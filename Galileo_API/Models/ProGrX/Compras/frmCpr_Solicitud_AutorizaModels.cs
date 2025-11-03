@@ -1,0 +1,3 @@
+namespace PgxAPI.Models.CPR
+{
+}

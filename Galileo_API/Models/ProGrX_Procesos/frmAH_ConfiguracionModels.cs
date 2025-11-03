@@ -1,0 +1,75 @@
+namespace PgxAPI.Models.AH
+{
+    public class ParametrosPatrimonioDTO
+    {
+        public string consec { get; set; } = string.Empty;
+        public string cta_obrero { get; set; } = string.Empty;
+        public string cta_patronal { get; set; } = string.Empty;
+        public string cta_patronalfci { get; set; } = string.Empty;
+        public string cta_extra { get; set; } = string.Empty;
+        public string cta_capitaliza { get; set; } = string.Empty;
+        public string cta_renta { get; set; } = string.Empty;
+        public string cta_liqpas { get; set; } = string.Empty;
+        public string cta_cc_obrero { get; set; } = string.Empty;
+        public string cta_cc_patronal { get; set; } = string.Empty;
+        public string cta_cc_extra { get; set; } = string.Empty;
+        public string cta_cc_capitaliza { get; set; } = string.Empty;
+        public string cta_custodia { get; set; } = string.Empty;
+        public string tipo_asiento { get; set; } = string.Empty;
+        public string porcentaje_aporte { get; set; } = string.Empty;
+        public string cta_pago_comision { get; set; } = string.Empty;
+        public string cta_custodiafci { get; set; } = string.Empty;
+        public string cta_excdist { get; set; } = string.Empty;
+        public string cta_excpagar { get; set; } = string.Empty;
+        public string cta_excnc { get; set; } = string.Empty;
+        public string cta_excajustepagar { get; set; } = string.Empty;
+        public string cta_excajustecobrar { get; set; } = string.Empty;
+        public string cta_excdonacion { get; set; } = string.Empty;
+        public string porcentaje_ahorro { get; set; } = string.Empty;
+        public string cta_devoluciones { get; set; } = string.Empty;
+        public string dev_aplica { get; set; } = string.Empty;
+        public string dev_operadora { get; set; } = string.Empty;
+        public string dev_plan { get; set; } = string.Empty;
+        public string dev_planpat { get; set; } = string.Empty;
+        public string cta_rentacap { get; set; } = string.Empty;
+        public string porcentaje_rentacap { get; set; } = string.Empty;
+        public string cod_divisa { get; set; } = string.Empty;
+        public string cta_exc_reserva { get; set; } = string.Empty;
+        public string excedentes_cfg { get; set; } = string.Empty;
+        public string divisa_desc { get; set; } = string.Empty;
+        public string cta_obr_mask { get; set; } = string.Empty;
+        public string cta_obr_desc { get; set; } = string.Empty;
+        public string cta_pat_mask { get; set; } = string.Empty;
+        public string cta_pat_desc { get; set; } = string.Empty;
+        public string cta_cst_mask { get; set; } = string.Empty;
+        public string cta_cst_desc { get; set; } = string.Empty;
+        public string cta_cap_mask { get; set; } = string.Empty;
+        public string cta_cap_desc { get; set; } = string.Empty;
+        public string cta_ext_mask { get; set; } = string.Empty;
+        public string cta_ext_desc { get; set; } = string.Empty;
+        public string cta_dev_mask { get; set; } = string.Empty;
+        public string cta_dev_desc { get; set; } = string.Empty;
+        public string cta_liq_mask { get; set; } = string.Empty;
+        public string cta_liq_desc { get; set; } = string.Empty;
+        public string cta_rnt_mask { get; set; } = string.Empty;
+        public string cta_rnt_desc { get; set; } = string.Empty;
+        public string cta_rntc_mask { get; set; } = string.Empty;
+        public string cta_rntc_desc { get; set; } = string.Empty;
+        public string cta_ecxc_mask { get; set; } = string.Empty;
+        public string cta_ecxc_desc { get; set; } = string.Empty;
+        public string cta_ecxp_mask { get; set; } = string.Empty;
+        public string cta_ecxp_desc { get; set; } = string.Empty;
+        public string cta_edst_mask { get; set; } = string.Empty;
+        public string cta_edst_desc { get; set; } = string.Empty;
+        public string cta_edon_mask { get; set; } = string.Empty;
+        public string cta_edon_desc { get; set; } = string.Empty;
+        public string cta_enc_mask { get; set; } = string.Empty;
+        public string cta_enc_desc { get; set; } = string.Empty;
+        public string cta_epg_mask { get; set; } = string.Empty;
+        public string cta_epg_desc { get; set; } = string.Empty;
+        public string cta_ereserva_mask { get; set; } = string.Empty;
+        public string cta_ereserva_desc { get; set; } = string.Empty;
+
+    }
+
+}
