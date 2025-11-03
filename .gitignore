@@ -52,3 +52,27 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Rider / VS Code / Visual Studio
+.idea/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Secret storage and local configs
+secrets.json
+appsettings.*.local.json
+appsettings.Development.json.backup
+.env
+
+# Misc
+*.db
+*.sqlite
+*.log
