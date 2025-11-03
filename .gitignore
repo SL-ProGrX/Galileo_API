@@ -76,3 +76,7 @@ appsettings.Development.json.backup
 *.db
 *.sqlite
 *.log
+
+# Ignorar archivos del sistema macOS
+.DS_Store
+
