@@ -1,0 +1,34 @@
+name: .NET Build
+
+on:
+  push:
+    branches: [ "*" ]
+  pull_request:
+    branches: [ "*" ]
+
+jobs:
+  build:
+    name: Build & Test (.NET 9)
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1) Código
+      - uses: actions/checkout@v4
+
+      # 2) .NET 9
+      - name: Setup .NET 9 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      # 3) Restore
+      - name: Restore
+        run: dotnet restore
+
+      # 4) Build (Release)
+      - name: Build
+        run: dotnet build --no-restore -c Release
+
+      # 5) Tests (si existen)
+      - name: Test
+        run: dotnet test --no-build -c Release --verbosity normal
