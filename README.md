@@ -7,7 +7,7 @@
 
 ---
 
-API desarrollada con **ASP.NET Core 8** que implementa autenticación segura mediante **JWT (JSON Web Tokens)**.  
+API desarrollada con **ASP.NET Core 9** que implementa autenticación segura mediante **JWT (JSON Web Tokens)**.  
 Diseñada para entornos privados y uso interno, con prácticas seguras para manejo de claves y configuración.
 
 ---
@@ -29,7 +29,7 @@ Diseñada para entornos privados y uso interno, con prácticas seguras para mane
 
 ## 🧰 Tecnologías utilizadas
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/)
+- [.NET 9 SDK](https://dotnet.microsoft.com/)
 - C# 12
 - ASP.NET Core Web API
 - Swagger / Swashbuckle
