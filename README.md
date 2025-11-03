@@ -1,6 +1,6 @@
 # 🌌 Galileo_API
 
-[![.NET](https://img.shields.io/badge/.NET-8.0-blue?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
+[![.NET](https://img.shields.io/badge/.NET-9.0-blue?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![C#](https://img.shields.io/badge/Language-C%23-239120?logo=csharp)](https://learn.microsoft.com/en-us/dotnet/csharp/)
 ![Status](https://img.shields.io/badge/Status-Private%20Project-critical)
 [![Swagger](https://img.shields.io/badge/API-Swagger-green?logo=swagger)](https://swagger.io/)
