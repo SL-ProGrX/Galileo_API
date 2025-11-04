@@ -39,7 +39,7 @@ namespace PgxAPI.Models.ProGrX.Bancos
 
     public class ResImpresion
     {
-        public ErrorDTO Value { get; set; }
+        public ErrorDto Value { get; set; }
         public int StatusCode { get; set; }
     }
 
