@@ -28,7 +28,7 @@ namespace PgxAPI.Models.CPR
         public string? cta_contable { get; set; }
         public string? notas { get; set; } = string.Empty;
         public Nullable<DateTime> fecha_inicio { get; set; }
-        public Nullable<DateTime> fecha_corte { get; set; }
+        public DateTime? fecha_corte { get; set; }
         public Nullable<DateTime> registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
         public DateTime? modifica_fecha { get; set; }
