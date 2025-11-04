@@ -1,9 +1,5 @@
 ﻿namespace PgxAPI.Models.ProGrX_Personas
 {
-    public class frmAF_Motivos_IngresoModels
-    {
-    }
-
     public class MotivoIngresoData
     {
         public string Cod_Motivo { get; set; } = string.Empty;

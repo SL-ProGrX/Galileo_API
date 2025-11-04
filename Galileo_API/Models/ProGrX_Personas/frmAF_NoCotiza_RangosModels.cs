@@ -18,5 +18,4 @@
         public int Total { get; set; }
         public List<NoCotizaRangosData> Lista { get; set; } = new List<NoCotizaRangosData>();
     }
-
 }
