@@ -21,17 +21,17 @@ namespace PgxAPI.Models.CPR
         public string? proveedor { get; set; } = string.Empty;
         public string? estado { get; set; } = string.Empty;
         public int? periodo_garantia { get; set; }
-        public string? tipo_contrato { get; set; } = string.Empty;
+        public string? tipo_contrato { get; set; }
         public int? plazo { get; set; }
         public string? cantidad_plazo { get; set; } = string.Empty;
         public float? monto { get; set; }
         public string? cta_contable { get; set; }
         public string? notas { get; set; } = string.Empty;
         public Nullable<DateTime> fecha_inicio { get; set; }
-        public Nullable<DateTime> fecha_corte { get; set; }
+        public DateTime? fecha_corte { get; set; }
         public Nullable<DateTime> registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
-        public Nullable<DateTime> modifica_fecha { get; set; }
+        public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; } = string.Empty;
         public string? divisa { get; set; } = string.Empty;
         public string? cod_centro_costo { get; set; } = string.Empty;
