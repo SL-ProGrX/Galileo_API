@@ -21,7 +21,7 @@ namespace PgxAPI.Models.CPR
         public string? proveedor { get; set; } = string.Empty;
         public string? estado { get; set; } = string.Empty;
         public int? periodo_garantia { get; set; }
-        public string? tipo_contrato { get; set; } = string.Empty;
+        public string? tipo_contrato { get; set; }
         public int? plazo { get; set; }
         public string? cantidad_plazo { get; set; } = string.Empty;
         public float? monto { get; set; }
