@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX_Personas
 {
-    public class AF_CRParametrosData
+    public class AfCrParametrosData
     {
         public int id { get; set; }
         public int dias_vence { get; set; }

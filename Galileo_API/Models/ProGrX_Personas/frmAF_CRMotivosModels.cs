@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX_Personas
 {
-    public class AF_CRMotivosData
+    public class AfCrMotivosData
     {
         public string cod_motivo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

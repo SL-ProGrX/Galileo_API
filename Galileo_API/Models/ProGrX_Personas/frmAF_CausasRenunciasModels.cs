@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX_Personas
 {
-    public class AF_CausasRenunciasData
+    public class AfCausasRenunciasData
     {
         public int id_causa { get; set; }
         public string descripcion { get; set; } = string.Empty;
