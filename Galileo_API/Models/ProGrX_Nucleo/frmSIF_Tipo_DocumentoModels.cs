@@ -46,7 +46,7 @@
         public string cod_concepto { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public string? asignado { get; set; }
-        public bool asignadob => string.IsNullOrEmpty(asignado) ? false : true;
+        public bool asignadob => !string.IsNullOrEmpty(asignado);
     }
 
 
