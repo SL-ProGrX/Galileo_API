@@ -1,15 +1,12 @@
 ﻿namespace PgxAPI.Models
 {
-    public class mProGrx_MainModels
-    {
-    }
-    public class ConsultaStatusResultDTO
+    public class ConsultaStatusResultDto
     {
         public int PERSONA_ID { get; set; }
         public int AUTORIZACION_ID { get; set; }
     }
 
-    public class SIFRegistraTagsRequestDTO
+    public class SifRegistraTagsRequestDto
     {
         public string Codigo { get; set; } = string.Empty;
         public string Tag { get; set; } = string.Empty;
@@ -22,7 +19,7 @@
         public string Usuario { get; set; } = string.Empty;
     }
 
-    public class MenuUsoRequestDTO
+    public class MenuUsoRequestDto
     {
         public int menu_nodo { get; set; }
         public int Empresa_Id { get; set; }
@@ -32,20 +29,20 @@
         public string Usuario { get; set; } = string.Empty;
     }
 
-    public class MenuFavoritosRequestDTO
+    public class MenuFavoritosRequestDto
     {
         public int Empresa_Id { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
-    public class MenuUsoResultDTO
+    public class MenuUsoResultDto
     {
         public int Nodo { get; set; }
         public int Cliente { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
-    public class ParametroDTO
+    public class ParametroDto
     {
         public int Cod_Parametro { get; set; }
         public string Descripcion { get; set; } = string.Empty;
@@ -55,7 +52,7 @@
         public string Acceso { get; set; } = string.Empty;
     }
 
-    public class EmpresaEnlaceResultDTO
+    public class EmpresaEnlaceResultDto
     {
         public int Cod_Empresa { get; set; }
         public string Nombre { get; set; } = string.Empty;
@@ -89,7 +86,7 @@
         public int? Modulo { get; set; }
     }
 
-    public class SIFOficinasUsuarioResultDTO
+    public class SifOficinasUsuarioResultDto
     {
         public string Titular { get; set; } = string.Empty;
         public string Apoyo { get; set; } = string.Empty;
@@ -99,7 +96,7 @@
         public int Inconsistencia { get; set; }
     }
 
-    public class Par_Ahcr
+    public class ParAhcr
     {
         public DateTime? cr_fecha_calculo { get; set; }
         public DateTime fechaalterna { get; set; }

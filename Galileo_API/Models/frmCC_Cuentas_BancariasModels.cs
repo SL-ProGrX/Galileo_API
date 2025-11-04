@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models
 {
-    public class SYS_Cuentas_BancariasDTO
+    public class SysCuentasBancariasDto
     {
         public string Identificacion { get; set; } = string.Empty;
         public string Cod_Banco { get; set; } = string.Empty;
@@ -32,22 +32,20 @@
         public string LCTA_InterBancaria { get; set; } = string.Empty;
     }
 
-    public class SYS_Cuentas_Bancarias_List
+    public class SysCuentasBancariasList
     {
         public int id_banco { get; set; }
-        public string descripcion { get; set; }
-        public string cta { get; set; }
+        public string? descripcion { get; set; }
+        public string? cta { get; set; }
         public int idx { get; set; }
-        public string cod_divisa { get; set; }
-        public string entidad_desc { get; set; }
+        public string? cod_divisa { get; set; }
+        public string? entidad_desc { get; set; }
     }
 
-    public class SIF_FormasPagoBancoAsgDTO
+    public class SifFormasPagoBancoAsgDto
     {
         public int IdBanco { get; set; }
-        public string CodFormaPago { get; set; }
-        public string RegistroUsuario { get; set; }
+        public string? CodFormaPago { get; set; }
+        public string? RegistroUsuario { get; set; }
     }
-
-
 }

@@ -1,11 +1,10 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
     public class LoginRequest
     {
         public string UserName { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
-
 
     public class LoginResult
     {
@@ -14,10 +13,7 @@
         public bool EsSuperAdmin { get; set; }
         public string Token { get; set; } = string.Empty;
         public List<LoginEmpresa>? EmpresaRol { get; set; }
-
         public bool BoolPasswordReset { get; set; }
-
-
     }
 
     public class LoginEmpresa
@@ -27,7 +23,6 @@
         public string EmpresaDescripcion { get; set; } = string.Empty;
         public string RolDescripcion { get; set; } = string.Empty;
     }
-
 
     public class Usuario
     {
@@ -60,7 +55,7 @@
         public string RolDescripcion { get; set; } = string.Empty;
     }
 
-    public class UsuarioInfoDto : Usuario
+    public class UsuarioInfo : Usuario
     {
         public List<LoginEmpresa>? EmpresaRol { get; set; }
     }
@@ -77,7 +72,7 @@
         public int PasswordReset { get; set; }
     }
 
-    public class UsuarioInfoDTO
+    public class UsuarioInfoDto
     {
         public int UserId { get; set; }
         public string UserName { get; set; } = string.Empty;
@@ -90,7 +85,7 @@
 
     }
 
-    public class UsuarioCambioContrasenaDTO
+    public class UsuarioCambioContrasenaDto
     {
         public string UserName { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
@@ -98,13 +93,7 @@
         public string ConfirmacionPassword { get; set; } = string.Empty;
     }
 
-    public class ErrorUsuarioDTO
-    {
-        public int Code { get; set; } = 0;
-        public string Description { get; set; } = string.Empty;
-    }
-
-    public class UsuarioContrasenaBitacorasRespuestaDTO
+    public class UsuarioContrasenaBitacorasRespuestaDto
     {
         public int IdKeyLog { get; set; }
         public int UserId { get; set; }
@@ -113,7 +102,7 @@
         public string RegistroUsuario { get; set; } = string.Empty;
     }
 
-    public class UsuarioBitacorasRespuestaDTO
+    public class UsuarioBitacorasRespuestaDto
     {
         public int LogAccountId { get; set; }
         public int UserId { get; set; }
@@ -123,7 +112,6 @@
         public DateTime RegistroFecha { get; set; }
         public string RegistroUsuario { get; set; } = string.Empty;
     }
-
 
     public class UsuarioEmpresaRolDto
     {
@@ -144,7 +132,6 @@
 
     }
 
-
     public class UsuarioCuentaRevisarDto
     {
         public string Usuario { get; set; } = string.Empty;
@@ -160,7 +147,6 @@
         public string UsuarioMovimiento { get; set; } = string.Empty;
         public string Maquina { get; set; } = string.Empty;
     }
-
 
     public class UsuarioCuentaMovimientoRequestDto
     {
@@ -202,6 +188,4 @@
         public string EMAIL { get; set; } = string.Empty;
         public string TEL_CELL { get; set; } = string.Empty;
     }
-
-
 }

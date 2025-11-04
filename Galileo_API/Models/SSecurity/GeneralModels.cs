@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
     public class PadronConsultarRequestDto
     {
@@ -65,6 +65,7 @@
         public new string Canton { get; set; } = string.Empty;
         public new string Distrito { get; set; } = string.Empty;
     }
+
     public class PadronEmpresasConsultarResponseDto : PadronConsultarResponseDto
     {
         public new string Nombre { get; set; } = string.Empty;
@@ -77,6 +78,7 @@
         public int Activo { get; set; } = 0;
 
     }
+
     public class ValidaCuentaRequestDto
     {
         public string Cuenta { get; set; } = string.Empty;
@@ -88,5 +90,4 @@
         public string Description { get; set; } = string.Empty;
         public int Code { get; set; }
     }
-
 }

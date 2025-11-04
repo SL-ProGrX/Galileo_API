@@ -227,7 +227,4 @@
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
     }
-
-   
-
 }

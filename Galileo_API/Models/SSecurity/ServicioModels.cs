@@ -1,7 +1,5 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
-
-
     public class ServicioSuscripcion
     {
         public string Cod_Servicio { get; set; } = string.Empty;
@@ -13,12 +11,5 @@
         public string Estado { get; set; } = string.Empty;
         public string Registro_Usuario { get; set; } = string.Empty;
         public DateTime Registro_Fecha { get; set; }
-
-    }
-
-    public class ErrorServicioSuscripcionDTO
-    {
-        public int Code { get; set; }
-        public string Description { get; set; } = string.Empty;
     }
 }

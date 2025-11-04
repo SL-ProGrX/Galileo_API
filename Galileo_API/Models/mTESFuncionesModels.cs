@@ -33,10 +33,9 @@
         public int vLinea { get; set; }
         public string vUnidad { get; set; } = "OC";
         public string vCC { get; set; } = "";
-
     }
 
-    public class TES_TransaccionesDTO
+    public class TesTransaccionesDto
     {
         public int NSOLICITUD { get; set; }
         public int ID_BANCO { get; set; }

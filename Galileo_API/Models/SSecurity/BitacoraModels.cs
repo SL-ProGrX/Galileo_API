@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
     public class BitacoraRequestDto
     {
@@ -16,7 +16,6 @@
         public string? LogEquipo { get; set; }
         public string? LogIP { get; set; }
         public string? EquipoMAC { get; set; }
-
         public bool todas { get; set; }
         public bool todos { get; set; }
     }
@@ -34,7 +33,5 @@
         public string App_Equipo { get; set; } = string.Empty;
         public string Equipo_MAC { get; set; } = string.Empty;
         public string App_IP { get; set; } = string.Empty;
-
-
     }
 }

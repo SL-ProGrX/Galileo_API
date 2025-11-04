@@ -1,6 +1,6 @@
-﻿namespace PgxAPI.Models.US
+﻿namespace PgxAPI.Models.Security
 {
-    public class RolesMembreciasInsertarDTO
+    public class RolesMembreciasInsertarDto
     {
         public int Ciente { get; set; }
         public string UsuarioLimita { get; set; } = string.Empty;
@@ -9,21 +9,21 @@
         public bool Acceso { get; set; }
     }
 
-    public class UsuariosConsultaDTO
+    public class UsuariosConsultaDto
     {
         public int UserID { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
     }
 
-    public class UsuariosVinculadosConsultaDTO
+    public class UsuariosVinculadosConsultaDto
     {
         public int userID { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
     }
 
-    public class RolConsultaDTO
+    public class RolConsultaDto
     {
         public string COD_ROL { get; set; } = string.Empty;
         public string DESCRIPCION { get; set; } = string.Empty;
@@ -32,7 +32,7 @@
         public string REGISTRO_USUARIO { get; set; } = string.Empty;
     }
 
-    public class EstacionConsultaDTO
+    public class EstacionConsultaDto
     {
         public string ESTACION { get; set; } = string.Empty;
         public string DESCRIPCION { get; set; } = string.Empty;
@@ -41,7 +41,7 @@
         public string REGISTRO_USUARIO { get; set; } = string.Empty;
     }
 
-    public class HorarioConsultaDTO
+    public class HorarioConsultaDto
     {
         public string COD_HORARIO { get; set; } = string.Empty;
         public string DESCRIPCION { get; set; } = string.Empty;
@@ -50,7 +50,7 @@
         public string REGISTRO_USUARIO { get; set; } = string.Empty;
     }
 
-    public class UsuarioRolAsignaDTO
+    public class UsuarioRolAsignaDto
     {
         public int Cliente { get; set; }
         public string Usuario { get; set; } = string.Empty;
@@ -67,7 +67,7 @@
         public char TipoMov { get; set; }
     }
 
-    public class EstacionAsignaDTO
+    public class EstacionAsignaDto
     {
         public int Cliente { get; set; }
         public string UsuarioLimita { get; set; } = string.Empty;
@@ -76,7 +76,7 @@
         public int Acceso { get; set; }
     }
 
-    public class Limita_Acceso
+    public class LimitaAcceso
     {
         public int Cliente { get; set; }
         public string UsuarioLimita { get; set; } = string.Empty;
@@ -90,7 +90,7 @@
         public int Horario { get; set; } = 0;
     }
 
-    public class HorarioAsignaDTO
+    public class HorarioAsignaDto
     {
         public int Cliente { get; set; }
         public string UsuarioLimita { get; set; } = string.Empty;

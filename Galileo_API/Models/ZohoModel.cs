@@ -111,20 +111,20 @@
         public object? cf { get; set; }
     }
 
-    public class dataModel
+    public class DataModel
     {
-        public List<Ticket> data { get; set; }
+        public List<Ticket>? data { get; set; }
         public int count { get; set; }
     }
 
     public class ZohoModel
     {
-        public string access_token { get; set; }
-        public string refresh_token { get; set; }
-        public string scope { get; set; }
-        public string api_domain { get; set; }
-        public string token_type { get; set; }
-        public string expires_in { get; set; }
+        public string access_token { get; set; } = string.Empty;
+        public string refresh_token { get; set; } = string.Empty;
+        public string scope { get; set; } = string.Empty;
+        public string api_domain { get; set; } = string.Empty;
+        public string token_type { get; set; } = string.Empty;
+        public string expires_in { get; set; } = string.Empty;
     }
 
     public class ZohoAuthModel
@@ -154,9 +154,9 @@
         public string scope { get; set; } = "Desk.tickets.ALL Desk.search.READ";
     }
 
-    public class tokenModel
+    public class TokenModel
     {
-        public string int_id { get; set; }
+        public string? int_id { get; set; }
         public string? token { get; set; }
         public Nullable<DateTime> fecha { get; set; }
     }
@@ -164,29 +164,28 @@
     public class TicketAttachments 
     { 
     
-        public List<AttachmentsLista> attachments { get; set; }
+        public List<AttachmentsLista>? attachments { get; set; }
         public int attachmentCount { get; set; }
 
     }
 
     public class AttachmentsLista
     {
-        public string id { get; set; }
-        public string name { get; set; }
-        public string size { get; set; }
-        public string href { get; set; }
-        public string previewurl { get; set; }
+        public string id { get; set; } = string.Empty;
+        public string name { get; set; } = string.Empty;
+        public string size { get; set; } = string.Empty;
+        public string href { get; set; } = string.Empty;
+        public string previewurl { get; set; } = string.Empty;
     }
 
     public class AttachmentBase
     {
-        public List<AttachmentBaseList> data { get; set; }
+        public List<AttachmentBaseList>? data { get; set; }
     }
 
     public class AttachmentBaseList
     {
-        public string id { get; set; }
+        public string? id { get; set; }
         public int attachmentCount { get; set; }
     }
-
 }

@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
     public class AppLog
     {
@@ -14,11 +14,5 @@
         public string Fecha_Inicio { get; set; } = string.Empty;
         public string Fecha_Corte { get; set; } = string.Empty;
         public int Empresa { get; set; }
-    }
-
-    public class ErrorAppLogDTO
-    {
-        public int Code { get; set; }
-        public string Description { get; set; } = string.Empty;
     }
 }

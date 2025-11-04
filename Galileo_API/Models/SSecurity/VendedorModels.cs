@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
     public class Vendedor
     {
@@ -13,11 +13,5 @@
         public int Activo { get; set; }
         public string Estado { get; set; } = string.Empty;
 
-    }
-
-    public class ErrorVendedorDTO
-    {
-        public int Code { get; set; }
-        public string Description { get; set; } = string.Empty;
     }
 }
