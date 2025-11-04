@@ -31,7 +31,7 @@ namespace PgxAPI.Models.CPR
         public Nullable<DateTime> fecha_corte { get; set; }
         public Nullable<DateTime> registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
-        public Nullable<DateTime> modifica_fecha { get; set; }
+        public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; } = string.Empty;
         public string? divisa { get; set; } = string.Empty;
         public string? cod_centro_costo { get; set; } = string.Empty;
