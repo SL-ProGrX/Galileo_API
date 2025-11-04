@@ -1,15 +1,12 @@
 namespace PgxAPI.Models.AH
 {
-
-
-    public class SifDocumentosDTO
+    public class SifDocumentosDto
     {
         public string idx { get; set; } = string.Empty;
         public string itmx { get; set; } = string.Empty;
-
     }
 
-    public class TransaccionSIFDTO
+    public class TransaccionSifdto
     {
         public string cod_transaccion { get; set; } = string.Empty;
         public string tipo_documento { get; set; } = string.Empty;
@@ -54,5 +51,4 @@ namespace PgxAPI.Models.AH
         public string caja_am_id { get; set; } = string.Empty;
 
     }
-
 }

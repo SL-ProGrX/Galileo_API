@@ -1,7 +1,6 @@
 namespace PgxAPI.Models.AH
 {
-
-    public class MovimientosPatrimonioDTO
+    public class MovimientosPatrimonioDto
     {
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
@@ -24,18 +23,15 @@ namespace PgxAPI.Models.AH
         public string fecha_emision { get; set; } = string.Empty;
         public string id_seq { get; set; } = string.Empty;
         public string sectordesc { get; set; } = string.Empty;
-
     }
 
-    public class DocumentosTransaccionSifDTO
+    public class DocumentosTransaccionSifDto
     {
         public string idx { get; set; } = string.Empty;
         public string itmx { get; set; } = string.Empty;
-
     }
 
-
-    public class MovimientosPatrimonio_Filtros
+    public class MovimientosPatrimonioFiltros
     {
         public string? beneficio_id { get; set; }
         public string? beneficiario_nombre { get; set; }
@@ -55,5 +51,4 @@ namespace PgxAPI.Models.AH
         public string documento { get; set; } = string.Empty;
         public string? cedula { get; set; }
     }
-
 }

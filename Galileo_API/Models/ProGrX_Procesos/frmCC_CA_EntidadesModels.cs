@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.GEN
 {
-    public class PRM_CA_EntidadData
+    public class PrmCaEntidadData
     {
         public string cod_entidad { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -10,7 +10,7 @@ namespace PgxAPI.Models.GEN
         public bool activo { get; set; }
     }
 
-    public class PRM_CA_EntidadUpsert
+    public class PrmCaEntidadUpsert
     {
         public string cod_entidad { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

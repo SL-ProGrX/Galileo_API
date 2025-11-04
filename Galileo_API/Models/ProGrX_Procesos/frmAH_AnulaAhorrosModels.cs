@@ -1,3 +1,1 @@
-namespace PgxAPI.Models.AH
-{
-}
+

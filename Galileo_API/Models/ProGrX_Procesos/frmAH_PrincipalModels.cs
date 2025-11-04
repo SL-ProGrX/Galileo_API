@@ -1,7 +1,6 @@
 namespace PgxAPI.Models.ProGrX_Procesos
 {
-
-    public class PatrimonioPrincipalDTO
+    public class PatrimonioPrincipalDto
     {
         public string consec { get; set; } = string.Empty;
         public string cedula { get; set; } = string.Empty;
@@ -22,7 +21,7 @@ namespace PgxAPI.Models.ProGrX_Procesos
 
     }
 
-    public class LiquidacionPatrimonioDTO
+    public class LiquidacionPatrimonioDto
     {
         public string consec { get; set; } = string.Empty;
         public string fecliq { get; set; } = string.Empty;
@@ -34,8 +33,7 @@ namespace PgxAPI.Models.ProGrX_Procesos
 
     }
 
-
-    public class ResumenPatrimonioDTO
+    public class ResumenPatrimonioDto
     {
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
@@ -53,10 +51,7 @@ namespace PgxAPI.Models.ProGrX_Procesos
 
     }
 
-
-
-
-    public class ExcedentePatrimonioDTO
+    public class ExcedentePatrimonioDto
     {
         public string inicio { get; set; } = string.Empty;
         public string corte { get; set; } = string.Empty;
@@ -102,8 +97,7 @@ namespace PgxAPI.Models.ProGrX_Procesos
 
     }
 
-
-    public class HistoricoPatrimonioDTO
+    public class HistoricoPatrimonioDto
     {
         public string anio { get; set; } = string.Empty;
         public string mes { get; set; } = string.Empty;
@@ -119,10 +113,5 @@ namespace PgxAPI.Models.ProGrX_Procesos
         public string rend_custodia { get; set; } = string.Empty;
         public string rend_custodia_apl { get; set; } = string.Empty;
         public string estado_desc { get; set; } = string.Empty;
-
     }
-
-
-
-
 }
