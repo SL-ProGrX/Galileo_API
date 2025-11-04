@@ -48,5 +48,4 @@ namespace PgxAPI.Models.FSL
         public int total { get; set; }
         public List<ListaPlanesData> planes { get; set; } = new List<ListaPlanesData>();
     }
-
 }

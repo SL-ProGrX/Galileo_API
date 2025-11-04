@@ -25,5 +25,4 @@ namespace PgxAPI.Models.INV
         public string Cod_Barras { get; set; } = string.Empty;
         public int Cod_ProdClas { get; set; }
     }
-
 }

@@ -7,7 +7,6 @@
         public string Descripcion { get; set; } = string.Empty;
         public string NitCodigo { get; set; } = string.Empty;
         public bool Activo { get; set; }
-
     }
 
     public class Proveedor

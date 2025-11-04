@@ -6,7 +6,7 @@ namespace PgxAPI.Models.CxP
         public string Descripcion { get; set; } = string.Empty;
     }
 
-    public class FacturaDTO
+    public class FacturaDto
     {
         public string Cod_Factura { get; set; } = string.Empty;
         public int Cod_Proveedor { get; set; }
@@ -55,13 +55,10 @@ namespace PgxAPI.Models.CxP
         public string Cod_Divisa { get; set; } = string.Empty;
         public string Divisa { get; set; } = string.Empty;
         public decimal Tipo_Cambio { get; set; }
-
-
         public decimal Credito { get; set; }
         public decimal Debito { get; set; }
         public string Divisa_Desc { get; set; } = string.Empty;
         public string Centro_Desc { get; set; } = string.Empty;
-
         public string DataKey { get; set; } = string.Empty;
     }
 
@@ -82,7 +79,7 @@ namespace PgxAPI.Models.CxP
 
     }
 
-    public class ParametrosIVA
+    public class ParametrosIva
     {
         public string Cod_Parametro { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -103,7 +100,6 @@ namespace PgxAPI.Models.CxP
         public string Descripcion { get; set; } = string.Empty;
         public string Cod_Divisa { get; set; } = string.Empty;
         public string Divisa_Local { get; set; } = string.Empty;
-
         public string Cod_Cuenta { get; set; } = string.Empty;
         public string Cod_Cuenta_Mask { get; set; } = string.Empty;
         public string Desc_Cuenta { get; set; } = string.Empty;
@@ -119,7 +115,6 @@ namespace PgxAPI.Models.CxP
         public string Cod_Factura { get; set; } = string.Empty;
         public int Cod_Proveedor { get; set; }
         public string Usuario { get; set; } = string.Empty;
-
     }
 
     public class FacturaPlantillaLista
@@ -150,7 +145,6 @@ namespace PgxAPI.Models.CxP
         public DateTime? Fecha { get; set; }
         public string Tipo { get; set; } = string.Empty;
         public string DataKey { get; set; } = string.Empty;
-
     }
 
     public class CuentaProveedor
@@ -159,7 +153,6 @@ namespace PgxAPI.Models.CxP
         public string Cod_Cuenta_Mask { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string DivisaProv { get; set; } = string.Empty;
-
     }
 
     public class PagoContado
@@ -181,7 +174,5 @@ namespace PgxAPI.Models.CxP
         public decimal Importe_Divisa_Real { get; set; }
         public decimal Tipo_Cambio { get; set; }
         public string Cod_Divisa { get; set; } = string.Empty;
-
     }
-
 }

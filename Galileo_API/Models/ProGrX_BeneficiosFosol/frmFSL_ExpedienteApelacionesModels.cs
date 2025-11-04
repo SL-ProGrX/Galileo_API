@@ -1,12 +1,12 @@
 namespace PgxAPI.Models.FSL
 {
-    public class fslTipoApelacion
+    public class FslTipoApelacion
     {
         public string item { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class fslApleacionAplicar
+    public class FslApleacionAplicar
     {
         public long cod_expediente { get; set; }
         public string cod_apelacion { get; set; } = string.Empty;
@@ -16,7 +16,7 @@ namespace PgxAPI.Models.FSL
         public string usuario { get; set; } = string.Empty;
     }
 
-    public class fslResolucionApleacion
+    public class FslResolucionApleacion
     {
         public string cod_comite { get; set; } = string.Empty;
         public List<FslResolucionDatos> miembros { get; set; } = new List<FslResolucionDatos>();

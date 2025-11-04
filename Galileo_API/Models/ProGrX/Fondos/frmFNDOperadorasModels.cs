@@ -1,9 +1,6 @@
-﻿using System.Text.Json.Serialization;
-
-namespace PgxAPI.Models.ProGrX.Fondos
+﻿namespace PgxAPI.Models.ProGrX.Fondos
 {
-
-    public class FndOperadoraDTO
+    public class FndOperadoraDto
     {
         public int? cod_operadora { get; set; }
         public string? descripcion { get; set; }
@@ -19,16 +16,13 @@ namespace PgxAPI.Models.ProGrX.Fondos
 
     }
 
-
-    public class OperadoraPlanDTO
+    public class OperadoraPlanDto
     {
-        public string cod_plan { get; set; }
-        public string plan_desc { get; set; }
-        public string cod_divisa { get; set; }
+        public string? cod_plan { get; set; }
+        public string? plan_desc { get; set; }
+        public string? cod_divisa { get; set; }
         public int contratos { get; set; }
         public decimal totallocal { get; set; }
         public decimal totaldivisa { get; set; }
     }
-
-
 }

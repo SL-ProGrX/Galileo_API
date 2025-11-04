@@ -1,9 +1,5 @@
 ﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
 {
-
-
-   
-
     public class ActivosRevaluacionData
     {
         public int id_addret { get; set; }
@@ -15,8 +11,4 @@
         public decimal monto { get; set; }  
         public int meses_calculo { get; set; } 
     }
-
-    
-
-
 }

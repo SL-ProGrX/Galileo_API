@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.INV
 {
-    public class TipoESDTO
+    public class TipoEsDto
     {
         public string Cod_Entsal { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -8,14 +8,13 @@ namespace PgxAPI.Models.INV
         public string Cod_Cuenta { get; set; } = string.Empty;
         public string CtaDesc { get; set; } = string.Empty;
         public bool Activo { get; set; } = false;
-
         public bool Mancomunado { get; set; } = false;
     }
 
     public class TipoESList
     {
         public int Total { get; set; }
-        public List<TipoESDTO> Lista { get; set; } = new List<TipoESDTO>();
+        public List<TipoEsDto> Lista { get; set; } = new List<TipoEsDto>();
     }
 
     public class TipoESFiltros
@@ -24,5 +23,4 @@ namespace PgxAPI.Models.INV
         public int? paginacion { get; set; }
         public string? filtro { get; set; }
     }
-
 }

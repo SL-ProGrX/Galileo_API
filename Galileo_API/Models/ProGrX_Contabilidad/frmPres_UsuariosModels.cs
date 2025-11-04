@@ -1,6 +1,5 @@
 namespace PgxAPI.Models.PRES
 {
-
     public class PresUsuariosData
     {
         public string Usuario { get; set; } = string.Empty;

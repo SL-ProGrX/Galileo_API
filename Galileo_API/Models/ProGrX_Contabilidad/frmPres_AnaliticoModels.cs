@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.PRES
 {
-    public class presAnaliticoDescData
+    public class PresAnaliticoDescData
     {
         public string modelo_desc { get; set; } = string.Empty;
         public string conta_desc { get; set; } = string.Empty;
@@ -10,7 +10,7 @@ namespace PgxAPI.Models.PRES
         public string cuenta_mask { get; set; } = string.Empty;
     }
 
-    public class presAnaliticoBuscar
+    public class PresAnaliticoBuscar
     {
         public string Modelo { get; set; } = string.Empty;
         public int Contabilidad { get; set; }
@@ -20,7 +20,7 @@ namespace PgxAPI.Models.PRES
         public string Periodo { get; set; } = string.Empty;
     }
 
-    public class presAnaliticoData
+    public class PresAnaliticoData
     {
         public string tipo_asiento { get; set; } = string.Empty;
         public string num_asiento { get; set; } = string.Empty;
@@ -41,5 +41,4 @@ namespace PgxAPI.Models.PRES
         public string descripcion { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
     }
-
 }

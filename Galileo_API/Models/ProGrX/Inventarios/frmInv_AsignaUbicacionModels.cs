@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.INV
 {
-    public class AsignaUbicacionDTO
+    public class AsignaUbicacionDto
     {
         public int cod_asignaubicacion { get; set; }
         public string cod_bodega { get; set; } = string.Empty;
@@ -20,7 +20,7 @@ namespace PgxAPI.Models.INV
 
     }
 
-    public class AsignaUbicacionDetalleDTO
+    public class AsignaUbicacionDetalleDto
     {
         public int cod_asignaubicacion { get; set; }
         public int linea { get; set; }
@@ -28,8 +28,5 @@ namespace PgxAPI.Models.INV
         public string descripcion { get; set; } = string.Empty;
         public float existencia { get; set; }
         public string ubicacion { get; set; } = string.Empty;
-
     }
-
-
 }

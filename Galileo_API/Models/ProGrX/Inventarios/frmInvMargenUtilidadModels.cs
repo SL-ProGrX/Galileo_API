@@ -1,18 +1,18 @@
 namespace PgxAPI.Models.INV
 {
-    public class LineaDTO
+    public class LineaDto
     {
         public int cod_prodclas { get; set; }
         public string Descripcion { get; set; } = string.Empty;
     }
 
-    public class SubLineaDTO
+    public class SubLineaDto
     {
         public int cod_linea_sub { get; set; }
         public string Descripcion { get; set; } = string.Empty;
     }
 
-    public class PrecioDTO
+    public class PrecioDto
     {
         public string? cod_precio { get; set; } 
         public string? descripcion { get; set; }
@@ -23,5 +23,4 @@ namespace PgxAPI.Models.INV
         public int? monto { get; set; }
 
     }
-
 }

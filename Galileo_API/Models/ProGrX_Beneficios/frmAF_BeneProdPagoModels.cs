@@ -5,6 +5,7 @@ namespace PgxAPI.Models.AF
         public int Total { get; set; }
         public List<AfiBeneProdAsgData> Beneficios { get; set; } = new List<AfiBeneProdAsgData>();
     }
+    
     public class AfiBeneProdAsgData
     {
         public bool estado { get; set; }
@@ -27,10 +28,9 @@ namespace PgxAPI.Models.AF
         public string? noTarjeta { get; set; }
     }
 
-    public class AfiBeneficiosData
+    public class AfiBeneProdData
     {
         public string cod_Beneficio { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
-
 }

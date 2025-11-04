@@ -1,9 +1,8 @@
 ﻿namespace PgxAPI.Models.ProGrX.Fondos
 {
-
-    public class Fnd_Calculadora_Planes
+    public class FndCalculadoraPlanes
     {
-        public string Tipo_Deduc { get; set; }
+        public string? Tipo_Deduc { get; set; }
         public decimal Porc_Deduc { get; set; }
         public int Tipo_Cdp { get; set; }
         public bool Pago_Cupones { get; set; }
@@ -12,7 +11,7 @@
         public decimal Tasa_Margen_Negociacion { get; set; }
     }
 
-    public class Fnd_Calculadora_Inversiones_FlujoData
+    public class FndCalculadoraInversionesFlujoData
     {
         public int Secuencia { get; set; }
         public DateTime FechaVencimiento { get; set; }
@@ -29,18 +28,18 @@
         public decimal MontoInversionNeto { get; set; }
     }
 
-    public class Filtros_Calculadora
+    public class FiltrosCalculadora
     {
         public int pCalculoId { get; set; }
         public decimal txtInversion { get; set; }
         public decimal Plazo { get; set; }
         public decimal pTasa { get; set; }
         public decimal pTP_Sol { get; set; }
-        public string pFrecuenciaPago { get; set; }
+        public string? pFrecuenciaPago { get; set; }
         public decimal txtMonto { get; set; }
         public bool chkCapitaliza { get; set; }
-        public string Cedula { get; set; }
-        public string Plan { get; set; }
-        public string Usuario { get; set; }
+        public string? Cedula { get; set; }
+        public string? Plan { get; set; }
+        public string? Usuario { get; set; }
     }
 }

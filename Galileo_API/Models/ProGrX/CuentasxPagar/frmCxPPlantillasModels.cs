@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.CxP
 {
-    public class PlantillaDTO
+    public class PlantillaDto
     {
         public string Cod_Plantilla { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -8,10 +8,9 @@
         public string Registro_Fecha { get; set; } = string.Empty;
         public string Registro_Usuario { get; set; } = string.Empty;
         public bool Activo { get; set; }
-
     }
 
-    public class Plantilla_AsientoDTO
+    public class PlantillaAsientoDto
     {
         public int Linea { get; set; }
         public string Cod_Plantilla { get; set; } = string.Empty;
@@ -32,10 +31,9 @@
         public string Descripcion { get; set; } = string.Empty;
     }
 
-    public class Centro_Costo
+    public class CentroCosto
     {
         public string Cod_Centro_Costo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
     }
-
 }

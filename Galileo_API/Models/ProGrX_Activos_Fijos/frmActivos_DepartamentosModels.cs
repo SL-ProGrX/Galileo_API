@@ -5,6 +5,7 @@
         public int total { get; set; } = 0;
         public List<ActivosDepartamentosData> lista { get; set; } = new();
     }
+
     public class ActivosDepartamentosData
     {
         public string cod_departamento { get; set; } = string.Empty;
@@ -15,6 +16,7 @@
 
         public bool isNew { get; set; } = false;
     }
+    
     public class ActivosSeccionesLista
     {
         public int total { get; set; } = 0;

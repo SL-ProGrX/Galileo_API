@@ -52,5 +52,4 @@ namespace PgxAPI.Models.AF
         public string? registro_usuario { get; set; }
         public bool estado { get; set; }
     }
-
 }

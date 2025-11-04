@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
 {
-    public class frmActivos_PolizasModels
+    public class FrmActivosPolizasModels
     {
         public class ActivosPolizasLista
         {
@@ -41,6 +41,7 @@
             public string tipo_poliza { get; set; } = string.Empty;
             public string descripcion { get; set; } = string.Empty;
         }
+        
         public class ActivosPolizasAsignacionItem
         {
             public string num_placa { get; set; } = string.Empty;
@@ -58,6 +59,7 @@
             public int? pagina { get; set; }
             public int? paginacion { get; set; }
         }
+        
         public class ActivosPolizasAsignacionBulk
         {
             public string cod_poliza { get; set; } = string.Empty;

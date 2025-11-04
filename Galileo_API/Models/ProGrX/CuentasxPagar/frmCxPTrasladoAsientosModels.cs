@@ -63,5 +63,4 @@ namespace PgxAPI.Models.CxP
         public decimal Monto { get; set; }
         public int IdX_Consec { get; set; }
     }
-
 }

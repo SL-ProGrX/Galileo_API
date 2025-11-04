@@ -1,19 +1,18 @@
 namespace PgxAPI.Models.INV
 {
-
-    public class ConsultaMovimientoBodegaCDTO
+    public class ConsultaMovimientoBodegaCDdto
     {
         public string Cod_Bodega { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
     }
 
-    public class MovimientosDTOList
+    public class MovimientosDtoList
     {
         public int Total { get; set; }
-        public List<MovimientosDTO> Movimientos { get; set; } = new List<MovimientosDTO>();
+        public List<MovimientosDto> Movimientos { get; set; } = new List<MovimientosDto>();
     }
 
-    public class MovimientosDTO
+    public class MovimientosDto
     {
         public DateTime fecha { get; set; }
         public string producto { get; set; } = string.Empty;
@@ -30,11 +29,9 @@ namespace PgxAPI.Models.INV
         public int totalconimp { get; set; } = 0;
         public string bodega { get; set; } = string.Empty;
         public string bodegaenlace { get; set; } = string.Empty;
-
     }
 
-
-    public class MovimientosInventarios_Filtros
+    public class MovimientosInventariosFiltros
     {
         public string? beneficio_id { get; set; }
         public string? beneficiario_nombre { get; set; }
@@ -58,5 +55,4 @@ namespace PgxAPI.Models.INV
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
     }
-
 }

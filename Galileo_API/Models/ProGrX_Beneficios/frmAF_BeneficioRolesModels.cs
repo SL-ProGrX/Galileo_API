@@ -12,7 +12,6 @@ namespace PgxAPI.Models.AF
         public string? descripcion { get; set; }
     }
 
-
     public class BeneficioUsuariosDataLista
     {
         public int Total { get; set; }
@@ -26,5 +25,4 @@ namespace PgxAPI.Models.AF
         public string usuario { get; set; } = string.Empty;
         public bool activo { get; set; } = false;
     }
-
 }

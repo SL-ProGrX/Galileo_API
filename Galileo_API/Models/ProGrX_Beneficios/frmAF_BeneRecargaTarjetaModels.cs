@@ -76,22 +76,21 @@ namespace PgxAPI.Models.AF
         public string? nombre_proveedor { get; set; } = string.Empty;
     }
 
-    public class DocArchivoBeneRecargaTarjetaDTO
+    public class DocArchivoBeneRecargaTarjetaDto
     {
         public int codCliente { get; set; }
         public int cod_remesa_tr { get; set; }
         public int cod_proveedor { get; set; }
-        public string body { get; set; }
-        public string usuario { get; set; }
-        public List<FileTarjetasDTO> archivos { get; set; }
+        public string? body { get; set; }
+        public string? usuario { get; set; }
+        public List<FileTarjetasDto>? archivos { get; set; }
     }
 
-    public class FileTarjetasDTO
+    public class FileTarjetasDto
     {
         public int? size { get; set; } 
         public string? filename { get; set; } = string.Empty;
         public string? filetype { get; set; } = string.Empty;
         public byte[]? filecontent { get; set; }
     }
-
 }

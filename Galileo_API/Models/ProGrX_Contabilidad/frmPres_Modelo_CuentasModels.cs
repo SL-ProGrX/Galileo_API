@@ -8,25 +8,25 @@ namespace PgxAPI.Models.PRES
         public bool Asignada { get; set; }
     }
 
-    public class Pres_Modelo_Cuentas_ImportData
+    public class PresModeloCuentasImportData
     {
         public int Cod_Contabilidad { get; set; }
-        public string? Cod_Modelo { get; set; } 
-        public string? Cod_Cuenta { get; set; } 
-        public string? Cod_Unidad { get; set; } 
-        public string? Cod_Centro_Costo { get; set; } 
+        public string? Cod_Modelo { get; set; }
+        public string? Cod_Cuenta { get; set; }
+        public string? Cod_Unidad { get; set; }
+        public string? Cod_Centro_Costo { get; set; }
         public string Corte { get; set; } = string.Empty;
         public int Anio { get; set; }
         public int Mes { get; set; }
         public float Monto { get; set; }
-        public string? Usuario { get; set; } 
+        public string? Usuario { get; set; }
         public int Inicializa { get; set; }
-        public string? Descripcion { get; set; } 
-        public string? Presupuesto { get; set; } 
-        public string? Detalle { get; set; } 
+        public string? Descripcion { get; set; }
+        public string? Presupuesto { get; set; }
+        public string? Detalle { get; set; }
     }
 
-    public class Pres_Modelo_Cuentas_Horizontal
+    public class PresModeloCuentasHorizontal
     {
         public string Cuenta { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -46,7 +46,7 @@ namespace PgxAPI.Models.PRES
         public float Diciembre { get; set; }
     }
 
-    public class CntX_Periodo_Fiscal_Meses
+    public class CntXPeriodoFiscalMeses
     {
         public int Cod_Contabilidad { get; set; }
         public int Id_Cierre { get; set; }

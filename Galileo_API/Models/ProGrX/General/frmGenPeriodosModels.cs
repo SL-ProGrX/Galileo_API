@@ -9,5 +9,4 @@
         public int Activo { get; set; }
         public string DescripcionEstado { get; set; } = string.Empty;
     }
-
 }

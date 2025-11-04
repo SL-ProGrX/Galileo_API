@@ -125,16 +125,16 @@ namespace PgxAPI.Models.FSL
         public string Resolucion_Notas { get; set; } = string.Empty;
     }
 
-    public class fslExpedienteData
+    public class FslExpedienteData
     {
         public long cod_expediente { get; set; }
         public string cedula { get; set; } = string.Empty;
     }
 
-    public class fslExpedienteListaData
+    public class FslExpedienteListaData
     {
         public int Total { get; set; }
-        public List<fslExpedienteData> expediente { get; set; } = new List<fslExpedienteData>();
+        public List<FslExpedienteData> expediente { get; set; } = new List<FslExpedienteData>();
     }
 
     public class FslExpedienteUpdate
@@ -161,5 +161,4 @@ namespace PgxAPI.Models.FSL
         public string usuario { get; set; } = string.Empty;
         public string clave { get; set; } = string.Empty;
     }
-
 }

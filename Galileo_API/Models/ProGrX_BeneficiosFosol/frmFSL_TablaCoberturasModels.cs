@@ -21,6 +21,6 @@ namespace PgxAPI.Models.FSL
     public class FslTablaAplicacionDataLista
     {
         public int Total { get; set; }
-        public List<FslTablaAplicacionData> coberturas { get; set; }
+        public List<FslTablaAplicacionData>? coberturas { get; set; }
     }
 }

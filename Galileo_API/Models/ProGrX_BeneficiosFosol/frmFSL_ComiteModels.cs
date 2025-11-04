@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.FSL
 {
-    public class FslComitesDTO
+    public class FslComitesDto
     {
         public string cod_comite { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -12,10 +12,10 @@ namespace PgxAPI.Models.FSL
     public class FslComitesDataLista
     {
         public int Total { get; set; }
-        public List<FslComitesDTO> Comites { get; set; } = new List<FslComitesDTO>();
+        public List<FslComitesDto> Comites { get; set; } = new List<FslComitesDto>();
     }
 
-    public class FslMiembrosComitesDTO
+    public class FslMiembrosComitesDto
     {
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
@@ -31,7 +31,7 @@ namespace PgxAPI.Models.FSL
     public class FslMiembrosComitesDataLista
     {
         public int Total { get; set; }
-        public List<FslMiembrosComitesDTO> Miembros { get; set; } = new List<FslMiembrosComitesDTO>();
+        public List<FslMiembrosComitesDto> Miembros { get; set; } = new List<FslMiembrosComitesDto>();
     }
 
     public class FslComitesActivosData()

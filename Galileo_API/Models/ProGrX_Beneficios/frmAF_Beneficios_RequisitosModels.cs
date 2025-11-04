@@ -21,5 +21,4 @@ namespace PgxAPI.Models.AF
         public int? paginacion { get; set; }
         public string? filtro { get; set; }
     }
-
 }

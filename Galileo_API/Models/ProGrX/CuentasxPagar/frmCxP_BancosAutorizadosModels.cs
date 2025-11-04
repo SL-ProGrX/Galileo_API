@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.CxP
 {
-    public class BancosAutorizadosDTO
+    public class BancosAutorizadosDto
     {
         public int id_banco { get; set; }
         public string descripcion { get; set; } = string.Empty;
@@ -8,5 +8,3 @@
         public bool transferencias { get; set; }
     }
 }
-
-

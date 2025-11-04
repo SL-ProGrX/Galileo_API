@@ -1,12 +1,12 @@
 namespace PgxAPI.Models.CxP
 {
-    public class cxpEventosDTO
+    public class CxpEventosDto
     {
         public int idx { get; set; }
         public string itmx { get; set; } = string.Empty;
     }
 
-    public class cxpEventos_VentasFiltros
+    public class CxpEventosVentasFiltros
     {
         public int? id_venta { get; set; }
         public DateTime inicio { get; set; }
@@ -19,7 +19,7 @@ namespace PgxAPI.Models.CxP
         public string appcod { get; set; } = string.Empty;
     }
 
-    public class cxpEventos_VentasDTO
+    public class CxpEventosVentasDto
     {
         public int id_venta { get; set; }
         public int cod_evento { get; set; } 

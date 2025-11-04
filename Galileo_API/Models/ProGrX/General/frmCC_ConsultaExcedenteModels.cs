@@ -1,19 +1,19 @@
 namespace PgxAPI.Models.GEN
 {
-    public class CC_PeriodoList
+    public class CCPeriodoList
     {
         public int idx { get; set; }
         public string itmx { get; set; } = string.Empty;
     }
 
-    public class CC_Exc_PeriodoData
+    public class CCExcPeriodoData
     {
         public string? nc_mora { get; set; }
         public string? nc_opcf { get; set; }
         public string? nc_saldos { get; set; }
     }
 
-    public class CC_ConsultaExcedenteData
+    public class CCConsultaExcedenteData
     {
         public int id_periodo { get; set; }
         public string cedula { get; set; } = string.Empty;
@@ -57,7 +57,7 @@ namespace PgxAPI.Models.GEN
         public string salidadesc { get; set; } = string.Empty;
     }
 
-    public class vSIFAuxCreditosMovDetalle
+    public class VSifAuxCreditosMovDetalle
     {
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;

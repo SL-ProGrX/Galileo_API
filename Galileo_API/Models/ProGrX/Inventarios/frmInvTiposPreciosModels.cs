@@ -13,5 +13,4 @@
         public int Total { get; set; }
         public List<Precio> Precios { get; set; } = new List<Precio>();
     }
-
 }

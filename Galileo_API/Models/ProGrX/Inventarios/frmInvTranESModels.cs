@@ -67,5 +67,4 @@ namespace PgxAPI.Models.INV
         public string Documento { get; set; } = string.Empty;
         public string Notas { get; set; } = string.Empty;
     }
-
 }

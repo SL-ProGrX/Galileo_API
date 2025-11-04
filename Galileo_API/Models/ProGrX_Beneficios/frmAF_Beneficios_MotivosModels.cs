@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.AF
 {
-    public class BENE_MOTIVOS
+    public class BeneMotivos
     {
         public string cod_motivo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -12,10 +12,9 @@ namespace PgxAPI.Models.AF
 
     }
 
-    public class BENE_MOTIVOSDataLista
+    public class BeneMotivosDataLista
     {
         public int Total { get; set; }
-        public List<BENE_MOTIVOS> Lista { get; set; } = new List<BENE_MOTIVOS>();
+        public List<BeneMotivos> Lista { get; set; } = new List<BeneMotivos>();
     }
-
 }

@@ -1,12 +1,12 @@
 namespace PgxAPI.Models.AF
 {
-    public class vBeneficios_IntegralDTOLista
+    public class VBeneficiosIntegralDtoLista
     {
         public int Total { get; set; }
-        public List<vBeneficios_IntegralDTO> Beneficios { get; set; } = new List<vBeneficios_IntegralDTO>();
+        public List<VBeneficiosIntegralDto> Beneficios { get; set; } = new List<VBeneficiosIntegralDto>();
     }
 
-    public class vBeneficios_IntegralDTO
+    public class VBeneficiosIntegralDto
     {
         public string? btn { get; set; }
         public string? cod_beneficio { get; set; }
@@ -27,7 +27,7 @@ namespace PgxAPI.Models.AF
         public string? oficina_desc { get; set; }
     }
 
-    public class BeneficiosMonitor_Filtros
+    public class BeneficiosMonitorFiltros
     {
         public string? beneficio_id { get; set; }
         public string? beneficiario_nombre { get; set; }
@@ -54,5 +54,4 @@ namespace PgxAPI.Models.AF
         public string? item { get; set; }
         public string? descripcion { get; set; }
     }
-
 }

@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.PRE
 {
-    public class PresParametrosDTO
+    public class PresParametrosDto
     {
         public string cod_parametro { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

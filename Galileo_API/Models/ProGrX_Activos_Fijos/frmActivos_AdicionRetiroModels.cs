@@ -1,8 +1,5 @@
-﻿using static PgxAPI.Models.ProGrX_Activos_Fijos.frmActivos_TiposActivosModels;
-
-namespace PgxAPI.Models.ProGrX_Activos_Fijos
+﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
 {
-
     public class ActivosDataLista
     {
         public int total { get; set; }
@@ -59,25 +56,27 @@ namespace PgxAPI.Models.ProGrX_Activos_Fijos
         public string identificacion { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
-        public decimal valor_historico { get; set; } 
-        public decimal valor_desecho { get; set; } 
+        public decimal valor_historico { get; set; }
+        public decimal valor_desecho { get; set; }
         public decimal depreciacion_mes { get; set; }
         public decimal depreciacion_acum { get; set; }
         public DateTime depreciacion_periodo { get; set; }
         public string depreciacionPeriodo { get; set; } = string.Empty;
-        public decimal valor_libros { get; set; } 
- 
+        public decimal valor_libros { get; set; }
+
 
     }
+
     public class ActivosHistoricoData
     {
         public int id_addret { get; set; }
         public string TipoMov { get; set; } = string.Empty;
         public DateTime fecha { get; set; }
-        public decimal monto { get; set; } 
+        public decimal monto { get; set; }
         public string Justifica { get; set; } = string.Empty;
-      public string descripcion { get; set; } = string.Empty;
+        public string descripcion { get; set; } = string.Empty;
     }
+    
     public class ActivosRetiroAdicionCierreData
     {
         public int anio { get; set; }
@@ -87,6 +86,4 @@ namespace PgxAPI.Models.ProGrX_Activos_Fijos
         public decimal depreciacion_mes { get; set; }
         public int ciclo { get; set; } 
     }
-
-
 }

@@ -1,14 +1,13 @@
 namespace PgxAPI.Models.INV
 {
-    public class ExistenciaProductoDTO
+    public class ExistenciaProductoDto
     {
         public string Bodega { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public int Existencia { get; set; } = 0;
-
     }
 
-    public class ExistenciaProducto_Filtros
+    public class ExistenciaProductoFiltros
     {
         public string? beneficio_id { get; set; }
         public string? beneficiario_nombre { get; set; }
@@ -29,5 +28,4 @@ namespace PgxAPI.Models.INV
         public string? cod_Bodega { get; set; }
         public string? cod_Producto { get; set; }
     }
-
 }

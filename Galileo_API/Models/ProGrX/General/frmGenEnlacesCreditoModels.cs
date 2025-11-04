@@ -1,6 +1,5 @@
 ﻿namespace PgxAPI.Models.GEN
 {
-
     public class EnlaceCreditoDto
     {
         public int CodEmpresa { get; set; }
@@ -20,5 +19,4 @@
         public List<EnlaceCreditoDto> lista { get; set; } = new List<EnlaceCreditoDto>();
         public int total { get; set; }
     }
-
 }

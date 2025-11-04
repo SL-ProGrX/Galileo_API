@@ -1,6 +1,4 @@
-﻿using PgxAPI.Models.ProGrX.Bancos;
-
-namespace PgxAPI.Models.ProGrX_Activos_Fijos
+﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
 {
     public class ActivosTrasladosMotivosDataLista
     {
@@ -14,10 +12,4 @@ namespace PgxAPI.Models.ProGrX_Activos_Fijos
         public bool activo { get; set; }
         public bool isNew { get; set; } = false;
     }
-
-
-
-
-
-
 }

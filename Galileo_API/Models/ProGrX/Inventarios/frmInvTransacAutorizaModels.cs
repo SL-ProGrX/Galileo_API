@@ -7,5 +7,4 @@ namespace PgxAPI.Models.INV
         public string Estado { get; set; } = string.Empty;
         public string Autoriza_User { get; set; } = string.Empty;
     }
-
 }

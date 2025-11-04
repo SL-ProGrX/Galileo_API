@@ -5,7 +5,7 @@ namespace PgxAPI.Models.AF
         public string item { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
-    public class Afi_Beneficio_Pago
+    public class AfiBenePago
     {
         public string cedula { get; set; } = string.Empty;
         public int consec { get; set; }

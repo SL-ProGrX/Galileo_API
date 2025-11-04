@@ -1,6 +1,5 @@
 namespace PgxAPI.Models.AF
 {
-
     public class AfiInformesTopFiltros
     {
         public string? filtro { get; set; }
@@ -15,13 +14,13 @@ namespace PgxAPI.Models.AF
         public int? paginacion { get; set; }
     }
 
-    public class AfiBeneficiosRemesasDTOLista
+    public class AfiBeneficiosRemesasDtoLista
     {
         public int Total { get; set; }
-        public List<AfiBeneficiosRemesasDTO> Beneficios { get; set; } = new List<AfiBeneficiosRemesasDTO>();
+        public List<AfiBeneficiosRemesasDto> Beneficios { get; set; } = new List<AfiBeneficiosRemesasDto>();
     }
 
-    public class AfiBeneficiosRemesasDTO
+    public class AfiBeneficiosRemesasDto
     {
         public long cod_remesa { get; set; }
         public string usuario { get; set; } = string.Empty;
@@ -107,7 +106,7 @@ namespace PgxAPI.Models.AF
         public string? justificacion { get; set; }
     }
 
-    public class AfiBeneficiosTrasladoDTO
+    public class AfiBeneficiosTrasladoDto
     {
         public long cod_remesa { get; set; }
         public string usuario { get; set; } = string.Empty;
@@ -202,5 +201,4 @@ namespace PgxAPI.Models.AF
         public Nullable<DateTime> fecha_corte { get; set; }
         public string detalle { get; set; } = string.Empty;
     }
-
 }

@@ -1,5 +1,3 @@
-using System.Drawing;
-
 namespace PgxAPI.Models.PRES
 {
     public class ModeloGenericList
@@ -67,5 +65,4 @@ namespace PgxAPI.Models.PRES
         public float Ajuste_Positivo { get; set; }
         public float Ajuste_Negativo { get; set; }
     }
-
 }

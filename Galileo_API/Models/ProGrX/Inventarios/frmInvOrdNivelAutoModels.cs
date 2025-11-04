@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.INV
 {
-    public class AutorizadorDTO
+    public class AutorizadorDto
     {
         public string Usuario { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -12,10 +12,10 @@
     public class AutorizadorDataLista
     {
         public int Total { get; set; }
-        public List<AutorizadorDTO> Autorizadores { get; set; } = new List<AutorizadorDTO>();
+        public List<AutorizadorDto> Autorizadores { get; set; } = new List<AutorizadorDto>();
     }
 
-    public class UsuarioaCargoDTO
+    public class UsuarioaCargoDto
     {
         public string Usuario { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -30,10 +30,10 @@
     public class UsuariosACargoDataLista
     {
         public int Total { get; set; }
-        public List<UsuarioaCargoDTO> Usuarios { get; set; } = new List<UsuarioaCargoDTO>();
+        public List<UsuarioaCargoDto> Usuarios { get; set; } = new List<UsuarioaCargoDto>();
     }
 
-    public class UsuarioaCambioFechaDTO
+    public class UsuarioaCambioFechaDto
     {
         public string Usuario { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -43,7 +43,6 @@
     public class UsuariosCambioFchDataLista
     {
         public int Total { get; set; }
-        public List<UsuarioaCambioFechaDTO> Usuarios { get; set; } = new List<UsuarioaCambioFechaDTO>();
+        public List<UsuarioaCambioFechaDto> Usuarios { get; set; } = new List<UsuarioaCambioFechaDto>();
     }
-
 }

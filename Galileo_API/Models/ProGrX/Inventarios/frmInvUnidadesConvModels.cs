@@ -18,5 +18,4 @@
         public string cod_unidad_d { get; set; } = string.Empty;
         public float factor { get; set; } = 0;
     }
-
 }

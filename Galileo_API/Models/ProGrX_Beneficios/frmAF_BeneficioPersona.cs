@@ -27,8 +27,4 @@ namespace PgxAPI.Models.AF
         public string estadolaboral { get; set; } = string.Empty;
 
     }
-
-
-
-
 }

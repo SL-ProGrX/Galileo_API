@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.FSL
 {
-    public class FDLParametrosDTO
+    public class FdlParametrosDto
     {
         public string cod_parametro { get; set; } = string.Empty;
         public string detalle { get; set; } = string.Empty;
@@ -11,8 +11,7 @@ namespace PgxAPI.Models.FSL
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-
-    public class FDLParametrosFiltros
+    public class FdlParametrosFiltros
     {
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
@@ -21,9 +20,9 @@ namespace PgxAPI.Models.FSL
         public string? comiteSeleccionado { get; set; }
     }
 
-    public class FDLParametrosListaDTO
+    public class FdlParametrosListaDto
     {
         public int Total { get; set; }
-        public List<FDLParametrosDTO> Comites { get; set; } = new List<FDLParametrosDTO>();
+        public List<FdlParametrosDto> Comites { get; set; } = new List<FdlParametrosDto>();
     }
 }

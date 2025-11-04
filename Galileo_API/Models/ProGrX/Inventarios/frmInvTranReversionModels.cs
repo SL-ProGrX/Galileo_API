@@ -45,5 +45,4 @@ namespace PgxAPI.Models.INV
         public float Total { get; set; }
         public float Despacho { get; set; }
     }
-
 }

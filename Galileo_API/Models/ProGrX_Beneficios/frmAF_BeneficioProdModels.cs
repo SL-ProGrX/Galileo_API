@@ -13,5 +13,4 @@ namespace PgxAPI.Models.AF
         public float? costo_unidad { get; set; } = 0;
         public string? cod_producto_inv { get; set; } = string.Empty;
     }
-
 }

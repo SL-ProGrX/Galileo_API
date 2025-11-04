@@ -1,11 +1,12 @@
 ﻿namespace PgxAPI.Models.CxP
 {
-    public class CargoPerDTOList
+    public class CargoPerDtoList
     {
         public int Total { get; set; }
-        public List<CargoPerDTO> Cargoper { get; set; } = new List<CargoPerDTO>();
+        public List<CargoPerDto> Cargoper { get; set; } = new List<CargoPerDto>();
     }
-    public class CargoPerDTO
+
+    public class CargoPerDto
     {
         public int Id { get; set; }
         public int Cod_Proveedor { get; set; }
@@ -35,14 +36,15 @@
         public string Proveedor { get; set; } = string.Empty;
         public string Cargo_Desc { get; set; } = string.Empty;
         public string Usuario_Sesion { get; set; } = string.Empty;
-
     }
-    public class PagoProvCargosDTOList
+
+    public class PagoProvCargosDtoList
     {
         public int Total { get; set; }
-        public List<PagoProvCargosDTO> Pagos { get; set; } = new List<PagoProvCargosDTO>();
+        public List<PagoProvCargosDto> Pagos { get; set; } = new List<PagoProvCargosDto>();
     }
-    public class PagoProvCargosDTO
+    
+    public class PagoProvCargosDto
     {
         public int Idx_Consec { get; set; }
         public int NPago { get; set; }
@@ -61,7 +63,6 @@
         public string Asiento_Usuario { get; set; } = string.Empty;
         public DateTime Fecha_Traslada { get; set; }
         public int Tesoreria { get; set; }
-
     }
 
     public class Secuencia
@@ -86,5 +87,4 @@
         public decimal Tipo_Cambio { get; set; }
         public decimal Saldo { get; set; }
     }
-
 }

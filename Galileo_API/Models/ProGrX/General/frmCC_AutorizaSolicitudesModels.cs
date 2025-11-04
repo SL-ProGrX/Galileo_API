@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.GEN
 {
-    public class AutorizaSolicitudes_CreditoData
+    public class AutorizaSolicitudesCreditoData
     {
         public int id_solicitud { get; set; }
         public string codigo { get; set; } = string.Empty;
@@ -9,7 +9,7 @@ namespace PgxAPI.Models.GEN
         public decimal monto_girado { get; set; }
     }
 
-    public class AutorizaSolicitudes_FondosData
+    public class AutorizaSolicitudesFondosData
     {
         public int consec { get; set; }
         public string cedula { get; set; } = string.Empty;
@@ -19,7 +19,7 @@ namespace PgxAPI.Models.GEN
         public decimal total_girar { get; set; }
     }
 
-    public class AutorizaSolicitudes_LiquidacionData
+    public class AutorizaSolicitudesLiquidacionData
     {
         public int consec { get; set; }
         public string cedula { get; set; } = string.Empty;
@@ -28,7 +28,7 @@ namespace PgxAPI.Models.GEN
         public string tipo { get; set; } = string.Empty;
     }
 
-    public class AutorizaSolicitudes_BeneficiosData
+    public class AutorizaSolicitudesBeneficiosData
     {
         public int consec { get; set; }
         public string cedula { get; set; } = string.Empty;
@@ -37,7 +37,7 @@ namespace PgxAPI.Models.GEN
         public string cod_beneficio { get; set; } = string.Empty;
     }
 
-    public class AutorizaSolicitudes_HipotecarioData
+    public class AutorizaSolicitudesHipotecarioData
     {
         public int codigodesembolso { get; set; }
         public int numerooperacion { get; set; }

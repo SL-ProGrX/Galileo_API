@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
 {
-    public class frmActivos_Localizaciones_ListModels
+    public class FrmActivosLocalizacionesListModels
     {
         public class ActivosLocalizacionesLista
         {

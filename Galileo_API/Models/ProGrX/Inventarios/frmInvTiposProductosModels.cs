@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.INV
 {
-    public class TipoProductoDTO
+    public class TipoProductoDto
     {
         public int Cod_Prodclas { get; set; }
         public string Descripcion { get; set; } = string.Empty;
@@ -15,7 +15,7 @@
     public class TipoProductoDataLista
     {
         public int Total { get; set; }
-        public List<TipoProductoDTO> Lista { get; set; } = new List<TipoProductoDTO>();
+        public List<TipoProductoDto> Lista { get; set; } = new List<TipoProductoDto>();
     }
 
     public class TipoProductoSubGradaData
@@ -23,11 +23,11 @@
         public string key { get; set; } = string.Empty;
         public string icon { get; set; } = string.Empty;
         public string label { get; set; } = string.Empty;
-        public TipoProductoSubDTO? data { get; set; }
+        public TipoProductoSubDto? data { get; set; }
         public List<TipoProductoSubGradaData>? children { get; set; }
     }
 
-    public class TipoProductoSubDTO
+    public class TipoProductoSubDto
     {
         public int Cod_Prodclas { get; set; }
         public string Cod_Linea_Sub { get; set; } = string.Empty;
@@ -46,7 +46,7 @@
     public class TipoProductoSubDataLista
     {
         public int Total { get; set; }
-        public List<TipoProductoSubDTO> Lista { get; set; } = new List<TipoProductoSubDTO>();
+        public List<TipoProductoSubDto> Lista { get; set; } = new List<TipoProductoSubDto>();
     }
 
     public class InvCabys
@@ -54,5 +54,4 @@
         public string Cod_ByS { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
     }
-
 }
