@@ -1,13 +1,12 @@
 namespace PgxAPI.Models.SIF
 {
-
-    public class coreUsuariosLista
+    public class CoreUsuariosLista
     {
         public int total { get; set; }
-        public List<coreUsuariosData> lista { get; set; } = new List<coreUsuariosData>();
+        public List<CoreUsuariosData> lista { get; set; } = new List<CoreUsuariosData>();
     }
 
-    public class coreUsuariosData
+    public class CoreUsuariosData
     {
         public string? core_usuario { get; set; }
         public string? nombre { get; set; }
@@ -22,14 +21,14 @@ namespace PgxAPI.Models.SIF
         public string? notas { get; set; }
     }
 
-    public class coreUsuarioFiltros
+    public class CoreUsuarioFiltros
     {
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
         public string? filtro { get; set; }
     }
 
-    public class coreMiembrosData
+    public class CoreMiembrosData
     {
         public string cod_unidad { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -39,7 +38,7 @@ namespace PgxAPI.Models.SIF
         public bool? asignado { get; set; }
     }
 
-    public class coreMiembrosRolData
+    public class CoreMiembrosRolData
     {
         public string cod_unidad { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

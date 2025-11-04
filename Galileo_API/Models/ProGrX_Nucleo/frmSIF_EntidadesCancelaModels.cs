@@ -1,11 +1,11 @@
 ﻿namespace PgxAPI.Models.ProGrX_Nucleo
 {
-    public class SIFEntidadesCancelaLista
+    public class SifEntidadesCancelaLista
     {
         public int total { get; set; }
-        public List<SIFEntidadesCancelaData> lista { get; set; } = new List<SIFEntidadesCancelaData>();
+        public List<SifEntidadesCancelaData> lista { get; set; } = new List<SifEntidadesCancelaData>();
     }
-    public class SIFEntidadesCancelaData
+    public class SifEntidadesCancelaData
     {
         public string cod_entidad_pago { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

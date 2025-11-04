@@ -1,16 +1,17 @@
 ﻿namespace PgxAPI.Models.ProGrX_Nucleo
 {
-    public class frmSYS_PortalModels
+    public class FrmSysPortalModels
     {
         // ============================
         // MENSAJES (GRID / LISTADO)
         // ============================
-        public class Sys_MensajesPortal_Lista
+        public class SysMensajesPortalLista
         {
             public int total { get; set; }
-            public List<Sys_MensajesPortal_ListaItem> lista { get; set; } = new();
+            public List<SysMensajesPortalListaItem> lista { get; set; } = new();
         }
-        public class Sys_MensajesPortal_ListaItem
+        
+        public class SysMensajesPortalListaItem
         {
             public string codigo { get; set; } = string.Empty;
             public string titulo { get; set; } = string.Empty;
@@ -28,7 +29,7 @@
         // ============================
         // MENSAJES (DETALLE / EDITAR)
         // ============================
-        public class Sys_MensajesPortal_DetalleModel
+        public class SysMensajesPortalDetalleModel
         {
             // --- Identificación y cabecera ---
             public string codigo { get; set; } = string.Empty;
@@ -67,53 +68,53 @@
             public string modifica_usuario { get; set; } = string.Empty;
             public DateTime? modifica_fecha { get; set; }
         }
+        
         public const int DIA_ULTIMO = 32;
         // ============================
         // CATÁLOGOS
         // ============================
-        public class Sys_MensajesPortal_SmtpDto
+        public class SysMensajesPortalSmtpDto
         {
             public string codigo { get; set; } = string.Empty; // p.ej. "CNF01"
             public string descripcion { get; set; } = string.Empty; // opcional
         }
 
-        public class Sys_MensajesPortal_FormatoDto
+        public class SysMensajesPortalFormatoDto
         {
             public string codigo { get; set; } = string.Empty;       // 3 chars
             public string descripcion { get; set; } = string.Empty;  // "AutoGestión", "Cobros", ...
         }
 
-        public class Sys_MensajesPortal_ActivacionDto
+        public class SysMensajesPortalActivacionDto
         {
             public char codigo { get; set; }         // 'M','F','D','C','E'
             public string descripcion { get; set; } = string.Empty; // "Manual", "Fecha", ...
         }
 
-        public class Sys_MensajesPortal_EventoDto
+        public class SysMensajesPortalEventoDto
         {
             public string codigo { get; set; } = string.Empty;       // "BEN","EST","CRD",...
             public string descripcion { get; set; } = string.Empty;  // Texto visible en combo
         }
 
         // Payload compuesto para la carga inicial del tab "Mensajes"
-        public class Sys_MensajesPortal_InitDto
+        public class SysMensajesPortalInitDto
         {
-            public List<Sys_MensajesPortal_ListaItem> lista { get; set; } = new();
-            public List<Sys_MensajesPortal_SmtpDto> catalogo_smtps { get; set; } = new();
-            public List<Sys_MensajesPortal_FormatoDto> catalogo_formatos { get; set; } = new();
-            public List<Sys_MensajesPortal_ActivacionDto> catalogo_activaciones { get; set; } = new();
-            public List<Sys_MensajesPortal_EventoDto> catalogo_eventos { get; set; } = new();
+            public List<SysMensajesPortalListaItem> lista { get; set; } = new();
+            public List<SysMensajesPortalSmtpDto> catalogo_smtps { get; set; } = new();
+            public List<SysMensajesPortalFormatoDto> catalogo_formatos { get; set; } = new();
+            public List<SysMensajesPortalActivacionDto> catalogo_activaciones { get; set; } = new();
+            public List<SysMensajesPortalEventoDto> catalogo_eventos { get; set; } = new();
         }
 
         // ============================
         // PORTAL (PREFERENCIAS)
         // ============================
-        public class Sys_MensajesPortal_PreferenciasModel
+        public class SysMensajesPortalPreferenciasModel
         {
             public string logo_url { get; set; } = string.Empty;
             public int logo_alto { get; set; } = 0;
             public int logo_ancho { get; set; } = 0;
-
             // Hex sin '#', p.ej. "4F46E5"
             public string color_set_hex { get; set; } = string.Empty;
         }

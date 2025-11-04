@@ -1,14 +1,14 @@
 ﻿namespace PgxAPI.Models.ProGrX_Nucleo
 {
-    public class frmSYS_Estado_CivilModels
+    public class FrmSysEstadoCivilModels
     {
-        public class SysEstado_CivilLista
+        public class SysEstadoCivilLista
         {
             public int total { get; set; }
-            public List<SysEstado_CivilData> lista { get; set; } = new List<SysEstado_CivilData>();
+            public List<SysEstadoCivilData> lista { get; set; } = new List<SysEstadoCivilData>();
         }
 
-        public class SysEstado_CivilData
+        public class SysEstadoCivilData
         {
             public string cod_estado_civil { get; set; } = string.Empty;
             public string descripcion { get; set; } = string.Empty;
@@ -17,6 +17,5 @@
             public string registro_usuario { get; set; } = string.Empty;
             public bool isNew { get; set; } = false;
         }
-
     }
 }

@@ -15,5 +15,4 @@
         public DateTime registro_fecha { get; set; }
         public bool isNew { get; set; } = false;
     }
-
 }

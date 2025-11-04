@@ -27,24 +27,17 @@
         public string? inicioVenc { get; set; } = string.Empty;
         public string? finVenc { get; set; } = string.Empty;
     }
+
     public class SysCasosAutorizacionesData
     {
         public int autorizacion_id { get; set; }
         public int horas { get; set; }
-        //public string notas { get; set; } = string.Empty;
         public DateTime? registro_fecha { get; set; }
-        //public string registro_usuario { get; set; } = string.Empty;
         public DateTime? fecha_vence { get; set; }
-        //public int persona_id { get; set; }
-        //public string usuario { get; set; } = string.Empty;
-        //public int autorizador_id { get; set; }
-        //public string aut_usuario { get; set; } = string.Empty;
-        //public string nombre { get; set; } = string.Empty;
         public string usuario_autorizado { get; set; } = string.Empty;
         public string usuario_autorizador { get; set; } = string.Empty;
-
-
     }
+    
     public class SysCasosAccesosData
     {
         public int id_exp_acceso { get; set; }
@@ -52,8 +45,5 @@
         public DateTime? registro_fecha { get; set; }     
         public string usuario_autorizado { get; set; } = string.Empty;
         public string usuario_autorizador { get; set; } = string.Empty;
-
-
     }
-
 }

@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.SIF
 {
-    public class BitacoraDTO
+    public class BitacoraDto
     {
         public int cliente { get; set; }
         public DateTime? fechainicio { get; set; }
@@ -35,13 +35,13 @@ namespace PgxAPI.Models.SIF
 
     }
 
-    public class sifBitacoraLista
+    public class SifBitacoraLista
     {
         public int total { get; set; }
-        public List<BitacoraResultadoDto> lista { get; set; }
+        public List<BitacoraResultadoDto>? lista { get; set; }
     }
 
-    public class BitacoraModuloDTO
+    public class BitacoraModuloDto
     {
         public int Modulo { get; set; }
         public string Nombre { get; set; } = string.Empty;

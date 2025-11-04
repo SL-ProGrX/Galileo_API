@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX_Nucleo
 {
-    public class frmSYS_Gestiones_BitacoraModels
+    public class FrmSysGestionesBitacoraModels
     {
         public class SysGestionesBitacorasData
         {
@@ -17,16 +17,18 @@
             public int total { get; set; }
             public List<SysGestionesBitacorasData>? lista { get; set; }
         }
+
         public class SociosLookupData
         {
-            public string CEDULA { get; set; }
-            public string CEDULAR { get; set; }
-            public string NOMBRE { get; set; }
+            public string? CEDULA { get; set; }
+            public string? CEDULAR { get; set; }
+            public string? NOMBRE { get; set; }
         }
+        
         public class SociosLookupLista
         {
             public int total { get; set; }
-            public List<SociosLookupData> lista { get; set; }
+            public List<SociosLookupData>? lista { get; set; }
         }
     }
 }

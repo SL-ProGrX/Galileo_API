@@ -14,16 +14,15 @@
         public string notas { get; set; } = string.Empty;
         public bool vence { get; set; }
         public DateTime? vencimiento { get; set; }
-
     }
+    
     public class SysExpedienteFiltroData
-    { 
+    {
         public string? cedula { get; set; } = string.Empty;
         public string? nombre { get; set; } = string.Empty;
-        public string? estado { get; set; } = string.Empty; 
+        public string? estado { get; set; } = string.Empty;
         public bool vence { get; set; }
         public string? inicioVenc { get; set; } = string.Empty;
         public string? finVenc { get; set; } = string.Empty;
     }
-
 }

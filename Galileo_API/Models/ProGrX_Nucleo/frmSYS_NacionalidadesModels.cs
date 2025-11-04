@@ -17,6 +17,4 @@ namespace PgxAPI.Models.SYS
         public string registro_usuario { get; set; } = string.Empty;
         public bool isNew { get; set; } = false;
     }
-
-
 }

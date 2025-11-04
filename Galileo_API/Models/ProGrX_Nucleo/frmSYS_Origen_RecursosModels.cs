@@ -1,14 +1,14 @@
 ﻿namespace PgxAPI.Models.ProGrX_Nucleo
 {
-    public class frmSYS_Origen_RecursosModels
+    public class FrmSysOrigenRecursosModels
     {
-        public class SysOrigen_RecursosLista
+        public class SysOrigenRecursosLista
         {
             public int total { get; set; }
-            public List<SysOrigen_RecursosData> lista { get; set; } = new List<SysOrigen_RecursosData>();
+            public List<SysOrigenRecursosData> lista { get; set; } = new List<SysOrigenRecursosData>();
         }
 
-        public class SysOrigen_RecursosData
+        public class SysOrigenRecursosData
         {
             public string cod_origen_recursos { get; set; } = string.Empty;
             public string descripcion { get; set; } = string.Empty;
@@ -19,6 +19,5 @@
             public string actualiza_usuario { get; set; } = string.Empty;
             public bool isNew { get; set; } = false;
         }
-
     }
 }

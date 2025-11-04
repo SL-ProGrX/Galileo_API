@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.GG_PE
 {
-    public class PeProyectosDTO
+    public class PeProyectosDto
     {
         public int proyecto_id { get; set; }
         public int programa_id { get; set; }
@@ -21,7 +21,7 @@ namespace PgxAPI.Models.GG_PE
     public class PeProyectosLista
     {
         public int total { get; set; }
-        public List<PeProyectosDTO>? proyectos { get; set; }
+        public List<PeProyectosDto>? proyectos { get; set; }
     }
 
     public class PeProyectosFiltros
@@ -56,5 +56,4 @@ namespace PgxAPI.Models.GG_PE
         public string? descripcion_objetivo { get; set; }
         public bool activo { get; set; }
     }
-
 }

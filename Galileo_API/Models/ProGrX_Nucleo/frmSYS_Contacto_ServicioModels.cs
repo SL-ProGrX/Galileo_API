@@ -1,17 +1,19 @@
 ﻿namespace PgxAPI.Models.ProGrX_Nucleo
 {
-    public class frmSYS_Contacto_ServicioModels
+    public class FrmSysContactoServicioModels
     {
         public class SysContactoServicioConsultaRequest
         {
             public string Identificacion { get; set; } = string.Empty;
-            public string CodPais { get; set; } = "CRC"; 
+            public string CodPais { get; set; } = "CRC";
         }
+        
         public class SysContactoServicioGeneralLista
         {
             public int total { get; set; }
             public List<SysContactoServicioGeneralData> lista { get; set; } = new();
         }
+        
         // ================
         // Sección: General
         // ================
@@ -42,11 +44,9 @@
             public string? Distrito { get; set; }
         }
 
-
         // =================
         // Sección: Teléfonos
         // =================
-
         public class SysContactoServicioTelefonoData
         {
             public string Identificacion { get; set; } = string.Empty;
@@ -58,8 +58,6 @@
             public string? Extension { get; set; }
             public string? Atiende { get; set; }
         }
-
-
 
         // ==================
         // Sección: Direcciones
@@ -103,6 +101,7 @@
             public decimal? Salario { get; set; }
             public bool? Activo { get; set; }
         }
+        
         public class SysContactoServicioTelefonoLista
         {
             public int total { get; set; }
@@ -120,11 +119,13 @@
             public int total { get; set; }
             public List<SysContactoServicioEmpresaData> lista { get; set; } = new();
         }
+        
         public class SysContactoServicioPersonaLookupDto
         {
             public string identificacion { get; set; } = string.Empty;
             public string nombre { get; set; } = string.Empty;
         }
+        
         public class SysContactoServicioPersonaLookupLista
         {
             public int total { get; set; }

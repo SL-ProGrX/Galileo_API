@@ -1,8 +1,6 @@
 namespace PgxAPI.Models.SIF
 {
-
-
-    public class JuzgadosDTO
+    public class JuzgadosDto
     {
         public string cod_juzgado { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
@@ -19,16 +17,5 @@ namespace PgxAPI.Models.SIF
         public int provincia { get; set; }
         public string canton { get; set; } = string.Empty;
         public string distrito { get; set; } = string.Empty;
-        //public string activo { get; set; }
-        //public DateTime registro_fecha { get; set; }
-        //public string registro_usuario { get; set; }
-
     }
-
-
-
-
-
-
-
 }
