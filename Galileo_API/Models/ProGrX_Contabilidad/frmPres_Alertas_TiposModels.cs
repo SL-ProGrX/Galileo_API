@@ -1,7 +1,6 @@
 ﻿namespace PgxAPI.Models.PRES
 {
-
-    public class AlertasTiposDTO
+    public class AlertasTiposDto
     {
         public string cod_desviacion { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -16,12 +15,9 @@
 
     }
 
-
     public class AlertasTiposLista
     {
         public int total { get; set; }
-        public List<AlertasTiposDTO> lista { get; set; } = new List<AlertasTiposDTO>();
+        public List<AlertasTiposDto> lista { get; set; } = new List<AlertasTiposDto>();
     }
-
-
 }

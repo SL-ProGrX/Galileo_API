@@ -6,7 +6,7 @@ namespace PgxAPI.Models.FSL
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class fslConsultaFiltros
+    public class FslConsultaFiltros
     {
         public string cod_plan { get; set; } = string.Empty;
         public List<FslConsultaListas> cod_causa { get; set; } = new List<FslConsultaListas>();
@@ -49,6 +49,5 @@ namespace PgxAPI.Models.FSL
         public float total_sobrante { get; set; }
         public string presenta_cedula { get; set; } = string.Empty;
         public string presenta_nombre { get; set; } = string.Empty;
-
     }
 }

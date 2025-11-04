@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Fondos
 {
-    public class FNDRetencionConceptoData
+    public class FndRetencionConceptoData
     {
         public string RetencionCodigo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -11,9 +11,9 @@
         public bool isNew { get; set; }
     }
 
-    public class FNDRetencionConceptoLista
+    public class FndRetencionConceptoLista
     {
         public int Total { get; set; }
-        public List<FNDRetencionConceptoData> Lista { get; set; } = new List<FNDRetencionConceptoData>();
+        public List<FndRetencionConceptoData> Lista { get; set; } = new List<FndRetencionConceptoData>();
     }
 }

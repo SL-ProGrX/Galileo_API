@@ -1,8 +1,5 @@
 ﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
 {
-
-
-
     public class ActivosDeterioroData
     {
         public int id_addret { get; set; }
@@ -23,7 +20,6 @@
         public decimal valor_libros { get; set; }
     }
 
-
     public class ActivosDeterioroDetallaData
     {
         public string num_placa { get; set; } = string.Empty;
@@ -34,6 +30,4 @@
         public decimal valor_libros { get; set; }
         public DateTime depreciacion_periodo { get; set; }
     }
-
-
 }

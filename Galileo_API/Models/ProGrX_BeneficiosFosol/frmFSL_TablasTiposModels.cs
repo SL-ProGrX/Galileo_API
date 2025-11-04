@@ -1,12 +1,12 @@
 namespace PgxAPI.Models.FSL
 {
-    public class fslTablaTipoLista
+    public class FslTablaTipoLista
     {
         public int Total { get; set; }
-        public List<fslTablaTipoData> Lista { get; set; }
+        public List<FslTablaTipoData>? Lista { get; set; }
     }
 
-    public class fslTablaTipoData
+    public class FslTablaTipoData
     {
         public string codigo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

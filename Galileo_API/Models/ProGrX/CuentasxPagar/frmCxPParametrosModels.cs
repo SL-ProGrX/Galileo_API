@@ -12,5 +12,4 @@
         public DateTime? Modifica_Fecha { get; set; }
         public string? Modifica_Usuario { get; set; }
     }
-
 }

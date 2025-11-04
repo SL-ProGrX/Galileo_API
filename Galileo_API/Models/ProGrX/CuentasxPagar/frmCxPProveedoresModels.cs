@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.CxP
 {
-    public class ProveedorDTO
+    public class ProveedorDto
     {
         public int Cod_Proveedor { get; set; }
         public string Cod_Clasificacion { get; set; } = string.Empty;
@@ -41,29 +41,17 @@
         public string TipoProv { get; set; } = string.Empty;
         public string CuentaConta { get; set; } = string.Empty;
         public string Banco_Desc { get; set; } = string.Empty;
-
         public bool Web_Auto_Gestion { get; set; } = false;
         public bool Web_Ferias { get; set; } = false;
-
         public Nullable<DateTime> registro_fecha { get; set; }
-
         public string registro_Usuario { get; set; } = string.Empty;
-
         public Nullable<DateTime> fecha_vencimiento { get; set; }
-
         public int plazo { get; set; }
-
         public int convenio { get; set; }
-
         public string? representante_legal { get; set; }
-
         public string? justificacion_estado { get; set; }
-
         public string? user_modifica { get; set; }
-
         public string? criticidad { get; set; }
-
-
     }
 
     public class ProveedorFusionLista
@@ -93,7 +81,6 @@
         public string Cta { get; set; } = string.Empty;
         public int IdX { get; set; }
         public string ItmX { get; set; } = string.Empty;
-
     }
 
     public class Cuenta
@@ -107,7 +94,6 @@
         public string Destino { get; set; } = string.Empty;
         public string Registro_Fecha { get; set; } = string.Empty;
         public string Registro_Usuario { get; set; } = string.Empty;
-
     }
 
     public class Autorizacion
@@ -153,9 +139,9 @@
 
     public class ProveedorUsuariosListaDatos
     {
-        public string usuario { get; set; }
+        public string? usuario { get; set; }
         public int cod_proveedor { get; set; }
-        public string nombre { get; set; }
+        public string? nombre { get; set; }
         public string? movil { get; set; }
         public string? email { get; set; }
         public string? clave { get; set; }
@@ -170,22 +156,20 @@
         public string? activo_desc { get; set; }
         public string? portal_desc { get; set; }
         public string? ferias_desc { get; set; }
-
     }
 
     public class ProveedorEventosListaDatos
     {
         public int cod_evento { get; set; }
-        public string descripcion { get; set; }
+        public string? descripcion { get; set; }
         public Nullable<DateTime> inicio { get; set; }
         public Nullable<DateTime> corte { get; set; }
         public Nullable<DateTime> registro_fecha { get; set; }
-        public string registro_usuario { get; set; }
+        public string? registro_usuario { get; set; }
         public bool asignado { get; set; }
     }
 
-
-    public class BitacoraProveedorDTO
+    public class BitacoraProveedorDto
     {
         public int id_bitacora { get; set; }
         public string cod_proveedor { get; set; } = string.Empty;
@@ -194,8 +178,5 @@
         public string detalle { get; set; } = string.Empty;
         public DateTime registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
-
-
     }
-
 }

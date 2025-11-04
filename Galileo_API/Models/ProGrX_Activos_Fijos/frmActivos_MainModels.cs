@@ -1,6 +1,5 @@
 ﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
 {
-
     public class MainGeneralData
     {
         public string num_placa { get; set; } = string.Empty;
@@ -38,7 +37,7 @@
         public string proveedor { get; set; } = string.Empty;
         public string tipo_activo_desc { get; set; } = string.Empty;
         public string localiza_id { get; set; } = string.Empty;
-        public string localiza_desc { get; set; } = string.Empty; 
+        public string localiza_desc { get; set; } = string.Empty;
     }
 
     public class MainHistoricoData
@@ -56,17 +55,16 @@
         public string met_depreciacion { get; set; } = string.Empty;
         public int vida_util { get; set; }
     }
+
     public class MainDetalleResponsablesData
     {
-
         public string identificacion { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string registro_fecha { get; set; } = string.Empty;
-
     }
+
     public class MainModificacionesData
     {
-
         public int id_addret { get; set; }
         public DateTime fecha { get; set; }
         public decimal monto { get; set; }
@@ -74,11 +72,10 @@
         public string justifica { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string tipomov { get; set; } = string.Empty;
-
     }
+
     public class MainComposicionData
     {
-
         public string num_placa { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -87,11 +84,10 @@
         public decimal depreciacion_mes { get; set; }
         public DateTime fecha { get; set; }
         public decimal libros { get; set; }
-
     }
+
     public class MainPolizasData
     {
-
         public string desctipo { get; set; } = string.Empty;
         public string num_poliza { get; set; } = string.Empty;
         public string documento { get; set; } = string.Empty;
@@ -99,14 +95,12 @@
         public DateTime fecha_vence { get; set; }
         public string descripcion { get; set; } = string.Empty;
         public string cod_poliza { get; set; } = string.Empty;
-
-
     }
+    
     public class MainActivosTiposData
     {
         public string met_depreciacion { get; set; } = string.Empty;
         public decimal vida_util { get; set; }
         public string tipo_vida_util { get; set; } = string.Empty;
-
     }
 }

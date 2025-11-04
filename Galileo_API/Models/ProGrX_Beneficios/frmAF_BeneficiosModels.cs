@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.AF
 {
-    public class AfiBeneficiosDTO
+    public class AfiBeneficiosDto
     {
         public string cod_beneficio { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
@@ -38,7 +38,6 @@ namespace PgxAPI.Models.AF
         public int corte { get; set; }
         public float monto { get; set; }
         public string cod_beneficio { get; set; } = string.Empty;
-
         public string registra_user { get; set; } = string.Empty;
     }
 
@@ -54,6 +53,7 @@ namespace PgxAPI.Models.AF
         public string item { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
+    
     public class AfiBeneFechaPagoData
     {
         public int id_fecha_pago { get; set; }

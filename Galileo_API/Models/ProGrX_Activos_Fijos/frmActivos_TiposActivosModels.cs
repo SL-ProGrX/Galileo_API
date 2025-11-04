@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
 {
-    public class frmActivos_TiposActivosModels
+    public class FrmActivosTiposActivosModels
     {
         public class ActivosTiposActivosLista
         {
@@ -42,6 +42,7 @@
             public string cod_cuenta_transitoria_mask { get; set; } = string.Empty;
             public string cod_cuenta_transitoria_desc { get; set; } = string.Empty;
         }
+        
         public class ActivosTiposActivosFiltros
         {
             public int? pagina { get; set; }
@@ -50,4 +51,3 @@
         }
     }
 }
-

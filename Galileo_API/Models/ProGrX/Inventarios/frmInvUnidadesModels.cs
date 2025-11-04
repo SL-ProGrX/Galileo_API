@@ -6,7 +6,7 @@
         public string Descripcion { get; set; } = string.Empty;
     }
 
-    public class UnidadMedicionDTO
+    public class UnidadMedicionDto
     {
         public string Cod_Unidad { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -20,7 +20,6 @@
     public class UnidadesDataLista
     {
         public int Total { get; set; }
-        public List<UnidadMedicionDTO> Unidades { get; set; } = new List<UnidadMedicionDTO>();
+        public List<UnidadMedicionDto> Unidades { get; set; } = new List<UnidadMedicionDto>();
     }
-
 }

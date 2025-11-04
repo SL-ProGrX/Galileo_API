@@ -62,5 +62,4 @@ namespace PgxAPI.Models.PRES
         public string UsuarioReg { get; set; } = string.Empty;
         public bool Activo { get; set; }
     }
-
 }

@@ -5,7 +5,7 @@ namespace PgxAPI.Models.FSL
         public string item { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
-
+    
     public class FslDevolucionesDataLista
     {
         public int Total { get; set; }

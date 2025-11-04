@@ -1,7 +1,6 @@
 namespace PgxAPI.Models.AF
 {
-
-    public class AfTipoSancionesDTO
+    public class AfTipoSancionesDto
     {
         public string tipo_sancion { get; set; } = string.Empty;
         public string? descripcion { get; set; }
@@ -12,14 +11,12 @@ namespace PgxAPI.Models.AF
         public string? registro_usuario { get; set; }
         public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
-
     }
 
-
-    public class AfTipoSancionesDTOLista
+    public class AfTipoSancionesDtoLista
     {
         public int total { get; set; }
-        public List<AfTipoSancionesDTO> lista { get; set; } = new List<AfTipoSancionesDTO>();
+        public List<AfTipoSancionesDto> lista { get; set; } = new List<AfTipoSancionesDto>();
     }
 
     public class AfiTipoSancionfiltros
@@ -35,5 +32,4 @@ namespace PgxAPI.Models.AF
         public string descripcion { get; set; } = string.Empty;
         public float plazo { get; set; }
     }
-
 }

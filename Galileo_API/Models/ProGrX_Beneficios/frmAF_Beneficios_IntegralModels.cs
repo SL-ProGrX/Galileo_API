@@ -33,7 +33,7 @@ namespace PgxAPI.Models.AF
         public decimal costo_unidad { get; set; }
     }
 
-    public class Afi_Bene_Integral_OrP
+    public class AfiBeneIntegralOrP
     {
         public string cedula { get; set; } = string.Empty;
         public int consec { get; set; }
@@ -89,7 +89,7 @@ namespace PgxAPI.Models.AF
 
     #region Datos Persona
 
-    public class AFIBeneTelefono
+    public class AfiBeneTelefono
     {
         public int id { get; set; }
         public int id_telefono { get; set; }
@@ -106,7 +106,7 @@ namespace PgxAPI.Models.AF
         public DateTime? modifica_fecha { get; set; }
     }
 
-    public class AFIBeneTelefonoGuardar
+    public class AfiBeneTelefonoGuardar
     {
         public int id { get; set; }
         public int id_telefono { get; set; }
@@ -194,7 +194,7 @@ namespace PgxAPI.Models.AF
         public string? modifica_monto { get; set; }
         public string? observaciones_monto { get; set; }
 
-        public List<AfiBenProductoDTO>? productos { get; set; }
+        public List<AfiBenProductoDto>? productos { get; set; }
         //Estado Beneficio
         public AfBeneficioIntegralDropsLista? estado { get; set; }
         public string? estadoObservaciones { get; set; }
@@ -224,7 +224,6 @@ namespace PgxAPI.Models.AF
 
         public string? cod_categoria { get; set; }
     }
-
 
     public class BeneConsultaDatosLista
     {
@@ -296,7 +295,7 @@ namespace PgxAPI.Models.AF
 
     }
 
-    public class BeneficioDTO
+    public class BeneficioDto
     {
         public long consec { get; set; }
         public string cod_beneficio { get; set; } = string.Empty;
@@ -378,7 +377,7 @@ namespace PgxAPI.Models.AF
         public bool activo { get; set; }
     }
 
-    public class BeneIntNucleoFamDTO
+    public class BeneIntNucleoFamDto
     {
         public long id_socio_familia { get; set; }
         public string cedula { get; set; } = string.Empty;
@@ -565,8 +564,8 @@ namespace PgxAPI.Models.AF
 
     public class BeneApreLista
     {
-        public string item { get; set; }
-        public string descripcion { get; set; }
+        public string? item { get; set; }
+        public string? descripcion { get; set; }
     }
 
     public class ValidaMetodoRequiere
@@ -598,6 +597,7 @@ namespace PgxAPI.Models.AF
     #endregion
 
     #region Orden de Pago
+
     public class AfiBeneOtorgaFiltros
     {
         public int? consec { get; set; }
@@ -608,22 +608,18 @@ namespace PgxAPI.Models.AF
     #endregion
 
     #region Bitacora
-    public class BitacoraBeneficioIntegralDTO
+
+    public class BitacoraBeneficioIntegralDto
     {
         public int id_bitacora { get; set; }
         public string cod_beneficio { get; set; } = string.Empty;
         public int consec { get; set; }
-
         public string movimiento { get; set; } = string.Empty;
-
         public string detalle { get; set; } = string.Empty;
-
         public DateTime registro_fecha { get; set; }
-
         public string registro_usuario { get; set; } = string.Empty;
-
-
     }
+    
     #endregion
 
     #region Sanciones
@@ -631,6 +627,7 @@ namespace PgxAPI.Models.AF
     #endregion
 
     #region Reconocimientos
+
     public class AfiBeneReconocimientos
     {
         public int id_reconocimiento { get; set; }
@@ -698,10 +695,12 @@ namespace PgxAPI.Models.AF
         public Nullable<DateTime> modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
     }
+    
     #endregion
 
     #region Crece
-    public class AfiBeneSocioCreceDTO
+
+    public class AfiBeneSocioCreceDto
     {
         public int id_crece { get; set; }
         public string cod_beneficio { get; set; } = string.Empty;
@@ -728,7 +727,7 @@ namespace PgxAPI.Models.AF
         public Nullable<DateTime> fecha_ahorro { get; set; }
     }
 
-    public class AfiBeneSocioCreceSesionesDTO
+    public class AfiBeneSocioCreceSesionesDto
     {
         public int id_sesion { get; set; }
         public string cod_beneficio { get; set; } = string.Empty;
@@ -744,6 +743,7 @@ namespace PgxAPI.Models.AF
         public string? modifica_usuario { get; set; }
 
     }
+    
     #endregion
 
     // Nuevos Metodos Nuevo Modelo
@@ -767,7 +767,7 @@ namespace PgxAPI.Models.AF
         public string? modifica_monto { get; set; }
         public string? observaciones_monto { get; set; }
 
-        public List<AfiBeneficioPago>? productos { get; set; }
+        public List<AfiBeneProdData>? productos { get; set; }
         //Estado Beneficio
         public string? estado { get; set; }
         public string? estadoObservaciones { get; set; }
@@ -798,7 +798,7 @@ namespace PgxAPI.Models.AF
         public bool aplica_pago_masivo { get; set; } = false;
     }
 
-    public class AfiBenProductoDTO
+    public class AfiBenProductoDto
     {
         public int? consec { get; set; }
         public string? cod_beneficio { get; set; }
@@ -816,7 +816,7 @@ namespace PgxAPI.Models.AF
         public string codigo_cobro { get; set; } = string.Empty;
     }
 
-    public class AfiBeneSancionesDTO
+    public class AfiBeneSancionesDto
     {
         public int sancion_id { get; set; }
         public string cedula { get; set; } = string.Empty;
@@ -839,16 +839,18 @@ namespace PgxAPI.Models.AF
         public int? plazocredito { get; set; }
 
     }
+
     public class AfiBeneFiltros
     {
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
         public string? filtro { get; set; }
-        public string? cod_grupo{ get; set; }
+        public string? cod_grupo { get; set; }
         public int? mes { get; set; }
         public int? periodo { get; set; }
     }
-    public class BitacoraBeneficioDTO
+    
+    public class BitacoraBeneficioDto
     {
         public int id_bitacora { get; set; }
         public string cod_beneficio { get; set; } = string.Empty;
@@ -864,7 +866,7 @@ namespace PgxAPI.Models.AF
 
     }
 
-    public class BeneRegistroMoraDTO
+    public class BeneRegistroMoraDto
     {
         public int id_mora { get; set; } 
         public string acuerdo { get; set; } = string.Empty;
@@ -909,32 +911,32 @@ namespace PgxAPI.Models.AF
 
     public class AfiBeneTicketTipos
     {
-        public string tipoTramite { get; set; }
+        public string? tipoTramite { get; set; }
         public int total { get; set; }
     }
 
     public class AfiBeneTicketsDatos
     {
-        public string id_zoho { get; set; }
+        public string? id_zoho { get; set; }
         public DateTime fecha_creacion { get; set; }
-        public string estado_zoho { get; set; }
-        public string web_url { get; set; }
-        public string categoria { get; set; }
-        public string tipo_tramite { get; set; }
-        public string cedula { get; set; }
-        public string n_expediente { get; set; }
-        public string consec { get; set; }
-        public string cod_beneficio { get; set; }
+        public string? estado_zoho { get; set; }
+        public string? web_url { get; set; }
+        public string? categoria { get; set; }
+        public string? tipo_tramite { get; set; }
+        public string? cedula { get; set; }
+        public string? n_expediente { get; set; }
+        public string? consec { get; set; }
+        public string? cod_beneficio { get; set; }
         public int id_beneficio { get; set; }
-        public string msj_interface { get; set; }
-        public string estado { get; set; }
-        public string caso_id { get; set; }
+        public string? msj_interface { get; set; }
+        public string? estado { get; set; }
+        public string? caso_id { get; set; }
         public bool i_visto { get; set; }
         public bool i_pendiente { get; set; }
 
-        public string visto_por { get; set; }
-        public string incluido_por { get; set; }
-        public string entrada { get; set; }
+        public string? visto_por { get; set; }
+        public string? incluido_por { get; set; }
+        public string? entrada { get; set; }
 
         public Nullable<DateTime> visto_fecha { get; set; }
         public Nullable<DateTime> incluido_fecha { get; set; }
@@ -952,33 +954,32 @@ namespace PgxAPI.Models.AF
 
     public class TicketRequisitos
     {
-        public string cod_requisito { get; set; }
-        public string campo_homologado { get; set; }
-        public string tipo_documento { get; set; }
+        public string? cod_requisito { get; set; }
+        public string? campo_homologado { get; set; }
+        public string? tipo_documento { get; set; }
     }
 
     public class TrdDocumentosModel
     {
-        public string CodDocumento { get; set; }
-        public string Consecutivo { get; set; }
+        public string? CodDocumento { get; set; }
+        public string? Consecutivo { get; set; }
         public int? IdSobre { get; set; } // Puede ser null
         public int IdEstado { get; set; }
         public short ConfirmaRecepcion { get; set; }
         public Nullable<DateTime> FechaActualiza { get; set; }
-        public string UsuarioActualiza { get; set; }
+        public string? UsuarioActualiza { get; set; }
         public Nullable<DateTime> FechaInserta { get; set; }
-        public string UsuarioInserta { get; set; }
-        public string CodBarras { get; set; }
-        public string Descripcion { get; set; }
+        public string? UsuarioInserta { get; set; }
+        public string? CodBarras { get; set; }
+        public string? Descripcion { get; set; }
         public short Resultado { get; set; } = 1; // Valor por defecto
     }
 
     public class ZohoTicketAdd
     {
         public int CodEmpresa { get; set; }
-        public string ticket { get; set; }
-        public string usuario { get; set; }
+        public string? ticket { get; set; }
+        public string? usuario { get; set; }
         public string? justificacion { get; set; }
     }
-
 }

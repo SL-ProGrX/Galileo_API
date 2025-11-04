@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.INV
 {
-    public class PermisosBodegasDTO
+    public class PermisosBodegasDto
     {
         public string Nombre { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -10,10 +10,9 @@ namespace PgxAPI.Models.INV
         public bool E_Modifica { get; set; }
         public bool E_Autoriza { get; set; }
         public bool E_Procesa { get; set; }
-
     }
 
-    public class BodegasDTO
+    public class BodegasDto
     {
         public string Cod_Bodega { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -26,5 +25,4 @@ namespace PgxAPI.Models.INV
         public int Utiliza_Permisos { get; set; }
         public string Estado { get; set; } = string.Empty;
     }
-
 }

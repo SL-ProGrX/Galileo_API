@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.INV
 {
-    public class Toma_FisicaDTO
+    public class TomaFisicaDto
     {
         public int consecutivo { get; set; }
         public string Cod_Bodega { get; set; } = string.Empty;
@@ -22,20 +22,16 @@ namespace PgxAPI.Models.INV
         public int Cod_Salidag { get; set; }
     }
 
-    public class Toma_FisicaDetalleDTO
+    public class TomaFisicaDetalleDto
     {
         public int consecutivo { get; set; }
         public string Cod_Bodega { get; set; } = string.Empty;
-
         public string bodega { get; set; } = string.Empty;
         public string Cod_Producto { get; set; } = string.Empty;
         public int Existencia_Logica { get; set; }
         public int Existencia_Fisica { get; set; }
         public string Ubicacion { get; set; } = string.Empty;
-
         public string Descripcion { get; set; } = string.Empty;
-
         public string tipo { get; set; } = string.Empty;
     }
-
 }

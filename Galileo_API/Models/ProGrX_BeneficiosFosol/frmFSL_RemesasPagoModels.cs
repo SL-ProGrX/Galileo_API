@@ -3,7 +3,7 @@ namespace PgxAPI.Models.FSL
     public class FslRemesasLista
     {
         public int Total { get; set; }
-        public List<FslRemesasListaDatos> Lista { get; set; }
+        public List<FslRemesasListaDatos>? Lista { get; set; }
     }
 
     public class FslRemesasListaDatos
@@ -13,9 +13,9 @@ namespace PgxAPI.Models.FSL
         public DateTime registro_fecha { get; set; }
         public DateTime fecha_inicio { get; set; }
         public DateTime fecha_corte { get; set; }
-        public string notas { get; set; }
-        public string estado { get; set; }
-        public string descripcion { get; set; }
+        public string? notas { get; set; }
+        public string? estado { get; set; }
+        public string? descripcion { get; set; }
     }
 
     public class FslRemesaInsertar
@@ -30,9 +30,8 @@ namespace PgxAPI.Models.FSL
     public class FslCargasLista
     {
         public int Total { get; set; }
-        public List<FslCargasListaData> Lista { get; set; }
+        public List<FslCargasListaData>? Lista { get; set; }
     }
-
 
     public class FslCargasListaData
     {
@@ -42,7 +41,6 @@ namespace PgxAPI.Models.FSL
         public float total_sobrante { get; set; }
         public string presenta_cedula { get; set; } = string.Empty;
         public string presenta_nombre { get; set; } = string.Empty;
-
     }
 
     public class FslTrasladoListaData

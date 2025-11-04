@@ -1,7 +1,6 @@
 ﻿namespace PgxAPI.Models.PRES
 {
-
-    public class PresAjustestTiposDTO
+    public class PresAjustestTiposDto
     {
         public string Cod_Ajuste { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -17,7 +16,6 @@
     public class PresAjustestTiposLista
     {
         public int total { get; set; }
-        public List<PresAjustestTiposDTO> lista { get; set; } = new List<PresAjustestTiposDTO>();
+        public List<PresAjustestTiposDto> lista { get; set; } = new List<PresAjustestTiposDto>();
     }
-
 }

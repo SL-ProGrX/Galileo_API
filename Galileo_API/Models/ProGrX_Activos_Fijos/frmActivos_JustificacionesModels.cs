@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
 {
-    public class frmActivos_JustificacionesModels
+    public class FrmActivosJustificacionesModels
     {
         public class ActivosJustificacionesLista
         {

@@ -35,5 +35,4 @@ namespace PgxAPI.Models.INV
         public DateTime Procesa_Fecha { get; set; }
 
     }
-
 }

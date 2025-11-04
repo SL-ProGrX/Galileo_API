@@ -1,13 +1,12 @@
 namespace PgxAPI.Models.AF
 {
-
-    public class afBeneficiosBancosDataLista
+    public class AfBeneficiosBancosDataLista
     {
         public int Total { get; set; }
-        public List<afBeneficiosBancosData> bancosX { get; set; } = new List<afBeneficiosBancosData>();
+        public List<AfBeneficiosBancosData> bancosX { get; set; } = new List<AfBeneficiosBancosData>();
     }
 
-    public class afBeneficiosBancosData
+    public class AfBeneficiosBancosData
     {
         public string id_banco { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

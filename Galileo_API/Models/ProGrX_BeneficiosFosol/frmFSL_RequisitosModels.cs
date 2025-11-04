@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.FSL
 {
-    public class fslRequisitosData
+    public class FslRequisitosData
     {
         public string cod_requisito { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -9,19 +9,19 @@ namespace PgxAPI.Models.FSL
 
     }
 
-    public class fslRequisitosDataLista
+    public class FslRequisitosDataLista
     {
         public int Total { get; set; }
-        public List<fslRequisitosData> requisitos { get; set; } = new List<fslRequisitosData>();
+        public List<FslRequisitosData> requisitos { get; set; } = new List<FslRequisitosData>();
     }
 
-    public class fslPanesCausasLista
+    public class FslPanesCausasLista
     {
         public string item { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class fslRequisitoCausa
+    public class FslRequisitoCausa
     {
         public string cod_requisito { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -32,13 +32,13 @@ namespace PgxAPI.Models.FSL
 
     }
 
-    public class fslPlanes
+    public class FslPlanes
     {
         public string item { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class fslRequisitoEditar
+    public class FslRequisitoEditar
     {
         public string cod_plan { get; set; } = string.Empty;
         public string cod_causa { get; set; } = string.Empty;
@@ -49,8 +49,7 @@ namespace PgxAPI.Models.FSL
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-
-    public class fslRequisitosFiltros
+    public class FslRequisitosFiltros
     {
         public int? pagina { get; set; }
         public int? paginacion { get; set; }

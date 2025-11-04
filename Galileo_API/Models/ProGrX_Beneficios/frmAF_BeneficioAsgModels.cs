@@ -37,7 +37,7 @@ namespace PgxAPI.Models.AF
         public bool? aplica_pago_masivo { get; set; }
     }
 
-    public class Afi_BeneficiosDTO
+    public class AfiBeneDto
     {
         public string cod_beneficio { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
@@ -58,7 +58,7 @@ namespace PgxAPI.Models.AF
         public int tipo_monetario { get; set; }
     }
 
-    public class fxMontoModel
+    public class FxMontoModel
     {
         public string cedula { get; set; } = string.Empty;
         public string cod_beneficio { get; set; } = string.Empty;
@@ -72,7 +72,7 @@ namespace PgxAPI.Models.AF
         public float cMontoRealGrupo { get; set; }
     }
 
-    public class fxMontosResult
+    public class FxMontosResult
     {
         public int Code { get; set; }
         public string Description { get; set; } = string.Empty;
@@ -172,5 +172,4 @@ namespace PgxAPI.Models.AF
         public float cantidad { get; set; }
         public float costo_unidad { get; set; }
     }
-
 }

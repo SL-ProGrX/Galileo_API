@@ -12,14 +12,14 @@
         public string fechaCargo { get; set; } = string.Empty;
     }
 
-    public class CargoDTO
+    public class CargoDto
     {
         public int COD_CARGO { get; set; }
         public string DESCRIPCION { get; set; } = string.Empty;
         public decimal MONTO { get; set; }
     }
 
-    public class AdelantoRegistradoDTO
+    public class AdelantoRegistradoDto
     {
         public int idx { get; set; }
         public int cod_proveedor { get; set; }
@@ -39,7 +39,7 @@
         public decimal saldo { get; set; }
     }
 
-    public class HistorialPagoDTO
+    public class HistorialPagoDto
     {
         public string anticipos { get; set; } = string.Empty;
         public int cod_proveedor { get; set; }
@@ -51,5 +51,4 @@
         public decimal tipo_cambio { get; set; }
         public int npago { get; set; }
     }
-
 }

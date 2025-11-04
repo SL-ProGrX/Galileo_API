@@ -1,12 +1,12 @@
 namespace PgxAPI.Models.FSL
 {
-    public class fslGestionesListaDatos
+    public class FslGestionesListaDatos
     {
         public string item { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class fslGestionAgregar
+    public class FslGestionAgregar
     {
         public long cod_expediente { get; set; }
         public string cod_gestion { get; set; } = string.Empty;

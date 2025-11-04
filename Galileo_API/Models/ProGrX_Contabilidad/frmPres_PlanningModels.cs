@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.PRES
 {
-    public class presVistaPresupuestoData
+    public class PresVistaPresupuestoData
     {
         public long cod_cuenta { get; set; }
         public string cod_unidad { get; set; } = string.Empty;
@@ -21,9 +21,8 @@ namespace PgxAPI.Models.PRES
         public bool acepta_movimientos { get; set; }
     }
 
-    public class preVistaPresupuestoCuentaData
+    public class PeriodoreVistaPresupuestoCuentaData
     {
-        //real
         public long cod_cuenta { get; set; }
         public string cod_unidad { get; set; } = string.Empty;
         public string cod_centro_costo { get; set; } = string.Empty;
@@ -50,36 +49,33 @@ namespace PgxAPI.Models.PRES
 
         //ajustes
         public int linea { get; set; }
-        public string cod_modelo { get; set; }
+        public string? cod_modelo { get; set; }
         public int cod_contabilidad { get; set; }
-        public string cod_ajuste { get; set; }
+        public string? cod_ajuste { get; set; }
         public decimal acumulado_inicial { get; set; }
         public decimal mensual_inicial { get; set; }
         public decimal ajuste_monto { get; set; }
         public decimal mensual_final { get; set; }
         public decimal acumulado_final { get; set; }
-        public string notas { get; set; }
+        public string? notas { get; set; }
         public DateTime registro_fecha { get; set; }
-        public string registro_usuario { get; set; }
+        public string? registro_usuario { get; set; }
         public decimal descarga_monto { get; set; }
         public decimal decarga_linea { get; set; }
         public decimal inicial { get; set; }
         public decimal final { get; set; }
-
-
     }
 
-    public class presVistaPresCuentaRealHistoricoData
+    public class PresVistaPresCuentaRealHistoricoData
     {
         public DateTime periodo { get; set; }
         public decimal neto_mes { get; set; }
         public decimal saldo_final { get; set; }
         public string cod_unidad { get; set; } = string.Empty;
         public string cod_centro_costo { get; set; } = string.Empty;
-
     }
 
-    public class presVistaPresupuestoBuscar
+    public class PresVistaPresupuestoBuscar
     {
         public long cod_conta { get; set; }
         public string cod_modelo { get; set; } = string.Empty;
@@ -90,12 +86,11 @@ namespace PgxAPI.Models.PRES
         public string tipo_vista { get; set; } = string.Empty;
         public bool ctaMov { get; set; }
         public bool traReal  { get; set; }
-
         public string? cuenta { get; set; } = string.Empty;
         public string? periodo { get; set; } = string.Empty;
     }
 
-    public class presVistaPresupuestoCuentaBuscar
+    public class PresVistaPresupuestoCuentaBuscar
     {
         public long cod_conta { get; set; }
         public string cod_modelo { get; set; } = string.Empty;
@@ -106,7 +101,7 @@ namespace PgxAPI.Models.PRES
         public string? periodo { get; set; }
     }
 
-    public class presPresCuentaRealBuscar
+    public class PresPresCuentaRealBuscar
     {
         public long cod_conta { get; set; }
         public string cod_modelo { get; set; } = string.Empty;
@@ -117,7 +112,7 @@ namespace PgxAPI.Models.PRES
         public string tipo_vista { get; set; } = string.Empty;
     }
 
-    public class presAjustesGuarda
+    public class PresAjustesGuarda
     {
         public long cod_conta { get; set; }
         public string cod_modelo { get; set; } = string.Empty;
@@ -133,7 +128,7 @@ namespace PgxAPI.Models.PRES
         public string ajuste_id { get; set; } = string.Empty;
     }
 
-    public class presTiposAjustes
+    public class PresTiposAjustes
     {
         public int cod_ajuste { get; set; }
         public string descripcion { get; set; } = string.Empty;
@@ -142,7 +137,7 @@ namespace PgxAPI.Models.PRES
         public bool activo { get; set; }
     }
 
-    public class presModelisLista
+    public class PresModelisLista
     {
         public string idX { get; set; } = string.Empty;
         public string itmX { get; set; } = string.Empty;
@@ -150,7 +145,7 @@ namespace PgxAPI.Models.PRES
         public int inicio_anio { get; set; } = 0;
     }
 
-    public class presCargaMasivaModel
+    public class PresCargaMasivaModel
     {
         public string cuenta { get; set; } = string.Empty;
         public string nombre_cuenta { get; set; } = string.Empty;
@@ -164,5 +159,4 @@ namespace PgxAPI.Models.PRES
         public decimal? tipoCambio { get; set; } = 0;
         public decimal valor { get; set; } = 0;
     }
-
 }

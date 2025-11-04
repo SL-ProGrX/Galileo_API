@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.CxP
 {
-    public class vCxP_ProgramacionPago
+    public class VCxpProgramacionPago
     {
         public int Cod_Proveedor { get; set; }
         public string Proveedor { get; set; } = string.Empty;
@@ -38,5 +38,4 @@ namespace PgxAPI.Models.CxP
         public int Pago { get; set; }
         public decimal Monto { get; set; }
     }
-
 }

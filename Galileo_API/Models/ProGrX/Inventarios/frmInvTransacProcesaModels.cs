@@ -6,5 +6,4 @@ namespace PgxAPI.Models.INV
         public string Tipo { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
-
 }

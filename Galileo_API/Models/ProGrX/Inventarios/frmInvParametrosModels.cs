@@ -1,7 +1,6 @@
 namespace PgxAPI.Models.INV
 {
-
-    public class ParametrosGenDTO
+    public class ParametrosGenDto
     {
         public int Cod_Par { get; set; }
         public string Cta_Comisiones { get; set; } = string.Empty;
@@ -26,24 +25,21 @@ namespace PgxAPI.Models.INV
         public string Enlace_Sif { get; set; } = string.Empty;
     }
 
-
-    public class CntX_ContaDTO
+    public class CntXContaDto
     {
         public int Cod_Contabilidad { get; set; }
         public string Nombre { get; set; } = string.Empty;
     }
 
-
-    public class DescripcionCuentasDTO
+    public class DescripcionCuentasDto
     {
         public string Descripcion { get; set; } = string.Empty;
         public string Cod_Cuenta { get; set; } = string.Empty;
     }
 
-    public class DescripcionTipoAsientoDTO
+    public class DescripcionTipoAsientoDto
     {
         public string Tipo_Asiento { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
     }
-
 }

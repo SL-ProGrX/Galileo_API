@@ -1,7 +1,6 @@
 namespace PgxAPI.Models.AF
 {
-
-    public class BENE_CATEGORIA
+    public class BeneCategoria
     {
         public string cod_categoria { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -19,14 +18,13 @@ namespace PgxAPI.Models.AF
 
     }
 
-
-    public class BENE_CATEGORIADataLista
+    public class BEeneCategoriaDataLista
     {
         public int Total { get; set; }
-        public List<BENE_CATEGORIA> Lista { get; set; } = new List<BENE_CATEGORIA>();
+        public List<BeneCategoria> Lista { get; set; } = new List<BeneCategoria>();
     }
 
-    public class Bene_CategoriaPermisos
+    public class BeneCategoriaPermisos
     {
         public string nombre { get; set; } = string.Empty;
         public bool i_cambiar_estado { get; set; } = false;
@@ -43,12 +41,8 @@ namespace PgxAPI.Models.AF
         public bool i_anular { get; set; } = false;
         public bool i_devolver_resolucion { get; set; } = false;
         public string registro_usuario { get; set; } = string.Empty;
-
         public DateTime registro_fecha { get; set; }
-
         public int cod_rol { get; set; }
-
-
     }
 
     public class  BeneValidaLista
@@ -74,16 +68,14 @@ namespace PgxAPI.Models.AF
         public Nullable<DateTime> modifica_fecha { get; set; }
     }
 
-    public class afiBeneCalidaciones
+    public class AfiBeneCalidaciones
     {
         public int cod_val { get; set; }
         public string descripcion { get; set; } = string.Empty;
         public string query_val { get; set; } = string.Empty;
         public string msj_val { get; set; } = string.Empty;
         public int resultado_val { get; set; } = 0;
-
         public bool registro_justifica { get; set; } = false;
         public bool pago_justifica { get; set; } = false;
-
     }
 }

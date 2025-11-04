@@ -40,9 +40,9 @@ namespace PgxAPI.Models.INV
 
     public class InvRequsUsuarioRecibe
     {
-        public string usuario { get; set; }
-        public string nombre { get; set; }
-        public string identificacion { get; set; }
+        public string? usuario { get; set; }
+        public string? nombre { get; set; }
+        public string? identificacion { get; set; }
     }
 
     public class  InvRequesicionesActivosLista
@@ -75,5 +75,4 @@ namespace PgxAPI.Models.INV
         public string? documento { get; set; }
         public string? usuario { get; set; }
     }
-
 }

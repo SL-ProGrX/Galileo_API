@@ -1,7 +1,7 @@
 
 namespace PgxAPI.Models.AF
 {
-    public class APT_CATEGORIAS
+    public class AptCategorias
     {
         public int id_apt_categoria { get; set; }
         public string descripcion { get; set; } = string.Empty;
@@ -10,12 +10,11 @@ namespace PgxAPI.Models.AF
         public string? registro_usuario { get; set; }
         public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
-
     }
 
-    public class APT_CATEGORIASDataLista
+    public class AptCategoriasDataLista
     {
         public int Total { get; set; }
-        public List<APT_CATEGORIAS> Lista { get; set; } = new List<APT_CATEGORIAS>();
+        public List<AptCategorias> Lista { get; set; } = new List<AptCategorias>();
     }
 }

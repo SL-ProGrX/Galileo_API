@@ -3,17 +3,17 @@ namespace PgxAPI.Models.INV
     public class InvControlActivosLista
     {
         public int total { get; set; } = 0;
-        public List<InvControlActivosDTO> lista { get; set; } = new List<InvControlActivosDTO>();
+        public List<InvControlActivosDto> lista { get; set; } = new List<InvControlActivosDto>();
     }
 
-    public class InvControlActivosDTO
+    public class InvControlActivosDto
     {
         public int id_control { get; set; }
         public string cod_producto { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public float costo_total { get; set; }
         public float costo_unitario { get; set; }
-        public string factura { get; set; }
+        public string? factura { get; set; }
         public string cod_compra { get; set; } = string.Empty;
         public Nullable<DateTime> fecha_compra { get; set; }
         public int cod_proveedor { get; set; }
@@ -54,8 +54,8 @@ namespace PgxAPI.Models.INV
 
     public class InvDatosActivos
     {
-        public string met_depreciacion { get; set; }
+        public string? met_depreciacion { get; set; }
         public int vida_util { get; set; }
-        public string tipo_vida_util { get; set; }
+        public string? tipo_vida_util { get; set; }
     }
 }

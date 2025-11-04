@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.GEN
 {
-    public class CC_GenericList
+    public class CCGenericList
     {
         public string idx { get; set; } = string.Empty;
         public string itmx { get; set; } = string.Empty;

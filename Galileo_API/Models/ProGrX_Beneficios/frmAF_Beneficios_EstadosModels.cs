@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.AF
 {
-    public class BENE_ESTADO
+    public class BeneEstado
     {
         public string cod_estado { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -13,12 +13,11 @@ namespace PgxAPI.Models.AF
         public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
         public string proceso { get; set; } = string.Empty;
-
     }
 
-    public class BENE_ESTADODataLista
+    public class BeneEstadoDataLista
     {
         public int Total { get; set; }
-        public List<BENE_ESTADO> Lista { get; set; } = new List<BENE_ESTADO>();
+        public List<BeneEstado> Lista { get; set; } = new List<BeneEstado>();
     }
 }

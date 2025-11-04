@@ -1,34 +1,32 @@
 namespace PgxAPI.Models.INV
 {
-
-    public class BodegaReporteInvDTO
+    public class BodegaReporteInvDto
     {
         public string cod_bodega { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class UnidadesReporteInvDTO
+    public class UnidadesReporteInvDto
     {
         public string cod_unidad { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class DepartamentoReporteInvDTO
+    public class DepartamentoReporteInvDto
     {
         public string cod_departamento { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class ProveedoresInvDTO
+    public class ProveedoresInvDto
     {
         public string cod_proveedor { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class LineasInvDTO
+    public class LineasInvDto
     {
         public string cod_prodclas { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
-
 }

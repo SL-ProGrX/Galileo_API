@@ -16,7 +16,7 @@ namespace PgxAPI.Models.CxP
         public string Cuenta_Default { get; set; } = string.Empty;
     }
 
-    public class FacturaPendiente_Pago
+    public class FacturaPendientePago
     {
         public int Npago { get; set; }
         public int Cod_Proveedor { get; set; }
@@ -30,15 +30,12 @@ namespace PgxAPI.Models.CxP
         public decimal Tipo_Cambio { get; set; }
         public decimal Importe_Divisa_Real { get; set; }
         public string Usuario { get; set; } = string.Empty;
-
         public int Cod_Cargo { get; set; }
-
         public decimal Neto { get; set; }
-
         public string Datakey { get; set; } = string.Empty;
     }
 
-    public class FactPen_Req
+    public class FactPenReq
     {
         public int Proveedor { get; set; }
         public string Divisa { get; set; } = string.Empty;
@@ -92,7 +89,7 @@ namespace PgxAPI.Models.CxP
         public decimal Procentaje { get; set; }
     }
 
-    public class TesTransAsientoDTO
+    public class TesTransAsientoDto
     {
         public int NSolicitud { get; set; }
         public string Cuenta_Contable { get; set; } = string.Empty;
@@ -108,7 +105,6 @@ namespace PgxAPI.Models.CxP
     public class Anticipo
     {
         public decimal Cargos { get; set; }
-
         public string Cod_Cargo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Cod_Cuenta { get; set; } = string.Empty;
@@ -116,7 +112,7 @@ namespace PgxAPI.Models.CxP
         public string Cod_Divisa { get; set; } = string.Empty;
     }
 
-    public class Tes_TransaccionesDTO
+    public class TesTransaccionesDto
     {
         public int Id_Banco { get; set; }
         public string Tipo { get; set; } = string.Empty;
@@ -161,7 +157,6 @@ namespace PgxAPI.Models.CxP
         public string Pago_Tercero { get; set; } = string.Empty;
         public int Cod_Proveedor { get; set; }
         public bool IsPagoTerceroChecked { get; set; }
-
     }
 
     public class CargoPer
@@ -185,6 +180,4 @@ namespace PgxAPI.Models.CxP
         public decimal Tipo_Cambio { get; set; }
         public DateTime Fecha { get; set; }
     }
-
 }
-

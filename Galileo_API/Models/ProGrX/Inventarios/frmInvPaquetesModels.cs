@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.INV
 {
-    public class PaqueteDTO
+    public class PaqueteDto
     {
         public int? Cod_Paquete { get; set; }
         public string Descripcion { get; set; } = string.Empty;
@@ -26,10 +26,10 @@
     public class PaqueteDataLista
     {
         public int Total { get; set; }
-        public List<PaqueteDTO> Lista { get; set; } = new List<PaqueteDTO>();
+        public List<PaqueteDto> Lista { get; set; } = new List<PaqueteDto>();
     }
 
-    public class PaqueteDetalleDTO
+    public class PaqueteDetalleDto
     {
         public int Linea { get; set; }
         public string Cod_Producto { get; set; } = string.Empty;
@@ -44,5 +44,4 @@
 
         public string unidad { get; set; } = string.Empty;
     }
-
 }

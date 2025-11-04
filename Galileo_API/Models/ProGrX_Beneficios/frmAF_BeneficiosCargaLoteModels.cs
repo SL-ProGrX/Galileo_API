@@ -1,6 +1,5 @@
 namespace PgxAPI.Models.AF
 {
-
     public class ExcelRoot
     {
         public bool Closed { get; set; }

@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.PRES
 {
-    public class Pres_PeriodoRequest
+    public class PresPeriodoRequest
     {
         public int Inicio_Anio { get; set; }
         public int Inicio_Mes { get; set; }

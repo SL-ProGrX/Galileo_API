@@ -1,13 +1,12 @@
-﻿using PgxAPI.Models.ProGrX.Bancos;
-
-namespace PgxAPI.Models.ProGrX_Activos_Fijos
+﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
 {
-    public class Activos_ObrasTipoDesemDataLista
+    public class ActivosObrasTipoDesemDataLista
     {
         public int total { get; set; }
-        public List<Activos_ObrasTipoDesemData> lista { get; set; } = new List<Activos_ObrasTipoDesemData>();
+        public List<ActivosObrasTipoDesemData> lista { get; set; } = new List<ActivosObrasTipoDesemData>();
     }
-    public class Activos_ObrasTipoDesemData
+
+    public class ActivosObrasTipoDesemData
     {
         public string cod_desembolso { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -15,20 +14,17 @@ namespace PgxAPI.Models.ProGrX_Activos_Fijos
         public bool isNew { get; set; } = false;
     }
 
-
-    public class Activos_ObrasTipoDataLista
+    public class ActivosObrasTipoDataLista
     {
         public int total { get; set; }
-        public List<Activos_ObrasTipoData> lista { get; set; } = new List<Activos_ObrasTipoData>();
+        public List<ActivosObrasTipoData> lista { get; set; } = new List<ActivosObrasTipoData>();
     }
-    public class Activos_ObrasTipoData
+    
+    public class ActivosObrasTipoData
     {
         public string cod_tipo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public bool activo { get; set; }
         public bool isNew { get; set; } = false;
     }
-
-
-
 }

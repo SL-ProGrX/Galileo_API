@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.AF
 {
-    public class afiBeneficiosData
+    public class AfiBeneficiosData
     {
         public string item { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

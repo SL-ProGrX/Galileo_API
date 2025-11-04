@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.INV
 {
-    public class FacturaPrecioDetalleDTO
+    public class FacturaPrecioDetalleDto
     {
         public string cod_factura { get; set; } = string.Empty;
         public string cod_producto { get; set; } = string.Empty;
@@ -16,8 +16,7 @@ namespace PgxAPI.Models.INV
 
     }
 
-
-    public class PrecioExcelDTO
+    public class PrecioExcelDto
     {
         public string? cod_producto { get; set; }
         public string? descripcion { get; set; }
@@ -32,5 +31,4 @@ namespace PgxAPI.Models.INV
         public string? unidad_medida { get; set; }
 
     }
-
 }

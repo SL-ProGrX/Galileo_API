@@ -9,7 +9,7 @@ namespace PgxAPI.Models.GEN
         public DateTime fecha_corte { get; set; }
     }
 
-    public class Estadistica_DetalleData
+    public class EstadisticaDetalleData
     {
         public string cliente_id { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
@@ -18,7 +18,7 @@ namespace PgxAPI.Models.GEN
         public DateTime fecha { get; set; }
     }
 
-    public class Estadistica_AnalisisData
+    public class EstadisticaAnalisisData
     {
         public string cliente_id { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;

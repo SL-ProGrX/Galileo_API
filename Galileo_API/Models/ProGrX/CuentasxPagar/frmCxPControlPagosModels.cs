@@ -34,5 +34,4 @@
         public string pagos { get; set; } = string.Empty;
         public string monto { get; set; } = string.Empty;
     }
-
 }

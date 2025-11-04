@@ -1,9 +1,8 @@
 ﻿namespace PgxAPI.Models.INV
 {
-    public class ProductoDTO
+    public class ProductoDto
     {
         public string codigo { get; set; } = string.Empty;
-
         public string Cod_Producto { get; set; } = string.Empty;
         public string Cod_Marca { get; set; } = string.Empty;
         public string Cod_Unidad { get; set; } = string.Empty;
@@ -14,7 +13,6 @@
         public string Descripcion { get; set; } = string.Empty;
         public string Tipo_Producto { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
-        //public bool Activo { get; set; }
         public string Modelo { get; set; } = string.Empty;
         public string Observacion { get; set; } = string.Empty;
         public decimal Costo_Regular { get; set; }
@@ -50,21 +48,14 @@
         public string MarcaDesc { get; set; } = string.Empty;
         public string? LineaSub { get; set; }
         public string? LineaSubCod { get; set; }
-
         public string? tipo_activo { get; set; }
         public bool i_filtrado { get; set; } = false;
         public float punto_reorden { get; set; } = 0;
         public int tiempo_entrega_dias { get; set; } = 0;
-
         public string Presentacion { get; set; } = string.Empty;
         public int Cant_Presentacion { get; set; } = 0;
-
         public int Volumen { get; set; } = 0;
-
         public string justificacion_estado { get; set; } = string.Empty;
-
-
-
     }
 
     public class Producto
@@ -72,7 +63,6 @@
         public string Cod_Producto { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
     }
-
 
     public class PrecioProducto
     {
@@ -139,8 +129,6 @@
         public List<ProveedorProducto> Lista { get; set; } = new List<ProveedorProducto>();
     }
 
-
-
     public class BodegaExistenciaProducto
     {
         public string Cod_Producto { get; set; } = string.Empty;
@@ -172,7 +160,7 @@
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class BitacoraProductosDTO
+    public class BitacoraProductosDto
     {
         public int id_bitacora { get; set; }
         public string cod_producto { get; set; } = string.Empty;
@@ -184,7 +172,4 @@
 
 
     }
-
-
-
 }
