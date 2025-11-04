@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
     public class ModuloResultDto
     {
@@ -44,5 +44,4 @@
         public string usuario { get; set; } = string.Empty;
         public bool check { get; set; }
     }
-
 }

@@ -1,6 +1,4 @@
-﻿using System.Reflection.Metadata;
-
-namespace PgxAPI.Models
+﻿namespace PgxAPI.Models
 {
     public class EnvioCorreoModels
     {
@@ -23,7 +21,7 @@ namespace PgxAPI.Models
         public List<IFormFile> Attachments { get; set; } = new List<IFormFile>();
     }
 
-    public class DocArchivoBeneIntegralDTO
+    public class DocArchivoBeneIntegralDto
     {
         public int? codCliente { get; set; }
         public string? cedula { get; set; }

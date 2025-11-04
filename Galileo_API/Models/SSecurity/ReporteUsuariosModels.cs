@@ -1,8 +1,5 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
-
-    //Solicitudes:
-
     public class ReporteUsuariosListaSolicitudDto
     {
         public int EmpresaId { get; set; }
@@ -31,8 +28,6 @@
         public string RolId { get; set; } = string.Empty;
     }
 
-
-    //Respuesta:
     public class ReporteUsuariosListaRespuestaDto
     {
         public string Usuario { get; set; } = string.Empty;
@@ -59,6 +54,7 @@
         public DateTime Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
     }
+    
     public class ReporteUsuariosPermisosRespuestaDto
     {
         public string Usuario { get; set; } = string.Empty;
@@ -102,10 +98,4 @@
         public string IdX { get; set; } = string.Empty;
         public string ItmX { get; set; } = string.Empty;
     }
-
-    /*public class ReporteUsuariosErrorDto
-    {
-        public int Code { get; set; }
-        public string Description { get; set; } = string.Empty;
-    }*/
 }

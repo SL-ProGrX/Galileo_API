@@ -1,11 +1,10 @@
-﻿namespace PgxAPI.Models.US
+﻿namespace PgxAPI.Models.Security
 {
     public class HorarioDto
     {
         public int IdEmpresa { get; set; }
         public string CodHorario { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        //public int Activo { get; set; }
         public bool Activo { get; set; }
         public DateTime FechaRegistro { get; set; }
         public string UsuarioRegistro { get; set; } = string.Empty;
@@ -26,12 +25,5 @@
         public DateTime FechaModificacion { get; set; }
         public string UsuarioModifica { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
-    }
-
-
-    public class ErrorHorarioDTO
-    {
-        public int Code { get; set; }
-        public string Description { get; set; } = string.Empty;
     }
 }

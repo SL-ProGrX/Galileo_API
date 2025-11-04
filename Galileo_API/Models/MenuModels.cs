@@ -13,9 +13,7 @@
         public int PRIORIDAD { get; set; }
         public int MODULO { get; set; }
         public int MIGRADO_WEB { get; set; }
-
         public string ICONO_WEB { get; set; } = string.Empty;
-
     }
 
     public class MenuDtoV2
@@ -34,5 +32,4 @@
         public string ICONO_WEB { get; set; } = string.Empty;
         public List<MenuDtoV2> NodoHijo { get; set; } = new List<MenuDtoV2>();
     }
-
-}//end namespace
+}

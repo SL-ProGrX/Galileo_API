@@ -1,6 +1,6 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
-    public class OpcionDTO
+    public class OpcionDto
     {
         public int Cod_Opcion { get; set; }
         public string Formulario { get; set; } = string.Empty;
@@ -12,9 +12,7 @@
 
     }
 
-
-
-    public class FormularioDTO
+    public class FormularioOpsDto
     {
         public string Formulario { get; set; } = string.Empty;
         public int Modulo { get; set; }
@@ -27,7 +25,5 @@
     {
         public int modulo { get; set; }
         public string formulario { get; set; } = string.Empty;
-
     }
-
 }

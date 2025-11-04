@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
     public class Aplicacion
     {
@@ -8,7 +8,6 @@
         public string Estado { get; set; } = string.Empty;
         public DateTime Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
-
     }
 
     public class Bloqueo
@@ -19,27 +18,15 @@
         public string Version_Bloqueada { get; set; } = string.Empty;
         public DateTime Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
-
     }
 
     public class Actualizacion
     {
-
         public string Cod_App { get; set; } = string.Empty;
         public string Version { get; set; } = string.Empty;
         public DateTime Fecha_Libera { get; set; }
         public string Notas_Descarga { get; set; } = string.Empty;
         public DateTime Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
-
-    }
-
-
-
-
-    public class ErrorAplicacionDTO
-    {
-        public int Code { get; set; }
-        public string Description { get; set; } = string.Empty;
     }
 }

@@ -1,6 +1,6 @@
-﻿namespace PgxAPI.Models.US
+﻿namespace PgxAPI.Models.Security
 {
-    public class UsuarioDTO
+    public class UsuarioModel
     {
         public string UserName { get; set; } = string.Empty;
         public int UserId { get; set; } = 0;
@@ -18,16 +18,13 @@
         public bool ModoEdicion { get; set; }
         public int EmpresaId { get; set; } = 0;
         public string NombreEmpresa { get; set; } = string.Empty;
-
-
         public bool tfa_ind { get; set; }
         public string tfa_metodo { get; set; } = string.Empty;
         public DateTime? tfa_vence { get; set; }
         public string tfa_activo { get; set; } = string.Empty;
-
     }
 
-    public class UsuarioClienteAsignaDTO
+    public class UsuarioClienteAsignaDto
     {
         public int CodigoEmpresa { get; set; }
         public string NombreEmpresa { get; set; } = string.Empty;
@@ -38,7 +35,7 @@
         public string AppVersion { get; set; } = string.Empty;
     }
 
-    public class UsuarioClienteDTO
+    public class UsuarioClienteDto
     {
         public string Cod_Empresa { get; set; } = string.Empty;
         public string Nombre_Corto { get; set; } = string.Empty;
@@ -78,7 +75,7 @@
         public string CodTransac { get; set; } = string.Empty;
     }
 
-    public class UsuarioClienteRolDTO
+    public class UsuarioClienteRolDto
     {
         public string CodigoRol { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
@@ -87,7 +84,7 @@
         public string RegistroUsuario { get; set; } = string.Empty;
     }
 
-    public class UsuarioClienteRolAsignaDTO
+    public class UsuarioClienteRolAsignaDto
     {
         public string CodigoRol { get; set; } = string.Empty;
         public int CodigoEmpresa { get; set; }

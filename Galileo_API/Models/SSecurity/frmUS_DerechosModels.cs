@@ -1,8 +1,7 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
-    public class UsDerechosNewDTO
+    public class UsDerechosNewDto
     {
-
         public int COD_OPCION { get; set; }
         public string FORMULARIO { get; set; } = string.Empty;
         public int MODULO { get; set; }
@@ -13,9 +12,8 @@
         public string PermisoEstado { get; set; } = string.Empty;
     }
 
-    public class Crear_UsDerechosNewDTO
+    public class CrearUsDerechosNewDto
     {
-
         public int COD_OPCION { get; set; }
         public string COD_ROL { get; set; } = string.Empty;
         public string ESTADO { get; set; } = string.Empty;
@@ -25,7 +23,6 @@
 
     public class PrimeTreeDto
     {
-
         public object Data { get; set; } = string.Empty;
         public string Key { get; set; } = string.Empty;
         public string Label { get; set; } = string.Empty;
@@ -40,21 +37,18 @@
         public bool leaf { get; set; }
     }
 
-    public class UsRolDTO
+    public class UsRolDto
     {
-
         public string COD_ROL { get; set; } = string.Empty;
         public string DESCRIPCION { get; set; } = string.Empty;
         public int ACTIVO { get; set; }
         public DateTime? REGISTRO_FECHA { get; set; }
         public string REGISTRO_USUARIO { get; set; } = string.Empty;
         public int? COD_EMPRESA { get; set; }
-
     }
 
     public class PrimeTreeDtoV2
     {
-
         public object Data { get; set; } = string.Empty;
         public string Key { get; set; } = string.Empty;
         public string Label { get; set; } = string.Empty;
@@ -69,7 +63,6 @@
         public bool leaf { get; set; }
         public int[] modules { get; set; } = Array.Empty<int>();
         public int badge { get; set; } = 0;
-
     }
 
     public class UsMenuManual
@@ -77,7 +70,4 @@
         public string Key { get; set; } = string.Empty;
         public string frame { get; set; } = string.Empty;
     }
-
-
 }
-

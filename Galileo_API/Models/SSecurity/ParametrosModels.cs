@@ -1,6 +1,6 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
-    public class ParametrosDTO
+    public class ParametrosDto
     {
         public int ID_PARAMETRO { get; set; }
         public int KEY_LENMIN { get; set; }
@@ -13,14 +13,5 @@
         public int KEY_CAPCHAR { get; set; }
         public int KEY_SIMCHAR { get; set; }
         public int KEY_NUMCHAR { get; set; }
-
-
-    }
-
-
-    public class ErrorParametroDTO
-    {
-        public int Code { get; set; }
-        public string Description { get; set; } = string.Empty;
     }
 }

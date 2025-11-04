@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models
 {
-    public class tesTransaccionDTO
+    public class TesTransaccionDto
     {
         public decimal monto { get; set; }
         public long nSolicitud { get; set; }
@@ -21,7 +21,7 @@
         public string cod_divisa { get; set; } = string.Empty;
     }
 
-    public class tesReporteTransferenciaDTO
+    public class TesReporteTransferenciaDto
     {
         public long registros { get; set; }
         public string montoLetras { get; set; } = string.Empty;

@@ -1,8 +1,7 @@
-﻿namespace PgxAPI.Models.US
+﻿namespace PgxAPI.Models.Security
 {
     public class EstacionDto
     {
-        //public int CodEmpresa { get; set; }
         public string Estacion { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public bool Activa { get; set; }
@@ -34,7 +33,7 @@
         public string Estacion { get; set; } = string.Empty;
     }
 
-    public class EstacionMACDto
+    public class EstacionMacDto
     {
         public string MAC_01 { get; set; } = string.Empty;
         public string MAC_02 { get; set; } = string.Empty;

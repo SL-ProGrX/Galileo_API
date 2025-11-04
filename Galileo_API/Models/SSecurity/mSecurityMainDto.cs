@@ -1,6 +1,6 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
-    public class ParametrosAccesoDTO
+    public class ParametrosAccesoDto
     {
         public long EmpresaId { get; set; }
         public string Usuario { get; set; } = string.Empty;
@@ -9,7 +9,7 @@
         public string Boton { get; set; } = string.Empty;
     }
 
-    public class BitacoraInsertarDTO
+    public class BitacoraInsertarDto
     {
         public long EmpresaId { get; set; }
         public string Usuario { get; set; } = string.Empty;
@@ -19,14 +19,10 @@
         public string DetalleMovimiento { get; set; } = string.Empty;
         public string Detalle { get; set; } = string.Empty;
         public string AppNombre { get; set; } = string.Empty;
-
-
         public string AppEquipo { get; set; } = string.Empty;
         public string AppVersion { get; set; } = string.Empty;
         public string AppIP { get; set; } = string.Empty;
     }
-
-  
 
     public class FiltroLazy
     {
@@ -35,7 +31,7 @@
         public string? filtro { get; set; }
     }
 
-    public class SEGLogInsertarDTO
+    public class SegLogInsertarDto
     {
         public string AppName { get; set; } = string.Empty;
         public string AppVersion { get; set; } = string.Empty;
@@ -46,7 +42,7 @@
         public string AppMaquina { get; set; } = string.Empty;
     }
 
-    public class DerechoMDIObtenerDTO
+    public class DerechoMdiObtenerDto
     {
         public int Cliente { get; set; }
         public string Usuario { get; set; } = string.Empty;
@@ -54,6 +50,5 @@
         public string FormX { get; set; } = string.Empty;
         public string Opcion { get; set; } = string.Empty;
     }
-
 
 }

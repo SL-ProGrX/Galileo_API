@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
     public class PaisObtenerDto
     {
@@ -44,6 +44,4 @@
         public string TagProvincia { get; set; } = string.Empty;
         public string TagCanton { get; set; } = string.Empty;
     }
-
-
 }

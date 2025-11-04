@@ -1,8 +1,7 @@
 ﻿namespace PgxAPI.Models
 {
-    public class UsAdminClientesDTO
+    public class UsAdminClientesDto
     {
-
         public string USUARIO { get; set; } = string.Empty;
         public int COD_EMPRESA { get; set; }
         public DateTime? REGISTRO_FECHA { get; set; }
@@ -18,8 +17,7 @@
 
     }
 
-
-    public class AdminAccessDTO
+    public class AdminAccessDto
     {
         public bool Admin_Portal { get; set; }
         public bool Rol_AdminView { get; set; }
@@ -30,38 +28,33 @@
         public string ResultMsg { get; set; } = string.Empty;
     }
 
-    public class UsuarioBloqueoDTO
+    public class UsuarioBloqueoDto
     {
         public int Bloqueo { get; set; }
         public DateTime BloqueoT { get; set; }
         public bool BloqueoI { get; set; }
         public string Usuario { get; set; } = string.Empty;
-
     }
 
-    public class UsuarioCondicionDTO
+    public class UsuarioCondicionDto
     {
-
         public int KEY_RENEW_SESION { get; set; }
         public DateTime KEY_BLOQUEO { get; set; }
         public int KEY_BLOQUEOI { get; set; }
         public int KEY_CADUCIDAD { get; set; }
         public int KEY_ADMIN { get; set; }
         public string Usuario { get; set; } = string.Empty;
-
     }
 
-    public class UsuarioVencimientoDTO
+    public class UsuarioVencimientoDto
     {
-
         public int Vencida { get; set; }
         public int Renovacion { get; set; }
         public int Dias { get; set; }
         public string Usuario { get; set; } = string.Empty;
-
     }
 
-    public class PgxClienteDTO
+    public class PgxClienteDto
     {
         public int COD_EMPRESA { get; set; } // Primary Key, not null
         public string COD_VENDEDOR { get; set; } = string.Empty; // FK, not null
@@ -120,20 +113,16 @@
         public int? URL_Logo_Activo { get; set; } // null
     }
 
-
-    public class sbgSEGInicializa_ResultDTO
+    public class SbgSegInicializaResultDto
     {
         public string BloqueoMsg { get; set; } = string.Empty;
         public string CondicionMsg { get; set; } = string.Empty;
         public string Vencimiento_VencidaMsg { get; set; } = string.Empty;
         public string Vencimiento_RenovacionMsg { get; set; } = string.Empty;
         public string AppStatusMsg { get; set; } = string.Empty;
-
-
-
     }
 
-    public class UsMenuDTO
+    public class UsMenuDto
     {
         public int MENU_NODO { get; set; } // PK, not null
         public int NODO_PADRE { get; set; } // FK, null
@@ -158,5 +147,4 @@
         public string value { get; set; } = string.Empty;
         public string iconMenu { get; set; } = string.Empty;
     }
-
 }

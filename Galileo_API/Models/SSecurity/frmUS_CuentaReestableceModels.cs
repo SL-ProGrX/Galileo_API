@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.US
+﻿namespace PgxAPI.Models.Security
 {
     public class CuentaReestablecer
     {

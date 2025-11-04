@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models
 {
-    public class ParametrosObtenerDTO
+    public class ParametrosObtenerDto
     {
         public int id_parametro { get; set; }
         public int key_lenmin { get; set; }
@@ -17,7 +17,7 @@
         public string tfa_metodo { get; set; } = string.Empty;
     }
 
-    public class ClaveCambiarDTO
+    public class ClaveCambiarDto
     {
         public long Cliente { get; set; }
         public string Usuario { get; set; } = string.Empty;

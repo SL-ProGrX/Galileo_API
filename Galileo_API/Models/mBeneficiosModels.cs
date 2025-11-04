@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models
 {
-    public class BitacoraBeneInsertarDTO
+    public class BitacoraBeneInsertarDto
     {
         public int EmpresaId { get; set; }
         public int id_bitacora { get; set; }

@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models
+﻿namespace PgxAPI.Models.Security
 {
     public class FormularioModel
     {
@@ -13,5 +13,4 @@
         public int ModuloId { get; set; } = 0;
         public string Usuario { get; set; } = String.Empty;
     }
-
 }
