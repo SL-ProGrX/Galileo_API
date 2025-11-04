@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.AH
 {
-    public class ParametrosPatrimonioDTO
+    public class ParametrosPatrimonioDto
     {
         public string consec { get; set; } = string.Empty;
         public string cta_obrero { get; set; } = string.Empty;
@@ -69,7 +69,5 @@ namespace PgxAPI.Models.AH
         public string cta_epg_desc { get; set; } = string.Empty;
         public string cta_ereserva_mask { get; set; } = string.Empty;
         public string cta_ereserva_desc { get; set; } = string.Empty;
-
     }
-
 }

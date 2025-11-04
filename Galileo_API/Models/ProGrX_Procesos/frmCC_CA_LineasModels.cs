@@ -1,18 +1,18 @@
 namespace PgxAPI.Models.GEN
 {
-    public class CC_CA_Lineas_ActivasData
+    public class CcCaLineasActivasData
     {
         public string ItmX { get; set; } = string.Empty;
     }
 
-    public class CC_CA_CodigosAsignadosData
+    public class CcCaCodigosAsignadosData
     {
         public string codigo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public int existe { get; set; }
     }
 
-    public class PRM_CA_Lineas_DtInsert
+    public class PrmCaLineasDtInsert
     {
         public string cod_linea { get; set; } = string.Empty;
         public string codigo { get; set; } = string.Empty;
@@ -20,7 +20,7 @@ namespace PgxAPI.Models.GEN
         public DateTime registro_fecha { get; set; }
     }
 
-    public class PRM_CA_LineasData
+    public class PrmCaLineasData
     {
         public string cod_linea { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -28,7 +28,7 @@ namespace PgxAPI.Models.GEN
         public bool activo { get; set; }
     }
 
-    public class PRM_CA_LineaUpsert
+    public class PrmCaLineaUpsert
     {
         public string cod_linea { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

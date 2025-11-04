@@ -1,12 +1,12 @@
 namespace PgxAPI.Models.GEN
 {
-    public class CC_CA_GenericData
+    public class CcCaGenericData
     {
         public string idx { get; set; } = string.Empty;
         public string itmx { get; set; } = string.Empty;
     }
 
-    public class PRM_CA_REMESA_DT
+    public class PrmCaRemesaDt
     {
         public string codRemesa { get; set; } = string.Empty;
         public int numLinea { get; set; }
@@ -22,7 +22,7 @@ namespace PgxAPI.Models.GEN
         public string nombre { get; set; } = string.Empty;
     }
 
-    public class PRM_CA_REMESA
+    public class PrmCaRemesa
     {
         public int cod_remesa { get; set; }
         public DateTime fecha { get; set; }
@@ -45,7 +45,7 @@ namespace PgxAPI.Models.GEN
         public string itmx { get; set; } = string.Empty;
     }
 
-    public class Filtros_BuscarCasos
+    public class FiltrosBuscarCasos
     {
         public int proceso { get; set; }
         public string linea { get; set; } = string.Empty;
@@ -54,7 +54,7 @@ namespace PgxAPI.Models.GEN
         public int nCuotas { get; set; }
     }
 
-    public class CC_CA_CasosData
+    public class CcCaCasosData
     {
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
@@ -83,7 +83,7 @@ namespace PgxAPI.Models.GEN
         public DateTime tarjetavence { get; set; }
     }
 
-    public class Remesa_Archivo_Data
+    public class RemesaArchivoData
     {
         public string numero_afiliado { get; set; } = string.Empty;
         public int cod_remesa { get; set; }
@@ -103,7 +103,7 @@ namespace PgxAPI.Models.GEN
         public string formato { get; set; } = string.Empty;
     }
 
-    public class Remesa_Autorizacion
+    public class RemesaAutorizacion
     {
         public int codremesa { get; set; }
         public string tarjeta { get; set; } = string.Empty;
@@ -114,7 +114,7 @@ namespace PgxAPI.Models.GEN
         public string referencia { get; set; } = string.Empty;
     }
 
-    public class CA_Remesa_Aplica_Inicializa
+    public class CaRemesaAplicaInicializa
     {
         public string tipodoc { get; set; } = string.Empty;
         public string numdoc { get; set; } = string.Empty;
@@ -122,7 +122,7 @@ namespace PgxAPI.Models.GEN
         public string rlinea { get; set; } = string.Empty;
     }
 
-    public class CA_Abonos_Detalla_Main
+    public class CaAbonosDetallaMain
     {
         public int total { get; set; }
         public int pendientes { get; set; }
