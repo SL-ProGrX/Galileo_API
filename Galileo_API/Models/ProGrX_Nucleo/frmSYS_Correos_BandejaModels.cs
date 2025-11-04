@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX_Nucleo
 {
-    public class frmSYS_Correos_BandejaModels
+    public class FrmSysCorreosBandejaModels
     {
         public class SysCorreosBandejaData
         {
@@ -26,17 +26,17 @@
             public int? MesId { get; set; }
             public string Mes { get; set; } = string.Empty;
         }
+
         public class SysCorreosBandejaLista
         {
             public int total { get; set; }
             public List<SysCorreosBandejaData>? lista { get; set; }
         }
+        
         public class SysCorreosBandejaResumenLista
         {
             public int total { get; set; }
             public List<SysCorreosBandejaResumenData> lista { get; set; } = new();
         }
-
-
     }
 }

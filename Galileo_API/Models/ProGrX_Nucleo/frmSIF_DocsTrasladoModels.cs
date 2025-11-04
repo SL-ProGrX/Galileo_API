@@ -1,12 +1,12 @@
 ﻿
 namespace PgxAPI.Models.ProGrX_Nucleo
 {
-    public class frmSIF_DocsTrasladoModels
+    public class FrmSifDocsTrasladoModels
     {
         public class SifDocsTrasladoDocumentosData
         {
-            public string Tipo_Documento { get; set; }
-            public string descripcion { get; set; }
+            public string? Tipo_Documento { get; set; }
+            public string? descripcion { get; set; }
             public int pendientes { get; set; }
             public int bloqueados { get; set; }
             public int? asientoTransaccion { get; set; }
@@ -34,15 +34,17 @@ namespace PgxAPI.Models.ProGrX_Nucleo
             public int total { get; set; }
             public List<SifDocsTrasladoDesbalanceadoData>? lista { get; set; }
         }
+
         public class SifDocsTrasladoDocumentoConfig
         {
-            public string tipoDocumento { get; set; }
-            public string tipoAsiento { get; set; }
-            public string asientoMascara { get; set; }
+            public string? tipoDocumento { get; set; }
+            public string? tipoAsiento { get; set; }
+            public string? asientoMascara { get; set; }
             public int asientoTransaccion { get; set; }
-            public string asientoModulo { get; set; }
-            public string descripcion { get; set; }
+            public string? asientoModulo { get; set; }
+            public string? descripcion { get; set; }
         }
+        
         public class SifDocsTrasladoBuscarRequest
         {
             public DateTime fechaInicio { get; set; }
@@ -54,12 +56,12 @@ namespace PgxAPI.Models.ProGrX_Nucleo
 
         public class SifDocsTrasladoEjecutarRequest
         {
-            public string tipoDocumento { get; set; }
+            public string? tipoDocumento { get; set; }
             public DateTime fechaInicio { get; set; }
             public DateTime fechaFin { get; set; }
             public bool soloBalanceados { get; set; }
-            public string modo { get; set; }
-            public string usuario { get; set; }
+            public string? modo { get; set; }
+            public string? usuario { get; set; }
             public int? codContabilidad { get; set; }
         }
 

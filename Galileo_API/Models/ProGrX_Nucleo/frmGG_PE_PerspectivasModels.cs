@@ -10,10 +10,10 @@ namespace PgxAPI.Models.GG_PE
     public class PePerspectivasDatosLista
     {
         public int total { get; set; } = 0;
-        public List<PePerspectivasDTO>? data { get; set; }
+        public List<PePerspectivasDto>? data { get; set; }
     }
 
-    public class PePerspectivasDTO
+    public class PePerspectivasDto
     {
         public int perspectiva_id { get; set; }
         public string descripcion { get; set; } = string.Empty;
@@ -32,7 +32,7 @@ namespace PgxAPI.Models.GG_PE
 
     public class PePlanesLista
     {
-        public string item { get; set; } 
-        public string descripcion { get; set; } 
+        public string? item { get; set; } 
+        public string? descripcion { get; set; } 
     }
 }

@@ -1,29 +1,30 @@
 namespace PgxAPI.Models.SYS
 {
-    public class Core_UENs_Filtros
+    public class CoreUeNsFiltros
     {
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
         public string? filtro { get; set; }
     }
-    public class Core_UENs_DTOList
+    
+    public class CoreUeNsDtoList
     {
         public int Total { get; set; }
-        public List<Core_UENs_DTO> uens { get; set; } = new List<Core_UENs_DTO>();
+        public List<CoreUeNsDto> uens { get; set; } = new List<CoreUeNsDto>();
     }
 
-    public class Core_UENs_DTO
+    public class CoreUeNsDto
     {
         public string cod_unidad { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public string cntx_unidad { get; set; } = string.Empty;
         public string? cntx_centro_costo { get; set; } = string.Empty;
-        public string? unidad_principal { get; set; } = string.Empty;    
+        public string? unidad_principal { get; set; } = string.Empty;
         public bool activa { get; set; }
         public bool btn { get; set; }
     }
 
-    public class Core_Usuarios_DTO
+    public class CoreUsuariosDto
     {
         public string core_usuario { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
@@ -34,7 +35,7 @@ namespace PgxAPI.Models.SYS
         public bool asignado { get; set; }
     }
 
-    public class Core_Roles_DTO
+    public class CoreRolesDto
     {
         public string core_usuario { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
@@ -50,25 +51,25 @@ namespace PgxAPI.Models.SYS
         public bool rol_lider { get; set; }
     }
 
-    public class Unidades_DTOList
+    public class UnidadesDtoList
     {
         public int Total { get; set; }
-        public List<Unidades_DTO> unidades { get; set; } = new List<Unidades_DTO>();
+        public List<UnidadesDto> unidades { get; set; } = new List<UnidadesDto>();
     }
 
-    public class Unidades_DTO
+    public class UnidadesDto
     {
         public string unidad { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
 
-    public class CentroCosto_DTOList
+    public class CentroCostoDtoList
     {
         public int Total { get; set; }
-        public List<CentroCosto_DTO> centrocostos { get; set; } = new List<CentroCosto_DTO>();
+        public List<CentroCostoDto> centrocostos { get; set; } = new List<CentroCostoDto>();
     }
 
-    public class CentroCosto_DTO
+    public class CentroCostoDto
     {
         public string centrocosto { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

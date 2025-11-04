@@ -25,5 +25,4 @@
         public string descripcion { get; set; } = string.Empty;
         public bool asignado { get; set; } = false;
     }
-
 }

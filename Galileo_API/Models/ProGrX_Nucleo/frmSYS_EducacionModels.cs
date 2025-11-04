@@ -22,8 +22,7 @@
         public string descripcion { get; set; } = string.Empty;
         public int asignado { get; set; }
         public bool asignadob => asignado == 1;
-     
+
 
     }
-
 }

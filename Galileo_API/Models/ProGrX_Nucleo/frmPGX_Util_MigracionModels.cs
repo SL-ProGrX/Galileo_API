@@ -2,7 +2,6 @@
 
 namespace PgxAPI.Models.ProGrX_Nucleo
 {
-
     public class PgxMigracionData
     {
         public string codigo { get; set; } = string.Empty;
@@ -18,7 +17,7 @@ namespace PgxAPI.Models.ProGrX_Nucleo
         public string cuota { get; set; } = string.Empty;
         public string saldo { get; set; } = string.Empty;
     }
-        public class PgxMigracionData_2
+    public class PgxMigracionData2
     {
         public string codigo { get; set; } = string.Empty;
         public int id_comite { get; set; }
@@ -39,21 +38,21 @@ namespace PgxAPI.Models.ProGrX_Nucleo
         public string userfor { get; set; } = string.Empty;
         public string usertesoreria { get; set; } = string.Empty;
         public string tesoreria { get; set; } = string.Empty;
-        public DateTime fechasol { get; set; } 
+        public DateTime fechasol { get; set; }
         public DateTime fechares { get; set; }
         public DateTime fechaforp { get; set; }
         public DateTime fechaforf { get; set; }
         public DateTime fecha_calculo_int { get; set; }
         public string garantia { get; set; } = string.Empty;
-        public string primer_cuota { get; set; } = string.Empty; 
+        public string primer_cuota { get; set; } = string.Empty;
         public string tdocumento { get; set; } = string.Empty;
-        public decimal pagare { get; set; }  
-        public int firma_deudor { get; set; }  
-        public int premio { get; set; } 
+        public decimal pagare { get; set; }
+        public int firma_deudor { get; set; }
+        public int premio { get; set; }
         public string observacion { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
-        public decimal prideduc { get; set; }  
-        public decimal fecult { get; set; }  
+        public decimal prideduc { get; set; }
+        public decimal fecult { get; set; }
         public string ESTADOSOL { get; set; } = string.Empty;
         public string documento_referido { get; set; } = string.Empty;
     }

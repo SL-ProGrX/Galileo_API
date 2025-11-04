@@ -1,10 +1,10 @@
 namespace PgxAPI.Models.ProGrX_Nucleo
 {
-    public class frmSIF_EmpresaModel
+    public class FrmSifEmpresaModel
     {
         public int id_empresa { get; set; }
 
-        // --- Datos básicos de empresa ---
+        // --- Datos bï¿½sicos de empresa ---
         public string nombre { get; set; } = string.Empty;
         public string cedula_juridica { get; set; } = string.Empty;
         public string apto_postal { get; set; } = string.Empty;
@@ -16,9 +16,9 @@ namespace PgxAPI.Models.ProGrX_Nucleo
         // Contabilidad / cuentas
         public int? cod_empresa_enlace { get; set; }  
         public string? cod_cuenta_no_cfg { get; set; }
-        public string? cuenta_desc { get; set; } // Descripción (vista vCNTX_CUENTAS_LOCAL)
+        public string? cuenta_desc { get; set; } // Descripciï¿½n (vista vCNTX_CUENTAS_LOCAL)
 
-        // --- Pagaré ---
+        // --- Pagarï¿½ ---
         public string pag_nomlargo { get; set; } = string.Empty;
         public string pag_nomcorto { get; set; } = string.Empty;
         public string pag_cedjurle { get; set; } = string.Empty;
@@ -45,7 +45,7 @@ namespace PgxAPI.Models.ProGrX_Nucleo
 
         public string liq_boleta_pie { get; set; } = string.Empty;
 
-        // --- Misión / Visión / Slogan ---
+        // --- Misiï¿½n / Visiï¿½n / Slogan ---
         public string mision { get; set; } = string.Empty;
         public string vision { get; set; } = string.Empty;
         public string slogan { get; set; } = string.Empty;
@@ -61,7 +61,7 @@ namespace PgxAPI.Models.ProGrX_Nucleo
         public string constancia_pat_pie { get; set; } = string.Empty;
         public bool constancia_fecha_vinculacion { get; set; }
 
-        // --- Logos / imágenes ---
+        // --- Logos / imï¿½genes ---
         public byte[]? logo { get; set; }
         public byte[]? fondo_pantalla { get; set; }
 
@@ -101,5 +101,4 @@ namespace PgxAPI.Models.ProGrX_Nucleo
         public string cod_cuenta_mask { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }
-
 }

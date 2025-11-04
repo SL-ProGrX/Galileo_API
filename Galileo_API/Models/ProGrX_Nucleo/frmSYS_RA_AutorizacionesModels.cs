@@ -1,7 +1,5 @@
 ﻿namespace PgxAPI.Models.ProGrX_Nucleo
 {
- 
-
     public class SysAutorizacionesData
     {
         public int persona_id { get; set; } 
@@ -17,7 +15,4 @@
         public int horas { get; set; }
 
     }
-
- 
-
 }
