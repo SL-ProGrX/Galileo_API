@@ -652,23 +652,23 @@ namespace PgxAPI.Models.ProGrX.Credito
 
     public class CRConsultaInfoDto
     {
-        public List<AF_TelefonosDTO>? Telefonos { get; set; }
-        public List<AF_CuentaBancariaDTO>? CuentasBancarias { get; set; }
-        public List<AF_PersonaBeneficiarioDTO>? Beneficiarios { get; set; }
-        public List<AF_TarjetaDTO>? Tarjetas { get; set; }
-        public List<AF_DireccionDTO>? Localizaciones { get; set; }
-        public List<AF_PersonaIngresoDTO> Ingresos { get; set; } = new();
-        public List<AF_PersonaRenunciaDTO> Renuncias { get; set; } = new();
+        public List<AfTelefonoDto>? Telefonos { get; set; }
+        public List<AfCuentaBancariaDto>? CuentasBancarias { get; set; }
+        public List<AfPersonaBeneficiarioDto>? Beneficiarios { get; set; }
+        public List<AfTarjetaDto>? Tarjetas { get; set; }
+        public List<AfDireccionDto>? Localizaciones { get; set; }
+        public List<AfPersonaIngresoDto> Ingresos { get; set; } = new();
+        public List<AfPersonaRenunciaDto> Renuncias { get; set; } = new();
         public List<CRPersonaLiquidacionDto> Liquidaciones { get; set; } = new();
-        public List<AF_PersonaNombramientoDTO> Nombramientos { get; set; } = new();
-        public List<AF_PersonaSalarioDTO> Salarios { get; set; } = new();
-        public List<AF_PersonaEmailDTO> Emails { get; set; } = new();
-        public List<AF_MotivosDTO> Motivos { get; set; } = new();
-        public List<AF_CanalesDTO> Canales { get; set; } = new();
+        public List<AfPersonaNombramientoDto> Nombramientos { get; set; } = new();
+        public List<AfPersonaSalarioDto> Salarios { get; set; } = new();
+        public List<AfPersonaEmailDto> Emails { get; set; } = new();
+        public List<AfMotivosDto> Motivos { get; set; } = new();
+        public List<AfCanalesDto> Canales { get; set; } = new();
         public List<CrPreferenciaDto> Preferencias { get; set; } = new();
-        public List<AF_BienDTO> Bienes { get; set; } = new();
-        public List<AF_EscolaridadDTO> Escolaridad { get; set; } = new();
-        public List<AF_PersonaRelacionDTO> Relaciones { get; set; } = new();
+        public List<AfBienDto> Bienes { get; set; } = new();
+        public List<AfEscolaridadDto> Escolaridad { get; set; } = new();
+        public List<AfPersonaRelacionDto> Relaciones { get; set; } = new();
         public List<AFPersonaDetalleDto> Contacto { get; set; } = new();
         public List<AFPersonaEstadoLaboralDto> EstadoLaboral { get; set; } = new();
         public List<AFPersonaBenePolizaDto> BenePolizas { get; set; } = new();
