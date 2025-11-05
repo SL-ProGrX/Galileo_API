@@ -24,9 +24,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CRMotivosData>> AF_CRMotivos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<AF_CRMotivosData>> AF_CRMotivos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<AF_CRMotivosData>>()
+            var result = new ErrorDto<List<AF_CRMotivosData>>()
             {
                 Code = 0,
                 Description = "OK",
@@ -76,9 +76,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="motivo"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CRMotivos_Guardar(int CodEmpresa, AF_CRMotivosData motivo, string usuario)
+        public ErrorDto AF_CRMotivos_Guardar(int CodEmpresa, AF_CRMotivosData motivo, string usuario)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "OK"
@@ -132,9 +132,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="cod_motivo"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CRMotivos_Eliminar(int CodEmpresa, string cod_motivo, string usuario)
+        public ErrorDto AF_CRMotivos_Eliminar(int CodEmpresa, string cod_motivo, string usuario)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "OK"

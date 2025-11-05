@@ -17,7 +17,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -29,10 +29,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="Usuario"></param>
         /// <param name="Tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_TrasladosDoc_Ubicaciones_Obtener(int CodEmpresa, string Usuario, string Tipo)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_TrasladosDoc_Ubicaciones_Obtener(int CodEmpresa, string Usuario, string Tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -74,10 +74,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="scrollCode"></param>
         /// <param name="Remesa"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_Ubi_RemesaDTO> TES_TrasladosDoc_Remesa_Scroll_Obtener(int CodEmpresa, int scrollCode, int Remesa)
+        public ErrorDto<TES_Ubi_RemesaDTO> TES_TrasladosDoc_Remesa_Scroll_Obtener(int CodEmpresa, int scrollCode, int Remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_Ubi_RemesaDTO>
+            var response = new ErrorDto<TES_Ubi_RemesaDTO>
             {
                 Code = 0,
                 Result = new TES_Ubi_RemesaDTO()
@@ -123,10 +123,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Remesa"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_Ubi_RemesaDTO> TES_TrasladosDoc_Remesa_Obtener(int CodEmpresa, int Remesa)
+        public ErrorDto<TES_Ubi_RemesaDTO> TES_TrasladosDoc_Remesa_Obtener(int CodEmpresa, int Remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_Ubi_RemesaDTO>
+            var response = new ErrorDto<TES_Ubi_RemesaDTO>
             {
                 Code = 0,
                 Result = new TES_Ubi_RemesaDTO()
@@ -166,10 +166,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="Remesa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> TES_TrasladosDocumentos_Obtener(int CodEmpresa, int Remesa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TablasListaGenericaModel> TES_TrasladosDocumentos_Obtener(int CodEmpresa, int Remesa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Result = new TablasListaGenericaModel()
@@ -245,10 +245,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_TrasladoDocumentoDTO> TES_TrasladosDoc_Solicitud_Obtener(int CodEmpresa, int Solicitud)
+        public ErrorDto<TES_TrasladoDocumentoDTO> TES_TrasladosDoc_Solicitud_Obtener(int CodEmpresa, int Solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_TrasladoDocumentoDTO>
+            var response = new ErrorDto<TES_TrasladoDocumentoDTO>
             {
                 Code = 0,
                 Result = new TES_TrasladoDocumentoDTO()
@@ -289,10 +289,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vEdita"></param>
         /// <param name="Remesa"></param>
         /// <returns></returns>
-        public ErrorDTO TES_TrasladosDocumentos_Guardar(int CodEmpresa, bool vEdita, TES_Ubi_RemesaDTO Remesa)
+        public ErrorDto TES_TrasladosDocumentos_Guardar(int CodEmpresa, bool vEdita, TES_Ubi_RemesaDTO Remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -382,10 +382,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="Remesa"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO TES_TrasladosDocumentos_Eliminar(int CodEmpresa, int Remesa, string Usuario)
+        public ErrorDto TES_TrasladosDocumentos_Eliminar(int CodEmpresa, int Remesa, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -426,10 +426,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="Remesa"></param>
         /// <param name="Linea"></param>
         /// <returns></returns>
-        public ErrorDTO TES_TrasladosDocumentos_Linea_Guardar(int CodEmpresa, TES_Ubi_RemesaDTO Remesa, TES_TrasladoDocumentoDTO Linea)
+        public ErrorDto TES_TrasladosDocumentos_Linea_Guardar(int CodEmpresa, TES_Ubi_RemesaDTO Remesa, TES_TrasladoDocumentoDTO Linea)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -485,10 +485,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vSolicitud"></param>
         /// <param name="vEstado"></param>
         /// <returns></returns>
-        private ErrorDTO<bool> fxVerificaLinea(int CodEmpresa, string vOrigen, int vSolicitud, string vEstado)
+        private ErrorDto<bool> fxVerificaLinea(int CodEmpresa, string vOrigen, int vSolicitud, string vEstado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<bool>
+            var response = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "Ok",
@@ -548,10 +548,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="Remesa"></param>
         /// <param name="Solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO TES_TrasladosDocumentos_Linea_Eliminar(int CodEmpresa, int Remesa, int Solicitud)
+        public ErrorDto TES_TrasladosDocumentos_Linea_Eliminar(int CodEmpresa, int Remesa, int Solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

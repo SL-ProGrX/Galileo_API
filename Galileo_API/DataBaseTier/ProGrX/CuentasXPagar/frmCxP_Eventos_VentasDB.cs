@@ -19,10 +19,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<cxpEventosDTO>> Eventos_Obtener(int CodEmpresa)
+        public ErrorDto<List<cxpEventosDTO>> Eventos_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<cxpEventosDTO>>
+            var response = new ErrorDto<List<cxpEventosDTO>>
             {
                 Code = 0
             };
@@ -44,11 +44,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<cxpEventos_VentasDTO>> Eventos_Ventas_Obtener(int CodEmpresa, string parametros)
+        public ErrorDto<List<cxpEventos_VentasDTO>> Eventos_Ventas_Obtener(int CodEmpresa, string parametros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var info = JsonConvert.DeserializeObject<cxpEventos_VentasFiltros>(parametros);
-            var response = new ErrorDTO<List<cxpEventos_VentasDTO>>
+            var response = new ErrorDto<List<cxpEventos_VentasDTO>>
             {
                 Code = 0,
                 Result = new List<cxpEventos_VentasDTO>()

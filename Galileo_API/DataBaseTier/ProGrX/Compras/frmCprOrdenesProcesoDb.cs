@@ -21,10 +21,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodOrden"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ProveedorOrdenesData>> ProveedorOrden_Obtener(int CodEmpresa, string CodOrden)
+        public ErrorDto<List<ProveedorOrdenesData>> ProveedorOrden_Obtener(int CodEmpresa, string CodOrden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<ProveedorOrdenesData>>();
+            var response = new ErrorDto<List<ProveedorOrdenesData>>();
             try
             {
 
@@ -54,11 +54,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="orden"></param>
         /// <returns></returns>
-        public ErrorDTO Cpr_Orden_Proceso(int CodEmpresa, OrdenProceso orden)
+        public ErrorDto Cpr_Orden_Proceso(int CodEmpresa, OrdenProceso orden)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -95,10 +95,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="pin"></param>
         /// <param name="CodOrden"></param>
         /// <returns></returns>
-        public ErrorDTO OrdenProceso_ReemplazarPin(int CodEmpresa, bool pinIngreso, string pin, string CodOrden)
+        public ErrorDto OrdenProceso_ReemplazarPin(int CodEmpresa, bool pinIngreso, string pin, string CodOrden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             int ingreso_pin = pinIngreso ? 1 : 0;
             try
@@ -130,10 +130,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario"></param>
         /// <param name="Index"></param>
         /// <returns></returns>
-        public ErrorDTO Orden_Autoriza(int CodEmpresa, string CodOrden, string Usuario, int Index)
+        public ErrorDto Orden_Autoriza(int CodEmpresa, string CodOrden, string Usuario, int Index)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -244,10 +244,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodOrden"></param>
         /// <returns></returns>
-        public ErrorDTO Orden_Cerrar(int CodEmpresa, string CodOrden)
+        public ErrorDto Orden_Cerrar(int CodEmpresa, string CodOrden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -276,10 +276,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodProveedor"></param>
         /// <returns></returns>
-        public ErrorDTO ProveedorEstado_Obtener(int CodEmpresa, int CodProveedor)
+        public ErrorDto ProveedorEstado_Obtener(int CodEmpresa, int CodProveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {

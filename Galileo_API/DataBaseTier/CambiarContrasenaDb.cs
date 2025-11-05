@@ -75,9 +75,9 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO CambiarClave(ClaveCambiarDTO cambioClave)
+        public ErrorDto CambiarClave(ClaveCambiarDTO cambioClave)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -119,9 +119,9 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO CambiarClave3(ClaveCambiarDTO cambioClave)
+        public ErrorDto CambiarClave3(ClaveCambiarDTO cambioClave)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

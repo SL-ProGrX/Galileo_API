@@ -27,12 +27,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<DepartamentosDataLista> Departamentos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<DepartamentosDataLista> Departamentos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<DepartamentosDataLista>
+            var response = new ErrorDto<DepartamentosDataLista>
             {
                 Result = new DepartamentosDataLista()
             };
@@ -86,11 +86,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Departamentos_Actualizar(int CodEmpresa, DepartamentosDTO request)
+        public ErrorDto Departamentos_Actualizar(int CodEmpresa, DepartamentosDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -121,10 +121,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Departamentos_Insertar(int CodEmpresa, DepartamentosDTO request)
+        public ErrorDto Departamentos_Insertar(int CodEmpresa, DepartamentosDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -156,11 +156,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="departamento"></param>
         /// <returns></returns>
-        public ErrorDTO Departamentos_Eliminar(int CodEmpresa, string departamento)
+        public ErrorDto Departamentos_Eliminar(int CodEmpresa, string departamento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -187,12 +187,12 @@ namespace PgxAPI.DataBaseTier
 
         #region Asignaciones
 
-        public ErrorDTO<List<AsignacionesDTO>> Asignaciones_ObtenerTodos(int CodEmpresa, string departamento)
+        public ErrorDto<List<AsignacionesDTO>> Asignaciones_ObtenerTodos(int CodEmpresa, string departamento)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<AsignacionesDTO>>();
+            var response = new ErrorDto<List<AsignacionesDTO>>();
 
             try
             {
@@ -220,10 +220,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO Asignaciones_Insertar(int CodEmpresa, AsignacionesDTO request)
+        public ErrorDto Asignaciones_Insertar(int CodEmpresa, AsignacionesDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -246,11 +246,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Asignaciones_Eliminar(int CodEmpresa, string Cod_Departamento, string Cod_Prodclas)
+        public ErrorDto Asignaciones_Eliminar(int CodEmpresa, string Cod_Departamento, string Cod_Prodclas)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);

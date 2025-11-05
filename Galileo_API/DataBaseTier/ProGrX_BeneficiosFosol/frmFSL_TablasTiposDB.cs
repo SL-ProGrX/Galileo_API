@@ -14,10 +14,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<fslTablaTipoLista> FslTablaTipos_Obtener(int CodCliente, string tipo, string? filtro, int? pagina, int? paginacion)
+        public ErrorDto<fslTablaTipoLista> FslTablaTipos_Obtener(int CodCliente, string tipo, string? filtro, int? pagina, int? paginacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<fslTablaTipoLista>();
+            var response = new ErrorDto<fslTablaTipoLista>();
             response.Result = new fslTablaTipoLista();
             try
             {
@@ -74,10 +74,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO FslTablaTipos_Actualizar(int CodCliente, string tipo, fslTablaTipoData tipoData)
+        public ErrorDto FslTablaTipos_Actualizar(int CodCliente, string tipo, fslTablaTipoData tipoData)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -112,10 +112,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO FslTablaTipo_Insertar(int CodCliente, string tipo, string usuario, fslTablaTipoData tipoData)
+        public ErrorDto FslTablaTipo_Insertar(int CodCliente, string tipo, string usuario, fslTablaTipoData tipoData)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -201,10 +201,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO FslTablaTipo_Eliminar(int CodCliente, string tipo, string codigo)
+        public ErrorDto FslTablaTipo_Eliminar(int CodCliente, string tipo, string codigo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO error = new ErrorDTO();
+            ErrorDto error = new ErrorDto();
             error.Code = 0;
             try
             {

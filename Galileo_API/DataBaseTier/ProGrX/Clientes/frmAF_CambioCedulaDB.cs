@@ -19,7 +19,7 @@ namespace PgxAPI.DataBaseTier
             _mSecurity = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -29,10 +29,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_TiposCedulas_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_TiposCedulas_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -67,11 +67,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="cambioData"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CambioCedula_Aplicar(int CodEmpresa, string usuario, string cambioData)
+        public ErrorDto AF_CambioCedula_Aplicar(int CodEmpresa, string usuario, string cambioData)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             AF_CambioCedulaDTO cambioCedula = JsonConvert.DeserializeObject<AF_CambioCedulaDTO>(cambioData);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Guardado correctamente"
@@ -130,10 +130,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_CedulaCambioDTO> AF_Cedula_Obtener(int CodEmpresa, string cedula)
+        public ErrorDto<AF_CedulaCambioDTO> AF_Cedula_Obtener(int CodEmpresa, string cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_CedulaCambioDTO>
+            var response = new ErrorDto<AF_CedulaCambioDTO>
             {
                 Code = 0,
                 Description = "Ok",
@@ -180,10 +180,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Usuario_Validar(int CodEmpresa, string parametros)
+        public ErrorDto AF_Usuario_Validar(int CodEmpresa, string parametros)
         {
             AF_UsuarioLogonDTO param = JsonConvert.DeserializeObject<AF_UsuarioLogonDTO>(parametros);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

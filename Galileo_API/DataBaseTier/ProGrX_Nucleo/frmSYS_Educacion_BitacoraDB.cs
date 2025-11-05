@@ -18,17 +18,17 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene una lista de datos de educación
+        /// Obtiene una lista de datos de educaciï¿½n
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <param name="valor"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysEducacionListData>> SYS_Educacion_Combo_Obtener(int CodEmpresa, string tipo, string valor)
+        public ErrorDto<List<SysEducacionListData>> SYS_Educacion_Combo_Obtener(int CodEmpresa, string tipo, string valor)
         {
-            // Inicializa la cadena de conexión y el resultado.
+            // Inicializa la cadena de conexiï¿½n y el resultado.
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysEducacionListData>>()
+            var result = new ErrorDto<List<SysEducacionListData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -53,7 +53,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
             }
             catch (Exception ex)
             {
-                // En caso de error, retorna el mensaje y código correspondiente.
+                // En caso de error, retorna el mensaje y cï¿½digo correspondiente.
                 result.Code = -1;
                 result.Description = ex.Message;
                 result.Result = null;
@@ -62,18 +62,18 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene una lista paginada del padrón nacional, aplicando filtros de búsqueda y ordenamiento.
+        /// Obtiene una lista paginada del padrï¿½n nacional, aplicando filtros de bï¿½squeda y ordenamiento.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="jfiltro"></param>
         /// <returns></returns>
-        public ErrorDTO<SysPadronLista> SYS_Padron_Obtener(int CodEmpresa, string jfiltro)
+        public ErrorDto<SysPadronLista> SYS_Padron_Obtener(int CodEmpresa, string jfiltro)
         {
             // Deserializa los filtros recibidos en formato JSON.
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro);
 
-            var response = new ErrorDTO<SysPadronLista>
+            var response = new ErrorDto<SysPadronLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -85,11 +85,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    // Obtiene el total de registros para paginación.
+                    // Obtiene el total de registros para paginaciï¿½n.
                     var queryTotal = "SELECT count(*) FROM vSys_Padron_Nacional";
                     response.Result.total = connection.Query<int>(queryTotal).FirstOrDefault();
 
-                    // Construye el filtro de búsqueda si se proporciona.
+                    // Construye el filtro de bï¿½squeda si se proporciona.
                     string where = "";
                     if (!string.IsNullOrEmpty(filtro.filtro))
                     {
@@ -100,14 +100,14 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     if (string.IsNullOrEmpty(filtro.sortField))
                         filtro.sortField = "Identificacion";
 
-                    // Aplica paginación si corresponde.
+                    // Aplica paginaciï¿½n si corresponde.
                     string paginacion = "";
                     if (filtro.pagina != null)
                     {
                         paginacion = $" OFFSET {filtro.pagina} ROWS FETCH NEXT {filtro.paginacion} ROWS ONLY ";
                     }
 
-                    // Ejecuta la consulta con filtros, orden y paginación.
+                    // Ejecuta la consulta con filtros, orden y paginaciï¿½n.
                     var query = $@"SELECT Identificacion, Nombre FROM vSys_Padron_Nacional
                                    {where}
                                    ORDER BY {filtro.sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}
@@ -118,7 +118,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
             }
             catch (Exception ex)
             {
-                // En caso de error, retorna el mensaje y código correspondiente.
+                // En caso de error, retorna el mensaje y cï¿½digo correspondiente.
                 response.Code = -1;
                 response.Description = ex.Message;
                 response.Result = null;
@@ -127,15 +127,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene registros de educación con lazy loading, paginación, ordenamiento y filtros avanzados.
+        /// Obtiene registros de educaciï¿½n con lazy loading, paginaciï¿½n, ordenamiento y filtros avanzados.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysEducacionLogData>> SYS_Educacion_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SysEducacionLogData>> SYS_Educacion_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysEducacionLogData>>
+            var result = new ErrorDto<List<SysEducacionLogData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -154,7 +154,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     ? JsonConvert.DeserializeObject<dynamic>(filtros.parametros.ToString())
                     : null;
 
-                // Filtros por rango de año
+                // Filtros por rango de aï¿½o
                 if (filtrosAvanzados != null && !string.IsNullOrEmpty((string?)filtrosAvanzados.Ciclo_Anio_Inicio) && !string.IsNullOrEmpty((string?)filtrosAvanzados.Ciclo_Anio_Corte))
                 {
                     where += " AND CICLO_ANIO BETWEEN @Ciclo_Anio_Inicio AND @Ciclo_Anio_Corte";
@@ -247,14 +247,14 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     parameters.Add("@filtro", $"%{filtros.filtro}%");
                 }
 
-                // Ordenamiento dinámico
+                // Ordenamiento dinï¿½mico
                 string orderBy = " ORDER BY Registro_Fecha DESC ";
                 if (!string.IsNullOrEmpty(filtros.sortField))
                 {
                     orderBy = $" ORDER BY {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")} ";
                 }
 
-                // Paginación
+                // Paginaciï¿½n
                 string paginacion = "";
                 if (filtros.paginacion > 0)
                 {

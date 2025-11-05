@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
         }
 
         /// Obtiene la lista de transacciones a inventarios
-        public ErrorDTO<TransacQryDataList> TransacInv_Obtener(int CodEmpresa, TransacQryParametros parametros)
+        public ErrorDto<TransacQryDataList> TransacInv_Obtener(int CodEmpresa, TransacQryParametros parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<TransacQryDataList>
+            var response = new ErrorDto<TransacQryDataList>
             {
                 Code = 0,
                 Result = new TransacQryDataList()

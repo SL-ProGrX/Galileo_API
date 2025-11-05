@@ -20,10 +20,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO CprSolicitudContizacionBs_Guardar(int CodEmpresa, CprSolicitusCotizacionGuardar datos)
+        public ErrorDto CprSolicitudContizacionBs_Guardar(int CodEmpresa, CprSolicitusCotizacionGuardar datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -152,10 +152,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO CprSolicitudCotizacionBs_Eliminar(int CodEmpresa, int id_cotizacion_linea)
+        public ErrorDto CprSolicitudCotizacionBs_Eliminar(int CodEmpresa, int id_cotizacion_linea)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -180,10 +180,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<List<CprSolicitudProvCotiza>> CprSolicitudContizacionLista_Obtener(int CodEmpresa, int cpr_id, string cod_proveedor)
+        public ErrorDto<List<CprSolicitudProvCotiza>> CprSolicitudContizacionLista_Obtener(int CodEmpresa, int cpr_id, string cod_proveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CprSolicitudProvCotiza>>();
+            var response = new ErrorDto<List<CprSolicitudProvCotiza>>();
 
             try
             {

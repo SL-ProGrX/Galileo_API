@@ -22,10 +22,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="filtros"></param>
         /// <returns></returns>
         /// 
-        public ErrorDTO<SifConceptoLista> SIF_ConceptosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SifConceptoLista> SIF_ConceptosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SifConceptoLista>()
+            var result = new ErrorDto<SifConceptoLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -89,10 +89,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SifConceptoData>> SIF_Conceptos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SifConceptoData>> SIF_Conceptos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SifConceptoData>>()
+            var result = new ErrorDto<List<SifConceptoData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -139,10 +139,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="cod_concepto"></param>
         /// <returns></returns>
 
-        public ErrorDTO SIF_Conceptos_Eliminar(int CodEmpresa, string usuario, string cod_concepto)
+        public ErrorDto SIF_Conceptos_Eliminar(int CodEmpresa, string usuario, string cod_concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -178,10 +178,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// </summary>
-        public ErrorDTO SIF_Conceptos_Guardar(int CodEmpresa, string usuario, SifConceptoData concepto)
+        public ErrorDto SIF_Conceptos_Guardar(int CodEmpresa, string usuario, SifConceptoData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -247,10 +247,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// </summary>
-        private ErrorDTO SIF_Conceptos_Actualizar(int CodEmpresa, string usuario, SifConceptoData concepto)
+        private ErrorDto SIF_Conceptos_Actualizar(int CodEmpresa, string usuario, SifConceptoData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -301,10 +301,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// </summary>
-        private ErrorDTO SIF_Conceptos_Insertar(int CodEmpresa, string usuario, SifConceptoData concepto)
+        private ErrorDto SIF_Conceptos_Insertar(int CodEmpresa, string usuario, SifConceptoData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -350,10 +350,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_concepto"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_Conceptos_Valida(int CodEmpresa, string cod_concepto)
+        public ErrorDto SIF_Conceptos_Valida(int CodEmpresa, string cod_concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -392,10 +392,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_concepto"></param>
         /// </summary>
-        public ErrorDTO<List<SifConceptoDocumentoData>> SIF_ConceptosDocumentos_Obtener(int CodEmpresa, string cod_concepto)
+        public ErrorDto<List<SifConceptoDocumentoData>> SIF_ConceptosDocumentos_Obtener(int CodEmpresa, string cod_concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SifConceptoDocumentoData>>()
+            var result = new ErrorDto<List<SifConceptoDocumentoData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -436,10 +436,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="cod_concepto"></param>
         /// <param name="tipo_documento"></param>
         /// </summary>
-        public ErrorDTO SIF_ConceptosDocumentos_Asociar(int CodEmpresa, string usuario, string cod_concepto, string tipo_documento)
+        public ErrorDto SIF_ConceptosDocumentos_Asociar(int CodEmpresa, string usuario, string cod_concepto, string tipo_documento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -476,10 +476,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="cod_concepto"></param>
         /// <param name="tipo_documento"></param>
         /// </summary>
-        public ErrorDTO SIF_ConceptosDocumentos_Desasociar(int CodEmpresa, string usuario, string cod_concepto, string tipo_documento)
+        public ErrorDto SIF_ConceptosDocumentos_Desasociar(int CodEmpresa, string usuario, string cod_concepto, string tipo_documento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {

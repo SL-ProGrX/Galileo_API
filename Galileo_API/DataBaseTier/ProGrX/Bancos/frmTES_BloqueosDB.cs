@@ -20,7 +20,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -32,10 +32,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Contabilidad"></param>
         /// <param name="Solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_Bloqueo_TransaccionDTO> TES_Bloqueos_Solicitud_Obtener(int CodEmpresa, int Contabilidad, int Solicitud)
+        public ErrorDto<TES_Bloqueo_TransaccionDTO> TES_Bloqueos_Solicitud_Obtener(int CodEmpresa, int Contabilidad, int Solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_Bloqueo_TransaccionDTO>
+            var response = new ErrorDto<TES_Bloqueo_TransaccionDTO>
             {
                 Code = 0,
                 Result = new TES_Bloqueo_TransaccionDTO()
@@ -79,11 +79,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> TES_Bloqueos_SolicitudesBloquedas_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<TablasListaGenericaModel> TES_Bloqueos_SolicitudesBloquedas_Obtener(int CodEmpresa, string filtros)
         {
             TES_BloqueosFiltros filtro = JsonConvert.DeserializeObject<TES_BloqueosFiltros>(filtros) ?? new TES_BloqueosFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Result = new TablasListaGenericaModel()
@@ -156,10 +156,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Solicitud"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Bloqueos_Solicitud_Bloquear(int CodEmpresa, int Solicitud, string razon ,string Usuario)
+        public ErrorDto TES_Bloqueos_Solicitud_Bloquear(int CodEmpresa, int Solicitud, string razon ,string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO()
+            var response = new ErrorDto()
             {
                 Code = 0,
                 Description = ""
@@ -208,10 +208,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Solicitud"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Bloqueos_Solicitud_Desbloquear(int CodEmpresa, int Solicitud, string Usuario)
+        public ErrorDto TES_Bloqueos_Solicitud_Desbloquear(int CodEmpresa, int Solicitud, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO()
+            var response = new ErrorDto()
             {
                 Code = 0,
                 Description = ""

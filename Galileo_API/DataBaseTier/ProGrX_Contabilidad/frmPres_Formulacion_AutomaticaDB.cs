@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Contabilidad
         /// <param name="CodContab"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<presModelisLista>> Pres_Modelos_Obtener(int CodEmpresa, int CodContab, string Usuario)
+        public ErrorDto<List<presModelisLista>> Pres_Modelos_Obtener(int CodEmpresa, int CodContab, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<presModelisLista>>
+            var resp = new ErrorDto<List<presModelisLista>>
             {
                 Code = 0,
                 Description = "OK",
@@ -70,11 +70,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Contabilidad
         /// <param name="vTipo"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PresFormulacionAutoDTO>> Pres_Formulacion_Automatica(
+        public ErrorDto<List<PresFormulacionAutoDTO>> Pres_Formulacion_Automatica(
             int CodEmpresa, string CodModelo, string vTipo ,string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PresFormulacionAutoDTO>>
+            var resp = new ErrorDto<List<PresFormulacionAutoDTO>>
             {
                 Code = 0,
                 Description = "OK",

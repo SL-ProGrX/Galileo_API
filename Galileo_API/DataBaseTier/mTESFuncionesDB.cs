@@ -357,10 +357,10 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbgTESBusqueda(int CodEmpresa, int Contabilidad, string vTipo, string vFiltro = "")
+        public ErrorDto<List<DropDownListaGenericaModel>> sbgTESBusqueda(int CodEmpresa, int Contabilidad, string vTipo, string vFiltro = "")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",

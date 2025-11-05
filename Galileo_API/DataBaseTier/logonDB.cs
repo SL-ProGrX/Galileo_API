@@ -43,9 +43,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO LoginObtener(LoginObtenerDTO req)
+        public ErrorDto LoginObtener(LoginObtenerDTO req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -72,9 +72,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<ClientesEmpresasObtenerDTO>> ClientesObtener(string usuario)
+        public ErrorDto<List<ClientesEmpresasObtenerDTO>> ClientesObtener(string usuario)
         {
-            var response = new ErrorDTO<List<ClientesEmpresasObtenerDTO>>()
+            var response = new ErrorDto<List<ClientesEmpresasObtenerDTO>>()
             {
                 Result = new List<ClientesEmpresasObtenerDTO>()
             };
@@ -203,9 +203,9 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public async Task<ErrorDTO> TFA_Codigo_EnviarMAIL(string usuario, string email)
+        public async Task<ErrorDto> TFA_Codigo_EnviarMAIL(string usuario, string email)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -238,9 +238,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO TFA_Codigo_Validar(string usuario, string codigo)
+        public ErrorDto TFA_Codigo_Validar(string usuario, string codigo)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -276,7 +276,7 @@ namespace PgxAPI.DataBaseTier
 
         private async Task TFACodigoEmail_Enviar(TFADatosCorreo datos)
         {
-            ErrorDTO response = new ErrorDTO();
+            ErrorDto response = new ErrorDto();
             EnvioCorreoModels eConfig = _envioCorreoDB.CorreoConfigCuenta(Notificaciones);
 
             string body = @$"<!DOCTYPE html>

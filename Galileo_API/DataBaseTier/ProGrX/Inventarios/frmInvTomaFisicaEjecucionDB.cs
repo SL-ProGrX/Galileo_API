@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<List<EntradasTomaFisicaDTO>> Obtener_Entradas(int CodEmpresa)
+        public ErrorDto<List<EntradasTomaFisicaDTO>> Obtener_Entradas(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<EntradasTomaFisicaDTO>>();
+            var response = new ErrorDto<List<EntradasTomaFisicaDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -40,11 +40,11 @@ namespace PgxAPI.DataBaseTier
 
             return response;
         }
-        public ErrorDTO<List<SalidasTomaFisicaDTO>> Obtener_Salidas(int CodEmpresa)
+        public ErrorDto<List<SalidasTomaFisicaDTO>> Obtener_Salidas(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<SalidasTomaFisicaDTO>>();
+            var response = new ErrorDto<List<SalidasTomaFisicaDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -65,10 +65,10 @@ namespace PgxAPI.DataBaseTier
 
             return response;
         }
-        public ErrorDTO ProcesarTomaFisica(int CodEmpresa, int consecutivo, string usuario, string cod_entrada, string cod_salida)
+        public ErrorDto ProcesarTomaFisica(int CodEmpresa, int consecutivo, string usuario, string cod_entrada, string cod_salida)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try

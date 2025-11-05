@@ -43,9 +43,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <returns></returns>
 
-        public ErrorDTO fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario)
+        public ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario)
         {
-            ErrorDTO response = new();
+            ErrorDto response = new();
 
             string fxValidacionSinpe = "";
             vInfoSinpe? info = new();
@@ -136,10 +136,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
    
-        private ErrorDTO<bool> ConsultarIsPINEntity(string AccountNumber)
+        private ErrorDto<bool> ConsultarIsPINEntity(string AccountNumber)
         {
             Sinpe_PIN.ResPINEntity Elresutado = new Sinpe_PIN.ResPINEntity();
-            ErrorDTO<bool> errorDTO = new ErrorDTO<bool>();
+            ErrorDto<bool> errorDTO = new ErrorDto<bool>();
             errorDTO.Result = true;
             var resultado = new Sinpe_PIN.ReqPINEntity();
             try
@@ -151,7 +151,7 @@ namespace PgxAPI.DataBaseTier
                 var obtenerIpEquipoActual = fxObtenerIpEquipoActual(_parametrosSinpe.vHost);
                 if(obtenerIpEquipoActual.Code == -1)
                 {
-                    return new ErrorDTO<bool>
+                    return new ErrorDto<bool>
                     {
                         Code = -1,
                         Description = obtenerIpEquipoActual.Description,
@@ -182,9 +182,9 @@ namespace PgxAPI.DataBaseTier
             return errorDTO;
         }
 
-        private ErrorDTO<string> fxObtenerIpEquipoActual(string nombreEquipo)
+        private ErrorDto<string> fxObtenerIpEquipoActual(string nombreEquipo)
         {
-            ErrorDTO<string> response = new ErrorDTO<string>();
+            ErrorDto<string> response = new ErrorDto<string>();
             try
             {
                 // Obtener información del host por nombre de equipo
@@ -206,9 +206,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<string> fxTesValidaRechazoCuentaIBAN(int CodEmpresa, string ced, string iban, int tipoID)
+        private ErrorDto<string> fxTesValidaRechazoCuentaIBAN(int CodEmpresa, string ced, string iban, int tipoID)
         {
-            ErrorDTO<string> response = new ErrorDTO<string>();
+            ErrorDto<string> response = new ErrorDto<string>();
             string? fxTesValidaRechazoCuentaIBAN = "";
             try
             {
@@ -223,7 +223,7 @@ namespace PgxAPI.DataBaseTier
                     var valCedula = fxFormatoIdentificacionSinpe(ced.Trim(), tipoID);
                     if(valCedula.Code == -1)
                     {
-                        return new ErrorDTO<string>
+                        return new ErrorDto<string>
                         {
                             Code = -1,
                             Description = valCedula.Description,
@@ -270,9 +270,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<string> fxFormatoIdentificacionSinpe(string cedula, int tipoID)
+        private ErrorDto<string> fxFormatoIdentificacionSinpe(string cedula, int tipoID)
         {
-            ErrorDTO<string> errorDTO = new();
+            ErrorDto<string> errorDTO = new();
             string response = "";
             string formato = "";
             int idSINPE = -1;
@@ -378,9 +378,9 @@ namespace PgxAPI.DataBaseTier
             return errorDTO;
         }
 
-        private ErrorDTO<string> fxTesConsultarMotivoRechazo(int CodEmpresa, int idMotivo)
+        private ErrorDto<string> fxTesConsultarMotivoRechazo(int CodEmpresa, int idMotivo)
         {
-            ErrorDTO<string> response = new ErrorDTO<string>();
+            ErrorDto<string> response = new ErrorDto<string>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
@@ -400,9 +400,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<bool> ConsultarIsServiceAvailable(string vUsuario)
+        private ErrorDto<bool> ConsultarIsServiceAvailable(string vUsuario)
         {
-            ErrorDTO<bool> errorDTO = new ErrorDTO<bool>();
+            ErrorDto<bool> errorDTO = new ErrorDto<bool>();
             try
             {
                 // Generar un nuevo GUID
@@ -440,10 +440,10 @@ namespace PgxAPI.DataBaseTier
              return errorDTO;
         }
 
-        private ErrorDTO<Sinpe_PIN.ResAccountInfo> ConsultarAccountInfo(string iban)
+        private ErrorDto<Sinpe_PIN.ResAccountInfo> ConsultarAccountInfo(string iban)
         {
-            ErrorDTO<Sinpe_PIN.ResAccountInfo> errorDTO = new ErrorDTO<Sinpe_PIN.ResAccountInfo>();
-            errorDTO = new ErrorDTO<Sinpe_PIN.ResAccountInfo>();
+            ErrorDto<Sinpe_PIN.ResAccountInfo> errorDTO = new ErrorDto<Sinpe_PIN.ResAccountInfo>();
+            errorDTO = new ErrorDto<Sinpe_PIN.ResAccountInfo>();
             try
             {
                 Guid newGuid = Guid.NewGuid();
@@ -469,10 +469,10 @@ namespace PgxAPI.DataBaseTier
             return errorDTO;
         }
 
-        private ErrorDTO<Sinpe_PIN.ResAccountInfo> fxCrearAccountInfo(Sinpe_PIN.ResAccountInfo accountInfo)
+        private ErrorDto<Sinpe_PIN.ResAccountInfo> fxCrearAccountInfo(Sinpe_PIN.ResAccountInfo accountInfo)
         {
-            ErrorDTO<Sinpe_PIN.ResAccountInfo> errorDTO = new ErrorDTO<Sinpe_PIN.ResAccountInfo>();
-            errorDTO = new ErrorDTO<Sinpe_PIN.ResAccountInfo>();
+            ErrorDto<Sinpe_PIN.ResAccountInfo> errorDTO = new ErrorDto<Sinpe_PIN.ResAccountInfo>();
+            errorDTO = new ErrorDto<Sinpe_PIN.ResAccountInfo>();
 
             try
             {
@@ -510,9 +510,9 @@ namespace PgxAPI.DataBaseTier
             return errorDTO;
         }
 
-        private ErrorDTO<Sinpe_PIN.ResAccountInfo> GetAccountInfo(Sinpe_PIN.ReqAccountInfo AccountData)
+        private ErrorDto<Sinpe_PIN.ResAccountInfo> GetAccountInfo(Sinpe_PIN.ReqAccountInfo AccountData)
         {
-            ErrorDTO<Sinpe_PIN.ResAccountInfo> response = new ErrorDTO<Sinpe_PIN.ResAccountInfo>();
+            ErrorDto<Sinpe_PIN.ResAccountInfo> response = new ErrorDto<Sinpe_PIN.ResAccountInfo>();
             var body = new Sinpe_PIN.ReqAccountInfoBody();
             try
             {
@@ -531,9 +531,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<Sinpe_PIN.IModelosRastroSIF> fxCrearRastroSINPESIF_PIN()
+        private ErrorDto<Sinpe_PIN.IModelosRastroSIF> fxCrearRastroSINPESIF_PIN()
         {
-            ErrorDTO<Sinpe_PIN.IModelosRastroSIF> response = new ErrorDTO<Sinpe_PIN.IModelosRastroSIF>();
+            ErrorDto<Sinpe_PIN.IModelosRastroSIF> response = new ErrorDto<Sinpe_PIN.IModelosRastroSIF>();
             response.Result = new Sinpe_PIN.IModelosRastroSIF();
             try
             {
@@ -550,9 +550,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<Sinpe_PIN.IModelosRastroSIF> fxCrearRastroSINPESIF_PIN(string vUsuario)
+        private ErrorDto<Sinpe_PIN.IModelosRastroSIF> fxCrearRastroSINPESIF_PIN(string vUsuario)
         {
-            ErrorDTO<Sinpe_PIN.IModelosRastroSIF> response = new ErrorDTO<Sinpe_PIN.IModelosRastroSIF>();
+            ErrorDto<Sinpe_PIN.IModelosRastroSIF> response = new ErrorDto<Sinpe_PIN.IModelosRastroSIF>();
             response.Result = new Sinpe_PIN.IModelosRastroSIF();
             try
             {
@@ -569,9 +569,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<Sinpe_PIN.ResPINEntity> IsPINEntity(Sinpe_PIN.ReqPINEntity PINEntity)
+        private ErrorDto<Sinpe_PIN.ResPINEntity> IsPINEntity(Sinpe_PIN.ReqPINEntity PINEntity)
         {
-            ErrorDTO<Sinpe_PIN.ResPINEntity> response = new ErrorDTO<Sinpe_PIN.ResPINEntity>();
+            ErrorDto<Sinpe_PIN.ResPINEntity> response = new ErrorDto<Sinpe_PIN.ResPINEntity>();
             var body = new Sinpe_PIN.ReqPINEntityBody();
 
             try
@@ -595,9 +595,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<Sinpe_PIN.ResServiceAvailable> IsServiceAvailable(Sinpe_PIN.BaseRequest Context,string vUsuario)
+        private ErrorDto<Sinpe_PIN.ResServiceAvailable> IsServiceAvailable(Sinpe_PIN.BaseRequest Context,string vUsuario)
         {
-            ErrorDTO<Sinpe_PIN.ResServiceAvailable> response = new ErrorDTO<Sinpe_PIN.ResServiceAvailable>();
+            ErrorDto<Sinpe_PIN.ResServiceAvailable> response = new ErrorDto<Sinpe_PIN.ResServiceAvailable>();
             var body = new Sinpe_PIN.BaseRequestBody();
             try
             {
@@ -617,9 +617,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
     
-        private ErrorDTO<Sinpe_TFT.IModelosRastroSIF> fxCrearRastroSINPESIF_TFT() 
+        private ErrorDto<Sinpe_TFT.IModelosRastroSIF> fxCrearRastroSINPESIF_TFT() 
         {
-            var response = new ErrorDTO<Sinpe_TFT.IModelosRastroSIF>();
+            var response = new ErrorDto<Sinpe_TFT.IModelosRastroSIF>();
             try
             {
                 Sinpe_TFT.IModelosRastroSIF rastro = new Sinpe_TFT.IModelosRastroSIF();
@@ -636,9 +636,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<Sinpe_TFT.ObtenerInformacionCuentaResponseBody> fxObtenerInformacionSINPE(ObtenerInformacionCuentaBody body)
+        private ErrorDto<Sinpe_TFT.ObtenerInformacionCuentaResponseBody> fxObtenerInformacionSINPE(ObtenerInformacionCuentaBody body)
         {
-            var response = new ErrorDTO<Sinpe_TFT.ObtenerInformacionCuentaResponseBody>();
+            var response = new ErrorDto<Sinpe_TFT.ObtenerInformacionCuentaResponseBody>();
             try
             {
                 response.Result = _srvSinpeTft.ObtenerInformacionCuentaAsync(body).Result;
@@ -666,11 +666,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="doc_base"></param>
         /// <param name="contador"></param>
         /// <returns></returns>
-        public ErrorDTO fxTesEmisionSinpeCreditoDirecto(int CodEmpresa,
+        public ErrorDto fxTesEmisionSinpeCreditoDirecto(int CodEmpresa,
             int Nsolicitud,DateTime vfecha,string vUsuario, int doc_base,int contador )
         {
             //(Realiza el proceso de envio y recibido de SINPE)
-            var response = new ErrorDTO 
+            var response = new ErrorDto 
             {
                 Code = 0,
                 Description = "Ok"
@@ -748,9 +748,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<bool> fxTesConsultarServicioDisponible(int CodEmpresa, string vUsuario)
+        private ErrorDto<bool> fxTesConsultarServicioDisponible(int CodEmpresa, string vUsuario)
         {
-            var response = new ErrorDTO<bool> 
+            var response = new ErrorDto<bool> 
             {
                 Code = 0,
                 Description = "Ok",
@@ -777,9 +777,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<Sinpe_CCD.IModelosRastroSIF> fxCrearRastroSINPESIF_CCD(string vUsuario)
+        private ErrorDto<Sinpe_CCD.IModelosRastroSIF> fxCrearRastroSINPESIF_CCD(string vUsuario)
         {
-            ErrorDTO<Sinpe_CCD.IModelosRastroSIF> response = new ErrorDTO<Sinpe_CCD.IModelosRastroSIF>();
+            ErrorDto<Sinpe_CCD.IModelosRastroSIF> response = new ErrorDto<Sinpe_CCD.IModelosRastroSIF>();
             response.Result = new Sinpe_CCD.IModelosRastroSIF();
             try
             {
@@ -796,11 +796,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<Sinpe_CCD.RespuestaRegistro> fxTesEnvioSinpeCreditoDirecto(int CodEmpresa, int Nsolicitud, string vUsuario)
+        private ErrorDto<Sinpe_CCD.RespuestaRegistro> fxTesEnvioSinpeCreditoDirecto(int CodEmpresa, int Nsolicitud, string vUsuario)
         {
             //(Realiza el proceso de emisión de la transferencia SINPE)
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<Sinpe_CCD.RespuestaRegistro>
+            var resp = new ErrorDto<Sinpe_CCD.RespuestaRegistro>
             {
                 Code = 0,
                 Description = "Ok",
@@ -923,9 +923,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="doc_base"></param>
         /// <param name="contador"></param>
         /// <returns></returns>
-        public ErrorDTO fxTesEmisionSinpeTiempoReal(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
+        public ErrorDto fxTesEmisionSinpeTiempoReal(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -1085,9 +1085,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<Sinpe_PIN.ResPINSending> SendTransfer(int CodEmpresa, TesTransaccion solicitud)
+        private ErrorDto<Sinpe_PIN.ResPINSending> SendTransfer(int CodEmpresa, TesTransaccion solicitud)
         {
-            var ErrorDTO = new ErrorDTO<Sinpe_PIN.ResPINSending>
+            var ErrorDto = new ErrorDto<Sinpe_PIN.ResPINSending>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1153,21 +1153,21 @@ namespace PgxAPI.DataBaseTier
                 
                 ElResultadoDeSendTransfer = SendTransfer(CodEmpresa, TransferData, solicitud.UsuarioGenera).Result;
 
-                ErrorDTO.Result = ElResultadoDeSendTransfer;
+                ErrorDto.Result = ElResultadoDeSendTransfer;
             }
             catch (Exception)
             {
-                ErrorDTO.Code = -1;
-                ErrorDTO.Description = "Error al procesar los detalles de la solicitud.";
-                ErrorDTO.Result = new Sinpe_PIN.ResPINSending();
+                ErrorDto.Code = -1;
+                ErrorDto.Description = "Error al procesar los detalles de la solicitud.";
+                ErrorDto.Result = new Sinpe_PIN.ResPINSending();
             }
-            return ErrorDTO;
+            return ErrorDto;
 
         }
 
-        private ErrorDTO<Sinpe_PIN.ResPINSending> SendTransfer(int CodEmpresa, Sinpe_PIN.ReqPINSending TransferData, string vUsuario)
+        private ErrorDto<Sinpe_PIN.ResPINSending> SendTransfer(int CodEmpresa, Sinpe_PIN.ReqPINSending TransferData, string vUsuario)
         {
-            var res = new ErrorDTO<Sinpe_PIN.ResPINSending> 
+            var res = new ErrorDto<Sinpe_PIN.ResPINSending> 
             {
                 Code = 0,
                 Description = "Ok",
@@ -1194,10 +1194,10 @@ namespace PgxAPI.DataBaseTier
             return res;
         }
 
-        private ErrorDTO<int> PIN_OBTENER_TIPO_IDENTIFICACION(int CodEmpresa, int CODIGO_SUGEF)
+        private ErrorDto<int> PIN_OBTENER_TIPO_IDENTIFICACION(int CodEmpresa, int CODIGO_SUGEF)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<int>
+            var response = new ErrorDto<int>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1222,10 +1222,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<string> ConsultarConsecutivoSinpe(int CodEmpresa)
+        private ErrorDto<string> ConsultarConsecutivoSinpe(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<string>
+            var response = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1250,9 +1250,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<Sinpe_TFT.RespuestaRegistro> fxTesEnvioSinpeTiempoReal(TesTransaccion solicitud)
+        private ErrorDto<Sinpe_TFT.RespuestaRegistro> fxTesEnvioSinpeTiempoReal(TesTransaccion solicitud)
         {
-            var resp = new ErrorDTO<Sinpe_TFT.RespuestaRegistro>
+            var resp = new ErrorDto<Sinpe_TFT.RespuestaRegistro>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1368,12 +1368,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="pNotas"></param>
         /// <param name="pTipoTramite"></param>
         /// <returns></returns>
-        public ErrorDTO<bool> GenerarFacturacionElectronica(int CodEmpresa,
+        public ErrorDto<bool> GenerarFacturacionElectronica(int CodEmpresa,
             string pCedula  , 
             string pNumeroDocumento, string pTipoDoc,
             byte pTipoDocEletronico, string pNotas, string pTipoTramite)
         {
-            var response = new ErrorDTO<bool>();
+            var response = new ErrorDto<bool>();
             try
             {
                 bool Respuesta = false;
@@ -1394,11 +1394,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<FactElectronica.FE_JsonEncabezado> ObtieneEncabezado (int CodEmpresa, string pCedula,
+        private ErrorDto<FactElectronica.FE_JsonEncabezado> ObtieneEncabezado (int CodEmpresa, string pCedula,
             string pNumComprobante, string pTipoDoc,
             byte pTipoDocEletronico)
         {
-            var response = new ErrorDTO<FactElectronica.FE_JsonEncabezado>();
+            var response = new ErrorDto<FactElectronica.FE_JsonEncabezado>();
             try
             {
                 var EncabezadoServicio = new FactElectronica.FE_JsonEncabezado();
@@ -1443,10 +1443,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<FE_ParametrosEncabezado> ObtieneParametrosEncabezado(int CodEmpresa)
+        private ErrorDto<FE_ParametrosEncabezado> ObtieneParametrosEncabezado(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO<FE_ParametrosEncabezado> response = new ErrorDTO<FE_ParametrosEncabezado>();
+            ErrorDto<FE_ParametrosEncabezado> response = new ErrorDto<FE_ParametrosEncabezado>();
             response.Result = new FE_ParametrosEncabezado();
             try
             {
@@ -1466,10 +1466,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<short[]> ObtieneMediosPago(int CodEmpresa, string pNumComprobante, string pTipoDocumento)
+        private ErrorDto<short[]> ObtieneMediosPago(int CodEmpresa, string pNumComprobante, string pTipoDocumento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO<short[]> response = new ErrorDTO<short[]>();
+            ErrorDto<short[]> response = new ErrorDto<short[]>();
             response.Result = new short[0];
             try
             {
@@ -1490,9 +1490,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<FactElectronica.FE_JsonReceptor> receptorValidado(int CodEmpresa, string pCedula)
+        private ErrorDto<FactElectronica.FE_JsonReceptor> receptorValidado(int CodEmpresa, string pCedula)
         {
-            var response = new ErrorDTO<FactElectronica.FE_JsonReceptor>();
+            var response = new ErrorDto<FactElectronica.FE_JsonReceptor>();
             try
             {
                 var receptorValServicio = new FactElectronica.FE_JsonReceptor();
@@ -1517,10 +1517,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<FE_Receptor> receptorValidado(int CodEmpresa, string pCedula, string? n)
+        private ErrorDto<FE_Receptor> receptorValidado(int CodEmpresa, string pCedula, string? n)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<FE_Receptor>();
+            var response = new ErrorDto<FE_Receptor>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -1538,9 +1538,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<FactElectronica.FE_JsonLineas[]> ObtieneDetalles(int CodEmpresa, string pNumComprobante, string pTipoDoc, string pTipoTramite)
+        private ErrorDto<FactElectronica.FE_JsonLineas[]> ObtieneDetalles(int CodEmpresa, string pNumComprobante, string pTipoDoc, string pTipoTramite)
         {
-            var response = new ErrorDTO<FactElectronica.FE_JsonLineas[]>();
+            var response = new ErrorDto<FactElectronica.FE_JsonLineas[]>();
             try
             {
                 var ListaLineaServicio = new FactElectronica.FE_JsonLineas[0];
@@ -1562,10 +1562,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<List<FE_Detalles>> ObtieneDetalles(int CodEmpresa, string pNumComprobante, string pTipoDocumento, string pTipoTramite, string? n)
+        private ErrorDto<List<FE_Detalles>> ObtieneDetalles(int CodEmpresa, string pNumComprobante, string pTipoDocumento, string pTipoTramite, string? n)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FE_Detalles>>();
+            var response = new ErrorDto<List<FE_Detalles>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -1597,10 +1597,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<List<FactElectronica.FE_JsonDescuentos>> ObtieneDescuentos(int CodEmpresa ,string pNumComprobante, string pTipoDocumento)
+        private ErrorDto<List<FactElectronica.FE_JsonDescuentos>> ObtieneDescuentos(int CodEmpresa ,string pNumComprobante, string pTipoDocumento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FactElectronica.FE_JsonDescuentos>>();
+            var response = new ErrorDto<List<FactElectronica.FE_JsonDescuentos>>();
             var ListaDescuentoServicio = new List<FactElectronica.FE_JsonDescuentos>();
             var DescuentoServicio = new FactElectronica.FE_JsonDescuentos();
             try
@@ -1631,9 +1631,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<List<FactElectronica.FE_JsonImpuestos>> ObtieneImpuestos(int CodEmpresa, string pNumComprobante, string pTipoDocumento, string pTipoTramite, short pNumeroLinea)
+        private ErrorDto<List<FactElectronica.FE_JsonImpuestos>> ObtieneImpuestos(int CodEmpresa, string pNumComprobante, string pTipoDocumento, string pTipoTramite, short pNumeroLinea)
         {
-            var response = new ErrorDTO<List<FactElectronica.FE_JsonImpuestos>>();
+            var response = new ErrorDto<List<FactElectronica.FE_JsonImpuestos>>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
@@ -1653,9 +1653,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<FactElectronica.FE_ParametrosSistemas> GenerarParametros(string pNumeroComprobante, string pTipoDoc, string pNotas)
+        private ErrorDto<FactElectronica.FE_ParametrosSistemas> GenerarParametros(string pNumeroComprobante, string pTipoDoc, string pNotas)
         {
-            var response = new ErrorDTO<FactElectronica.FE_ParametrosSistemas>();
+            var response = new ErrorDto<FactElectronica.FE_ParametrosSistemas>();
             try
             {
                 if(pNotas == "" && pNotas == null)
@@ -1687,10 +1687,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Nsolicitud"></param>
         /// <returns></returns>
-        private ErrorDTO<TesTransaccion> fxTesConsultaSolicitud(int CodEmpresa, int Nsolicitud)
+        private ErrorDto<TesTransaccion> fxTesConsultaSolicitud(int CodEmpresa, int Nsolicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TesTransaccion>
+            var response = new ErrorDto<TesTransaccion>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1820,10 +1820,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        private ErrorDTO<vInfoSinpe> fxTesConsultaInfoSinpe(int CodEmpresa, string solicitud)
+        private ErrorDto<vInfoSinpe> fxTesConsultaInfoSinpe(int CodEmpresa, string solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<vInfoSinpe>
+            var response = new ErrorDto<vInfoSinpe>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1860,10 +1860,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="idRechazo"></param>
         /// <returns></returns>
-        private ErrorDTO<string> fxTesConsultaMotivo(int CodEmpresa, int idRechazo)
+        private ErrorDto<string> fxTesConsultaMotivo(int CodEmpresa, int idRechazo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<string>
+            var response = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1893,10 +1893,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDTO<bool> fxTesRespuestaSinpe(int CodEmpresa, TesTransaccion datos)
+        private ErrorDto<bool> fxTesRespuestaSinpe(int CodEmpresa, TesTransaccion datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<bool>
+            var response = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1958,9 +1958,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="TipoId"></param>
         /// <returns></returns>
-        private ErrorDTO<int> setCodigoSugefEstandar(int TipoId)
+        private ErrorDto<int> setCodigoSugefEstandar(int TipoId)
         {
-            var response = new ErrorDTO<int>();
+            var response = new ErrorDto<int>();
             try
             {
                 switch (TipoId)
@@ -1997,10 +1997,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodigoReferencia"></param>
         /// <returns></returns>
-        private ErrorDTO<bool> EnviaNotificacionesCajas(int CodEmpresa, string CodigoReferencia)
+        private ErrorDto<bool> EnviaNotificacionesCajas(int CodEmpresa, string CodigoReferencia)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<bool>
+            var resp = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "Ok",

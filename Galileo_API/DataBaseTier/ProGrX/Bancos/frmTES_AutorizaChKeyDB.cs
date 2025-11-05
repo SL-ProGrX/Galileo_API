@@ -22,10 +22,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_AutorizaChKey_Cambiar(AutorizaChKeyData usuario)
+        public ErrorDto Tes_AutorizaChKey_Cambiar(AutorizaChKeyData usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(usuario.CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Clave cambiada correctamente"

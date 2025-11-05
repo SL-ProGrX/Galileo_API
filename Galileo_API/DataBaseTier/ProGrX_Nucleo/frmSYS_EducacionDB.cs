@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
       /// <param name="tipo"></param>
       /// <param name="filtros"></param>
       /// <returns></returns>
-        public ErrorDTO<SysEducacionLista> Sys_EducacionlLista_Obtener(int CodEmpresa,string tipo, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysEducacionLista> Sys_EducacionlLista_Obtener(int CodEmpresa,string tipo, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysEducacionLista>()
+            var result = new ErrorDto<SysEducacionLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -93,10 +93,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_Educacion_Guardar(int CodEmpresa, string usuario, SysEducacionData datos)
+        public ErrorDto Sys_Educacion_Guardar(int CodEmpresa, string usuario, SysEducacionData datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -147,10 +147,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="dato"></param>
         /// <returns></returns>
-        private ErrorDTO Sys_Educacion_Actualizar(int CodEmpresa, string usuario, SysEducacionData dato)
+        private ErrorDto Sys_Educacion_Actualizar(int CodEmpresa, string usuario, SysEducacionData dato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -195,10 +195,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="dato"></param>
         /// <returns></returns>
-        private ErrorDTO Sys_Educacion_Insertar(int CodEmpresa, string usuario, SysEducacionData dato)
+        private ErrorDto Sys_Educacion_Insertar(int CodEmpresa, string usuario, SysEducacionData dato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -245,10 +245,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="cod_Educ"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_Educacion_Eliminar(int CodEmpresa, string usuario, string cod_Educ,string tipo)
+        public ErrorDto Sys_Educacion_Eliminar(int CodEmpresa, string usuario, string cod_Educ,string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -284,10 +284,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="tipoDetalleEduc"></param>
         /// <param name="cod_Educ"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysEducacionDetalleData>> Sys_EducacionDetalle_Consulta(int CodEmpresa, string tipoDetalleEduc, string cod_Educ)
+        public ErrorDto<List<SysEducacionDetalleData>> Sys_EducacionDetalle_Consulta(int CodEmpresa, string tipoDetalleEduc, string cod_Educ)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysEducacionDetalleData>>()
+            var result = new ErrorDto<List<SysEducacionDetalleData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -321,11 +321,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="cod_DetalleEduc"></param>
         /// <param name="accion"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_EducacionDetalle_Asignar(int CodEmpresa, string usuario, string cod_Educ, string cod_DetalleEduc, bool accion)
+        public ErrorDto Sys_EducacionDetalle_Asignar(int CodEmpresa, string usuario, string cod_Educ, string cod_DetalleEduc, bool accion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             string check = accion == true ? "A" : "E";
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

@@ -24,7 +24,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -35,10 +35,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> AF_ComisionesParametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
+        public ErrorDto<TablasListaGenericaModel> AF_ComisionesParametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Description = "Ok",
@@ -101,10 +101,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public ErrorDTO AF_ComisionesParametros_Guardar(int CodEmpresa, int Contabilidad, string Usuario, AF_Comisiones_ParametrosDTO param)
+        public ErrorDto AF_ComisionesParametros_Guardar(int CodEmpresa, int Contabilidad, string Usuario, AF_Comisiones_ParametrosDTO param)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO()
+            var response = new ErrorDto()
             {
                 Code = 0,
                 Description = ""
@@ -208,10 +208,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Contabilidad"></param>
         /// <param name="Parametro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_ComisionesParametros_Busqueda(int CodEmpresa, int Contabilidad, string Parametro)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_ComisionesParametros_Busqueda(int CodEmpresa, int Contabilidad, string Parametro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",

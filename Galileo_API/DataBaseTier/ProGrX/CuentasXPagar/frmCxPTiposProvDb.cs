@@ -16,12 +16,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<TiposProveedorDto>> ObtenerClasificacionProveedores(int CodCliente)
+        public ErrorDto<List<TiposProveedorDto>> ObtenerClasificacionProveedores(int CodCliente)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<List<TiposProveedorDto>>
+            var response = new ErrorDto<List<TiposProveedorDto>>
             {
                 Code = 0
             };
@@ -45,12 +45,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<Proveedor>> ObtenerProveedores(int CodCliente)
+        public ErrorDto<List<Proveedor>> ObtenerProveedores(int CodCliente)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<List<Proveedor>>
+            var response = new ErrorDto<List<Proveedor>>
             {
                 Code = 0
             };
@@ -75,11 +75,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO TipoProveedor_Actualizar(TiposProveedorDto request)
+        public ErrorDto TipoProveedor_Actualizar(TiposProveedorDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(request.CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -107,11 +107,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO TipoProveedor_Eliminar(TiposProveedorDto request)
+        public ErrorDto TipoProveedor_Eliminar(TiposProveedorDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(request.CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -137,12 +137,12 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO TipoProveedor_Insertar(TiposProveedorDto request)
+        public ErrorDto TipoProveedor_Insertar(TiposProveedorDto request)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(request.CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };

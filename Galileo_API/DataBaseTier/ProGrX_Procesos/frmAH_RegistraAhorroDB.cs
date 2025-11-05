@@ -50,10 +50,10 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO Aplicar_Transacciones(int CodEmpresa, TransaccionSIFDTO transaccion)
+        public ErrorDto Aplicar_Transacciones(int CodEmpresa, TransaccionSIFDTO transaccion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -93,12 +93,12 @@ namespace PgxAPI.DataBaseTier
                 //) VALUES(
                 //    @vNumDoc,
                 //    @vTipoDoc,
-                //    GETDATE(), --O la función específica para obtener la fecha actual en tu sistema
+                //    GETDATE(), --O la funciï¿½n especï¿½fica para obtener la fecha actual en tu sistema
                 //    @glodon_Usuario,
                 //    @txtCedula,
                 //    @txtNombre,
                 //    'PAT001',
-                //    @txtMonto, --Asegúrate de que sea un tipo numérico compatible
+                //    @txtMonto, --Asegï¿½rate de que sea un tipo numï¿½rico compatible
                 //    'P',
                 //    @txtCedula,
                 //    '',

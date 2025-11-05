@@ -26,11 +26,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_operadora"></param>
         /// <returns></returns>
-        public ErrorDTO<FndOperadoraDTO> AF_Operadora_Obtener(int CodEmpresa, int cod_operadora)
+        public ErrorDto<FndOperadoraDTO> AF_Operadora_Obtener(int CodEmpresa, int cod_operadora)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<FndOperadoraDTO>
+            var response = new ErrorDto<FndOperadoraDTO>
             {
                 Code = 0,
                 Result = new FndOperadoraDTO()
@@ -63,10 +63,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Operadoras_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Operadoras_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -97,10 +97,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Operadora_Guardar(int codEmpresa, FndOperadoraDTO request)
+        public ErrorDto AF_Operadora_Guardar(int codEmpresa, FndOperadoraDTO request)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO { Code = 0, Description = "OK" };
+            var response = new ErrorDto { Code = 0, Description = "OK" };
 
             try
             {
@@ -160,10 +160,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_operadora"></param>
         /// <returns></returns>
-        public ErrorDTO<List<OperadoraPlanDTO>> FND_OperadoraPlanes_Obtener(int CodEmpresa, int cod_operadora)
+        public ErrorDto<List<OperadoraPlanDTO>> FND_OperadoraPlanes_Obtener(int CodEmpresa, int cod_operadora)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<OperadoraPlanDTO>>
+            var response = new ErrorDto<List<OperadoraPlanDTO>>
             {
                 Code = 0,
                 Result = new List<OperadoraPlanDTO>()
@@ -203,10 +203,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="codEmpresa"></param>
         /// <param name="cod_operadora"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Operadora_Eliminar(int codEmpresa, int cod_operadora)
+        public ErrorDto AF_Operadora_Eliminar(int codEmpresa, int cod_operadora)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO { Code = 0, Description = "OK" };
+            var response = new ErrorDto { Code = 0, Description = "OK" };
 
             try
             {
@@ -234,10 +234,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="operadora"></param>
         /// <param name="scrollCode"></param>
         /// <returns></returns>
-        public ErrorDTO<FndOperadoraDTO> AF_Operadora_Scroll_Obtener(int CodEmpresa, int operadora, int scrollCode)
+        public ErrorDto<FndOperadoraDTO> AF_Operadora_Scroll_Obtener(int CodEmpresa, int operadora, int scrollCode)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<FndOperadoraDTO>
+            var response = new ErrorDto<FndOperadoraDTO>
             {
                 Code = 0,
                 Result = new FndOperadoraDTO()

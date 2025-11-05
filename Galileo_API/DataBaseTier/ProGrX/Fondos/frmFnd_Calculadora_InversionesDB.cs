@@ -21,10 +21,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="TipoInv"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Fnd_Calculadora_Planes_Obtener(int CodEmpresa, int TipoInv)
+        public ErrorDto<List<DropDownListaGenericaModel>> Fnd_Calculadora_Planes_Obtener(int CodEmpresa, int TipoInv)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -63,10 +63,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="CodPlan"></param>
         /// <returns></returns>
-        public ErrorDTO<Fnd_Calculadora_Planes> Fnd_Calculadora_ConsultaPlan_Obtener(int CodEmpresa, string CodPlan)
+        public ErrorDto<Fnd_Calculadora_Planes> Fnd_Calculadora_ConsultaPlan_Obtener(int CodEmpresa, string CodPlan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<Fnd_Calculadora_Planes>
+            var response = new ErrorDto<Fnd_Calculadora_Planes>
             {
                 Code = 0,
                 Description = "Ok",
@@ -99,10 +99,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="CodPlan"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Fnd_Calculadora_PlazosInv_Obtener(int CodEmpresa, string CodPlan)
+        public ErrorDto<List<DropDownListaGenericaModel>> Fnd_Calculadora_PlazosInv_Obtener(int CodEmpresa, string CodPlan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -139,10 +139,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="Plazo"></param>
         /// <param name="CodPlan"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Fnd_Calculadora_Cupones_Obtener(int CodEmpresa, int Plazo, string CodPlan)
+        public ErrorDto<List<DropDownListaGenericaModel>> Fnd_Calculadora_Cupones_Obtener(int CodEmpresa, int Plazo, string CodPlan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -179,10 +179,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="Plazo"></param>
         /// <param name="CodPlan"></param>
         /// <returns></returns>
-        public ErrorDTO<int> Fnd_Calculadora_PlazosDias_Obtener(int CodEmpresa, int Plazo, string CodPlan)
+        public ErrorDto<int> Fnd_Calculadora_PlazosDias_Obtener(int CodEmpresa, int Plazo, string CodPlan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<int>
+            var response = new ErrorDto<int>
             {
                 Code = 0,
                 Description = "Ok"
@@ -227,10 +227,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="PlazoInv"></param>
         /// <param name="CuponId"></param>
         /// <returns></returns>
-        public ErrorDTO<decimal> Fnd_Calculadora_TasaRef_Obtener(int CodEmpresa, int PlazoDias, string Tipo, string Plan, int Operadora, bool chkCupon, int rpTipo, int PlazoInv, int? CuponId )
+        public ErrorDto<decimal> Fnd_Calculadora_TasaRef_Obtener(int CodEmpresa, int PlazoDias, string Tipo, string Plan, int Operadora, bool chkCupon, int rpTipo, int PlazoInv, int? CuponId )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<decimal>
+            var response = new ErrorDto<decimal>
             {
                 Code = 0,
                 Description = "Ok"
@@ -267,11 +267,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="FiltrosCalculadora"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Fnd_Calculadora_Inversiones_FlujoData>> Fnd_Calculadora_Inversiones_Calcular(int CodEmpresa, string FiltrosCalculadora)
+        public ErrorDto<List<Fnd_Calculadora_Inversiones_FlujoData>> Fnd_Calculadora_Inversiones_Calcular(int CodEmpresa, string FiltrosCalculadora)
         {
             var filtros = System.Text.Json.JsonSerializer.Deserialize<Filtros_Calculadora>(FiltrosCalculadora);
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<Fnd_Calculadora_Inversiones_FlujoData>>
+            var response = new ErrorDto<List<Fnd_Calculadora_Inversiones_FlujoData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -336,10 +336,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CalculoId"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Fnd_Calculadora_Inversiones_EmailEnviar(int CodEmpresa, int CalculoId, string Usuario)
+        public ErrorDto Fnd_Calculadora_Inversiones_EmailEnviar(int CodEmpresa, int CalculoId, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",

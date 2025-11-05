@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO ExecParametros(int CodCliente)
+        public ErrorDto ExecParametros(int CodCliente)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };
@@ -45,11 +45,11 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO<List<ParametrosDto>> ObtenerParametros(int CodCliente)
+        public ErrorDto<List<ParametrosDto>> ObtenerParametros(int CodCliente)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<ParametrosDto>>
+            var response = new ErrorDto<List<ParametrosDto>>
             {
                 Code = 0
             };
@@ -75,11 +75,11 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO ActualizarDatosParametro(int CodCliente, string Usuario, string Valor, string Parametro)
+        public ErrorDto ActualizarDatosParametro(int CodCliente, string Usuario, string Valor, string Parametro)
         {
 
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {

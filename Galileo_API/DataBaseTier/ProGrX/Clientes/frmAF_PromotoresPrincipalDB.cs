@@ -18,7 +18,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
             _mSecurity = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Promotores_Lista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Promotores_Lista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -58,10 +58,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Promotores_Usuarios_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Promotores_Usuarios_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -90,10 +90,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="ScrollCode"></param>
         /// <param name="Codigo"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_PromotoresPrincipalDTO> AF_Promotores_Scroll_Obtener(int CodEmpresa, int ScrollCode, int Codigo)
+        public ErrorDto<AF_PromotoresPrincipalDTO> AF_Promotores_Scroll_Obtener(int CodEmpresa, int ScrollCode, int Codigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_PromotoresPrincipalDTO>
+            var response = new ErrorDto<AF_PromotoresPrincipalDTO>
             {
                 Code = 0,
                 Result = new AF_PromotoresPrincipalDTO()
@@ -131,10 +131,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Codigo"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_PromotoresPrincipalDTO> AF_Promotor_Obtener(int CodEmpresa, int Codigo)
+        public ErrorDto<AF_PromotoresPrincipalDTO> AF_Promotor_Obtener(int CodEmpresa, int Codigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_PromotoresPrincipalDTO>
+            var response = new ErrorDto<AF_PromotoresPrincipalDTO>
             {
                 Code = 0,
                 Result = new AF_PromotoresPrincipalDTO()
@@ -165,10 +165,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="CodComision"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_Promotores_CuentasDTO>> AF_Promotores_Cuentas_Obtener(int CodEmpresa, string CodComision)
+        public ErrorDto<List<AF_Promotores_CuentasDTO>> AF_Promotores_Cuentas_Obtener(int CodEmpresa, string CodComision)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AF_Promotores_CuentasDTO>>
+            var response = new ErrorDto<List<AF_Promotores_CuentasDTO>>
             {
                 Code = 0,
                 Result = new List<AF_Promotores_CuentasDTO>()
@@ -201,11 +201,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_Promotores_BancoDTO>> AF_Promotores_Bancos_Obtener(int CodEmpresa, string Usuario)
+        public ErrorDto<List<AF_Promotores_BancoDTO>> AF_Promotores_Bancos_Obtener(int CodEmpresa, string Usuario)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AF_Promotores_BancoDTO>>();
+            var response = new ErrorDto<List<AF_Promotores_BancoDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -238,10 +238,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Estado"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_PromotoresPrincipalLista> AF_Promotores_ListadoConsulta_Obtener(int CodEmpresa, string Tipo, int Estado, FiltrosLazyLoadData filtros)
+        public ErrorDto<AF_PromotoresPrincipalLista> AF_Promotores_ListadoConsulta_Obtener(int CodEmpresa, string Tipo, int Estado, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_PromotoresPrincipalLista>
+            var response = new ErrorDto<AF_PromotoresPrincipalLista>
             {
                 Code = 0,
                 Result = new AF_PromotoresPrincipalLista()
@@ -293,10 +293,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Promotores_Guardar(int CodEmpresa, string Usuario, AF_PromotoresPrincipalDTO Info)
+        public ErrorDto AF_Promotores_Guardar(int CodEmpresa, string Usuario, AF_PromotoresPrincipalDTO Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -426,10 +426,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Codigo"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Promotores_Eliminar(int CodEmpresa, string Usuario, int Codigo)
+        public ErrorDto AF_Promotores_Eliminar(int CodEmpresa, string Usuario, int Codigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

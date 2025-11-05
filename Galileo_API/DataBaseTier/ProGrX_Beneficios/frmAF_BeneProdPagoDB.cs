@@ -19,11 +19,11 @@ namespace PgxAPI.DataBaseTier
             _mBeneficiosDB = new mBeneficiosDB(config);
         }
 
-        public ErrorDTO<AfiBeneProdAsgDataList> AfiBeneProdAsgLista_Obtener(int CodCliente, string cod_beneficio, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<AfiBeneProdAsgDataList> AfiBeneProdAsgLista_Obtener(int CodCliente, string cod_beneficio, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<AfiBeneProdAsgDataList>();
+            var response = new ErrorDto<AfiBeneProdAsgDataList>();
             response.Result = new AfiBeneProdAsgDataList();
             string paginaActual = " ", paginacionActual = " ";
             try
@@ -85,10 +85,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO AfiBeneOtorga_Actualiza(int CodCliente, string beneficio)
+        public ErrorDto AfiBeneOtorga_Actualiza(int CodCliente, string beneficio)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -273,10 +273,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO<List<AfiBeneficiosData>> AfiBeneficios_Obtener(int CodCliente)
+        public ErrorDto<List<AfiBeneficiosData>> AfiBeneficios_Obtener(int CodCliente)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiBeneficiosData>>();
+            var response = new ErrorDto<List<AfiBeneficiosData>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -297,10 +297,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<AfiBeneficiosData>> AfiBeneProdAsg_Obtener(int CodCliente, string consec, string cod_beneficio)
+        public ErrorDto<List<AfiBeneficiosData>> AfiBeneProdAsg_Obtener(int CodCliente, string consec, string cod_beneficio)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiBeneficiosData>>();
+            var response = new ErrorDto<List<AfiBeneficiosData>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);

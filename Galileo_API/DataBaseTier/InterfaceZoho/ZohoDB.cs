@@ -33,9 +33,9 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        private async Task<ErrorDTO<ZohoAuthModel>> ObtenerAuthZohoAsync(int CodEmpresa)
+        private async Task<ErrorDto<ZohoAuthModel>> ObtenerAuthZohoAsync(int CodEmpresa)
         {
-            var response = new ErrorDTO<ZohoAuthModel>();
+            var response = new ErrorDto<ZohoAuthModel>();
             string URLAuth = "https://accounts.zoho.com/oauth/v2/token";
 
             try
@@ -120,9 +120,9 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="entrada"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public async Task<ErrorDTO<string>> TicketRegistro_Guardar(int CodEmpresa, Ticket ticket, string entrada, string usuario)
+        public async Task<ErrorDto<string>> TicketRegistro_Guardar(int CodEmpresa, Ticket ticket, string entrada, string usuario)
         {
-            var response = new ErrorDTO<string>();
+            var response = new ErrorDto<string>();
             //var token = ObtenerAuthZohoAsync();
             try
             {
@@ -262,12 +262,12 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// </summary>
         /// <param name="Id"></param>
         /// <returns></returns>
-        public ErrorDTO EstadoTikcet_Actualizar(string Id)
+        public ErrorDto EstadoTikcet_Actualizar(string Id)
         {
             var jwtSettings = _config.GetSection("JwtSettings");
             int CodEmpresa = Convert.ToInt32(jwtSettings["CodEmpresa"]);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             response.Code = 0;
 
             try
@@ -299,9 +299,9 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="entrada"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public async Task<ErrorDTO> Casos_Sincronizar(int CodEmpresa, DateTime fechaInicio, DateTime fechaCorte, string entrada, string usuario)
+        public async Task<ErrorDto> Casos_Sincronizar(int CodEmpresa, DateTime fechaInicio, DateTime fechaCorte, string entrada, string usuario)
         {
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             var token = await ObtenerAuthZohoAsync(CodEmpresa);
             int pageSize = 10;
             int maxConcurrentRequests = 5; // Máximo de peticiones en paralelo
@@ -418,10 +418,10 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="CodCliente"></param>
         /// <param name="Filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AfiBeneTicketsLista> AfiBeneTickets_Obtener(int CodCliente, string Filtros)
+        public ErrorDto<AfiBeneTicketsLista> AfiBeneTickets_Obtener(int CodCliente, string Filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<AfiBeneTicketsLista>();
+            var response = new ErrorDto<AfiBeneTicketsLista>();
             AfiBeneTicketFiltros jFiltros = JsonConvert.DeserializeObject<AfiBeneTicketFiltros>(Filtros);
             response.Result = new AfiBeneTicketsLista();
             response.Result.total = 0;
@@ -505,10 +505,10 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public async Task<ErrorDTO<List<string>>> CamposCustom_Obtener(int CodEmpresa)
+        public async Task<ErrorDto<List<string>>> CamposCustom_Obtener(int CodEmpresa)
         {
             var token = await ObtenerAuthZohoAsync(CodEmpresa);
-            var response = new ErrorDTO<List<string>>();
+            var response = new ErrorDto<List<string>>();
             response.Result = new List<string>();
 
             if (token.Code == -1) return response;
@@ -568,9 +568,9 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="usuario"></param>
         /// <param name="jsonZoho"></param>
         /// <returns></returns>
-        public ErrorDTO Expediente_Guardar(int CodEmpresa, Ticket ticket, string usuario, ZohoTicketAdd jsonZoho)
+        public ErrorDto Expediente_Guardar(int CodEmpresa, Ticket ticket, string usuario, ZohoTicketAdd jsonZoho)
         {
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             response.Code = 0;
             string tipo_tramite = null;
             Dictionary<string, object> datos = new Dictionary<string, object>();
@@ -631,10 +631,10 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="usuario"></param>
         /// <param name="jsonZoho"></param>
         /// <returns></returns>
-        private ErrorDTO Apremiante_Guardar(int CodEmpresa, Ticket ticket, Dictionary<string, object> datos, string usuario, ZohoTicketAdd jsonZoho)
+        private ErrorDto Apremiante_Guardar(int CodEmpresa, Ticket ticket, Dictionary<string, object> datos, string usuario, ZohoTicketAdd jsonZoho)
         {
-            var response = new ErrorDTO();
-            var respBeneficio = new ErrorDTO<BeneficioGeneralDatos>();
+            var response = new ErrorDto();
+            var respBeneficio = new ErrorDto<BeneficioGeneralDatos>();
             response.Code = 0;
             
             string msjError = "";
@@ -772,10 +772,10 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="usuario"></param>
         /// <param name="jsonZoho"></param>
         /// <returns></returns>
-        private ErrorDTO Sepelios_Guardar(int CodEmpresa, Ticket ticket, Dictionary<string, object> datos, string usuario, ZohoTicketAdd jsonZoho)
+        private ErrorDto Sepelios_Guardar(int CodEmpresa, Ticket ticket, Dictionary<string, object> datos, string usuario, ZohoTicketAdd jsonZoho)
         {
-            var response = new ErrorDTO();
-            var respBeneficio = new ErrorDTO<BeneficioGeneralDatos>();
+            var response = new ErrorDto();
+            var respBeneficio = new ErrorDto<BeneficioGeneralDatos>();
             response.Code = 0;
 
             string msjError = "";
@@ -954,10 +954,10 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="usuario"></param>
         /// <param name="jsonZoho"></param>
         /// <returns></returns>
-        private ErrorDTO Desastres_Guardar(int CodEmpresa, Ticket ticket, Dictionary<string, object> datos, string usuario, ZohoTicketAdd jsonZoho)
+        private ErrorDto Desastres_Guardar(int CodEmpresa, Ticket ticket, Dictionary<string, object> datos, string usuario, ZohoTicketAdd jsonZoho)
         {
-            var response = new ErrorDTO();
-            var respBeneficio = new ErrorDTO<BeneficioGeneralDatos>();
+            var response = new ErrorDto();
+            var respBeneficio = new ErrorDto<BeneficioGeneralDatos>();
             response.Code = 0;
 
             string msjError = "", categoria = "";
@@ -1124,10 +1124,10 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="usuario"></param>
         /// <param name="jsonZoho"></param>
         /// <returns></returns>
-        private ErrorDTO FENA_Guardar(int CodEmpresa, Ticket ticket, Dictionary<string, object> datos, string usuario, ZohoTicketAdd jsonZoho)
+        private ErrorDto FENA_Guardar(int CodEmpresa, Ticket ticket, Dictionary<string, object> datos, string usuario, ZohoTicketAdd jsonZoho)
         {
-            var response = new ErrorDTO();
-            var respBeneficio = new ErrorDTO<BeneficioGeneralDatos>();
+            var response = new ErrorDto();
+            var respBeneficio = new ErrorDto<BeneficioGeneralDatos>();
             response.Code = 0;
             string msjError = "";
             try
@@ -1255,10 +1255,10 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="usuario"></param>
         /// <param name="jsonZoho"></param>
         /// <returns></returns>
-        private ErrorDTO Reconocimientos_Guardar(int CodEmpresa, Ticket ticket, Dictionary<string, object> datos, string usuario, ZohoTicketAdd jsonZoho)
+        private ErrorDto Reconocimientos_Guardar(int CodEmpresa, Ticket ticket, Dictionary<string, object> datos, string usuario, ZohoTicketAdd jsonZoho)
         {
-            var response = new ErrorDTO();
-            var respBeneficio = new ErrorDTO<BeneficioGeneralDatos>();
+            var response = new ErrorDto();
+            var respBeneficio = new ErrorDto<BeneficioGeneralDatos>();
             response.Code = 0;
 
             string msjError = "";
@@ -1520,9 +1520,9 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="visto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<AfiBeneTicketsDatos> MarcaVisto_Actualizar(int CodEmpresa, string ticket, string visto, string usuario)
+        public ErrorDto<AfiBeneTicketsDatos> MarcaVisto_Actualizar(int CodEmpresa, string ticket, string visto, string usuario)
         {
-            var response = new ErrorDTO<AfiBeneTicketsDatos>();
+            var response = new ErrorDto<AfiBeneTicketsDatos>();
             response.Code = 0;
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
@@ -1562,9 +1562,9 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<int> TicketsContador_Obtener(int CodEmpresa)
+        public ErrorDto<int> TicketsContador_Obtener(int CodEmpresa)
         {
-            var response = new ErrorDTO<int>();
+            var response = new ErrorDto<int>();
             response.Code = 0;
             response.Result = 0;
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -1594,9 +1594,9 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// </summary>
         /// <param name="jsonZoho"></param>
         /// <returns></returns>
-        public async Task<ErrorDTO<AfiBeneTicketsDatos>> IncluirTicket_Guardar(ZohoTicketAdd jsonZoho)
+        public async Task<ErrorDto<AfiBeneTicketsDatos>> IncluirTicket_Guardar(ZohoTicketAdd jsonZoho)
         {
-            var response = new ErrorDTO<AfiBeneTicketsDatos>();
+            var response = new ErrorDto<AfiBeneTicketsDatos>();
             var token = await ObtenerAuthZohoAsync(jsonZoho.CodEmpresa);
 
             if (token.Code == -1) return response;
@@ -1627,7 +1627,7 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
                     
         
                    
-                    ErrorDTO error =  Expediente_Guardar(jsonZoho.CodEmpresa, ticketJson, jsonZoho.usuario, jsonZoho);
+                    ErrorDto error =  Expediente_Guardar(jsonZoho.CodEmpresa, ticketJson, jsonZoho.usuario, jsonZoho);
 
                     if (error.Code == -1)
                     {
@@ -1673,9 +1673,9 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="CodEmpresa"></param>
         /// <param name="ticket"></param>
         /// <returns></returns>
-        private ErrorDTO<AfiBeneTicketsDatos> TicketActualizado(int CodEmpresa, string ticket)
+        private ErrorDto<AfiBeneTicketsDatos> TicketActualizado(int CodEmpresa, string ticket)
         {
-            ErrorDTO<AfiBeneTicketsDatos> response = new ErrorDTO<AfiBeneTicketsDatos>();
+            ErrorDto<AfiBeneTicketsDatos> response = new ErrorDto<AfiBeneTicketsDatos>();
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
@@ -1705,9 +1705,9 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="error"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        private ErrorDTO ActualizaError(int CodEmpresa, string ticket, string error, string usuario)
+        private ErrorDto ActualizaError(int CodEmpresa, string ticket, string error, string usuario)
         {
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -1736,9 +1736,9 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public async Task<ErrorDTO> CargaTickets_Pendientes(int CodEmpresa)
+        public async Task<ErrorDto> CargaTickets_Pendientes(int CodEmpresa)
         {
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             List<AfiBeneTicketsDatos> tikets = new List<AfiBeneTicketsDatos>();
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -1786,10 +1786,10 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
         /// <param name="llave2"></param>
         /// <param name="cod_beneficio"></param>
         /// <returns></returns>
-        private async Task<ErrorDTO> BuscaArchivos(int CodEmpresa, string ticket, string usuario, 
+        private async Task<ErrorDto> BuscaArchivos(int CodEmpresa, string ticket, string usuario, 
             string llave1, string llave2, string cod_beneficio)
         {
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             var token = await ObtenerAuthZohoAsync(CodEmpresa);
 
             if (token.Code == -1) return response;

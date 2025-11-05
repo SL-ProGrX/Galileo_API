@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<BeneficioGrupoDataLista> BeneficioGrupoLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<BeneficioGrupoDataLista> BeneficioGrupoLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<BeneficioGrupoDataLista>();
+            var response = new ErrorDto<BeneficioGrupoDataLista>();
             response.Result = new BeneficioGrupoDataLista();
             response.Code = 0;
             try
@@ -79,10 +79,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtro"></param>
         /// <param name="cod_grupo"></param>
         /// <returns></returns>
-        public ErrorDTO<BeneficioUsuariosDataLista> BeneficioUsuariosLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string cod_grupo)
+        public ErrorDto<BeneficioUsuariosDataLista> BeneficioUsuariosLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string cod_grupo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<BeneficioUsuariosDataLista>();
+            var response = new ErrorDto<BeneficioUsuariosDataLista>();
             response.Result = new BeneficioUsuariosDataLista();
             response.Code = 0;
             try
@@ -137,11 +137,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="cod_grupo"></param>
         /// <returns></returns>
-        public ErrorDTO GrupoUsuario_Insertar(int CodCliente, string usuario, string cod_grupo)
+        public ErrorDto GrupoUsuario_Insertar(int CodCliente, string usuario, string cod_grupo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -173,11 +173,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="cod_grupo"></param>
         /// <returns></returns>
-        public ErrorDTO GrupoUsuario_Eliminar(int CodCliente, string usuario, string cod_grupo)
+        public ErrorDto GrupoUsuario_Eliminar(int CodCliente, string usuario, string cod_grupo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -206,11 +206,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_grupo"></param>
         /// <param name="descripcion"></param>
         /// <returns></returns>
-        private ErrorDTO BeneficioGrupo_Insertar(int CodCliente, string cod_grupo, string descripcion)
+        private ErrorDto BeneficioGrupo_Insertar(int CodCliente, string cod_grupo, string descripcion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -250,11 +250,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_grupo"></param>
         /// <param name="descripcion"></param>
         /// <returns></returns>
-        private ErrorDTO BeneficioGrupo_Actualizar(int CodCliente, string cod_grupo, string descripcion)
+        private ErrorDto BeneficioGrupo_Actualizar(int CodCliente, string cod_grupo, string descripcion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -306,10 +306,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<BeneficioGrupoData>> BeneficioGrupoData_Obtener(int CodCliente)
+        public ErrorDto<List<BeneficioGrupoData>> BeneficioGrupoData_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<BeneficioGrupoData>>();
+            var response = new ErrorDto<List<BeneficioGrupoData>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -333,9 +333,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="grupo"></param>
         /// <returns></returns>
-        public ErrorDTO BeneficioGrupo_Guardar(int CodCliente, BeneficioGrupoData grupo)
+        public ErrorDto BeneficioGrupo_Guardar(int CodCliente, BeneficioGrupoData grupo)
         {
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             if (!BeneficioGrupo_Existe(CodCliente, grupo.cod_grupo))
             {

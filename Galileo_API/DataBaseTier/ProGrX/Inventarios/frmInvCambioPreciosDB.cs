@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<List<FacturaPrecioDetalleDTO>> OrdenesDetalle_Obtener(int CodEmpresa, string CodFactura, int? CodProveedor)
+        public ErrorDto<List<FacturaPrecioDetalleDTO>> OrdenesDetalle_Obtener(int CodEmpresa, string CodFactura, int? CodProveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FacturaPrecioDetalleDTO>>();
+            var response = new ErrorDto<List<FacturaPrecioDetalleDTO>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -39,11 +39,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO PreciosFactura_Actualiza(int CodEmpresa, FacturaPrecioDetalleDTO request)
+        public ErrorDto PreciosFactura_Actualiza(int CodEmpresa, FacturaPrecioDetalleDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -68,11 +68,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CambiosPrecios_Actualizar(int CodEmpresa, PrecioExcelDTO precio)
+        public ErrorDto CambiosPrecios_Actualizar(int CodEmpresa, PrecioExcelDTO precio)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

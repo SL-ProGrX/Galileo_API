@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="tipoCambio"></param>
         /// <returns></returns>
-        public ErrorDTO<TesTipoCambioDivisasTipoCambio> Tes_TipoCambio_Obtener(TesTipoCambioConsulta tipoCambio)
+        public ErrorDto<TesTipoCambioDivisasTipoCambio> Tes_TipoCambio_Obtener(TesTipoCambioConsulta tipoCambio)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(tipoCambio.CodEmpresa);
-            var response = new ErrorDTO<TesTipoCambioDivisasTipoCambio>
+            var response = new ErrorDto<TesTipoCambioDivisasTipoCambio>
             {
                 Code = 0,
                 Description = "OK",
@@ -107,9 +107,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="pTipoCambio"></param>
         /// <returns></returns>
-        public ErrorDTO<double> Tes_TipoCambio_MontoCambiar(decimal pTipoCambio)
+        public ErrorDto<double> Tes_TipoCambio_MontoCambiar(decimal pTipoCambio)
         {
-            var response = new ErrorDTO<double>
+            var response = new ErrorDto<double>
             {
                 Code = 0,
                 Description = "OK",
@@ -134,9 +134,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_divisa"></param>
         /// <returns></returns>
-        public ErrorDTO<string> Tes_tipoCambioDivisa_Obterner(int CodEmpresa, string cod_divisa)
+        public ErrorDto<string> Tes_tipoCambioDivisa_Obterner(int CodEmpresa, string cod_divisa)
         {
-            var response = new ErrorDTO<string>
+            var response = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "OK",

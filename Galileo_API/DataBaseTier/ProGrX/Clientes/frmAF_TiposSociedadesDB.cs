@@ -17,7 +17,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
             _mSecurity = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_TiposSociedadesLista> AF_TiposSociedades_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<AF_TiposSociedadesLista> AF_TiposSociedades_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_TiposSociedadesLista>
+            var response = new ErrorDto<AF_TiposSociedadesLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -87,10 +87,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDTO AF_TiposSociedades_Guardar(int CodEmpresa, string Usuario, AF_TiposSociedadesDTO Info)
+        public ErrorDto AF_TiposSociedades_Guardar(int CodEmpresa, string Usuario, AF_TiposSociedadesDTO Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -172,10 +172,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="CodSociedad"></param>
         /// <returns></returns>
-        public ErrorDTO AF_TiposSociedades_Eliminar(int CodEmpresa, string Usuario, string CodSociedad)
+        public ErrorDto AF_TiposSociedades_Eliminar(int CodEmpresa, string Usuario, string CodSociedad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

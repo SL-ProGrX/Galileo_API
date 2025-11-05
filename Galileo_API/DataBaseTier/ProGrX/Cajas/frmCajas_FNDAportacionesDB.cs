@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="codCaja"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Cajas_Documentos_Obtener(int codEmpresa, string codCaja)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_Documentos_Obtener(int codEmpresa, string codCaja)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -70,10 +70,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Fondos_Aporte_Aplicar(int codEmpresa, FondosAporteAplicarDTO request)
+        public ErrorDto Fondos_Aporte_Aplicar(int codEmpresa, FondosAporteAplicarDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -85,7 +85,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                // ?? 0. Obtener cod_oficina según usuario y caja
+                // ?? 0. Obtener cod_oficina segï¿½n usuario y caja
                 string sqlOficina = @"
                             SELECT TOP 1 C.cod_oficina
                             FROM CAJAS_USUARIOS Cu
@@ -232,17 +232,17 @@ namespace PgxAPI.DataBaseTier
 
 
         /// <summary>
-        /// Verifica si el aporte requiere autorización
+        /// Verifica si el aporte requiere autorizaciï¿½n
         /// </summary>
         /// <param name="codempresa"></param>
         /// <param name="plan"></param>
         /// <param name="usuario"></param>
         /// <param name="aporte"></param>
         /// <returns></returns>
-        public ErrorDTO<fondosRequiereAutorizacionDTO> Fondos_Aporte_RequiereAutorizacion(int codempresa, string plan, string usuario, decimal aporte)
+        public ErrorDto<fondosRequiereAutorizacionDTO> Fondos_Aporte_RequiereAutorizacion(int codempresa, string plan, string usuario, decimal aporte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codempresa);
-            var response = new ErrorDTO<fondosRequiereAutorizacionDTO>
+            var response = new ErrorDto<fondosRequiereAutorizacionDTO>
             {
                 Code = 0,
                 Description = "ok",
@@ -265,7 +265,7 @@ namespace PgxAPI.DataBaseTier
                 //if (data.autorizado == 0)
                 //{
                 //    response.Code = -1;
-                //    response.Description = "el usuario no tiene nivel de autorización para este plan";
+                //    response.Description = "el usuario no tiene nivel de autorizaciï¿½n para este plan";
                 //    return response;
                 //}
 
@@ -276,28 +276,28 @@ namespace PgxAPI.DataBaseTier
                 };
 
                 response.Description = response.Result.requiere
-                    ? "el aporte excede el monto permitido. requiere autorización"
-                    : "el aporte está dentro del rango permitido. no requiere autorización";
+                    ? "el aporte excede el monto permitido. requiere autorizaciï¿½n"
+                    : "el aporte estï¿½ dentro del rango permitido. no requiere autorizaciï¿½n";
             }
             catch (Exception ex)
             {
                 response.Code = -1;
-                response.Description = $"error al validar autorización: {ex.Message}";
+                response.Description = $"error al validar autorizaciï¿½n: {ex.Message}";
             }
 
             return response;
         }
 
         /// <summary>
-        /// Verifica el estado de la gestión
+        /// Verifica el estado de la gestiï¿½n
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="gestionId"></param>
         /// <returns></returns>
-        public ErrorDTO<GestionEstadoDTO> Fondos_Gestion_Estado(int codEmpresa, int gestionId)
+        public ErrorDto<GestionEstadoDTO> Fondos_Gestion_Estado(int codEmpresa, int gestionId)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO<GestionEstadoDTO>
+            var response = new ErrorDto<GestionEstadoDTO>
             {
                 Code = 0,
                 Description = "Ok",
@@ -323,22 +323,22 @@ namespace PgxAPI.DataBaseTier
             catch (Exception ex)
             {
                 response.Code = -1;
-                response.Description = $"Error al consultar estado de gestión: {ex.Message}";
+                response.Description = $"Error al consultar estado de gestiï¿½n: {ex.Message}";
             }
 
             return response;
         }
 
         /// <summary>
-        ///  Registra la gestión
+        ///  Registra la gestiï¿½n
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO<fondosGestionRegistroDTO> fondos_gestion_registro(int CodEmpresa, fondosGestionRegistroAddDTO request)
+        public ErrorDto<fondosGestionRegistroDTO> fondos_gestion_registro(int CodEmpresa, fondosGestionRegistroAddDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<fondosGestionRegistroDTO>
+            var response = new ErrorDto<fondosGestionRegistroDTO>
             {
                 Code = 0,
                 Description = "ok",
@@ -368,7 +368,7 @@ namespace PgxAPI.DataBaseTier
                 if (result == null)
                 {
                     response.Code = -1;
-                    response.Description = "no se pudo registrar la gestión";
+                    response.Description = "no se pudo registrar la gestiï¿½n";
                 }
                 else
                 {
@@ -378,7 +378,7 @@ namespace PgxAPI.DataBaseTier
             catch (Exception ex)
             {
                 response.Code = -1;
-                response.Description = $"error en registro de gestión: {ex.Message}";
+                response.Description = $"error en registro de gestiï¿½n: {ex.Message}";
             }
 
             return response;
@@ -393,10 +393,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="plan"></param>
         /// <param name="contrato"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FndSubCuentasDTO>> SubCuentas_Obtener(int CodEmpresa, string operadora, string plan, int contrato)
+        public ErrorDto<List<FndSubCuentasDTO>> SubCuentas_Obtener(int CodEmpresa, string operadora, string plan, int contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FndSubCuentasDTO>>
+            var response = new ErrorDto<List<FndSubCuentasDTO>>
             {
                 Code = 0,
                 Description = "ok",
@@ -455,7 +455,7 @@ namespace PgxAPI.DataBaseTier
                         "DP" => "CS_DEPOSITO",
                         "ND" => "CS_NOTA_DEBITO",
                         "NC" => "CS_NOTA_CREDITO",
-                        _ => throw new Exception($"Tipo de documento {vTipo} no válido")
+                        _ => throw new Exception($"Tipo de documento {vTipo} no vï¿½lido")
                     };
 
                     // ?? Leer el consecutivo actual
@@ -470,7 +470,7 @@ namespace PgxAPI.DataBaseTier
                 }
                 else
                 {
-                    // ?? Control de documentos versión 2 (SP)
+                    // ?? Control de documentos versiï¿½n 2 (SP)
                     var consecutivo = connection.QueryFirstOrDefault<long>(
                         "exec spSIFDocsConsecutivo @Tipo",
                         new { Tipo = vTipo },

@@ -18,10 +18,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<EnlaceCreditoLista> EnlacesCreditoConsultar(int codEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<EnlaceCreditoLista> EnlacesCreditoConsultar(int codEmpresa, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var datos = new ErrorDTO<EnlaceCreditoLista>();
+            var datos = new ErrorDto<EnlaceCreditoLista>();
             datos.Result = new EnlaceCreditoLista();
             datos.Result.total = 0;
 
@@ -74,7 +74,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<List<CodigoCreditoDto>> CodigoCredito_ObtenerTodos(int codEmpresa, string cod_institucion)
+        public ErrorDto<List<CodigoCreditoDto>> CodigoCredito_ObtenerTodos(int codEmpresa, string cod_institucion)
         {
 
             PgxClienteDTO pgxClienteDto;
@@ -90,7 +90,7 @@ namespace PgxAPI.DataBaseTier
                                   $"Initial Catalog={nombreBDCore};" +
                                   $"Integrated Security=False;User Id={userId};Password={pass};";
 
-            var resp = new ErrorDTO<List<CodigoCreditoDto>>();
+            var resp = new ErrorDto<List<CodigoCreditoDto>>();
 
             try
             {
@@ -117,7 +117,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO EnlaceCredito_Actualizar(EnlaceCreditoDto request)
+        public ErrorDto EnlaceCredito_Actualizar(EnlaceCreditoDto request)
         {
             PgxClienteDTO pgxClienteDto;
             Seguridad_PortalDB seguridadPortal = new Seguridad_PortalDB(_config);
@@ -132,7 +132,7 @@ namespace PgxAPI.DataBaseTier
                                   $"Initial Catalog={nombreBDCore};" +
                                   $"Integrated Security=False;User Id={userId};Password={pass};";
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
 
             try

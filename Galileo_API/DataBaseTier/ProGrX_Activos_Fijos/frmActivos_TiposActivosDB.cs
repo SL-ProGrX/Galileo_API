@@ -25,12 +25,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosTiposActivosLista> Activos_TiposActivosLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<ActivosTiposActivosLista> Activos_TiposActivosLista_Obtener(int CodEmpresa, string filtros)
         {
             var vfiltro = JsonConvert.DeserializeObject<ActivosTiposActivosFiltros>(filtros);
             var connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var resp = new ErrorDTO<ActivosTiposActivosLista>
+            var resp = new ErrorDto<ActivosTiposActivosLista>
             {
                 Code = 0,
                 Description = "",
@@ -90,10 +90,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo_activo"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_TiposActivosExiste_Obtener(int CodEmpresa, string tipo_activo)
+        public ErrorDto Activos_TiposActivosExiste_Obtener(int CodEmpresa, string tipo_activo)
         {
             var connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "" };
+            var resp = new ErrorDto { Code = 0, Description = "" };
 
             try
             {
@@ -121,10 +121,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo_activo"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosTiposActivosData> Activos_TiposActivos_Obtener(int CodEmpresa, string tipo_activo)
+        public ErrorDto<ActivosTiposActivosData> Activos_TiposActivos_Obtener(int CodEmpresa, string tipo_activo)
         {
             var connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<ActivosTiposActivosData> { Code = 0, Description = "" };
+            var resp = new ErrorDto<ActivosTiposActivosData> { Code = 0, Description = "" };
 
             try
             {
@@ -197,10 +197,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="scroll"></param>
         /// <param name="tipo_activo"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosTiposActivosData> Activos_TiposActivos_Scroll(int CodEmpresa, int scroll, string? tipo_activo)
+        public ErrorDto<ActivosTiposActivosData> Activos_TiposActivos_Scroll(int CodEmpresa, int scroll, string? tipo_activo)
         {
             var connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<ActivosTiposActivosData> { Code = 0, Description = "" };
+            var resp = new ErrorDto<ActivosTiposActivosData> { Code = 0, Description = "" };
 
             try
             {
@@ -283,15 +283,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_TiposActivos_Guardar(int CodEmpresa, ActivosTiposActivosData data)
+        public ErrorDto Activos_TiposActivos_Guardar(int CodEmpresa, ActivosTiposActivosData data)
         {
             var connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "" };
+            var resp = new ErrorDto { Code = 0, Description = "" };
 
             try
             {
                 if (data == null)
-                    return new ErrorDTO { Code = -1, Description = "Datos no proporcionados." };
+                    return new ErrorDto { Code = -1, Description = "Datos no proporcionados." };
 
                 var errores = new List<string>();
                 if (string.IsNullOrWhiteSpace(data.tipo_activo)) errores.Add("Debe indicar el Tipo de Activo.");
@@ -305,7 +305,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     errores.Add("Vida Útil debe ser un número entero.");
 
                 if (errores.Count > 0)
-                    return new ErrorDTO { Code = -1, Description = string.Join(" | ", errores) };
+                    return new ErrorDto { Code = -1, Description = string.Join(" | ", errores) };
 
                 using var cn = new SqlConnection(connStr);
 
@@ -315,13 +315,13 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 if (data.isNew)
                 {
                     if (existe > 0)
-                        return new ErrorDTO { Code = -2, Description = $"El Tipo de Activo {data.tipo_activo.ToUpper()} ya existe." };
+                        return new ErrorDto { Code = -2, Description = $"El Tipo de Activo {data.tipo_activo.ToUpper()} ya existe." };
                     return Activos_TiposActivos_Insertar(CodEmpresa, data);
                 }
                 else
                 {
                     if (existe == 0)
-                        return new ErrorDTO { Code = -2, Description = $"El Tipo de Activo {data.tipo_activo.ToUpper()} no existe." };
+                        return new ErrorDto { Code = -2, Description = $"El Tipo de Activo {data.tipo_activo.ToUpper()} no existe." };
                     return Activos_TiposActivos_Actualizar(CodEmpresa, data);
                 }
             }
@@ -338,10 +338,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_TiposActivos_Insertar(int CodEmpresa, ActivosTiposActivosData data)
+        private ErrorDto Activos_TiposActivos_Insertar(int CodEmpresa, ActivosTiposActivosData data)
         {
             var connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "" };
+            var resp = new ErrorDto { Code = 0, Description = "" };
 
             try
             {
@@ -396,10 +396,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_TiposActivos_Actualizar(int CodEmpresa, ActivosTiposActivosData data)
+        private ErrorDto Activos_TiposActivos_Actualizar(int CodEmpresa, ActivosTiposActivosData data)
         {
             var connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "" };
+            var resp = new ErrorDto { Code = 0, Description = "" };
 
             try
             {
@@ -460,10 +460,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="tipo_activo"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_TiposActivos_Eliminar(int CodEmpresa, string usuario, string tipo_activo)
+        public ErrorDto Activos_TiposActivos_Eliminar(int CodEmpresa, string usuario, string tipo_activo)
         {
             var connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -499,10 +499,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_TiposActivos_MetodosDepreciacion_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_TiposActivos_MetodosDepreciacion_Obtener(int CodEmpresa)
         {
             var connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -539,9 +539,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// Obtiene una lista de Tipos de vida util que se guardan en la tabla de tipos de activo.
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_TiposActivos_TipoVidaUtil_Obtener()
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_TiposActivos_TipoVidaUtil_Obtener()
         {
-            return new ErrorDTO<List<DropDownListaGenericaModel>>
+            return new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -558,10 +558,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="contabilidad"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_TiposActivos_TiposAsientos_Obtener(int CodEmpresa, int contabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_TiposActivos_TiposAsientos_Obtener(int CodEmpresa, int contabilidad)
         {
             var connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "",

@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TesAutorizadoresLista> Tes_AutorizadoresUsuarioLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TesAutorizadoresLista> Tes_AutorizadoresUsuarioLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<TesAutorizadoresLista>()
+            var result = new ErrorDto<TesAutorizadoresLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -87,10 +87,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="nombre"></param>
         /// <param name="scroll"></param>
         /// <returns></returns>
-        public ErrorDTO<TesAutorizadoresDTO> Tes_AutorizadoresUsuarioBuscar_scroll(int CodEmpresa, string nombre, int? scroll)
+        public ErrorDto<TesAutorizadoresDTO> Tes_AutorizadoresUsuarioBuscar_scroll(int CodEmpresa, string nombre, int? scroll)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TesAutorizadoresDTO>
+            var response = new ErrorDto<TesAutorizadoresDTO>
             {
                 Code = 0,
                 Description = "Ok",
@@ -138,10 +138,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="nombre"></param>
         /// <returns></returns>
-        public ErrorDTO<TesAutorizadoresDTO> Tes_AutorizadoresUsuario_Obtener(int CodEmpresa, string nombre)
+        public ErrorDto<TesAutorizadoresDTO> Tes_AutorizadoresUsuario_Obtener(int CodEmpresa, string nombre)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TesAutorizadoresDTO>
+            var response = new ErrorDto<TesAutorizadoresDTO>
             {
                 Code = 0,
                 Description = "Ok",
@@ -179,10 +179,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="autorizador"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_Autorizadores_Guardar(int CodEmpresa,string usuario, TesAutorizadoresDTO autorizador)
+        public ErrorDto Tes_Autorizadores_Guardar(int CodEmpresa,string usuario, TesAutorizadoresDTO autorizador)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -257,9 +257,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="autorizador"></param>
         /// <returns></returns>
-        private ErrorDTO fxValida(TesAutorizadoresDTO autorizador)
+        private ErrorDto fxValida(TesAutorizadoresDTO autorizador)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = ""
@@ -312,10 +312,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="nombre"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_Autorizadores_Eliminar(int CodEmpresa, string nombre, string usuario)
+        public ErrorDto Tes_Autorizadores_Eliminar(int CodEmpresa, string nombre, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

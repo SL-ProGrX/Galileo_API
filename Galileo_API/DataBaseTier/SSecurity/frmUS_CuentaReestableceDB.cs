@@ -18,15 +18,15 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
 
 
-        public ErrorDTO UsuarioCuentaReestablecer(CuentaReestablecer datos)
+        public ErrorDto UsuarioCuentaReestablecer(CuentaReestablecer datos)
         {
-            ErrorDTO resultado = new ErrorDTO();
+            ErrorDto resultado = new ErrorDto();
             try
             {
                 if (VerifyPasswordHistory(datos.Nuevo, datos.UsuarioId))

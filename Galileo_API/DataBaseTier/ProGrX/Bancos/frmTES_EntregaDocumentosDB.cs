@@ -18,7 +18,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaBancosDocumentos>> Tes_Bancos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaBancosDocumentos>> Tes_Bancos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaBancosDocumentos>>
+            var response = new ErrorDto<List<DropDownListaBancosDocumentos>>
             {
                 Code = 0,
                 Result = new List<DropDownListaBancosDocumentos>()
@@ -59,10 +59,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_Banco"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaTiposDocumentos>> Tes_Tipos_Obtener(int CodEmpresa, string cod_Banco)
+        public ErrorDto<List<DropDownListaTiposDocumentos>> Tes_Tipos_Obtener(int CodEmpresa, string cod_Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaTiposDocumentos>>
+            var response = new ErrorDto<List<DropDownListaTiposDocumentos>>
             {
                 Code = 0,
                 Result = new List<DropDownListaTiposDocumentos>()
@@ -104,12 +104,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<EntregaDocumentoPendientesDTO>> listaPendientes_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<List<EntregaDocumentoPendientesDTO>> listaPendientes_Obtener(int CodEmpresa, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             TES_EntregaDocumentosFiltros filtro = JsonConvert.DeserializeObject<TES_EntregaDocumentosFiltros>(filtros) ?? new TES_EntregaDocumentosFiltros();
 
-            var response = new ErrorDTO<List<EntregaDocumentoPendientesDTO>>
+            var response = new ErrorDto<List<EntregaDocumentoPendientesDTO>>
             {
                 Code = 0,
                 Result = new List<EntregaDocumentoPendientesDTO>()
@@ -170,7 +170,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="estadoCheck"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO TES_documentosPendientes_Guardar(int CodEmpresa, string trasladoLista, string estadoCheck, string usuario)
+        public ErrorDto TES_documentosPendientes_Guardar(int CodEmpresa, string trasladoLista, string estadoCheck, string usuario)
         {
             List<int> lista;
 
@@ -186,7 +186,7 @@ namespace PgxAPI.DataBaseTier
                     lista = new List<int>();
             }
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };

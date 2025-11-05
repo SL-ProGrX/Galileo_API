@@ -26,11 +26,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="estado"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfiAfiliacionControlDTO>> AFI_Afiliaciones_Consulta_Recepcion(int CodEmpresa, string estado, string filtro)
+        public ErrorDto<List<AfiAfiliacionControlDTO>> AFI_Afiliaciones_Consulta_Recepcion(int CodEmpresa, string estado, string filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<AfiAfiliacionControlDTO>>
+            var response = new ErrorDto<List<AfiAfiliacionControlDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -66,11 +66,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="estado"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfiAfiliacionControlDTO>> AFI_Afiliaciones_Consulta_Recibidas(int CodEmpresa, string estado, string filtro)
+        public ErrorDto<List<AfiAfiliacionControlDTO>> AFI_Afiliaciones_Consulta_Recibidas(int CodEmpresa, string estado, string filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<AfiAfiliacionControlDTO>>
+            var response = new ErrorDto<List<AfiAfiliacionControlDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -106,11 +106,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="estado"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfiAfiliacionControlDTO>> AFI_Afiliaciones_Consulta_Pendientes(int CodEmpresa, string estado, string filtro)
+        public ErrorDto<List<AfiAfiliacionControlDTO>> AFI_Afiliaciones_Consulta_Pendientes(int CodEmpresa, string estado, string filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<AfiAfiliacionControlDTO>>
+            var response = new ErrorDto<List<AfiAfiliacionControlDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -145,9 +145,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
        /// </summary>
        /// <param name="CodEmpresa"></param>
        /// <returns></returns>
-        public ErrorDTO<List<AfBoletasAfiliacion>> AF_CR_BoletasAfiliacion_Obtener(int CodEmpresa)
+        public ErrorDto<List<AfBoletasAfiliacion>> AF_CR_BoletasAfiliacion_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<AfBoletasAfiliacion>>()
+            var result = new ErrorDto<List<AfBoletasAfiliacion>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -180,10 +180,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="boleta"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AFI_Afiliacion_Recepcion_Aplica(int codEmpresa, int boleta, string usuario)
+        public ErrorDto AFI_Afiliacion_Recepcion_Aplica(int codEmpresa, int boleta, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -222,9 +222,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="nota"></param>
         /// <returns></returns>
-        public ErrorDTO AFI_Afiliacion_Revision_Aplica(int codEmpresa, int consec, string estado, string usuario, string nota)
+        public ErrorDto AFI_Afiliacion_Revision_Aplica(int codEmpresa, int consec, string estado, string usuario, string nota)
         {
-            var response = new ErrorDTO { Code = 0, Description = "Ok" };
+            var response = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
@@ -259,10 +259,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="boleta"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfiEtiquetaDTO>> AFI_Afiliaciones_Etiquetas_Consulta(int CodEmpresa, int boleta)
+        public ErrorDto<List<AfiEtiquetaDTO>> AFI_Afiliaciones_Etiquetas_Consulta(int CodEmpresa, int boleta)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AfiEtiquetaDTO>> { Code = 0, Result = new List<AfiEtiquetaDTO>() };
+            var response = new ErrorDto<List<AfiEtiquetaDTO>> { Code = 0, Result = new List<AfiEtiquetaDTO>() };
 
             try
             {
@@ -289,10 +289,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="nota"></param>
         /// <returns></returns>
-        public ErrorDTO AFI_Afiliacion_Revision_Reversar(int CodEmpresa, int boleta, string usuario, string nota)
+        public ErrorDto AFI_Afiliacion_Revision_Reversar(int CodEmpresa, int boleta, string usuario, string nota)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO { Code = 0, Description = "Ok" };
+            var response = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -336,10 +336,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="boleta"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AFI_Afiliacion_Recepcion_Agregar(int CodEmpresa, int boleta, string usuario)
+        public ErrorDto AFI_Afiliacion_Recepcion_Agregar(int CodEmpresa, int boleta, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO { Code = 0, Description = "Ok" };
+            var response = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -368,9 +368,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfBoletasAfiliacion>> AF_BoletasAfiliacionLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<AfBoletasAfiliacion>> AF_BoletasAfiliacionLista_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<AfBoletasAfiliacion>>()
+            var result = new ErrorDto<List<AfBoletasAfiliacion>>()
             {
                 Code = 0,
                 Description = "Ok",

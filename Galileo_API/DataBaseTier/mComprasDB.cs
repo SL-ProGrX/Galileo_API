@@ -67,11 +67,11 @@ namespace PgxAPI.DataBaseTier
             return vCambia;
         }
 
-        public ErrorDTO sbCprOrdenesDespacho(int CodEmpresa, string vOrden)
+        public ErrorDto sbCprOrdenesDespacho(int CodEmpresa, string vOrden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var query = string.Empty;
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -127,11 +127,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO<UnidadesDTOList> UnidadesObtener(int CodEmpresa, string? filtros)
+        public ErrorDto<UnidadesDTOList> UnidadesObtener(int CodEmpresa, string? filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             mComprasFiltros vfiltro = JsonConvert.DeserializeObject<mComprasFiltros>(filtros);
-            var response = new ErrorDTO<UnidadesDTOList>();
+            var response = new ErrorDto<UnidadesDTOList>();
             response.Result = new UnidadesDTOList();
             response.Code = 0;
             try
@@ -170,11 +170,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<CentroCostoDTOList> CentroCostosObtener(int CodEmpresa, string? filtros)
+        public ErrorDto<CentroCostoDTOList> CentroCostosObtener(int CodEmpresa, string? filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             mComprasFiltros vfiltro = JsonConvert.DeserializeObject<mComprasFiltros>(filtros);
-            var response = new ErrorDTO<CentroCostoDTOList>();
+            var response = new ErrorDto<CentroCostoDTOList>();
             response.Result = new CentroCostoDTOList();
             response.Code = 0;
             try
@@ -213,10 +213,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<CatalogoDTO>> CatalogoCompras_Obtener(int CodEmpresa, string tipo)
+        public ErrorDto<List<CatalogoDTO>> CatalogoCompras_Obtener(int CodEmpresa, string tipo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CatalogoDTO>>();
+            var response = new ErrorDto<List<CatalogoDTO>>();
             response.Code = 0;
             try
             {
@@ -237,10 +237,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO FacturaOrdenes_Actualizar(int CodEmpresa, string cod_factura, int cod_proveedor)
+        public ErrorDto FacturaOrdenes_Actualizar(int CodEmpresa, string cod_factura, int cod_proveedor)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             response.Code = 0;
             try
             {

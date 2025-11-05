@@ -21,10 +21,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AfTipoSancionesDTOLista> afBeneTipoSancionObtener(int CodCliente, string filtros)
+        public ErrorDto<AfTipoSancionesDTOLista> afBeneTipoSancionObtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<AfTipoSancionesDTOLista>();
+            var response = new ErrorDto<AfTipoSancionesDTOLista>();
             response.Result = new AfTipoSancionesDTOLista();
 
             AfiTipoSancionfiltros filtro = JsonConvert.DeserializeObject<AfiTipoSancionfiltros>(filtros);
@@ -91,10 +91,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="tipo_sancion"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneTipoSancion_Insertar(int CodCliente, AfTipoSancionesDTO tipo_sancion)
+        public ErrorDto AfBeneTipoSancion_Insertar(int CodCliente, AfTipoSancionesDTO tipo_sancion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -149,10 +149,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="tipo_sancion"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneTipoSancion_Actualizar(int CodCliente, AfTipoSancionesDTO tipo_sancion)
+        public ErrorDto AfBeneTipoSancion_Actualizar(int CodCliente, AfTipoSancionesDTO tipo_sancion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -184,10 +184,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="tipo_sancion"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneTipoSancion_Eliminar(int CodCliente, int tipo_sancion)
+        public ErrorDto AfBeneTipoSancion_Eliminar(int CodCliente, int tipo_sancion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -209,10 +209,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<BeneListaRetencion>> BeneRetenciones_Obtener(int CodCliente)
+        public ErrorDto<List<BeneListaRetencion>> BeneRetenciones_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<BeneListaRetencion>>();
+            var response = new ErrorDto<List<BeneListaRetencion>>();
             response.Result = new List<BeneListaRetencion>();
             try
             {

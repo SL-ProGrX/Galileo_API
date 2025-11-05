@@ -23,11 +23,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<BENE_ESTADODataLista> BeneficiosEstados_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<BENE_ESTADODataLista> BeneficiosEstados_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<BENE_ESTADODataLista>();
+            var response = new ErrorDto<BENE_ESTADODataLista>();
             response.Result = new BENE_ESTADODataLista();
             try
             {
@@ -77,11 +77,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO BeneficiosEstados_Actualizar(int CodEmpresa, BENE_ESTADO request)
+        public ErrorDto BeneficiosEstados_Actualizar(int CodEmpresa, BENE_ESTADO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -111,15 +111,15 @@ namespace PgxAPI.DataBaseTier
 
 
         /// <summary>
-        /// Agrega una categoría apremiante
+        /// Agrega una categorï¿½a apremiante
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO BeneficiosEstados_Agregar(int CodEmpresa, BENE_ESTADO request)
+        public ErrorDto BeneficiosEstados_Agregar(int CodEmpresa, BENE_ESTADO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -130,7 +130,7 @@ namespace PgxAPI.DataBaseTier
                     if (existe > 0)
                     {
                         resp.Code = -1;
-                        resp.Description = "Ya existe un estado con el código: " + request.cod_estado + ", por favor verifique";
+                        resp.Description = "Ya existe un estado con el cï¿½digo: " + request.cod_estado + ", por favor verifique";
                     }
                     else
                     {
@@ -161,11 +161,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ErrorDTO BeneficiosEstados_Eliminar(int CodEmpresa, string id)
+        public ErrorDto BeneficiosEstados_Eliminar(int CodEmpresa, string id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

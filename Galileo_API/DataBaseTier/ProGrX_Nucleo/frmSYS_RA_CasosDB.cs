@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysRaCasosData>> SYS_RA_Casos_Buscar(int CodEmpresa, SysCasosFiltroData filtros)
+        public ErrorDto<List<SysRaCasosData>> SYS_RA_Casos_Buscar(int CodEmpresa, SysCasosFiltroData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysRaCasosData>>
+            var result = new ErrorDto<List<SysRaCasosData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -97,10 +97,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="persona_id"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysCasosAutorizacionesData>> SYS_RA_CasosAutorizaciones_Obtener(int CodEmpresa, int persona_id)
+        public ErrorDto<List<SysCasosAutorizacionesData>> SYS_RA_CasosAutorizaciones_Obtener(int CodEmpresa, int persona_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysCasosAutorizacionesData>>
+            var result = new ErrorDto<List<SysCasosAutorizacionesData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -138,10 +138,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="autorizacionId"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysCasosAccesosData>> SYS_RA_CasosAccesos_Obtener(int CodEmpresa, int autorizacionId)
+        public ErrorDto<List<SysCasosAccesosData>> SYS_RA_CasosAccesos_Obtener(int CodEmpresa, int autorizacionId)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysCasosAccesosData>>
+            var result = new ErrorDto<List<SysCasosAccesosData>>
             {
                 Code = 0,
                 Description = "Ok",

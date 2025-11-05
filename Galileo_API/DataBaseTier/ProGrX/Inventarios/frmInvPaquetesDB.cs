@@ -31,11 +31,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<PaqueteDataLista> Paquetes_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<PaqueteDataLista> Paquetes_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<PaqueteDataLista>();
+            var response = new ErrorDto<PaqueteDataLista>();
             response.Result = new PaqueteDataLista();
             response.Result.Total = 0;
             try
@@ -84,10 +84,10 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO<List<PaqueteDTO>> Paquetes_ObtenerTodos(int CodEmpresa)
+        public ErrorDto<List<PaqueteDTO>> Paquetes_ObtenerTodos(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<PaqueteDTO>>();
+            var response = new ErrorDto<List<PaqueteDTO>>();
 
             try
             {
@@ -107,10 +107,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<PaqueteDTO> Paquete_Obtener(int CodEmpresa, int Cod_Paquete)
+        public ErrorDto<PaqueteDTO> Paquete_Obtener(int CodEmpresa, int Cod_Paquete)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<PaqueteDTO>();
+            var response = new ErrorDto<PaqueteDTO>();
             response.Result = new PaqueteDTO();
             try
             {
@@ -134,10 +134,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<PaqueteDetalleDTO>> Paquete_ObtenerDetalles(int CodEmpresa, int Cod_Paquete)
+        public ErrorDto<List<PaqueteDetalleDTO>> Paquete_ObtenerDetalles(int CodEmpresa, int Cod_Paquete)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<PaqueteDetalleDTO>>();
+            var response = new ErrorDto<List<PaqueteDetalleDTO>>();
 
             try
             {
@@ -176,11 +176,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO Paquete_Actualizar(int CodEmpresa, PaqueteDTO request)
+        public ErrorDto Paquete_Actualizar(int CodEmpresa, PaqueteDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -226,11 +226,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Paquete_Insertar2(int CodEmpresa, PaqueteDTO request)
+        public ErrorDto Paquete_Insertar2(int CodEmpresa, PaqueteDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -274,10 +274,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Paquete_Insertar(int CodEmpresa, PaqueteDTO request)
+        public ErrorDto Paquete_Insertar(int CodEmpresa, PaqueteDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -330,11 +330,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO PaqueteDetalle_Insertar(int CodEmpresa, PaqueteDetalleDTO request)
+        public ErrorDto PaqueteDetalle_Insertar(int CodEmpresa, PaqueteDetalleDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -367,11 +367,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO PaqueteDetalle_Actualizar(int CodEmpresa, PaqueteDetalleDTO request)
+        public ErrorDto PaqueteDetalle_Actualizar(int CodEmpresa, PaqueteDetalleDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -404,11 +404,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO PaqueteDetalle_Eliminar(int CodEmpresa, PaqueteDetalleDTO request)
+        public ErrorDto PaqueteDetalle_Eliminar(int CodEmpresa, PaqueteDetalleDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -432,11 +432,11 @@ namespace PgxAPI.DataBaseTier
 
 
         /*Por si habilitan el borrado por ahora no aplica*/
-        public ErrorDTO Paquete_Eliminar(int CodEmpresa, PaqueteDTO request)
+        public ErrorDto Paquete_Eliminar(int CodEmpresa, PaqueteDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -482,11 +482,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Paquete_EliminarDetalles(int CodEmpresa, PaqueteDTO request)
+        public ErrorDto Paquete_EliminarDetalles(int CodEmpresa, PaqueteDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

@@ -18,13 +18,13 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<List<CprSolicitud_Autoriza>> SolicitudAutorizacion_Obtener(int CodCliente, string filtroString)
+        public ErrorDto<List<CprSolicitud_Autoriza>> SolicitudAutorizacion_Obtener(int CodCliente, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
             CprSolicitud_Filtros filtros = JsonConvert.DeserializeObject<CprSolicitud_Filtros>(filtroString);
 
-            var response = new ErrorDTO<List<CprSolicitud_Autoriza>>();
+            var response = new ErrorDto<List<CprSolicitud_Autoriza>>();
             response.Code = 0;
 
             try
@@ -75,9 +75,9 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO AutorizaSolicitudes(int CodCliente, string solicitudes, string usuario)
+        public ErrorDto AutorizaSolicitudes(int CodCliente, string solicitudes, string usuario)
         {
-            ErrorDTO info = new()
+            ErrorDto info = new()
             {
                 Code = 0
             };
@@ -104,9 +104,9 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO RechazaSolicitudes(int CodCliente, string solicitudes, string justificacion, string usuario)
+        public ErrorDto RechazaSolicitudes(int CodCliente, string solicitudes, string justificacion, string usuario)
         {
-            ErrorDTO info = new()
+            ErrorDto info = new()
             {
                 Code = 0
             };

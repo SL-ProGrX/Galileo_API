@@ -22,11 +22,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FslConsultaListas>> FslConsultaPlanes_Obtener(int CodCliente)
+        public ErrorDto<List<FslConsultaListas>> FslConsultaPlanes_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<List<FslConsultaListas>>();
+            var response = new ErrorDto<List<FslConsultaListas>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -51,11 +51,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_plan"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FslConsultaListas>> FslConsultaCausas_Obtener(int CodCliente, string cod_plan)
+        public ErrorDto<List<FslConsultaListas>> FslConsultaCausas_Obtener(int CodCliente, string cod_plan)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<List<FslConsultaListas>>();
+            var response = new ErrorDto<List<FslConsultaListas>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -80,11 +80,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FslConsultaListas>> FslConsultaEnfermedades_Obtener(int CodCliente)
+        public ErrorDto<List<FslConsultaListas>> FslConsultaEnfermedades_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<List<FslConsultaListas>>();
+            var response = new ErrorDto<List<FslConsultaListas>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -108,11 +108,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FslConsultaListas>> FslConsutaComites_Obtener(int CodCliente)
+        public ErrorDto<List<FslConsultaListas>> FslConsutaComites_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<List<FslConsultaListas>>();
+            var response = new ErrorDto<List<FslConsultaListas>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -137,11 +137,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FslConsultaListas>> FslConsutaEstadoPersonas_Obtener(int CodCliente)
+        public ErrorDto<List<FslConsultaListas>> FslConsutaEstadoPersonas_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<List<FslConsultaListas>>();
+            var response = new ErrorDto<List<FslConsultaListas>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -165,11 +165,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FslConsultaListas>> FslConsutaTiposGestion_Obtener(int CodCliente)
+        public ErrorDto<List<FslConsultaListas>> FslConsutaTiposGestion_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<List<FslConsultaListas>>();
+            var response = new ErrorDto<List<FslConsultaListas>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -193,11 +193,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FslConsultaListas>> FslConsutaTiposApelaciones_Obtener(int CodCliente)
+        public ErrorDto<List<FslConsultaListas>> FslConsutaTiposApelaciones_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<List<FslConsultaListas>>();
+            var response = new ErrorDto<List<FslConsultaListas>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -222,11 +222,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_comite"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FslConsultaListas>> FslConsultaComiteMiembros_Obtener(int CodCliente, string cod_comite)
+        public ErrorDto<List<FslConsultaListas>> FslConsultaComiteMiembros_Obtener(int CodCliente, string cod_comite)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<List<FslConsultaListas>>();
+            var response = new ErrorDto<List<FslConsultaListas>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -246,12 +246,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<FslConsultaExpedienteDatos>> FslConsultaExpedientes_Obtener(int CodCliente, string filtros)
+        public ErrorDto<List<FslConsultaExpedienteDatos>> FslConsultaExpedientes_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             fslConsultaFiltros _filtro = JsonConvert.DeserializeObject<fslConsultaFiltros>(filtros);
 
-            var response = new ErrorDTO<List<FslConsultaExpedienteDatos>>();
+            var response = new ErrorDto<List<FslConsultaExpedienteDatos>>();
             try
             {
                 string filtro = "", vEstado = "";

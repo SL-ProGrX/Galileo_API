@@ -24,7 +24,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGeneral(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGeneral(int CodEmpresa)
         {
             return mTesoreria.sbTesBancoCargaCboAccesoGeneral(CodEmpresa);
         }
@@ -35,7 +35,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="id_banco"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>>  sbTesTiposDocsCargaCbo(int CodEmpresa, int id_banco)
+        public ErrorDto<List<DropDownListaGenericaModel>>  sbTesTiposDocsCargaCbo(int CodEmpresa, int id_banco)
         {
             return mTesoreria.sbTesTiposDocsCargaCbo(CodEmpresa, id_banco);
         }
@@ -45,15 +45,15 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTESCombos(string tipo)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTESCombos(string tipo)
         {
             return mTesoreria.sbTESCombos(tipo);
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesTokens(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesTokens(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -85,20 +85,20 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="contabilidad"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCboGeneral(int CodEmpresa, int contabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCboGeneral(int CodEmpresa, int contabilidad)
         {
             return mTesoreria.sbTesUnidadesCargaCboGeneral(CodEmpresa, contabilidad);
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesConceptosCargaCboGeneral(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesConceptosCargaCboGeneral(int CodEmpresa)
         {
             return mTesoreria.sbTesConceptosCargaCboGeneral(CodEmpresa);
         }
 
-        public ErrorDTO<string> Tes_AnalisisCubo_Obtener(int CodEmpresa, string tipo,DateTime FechaInicio,DateTime FechaCorte)
+        public ErrorDto<string> Tes_AnalisisCubo_Obtener(int CodEmpresa, string tipo,DateTime FechaInicio,DateTime FechaCorte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<string>();
+            var response = new ErrorDto<string>();
             try
             {
                 using var connection = new SqlConnection(stringConn);

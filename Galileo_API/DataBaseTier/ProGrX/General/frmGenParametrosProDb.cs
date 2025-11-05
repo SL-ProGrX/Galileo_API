@@ -20,10 +20,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<PvParametrosModDto> Obtener_ParamaterosPro(int CodEmpresa)
+        public ErrorDto<PvParametrosModDto> Obtener_ParamaterosPro(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<PvParametrosModDto>();
+            var resp = new ErrorDto<PvParametrosModDto>();
             resp.Result = new PvParametrosModDto();
 
             try
@@ -57,9 +57,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="pvParametrosMod"></param>
         /// <returns></returns>
-        public ErrorDTO ParamaterosPro_ActualizaGen(int CodEmpresa, PvParametrosModDto pvParametrosMod)
+        public ErrorDto ParamaterosPro_ActualizaGen(int CodEmpresa, PvParametrosModDto pvParametrosMod)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -91,9 +91,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="pvParametrosMod"></param>
         /// <returns></returns>
-        public ErrorDTO ParamaterosPro_ActualizaCxP(int CodEmpresa, PvParametrosModDto pvParametrosMod)
+        public ErrorDto ParamaterosPro_ActualizaCxP(int CodEmpresa, PvParametrosModDto pvParametrosMod)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -122,9 +122,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="pvParametrosMod"></param>
         /// <returns></returns>
-        public ErrorDTO ParamaterosPro_ActualizaInv(int CodEmpresa, PvParametrosModDto pvParametrosMod)
+        public ErrorDto ParamaterosPro_ActualizaInv(int CodEmpresa, PvParametrosModDto pvParametrosMod)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -154,9 +154,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="pvParametrosMod"></param>
         /// <returns></returns>
-        public ErrorDTO ParamaterosPro_ActualizaPos(int CodEmpresa, PvParametrosModDto pvParametrosMod)
+        public ErrorDto ParamaterosPro_ActualizaPos(int CodEmpresa, PvParametrosModDto pvParametrosMod)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -179,9 +179,9 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO CambiaParTc(int CodEmpresa, PvParametrosModDto pvParametrosMod)
+        public ErrorDto CambiaParTc(int CodEmpresa, PvParametrosModDto pvParametrosMod)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -204,9 +204,9 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO ParametrosGen_Insertar(int CodEmpresa)
+        public ErrorDto ParametrosGen_Insertar(int CodEmpresa)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try

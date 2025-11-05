@@ -18,7 +18,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
             _mSecurity = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -74,10 +74,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_DistribucionPolitica_Provincias_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_DistribucionPolitica_Provincias_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -108,10 +108,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Provincia"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_DistribucionPolitica_Cantones_Obtener(int CodEmpresa, string Provincia)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_DistribucionPolitica_Cantones_Obtener(int CodEmpresa, string Provincia)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -143,10 +143,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Provincia"></param>
         /// <param name="Canton"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_DistribucionPolitica_Distritos_Obtener(int CodEmpresa, string Provincia, string Canton)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_DistribucionPolitica_Distritos_Obtener(int CodEmpresa, string Provincia, string Canton)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -179,10 +179,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDTO AF_DistribucionPolitica_Guardar(int CodEmpresa, string Usuario, AF_DistribucionesDTO Info)
+        public ErrorDto AF_DistribucionPolitica_Guardar(int CodEmpresa, string Usuario, AF_DistribucionesDTO Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

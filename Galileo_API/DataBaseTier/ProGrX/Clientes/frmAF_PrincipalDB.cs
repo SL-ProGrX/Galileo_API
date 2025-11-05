@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodCatalogo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CatalogosGenerales_Obtener(int CodEmpresa, string CodCatalogo)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CatalogosGenerales_Obtener(int CodEmpresa, string CodCatalogo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -56,11 +56,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_institucion"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_CatalogosGeneralesDTO> AF_Catalogos_Obtener(int CodEmpresa, string? cod_institucion)
+        public ErrorDto<AF_CatalogosGeneralesDTO> AF_Catalogos_Obtener(int CodEmpresa, string? cod_institucion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<AF_CatalogosGeneralesDTO>
+            var response = new ErrorDto<AF_CatalogosGeneralesDTO>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -121,10 +121,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns>Datos de la persona</returns>
-        public ErrorDTO<AF_PersonaDTO> AF_Persona_Obtener(int CodEmpresa, string cedula)
+        public ErrorDto<AF_PersonaDTO> AF_Persona_Obtener(int CodEmpresa, string cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_PersonaDTO>
+            var response = new ErrorDto<AF_PersonaDTO>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -158,13 +158,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="request"></param>
         /// <param name="mov"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Guardar(int CodEmpresa, string request, string mov)
+        public ErrorDto AF_Persona_Guardar(int CodEmpresa, string request, string mov)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             AF_PersonaAddRequestDTO req = JsonConvert.DeserializeObject<AF_PersonaAddRequestDTO>(request) ?? new AF_PersonaAddRequestDTO();
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
             };
@@ -335,13 +335,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="req"></param>
         /// <param name="mov"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Nombramientos_Add(int CodEmpresa, string req, string mov)
+        public ErrorDto AF_Persona_Nombramientos_Add(int CodEmpresa, string req, string mov)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             AF_PersonaNombramientoDTO request = JsonConvert.DeserializeObject<AF_PersonaNombramientoDTO>(req) ?? new AF_PersonaNombramientoDTO();
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
             };
@@ -373,13 +373,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Relacion_Add(int CodEmpresa, string request, string mov)
+        public ErrorDto AF_Persona_Relacion_Add(int CodEmpresa, string request, string mov)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             AF_PersonaRelacionDTOAdd req = JsonConvert.DeserializeObject<AF_PersonaRelacionDTOAdd>(request) ?? new AF_PersonaRelacionDTOAdd();
 
-            var response = new ErrorDTO { Code = 0, Description = "Registro realizado correctamente" };
+            var response = new ErrorDto { Code = 0, Description = "Registro realizado correctamente" };
 
             try
             {
@@ -418,10 +418,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="idRelacion"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Relacion_Del(int CodEmpresa, int idRelacion, string usuario)
+        public ErrorDto AF_Persona_Relacion_Del(int CodEmpresa, int idRelacion, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO { Code = 0, Description = "Registro eliminado correctamente" };
+            var response = new ErrorDto { Code = 0, Description = "Registro eliminado correctamente" };
 
             try
             {
@@ -449,13 +449,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="req"></param>
         /// <param name="mov"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Salarios_Add(int CodEmpresa, string req, string mov)
+        public ErrorDto AF_Persona_Salarios_Add(int CodEmpresa, string req, string mov)
         {
             string cn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             AF_PersonaSalarioAddDTO request = JsonConvert.DeserializeObject<AF_PersonaSalarioAddDTO>(req) ?? new AF_PersonaSalarioAddDTO();
 
-            var response = new ErrorDTO { Code = 0 };
+            var response = new ErrorDto { Code = 0 };
             try
             {
                 using var connection = new SqlConnection(cn);
@@ -487,10 +487,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Ingresos_Economicos_Add(int CodEmpresa, AF_PersonaIngresoEconomicoAddDTO request)
+        public ErrorDto AF_Persona_Ingresos_Economicos_Add(int CodEmpresa, AF_PersonaIngresoEconomicoAddDTO request)
         {
             string cn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO { Code = 0, Description = "Ingreso económico registrado correctamente" };
+            var response = new ErrorDto { Code = 0, Description = "Ingreso económico registrado correctamente" };
             try
             {
                 using var connection = new SqlConnection(cn);
@@ -519,14 +519,14 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Direccion_Add(int CodEmpresa, string request, string mov)
+        public ErrorDto AF_Persona_Direccion_Add(int CodEmpresa, string request, string mov)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             AF_PersonaDireccionDTO req = JsonConvert.DeserializeObject<AF_PersonaDireccionDTO>(request) ?? new AF_PersonaDireccionDTO();
 
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Dirección registrada correctamente"
@@ -568,12 +568,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Escolaridad_Registra(int CodEmpresa, string request)
+        public ErrorDto AF_Persona_Escolaridad_Registra(int CodEmpresa, string request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             AF_PersonaEscolaridadRegistraDTO req = JsonConvert.DeserializeObject<AF_PersonaEscolaridadRegistraDTO>(request) ?? new AF_PersonaEscolaridadRegistraDTO();
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Operación realizada correctamente"
@@ -619,11 +619,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Preferencias_Registra(int CodEmpresa, string request)
+        public ErrorDto AF_Persona_Preferencias_Registra(int CodEmpresa, string request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             AF_PreferenciaDTO req = JsonConvert.DeserializeObject<AF_PreferenciaDTO>(request) ?? new AF_PreferenciaDTO();
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Operación realizada correctamente"
@@ -668,11 +668,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Canales_Registra(int CodEmpresa, string req)
+        public ErrorDto AF_Persona_Canales_Registra(int CodEmpresa, string req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             AF_CanalesDTO request = JsonConvert.DeserializeObject<AF_CanalesDTO>(req) ?? new AF_CanalesDTO();
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Operación realizada correctamente"
@@ -705,11 +705,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Patrimonio_Vincula(int CodEmpresa, AF_PersonaPatrimonioVinculaDTO req)
+        public ErrorDto AF_Persona_Patrimonio_Vincula(int CodEmpresa, AF_PersonaPatrimonioVinculaDTO req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Operación realizada correctamente"
@@ -739,12 +739,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Bienes_Registra(int CodEmpresa, string req)
+        public ErrorDto AF_Persona_Bienes_Registra(int CodEmpresa, string req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             AF_PersonaBienesRegistraDTO request = JsonConvert.DeserializeObject<AF_PersonaBienesRegistraDTO>(req) ?? new AF_PersonaBienesRegistraDTO();
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Operación realizada correctamente"
@@ -790,12 +790,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Productos_Registra(int CodEmpresa, string req)
+        public ErrorDto AF_Persona_Productos_Registra(int CodEmpresa, string req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             AF_PersonaProductosRegistraDTO request = JsonConvert.DeserializeObject<AF_PersonaProductosRegistraDTO>(req) ?? new AF_PersonaProductosRegistraDTO();
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
             };
@@ -827,11 +827,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO AF_RegistroDefault(int CodEmpresa, AF_RegistroDefaultDTO req)
+        public ErrorDto AF_RegistroDefault(int CodEmpresa, AF_RegistroDefaultDTO req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Operación realizada correctamente"
@@ -860,10 +860,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Provincias_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Provincias_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -891,10 +891,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Provincia"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Cantones_Obtener(int CodEmpresa, string Provincia)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Cantones_Obtener(int CodEmpresa, string Provincia)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -925,10 +925,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Provincia"></param>
         /// <param name="Canton"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Distritos_Obtener(int CodEmpresa, string Provincia, string Canton)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Distritos_Obtener(int CodEmpresa, string Provincia, string Canton)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -958,10 +958,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="scrollCode"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<string> TES_Persona_Scroll(int CodEmpresa, int scrollCode, string cedula)
+        public ErrorDto<string> TES_Persona_Scroll(int CodEmpresa, int scrollCode, string cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<string>
+            var response = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1021,11 +1021,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CumplimientoDTO>> AF_PersonaProductos_Consulta(int CodEmpresa, string Cedula)
+        public ErrorDto<List<AF_CumplimientoDTO>> AF_PersonaProductos_Consulta(int CodEmpresa, string Cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<AF_CumplimientoDTO>>
+            var response = new ErrorDto<List<AF_CumplimientoDTO>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -1055,11 +1055,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_ConsultasGeneralesDTO> AF_Persona_Consulta_Obtener(int CodEmpresa, string cedula, string usuario)
+        public ErrorDto<AF_ConsultasGeneralesDTO> AF_Persona_Consulta_Obtener(int CodEmpresa, string cedula, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<AF_ConsultasGeneralesDTO>
+            var response = new ErrorDto<AF_ConsultasGeneralesDTO>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -1111,12 +1111,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Indicadores_Registra(int CodEmpresa, string req)
+        public ErrorDto AF_Persona_Indicadores_Registra(int CodEmpresa, string req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             AF_PersonaIndicadoresDTO request = JsonConvert.DeserializeObject<AF_PersonaIndicadoresDTO>(req) ?? new AF_PersonaIndicadoresDTO();
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
             };
@@ -1150,11 +1150,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cedula"></param>
         /// <param name="prideduc"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_PrimeraDeduccion_Registra(int CodEmpresa, string cedula, string prideduc)
+        public ErrorDto AF_Persona_PrimeraDeduccion_Registra(int CodEmpresa, string cedula, string prideduc)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
             };
@@ -1184,11 +1184,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Elimina(int CodEmpresa, string cedula)
+        public ErrorDto AF_Persona_Elimina(int CodEmpresa, string cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
             };
@@ -1219,10 +1219,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="scrollCode"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<string> AF_Scroll_General(int CodEmpresa, int scrollCode, string id, int tipoScroll, string cod_Institucion, string cod_Departamento = "")
+        public ErrorDto<string> AF_Scroll_General(int CodEmpresa, int scrollCode, string id, int tipoScroll, string cod_Institucion, string cod_Departamento = "")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<string>
+            var response = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1298,11 +1298,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Validar(int CodEmpresa, string req)
+        public ErrorDto AF_Persona_Validar(int CodEmpresa, string req)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             AF_PersonaAddRequestDTO dto = JsonConvert.DeserializeObject<AF_PersonaAddRequestDTO>(req) ?? new AF_PersonaAddRequestDTO();
-            var response = new ErrorDTO { Code = 0, Description = "Validación correcta" };
+            var response = new ErrorDto { Code = 0, Description = "Validación correcta" };
 
             try
             {
@@ -1447,10 +1447,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_PadronPersonaDTO> AF_PersonaPadron_Obtener(int codEmpresa, string cedula)
+        public ErrorDto<AF_PadronPersonaDTO> AF_PersonaPadron_Obtener(int codEmpresa, string cedula)
         {
             string stringConn = _config.GetConnectionString("BaseConnString");
-            var response = new ErrorDTO<AF_PadronPersonaDTO>
+            var response = new ErrorDto<AF_PadronPersonaDTO>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -1485,12 +1485,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Dimex_Add(int codEmpresa, string req)
+        public ErrorDto AF_Persona_Dimex_Add(int codEmpresa, string req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             AF_PersonaDimexAddDTO request = JsonConvert.DeserializeObject<AF_PersonaDimexAddDTO>(req) ?? new AF_PersonaDimexAddDTO();
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Operación realizada correctamente"
@@ -1526,12 +1526,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="linea"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Direccion_Elimina(int codEmpresa, string cedula, string linea, string usuario)
+        public ErrorDto AF_Persona_Direccion_Elimina(int codEmpresa, string cedula, string linea, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Operación realizada correctamente"
@@ -1565,11 +1565,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Persona_Motivos_Registra(int CodEmpresa, string request)
+        public ErrorDto AF_Persona_Motivos_Registra(int CodEmpresa, string request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             AF_MotivosDTO req = JsonConvert.DeserializeObject<AF_MotivosDTO>(request) ?? new AF_MotivosDTO();
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Operación realizada correctamente"
@@ -1614,11 +1614,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO FechaServidor_Obtener(int CodEmpresa)
+        public ErrorDto FechaServidor_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Operación realizada correctamente"

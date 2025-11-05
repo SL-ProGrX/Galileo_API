@@ -17,12 +17,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO Beneficio_Lote_Carga_Insertar(int CodEmpresa, string beneficio)
+        public ErrorDto Beneficio_Lote_Carga_Insertar(int CodEmpresa, string beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             List<BeneficioExcelData> beneficioExcelDatas = new List<BeneficioExcelData>();
             beneficioExcelDatas = JsonConvert.DeserializeObject<List<BeneficioExcelData>>(beneficio);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -74,11 +74,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<AfiBeneCargaLoteData>> Beneficio_Lote_Revisa_Obtener(int CodEmpresa, string cod_beneficio, string usuario)
+        public ErrorDto<List<AfiBeneCargaLoteData>> Beneficio_Lote_Revisa_Obtener(int CodEmpresa, string cod_beneficio, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<AfiBeneCargaLoteData>>();
+            var response = new ErrorDto<List<AfiBeneCargaLoteData>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -103,11 +103,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO Beneficio_Lote_Procesa(int CodEmpresa, string cod_beneficio, string usuario, string Formato)
+        public ErrorDto Beneficio_Lote_Procesa(int CodEmpresa, string cod_beneficio, string usuario, string Formato)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);

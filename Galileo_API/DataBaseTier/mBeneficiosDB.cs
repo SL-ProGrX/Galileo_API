@@ -14,9 +14,9 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO fxNombre(int CodEmpresa, string cedula)
+        public ErrorDto fxNombre(int CodEmpresa, string cedula)
         {
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
@@ -35,9 +35,9 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO fxDescribeBanco(int CodEmpresa, int codBanco)
+        public ErrorDto fxDescribeBanco(int CodEmpresa, int codBanco)
         {
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -148,10 +148,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO BitacoraBeneficios(BitacoraBeneInsertarDTO req)
+        public ErrorDto BitacoraBeneficios(BitacoraBeneInsertarDTO req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -199,10 +199,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        //public ErrorDTO<BeneficioGeneralDatos> ValidaBeneficio(int CodCliente, BeneficioGeneralDatos beneficio)
+        //public ErrorDto<BeneficioGeneralDatos> ValidaBeneficio(int CodCliente, BeneficioGeneralDatos beneficio)
         //{
         //    var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-        //    var response = new ErrorDTO<BeneficioGeneralDatos>();
+        //    var response = new ErrorDto<BeneficioGeneralDatos>();
 
         //    try
         //    {
@@ -272,10 +272,10 @@ namespace PgxAPI.DataBaseTier
         //}
 
 
-        //public ErrorDTO<BeneficioGeneralDatos> ValidaBeneficioActualizar(int CodCliente, BeneficioGeneralDatos beneficio)
+        //public ErrorDto<BeneficioGeneralDatos> ValidaBeneficioActualizar(int CodCliente, BeneficioGeneralDatos beneficio)
         //{
         //    var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-        //    var response = new ErrorDTO<BeneficioGeneralDatos>();
+        //    var response = new ErrorDto<BeneficioGeneralDatos>();
 
         //    try
         //    {
@@ -403,10 +403,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<BeneficioGeneralDatos> ValidaEstadoSocio(int CodCliente, string cedula)
+        public ErrorDto<BeneficioGeneralDatos> ValidaEstadoSocio(int CodCliente, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<BeneficioGeneralDatos>();
+            var response = new ErrorDto<BeneficioGeneralDatos>();
 
             try
             {
@@ -433,11 +433,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO ValidarPersona(int CodCliente, string cedula, string? cod_beneficio)
+        public ErrorDto ValidarPersona(int CodCliente, string cedula, string? cod_beneficio)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -492,7 +492,7 @@ namespace PgxAPI.DataBaseTier
             return info;
 
             //var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            //ErrorDTO info = new ErrorDTO();
+            //ErrorDto info = new ErrorDto();
             //info.Code = 0;
             //info.Description = null;
             //try
@@ -527,11 +527,11 @@ namespace PgxAPI.DataBaseTier
             //return info;
         }
 
-        public ErrorDTO ValidarPersonaPago(int CodCliente, string cedula, string? cod_beneficio)
+        public ErrorDto ValidarPersonaPago(int CodCliente, string cedula, string? cod_beneficio)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -586,10 +586,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO ValidaRequisitos(int CodCliente, string estado, string cod_beneficio, int consec)
+        public ErrorDto ValidaRequisitos(int CodCliente, string estado, string cod_beneficio, int consec)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
 
             try
             {
@@ -662,10 +662,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
     
-        public ErrorDTO ValidaFallecido(int CodCliente, string cedulafallecido)
+        public ErrorDto ValidaFallecido(int CodCliente, string cedulafallecido)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             response.Code = 0;
             try
             {
@@ -696,11 +696,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO ValidarBeneficioDato(int CodCliente, BeneficioGeneralDatos beneficio)
+        public ErrorDto ValidarBeneficioDato(int CodCliente, BeneficioGeneralDatos beneficio)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -746,11 +746,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO ValidarBeneficioPagoDato(int CodCliente, BeneficioGeneralDatos beneficio)
+        public ErrorDto ValidarBeneficioPagoDato(int CodCliente, BeneficioGeneralDatos beneficio)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -796,11 +796,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO ValidarBeneficioJustificaDato(int CodCliente, BeneficioGeneralDatos beneficio, bool justifica)
+        public ErrorDto ValidarBeneficioJustificaDato(int CodCliente, BeneficioGeneralDatos beneficio, bool justifica)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -875,11 +875,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO ValidarBeneficioPagoJustificaDato(int CodCliente, BeneficioGeneralDatos beneficio, bool justifica)
+        public ErrorDto ValidarBeneficioPagoJustificaDato(int CodCliente, BeneficioGeneralDatos beneficio, bool justifica)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -954,10 +954,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO ValidaCargaPagos(int CodCliente, BeneficioGeneralDatos beneficio)
+        public ErrorDto ValidaCargaPagos(int CodCliente, BeneficioGeneralDatos beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try

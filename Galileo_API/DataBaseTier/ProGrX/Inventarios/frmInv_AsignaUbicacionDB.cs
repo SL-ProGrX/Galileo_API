@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodAsignaUbicacion"></param>
         /// <returns></returns>
-        public ErrorDTO<AsignaUbicacionDTO> InvUbicaciones_Obtener(int CodEmpresa, int CodAsignaUbicacion)
+        public ErrorDto<AsignaUbicacionDTO> InvUbicaciones_Obtener(int CodEmpresa, int CodAsignaUbicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AsignaUbicacionDTO>
+            var response = new ErrorDto<AsignaUbicacionDTO>
             {
                 Code = 0
             };
@@ -55,10 +55,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodAsignaUbicacion"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AsignaUbicacionDetalleDTO>> InvUbicacionProduc_Obtener(int CodEmpresa, int CodAsignaUbicacion)
+        public ErrorDto<List<AsignaUbicacionDetalleDTO>> InvUbicacionProduc_Obtener(int CodEmpresa, int CodAsignaUbicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AsignaUbicacionDetalleDTO>>
+            var response = new ErrorDto<List<AsignaUbicacionDetalleDTO>>
             {
                 Code = 0
             };
@@ -91,10 +91,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="scrollValue"></param>
         /// <param name="CodAsignaUbicacion"></param>
         /// <returns></returns>
-        public ErrorDTO<AsignaUbicacionDTO> InvUbicacion_scroll(int CodEmpresa, int scrollValue, int? CodAsignaUbicacion)
+        public ErrorDto<AsignaUbicacionDTO> InvUbicacion_scroll(int CodEmpresa, int scrollValue, int? CodAsignaUbicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AsignaUbicacionDTO>
+            var response = new ErrorDto<AsignaUbicacionDTO>
             {
                 Code = 0
             };
@@ -133,10 +133,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO InvAsignaUbicacion_Insertar(int CodEmpresa, AsignaUbicacionDTO request)
+        public ErrorDto InvAsignaUbicacion_Insertar(int CodEmpresa, AsignaUbicacionDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -183,11 +183,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO InvAsignaUbicacion_Actualizar(int CodEmpresa, AsignaUbicacionDTO request)
+        public ErrorDto InvAsignaUbicacion_Actualizar(int CodEmpresa, AsignaUbicacionDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -228,10 +228,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodAsignaUbicacion"></param>
         /// <returns></returns>
-        public ErrorDTO InvAsignaUbicacion_Eliminar(int CodEmpresa, int CodAsignaUbicacion)
+        public ErrorDto InvAsignaUbicacion_Eliminar(int CodEmpresa, int CodAsignaUbicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -264,10 +264,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodAsignaUbicacion"></param>
         /// <param name="producLineas"></param>
         /// <returns></returns>
-        public ErrorDTO InvAsignaUbicacionProduc_Insertar(int CodEmpresa, int CodAsignaUbicacion, List<AsignaUbicacionDetalleDTO> producLineas)
+        public ErrorDto InvAsignaUbicacionProduc_Insertar(int CodEmpresa, int CodAsignaUbicacion, List<AsignaUbicacionDetalleDTO> producLineas)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO errorDTO = new()
+            ErrorDto errorDTO = new()
             {
                 Code = 0
             };
@@ -311,10 +311,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AsignaUbicacionDTO>> InvAsignaUbicacion_Lista(int CodEmpresa)
+        public ErrorDto<List<AsignaUbicacionDTO>> InvAsignaUbicacion_Lista(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AsignaUbicacionDTO>>
+            var response = new ErrorDto<List<AsignaUbicacionDTO>>
             {
                 Code = 0
             };
@@ -355,11 +355,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario"></param>
         /// <param name="Estado"></param>
         /// <returns></returns>
-        public ErrorDTO InvAsignacionUbicacion_CerrarOrden_Finalizar(int CodEmpresa, int codigoAsignaUbicacion, string Usuario, string Estado)
+        public ErrorDto InvAsignacionUbicacion_CerrarOrden_Finalizar(int CodEmpresa, int codigoAsignaUbicacion, string Usuario, string Estado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -395,10 +395,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodAsignaUbicacion"></param>
         /// <param name="Linea"></param>
         /// <returns></returns>
-        public ErrorDTO InvAsignaUbicacionProduc_Eliminar(int CodEmpresa, int CodAsignaUbicacion, int Linea)
+        public ErrorDto InvAsignaUbicacionProduc_Eliminar(int CodEmpresa, int CodAsignaUbicacion, int Linea)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };

@@ -14,10 +14,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<TiposSuspensionDtoList> TiposSuspension_ObtenerTodos(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<TiposSuspensionDtoList> TiposSuspension_ObtenerTodos(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TiposSuspensionDtoList>();
+            var response = new ErrorDto<TiposSuspensionDtoList>();
             response.Result = new TiposSuspensionDtoList();
             response.Code = 0;
             try
@@ -54,10 +54,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO TiposSuspension_Agregar(int CodEmpresa, TiposSuspensionDto tiposSuspensionDto)
+        private ErrorDto TiposSuspension_Agregar(int CodEmpresa, TiposSuspensionDto tiposSuspensionDto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -81,10 +81,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDTO TiposSuspension_Actualizar(int CodEmpresa, TiposSuspensionDto tiposSuspensionDto)
+        private ErrorDto TiposSuspension_Actualizar(int CodEmpresa, TiposSuspensionDto tiposSuspensionDto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -107,10 +107,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO TiposSuspension_Eliminar(int CodEmpresa, string codSuspension)
+        public ErrorDto TiposSuspension_Eliminar(int CodEmpresa, string codSuspension)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -132,10 +132,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO TiposSuspension_Guardar(int CodEmpresa, TiposSuspensionDto tiposSuspensionDto)
+        public ErrorDto TiposSuspension_Guardar(int CodEmpresa, TiposSuspensionDto tiposSuspensionDto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };

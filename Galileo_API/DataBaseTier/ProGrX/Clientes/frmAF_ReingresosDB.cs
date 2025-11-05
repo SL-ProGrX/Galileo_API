@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_PromotoresReingreso_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_PromotoresReingreso_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -53,13 +53,13 @@ namespace PgxAPI.DataBaseTier
         /// <summary>
         /// Activa un socio, registra ingreso y vincula patrimonio en una sola transacción.
         /// </summary>
-        public ErrorDTO AF_Persona_ActivarYVincular(int CodEmpresa, string request)
+        public ErrorDto AF_Persona_ActivarYVincular(int CodEmpresa, string request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             AF_Prsona_ActivacionDTO req = JsonConvert.DeserializeObject<AF_Prsona_ActivacionDTO>(request) ?? new AF_Prsona_ActivacionDTO();
 
-            var response = new ErrorDTO { Code = 0 };
+            var response = new ErrorDto { Code = 0 };
 
             try
             {

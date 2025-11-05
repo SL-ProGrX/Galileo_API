@@ -21,10 +21,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
         /// 
-        public ErrorDTO<List<AFI_RemesaIngDTO>> AFI_Remesas_Obtener(int CodEmpresa)
+        public ErrorDto<List<AFI_RemesaIngDTO>> AFI_Remesas_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AFI_RemesaIngDTO>>
+            var response = new ErrorDto<List<AFI_RemesaIngDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -73,10 +73,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="codEmpresa"></param>
         /// <param name="codRemesa"></param>
         /// <returns></returns>
-        public ErrorDTO AFI_Remesa_Eliminar(int codEmpresa, string codRemesa)
+        public ErrorDto AFI_Remesa_Eliminar(int codEmpresa, string codRemesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -106,10 +106,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO AFI_Remesa_Registrar(int codEmpresa, AFI_RemesaIngRequestDTO request)
+        public ErrorDto AFI_Remesa_Registrar(int codEmpresa, AFI_RemesaIngRequestDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -186,9 +186,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_RemesaAbiertas_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_RemesaAbiertas_Obtener(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
             try
             {
                 var conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -224,10 +224,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="codRemesa"></param>
         /// <param name="oficina"></param>
         /// <returns></returns>
-        public ErrorDTO<List<IngresosPendientesDTO>> AFI_IngresosPendientes_Obtener(int codEmpresa, string codRemesa, string oficina = "")
+        public ErrorDto<List<IngresosPendientesDTO>> AFI_IngresosPendientes_Obtener(int codEmpresa, string codRemesa, string oficina = "")
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO<List<IngresosPendientesDTO>>
+            var response = new ErrorDto<List<IngresosPendientesDTO>>
             {
                 Code = 0,
                 Result = new List<IngresosPendientesDTO>()
@@ -302,10 +302,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="codEmpresa"></param>
         /// <param name="codRemesa"></param>
         /// <returns></returns>
-        public ErrorDTO AFI_Remesa_Cerrar(int codEmpresa, int codRemesa)
+        public ErrorDto AFI_Remesa_Cerrar(int codEmpresa, int codRemesa)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO { Code = 0, Description = "Ok" };
+            var response = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -349,10 +349,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="codRemesa"></param>
         /// <param name="ingresosSeleccionados"></param>
         /// <returns></returns>
-        public ErrorDTO AFI_Remesa_Cargar(int codEmpresa, int codRemesa, List<int> ingresosSeleccionados)
+        public ErrorDto AFI_Remesa_Cargar(int codEmpresa, int codRemesa, List<int> ingresosSeleccionados)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO { Code = 0, Description = "Ok" };
+            var response = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -408,10 +408,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="codEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<RemesaConsultaDTO>> AFI_RemesaPorCedula_Obtener(int codEmpresa, string cedula)
+        public ErrorDto<List<RemesaConsultaDTO>> AFI_RemesaPorCedula_Obtener(int codEmpresa, string cedula)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO<List<RemesaConsultaDTO>>
+            var response = new ErrorDto<List<RemesaConsultaDTO>>
             {
                 Code = 0,
                 Result = new List<RemesaConsultaDTO>()

@@ -20,9 +20,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtro">Filtros de consulta</param>
         /// <returns></returns>
-        public ErrorDTO<IngresosConsultaLista> AF_Ingresos_Consulta(int CodEmpresa, IngresosConsultaFiltro filtro)
+        public ErrorDto<IngresosConsultaLista> AF_Ingresos_Consulta(int CodEmpresa, IngresosConsultaFiltro filtro)
         {
-            var result = new ErrorDTO<IngresosConsultaLista>
+            var result = new ErrorDto<IngresosConsultaLista>
             {
                 Code = 0,
                 Description = "Ok",

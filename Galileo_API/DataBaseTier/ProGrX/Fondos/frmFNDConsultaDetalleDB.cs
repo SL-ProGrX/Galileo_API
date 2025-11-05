@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="cod_plan"></param>
         /// <param name="cod_contrato"></param>
         /// <returns></returns>
-        public ErrorDTO<FndConsultaDetalleData> FndConsultaDetalle_Obtener(int CodEmpresa, string vCedula, string cod_plan, int cod_contrato)
+        public ErrorDto<FndConsultaDetalleData> FndConsultaDetalle_Obtener(int CodEmpresa, string vCedula, string cod_plan, int cod_contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<FndConsultaDetalleData>
+            var response = new ErrorDto<FndConsultaDetalleData>
             {
                 Code = 0,
                 Description = "Ok",
@@ -74,10 +74,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="cod_plan"></param>
         /// <param name="cod_contrato"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FndConsultaContratoDetallesData>> FndConsultaContratos_Obtener(int CodEmpresa, string vCedula, string cod_plan, int cod_contrato)
+        public ErrorDto<List<FndConsultaContratoDetallesData>> FndConsultaContratos_Obtener(int CodEmpresa, string vCedula, string cod_plan, int cod_contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FndConsultaContratoDetallesData>>
+            var response = new ErrorDto<List<FndConsultaContratoDetallesData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -125,10 +125,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="cod_contrato"></param>
         /// <param name="subCuenta"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FndConsultaSubCuentasData>> FndConsultaSubCuentas_Obtener(int CodEmpresa, string vCedula, string cod_plan, int cod_contrato, string subCuenta)
+        public ErrorDto<List<FndConsultaSubCuentasData>> FndConsultaSubCuentas_Obtener(int CodEmpresa, string vCedula, string cod_plan, int cod_contrato, string subCuenta)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FndConsultaSubCuentasData>>
+            var response = new ErrorDto<List<FndConsultaSubCuentasData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -174,10 +174,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="cod_contrato"></param>
         /// <param name="subCuenta"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FndConsultaSubCuentasDetalleData>> FndConsultaSubCuentasDetalle_Obtener(int CodEmpresa, string vCedula, string cod_plan, int cod_contrato, string subCuenta)
+        public ErrorDto<List<FndConsultaSubCuentasDetalleData>> FndConsultaSubCuentasDetalle_Obtener(int CodEmpresa, string vCedula, string cod_plan, int cod_contrato, string subCuenta)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FndConsultaSubCuentasDetalleData>>
+            var response = new ErrorDto<List<FndConsultaSubCuentasDetalleData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -224,10 +224,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="cod_plan"></param>
         /// <param name="cod_contrato"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FndConsultaBeneficiarioDetalle>> FndConsultaContratosBeneficiario_Obtener(int CodEmpresa, string vCedula, string cod_plan, int cod_contrato)
+        public ErrorDto<List<FndConsultaBeneficiarioDetalle>> FndConsultaContratosBeneficiario_Obtener(int CodEmpresa, string vCedula, string cod_plan, int cod_contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FndConsultaBeneficiarioDetalle>>
+            var response = new ErrorDto<List<FndConsultaBeneficiarioDetalle>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -270,10 +270,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="cuenta"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FndConsultaMovTransitoData>> FndConsultaMovTransito_Obtener(int CodEmpresa, string cuenta)
+        public ErrorDto<List<FndConsultaMovTransitoData>> FndConsultaMovTransito_Obtener(int CodEmpresa, string cuenta)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FndConsultaMovTransitoData>>
+            var response = new ErrorDto<List<FndConsultaMovTransitoData>>
             {
                 Code = 0,
                 Description = "Ok",

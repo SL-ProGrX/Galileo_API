@@ -163,10 +163,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_CargarRemesa_SP(int CodEmpresa, RemesaInsert request)
+        public ErrorDto CC_CA_CargarRemesa_SP(int CodEmpresa, RemesaInsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             string procesoStr = request.proceso.ToString();
             string year = procesoStr.Substring(0, 4);
@@ -199,10 +199,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_CargarRemesaDetalle_SP(int CodEmpresa, RemesaDetalleInsert request)
+        public ErrorDto CC_CA_CargarRemesaDetalle_SP(int CodEmpresa, RemesaDetalleInsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -250,10 +250,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_Remesa_Cierra(int CodEmpresa, int Cod_Remesa, string Usuario)
+        public ErrorDto CC_CA_Remesa_Cierra(int CodEmpresa, int Cod_Remesa, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -263,7 +263,7 @@ namespace PgxAPI.DataBaseTier
                     resp.Code = connection.ExecuteAsync(query).Result;
                     if (resp.Code != -1)
                     {
-                        resp.Description = $"La Remesa {Cod_Remesa} ha sido cerrada con éxito";
+                        resp.Description = $"La Remesa {Cod_Remesa} ha sido cerrada con ï¿½xito";
                     }
                 }
             }
@@ -275,10 +275,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_Remesa_Autorizaciones_SP(int CodEmpresa, Remesa_Autorizacion request)
+        public ErrorDto CC_CA_Remesa_Autorizaciones_SP(int CodEmpresa, Remesa_Autorizacion request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             try
@@ -295,7 +295,7 @@ namespace PgxAPI.DataBaseTier
                     parameters.Add("Comision", request.comision, DbType.Decimal);
                     parameters.Add("Fecha", request.fecha, DbType.Date);
                     resp.Code = connection.ExecuteAsync(query, parameters).Result;
-                    resp.Description = "Información Cargada Satisfactoriamente";
+                    resp.Description = "Informaciï¿½n Cargada Satisfactoriamente";
                 }
             }
             catch (Exception ex)
@@ -346,10 +346,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_Abonos_Aplica(int CodEmpresa, int Cod_Remesa, string Usuario, CA_Remesa_Aplica_Inicializa request)
+        public ErrorDto CC_CA_Abonos_Aplica(int CodEmpresa, int Cod_Remesa, string Usuario, CA_Remesa_Aplica_Inicializa request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -371,7 +371,7 @@ namespace PgxAPI.DataBaseTier
                     //Cierra Remesa
                     var query4 = $@"update prm_Ca_Remesas set Estado = 'A'  where COD_REMESA = {Cod_Remesa}";
                     resp.Code = connection.ExecuteAsync(query4).Result;
-                    resp.Description = "Proceso finalizado con éxito";
+                    resp.Description = "Proceso finalizado con ï¿½xito";
                 }
             }
             catch (Exception ex)
@@ -382,10 +382,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_Aplica_Asiento(int CodEmpresa, int Cod_Remesa, string Usuario, CA_Remesa_Aplica_Inicializa request)
+        public ErrorDto CC_CA_Aplica_Asiento(int CodEmpresa, int Cod_Remesa, string Usuario, CA_Remesa_Aplica_Inicializa request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {

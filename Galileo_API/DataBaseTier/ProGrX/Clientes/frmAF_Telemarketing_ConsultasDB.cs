@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Telemarketing_Categoria_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Telemarketing_Categoria_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -61,10 +61,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfTelemarketingColocacionData>> AF_Telemarketing_Colocacion_Obtener(int CodEmpresa, ColocacionFiltros filtros)
+        public ErrorDto<List<AfTelemarketingColocacionData>> AF_Telemarketing_Colocacion_Obtener(int CodEmpresa, ColocacionFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<AfTelemarketingColocacionData>>
+            var result = new ErrorDto<List<AfTelemarketingColocacionData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -199,10 +199,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Telemarketing_Catalogos_Obtener(int CodEmpresa, string tipo)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Telemarketing_Catalogos_Obtener(int CodEmpresa, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -257,10 +257,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="combo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Telemarketing_Lineas_Obtener(int CodEmpresa, int combo)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Telemarketing_Lineas_Obtener(int CodEmpresa, int combo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -301,10 +301,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfTelemarketingClientesData>> AF_Telemarketing_Clientes_Obtener(int CodEmpresa, ClientesFiltros filtros)
+        public ErrorDto<List<AfTelemarketingClientesData>> AF_Telemarketing_Clientes_Obtener(int CodEmpresa, ClientesFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<AfTelemarketingClientesData>>
+            var result = new ErrorDto<List<AfTelemarketingClientesData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -358,10 +358,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfTelemarketingClientesDetalleData>> AF_Telemarketing_ClientesDetalle_Obtener(int CodEmpresa, string vCadena, string usuario)
+        public ErrorDto<List<AfTelemarketingClientesDetalleData>> AF_Telemarketing_ClientesDetalle_Obtener(int CodEmpresa, string vCadena, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<AfTelemarketingClientesDetalleData>>
+            var result = new ErrorDto<List<AfTelemarketingClientesDetalleData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -394,10 +394,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Telemarketing_EstadosPer_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Telemarketing_EstadosPer_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -431,10 +431,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfTelemarketingContactoData>> AF_Telemarketing_Contacto_Obtener(int CodEmpresa, ContactosFiltros filtros)
+        public ErrorDto<List<AfTelemarketingContactoData>> AF_Telemarketing_Contacto_Obtener(int CodEmpresa, ContactosFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<AfTelemarketingContactoData>>
+            var result = new ErrorDto<List<AfTelemarketingContactoData>>
             {
                 Code = 0,
                 Description = "Ok",

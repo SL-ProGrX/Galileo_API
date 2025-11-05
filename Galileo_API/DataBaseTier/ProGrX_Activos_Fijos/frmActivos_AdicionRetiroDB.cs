@@ -27,10 +27,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_AdicionRetiro_Justificaciones_Obtener(int CodEmpresa, string tipo)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_AdicionRetiro_Justificaciones_Obtener(int CodEmpresa, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -59,10 +59,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_AdicionRetiro_Proveedores_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_AdicionRetiro_Proveedores_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -91,10 +91,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosData>> Activos_AdicionRetiro_Activos_Obtener(int CodEmpresa)
+        public ErrorDto<List<ActivosData>> Activos_AdicionRetiro_Activos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ActivosData>>()
+            var result = new ErrorDto<List<ActivosData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -125,10 +125,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="Id_AddRet"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosRetiroAdicionData> Activos_AdicionRetiro_Consultar(int CodEmpresa, int Id_AddRet, string placa)
+        public ErrorDto<ActivosRetiroAdicionData> Activos_AdicionRetiro_Consultar(int CodEmpresa, int Id_AddRet, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<ActivosRetiroAdicionData>()
+            var result = new ErrorDto<ActivosRetiroAdicionData>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -178,11 +178,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="placa"></param>
         /// <param name="fecha"></param>
         /// <returns></returns>
-        public ErrorDTO<string> Activos_AdicionRetiro_Validar(int CodEmpresa, string placa, DateTime fecha)
+        public ErrorDto<string> Activos_AdicionRetiro_Validar(int CodEmpresa, string placa, DateTime fecha)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "",
@@ -254,11 +254,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="tipo"></param>
         /// <param name="fecha"></param>
         /// <returns></returns>
-        public ErrorDTO<int> Activos_AdicionRetiro_Meses_Consulta(int CodEmpresa, string placa, string tipo, DateTime fecha)
+        public ErrorDto<int> Activos_AdicionRetiro_Meses_Consulta(int CodEmpresa, string placa, string tipo, DateTime fecha)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO<int>
+            var result = new ErrorDto<int>
             {
                 Code = 0,
                 Description = "Ok",
@@ -287,10 +287,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosPrincipalData> Activos_AdicionRetiro_DatosActivo_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<ActivosPrincipalData> Activos_AdicionRetiro_DatosActivo_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<ActivosPrincipalData>()
+            var result = new ErrorDto<ActivosPrincipalData>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -337,10 +337,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_AdicionRetiro_Guardar(int CodEmpresa, string usuario, ActivosRetiroAdicionData data)
+        public ErrorDto Activos_AdicionRetiro_Guardar(int CodEmpresa, string usuario, ActivosRetiroAdicionData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok",
@@ -398,10 +398,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosHistoricoData>> Activos_AdicionRetiro_Historico_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<List<ActivosHistoricoData>> Activos_AdicionRetiro_Historico_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ActivosHistoricoData>>()
+            var result = new ErrorDto<List<ActivosHistoricoData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -438,10 +438,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="placa"></param>
         /// <param name="Id_AddRet"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosRetiroAdicionCierreData>> Activos_AdicionRetiro_Cierres_Consultar(int CodEmpresa, string placa, int Id_AddRet)
+        public ErrorDto<List<ActivosRetiroAdicionCierreData>> Activos_AdicionRetiro_Cierres_Consultar(int CodEmpresa, string placa, int Id_AddRet)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ActivosRetiroAdicionCierreData>>()
+            var result = new ErrorDto<List<ActivosRetiroAdicionCierreData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -475,11 +475,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<string> Activos_AdicionRetiro_ActivosNombre_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<string> Activos_AdicionRetiro_ActivosNombre_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -511,11 +511,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="placa"></param>
         /// <param name="Id_AddRet"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_AdicionRetiro_Eliminar(int CodEmpresa, string placa, int Id_AddRet)
+        public ErrorDto Activos_AdicionRetiro_Eliminar(int CodEmpresa, string placa, int Id_AddRet)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -542,11 +542,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="contabilidad"></param>
         /// <returns></returns>
-        public ErrorDTO<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
+        public ErrorDto<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
         {
 
 
-            var result = new ErrorDTO<DateTime>
+            var result = new ErrorDto<DateTime>
             {
                 Code = 0,
                 Description = "Ok",

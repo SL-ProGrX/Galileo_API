@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<CxPEventos> Eventos_Obtener(int CodCliente, string cod_evento)
+        public ErrorDto<CxPEventos> Eventos_Obtener(int CodCliente, string cod_evento)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<CxPEventos>();
+            var response = new ErrorDto<CxPEventos>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -48,10 +48,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO top1EventoObtener(int CodCliente, int Scroll, string cod_evento)
+        public ErrorDto top1EventoObtener(int CodCliente, int Scroll, string cod_evento)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -82,10 +82,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO Evento_Guardar(int CodCliente, CxPEventos evento)
+        public ErrorDto Evento_Guardar(int CodCliente, CxPEventos evento)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
 
@@ -122,10 +122,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO Evento_Eliminar(int CodCliente, string cod_evento)
+        public ErrorDto Evento_Eliminar(int CodCliente, string cod_evento)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -143,10 +143,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO<List<CxPEventosProveedor>> ObtenerProveedoresEvento(int CodEmpresa, string? cod_evento)
+        public ErrorDto<List<CxPEventosProveedor>> ObtenerProveedoresEvento(int CodEmpresa, string? cod_evento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CxPEventosProveedor>>();
+            var response = new ErrorDto<List<CxPEventosProveedor>>();
 
             try
             {
@@ -166,10 +166,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO AsignaEventoProveedor(int CodCliente, int proveedor, string evento, int activa, string usuario)
+        public ErrorDto AsignaEventoProveedor(int CodCliente, int proveedor, string evento, int activa, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -189,10 +189,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO<List<CxPEventosBusqueda>> EventosLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<CxPEventosBusqueda>> EventosLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CxPEventosBusqueda>>();
+            var response = new ErrorDto<List<CxPEventosBusqueda>>();
 
             try
             {
@@ -212,10 +212,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<CxPEventosLineas>> EventosLineas_Obtener(int CodEmpresa, string cod_evento)
+        public ErrorDto<List<CxPEventosLineas>> EventosLineas_Obtener(int CodEmpresa, string cod_evento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CxPEventosLineas>>();
+            var response = new ErrorDto<List<CxPEventosLineas>>();
 
             try
             {

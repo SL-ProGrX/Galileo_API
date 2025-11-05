@@ -25,11 +25,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO<List<presAnaliticoDescData>> PresAnaliticoDesc_Obtener(int CodCliente, string datos)
+        public ErrorDto<List<presAnaliticoDescData>> PresAnaliticoDesc_Obtener(int CodCliente, string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             presAnaliticoBuscar filtros = JsonConvert.DeserializeObject<presAnaliticoBuscar>(datos);
-            var info = new ErrorDTO<List<presAnaliticoDescData>> 
+            var info = new ErrorDto<List<presAnaliticoDescData>> 
             { 
                 Code = 0,
                 Description = "OK",
@@ -67,11 +67,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO<List<presAnaliticoData>> PresAnalitico_Obtener(int CodCliente, string datos)
+        public ErrorDto<List<presAnaliticoData>> PresAnalitico_Obtener(int CodCliente, string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             presAnaliticoBuscar filtros = JsonConvert.DeserializeObject<presAnaliticoBuscar>(datos);
-            var info = new ErrorDTO<List<presAnaliticoData>>
+            var info = new ErrorDto<List<presAnaliticoData>>
             {
                 Code = 0,
                 Description = "OK",

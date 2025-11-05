@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
        /// </summary>
        /// <param name="CodEmpresa"></param>
        /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> SYS_RA_AutorizacionesUsuariosAutorizados_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> SYS_RA_AutorizacionesUsuariosAutorizados_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -55,10 +55,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysAutorizacionesData>> SYS_RA_AutorizacionesCasos_Obtener(int CodEmpresa)
+        public ErrorDto<List<SysAutorizacionesData>> SYS_RA_AutorizacionesCasos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysAutorizacionesData>>
+            var result = new ErrorDto<List<SysAutorizacionesData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -90,10 +90,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="persona_id"></param>
         /// <returns></returns>
-        public ErrorDTO<SysAutorizacionesData> SYS_RA_AutorizacionesCasosDatos_Obtener(int CodEmpresa,int persona_id)
+        public ErrorDto<SysAutorizacionesData> SYS_RA_AutorizacionesCasosDatos_Obtener(int CodEmpresa,int persona_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysAutorizacionesData>
+            var result = new ErrorDto<SysAutorizacionesData>
             {
                 Code = 0,
                 Description = "Ok",
@@ -127,10 +127,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="datos"></param>
         /// <param name="clave"></param>
         /// <returns></returns>
-        public ErrorDTO SYS_RA_Autorizaciones_Autorizar(int CodEmpresa, string usuario, SysAutorizacionesData datos,string clave)
+        public ErrorDto SYS_RA_Autorizaciones_Autorizar(int CodEmpresa, string usuario, SysAutorizacionesData datos,string clave)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

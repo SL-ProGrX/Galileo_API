@@ -20,11 +20,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<Core_UENs_DTOList> Core_UENS_Obtener(int CodCliente, string filtros)
+        public ErrorDto<Core_UENs_DTOList> Core_UENS_Obtener(int CodCliente, string filtros)
         {
             var vfiltro = JsonConvert.DeserializeObject<Core_UENs_Filtros>(filtros);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<Core_UENs_DTOList>();
+            var response = new ErrorDto<Core_UENs_DTOList>();
             response.Result = new Core_UENs_DTOList();
             response.Code = 0;
             try
@@ -71,10 +71,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Core_UENS_Upsert(int CodCliente, string usuario, Core_UENs_DTO request)
+        public ErrorDto Core_UENS_Upsert(int CodCliente, string usuario, Core_UENs_DTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -128,10 +128,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="unidad_anterior"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Core_SubUnidad_Upsert(int CodCliente, string usuario, string? unidad_anterior, Core_UENs_DTO request)
+        public ErrorDto Core_SubUnidad_Upsert(int CodCliente, string usuario, string? unidad_anterior, Core_UENs_DTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -202,10 +202,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Core_SubCentroCosto_Upsert(int CodCliente, string usuario, Core_UENs_DTO request)
+        public ErrorDto Core_SubCentroCosto_Upsert(int CodCliente, string usuario, Core_UENs_DTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -274,10 +274,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDTO Core_UENS_Delete(int CodCliente, string cod_unidad)
+        public ErrorDto Core_UENS_Delete(int CodCliente, string cod_unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -305,10 +305,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_unidad"></param>
         /// <param name="cntx_unidad"></param>
         /// <returns></returns>
-        public ErrorDTO Core_SubUnidad_Delete(int CodCliente, string cod_unidad, string cntx_unidad)
+        public ErrorDto Core_SubUnidad_Delete(int CodCliente, string cod_unidad, string cntx_unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -376,10 +376,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDTO Core_SubCentroCosto_Delete(int CodCliente, string cod_unidad)
+        public ErrorDto Core_SubCentroCosto_Delete(int CodCliente, string cod_unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -442,11 +442,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDTO<Core_UENs_DTOList> Core_UENSPrincipales_Obtener(int CodCliente, string filtros)
+        public ErrorDto<Core_UENs_DTOList> Core_UENSPrincipales_Obtener(int CodCliente, string filtros)
         {
             var vfiltro = JsonConvert.DeserializeObject<Core_UENs_Filtros>(filtros);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<Core_UENs_DTOList>();
+            var response = new ErrorDto<Core_UENs_DTOList>();
             response.Result = new Core_UENs_DTOList();
             response.Code = 0;
             try
@@ -490,10 +490,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDTO<Core_UENs_DTOList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad)
+        public ErrorDto<Core_UENs_DTOList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<Core_UENs_DTOList>();
+            var response = new ErrorDto<Core_UENs_DTOList>();
             response.Result = new Core_UENs_DTOList();
             response.Code = 0;
             response.Result.Total = 0;
@@ -530,10 +530,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDTO<Core_UENs_DTOList> Core_SubCentroCosto_Obtener(int CodCliente, string cod_unidad, string sub_unidad)
+        public ErrorDto<Core_UENs_DTOList> Core_SubCentroCosto_Obtener(int CodCliente, string cod_unidad, string sub_unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<Core_UENs_DTOList>();
+            var response = new ErrorDto<Core_UENs_DTOList>();
             response.Result = new Core_UENs_DTOList();
             response.Code = 0;
             response.Result.Total = 0;
@@ -571,10 +571,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_unidad"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Core_Usuarios_DTO>> Core_Miembros_Obtener(int CodCliente, string cod_unidad, string? filtro)
+        public ErrorDto<List<Core_Usuarios_DTO>> Core_Miembros_Obtener(int CodCliente, string cod_unidad, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<Core_Usuarios_DTO>>();
+            var response = new ErrorDto<List<Core_Usuarios_DTO>>();
             response.Code = 0;
             try
             {
@@ -599,10 +599,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_unidad"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Core_Miembros_Registro(int CodCliente, string cod_unidad, Core_Usuarios_DTO request)
+        public ErrorDto Core_Miembros_Registro(int CodCliente, string cod_unidad, Core_Usuarios_DTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             var mov = 'E';
             try
@@ -634,10 +634,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_unidad"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Core_Roles_DTO>> Core_Roles_Obtener(int CodCliente, string cod_unidad, string? filtro)
+        public ErrorDto<List<Core_Roles_DTO>> Core_Roles_Obtener(int CodCliente, string cod_unidad, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<Core_Roles_DTO>>();
+            var response = new ErrorDto<List<Core_Roles_DTO>>();
             response.Code = 0;
             try
             {
@@ -663,10 +663,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_unidad"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Core_Roles_Registro(int CodCliente, string cod_unidad, Core_Roles_DTO request)
+        public ErrorDto Core_Roles_Registro(int CodCliente, string cod_unidad, Core_Roles_DTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -695,10 +695,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<UensListaDatos>> Core_UENLista_Obtener(int CodCliente, string? usuario)
+        public ErrorDto<List<UensListaDatos>> Core_UENLista_Obtener(int CodCliente, string? usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<UensListaDatos>>();
+            var response = new ErrorDto<List<UensListaDatos>>();
             response.Code = 0;
             try
             {

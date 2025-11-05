@@ -14,10 +14,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<TranReversionData> InvTranReversion_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
+        public ErrorDto<TranReversionData> InvTranReversion_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TranReversionData>();
+            var response = new ErrorDto<TranReversionData>();
             response.Code = 0;
 
             try
@@ -59,10 +59,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<InvProducReversion>> InvProducLineas_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
+        public ErrorDto<List<InvProducReversion>> InvProducLineas_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<InvProducReversion>>
+            var response = new ErrorDto<List<InvProducReversion>>
             {
                 Code = 0
             };
@@ -88,10 +88,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<TranReversionData> InvTranReversion_scroll(int CodEmpresa, int scrollValue, string? CodBoleta, string TipoTran)
+        public ErrorDto<TranReversionData> InvTranReversion_scroll(int CodEmpresa, int scrollValue, string? CodBoleta, string TipoTran)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TranReversionData>
+            var response = new ErrorDto<TranReversionData>
             {
                 Code = 0
             };
@@ -123,10 +123,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO InvTranReversion_Insertar(int CodEmpresa, TranReversionInsert request)
+        public ErrorDto InvTranReversion_Insertar(int CodEmpresa, TranReversionInsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -165,7 +165,7 @@ namespace PgxAPI.DataBaseTier
                     if (string.IsNullOrEmpty(verificaEstado))
                     {
                         resp.Code = -1;
-                        resp.Description = $"No se encontró la boleta '{request.Boleta}', verifique...";
+                        resp.Description = $"No se encontrï¿½ la boleta '{request.Boleta}', verifique...";
                         return resp;
                     }
                     else if (verificaEstado != "P")

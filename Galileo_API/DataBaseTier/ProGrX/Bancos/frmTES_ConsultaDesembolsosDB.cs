@@ -26,9 +26,9 @@ namespace PgxAPI.DataBaseTier.TES
         /// <param name="usuario"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ErrorDTO VerificarAutorizacion(int codEmpresa, string usuario)
+        public ErrorDto VerificarAutorizacion(int codEmpresa, string usuario)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = string.Empty
@@ -70,9 +70,9 @@ namespace PgxAPI.DataBaseTier.TES
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <returns>Lista de grupos de bancos.</returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_Bancos_Grupos_Obtener(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_Bancos_Grupos_Obtener(int codEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -114,9 +114,9 @@ namespace PgxAPI.DataBaseTier.TES
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="codGrupo">Código del grupo de bancos (opcional).</param>
         /// <returns>Lista de cuentas.</returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_Bancos_Cuentas_Obtener(int codEmpresa, string usuario, string? codGrupo = null)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_Bancos_Cuentas_Obtener(int codEmpresa, string usuario, string? codGrupo = null)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -172,9 +172,9 @@ namespace PgxAPI.DataBaseTier.TES
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <returns>Lista de conceptos.</returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_Conceptos_Obtener(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_Conceptos_Obtener(int codEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -215,9 +215,9 @@ namespace PgxAPI.DataBaseTier.TES
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <returns>Lista de tipos de documentos.</returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_Tipos_Documentos_Obtener(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_Tipos_Documentos_Obtener(int codEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -259,9 +259,9 @@ namespace PgxAPI.DataBaseTier.TES
         /// <param name="filtros"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ErrorDTO<DesembolsosLista> Desembolsos_Buscar(int codEmpresa, int CodConta, FiltrosBusqueda filtros)
+        public ErrorDto<DesembolsosLista> Desembolsos_Buscar(int codEmpresa, int CodConta, FiltrosBusqueda filtros)
         {
-            var response = new ErrorDTO<DesembolsosLista>
+            var response = new ErrorDto<DesembolsosLista>
             {
                 Code = 0,
                 Description = "OK",
@@ -557,9 +557,9 @@ REF_02,REF_03,id_desembolso,REFERENCIA_SINPE, NOMBRE_ORIGEN, USER_AUTORIZA, fech
         }
 
 
-        public ErrorDTO<List<Desembolsos>> Desembolsos_Exportar(int codEmpresa, int CodConta, FiltrosBusqueda filtros)
+        public ErrorDto<List<Desembolsos>> Desembolsos_Exportar(int codEmpresa, int CodConta, FiltrosBusqueda filtros)
         {
-            var response = new ErrorDTO<List<Desembolsos>>
+            var response = new ErrorDto<List<Desembolsos>>
             {
                 Code = 0,
                 Description = "OK",

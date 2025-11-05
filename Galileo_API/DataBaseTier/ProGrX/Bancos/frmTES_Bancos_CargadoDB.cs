@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaBancosCargados>> Tes_Bancos_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<DropDownListaBancosCargados>> Tes_Bancos_Obtener(int CodEmpresa, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaBancosCargados>>
+            var response = new ErrorDto<List<DropDownListaBancosCargados>>
             {
                 Code = 0,
                 Result = new List<DropDownListaBancosCargados>()
@@ -59,10 +59,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TesBancoCargadoConceptos>> Tes_BancosCargadoConceptos_Obtener(int CodEmpresa, string concepto = null)
+        public ErrorDto<List<TesBancoCargadoConceptos>> Tes_BancosCargadoConceptos_Obtener(int CodEmpresa, string concepto = null)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TesBancoCargadoConceptos>>
+            var response = new ErrorDto<List<TesBancoCargadoConceptos>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -98,10 +98,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroUnidades_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroUnidades_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -128,10 +128,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -160,10 +160,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TesAuto_RegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TesAuto_RegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<TesAuto_RegistroLista>()
+            var result = new ErrorDto<TesAuto_RegistroLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -225,10 +225,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="file"></param>
         /// <returns></returns>
-        public ErrorDTO TES_BancosCargados_Aplicar(int CodEmpresa, string cod_banco, string usuario, List<TesCargadoExcelDTO> file)
+        public ErrorDto TES_BancosCargados_Aplicar(int CodEmpresa, string cod_banco, string usuario, List<TesCargadoExcelDTO> file)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "OK"
@@ -276,12 +276,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TES_listaRegistroBancosDTO>> TES_ListaRegistroBancos_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<List<TES_listaRegistroBancosDTO>> TES_ListaRegistroBancos_Obtener(int CodEmpresa, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             TES_FiltrosRegistroBancoDTO filtro = JsonConvert.DeserializeObject<TES_FiltrosRegistroBancoDTO>(filtros) ?? new TES_FiltrosRegistroBancoDTO();
 
-            var response = new ErrorDTO<List<TES_listaRegistroBancosDTO>>
+            var response = new ErrorDto<List<TES_listaRegistroBancosDTO>>
             {
                 Code = 0,
                 Result = new List<TES_listaRegistroBancosDTO>()
@@ -330,11 +330,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="registroLista"></param>
         /// <returns></returns>
-        public ErrorDTO TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, string registroLista)
+        public ErrorDto TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, string registroLista)
         {
             List<RegistroBancoDTO> lista = JsonConvert.DeserializeObject<List<RegistroBancoDTO>>(registroLista) ?? new List<RegistroBancoDTO>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };

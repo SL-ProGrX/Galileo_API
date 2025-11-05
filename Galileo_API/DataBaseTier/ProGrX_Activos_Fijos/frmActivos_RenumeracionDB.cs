@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosDataLista> Activos_Buscar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosDataLista> Activos_Buscar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<ActivosDataLista>
+            var response = new ErrorDto<ActivosDataLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -84,10 +84,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="num_placa"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosRenumeracionData> Activos_Renumeracion_Obtener(int CodEmpresa, string num_placa)
+        public ErrorDto<ActivosRenumeracionData> Activos_Renumeracion_Obtener(int CodEmpresa, string num_placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<ActivosRenumeracionData>()
+            var result = new ErrorDto<ActivosRenumeracionData>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -123,10 +123,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="num_placa"></param>
         /// <param name="nuevo_num"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Renumeracion_Actualizar(int CodEmpresa, string usuario, string num_placa, string nuevo_num)
+        public ErrorDto Activos_Renumeracion_Actualizar(int CodEmpresa, string usuario, string num_placa, string nuevo_num)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

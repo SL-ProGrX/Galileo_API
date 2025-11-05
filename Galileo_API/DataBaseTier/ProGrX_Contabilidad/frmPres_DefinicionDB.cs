@@ -14,10 +14,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<ModeloGenericList>> Pres_Modelos_Obtener(int CodEmpresa, string usuario, int codContab)
+        public ErrorDto<List<ModeloGenericList>> Pres_Modelos_Obtener(int CodEmpresa, string usuario, int codContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<ModeloGenericList>>
+            var resp = new ErrorDto<List<ModeloGenericList>>
             {
                 Code = 0,
                 Result = new List<ModeloGenericList>()
@@ -56,11 +56,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<ModeloGenericList>> Pres_Modelo_Unidades_Obtener(int CodEmpresa, string codModelo, int codContab, string usuario)
+        public ErrorDto<List<ModeloGenericList>> Pres_Modelo_Unidades_Obtener(int CodEmpresa, string codModelo, int codContab, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             CntxCierres cierre = new CntxCierres();
-            var resp = new ErrorDTO<List<ModeloGenericList>>
+            var resp = new ErrorDto<List<ModeloGenericList>>
             {
                 Code = 0,
                 Result = new List<ModeloGenericList>()
@@ -91,10 +91,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<ModeloGenericList>> Pres_Modelo_Unidades_CC_Obtener(int CodEmpresa, string codModelo, int codContab, string codUnidad)
+        public ErrorDto<List<ModeloGenericList>> Pres_Modelo_Unidades_CC_Obtener(int CodEmpresa, string codModelo, int codContab, string codUnidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<ModeloGenericList>>
+            var resp = new ErrorDto<List<ModeloGenericList>>
             {
                 Code = 0,
                 Result = new List<ModeloGenericList>()
@@ -125,10 +125,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<CntxCuentasData> Pres_Definicion_scroll(int CodEmpresa, int scrollValue, string? CodCtaMask, int CodContab)
+        public ErrorDto<CntxCuentasData> Pres_Definicion_scroll(int CodEmpresa, int scrollValue, string? CodCtaMask, int CodContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<CntxCuentasData>
+            var resp = new ErrorDto<CntxCuentasData>
             {
                 Code = 0,
                 Result = new CntxCuentasData()
@@ -161,10 +161,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<VistaPresCuentaData>> Pres_VistaPresupuesto_Cuenta_SP(int CodEmpresa, PresCuenta request)
+        public ErrorDto<List<VistaPresCuentaData>> Pres_VistaPresupuesto_Cuenta_SP(int CodEmpresa, PresCuenta request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<VistaPresCuentaData>>
+            var resp = new ErrorDto<List<VistaPresCuentaData>>
             {
                 Code = 0,
                 Result = new List<VistaPresCuentaData>()
@@ -187,10 +187,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<CuentasLista> Pres_Cuentas_Obtener(int CodEmpresa, string cod_contabilidad, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<CuentasLista> Pres_Cuentas_Obtener(int CodEmpresa, string cod_contabilidad, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<CuentasLista>
+            var resp = new ErrorDto<CuentasLista>
             {
                 Code = 0,
                 Result = new CuentasLista()

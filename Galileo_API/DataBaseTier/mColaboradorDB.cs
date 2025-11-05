@@ -16,15 +16,15 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
 
-        public ErrorDTO spRH_Boleta_Pago_Email(int CodEmpresa, RH_BoletaDTO request, string usuario, int modulo)
+        public ErrorDto spRH_Boleta_Pago_Email(int CodEmpresa, RH_BoletaDTO request, string usuario, int modulo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -58,10 +58,10 @@ namespace PgxAPI.DataBaseTier
             }
             return resp;
         }
-        public ErrorDTO spRH_Boleta_Aguinaldo_Email(int CodEmpresa, RH_BoletaDTO request, string usuario, int modulo)
+        public ErrorDto spRH_Boleta_Aguinaldo_Email(int CodEmpresa, RH_BoletaDTO request, string usuario, int modulo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {

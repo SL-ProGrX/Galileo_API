@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ComisionAutorizaData>> AF_ComisionesAutoriza_Obtener(int CodEmpresa, ComisionAutorizaFiltroDTO filtro)
+        public ErrorDto<List<ComisionAutorizaData>> AF_ComisionesAutoriza_Obtener(int CodEmpresa, ComisionAutorizaFiltroDTO filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ComisionAutorizaData>>()
+            var result = new ErrorDto<List<ComisionAutorizaData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -107,11 +107,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="notas"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_ComisionesAutoriza_Autorizar(int CodEmpresa, string cedula, int autoriza, string? notas, string usuario)
+        public ErrorDto AF_ComisionesAutoriza_Autorizar(int CodEmpresa, string cedula, int autoriza, string? notas, string usuario)
         {
             string notasValida = notas ?? "";
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

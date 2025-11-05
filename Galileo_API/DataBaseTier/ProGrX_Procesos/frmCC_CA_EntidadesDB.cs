@@ -19,7 +19,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -63,10 +63,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_Entidad_Upsert(int CodEmpresa, PRM_CA_EntidadUpsert request)
+        public ErrorDto CC_CA_Entidad_Upsert(int CodEmpresa, PRM_CA_EntidadUpsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -94,7 +94,7 @@ namespace PgxAPI.DataBaseTier
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = request.registro_usuario.ToUpper(),
-                            DetalleMovimiento = "Cargos Automáticos - Entidad: " + request.cod_entidad,
+                            DetalleMovimiento = "Cargos Automï¿½ticos - Entidad: " + request.cod_entidad,
                             Movimiento = "REGISTRA",
                             Modulo = 10
                         });
@@ -118,7 +118,7 @@ namespace PgxAPI.DataBaseTier
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = request.registro_usuario.ToUpper(),
-                            DetalleMovimiento = "Cargos Automáticos - Entidad: " + request.cod_entidad,
+                            DetalleMovimiento = "Cargos Automï¿½ticos - Entidad: " + request.cod_entidad,
                             Movimiento = "MODIFICA",
                             Modulo = 10
                         });
@@ -134,10 +134,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_Entidad_Delete(int CodEmpresa, string Usuario, string Codigo)
+        public ErrorDto CC_CA_Entidad_Delete(int CodEmpresa, string Usuario, string Codigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -152,7 +152,7 @@ namespace PgxAPI.DataBaseTier
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
-                        DetalleMovimiento = "Cargos Automáticos - Entidad: " + Codigo,
+                        DetalleMovimiento = "Cargos Automï¿½ticos - Entidad: " + Codigo,
                         Movimiento = "ELIMINA",
                         Modulo = 10
                     });

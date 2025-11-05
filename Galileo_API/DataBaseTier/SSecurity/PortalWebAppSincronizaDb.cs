@@ -16,9 +16,9 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO ServidorPrincipalSincronizar()
+        public ErrorDto ServidorPrincipalSincronizar()
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -36,9 +36,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO SincronizarWebApps(int paso, string server)
+        public ErrorDto SincronizarWebApps(int paso, string server)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 if (paso == 1)

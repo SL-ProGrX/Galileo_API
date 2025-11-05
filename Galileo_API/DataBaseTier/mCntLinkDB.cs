@@ -241,7 +241,7 @@ namespace PgxAPI.DataBaseTier
             pCuenta = pCuenta.Trim();
 
             //DefMascarasDTO param = new DefMascarasDTO();
-            var param = new ErrorDTO<DefMascarasDTO>();
+            var param = new ErrorDto<DefMascarasDTO>();
             CntContabilidadesDTO info = new CntContabilidadesDTO();
 
             try
@@ -299,9 +299,9 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO<DefMascarasDTO> sbgCntParametros(int CodEmpresa)
+        public ErrorDto<DefMascarasDTO> sbgCntParametros(int CodEmpresa)
         {
-            var info = new ErrorDTO<DefMascarasDTO>
+            var info = new ErrorDto<DefMascarasDTO>
             {
                 Result = new DefMascarasDTO() // Instantiate DefMascarasDTO to avoid null
             };

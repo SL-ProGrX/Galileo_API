@@ -24,9 +24,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda, orden y paginación</param>
         /// <returns></returns>
-        public ErrorDTO<CanalTipoLista> AF_CanalesTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<CanalTipoLista> AF_CanalesTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<CanalTipoLista>
+            var result = new ErrorDto<CanalTipoLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -84,9 +84,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="canalTipo">Datos del tipo de canal</param>
         /// <returns></returns>
-        public ErrorDTO AF_CanalesTipos_Guardar(int CodEmpresa, string usuario, CanalTipoData canalTipo)
+        public ErrorDto AF_CanalesTipos_Guardar(int CodEmpresa, string usuario, CanalTipoData canalTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -122,9 +122,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="canalTipo">Datos del tipo de canal a insertar</param>
         /// <returns></returns>
-        private ErrorDTO AF_CanalesTipos_Insertar(int CodEmpresa, string usuario, CanalTipoData canalTipo)
+        private ErrorDto AF_CanalesTipos_Insertar(int CodEmpresa, string usuario, CanalTipoData canalTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -163,9 +163,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="canalTipo">Datos del tipo de canal a actualizar</param>
         /// <returns></returns>
-        private ErrorDTO AF_CanalesTipos_Actualizar(int CodEmpresa, string usuario, CanalTipoData canalTipo)
+        private ErrorDto AF_CanalesTipos_Actualizar(int CodEmpresa, string usuario, CanalTipoData canalTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -205,9 +205,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="canalTipo">Código del tipo de canal a eliminar</param>
         /// <returns></returns>
-        public ErrorDTO AF_CanalesTipos_Eliminar(int CodEmpresa, string usuario, string canalTipo)
+        public ErrorDto AF_CanalesTipos_Eliminar(int CodEmpresa, string usuario, string canalTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -238,9 +238,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="canalTipo">Código del tipo de canal a validar</param>
         /// <returns></returns>
-        public ErrorDTO AF_CanalesTipos_Valida(int CodEmpresa, string canalTipo)
+        public ErrorDto AF_CanalesTipos_Valida(int CodEmpresa, string canalTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -272,9 +272,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda</param>
         /// <returns></returns>
-        public ErrorDTO<List<CanalTipoData>> AF_CanalesTipos_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<CanalTipoData>> AF_CanalesTipos_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<CanalTipoData>>
+            var result = new ErrorDto<List<CanalTipoData>>
             {
                 Code = 0,
                 Description = "Ok",

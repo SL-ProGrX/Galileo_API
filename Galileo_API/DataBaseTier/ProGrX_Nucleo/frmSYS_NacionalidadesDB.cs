@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysNacionalidadesLista> Sys_NacionalidadesLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysNacionalidadesLista> Sys_NacionalidadesLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysNacionalidadesLista>()
+            var result = new ErrorDto<SysNacionalidadesLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -86,10 +86,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysNacionalidadesData>> Sys_Nacionalidades_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SysNacionalidadesData>> Sys_Nacionalidades_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysNacionalidadesData>>()
+            var result = new ErrorDto<List<SysNacionalidadesData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -130,9 +130,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="nacionalidad"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_Nacionalidades_Guardar(int CodEmpresa, string usuario, SysNacionalidadesData nacionalidad)
+        public ErrorDto Sys_Nacionalidades_Guardar(int CodEmpresa, string usuario, SysNacionalidadesData nacionalidad)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -185,10 +185,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <summary>
         /// Inserta una nueva nacionalidad.
         /// </summary>
-        private ErrorDTO Sys_Nacionalidades_Insertar(int CodEmpresa, string usuario, SysNacionalidadesData nacionalidad)
+        private ErrorDto Sys_Nacionalidades_Insertar(int CodEmpresa, string usuario, SysNacionalidadesData nacionalidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -229,10 +229,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <summary>
         /// Actualiza una nacionalidad existente.
         /// </summary>
-        private ErrorDTO Sys_Nacionalidades_Actualizar(int CodEmpresa, string usuario, SysNacionalidadesData nacionalidad)
+        private ErrorDto Sys_Nacionalidades_Actualizar(int CodEmpresa, string usuario, SysNacionalidadesData nacionalidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -282,9 +282,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="cod_nacionalidad"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_Nacionalidades_Eliminar(int CodEmpresa, string usuario, string cod_nacionalidad)
+        public ErrorDto Sys_Nacionalidades_Eliminar(int CodEmpresa, string usuario, string cod_nacionalidad)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -336,10 +336,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="nacionalidad"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_Nacionalidades_Valida(int CodEmpresa, SysNacionalidadesData nacionalidad)
+        public ErrorDto Sys_Nacionalidades_Valida(int CodEmpresa, SysNacionalidadesData nacionalidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

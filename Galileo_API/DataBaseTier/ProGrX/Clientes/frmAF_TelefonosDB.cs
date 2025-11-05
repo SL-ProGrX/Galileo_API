@@ -21,9 +21,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_TiposTelefonos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_TiposTelefonos_Obtener(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
             try
             {
                 var conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -53,9 +53,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_TelefonoDTO>> AF_Telefonos_ObtenerPorCedula(int CodEmpresa, string cedula)
+        public ErrorDto<List<AF_TelefonoDTO>> AF_Telefonos_ObtenerPorCedula(int CodEmpresa, string cedula)
         {
-            var response = new ErrorDTO<List<AF_TelefonoDTO>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<AF_TelefonoDTO>> { Code = 0, Result = new() };
             try
             {
                 var conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -97,9 +97,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="contacto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Telefono_Insertar(int CodEmpresa, string cedula, int tipoId, string numero, string ext, string contacto, string usuario)
+        public ErrorDto AF_Telefono_Insertar(int CodEmpresa, string cedula, int tipoId, string numero, string ext, string contacto, string usuario)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Guardado correctamente"
@@ -157,9 +157,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="contacto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Telefono_Actualizar(int CodEmpresa, int telefonoId, int tipoId, string numero, string ext, string contacto, string usuario)
+        public ErrorDto AF_Telefono_Actualizar(int CodEmpresa, int telefonoId, int tipoId, string numero, string ext, string contacto, string usuario)
         {
-            var response = new ErrorDTO { Code = 0, Description = "Actualizado correctamente" };
+            var response = new ErrorDto { Code = 0, Description = "Actualizado correctamente" };
             try
             {
                 if (ext == "0")
@@ -202,14 +202,14 @@ namespace PgxAPI.DataBaseTier
         }
 
         /// <summary>
-        /// Eliminar teléfono
+        /// Eliminar telï¿½fono
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="telefonoId"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Telefono_Eliminar(int CodEmpresa, int telefonoId)
+        public ErrorDto AF_Telefono_Eliminar(int CodEmpresa, int telefonoId)
         {
-            var response = new ErrorDTO { Code = 0, Description = "Eliminado correctamente" };
+            var response = new ErrorDto { Code = 0, Description = "Eliminado correctamente" };
             try
             {
                 var conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);

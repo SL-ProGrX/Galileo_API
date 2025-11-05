@@ -29,7 +29,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="emailRequest"></param>
         /// <param name="eConfig"></param>
         /// <returns></returns>
-        public async Task SendEmailAsync(EmailRequest emailRequest, EnvioCorreoModels eConfig, ErrorDTO response)
+        public async Task SendEmailAsync(EmailRequest emailRequest, EnvioCorreoModels eConfig, ErrorDto response)
         {
             response.Code = 0;
             try

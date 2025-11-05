@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysUsuariosData>> Sys_RA_Usuarios_Consulta(int CodEmpresa, string filtro)
+        public ErrorDto<List<SysUsuariosData>> Sys_RA_Usuarios_Consulta(int CodEmpresa, string filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysUsuariosData>>()
+            var result = new ErrorDto<List<SysUsuariosData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -62,12 +62,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="accion"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_RA_Usuarios_Asigna(int CodEmpresa, string ra_usuario, string usuario, bool accion)
+        public ErrorDto Sys_RA_Usuarios_Asigna(int CodEmpresa, string ra_usuario, string usuario, bool accion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             int check = accion == true ? 1 : 0;
             string _accion = accion == true ? "Activa" : "Inactiva";
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

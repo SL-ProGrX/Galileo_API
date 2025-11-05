@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<FslGarantiasData>> FslGarantias_Obtener(int CodCliente)
+        public ErrorDto<List<FslGarantiasData>> FslGarantias_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<FslGarantiasData>>();
+            var response = new ErrorDto<List<FslGarantiasData>>();
 
             response.Code = 0;
             try
@@ -42,10 +42,10 @@ namespace PgxAPI.DataBaseTier
             return response; ;
         }
 
-        public ErrorDTO<FslDevolucionesDataLista> FslDevoluciones_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<FslDevolucionesDataLista> FslDevoluciones_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<FslDevolucionesDataLista>();
+            var response = new ErrorDto<FslDevolucionesDataLista>();
 
             response.Result = new FslDevolucionesDataLista();
             response.Code = 0;
@@ -94,10 +94,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO ParametroDevolucion_Guardar(int CodCliente, FslDevolucionesData devolucion)
+        public ErrorDto ParametroDevolucion_Guardar(int CodCliente, FslDevolucionesData devolucion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0; ;
 
             try
@@ -120,11 +120,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO FslDevolucion_Insertar(int CodCliente, FslDevolucionesData devolucion)
+        public ErrorDto FslDevolucion_Insertar(int CodCliente, FslDevolucionesData devolucion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -183,11 +183,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO FslDevolucion_Actualizar(int CodCliente, FslDevolucionesData devolucion)
+        public ErrorDto FslDevolucion_Actualizar(int CodCliente, FslDevolucionesData devolucion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -208,11 +208,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO FslDevolucion_Eliminar(int CodCliente, int cod_devolucion)
+        public ErrorDto FslDevolucion_Eliminar(int CodCliente, int cod_devolucion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0; ;
 
             try

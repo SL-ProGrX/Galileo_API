@@ -18,7 +18,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TES_DropDownListaBancosExplorer>> Tes_Bancos_Obtener(int CodEmpresa)
+        public ErrorDto<List<TES_DropDownListaBancosExplorer>> Tes_Bancos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TES_DropDownListaBancosExplorer>>
+            var response = new ErrorDto<List<TES_DropDownListaBancosExplorer>>
             {
                 Code = 0,
                 Result = new List<TES_DropDownListaBancosExplorer>()
@@ -60,11 +60,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtrosExplorer"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> TES_explorer_Obtener(int CodEmpresa, string filtrosExplorer, FiltrosLazyLoadData filtros)
+        public ErrorDto<TablasListaGenericaModel> TES_explorer_Obtener(int CodEmpresa, string filtrosExplorer, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             TES_ExplorerFiltros filtro = JsonConvert.DeserializeObject<TES_ExplorerFiltros>(filtrosExplorer) ?? new TES_ExplorerFiltros();
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Result = new TablasListaGenericaModel()

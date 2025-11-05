@@ -19,7 +19,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -83,10 +83,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_Linea_Upsert(int CodEmpresa, PRM_CA_LineaUpsert request)
+        public ErrorDto CC_CA_Linea_Upsert(int CodEmpresa, PRM_CA_LineaUpsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -148,10 +148,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_Linea_Delete(int CodEmpresa, string Usuario, string Codigo)
+        public ErrorDto CC_CA_Linea_Delete(int CodEmpresa, string Usuario, string Codigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -233,10 +233,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_CodigoAsignado_Insert(int CodEmpresa, PRM_CA_Lineas_DtInsert request)
+        public ErrorDto CC_CA_CodigoAsignado_Insert(int CodEmpresa, PRM_CA_Lineas_DtInsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             try
@@ -251,7 +251,7 @@ namespace PgxAPI.DataBaseTier
                     parameters1.Add("registro_usuario", request.registro_usuario, DbType.String);
                     resp.Code = connection.ExecuteAsync(query1, parameters1).Result;
 
-                    resp.Description = "Código " + request.codigo + " asignado!";
+                    resp.Description = "Cï¿½digo " + request.codigo + " asignado!";
 
                     Bitacora(new BitacoraInsertarDTO
                     {
@@ -271,10 +271,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CA_CodigoAsignado_Delete(int CodEmpresa, string CodLinea, string Codigo, string Usuario)
+        public ErrorDto CC_CA_CodigoAsignado_Delete(int CodEmpresa, string CodLinea, string Codigo, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -282,7 +282,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"delete prm_ca_lineas_dt where cod_linea = '{CodLinea}' and codigo = '{Codigo}'";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Código " + Codigo + " desasignado!";
+                    resp.Description = "Cï¿½digo " + Codigo + " desasignado!";
 
                     Bitacora(new BitacoraInsertarDTO
                     {

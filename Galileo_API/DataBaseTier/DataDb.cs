@@ -23,12 +23,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="jFiltros"></param>
         /// <returns></returns>
-        public ErrorDTO<ProveedoresDataLista> Proveedores_Obtener(int CodCliente, ProveedorDataFiltros jFiltros)
+        public ErrorDto<ProveedoresDataLista> Proveedores_Obtener(int CodCliente, ProveedorDataFiltros jFiltros)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<ProveedoresDataLista>();
+            var response = new ErrorDto<ProveedoresDataLista>();
             response.Result = new ProveedoresDataLista();
             response.Result.Total = 0;
             try
@@ -208,11 +208,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<ArticuloDataLista> Articulos_Obtener(int CodCliente, ArticuloDataFiltros filtro)
+        public ErrorDto<ArticuloDataLista> Articulos_Obtener(int CodCliente, ArticuloDataFiltros filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<ArticuloDataLista>
+            var response = new ErrorDto<ArticuloDataLista>
             {
                 Code = 0,
                 Result = new ArticuloDataLista()
@@ -971,11 +971,11 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<SociosDataLista> Socios_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<SociosDataLista> Socios_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<SociosDataLista>();
+            var response = new ErrorDto<SociosDataLista>();
             response.Result = new SociosDataLista();
             response.Result.Total = 0;
 
@@ -1173,10 +1173,10 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CatalogosLista>> UENS_Obtener(int CodEmpresa)
+        public ErrorDto<List<CatalogosLista>> UENS_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CatalogosLista>>
+            var response = new ErrorDto<List<CatalogosLista>>
             {
                 Code = 0
             };
@@ -1197,10 +1197,10 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
             return response;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
 
             try
             {
@@ -1234,10 +1234,10 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
             return resp;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
 
             try
             {
@@ -1288,11 +1288,11 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
         }
 
 
-        public ErrorDTO<List<TipoProductoSubGradaData>> TipoProductoSub_ObtenerTodos(int CodEmpresa, string Cod_Prodclas)
+        public ErrorDto<List<TipoProductoSubGradaData>> TipoProductoSub_ObtenerTodos(int CodEmpresa, string Cod_Prodclas)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TipoProductoSubGradaData>>
+            var response = new ErrorDto<List<TipoProductoSubGradaData>>
             {
                 Code = 0,
                 Result = new List<TipoProductoSubGradaData>()
@@ -1381,12 +1381,12 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
         /// <param name="CodEmpresa"></param>
         /// <param name="jfiltro"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> Personas_Obtener(int CodEmpresa, string jfiltro)
+        public ErrorDto<TablasListaGenericaModel> Personas_Obtener(int CodEmpresa, string jfiltro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro);
 
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1440,12 +1440,12 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
         /// <param name="CodEmpresa"></param>
         /// <param name="jfiltro"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string jfiltro)
+        public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string jfiltro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro);
 
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Description = "Ok",

@@ -16,11 +16,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<PePlanesDatosLista> PePlanesLista_Obtener(int CodEmpresa, string Jfiltros)
+        public ErrorDto<PePlanesDatosLista> PePlanesLista_Obtener(int CodEmpresa, string Jfiltros)
         {
             PePlanesFiltros filtros = JsonConvert.DeserializeObject<PePlanesFiltros>(Jfiltros) ?? new PePlanesFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<PePlanesDatosLista>();
+            var response = new ErrorDto<PePlanesDatosLista>();
             response.Result = new PePlanesDatosLista
             {
                 total = 0,
@@ -76,9 +76,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO PePlanes_Guardar(int CodEmpresa, PePlanesDTO plan)
+        public ErrorDto PePlanes_Guardar(int CodEmpresa, PePlanesDTO plan)
         {
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -103,10 +103,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        private ErrorDTO PePlanes_Insertar(int CodEmpresa, PePlanesDTO plan)
+        private ErrorDto PePlanes_Insertar(int CodEmpresa, PePlanesDTO plan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -157,10 +157,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        private ErrorDTO PePlanes_Actualizar(int CodEmpresa, PePlanesDTO plan)
+        private ErrorDto PePlanes_Actualizar(int CodEmpresa, PePlanesDTO plan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -197,10 +197,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDTO PePlanes_Eliminar(int CodEmpresa, int pe_id)
+        public ErrorDto PePlanes_Eliminar(int CodEmpresa, int pe_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -233,10 +233,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDTO<List<PePlanesDTO>> PePlanes_Exportar(int CodEmpresa)
+        public ErrorDto<List<PePlanesDTO>> PePlanes_Exportar(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<PePlanesDTO>>();
+            var response = new ErrorDto<List<PePlanesDTO>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);

@@ -24,9 +24,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda, orden y paginación</param>
         /// <returns></returns>
-        public ErrorDTO<NoCotizaRangosLista> AF_NoCotizaRangos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<NoCotizaRangosLista> AF_NoCotizaRangos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<NoCotizaRangosLista>
+            var result = new ErrorDto<NoCotizaRangosLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -83,9 +83,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="rango">Datos del rango</param>
         /// <returns></returns>
-        public ErrorDTO AF_NoCotizaRangos_Guardar(int CodEmpresa, string usuario, NoCotizaRangosData rango)
+        public ErrorDto AF_NoCotizaRangos_Guardar(int CodEmpresa, string usuario, NoCotizaRangosData rango)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -118,9 +118,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="rango">Datos del rango a insertar</param>
         /// <returns></returns>
-        private ErrorDTO AF_NoCotizaRangos_Insertar(int CodEmpresa, string usuario, NoCotizaRangosData rango)
+        private ErrorDto AF_NoCotizaRangos_Insertar(int CodEmpresa, string usuario, NoCotizaRangosData rango)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -161,9 +161,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="rango">Datos del rango a actualizar</param>
         /// <returns></returns>
-        private ErrorDTO AF_NoCotizaRangos_Actualizar(int CodEmpresa, string usuario, NoCotizaRangosData rango)
+        private ErrorDto AF_NoCotizaRangos_Actualizar(int CodEmpresa, string usuario, NoCotizaRangosData rango)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -210,9 +210,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="lineaId">Id del rango a eliminar</param>
         /// <returns></returns>
-        public ErrorDTO AF_NoCotizaRangos_Eliminar(int CodEmpresa, string usuario, int lineaId)
+        public ErrorDto AF_NoCotizaRangos_Eliminar(int CodEmpresa, string usuario, int lineaId)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -244,9 +244,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda</param>
         /// <returns></returns>
-        public ErrorDTO<List<NoCotizaRangosData>> AF_NoCotizaRangos_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<NoCotizaRangosData>> AF_NoCotizaRangos_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<NoCotizaRangosData>>
+            var result = new ErrorDto<List<NoCotizaRangosData>>
             {
                 Code = 0,
                 Description = "Ok",

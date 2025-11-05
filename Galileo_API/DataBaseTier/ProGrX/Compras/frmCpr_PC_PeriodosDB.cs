@@ -16,10 +16,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<CatalogosLista>> CprPeriodosContabilidades_Obtener(int CodEmpresa)
+        public ErrorDto<List<CatalogosLista>> CprPeriodosContabilidades_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CatalogosLista>>();
+            var response = new ErrorDto<List<CatalogosLista>>();
             response.Code = 0;
             try
             {
@@ -40,10 +40,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<CatalogosLista>> CprPeriodosModelos_Obtener(int CodEmpresa, string usuario, int cod_contabilidad)
+        public ErrorDto<List<CatalogosLista>> CprPeriodosModelos_Obtener(int CodEmpresa, string usuario, int cod_contabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CatalogosLista>>();
+            var response = new ErrorDto<List<CatalogosLista>>();
             response.Code = 0;
             try
             {
@@ -68,10 +68,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<cprPlanPeriodosDTO> CprPeriodosPlan_Obtener(int CodEmpresa, int id_periodo)
+        public ErrorDto<cprPlanPeriodosDTO> CprPeriodosPlan_Obtener(int CodEmpresa, int id_periodo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<cprPlanPeriodosDTO>();
+            var response = new ErrorDto<cprPlanPeriodosDTO>();
             response.Code = 0;
             try
             {
@@ -92,11 +92,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<cprPeriodosPlanLista> CprPeriodosPlanLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<cprPeriodosPlanLista> CprPeriodosPlanLista_Obtener(int CodEmpresa, string filtros)
         {
             cprPeriodosPlanFiltros filtro = JsonConvert.DeserializeObject<cprPeriodosPlanFiltros>(filtros);
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<cprPeriodosPlanLista>();
+            var response = new ErrorDto<cprPeriodosPlanLista>();
             response.Result = new cprPeriodosPlanLista();
             response.Code = 0;
             try
@@ -145,10 +145,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<cprPlanPeriodosDTO> CprPeriodoPlan_Scroll(int CodEmpresa, int scroll, int? id_periodo)
+        public ErrorDto<cprPlanPeriodosDTO> CprPeriodoPlan_Scroll(int CodEmpresa, int scroll, int? id_periodo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<cprPlanPeriodosDTO>();
+            var response = new ErrorDto<cprPlanPeriodosDTO>();
             try
             {
                 string where = " ", orderBy = " ";
@@ -179,10 +179,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO CprPeriodoPlan_Guardar(int CodEmpresa, cprPlanPeriodosDTO periodo)
+        public ErrorDto CprPeriodoPlan_Guardar(int CodEmpresa, cprPlanPeriodosDTO periodo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0,
                 Description = ""
@@ -216,10 +216,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDTO CprPeriodoPlan_Insertar(int CodEmpresa, cprPlanPeriodosDTO periodo)
+        private ErrorDto CprPeriodoPlan_Insertar(int CodEmpresa, cprPlanPeriodosDTO periodo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -261,10 +261,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDTO CprPeriodoPlan_Actualizar(int CodEmpresa, cprPlanPeriodosDTO periodo)
+        private ErrorDto CprPeriodoPlan_Actualizar(int CodEmpresa, cprPlanPeriodosDTO periodo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -295,10 +295,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CprPeriodoPlan_Eliminar(int CodEmpresa, int id_periodo)
+        public ErrorDto CprPeriodoPlan_Eliminar(int CodEmpresa, int id_periodo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -321,10 +321,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CprPeriodoPlan_Aprobar(int CodEmpresa, int id_periodo, string usuario)
+        public ErrorDto CprPeriodoPlan_Aprobar(int CodEmpresa, int id_periodo, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -349,11 +349,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<cprModeloDateDatos> CprPeriodoPlanMeses_Obtener(string modelo)
+        public ErrorDto<cprModeloDateDatos> CprPeriodoPlanMeses_Obtener(string modelo)
         {
             cprModeloFiltro cpr = JsonConvert.DeserializeObject<cprModeloFiltro>(modelo);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(cpr.codEmpresa);
-            var response = new ErrorDTO<cprModeloDateDatos>();
+            var response = new ErrorDto<cprModeloDateDatos>();
             response.Result = new cprModeloDateDatos();
             cprModeloDatos datos = new cprModeloDatos();
             try

@@ -25,9 +25,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="EstadoAutorizado"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_NAT_Autorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa, int EstadoAutorizado)
+        public ErrorDto<List<AF_NAT_Autorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa, int EstadoAutorizado)
         {
-            var result = new ErrorDTO<List<AF_NAT_Autorizadores>>()
+            var result = new ErrorDto<List<AF_NAT_Autorizadores>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -64,10 +64,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="Mov"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_NAT_Autorizadores_Asignar(int CodEmpresa, string A_Usuario, string Mov, string Usuario)
+        public ErrorDto AF_NAT_Autorizadores_Asignar(int CodEmpresa, string A_Usuario, string Mov, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

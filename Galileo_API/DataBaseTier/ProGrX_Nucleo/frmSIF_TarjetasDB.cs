@@ -9,7 +9,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
     public class frmSIF_TarjetasDB
     {
         private readonly IConfiguration? _config;
-        private readonly int vModulo = 10; // Modulo de Tesorería
+        private readonly int vModulo = 10; // Modulo de Tesorerï¿½a
         private readonly mSecurityMainDb _Security_MainDB;
 
         public frmSIF_TarjetasDB(IConfiguration? config)
@@ -19,15 +19,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene una lista de tarjetas con paginación y filtros (lazy loading).
+        /// Obtiene una lista de tarjetas con paginaciï¿½n y filtros (lazy loading).
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SifTarjetasLista> SIF_TarjetasLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SifTarjetasLista> SIF_TarjetasLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SifTarjetasLista>()
+            var result = new ErrorDto<SifTarjetasLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -79,15 +79,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene una lista de tarjetas con filtros aplicados (sin paginación).
+        /// Obtiene una lista de tarjetas con filtros aplicados (sin paginaciï¿½n).
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SifTarjetasData>> SIF_Tarjetas_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SifTarjetasData>> SIF_Tarjetas_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SifTarjetasData>>()
+            var result = new ErrorDto<List<SifTarjetasData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -127,10 +127,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="tarjeta"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_Tarjetas_Guardar(int CodEmpresa, string usuario, SifTarjetasData tarjeta)
+        public ErrorDto SIF_Tarjetas_Guardar(int CodEmpresa, string usuario, SifTarjetasData tarjeta)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -161,11 +161,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Inserta una nueva tarjeta y registra en bitácora.
+        /// Inserta una nueva tarjeta y registra en bitï¿½cora.
         /// </summary>
-        private ErrorDTO SIF_Tarjetas_Insertar(SqlConnection connection, int CodEmpresa, string usuario, SifTarjetasData tarjeta)
+        private ErrorDto SIF_Tarjetas_Insertar(SqlConnection connection, int CodEmpresa, string usuario, SifTarjetasData tarjeta)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Tarjeta registrada correctamente."
@@ -200,11 +200,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Actualiza una tarjeta existente y registra en bitácora.
+        /// Actualiza una tarjeta existente y registra en bitï¿½cora.
         /// </summary>
-        private ErrorDTO SIF_Tarjetas_Actualizar(SqlConnection connection, int CodEmpresa, string usuario, SifTarjetasData tarjeta)
+        private ErrorDto SIF_Tarjetas_Actualizar(SqlConnection connection, int CodEmpresa, string usuario, SifTarjetasData tarjeta)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Tarjeta actualizada correctamente."
@@ -240,16 +240,16 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Elimina una tarjeta por su código y registra en bitácora.
+        /// Elimina una tarjeta por su cï¿½digo y registra en bitï¿½cora.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="cod_tarjeta"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_Tarjetas_Eliminar(int CodEmpresa, string usuario, string cod_tarjeta)
+        public ErrorDto SIF_Tarjetas_Eliminar(int CodEmpresa, string usuario, string cod_tarjeta)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -265,7 +265,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 if (existe == 0)
                 {
                     result.Code = -2;
-                    result.Description = $"La tarjeta con el código {cod_tarjeta} no existe.";
+                    result.Description = $"La tarjeta con el cï¿½digo {cod_tarjeta} no existe.";
                     return result;
                 }
 
@@ -290,15 +290,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Valida si un código o descripción de tarjeta ya existe en la base de datos.
+        /// Valida si un cï¿½digo o descripciï¿½n de tarjeta ya existe en la base de datos.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="tarjeta"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_Tarjetas_Valida(int CodEmpresa, SifTarjetasData tarjeta)
+        public ErrorDto SIF_Tarjetas_Valida(int CodEmpresa, SifTarjetasData tarjeta)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -319,12 +319,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     if (existe > 0)
                     {
                         result.Code = -1;
-                        result.Description = "Ya existe una tarjeta con ese código o descripción.";
+                        result.Description = "Ya existe una tarjeta con ese cï¿½digo o descripciï¿½n.";
                     }
                     else
                     {
                         result.Code = 0;
-                        result.Description = "El código y la descripción de tarjeta son válidos.";
+                        result.Description = "El cï¿½digo y la descripciï¿½n de tarjeta son vï¿½lidos.";
                     }
                 }
             }
@@ -337,15 +337,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene la lista de emisores y su asignación para una tarjeta.
+        /// Obtiene la lista de emisores y su asignaciï¿½n para una tarjeta.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_tarjeta"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SifEmisoresAsignadosData>> SIF_TarjetasEmisores_Obtener(int CodEmpresa, string cod_tarjeta)
+        public ErrorDto<List<SifEmisoresAsignadosData>> SIF_TarjetasEmisores_Obtener(int CodEmpresa, string cod_tarjeta)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SifEmisoresAsignadosData>>()
+            var result = new ErrorDto<List<SifEmisoresAsignadosData>>()
             {
                 Code = 0,
                 Description = "Ok",

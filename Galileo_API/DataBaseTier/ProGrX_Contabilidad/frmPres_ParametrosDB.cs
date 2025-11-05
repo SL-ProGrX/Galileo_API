@@ -20,10 +20,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDTO PresParametros_Guardar(int CodEmpresa, PresParametrosDTO parametros)
+        public ErrorDto PresParametros_Guardar(int CodEmpresa, PresParametrosDTO parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };
@@ -79,11 +79,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PresParametrosDTO>> PresParametrosLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<PresParametrosDTO>> PresParametrosLista_Obtener(int CodEmpresa)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<PresParametrosDTO>>
+            var response = new ErrorDto<List<PresParametrosDTO>>
             {
                 Code = 0
             };

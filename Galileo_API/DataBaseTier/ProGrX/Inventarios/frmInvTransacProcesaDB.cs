@@ -16,10 +16,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO InvTransacProcesa_SP(int CodEmpresa, InvTransacProcesa request)
+        public ErrorDto InvTransacProcesa_SP(int CodEmpresa, InvTransacProcesa request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO result = new()
+            ErrorDto result = new()
             {
                 Code = 0
             };

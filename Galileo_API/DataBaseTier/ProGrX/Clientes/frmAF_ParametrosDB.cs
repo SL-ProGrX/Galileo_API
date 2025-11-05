@@ -17,7 +17,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
             _mSecurity = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_ParametrosLista> AF_Parametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<AF_ParametrosLista> AF_Parametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_ParametrosLista>
+            var response = new ErrorDto<AF_ParametrosLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -91,10 +91,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Codigo"></param>
         /// <param name="Valor"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Parametros_Actualizar(int CodEmpresa, string Usuario, string Codigo, string Valor)
+        public ErrorDto AF_Parametros_Actualizar(int CodEmpresa, string Usuario, string Codigo, string Valor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

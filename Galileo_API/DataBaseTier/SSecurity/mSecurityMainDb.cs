@@ -1,21 +1,21 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mSecurityMainDb
+    public class MSecurityMainDb
     {
         private readonly IConfiguration _config;
 
-        public mSecurityMainDb(IConfiguration config)
+        public MSecurityMainDb(IConfiguration config)
         {
             _config = config;
         }
 
-        public int Derecho(ParametrosAccesoDTO req)
+        public int Derecho(ParametrosAccesoDto req)
         {
             int resp = 0;
             try
@@ -45,9 +45,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO req)
+        public ErrorDto Bitacora(BitacoraInsertarDto req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
 
@@ -72,9 +72,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO SbSEGCuentaLog(SEGLogInsertarDTO req)
+        public ErrorDto SbSEGCuentaLog(SegLogInsertarDto req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -104,7 +104,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public int DerechoMDI(DerechoMDIObtenerDTO req)
+        public int DerechoMDI(DerechoMdiObtenerDto req)
         {
             int resp = 0;
             try
@@ -131,8 +131,6 @@ namespace PgxAPI.DataBaseTier
             }
             return resp;
         }
-
-
 
     }
 }

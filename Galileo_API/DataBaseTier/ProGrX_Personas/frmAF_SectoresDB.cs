@@ -23,9 +23,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <returns></returns>
-        public ErrorDTO<SectoresLista> AF_Sectores_Obtener(int CodEmpresa)
+        public ErrorDto<SectoresLista> AF_Sectores_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<SectoresLista>
+            var result = new ErrorDto<SectoresLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -59,9 +59,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="sector">Datos del sector</param>
         /// <returns></returns>
-        public ErrorDTO AF_Sectores_Guardar(int CodEmpresa, string usuario, SectoresData sector)
+        public ErrorDto AF_Sectores_Guardar(int CodEmpresa, string usuario, SectoresData sector)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -94,9 +94,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="sector">Datos del sector a insertar</param>
         /// <returns></returns>
-        private ErrorDTO AF_Sectores_Insertar(int CodEmpresa, string usuario, SectoresData sector)
+        private ErrorDto AF_Sectores_Insertar(int CodEmpresa, string usuario, SectoresData sector)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -128,9 +128,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="sector">Datos del sector a actualizar</param>
         /// <returns></returns>
-        private ErrorDTO AF_Sectores_Actualizar(int CodEmpresa, string usuario, SectoresData sector)
+        private ErrorDto AF_Sectores_Actualizar(int CodEmpresa, string usuario, SectoresData sector)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -162,9 +162,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="cod_sector">Código del sector a eliminar</param>
         /// <returns></returns>
-        public ErrorDTO AF_Sectores_Eliminar(int CodEmpresa, string usuario, int cod_sector)
+        public ErrorDto AF_Sectores_Eliminar(int CodEmpresa, string usuario, int cod_sector)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);

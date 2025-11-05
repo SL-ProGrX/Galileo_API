@@ -24,9 +24,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda, orden y paginación</param>
         /// <returns></returns>
-        public ErrorDTO<PerfilTransaccionalLista> AF_PerfilTransaccional_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<PerfilTransaccionalLista> AF_PerfilTransaccional_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<PerfilTransaccionalLista>
+            var result = new ErrorDto<PerfilTransaccionalLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -83,9 +83,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="perfil">Datos del perfil transaccional</param>
         /// <returns></returns>
-        public ErrorDTO AF_PerfilTransaccional_Guardar(int CodEmpresa, string usuario, PerfilTransaccionalData perfil)
+        public ErrorDto AF_PerfilTransaccional_Guardar(int CodEmpresa, string usuario, PerfilTransaccionalData perfil)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -118,9 +118,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="perfil">Datos del perfil a insertar</param>
         /// <returns></returns>
-        private ErrorDTO AF_PerfilTransaccional_Insertar(int CodEmpresa, string usuario, PerfilTransaccionalData perfil)
+        private ErrorDto AF_PerfilTransaccional_Insertar(int CodEmpresa, string usuario, PerfilTransaccionalData perfil)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -161,9 +161,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="perfil">Datos del perfil a actualizar</param>
         /// <returns></returns>
-        private ErrorDTO AF_PerfilTransaccional_Actualizar(int CodEmpresa, string usuario, PerfilTransaccionalData perfil)
+        private ErrorDto AF_PerfilTransaccional_Actualizar(int CodEmpresa, string usuario, PerfilTransaccionalData perfil)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -210,9 +210,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="ptId">Id del perfil a eliminar</param>
         /// <returns></returns>
-        public ErrorDTO AF_PerfilTransaccional_Eliminar(int CodEmpresa, string usuario, int ptId)
+        public ErrorDto AF_PerfilTransaccional_Eliminar(int CodEmpresa, string usuario, int ptId)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -243,9 +243,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda</param>
         /// <returns></returns>
-        public ErrorDTO<List<PerfilTransaccionalData>> AF_PerfilTransaccional_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<PerfilTransaccionalData>> AF_PerfilTransaccional_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<PerfilTransaccionalData>>
+            var result = new ErrorDto<List<PerfilTransaccionalData>>
             {
                 Code = 0,
                 Description = "Ok",

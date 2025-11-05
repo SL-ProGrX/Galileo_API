@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosPolizasTiposLista> Activos_PolizasTiposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosPolizasTiposLista> Activos_PolizasTiposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<ActivosPolizasTiposLista>()
+            var result = new ErrorDto<ActivosPolizasTiposLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -82,10 +82,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosPolizasTiposData>> Activos_PolizasTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ActivosPolizasTiposData>> Activos_PolizasTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ActivosPolizasTiposData>>()
+            var result = new ErrorDto<List<ActivosPolizasTiposData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -125,10 +125,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="tipoPoliza"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_PolizasTipos_Guardar(int CodEmpresa, string usuario, ActivosPolizasTiposData tipoPoliza)
+        public ErrorDto Activos_PolizasTipos_Guardar(int CodEmpresa, string usuario, ActivosPolizasTiposData tipoPoliza)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -191,10 +191,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="tipoPoliza"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_PolizasTipos_Actualizar(int CodEmpresa, string usuario, ActivosPolizasTiposData tipoPoliza)
+        private ErrorDto Activos_PolizasTipos_Actualizar(int CodEmpresa, string usuario, ActivosPolizasTiposData tipoPoliza)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -242,10 +242,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="tipoPoliza"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_PolizasTipos_Insertar(int CodEmpresa, string usuario, ActivosPolizasTiposData tipoPoliza)
+        private ErrorDto Activos_PolizasTipos_Insertar(int CodEmpresa, string usuario, ActivosPolizasTiposData tipoPoliza)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -289,10 +289,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="tipo_poliza"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_PolizasTipos_Eliminar(int CodEmpresa, string usuario, string tipo_poliza)
+        public ErrorDto Activos_PolizasTipos_Eliminar(int CodEmpresa, string usuario, string tipo_poliza)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -327,10 +327,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo_poliza"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_PolizasTipos_Valida(int CodEmpresa, string tipo_poliza)
+        public ErrorDto Activos_PolizasTipos_Valida(int CodEmpresa, string tipo_poliza)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

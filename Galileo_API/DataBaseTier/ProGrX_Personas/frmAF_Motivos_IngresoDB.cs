@@ -24,9 +24,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda, orden y paginación</param>
         /// <returns></returns>
-        public ErrorDTO<MotivoIngresoLista> AF_MotivosIngreso_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<MotivoIngresoLista> AF_MotivosIngreso_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<MotivoIngresoLista>
+            var result = new ErrorDto<MotivoIngresoLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -84,9 +84,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="motivoIngreso">Datos del motivo de ingreso</param>
         /// <returns></returns>
-        public ErrorDTO AF_MotivosIngreso_Guardar(int CodEmpresa, string usuario, MotivoIngresoData motivoIngreso)
+        public ErrorDto AF_MotivosIngreso_Guardar(int CodEmpresa, string usuario, MotivoIngresoData motivoIngreso)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -122,9 +122,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="motivoIngreso">Datos del motivo de ingreso a insertar</param>
         /// <returns></returns>
-        private ErrorDTO AF_MotivosIngreso_Insertar(int CodEmpresa, string usuario, MotivoIngresoData motivoIngreso)
+        private ErrorDto AF_MotivosIngreso_Insertar(int CodEmpresa, string usuario, MotivoIngresoData motivoIngreso)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -163,9 +163,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="motivoIngreso">Datos del motivo de ingreso a actualizar</param>
         /// <returns></returns>
-        private ErrorDTO AF_MotivosIngreso_Actualizar(int CodEmpresa, string usuario, MotivoIngresoData motivoIngreso)
+        private ErrorDto AF_MotivosIngreso_Actualizar(int CodEmpresa, string usuario, MotivoIngresoData motivoIngreso)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -205,9 +205,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="codMotivo">Código del motivo de ingreso a eliminar</param>
         /// <returns></returns>
-        public ErrorDTO AF_MotivosIngreso_Eliminar(int CodEmpresa, string usuario, string codMotivo)
+        public ErrorDto AF_MotivosIngreso_Eliminar(int CodEmpresa, string usuario, string codMotivo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -238,9 +238,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="codMotivo">Código del motivo de ingreso a validar</param>
         /// <returns></returns>
-        public ErrorDTO AF_MotivosIngreso_Valida(int CodEmpresa, string codMotivo)
+        public ErrorDto AF_MotivosIngreso_Valida(int CodEmpresa, string codMotivo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -272,9 +272,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda</param>
         /// <returns></returns>
-        public ErrorDTO<List<MotivoIngresoData>> AF_MotivosIngreso_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<MotivoIngresoData>> AF_MotivosIngreso_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<MotivoIngresoData>>
+            var result = new ErrorDto<List<MotivoIngresoData>>
             {
                 Code = 0,
                 Description = "Ok",

@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfBeneficioIntegralDropsLista>> EstadoCivilLista_Obtener(int CodCliente)
+        public ErrorDto<List<AfBeneficioIntegralDropsLista>> EstadoCivilLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfBeneficioIntegralDropsLista>>();
+            var response = new ErrorDto<List<AfBeneficioIntegralDropsLista>>();
 
             try
             {
@@ -54,10 +54,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfBeneficioIntegralDropsLista>> NivelAcademicoLista_Obtener(int CodCliente)
+        public ErrorDto<List<AfBeneficioIntegralDropsLista>> NivelAcademicoLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfBeneficioIntegralDropsLista>>();
+            var response = new ErrorDto<List<AfBeneficioIntegralDropsLista>>();
 
             try
             {
@@ -83,10 +83,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfBeneficioIntegralDropsLista>> NacionalidadLista_Obtener(int CodCliente)
+        public ErrorDto<List<AfBeneficioIntegralDropsLista>> NacionalidadLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfBeneficioIntegralDropsLista>>();
+            var response = new ErrorDto<List<AfBeneficioIntegralDropsLista>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -111,10 +111,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfBeneficioIntegralDropsLista>> PaisLista_Obtener(int CodCliente)
+        public ErrorDto<List<AfBeneficioIntegralDropsLista>> PaisLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfBeneficioIntegralDropsLista>>();
+            var response = new ErrorDto<List<AfBeneficioIntegralDropsLista>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -138,10 +138,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfBeneficioIntegralDropsLista>> ProvinciaLista_Obtener(int CodCliente)
+        public ErrorDto<List<AfBeneficioIntegralDropsLista>> ProvinciaLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfBeneficioIntegralDropsLista>>();
+            var response = new ErrorDto<List<AfBeneficioIntegralDropsLista>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -165,10 +165,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<AfiBeneficioIntegralPersonaData> DatosPersona_Obtener(int CodCliente, string? cedula)
+        public ErrorDto<AfiBeneficioIntegralPersonaData> DatosPersona_Obtener(int CodCliente, string? cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<AfiBeneficioIntegralPersonaData>();
+            var response = new ErrorDto<AfiBeneficioIntegralPersonaData>();
             response.Code = 0;
 
             if (cedula == null)
@@ -247,11 +247,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario"></param>
         /// <returns></returns>
 
-        public ErrorDTO<List<CuentaListaData>> Cuentas_Obtener(int CodCliente, string Usuario)
+        public ErrorDto<List<CuentaListaData>> Cuentas_Obtener(int CodCliente, string Usuario)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<CuentaListaData>>();
+            var response = new ErrorDto<List<CuentaListaData>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -280,10 +280,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO validaSocioExiste(int CodCliente, string cedula)
+        public ErrorDto validaSocioExiste(int CodCliente, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -318,11 +318,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cedula"></param>
         /// <param name="persona"></param>
         /// <returns></returns>
-        public ErrorDTO Persona_Actualizar(int CodCliente, string cedula, string persona)
+        public ErrorDto Persona_Actualizar(int CodCliente, string cedula, string persona)
         {
             BeneficioPersona personainsertar = JsonConvert.DeserializeObject<BeneficioPersona>(persona) ?? new BeneficioPersona();
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -369,11 +369,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="telefono"></param>
         /// <returns></returns>
-        public ErrorDTO Telefono_Guardar(int CodCliente, AFIBeneTelefonoGuardar telefono)
+        public ErrorDto Telefono_Guardar(int CodCliente, AFIBeneTelefonoGuardar telefono)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -416,10 +416,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="telefono"></param>
         /// <returns></returns>
-        private ErrorDTO Telefono_Agregar(int CodCliente, AFIBeneTelefonoGuardar telefono)
+        private ErrorDto Telefono_Agregar(int CodCliente, AFIBeneTelefonoGuardar telefono)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -472,7 +472,7 @@ namespace PgxAPI.DataBaseTier
         private bool Telefono_Actualizar(int CodCliente, AFIBeneTelefonoGuardar telefono)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<AFIBeneTelefonoGuardar>();
+            var response = new ErrorDto<AFIBeneTelefonoGuardar>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -510,10 +510,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AFIBeneTelefono>> Telefonos_Obtener(int CodCliente, string cedula)
+        public ErrorDto<List<AFIBeneTelefono>> Telefonos_Obtener(int CodCliente, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AFIBeneTelefono>>();
+            var response = new ErrorDto<List<AFIBeneTelefono>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -571,10 +571,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="id"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Telefono_Eliminar(int CodCliente, int id, string usuario)
+        public ErrorDto Telefono_Eliminar(int CodCliente, int id, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -601,10 +601,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO ValidarPersona(int CodCliente, string cedula)
+        public ErrorDto ValidarPersona(int CodCliente, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -646,10 +646,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfBeneficioIntegralDropsLista>> EstadoLaboral_Obtener (int CodCliente)
+        public ErrorDto<List<AfBeneficioIntegralDropsLista>> EstadoLaboral_Obtener (int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfBeneficioIntegralDropsLista>>();
+            var response = new ErrorDto<List<AfBeneficioIntegralDropsLista>>();
 
             try
             {

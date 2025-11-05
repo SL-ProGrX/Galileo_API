@@ -24,9 +24,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda, orden y paginación</param>
         /// <returns></returns>
-        public ErrorDTO<EstadoLaboralLista> AF_EstadoLaboral_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<EstadoLaboralLista> AF_EstadoLaboral_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<EstadoLaboralLista>
+            var result = new ErrorDto<EstadoLaboralLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -84,9 +84,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="estadoLaboral">Datos del estado laboral</param>
         /// <returns></returns>
-        public ErrorDTO AF_EstadoLaboral_Guardar(int CodEmpresa, string usuario, EstadoLaboralData estadoLaboral)
+        public ErrorDto AF_EstadoLaboral_Guardar(int CodEmpresa, string usuario, EstadoLaboralData estadoLaboral)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -122,9 +122,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="estadoLaboral">Datos del estado laboral a insertar</param>
         /// <returns></returns>
-        private ErrorDTO AF_EstadoLaboral_Insertar(int CodEmpresa, string usuario, EstadoLaboralData estadoLaboral)
+        private ErrorDto AF_EstadoLaboral_Insertar(int CodEmpresa, string usuario, EstadoLaboralData estadoLaboral)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -163,9 +163,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="estadoLaboral">Datos del estado laboral a actualizar</param>
         /// <returns></returns>
-        private ErrorDTO AF_EstadoLaboral_Actualizar(int CodEmpresa, string usuario, EstadoLaboralData estadoLaboral)
+        private ErrorDto AF_EstadoLaboral_Actualizar(int CodEmpresa, string usuario, EstadoLaboralData estadoLaboral)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -205,9 +205,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="estadoLaboral">Código del estado laboral a eliminar</param>
         /// <returns></returns>
-        public ErrorDTO AF_EstadoLaboral_Eliminar(int CodEmpresa, string usuario, string estadoLaboral)
+        public ErrorDto AF_EstadoLaboral_Eliminar(int CodEmpresa, string usuario, string estadoLaboral)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -238,9 +238,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="estadoLaboral">Código del estado laboral a validar</param>
         /// <returns></returns>
-        public ErrorDTO AF_EstadoLaboral_Valida(int CodEmpresa, string estadoLaboral)
+        public ErrorDto AF_EstadoLaboral_Valida(int CodEmpresa, string estadoLaboral)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -272,9 +272,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda</param>
         /// <returns></returns>
-        public ErrorDTO<List<EstadoLaboralData>> AF_EstadoLaboral_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<EstadoLaboralData>> AF_EstadoLaboral_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<EstadoLaboralData>>
+            var result = new ErrorDto<List<EstadoLaboralData>>
             {
                 Code = 0,
                 Description = "Ok",

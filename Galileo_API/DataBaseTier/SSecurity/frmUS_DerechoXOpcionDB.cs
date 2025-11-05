@@ -103,9 +103,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO RolPermisosActualizar(OpcionRolRequestDto req)
+        public ErrorDto RolPermisosActualizar(OpcionRolRequestDto req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

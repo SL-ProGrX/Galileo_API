@@ -17,14 +17,14 @@ namespace PgxAPI.DataBaseTier
             _Security_MainDB = new mSecurityMainDb(_config);
         }
         /// <summary>
-        /// Obtiene la configuración de empresa desde SIF_EMPRESA.
+        /// Obtiene la configuraciï¿½n de empresa desde SIF_EMPRESA.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="idEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<frmSIF_EmpresaModel> Sif_Empresa_Obtener(int CodEmpresa, int? idEmpresa = null)
+        public ErrorDto<frmSIF_EmpresaModel> Sif_Empresa_Obtener(int CodEmpresa, int? idEmpresa = null)
         {
-            var r = new ErrorDTO<frmSIF_EmpresaModel> { Code = 0 };
+            var r = new ErrorDto<frmSIF_EmpresaModel> { Code = 0 };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -105,15 +105,15 @@ namespace PgxAPI.DataBaseTier
         }
 
         /// <summary>
-        /// Guarda la configuración de SIF_EMPRESA.
+        /// Guarda la configuraciï¿½n de SIF_EMPRESA.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Sif_Empresa_Guardar(int CodEmpresa, frmSIF_EmpresaModel dto, string usuario)
+        public ErrorDto Sif_Empresa_Guardar(int CodEmpresa, frmSIF_EmpresaModel dto, string usuario)
         {
-            var r = new ErrorDTO { Code = 0, Description = "OK" };
+            var r = new ErrorDto { Code = 0, Description = "OK" };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -139,7 +139,7 @@ namespace PgxAPI.DataBaseTier
                     dto.cod_empresa_enlace,
                     cod_cuenta_no_cfg = string.IsNullOrWhiteSpace(dto.cod_cuenta_no_cfg) ? null : dto.cod_cuenta_no_cfg,
 
-                    // pagaré
+                    // pagarï¿½
                     dto.pag_nomlargo,
                     dto.pag_nomcorto,
                     dto.pag_cedjurle,
@@ -164,7 +164,7 @@ namespace PgxAPI.DataBaseTier
                     // pie de boleta
                     dto.liq_boleta_pie,
 
-                    // misión/visión
+                    // misiï¿½n/visiï¿½n
                     dto.mision,
                     dto.vision,
                     dto.slogan,
@@ -283,9 +283,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="idEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<byte[]> Sif_Empresa_Logo_Obtener(int CodEmpresa, int? idEmpresa = null)
+        public ErrorDto<byte[]> Sif_Empresa_Logo_Obtener(int CodEmpresa, int? idEmpresa = null)
         {
-            var r = new ErrorDTO<byte[]> { Code = 0 };
+            var r = new ErrorDto<byte[]> { Code = 0 };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
@@ -308,9 +308,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="contenido"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Sif_Empresa_Logo_Guardar(int CodEmpresa, int idEmpresa, byte[] contenido, string usuario)
+        public ErrorDto Sif_Empresa_Logo_Guardar(int CodEmpresa, int idEmpresa, byte[] contenido, string usuario)
         {
-            var r = new ErrorDTO { Code = 0, Description = "OK" };
+            var r = new ErrorDto { Code = 0, Description = "OK" };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
@@ -336,9 +336,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="idEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<byte[]> Sif_Empresa_Fondo_Obtener(int CodEmpresa, int? idEmpresa = null)
+        public ErrorDto<byte[]> Sif_Empresa_Fondo_Obtener(int CodEmpresa, int? idEmpresa = null)
         {
-            var r = new ErrorDTO<byte[]> { Code = 0 };
+            var r = new ErrorDto<byte[]> { Code = 0 };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
@@ -361,9 +361,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="contenido"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Sif_Empresa_Fondo_Guardar(int CodEmpresa, int idEmpresa, byte[] contenido, string usuario)
+        public ErrorDto Sif_Empresa_Fondo_Guardar(int CodEmpresa, int idEmpresa, byte[] contenido, string usuario)
         {
-            var r = new ErrorDTO { Code = 0, Description = "OK" };
+            var r = new ErrorDto { Code = 0, Description = "OK" };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
@@ -388,9 +388,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ComboContabilidadDto>> Sif_Empresa_Contabilidades_Obtener(int CodEmpresa)
+        public ErrorDto<List<ComboContabilidadDto>> Sif_Empresa_Contabilidades_Obtener(int CodEmpresa)
         {
-            var r = new ErrorDTO<List<ComboContabilidadDto>> { Code = 0, Result = new() };
+            var r = new ErrorDto<List<ComboContabilidadDto>> { Code = 0, Result = new() };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
@@ -406,15 +406,15 @@ namespace PgxAPI.DataBaseTier
         }
 
         /// <summary>
-        /// Busca una cuenta exacta en la vista local por contabilidad y código de cuenta.
+        /// Busca una cuenta exacta en la vista local por contabilidad y cï¿½digo de cuenta.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="codContabilidad"></param>
         /// <param name="codCuenta"></param>
         /// <returns></returns>
-        public ErrorDTO<CuentaLookupDto> Sif_Empresa_CuentaPorCodigo_Obtener(int CodEmpresa, int codContabilidad, string codCuenta)
+        public ErrorDto<CuentaLookupDto> Sif_Empresa_CuentaPorCodigo_Obtener(int CodEmpresa, int codContabilidad, string codCuenta)
         {
-            var r = new ErrorDTO<CuentaLookupDto> { Code = 0 };
+            var r = new ErrorDto<CuentaLookupDto> { Code = 0 };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
@@ -431,16 +431,16 @@ namespace PgxAPI.DataBaseTier
         }
 
         /// <summary>
-        /// Busca cuentas por texto (máscara o descripción) en la vista local.
+        /// Busca cuentas por texto (mï¿½scara o descripciï¿½n) en la vista local.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="codContabilidad"></param>
         /// <param name="search"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CuentaLookupDto>> Sif_Empresa_Cuentas_Buscar(
+        public ErrorDto<List<CuentaLookupDto>> Sif_Empresa_Cuentas_Buscar(
          int CodEmpresa, int codContabilidad, string? search)
         {
-            var r = new ErrorDTO<List<CuentaLookupDto>> { Code = 0, Result = new() };
+            var r = new ErrorDto<List<CuentaLookupDto>> { Code = 0, Result = new() };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -479,9 +479,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="accion"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Sif_Empresa_BloqueoFecha_Aplicar(int CodEmpresa, DateTime fecha, char accion, string usuario)
+        public ErrorDto Sif_Empresa_BloqueoFecha_Aplicar(int CodEmpresa, DateTime fecha, char accion, string usuario)
         {
-            var r = new ErrorDTO { Code = 0, Description = "OK" };
+            var r = new ErrorDto { Code = 0, Description = "OK" };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -496,7 +496,7 @@ namespace PgxAPI.DataBaseTier
                     commandType: CommandType.StoredProcedure,
                     commandTimeout: 180
                 );
-                // Bitácora
+                // Bitï¿½cora
                 var mov = "Aplica - WEB";
                 var detalle = (char.ToUpperInvariant(accion) == 'B')
                     ? $"Bloquea Fecha Auxiliar: {fechaHora:yyyy/MM/dd}"
@@ -527,9 +527,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="idEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<DateTime?> Sif_Empresa_BloqueoFecha_Obtener(int CodEmpresa, int? idEmpresa = null)
+        public ErrorDto<DateTime?> Sif_Empresa_BloqueoFecha_Obtener(int CodEmpresa, int? idEmpresa = null)
         {
-            var r = new ErrorDTO<DateTime?> { Code = 0 };
+            var r = new ErrorDto<DateTime?> { Code = 0 };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {

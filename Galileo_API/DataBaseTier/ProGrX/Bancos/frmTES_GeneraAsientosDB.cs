@@ -19,7 +19,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -29,10 +29,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaBancosGA>> Tes_Bancos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaBancosGA>> Tes_Bancos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaBancosGA>>
+            var response = new ErrorDto<List<DropDownListaBancosGA>>
             {
                 Code = 0,
                 Result = new List<DropDownListaBancosGA>()
@@ -60,10 +60,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_Banco"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaTiposGA>> Tes_Tipos_Obtener(int CodEmpresa, string cod_Banco)
+        public ErrorDto<List<DropDownListaTiposGA>> Tes_Tipos_Obtener(int CodEmpresa, string cod_Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaTiposGA>>
+            var response = new ErrorDto<List<DropDownListaTiposGA>>
             {
                 Code = 0,
                 Result = new List<DropDownListaTiposGA>()
@@ -105,16 +105,16 @@ namespace PgxAPI.DataBaseTier
 
 
         /// <summary>
-        /// Obtener información de las transacciones con asiento
+        /// Obtener informaciï¿½n de las transacciones con asiento
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="filtrosTransacciones"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> TES_transaccionesAsientos_Obtener(int CodEmpresa, string filtrosTransacciones, FiltrosLazyLoadData filtros)
+        public ErrorDto<TablasListaGenericaModel> TES_transaccionesAsientos_Obtener(int CodEmpresa, string filtrosTransacciones, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             TES_TransaccionesFiltros filtro = JsonConvert.DeserializeObject<TES_TransaccionesFiltros>(filtrosTransacciones) ?? new TES_TransaccionesFiltros();
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Result = new TablasListaGenericaModel()
@@ -236,11 +236,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="trasladoLista"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Traslado_Generar(int CodEmpresa,string trasladoLista)
+        public ErrorDto TES_Traslado_Generar(int CodEmpresa,string trasladoLista)
         {
             List<int> lista = JsonConvert.DeserializeObject<List<int>>(trasladoLista) ?? new List<int>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };

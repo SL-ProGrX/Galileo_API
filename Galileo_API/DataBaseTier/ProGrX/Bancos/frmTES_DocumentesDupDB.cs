@@ -18,7 +18,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaBancos>> Tes_Bancos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaBancos>> Tes_Bancos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaBancos>>
+            var response = new ErrorDto<List<DropDownListaBancos>>
             {
                 Code = 0,
                 Result = new List<DropDownListaBancos>()
@@ -59,10 +59,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_Banco"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaTipos>> Tes_Tipos_Obtener(int CodEmpresa, string cod_Banco)
+        public ErrorDto<List<DropDownListaTipos>> Tes_Tipos_Obtener(int CodEmpresa, string cod_Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaTipos>>
+            var response = new ErrorDto<List<DropDownListaTipos>>
             {
                 Code = 0,
                 Result = new List<DropDownListaTipos>()
@@ -104,12 +104,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Cod_banco"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DocumentoDuplicadosLista>> Documentos_Duplicados_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<List<DocumentoDuplicadosLista>> Documentos_Duplicados_Obtener(int CodEmpresa, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             TES_DocumentosDuplicadosFiltros filtro = JsonConvert.DeserializeObject<TES_DocumentosDuplicadosFiltros>(filtros) ?? new TES_DocumentosDuplicadosFiltros();
 
-            var response = new ErrorDTO<List<DocumentoDuplicadosLista>>
+            var response = new ErrorDto<List<DocumentoDuplicadosLista>>
             {
                 Code = 0,
                 Result = new List<DocumentoDuplicadosLista>()

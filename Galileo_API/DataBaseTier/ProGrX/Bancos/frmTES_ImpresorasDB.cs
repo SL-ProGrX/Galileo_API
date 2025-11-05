@@ -19,7 +19,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -31,10 +31,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="impresora"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_Impresoras_Guardar(int CodEmpresa, string usuario, TES_ImpresorasDTO impresora)
+        public ErrorDto Tes_Impresoras_Guardar(int CodEmpresa, string usuario, TES_ImpresorasDTO impresora)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Guardado correctamente"
@@ -80,10 +80,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_ImpresorasDTO> Tes_Impresoras_Obtener(int CodEmpresa)
+        public ErrorDto<TES_ImpresorasDTO> Tes_Impresoras_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_ImpresorasDTO>
+            var response = new ErrorDto<TES_ImpresorasDTO>
             {
                 Code = 0,
                 Description = "Ok",

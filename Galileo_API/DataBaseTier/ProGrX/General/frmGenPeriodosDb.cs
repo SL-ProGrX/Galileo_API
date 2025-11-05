@@ -16,12 +16,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<PeriodoDto>> Periodos_ObtenerTodos(int CodEmpresa, string estado)
+        public ErrorDto<List<PeriodoDto>> Periodos_ObtenerTodos(int CodEmpresa, string estado)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var resp = new ErrorDTO<List<PeriodoDto>>();
+            var resp = new ErrorDto<List<PeriodoDto>>();
 
             try
             {
@@ -61,12 +61,12 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Periodo_Cerrar(int CodEmpresa, PeriodoDto periodoDto)
+        public ErrorDto Periodo_Cerrar(int CodEmpresa, PeriodoDto periodoDto)
         {
             int res = 0;
             string resultadoMensaje = string.Empty;
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resultado = new ErrorDTO();
+            ErrorDto resultado = new ErrorDto();
 
             try
             {

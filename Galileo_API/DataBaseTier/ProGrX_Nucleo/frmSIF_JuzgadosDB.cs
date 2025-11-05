@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO Juzgado_Insertar(int CodCliente, JuzgadosDTO juzgado)
+        public ErrorDto Juzgado_Insertar(int CodCliente, JuzgadosDTO juzgado)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -70,7 +70,7 @@ namespace PgxAPI.DataBaseTier
                 info.Code = 1;
                 if (ex.Message.Contains("Cannot insert duplicate key"))
                 {
-                    info.Description = "El código de juzgado ya existe";
+                    info.Description = "El cï¿½digo de juzgado ya existe";
                 }
                 else
                 {
@@ -155,11 +155,11 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO Juzgado_Actualizar(int CodEmpresa, JuzgadosDTO request)
+        public ErrorDto Juzgado_Actualizar(int CodEmpresa, JuzgadosDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

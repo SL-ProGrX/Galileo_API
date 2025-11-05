@@ -20,10 +20,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="Usuario">Nombre del usuario (opcional)</param>
         /// <returns>Lista de usuarios del módulo </returns>
-        public ErrorDTO<List<PresUsuariosData>> Pres_Usuarios_Obtener(int CodEmpresa, string? Usuario)
+        public ErrorDto<List<PresUsuariosData>> Pres_Usuarios_Obtener(int CodEmpresa, string? Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PresUsuariosData>>();
+            var resp = new ErrorDto<List<PresUsuariosData>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -49,10 +49,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="Usuario">Nombre del usuario</param>
         /// <returns>Lista de contabilidades </returns>
-        public ErrorDTO<List<PresContabilidadesData>> Pres_Contabilidades_Obtener(int CodEmpresa, string Usuario)
+        public ErrorDto<List<PresContabilidadesData>> Pres_Contabilidades_Obtener(int CodEmpresa, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PresContabilidadesData>>();
+            var resp = new ErrorDto<List<PresContabilidadesData>>();
 
             try
             {
@@ -79,10 +79,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario">Nombre del usuario</param>
         /// <param name="CodContab">Código de la contabilidad</param>   
         /// <returns>Lista de unidades del módulo</returns>
-        public ErrorDTO<List<PresUnidadesData>> Pres_Unidades_Obtener(int CodEmpresa, string Usuario, int CodContab)
+        public ErrorDto<List<PresUnidadesData>> Pres_Unidades_Obtener(int CodEmpresa, string Usuario, int CodContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PresUnidadesData>>();
+            var resp = new ErrorDto<List<PresUnidadesData>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -106,12 +106,12 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="request">Objeto con los datos del usuario a registrar o actualizar</param> 
-        /// /// <returns>Objeto ErrorDTO con el código y descripción del resultado de la operación</returns>
-        public ErrorDTO Pres_Usuarios_Registro_SP(int CodEmpresa, PresUsuariosInsert request)
+        /// /// <returns>Objeto ErrorDto con el código y descripción del resultado de la operación</returns>
+        public ErrorDto Pres_Usuarios_Registro_SP(int CodEmpresa, PresUsuariosInsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             int activoValue;
             try
             {
@@ -144,12 +144,12 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa</param>       
         /// /// <param name="request">Objeto con los datos de la unidad a registrar o actualizar</param>
-        /// <returns>Objeto ErrorDTO con el código y descripción del resultado de la operación</returns>
-        public ErrorDTO Pres_Unidades_Registro_SP(int CodEmpresa, PresUnidadesInsert request)
+        /// <returns>Objeto ErrorDto con el código y descripción del resultado de la operación</returns>
+        public ErrorDto Pres_Unidades_Registro_SP(int CodEmpresa, PresUnidadesInsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             int activoValue;
             try
             {

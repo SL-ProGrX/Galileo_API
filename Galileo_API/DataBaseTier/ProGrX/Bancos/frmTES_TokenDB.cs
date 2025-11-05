@@ -25,7 +25,7 @@ namespace PgxAPI.DataBaseTier.TES
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns>Lista de tokens.</returns>
-        public ErrorDTO<List<TES_TokenDTO>> TES_Token_Top_Obtener(int CodEmpresa)
+        public ErrorDto<List<TES_TokenDTO>> TES_Token_Top_Obtener(int CodEmpresa)
         {
             if (_config == null)
             {
@@ -33,7 +33,7 @@ namespace PgxAPI.DataBaseTier.TES
             }
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TES_TokenDTO>>
+            var response = new ErrorDto<List<TES_TokenDTO>>
             {
                 Code = 0
             };
@@ -74,7 +74,7 @@ namespace PgxAPI.DataBaseTier.TES
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Id">ID del token a cerrar.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDTO TES_Token_Cerrar(int CodEmpresa, string Id)
+        public ErrorDto TES_Token_Cerrar(int CodEmpresa, string Id)
         {
             if (_config == null)
             {
@@ -82,7 +82,7 @@ namespace PgxAPI.DataBaseTier.TES
             }
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };
@@ -118,10 +118,10 @@ namespace PgxAPI.DataBaseTier.TES
 
         }
     
-        public ErrorDTO<List<TES_TokenSolicitudesData>> TES_Token_Pen_Obtener(int CodEmpresa)
+        public ErrorDto<List<TES_TokenSolicitudesData>> TES_Token_Pen_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TES_TokenSolicitudesData>>
+            var response = new ErrorDto<List<TES_TokenSolicitudesData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -148,10 +148,10 @@ namespace PgxAPI.DataBaseTier.TES
         }
 
 
-        public ErrorDTO TES_Token_Pen_Incluir(int CodEmpresa, string token ,List<string> solicitudes)
+        public ErrorDto TES_Token_Pen_Incluir(int CodEmpresa, string token ,List<string> solicitudes)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = ""
@@ -192,7 +192,7 @@ namespace PgxAPI.DataBaseTier.TES
             return response;
         }
 
-        public ErrorDTO TES_Token_Crear(int CodEmpresa, string Usuario)
+        public ErrorDto TES_Token_Crear(int CodEmpresa, string Usuario)
         {
             return _mtes.spTes_Token_New(CodEmpresa, Usuario);
         }

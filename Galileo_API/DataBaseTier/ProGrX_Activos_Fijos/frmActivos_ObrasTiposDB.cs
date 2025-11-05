@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<Activos_ObrasTipoDataLista> Activos_ObrasTipos_Consultar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<Activos_ObrasTipoDataLista> Activos_ObrasTipos_Consultar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<Activos_ObrasTipoDataLista>()
+            var result = new ErrorDto<Activos_ObrasTipoDataLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -84,10 +84,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Activos_ObrasTipoData>> Activos_ObrasTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<Activos_ObrasTipoData>> Activos_ObrasTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<Activos_ObrasTipoData>>()
+            var result = new ErrorDto<List<Activos_ObrasTipoData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -127,10 +127,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_ObrasTipos_Guardar(int CodEmpresa, string usuario, Activos_ObrasTipoData datos)
+        public ErrorDto Activos_ObrasTipos_Guardar(int CodEmpresa, string usuario, Activos_ObrasTipoData datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -182,10 +182,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_ObrasTipos_Actualizar(int CodEmpresa, string usuario, Activos_ObrasTipoData datos)
+        private ErrorDto Activos_ObrasTipos_Actualizar(int CodEmpresa, string usuario, Activos_ObrasTipoData datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -233,10 +233,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_ObrasTipos_Insertar(int CodEmpresa, string usuario, Activos_ObrasTipoData datos)
+        private ErrorDto Activos_ObrasTipos_Insertar(int CodEmpresa, string usuario, Activos_ObrasTipoData datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -281,10 +281,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="cod_tipo"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_ObrasTipos_Eliminar(int CodEmpresa, string usuario, string cod_tipo)
+        public ErrorDto Activos_ObrasTipos_Eliminar(int CodEmpresa, string usuario, string cod_tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

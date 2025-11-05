@@ -22,7 +22,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
             productName = _config.GetSection("AppSettings").GetSection("ProductName").Value.ToString();
         }
 
-        public ErrorDTO SbSIFRegistraTags(SIFRegistraTagsRequestDTO data)
+        public ErrorDto SbSIFRegistraTags(SIFRegistraTagsRequestDTO data)
         {
             return _mMain.SbSIFRegistraTags(data);
         }
@@ -35,10 +35,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="Plan"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<FND_SeguridadRango> FND_RetLiq_SeguridadRango_Obtener(int CodEmpresa, int Operadora, string Plan, string Usuario)
+        public ErrorDto<FND_SeguridadRango> FND_RetLiq_SeguridadRango_Obtener(int CodEmpresa, int Operadora, string Plan, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<FND_SeguridadRango>
+            var response = new ErrorDto<FND_SeguridadRango>
             {
                 Code = 0,
                 Description = "Ok",
@@ -87,10 +87,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> FND_RetLiq_Bancos_Obtener(int CodEmpresa, string Usuario)
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_RetLiq_Bancos_Obtener(int CodEmpresa, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -115,10 +115,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
             return response;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> FND_RetLiq_CuentasBancarias_Obtener(int CodEmpresa, string Cedula, int Banco)
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_RetLiq_CuentasBancarias_Obtener(int CodEmpresa, string Cedula, int Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -152,10 +152,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> FND_RetLiq_RetencionConceptos_Obtener(int CodEmpresa, string Usuario)
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_RetLiq_RetencionConceptos_Obtener(int CodEmpresa, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -188,10 +188,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="Plan"></param>
         /// <param name="Contrato"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> FND_RetLiq_PlanesDestino_Obtener(int CodEmpresa, int Operadora, string Plan, int Contrato)
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_RetLiq_PlanesDestino_Obtener(int CodEmpresa, int Operadora, string Plan, int Contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -220,10 +220,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FND_RetLiq_RebajosData>> FND_RetLiq_Rebajos_Obtener(int CodEmpresa, string Usuario)
+        public ErrorDto<List<FND_RetLiq_RebajosData>> FND_RetLiq_Rebajos_Obtener(int CodEmpresa, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FND_RetLiq_RebajosData>>
+            var response = new ErrorDto<List<FND_RetLiq_RebajosData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -255,10 +255,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="Plan"></param>
         /// <param name="Contrato"></param>
         /// <returns></returns>
-        public ErrorDTO<FND_RetLiq_ConsultaData> FND_RetLiq_Consulta_Obtener(int CodEmpresa, int Operadora, string Plan, int Contrato)
+        public ErrorDto<FND_RetLiq_ConsultaData> FND_RetLiq_Consulta_Obtener(int CodEmpresa, int Operadora, string Plan, int Contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<FND_RetLiq_ConsultaData>
+            var response = new ErrorDto<FND_RetLiq_ConsultaData>
             {
                 Code = 0,
                 Description = "Ok",
@@ -308,10 +308,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="Contrato"></param>
         /// <param name="Cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> FND_RetLiq_PagoTerceros_Obtener(int CodEmpresa, int Operadora, string Plan, int Contrato, string Cedula)
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_RetLiq_PagoTerceros_Obtener(int CodEmpresa, int Operadora, string Plan, int Contrato, string Cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -348,10 +348,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="Contrato"></param>
         /// <param name="Monto"></param>
         /// <returns></returns>
-        public ErrorDTO<decimal> FND_RetLiq_Multa_Obtener(int CodEmpresa, int Operadora, string Plan, int Contrato, decimal Monto)
+        public ErrorDto<decimal> FND_RetLiq_Multa_Obtener(int CodEmpresa, int Operadora, string Plan, int Contrato, decimal Monto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<decimal>
+            var response = new ErrorDto<decimal>
             {
                 Code = 0,
                 Description = "Ok",
@@ -377,10 +377,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="RndRetiro"></param>
         /// <param name="Plan"></param>
         /// <returns></returns>
-        public ErrorDTO<FND_RetLiq_RentaGlobalData> FND_RetLiq_RentaGlobal_Obtener(int CodEmpresa, string Cedula, decimal RndRetiro, string Plan)
+        public ErrorDto<FND_RetLiq_RentaGlobalData> FND_RetLiq_RentaGlobal_Obtener(int CodEmpresa, string Cedula, decimal RndRetiro, string Plan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<FND_RetLiq_RentaGlobalData>
+            var response = new ErrorDto<FND_RetLiq_RentaGlobalData>
             {
                 Code = 0,
                 Description = "Ok",
@@ -410,12 +410,12 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="Filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<FND_RetLiq_ProcesoData> FND_RetLiq_Aplicar(int CodEmpresa, string Filtro)
+        public ErrorDto<FND_RetLiq_ProcesoData> FND_RetLiq_Aplicar(int CodEmpresa, string Filtro)
         {
 
             Filtros_RetLiq_Aplicar filtros = JsonConvert.DeserializeObject<Filtros_RetLiq_Aplicar>(Filtro) ?? new Filtros_RetLiq_Aplicar();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<FND_RetLiq_ProcesoData>
+            var response = new ErrorDto<FND_RetLiq_ProcesoData>
             {
                 Code = 0,
                 Description = "Ok",

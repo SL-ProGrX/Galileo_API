@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Toma_FisicaDTO>> TomaFisica_Obtener(int CodEmpresa, int Cod_Proveedor, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<List<Toma_FisicaDTO>> TomaFisica_Obtener(int CodEmpresa, int Cod_Proveedor, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<Toma_FisicaDTO>>();
+            var response = new ErrorDto<List<Toma_FisicaDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -62,11 +62,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Toma_FisicaDetalleDTO>> tomasFisicasDetalle_Obtener(int CodEmpresa, int consecutivo, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<List<Toma_FisicaDetalleDTO>> tomasFisicasDetalle_Obtener(int CodEmpresa, int consecutivo, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<Toma_FisicaDetalleDTO>>();
+            var response = new ErrorDto<List<Toma_FisicaDetalleDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -115,11 +115,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO tomaFisica_Insertar(int CodEmpresa, Toma_FisicaDTO data)
+        public ErrorDto tomaFisica_Insertar(int CodEmpresa, Toma_FisicaDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -169,11 +169,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO tomaFisicaDetalle_Insertar(int CodEmpresa, Toma_FisicaDetalleDTO data)
+        public ErrorDto tomaFisicaDetalle_Insertar(int CodEmpresa, Toma_FisicaDetalleDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -201,13 +201,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consecutivo"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<Toma_FisicaDTO> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
+        public ErrorDto<Toma_FisicaDTO> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             int result = 0;
 
-            var response = new ErrorDTO<Toma_FisicaDTO>();
+            var response = new ErrorDto<Toma_FisicaDTO>();
 
             try
             {
@@ -256,11 +256,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="consecutivo"></param>
         /// <returns></returns>
-        public ErrorDTO<Toma_FisicaDTO> tomaFisicaConsecutivo_Obtener(int CodEmpresa, int consecutivo)
+        public ErrorDto<Toma_FisicaDTO> tomaFisicaConsecutivo_Obtener(int CodEmpresa, int consecutivo)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<Toma_FisicaDTO>();
+            var response = new ErrorDto<Toma_FisicaDTO>();
             response.Result = new Toma_FisicaDTO();
 
             try
@@ -290,11 +290,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO actualizarTomaFisica(int CodEmpresa, Toma_FisicaDTO request)
+        public ErrorDto actualizarTomaFisica(int CodEmpresa, Toma_FisicaDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -329,11 +329,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO actualizarTomaFisicaDetalle(int CodEmpresa, Toma_FisicaDetalleDTO request)
+        public ErrorDto actualizarTomaFisicaDetalle(int CodEmpresa, Toma_FisicaDetalleDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -383,11 +383,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consecutivo"></param>
         /// <param name="cod_producto"></param>
         /// <returns></returns>
-        public ErrorDTO EliminarDetalleTomaFisica(int CodEmpresa, int consecutivo, string cod_producto)
+        public ErrorDto EliminarDetalleTomaFisica(int CodEmpresa, int consecutivo, string cod_producto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -413,11 +413,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="consecutivo"></param>
         /// <returns></returns>
-        public ErrorDTO EliminarTomaFisica(int CodEmpresa, int consecutivo)
+        public ErrorDto EliminarTomaFisica(int CodEmpresa, int consecutivo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -442,12 +442,12 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<Toma_FisicaDetalleDTO> TomaFisicaProdBarras_Obtener(
+        public ErrorDto<Toma_FisicaDetalleDTO> TomaFisicaProdBarras_Obtener(
             int CodEmpresa, string cod_bodega, string cod_barras, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var resp = new ErrorDTO<Toma_FisicaDetalleDTO>();
+            var resp = new ErrorDto<Toma_FisicaDetalleDTO>();
             try
             {
                 var query = "";
@@ -504,11 +504,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO TomaFisicaBarras_Guardar(int CodEmpresa, Toma_FisicaDetalleDTO linea )
+        public ErrorDto TomaFisicaBarras_Guardar(int CodEmpresa, Toma_FisicaDetalleDTO linea )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

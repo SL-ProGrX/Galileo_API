@@ -23,11 +23,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<AlertasTiposLista> AlertasTipos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<AlertasTiposLista> AlertasTipos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<AlertasTiposLista>();
+            var response = new ErrorDto<AlertasTiposLista>();
             response.Result = new AlertasTiposLista();
             response.Result.total = 0;
 
@@ -83,10 +83,10 @@ namespace PgxAPI.DataBaseTier
         /// /// <param name="CodCliente"></param>
         /// <param name="alertatipo"></param>
         /// <returns></returns>
-        public ErrorDTO AlertasTipos_Insertar(int CodCliente, AlertasTiposDTO alertatipo)
+        public ErrorDto AlertasTipos_Insertar(int CodCliente, AlertasTiposDTO alertatipo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -146,10 +146,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="alertatipo"></param>
         /// <returns></returns>
-        public ErrorDTO AlertasTipos_Actualizar(int CodCliente, AlertasTiposDTO alertatipo)
+        public ErrorDto AlertasTipos_Actualizar(int CodCliente, AlertasTiposDTO alertatipo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -195,10 +195,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="codDesviacion"></param>
         /// <returns></returns>
-        public ErrorDTO AlertasTipos_Eliminar(int CodCliente, string codDesviacion)
+        public ErrorDto AlertasTipos_Eliminar(int CodCliente, string codDesviacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);

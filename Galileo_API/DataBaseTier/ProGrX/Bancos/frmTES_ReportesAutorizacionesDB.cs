@@ -24,7 +24,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGeneral(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGeneral(int CodEmpresa)
         {
             return mTesoreria.sbTesBancoCargaCboAccesoGeneral(CodEmpresa);
         }
@@ -35,7 +35,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="id_banco"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>>  sbTesTiposDocsCargaCbo(int CodEmpresa, int id_banco)
+        public ErrorDto<List<DropDownListaGenericaModel>>  sbTesTiposDocsCargaCbo(int CodEmpresa, int id_banco)
         {
             return mTesoreria.sbTesTiposDocsCargaCbo(CodEmpresa, id_banco);
         }
@@ -45,10 +45,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_RepAuthUsuarios_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_RepAuthUsuarios_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",

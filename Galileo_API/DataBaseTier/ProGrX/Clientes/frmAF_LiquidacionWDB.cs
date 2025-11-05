@@ -22,9 +22,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="filtro">Filtro de usuario y divisa.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfLiquidacionBancos>> AF_Liquidacion_Bancos_Obtener(int CodEmpresa, AfLiquidacionBancosFiltro filtro)
+        public ErrorDto<List<AfLiquidacionBancos>> AF_Liquidacion_Bancos_Obtener(int CodEmpresa, AfLiquidacionBancosFiltro filtro)
         {
-            var result = new ErrorDTO<List<AfLiquidacionBancos>>()
+            var result = new ErrorDto<List<AfLiquidacionBancos>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -63,9 +63,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="filtro">Filtro de banco y mortalidad.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfLiquidacionEmiteTDoc>> AF_Liquidacion_Emite_TDoc(int CodEmpresa, AfLiquidacionEmiteTDocFiltro filtro)
+        public ErrorDto<List<AfLiquidacionEmiteTDoc>> AF_Liquidacion_Emite_TDoc(int CodEmpresa, AfLiquidacionEmiteTDocFiltro filtro)
         {
-            var result = new ErrorDTO<List<AfLiquidacionEmiteTDoc>>()
+            var result = new ErrorDto<List<AfLiquidacionEmiteTDoc>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -103,9 +103,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Liquidacion_TipoAccion_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Liquidacion_TipoAccion_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -135,9 +135,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Causa">ID de la causa.</param>
         /// <returns></returns>
-        public ErrorDTO<AfLiquidacionCausasDetalle> AF_Liquidacion_Causas_ObtenerDetalle(int CodEmpresa, int Causa)
+        public ErrorDto<AfLiquidacionCausasDetalle> AF_Liquidacion_Causas_ObtenerDetalle(int CodEmpresa, int Causa)
         {
-            var result = new ErrorDTO<AfLiquidacionCausasDetalle>()
+            var result = new ErrorDto<AfLiquidacionCausasDetalle>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -171,9 +171,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="filtro">Filtro de identificación, banco y divisa.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfLiquidacionCuentaBancaria>> AF_Liquidacion_CuentasBancarias_Obtener(int CodEmpresa, AfLiquidacionCuentaBancariaFiltro filtro)
+        public ErrorDto<List<AfLiquidacionCuentaBancaria>> AF_Liquidacion_CuentasBancarias_Obtener(int CodEmpresa, AfLiquidacionCuentaBancariaFiltro filtro)
         {
-            var result = new ErrorDTO<List<AfLiquidacionCuentaBancaria>>()
+            var result = new ErrorDto<List<AfLiquidacionCuentaBancaria>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -212,9 +212,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<short> AF_Liquidacion_Fondos(int CodEmpresa)
+        public ErrorDto<short> AF_Liquidacion_Fondos(int CodEmpresa)
         {
-            var result = new ErrorDTO<short>
+            var result = new ErrorDto<short>
             {
                 Code = 0,
                 Description = "Ok",
@@ -243,9 +243,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns></returns>
-        public ErrorDTO<bool> AF_Liquidacion_ActivarControl(int CodEmpresa)
+        public ErrorDto<bool> AF_Liquidacion_ActivarControl(int CodEmpresa)
         {
-            var result = new ErrorDTO<bool>
+            var result = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "Ok",
@@ -276,9 +276,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="activar_control">Si es true consulta vAFI_Renuncias_SinLiquidar, si es false consulta socios.</param>
         /// <returns></returns>
-        public ErrorDTO<List<object>> AF_Liquidacion_Renuncias_Obtener(int CodEmpresa, bool activar_control)
+        public ErrorDto<List<object>> AF_Liquidacion_Renuncias_Obtener(int CodEmpresa, bool activar_control)
         {
-            var result = new ErrorDTO<List<object>>
+            var result = new ErrorDto<List<object>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -318,9 +318,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="activar_control">Si es true consulta a los socios con renuncia activa, si es false muestra todos los socios.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfLiquidacionSocio>> AF_Liquidacion_SociosRenuncia_Obtener(int CodEmpresa, bool activar_control)
+        public ErrorDto<List<AfLiquidacionSocio>> AF_Liquidacion_SociosRenuncia_Obtener(int CodEmpresa, bool activar_control)
         {
-            var result = new ErrorDTO<List<AfLiquidacionSocio>>
+            var result = new ErrorDto<List<AfLiquidacionSocio>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -364,9 +364,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns></returns>
-        public ErrorDTO<int> AF_Liquidacion_ActualizarEstadoRenuncias(int CodEmpresa)
+        public ErrorDto<int> AF_Liquidacion_ActualizarEstadoRenuncias(int CodEmpresa)
         {
-            var result = new ErrorDTO<int>
+            var result = new ErrorDto<int>
             {
                 Code = 0,
                 Description = "Ok",
@@ -397,9 +397,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Cedula">Cédula del socio.</param>
         /// <returns></returns>
-        public ErrorDTO<AfLiquidacionSocioDetalle> AF_Liquidacion_SocioDetalle_Obtener(int CodEmpresa, string Cedula)
+        public ErrorDto<AfLiquidacionSocioDetalle> AF_Liquidacion_SocioDetalle_Obtener(int CodEmpresa, string Cedula)
         {
-            var result = new ErrorDTO<AfLiquidacionSocioDetalle>
+            var result = new ErrorDto<AfLiquidacionSocioDetalle>
             {
                 Code = 0,
                 Description = "Ok",

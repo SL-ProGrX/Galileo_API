@@ -26,11 +26,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosJustificacionesLista> Activos_JustificacionesLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<ActivosJustificacionesLista> Activos_JustificacionesLista_Obtener(int CodEmpresa, string filtros)
         {
             var vfiltro = JsonConvert.DeserializeObject<ActivosJustificacionesFiltros>(filtros);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<ActivosJustificacionesLista>();
+            var response = new ErrorDto<ActivosJustificacionesLista>();
             response.Result = new ActivosJustificacionesLista();
             response.Code = 0;
 
@@ -90,10 +90,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_justificacion"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_JustificacionesExiste_Obtener(int CodEmpresa, string cod_justificacion)
+        public ErrorDto Activos_JustificacionesExiste_Obtener(int CodEmpresa, string cod_justificacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0 };
+            var resp = new ErrorDto { Code = 0 };
 
             try
             {
@@ -122,10 +122,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_justificacion"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosJustificacionesData> Activos_Justificaciones_Obtener(int CodEmpresa, string cod_justificacion)
+        public ErrorDto<ActivosJustificacionesData> Activos_Justificaciones_Obtener(int CodEmpresa, string cod_justificacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<ActivosJustificacionesData> { Code = 0 };
+            var resp = new ErrorDto<ActivosJustificacionesData> { Code = 0 };
 
             try
             {
@@ -194,10 +194,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="scroll"></param>
         /// <param name="cod_justificacion"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosJustificacionesData> Activos_Justificacion_Scroll(int CodEmpresa, int scroll, string? cod_justificacion)
+        public ErrorDto<ActivosJustificacionesData> Activos_Justificacion_Scroll(int CodEmpresa, int scroll, string? cod_justificacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<ActivosJustificacionesData> { Code = 0 };
+            var resp = new ErrorDto<ActivosJustificacionesData> { Code = 0 };
 
             try
             {
@@ -276,16 +276,16 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Justificaciones_Guardar(int CodEmpresa, ActivosJustificacionesData data)
+        public ErrorDto Activos_Justificaciones_Guardar(int CodEmpresa, ActivosJustificacionesData data)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = string.Empty };
+            var resp = new ErrorDto { Code = 0, Description = string.Empty };
 
             try
             {
                 var errores = new List<string>();
                 if (data == null)
-                    return new ErrorDTO { Code = -1, Description = "Datos de justificación no proporcionados." };
+                    return new ErrorDto { Code = -1, Description = "Datos de justificación no proporcionados." };
 
                 if (string.IsNullOrWhiteSpace(data.cod_justificacion))
                     errores.Add("No ha indicado el código de justificación.");
@@ -312,10 +312,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 // 3) Upsert
                 resp = (data.isNew)
                     ? (existe > 0
-                        ? new ErrorDTO { Code = -2, Description = $"La justificación {data.cod_justificacion.ToUpper()} ya existe." }
+                        ? new ErrorDto { Code = -2, Description = $"La justificación {data.cod_justificacion.ToUpper()} ya existe." }
                         : Activos_Justificaciones_Insertar(CodEmpresa, data))
                     : (existe == 0
-                        ? new ErrorDTO { Code = -2, Description = $"La justificación {data.cod_justificacion.ToUpper()} no existe." }
+                        ? new ErrorDto { Code = -2, Description = $"La justificación {data.cod_justificacion.ToUpper()} no existe." }
                         : Activos_Justificaciones_Actualizar(CodEmpresa, data));
             }
             catch (Exception ex)
@@ -334,10 +334,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_Justificaciones_Insertar(int CodEmpresa, ActivosJustificacionesData data)
+        private ErrorDto Activos_Justificaciones_Insertar(int CodEmpresa, ActivosJustificacionesData data)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0 };
+            var resp = new ErrorDto { Code = 0 };
 
             try
             {
@@ -393,10 +393,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_Justificaciones_Actualizar(int CodEmpresa, ActivosJustificacionesData data)
+        private ErrorDto Activos_Justificaciones_Actualizar(int CodEmpresa, ActivosJustificacionesData data)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0 };
+            var resp = new ErrorDto { Code = 0 };
 
             try
             {
@@ -457,10 +457,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="cod_justificacion"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Justificaciones_Eliminar(int CodEmpresa, string usuario, string cod_justificacion)
+        public ErrorDto Activos_Justificaciones_Eliminar(int CodEmpresa, string usuario, string cod_justificacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -507,9 +507,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_JustificacionesTipos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_JustificacionesTipos_Obtener(int CodEmpresa)
         {
-            return new ErrorDTO<List<DropDownListaGenericaModel>>
+            return new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -530,10 +530,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="contabilidad"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_JustificacionesTiposAsientos_Obtener(int CodEmpresa, int contabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_JustificacionesTiposAsientos_Obtener(int CodEmpresa, int contabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "",

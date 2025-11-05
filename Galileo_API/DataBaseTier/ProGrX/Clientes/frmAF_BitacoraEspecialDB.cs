@@ -22,10 +22,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_BitacoraEspecialMov_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_BitacoraEspecialMov_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -57,10 +57,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="bitacora"></param>
         /// <returns></returns>
-        public ErrorDTO AF_BitacoraEspecial_Revisar(int CodEmpresa, string usuario, List<AF_BitacoraEspecialData> bitacora )
+        public ErrorDto AF_BitacoraEspecial_Revisar(int CodEmpresa, string usuario, List<AF_BitacoraEspecialData> bitacora )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -92,10 +92,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="campo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_BitacoraEspecialBusquedas_Obtener(int CodEmpresa, string campo)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_BitacoraEspecialBusquedas_Obtener(int CodEmpresa, string campo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -134,10 +134,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_BitacoraEspecialData>> AF_BitacoraEspecial_Obtener(int CodEmpresa, AF_BitacoraEspecialFiltros filtros)
+        public ErrorDto<List<AF_BitacoraEspecialData>> AF_BitacoraEspecial_Obtener(int CodEmpresa, AF_BitacoraEspecialFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<AF_BitacoraEspecialData>>
+            var result = new ErrorDto<List<AF_BitacoraEspecialData>>
             {
                 Code = 0,
                 Description = "Ok",

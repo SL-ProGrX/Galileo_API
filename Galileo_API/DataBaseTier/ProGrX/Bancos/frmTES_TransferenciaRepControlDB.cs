@@ -30,10 +30,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Banco"></param>
         /// <returns></returns>
-        public ErrorDTO<TransferenciaRepControl_CatalogoDTO> TES_TransferenciaRepControl_Catalogos_Obtener(int CodEmpresa, int Banco)
+        public ErrorDto<TransferenciaRepControl_CatalogoDTO> TES_TransferenciaRepControl_Catalogos_Obtener(int CodEmpresa, int Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TransferenciaRepControl_CatalogoDTO>
+            var response = new ErrorDto<TransferenciaRepControl_CatalogoDTO>
             {
                 Code = 0,
                 Result = new TransferenciaRepControl_CatalogoDTO()
@@ -85,10 +85,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="Formato"></param>
         /// <param name="Plan"></param>
         /// <returns></returns>
-        public ErrorDTO<object> TES_TransferenciaRepControl_Archivo_Generar(int CodEmpresa, int Banco, int NTransac, string TipoDoc, string Formato, string Plan)
+        public ErrorDto<object> TES_TransferenciaRepControl_Archivo_Generar(int CodEmpresa, int Banco, int NTransac, string TipoDoc, string Formato, string Plan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<object>
+            var response = new ErrorDto<object>
             {
                 Code = 0
             };
@@ -200,10 +200,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="transaccionesList"></param>
         /// <param name="curPlanilla"></param>
         /// <returns></returns>
-        public ErrorDTO<object> sbTeBancoNacional(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TES_TransaccionDTO> transaccionesList, int? curPlanilla)
+        public ErrorDto<object> sbTeBancoNacional(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TES_TransaccionDTO> transaccionesList, int? curPlanilla)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<object>
+            var resp = new ErrorDto<object>
             {
                 Code = 0,
                 Description = ""
@@ -337,10 +337,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vNTransac"></param>
         /// <param name="transaccionesList"></param>
         /// <returns></returns>
-        public ErrorDTO<object> sbTeBancoPopular(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TES_TransaccionDTO> transaccionesList)
+        public ErrorDto<object> sbTeBancoPopular(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TES_TransaccionDTO> transaccionesList)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<object>
+            var resp = new ErrorDto<object>
             {
                 Code = 0,
                 Description = ""
@@ -462,10 +462,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vTestKey"></param>
         /// <param name="vMontoTotal"></param>
         /// <returns></returns>
-        public ErrorDTO<object> sbTeBCR(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TES_TransaccionDTO> transaccionesList, long vTestKey, decimal vMontoTotal)
+        public ErrorDto<object> sbTeBCR(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TES_TransaccionDTO> transaccionesList, long vTestKey, decimal vMontoTotal)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<object>
+            var resp = new ErrorDto<object>
             {
                 Code = 0,
                 Description = ""
@@ -600,10 +600,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vTipoDoc"></param>
         /// <param name="vNTransac"></param>
         /// <returns></returns>
-        private ErrorDTO<object> sbTeBCR_Empresarial(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
+        private ErrorDto<object> sbTeBCR_Empresarial(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<object>
+            var resp = new ErrorDto<object>
             {
                 Code = 0,
                 Description = ""
@@ -721,10 +721,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vTipoDoc"></param>
         /// <param name="vNTransac"></param>
         /// <returns></returns>
-        private ErrorDTO<object> sbTeBCT_Enlace(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
+        private ErrorDto<object> sbTeBCT_Enlace(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<object>
+            var resp = new ErrorDto<object>
             {
                 Code = 0,
                 Description = ""
@@ -785,10 +785,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vTipoDoc"></param>
         /// <param name="vNTransac"></param>
         /// <returns></returns>
-        private ErrorDTO<object> sbTeBCR_Comercial(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
+        private ErrorDto<object> sbTeBCR_Comercial(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<object>
+            var resp = new ErrorDto<object>
             {
                 Code = 0,
                 Description = ""
@@ -903,10 +903,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vTipoDoc"></param>
         /// <param name="vNTransac"></param>
         /// <returns></returns>
-        private ErrorDTO<object> sbTeBNCR_Sinpe(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
+        private ErrorDto<object> sbTeBNCR_Sinpe(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<object>
+            var resp = new ErrorDto<object>
             {
                 Code = 0,
                 Description = ""
@@ -992,10 +992,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vFormato"></param>
         /// <param name="vPlan"></param>
         /// <returns></returns>
-        private ErrorDTO<object> sbTeFormatoEstandar(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, string vFormato, string vPlan)
+        private ErrorDto<object> sbTeFormatoEstandar(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, string vFormato, string vPlan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<object>
+            var resp = new ErrorDto<object>
             {
                 Code = 0,
                 Description = ""

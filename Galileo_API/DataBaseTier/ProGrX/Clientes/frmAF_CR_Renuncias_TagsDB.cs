@@ -21,9 +21,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Estado"></param>
         /// <param name="Filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CR_Renuncias_TagsData>> AF_CR_Renuncias_Tags_Obtener(int CodEmpresa, string Estado, string Filtro)
+        public ErrorDto<List<AF_CR_Renuncias_TagsData>> AF_CR_Renuncias_Tags_Obtener(int CodEmpresa, string Estado, string Filtro)
         {
-            var result = new ErrorDTO<List<AF_CR_Renuncias_TagsData>>()
+            var result = new ErrorDto<List<AF_CR_Renuncias_TagsData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -62,9 +62,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="recepcionDatos"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CR_Renuncia_Recepcion_Aplica(int CodEmpresa, AF_CR_RenunciaRecepcionAplica recepcionDatos)
+        public ErrorDto AF_CR_Renuncia_Recepcion_Aplica(int CodEmpresa, AF_CR_RenunciaRecepcionAplica recepcionDatos)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -104,9 +104,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="revisionDatos"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CR_Renuncia_Revision_Aplica(int CodEmpresa, AF_CR_RenunciaRevisionAplica revisionDatos)
+        public ErrorDto AF_CR_Renuncia_Revision_Aplica(int CodEmpresa, AF_CR_RenunciaRevisionAplica revisionDatos)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -147,9 +147,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="RenunciaId"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CR_RenunciaEtiquetas>> AF_CR_Renuncia_Etiquetas_Consulta(int CodEmpresa, int RenunciaId)
+        public ErrorDto<List<AF_CR_RenunciaEtiquetas>> AF_CR_Renuncia_Etiquetas_Consulta(int CodEmpresa, int RenunciaId)
         {
-            var result = new ErrorDTO<List<AF_CR_RenunciaEtiquetas>>()
+            var result = new ErrorDto<List<AF_CR_RenunciaEtiquetas>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -184,9 +184,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="RenunciaId"></param>
         /// <returns></returns>
-        public ErrorDTO<int> AF_CR_Renuncia_Revision_Reversar_Valida(int CodEmpresa, int RenunciaId)
+        public ErrorDto<int> AF_CR_Renuncia_Revision_Reversar_Valida(int CodEmpresa, int RenunciaId)
         {
-            var result = new ErrorDTO<int>()
+            var result = new ErrorDto<int>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -216,9 +216,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CR_Renuncia_Revision_Reversar(int CodEmpresa, AF_CR_RenunciaReversa dto)
+        public ErrorDto AF_CR_Renuncia_Revision_Reversar(int CodEmpresa, AF_CR_RenunciaReversa dto)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -257,9 +257,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CR_Renuncias_TagsData>> AF_CR_Renuncias_Pendientes_Obtener(int CodEmpresa)
+        public ErrorDto<List<AF_CR_Renuncias_TagsData>> AF_CR_Renuncias_Pendientes_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<AF_CR_Renuncias_TagsData>>()
+            var result = new ErrorDto<List<AF_CR_Renuncias_TagsData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -290,9 +290,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CR_Renuncias_TagsData>> AF_CR_Renuncias_Obtener(int CodEmpresa)
+        public ErrorDto<List<AF_CR_Renuncias_TagsData>> AF_CR_Renuncias_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<AF_CR_Renuncias_TagsData>>()
+            var result = new ErrorDto<List<AF_CR_Renuncias_TagsData>>()
             {
                 Code = 0,
                 Description = "Ok",

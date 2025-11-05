@@ -173,11 +173,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO CuentaBancaria_Actualizar(int CodEmpresa, SYS_Cuentas_BancariasDTO data)
+        public ErrorDto CuentaBancaria_Actualizar(int CodEmpresa, SYS_Cuentas_BancariasDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -217,11 +217,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO CuentaBancaria_Insertar(int CodEmpresa, SYS_Cuentas_BancariasDTO data)
+        public ErrorDto CuentaBancaria_Insertar(int CodEmpresa, SYS_Cuentas_BancariasDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -254,11 +254,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO CuentaBancaria_Borrar(int CodEmpresa, SYS_Cuentas_BancariasDTO data)
+        public ErrorDto CuentaBancaria_Borrar(int CodEmpresa, SYS_Cuentas_BancariasDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

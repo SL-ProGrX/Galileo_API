@@ -17,10 +17,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<fslTipoApelacion>> FslTipoApelacion_Obtener(int CodCliente)
+        public ErrorDto<List<fslTipoApelacion>> FslTipoApelacion_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<fslTipoApelacion>>();
+            var response = new ErrorDto<List<fslTipoApelacion>>();
 
 
             try
@@ -43,11 +43,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO FslApelacion_Aplicar(int CodCliente, fslApleacionAplicar expediente)
+        public ErrorDto FslApelacion_Aplicar(int CodCliente, fslApleacionAplicar expediente)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             int mLinea = 0;
             try
@@ -96,11 +96,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO FslResolucionApelacion_Aplicar(int CodCliente, string apelacion)
+        public ErrorDto FslResolucionApelacion_Aplicar(int CodCliente, string apelacion)
         {
             fslResolucionApleacion expediente = JsonConvert.DeserializeObject<fslResolucionApleacion>(apelacion) ?? new fslResolucionApleacion();
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             int mLinea = 0;
             try

@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<PePerspectivasDTO> PePerspectiva_Obtener(int CodEmpresa, int perspectiva)
+        public ErrorDto<PePerspectivasDTO> PePerspectiva_Obtener(int CodEmpresa, int perspectiva)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<PePerspectivasDTO>();
+            var response = new ErrorDto<PePerspectivasDTO>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -47,10 +47,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<PePerspectivasDTO> PePerspectiva_Scroll(int CodEmpresa, int scroll, int? perspectiva)
+        public ErrorDto<PePerspectivasDTO> PePerspectiva_Scroll(int CodEmpresa, int scroll, int? perspectiva)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<PePerspectivasDTO>();
+            var response = new ErrorDto<PePerspectivasDTO>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -80,10 +80,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
     
-        public ErrorDTO PePerspectiva_Guardar(int CodEmpresa, PePerspectivasDTO perspectiva)
+        public ErrorDto PePerspectiva_Guardar(int CodEmpresa, PePerspectivasDTO perspectiva)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0,
                 Description = ""
@@ -117,10 +117,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDTO Perspectiva_Insertar(int CodEmpresa, PePerspectivasDTO perspectiva)
+        private ErrorDto Perspectiva_Insertar(int CodEmpresa, PePerspectivasDTO perspectiva)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0,
                 Description = ""
@@ -165,10 +165,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDTO Perspectiva_Actualizar(int CodEmpresa, PePerspectivasDTO perspectiva)
+        private ErrorDto Perspectiva_Actualizar(int CodEmpresa, PePerspectivasDTO perspectiva)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0,
                 Description = ""
@@ -199,10 +199,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO PePerspectiva_Eliminar(int CodEmpresa, int perspectiva)
+        public ErrorDto PePerspectiva_Eliminar(int CodEmpresa, int perspectiva)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0,
                 Description = ""
@@ -233,10 +233,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<PePerspectivasDTO>> PePlanesLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<PePerspectivasDTO>> PePlanesLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<PePerspectivasDTO>>();
+            var response = new ErrorDto<List<PePerspectivasDTO>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -256,11 +256,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<PePerspectivasDatosLista> PePerpectivasLista_Obtener(int CodEmpresa, string Jfiltros)
+        public ErrorDto<PePerspectivasDatosLista> PePerpectivasLista_Obtener(int CodEmpresa, string Jfiltros)
         {
             PePerspectivasFiltros filtros = JsonConvert.DeserializeObject<PePerspectivasFiltros>(Jfiltros) ?? new PePerspectivasFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<PePerspectivasDatosLista>();
+            var response = new ErrorDto<PePerspectivasDatosLista>();
             response.Result = new PePerspectivasDatosLista
             {
                 total = 0,

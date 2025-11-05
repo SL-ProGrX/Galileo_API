@@ -14,9 +14,9 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<CargosAdicionalDTO>> ObtenerCargosAdicionales(int CodEmpresa)
+        public ErrorDto<List<CargosAdicionalDTO>> ObtenerCargosAdicionales(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<CargosAdicionalDTO>>();
+            var response = new ErrorDto<List<CargosAdicionalDTO>>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             mCntLinkDB obj = new mCntLinkDB(_config);
 
@@ -42,9 +42,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO ExisteCargoAdicional(int CodEmpresa, string CodCargo)
+        public ErrorDto ExisteCargoAdicional(int CodEmpresa, string CodCargo)
         {
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -70,9 +70,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO EliminarCargoAdicional(int CodEmpresa, string CodCargo)
+        public ErrorDto EliminarCargoAdicional(int CodEmpresa, string CodCargo)
         {
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -99,9 +99,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO InsertarCargoAdicional(int CodEmpresa, CargosAdicionalDTO Info)
+        public ErrorDto InsertarCargoAdicional(int CodEmpresa, CargosAdicionalDTO Info)
         {
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -131,9 +131,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO ActualizarCargoAdicional(int CodEmpresa, CargosAdicionalDTO Info)
+        public ErrorDto ActualizarCargoAdicional(int CodEmpresa, CargosAdicionalDTO Info)
         {
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };

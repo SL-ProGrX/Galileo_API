@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysEstado_CivilLista> Sys_EstadoCivilLista_Obtener(int CodEmpresa)
+        public ErrorDto<SysEstado_CivilLista> Sys_EstadoCivilLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysEstado_CivilLista>()
+            var result = new ErrorDto<SysEstado_CivilLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -71,10 +71,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="estadoCivil"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_EstadoCivil_Guardar(int CodEmpresa, SysEstado_CivilData estadoCivil)
+        public ErrorDto Sys_EstadoCivil_Guardar(int CodEmpresa, SysEstado_CivilData estadoCivil)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -125,10 +125,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="estadoCivil"></param>
         /// <returns></returns>
-        private ErrorDTO Sys_EstadoCivil_Actualizar(int CodEmpresa, SysEstado_CivilData estadoCivil)
+        private ErrorDto Sys_EstadoCivil_Actualizar(int CodEmpresa, SysEstado_CivilData estadoCivil)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -172,10 +172,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="estadoCivil"></param>
         /// <returns></returns>
-        private ErrorDTO Sys_EstadoCivil_Insertar(int CodEmpresa, SysEstado_CivilData estadoCivil)
+        private ErrorDto Sys_EstadoCivil_Insertar(int CodEmpresa, SysEstado_CivilData estadoCivil)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -220,10 +220,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="estadoCivil"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_EstadoCivil_Eliminar(int CodEmpresa, string usuario, string estadoCivil)
+        public ErrorDto Sys_EstadoCivil_Eliminar(int CodEmpresa, string usuario, string estadoCivil)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

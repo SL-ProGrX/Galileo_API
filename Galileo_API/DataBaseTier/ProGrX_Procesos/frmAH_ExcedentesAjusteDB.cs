@@ -39,10 +39,10 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO AjusteExcedente_Insertar(int CodCliente, AjusteExcedenteDTO capIndv)
+        public ErrorDto AjusteExcedente_Insertar(int CodCliente, AjusteExcedenteDTO capIndv)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -71,10 +71,10 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO AjusteExcedente_Actualizar(int CodCliente, AjusteExcedenteDTO capIndv)
+        public ErrorDto AjusteExcedente_Actualizar(int CodCliente, AjusteExcedenteDTO capIndv)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -101,10 +101,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO AjusteExcedente_Borrar(int CodCliente, string cod_producto)
+        public ErrorDto AjusteExcedente_Borrar(int CodCliente, string cod_producto)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try

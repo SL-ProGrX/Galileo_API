@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="tipoDocumento"></param>
         /// <param name="orden"></param>
         /// <returns></returns>
-        public ErrorDTO<string> SIF_tipoDocumento_Consultar(int CodEmpresa, string tipoDocumento, int orden)
+        public ErrorDto<string> SIF_tipoDocumento_Consultar(int CodEmpresa, string tipoDocumento, int orden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -72,10 +72,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="tipoDocumento"></param>
         /// <returns></returns>
-        public ErrorDTO<SifTipoDocumentoData> SIF_tipoDocumentoData_Consultar(int CodEmpresa, string tipoDocumento)
+        public ErrorDto<SifTipoDocumentoData> SIF_tipoDocumentoData_Consultar(int CodEmpresa, string tipoDocumento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SifTipoDocumentoData>
+            var result = new ErrorDto<SifTipoDocumentoData>
             {
                 Code = 0,
                 Description = "Ok",
@@ -106,10 +106,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> SIF_tipoDocumento_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> SIF_tipoDocumento_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -140,10 +140,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="tipoDoc"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_tipoDocumento_Actualiza(int CodEmpresa, string usuario, SifTipoDocumentoData tipoDoc)
+        public ErrorDto SIF_tipoDocumento_Actualiza(int CodEmpresa, string usuario, SifTipoDocumentoData tipoDoc)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -219,10 +219,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="tipoDoc"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_tipoDocumento_Insertar(int CodEmpresa, string usuario, SifTipoDocumentoData tipoDoc)
+        public ErrorDto SIF_tipoDocumento_Insertar(int CodEmpresa, string usuario, SifTipoDocumentoData tipoDoc)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -304,10 +304,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="tipoDoc"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SifTipoDocConceptoData>> SIF_TipoDocumentosConceptosRelacionados_Obtener(int CodEmpresa, string tipoDoc)
+        public ErrorDto<List<SifTipoDocConceptoData>> SIF_TipoDocumentosConceptosRelacionados_Obtener(int CodEmpresa, string tipoDoc)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SifTipoDocConceptoData>>()
+            var result = new ErrorDto<List<SifTipoDocConceptoData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -344,10 +344,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="tipoDoc"></param>
         /// <param name="accion"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_TipoDocumentosConceptosRelacionados_Guardar(int CodEmpresa, string usuario, string cod_concepto, string tipoDoc, string accion)
+        public ErrorDto SIF_TipoDocumentosConceptosRelacionados_Guardar(int CodEmpresa, string usuario, string cod_concepto, string tipoDoc, string accion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);        
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

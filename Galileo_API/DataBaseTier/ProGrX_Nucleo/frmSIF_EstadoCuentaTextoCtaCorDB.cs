@@ -14,11 +14,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<Sif_EmpresaDTO> NotasEstados_Obtener(int CodEmpresa)
+        public ErrorDto<Sif_EmpresaDTO> NotasEstados_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO<Sif_EmpresaDTO> result = new ErrorDTO<Sif_EmpresaDTO>();
+            ErrorDto<Sif_EmpresaDTO> result = new ErrorDto<Sif_EmpresaDTO>();
             result.Code = 0;
 
             try
@@ -46,10 +46,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO NotasEstados_Insertar(int CodCliente, Sif_EmpresaDTO notas)
+        public ErrorDto NotasEstados_Insertar(int CodCliente, Sif_EmpresaDTO notas)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {

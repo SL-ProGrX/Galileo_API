@@ -16,10 +16,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<fslRequisitosDataLista> FslRequisitos_Obtener(int CodCliente, string filtros)
+        public ErrorDto<fslRequisitosDataLista> FslRequisitos_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<fslRequisitosDataLista>();
+            var response = new ErrorDto<fslRequisitosDataLista>();
 
             response.Result = new fslRequisitosDataLista();
 
@@ -74,10 +74,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<fslPanesCausasLista>> FslPlanesCausa_Obtener(int CodCliente, string cod_plan)
+        public ErrorDto<List<fslPanesCausasLista>> FslPlanesCausa_Obtener(int CodCliente, string cod_plan)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<fslPanesCausasLista>>();
+            var response = new ErrorDto<List<fslPanesCausasLista>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -100,10 +100,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO<List<fslRequisitoCausa>> FslRequisitoCausa_Obtener(int CodCliente, string cod_plan, string cod_causa)
+        public ErrorDto<List<fslRequisitoCausa>> FslRequisitoCausa_Obtener(int CodCliente, string cod_plan, string cod_causa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<fslRequisitoCausa>>();
+            var response = new ErrorDto<List<fslRequisitoCausa>>();
 
             try
             {
@@ -126,10 +126,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<fslPlanes>> FslPlanes_Obtener(int CodCliente)
+        public ErrorDto<List<fslPlanes>> FslPlanes_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<fslPlanes>>(); ;
+            var response = new ErrorDto<List<fslPlanes>>(); ;
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -152,11 +152,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO Requisito_Guardar(int CodCliente, fslRequisitosData requisito)
+        public ErrorDto Requisito_Guardar(int CodCliente, fslRequisitosData requisito)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -178,11 +178,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO FslRequisito_Insertar(int CodCliente, fslRequisitosData requisito)
+        public ErrorDto FslRequisito_Insertar(int CodCliente, fslRequisitosData requisito)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
 
@@ -240,10 +240,10 @@ namespace PgxAPI.DataBaseTier
             return existe;
         }
 
-        public ErrorDTO FslRequisito_Actualizar(int CodCliente, fslRequisitosData requisito)
+        public ErrorDto FslRequisito_Actualizar(int CodCliente, fslRequisitosData requisito)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -268,11 +268,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO FslRequisito_Eliminar(int CodCliente, string cod_requisito)
+        public ErrorDto FslRequisito_Eliminar(int CodCliente, string cod_requisito)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
 
@@ -298,9 +298,9 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<fslRequisitoEditar> FslAsignacion_Editar(int CodCliente, fslRequisitoEditar asignacion)
+        public ErrorDto<fslRequisitoEditar> FslAsignacion_Editar(int CodCliente, fslRequisitoEditar asignacion)
         {
-            var response = new ErrorDTO<fslRequisitoEditar>();
+            var response = new ErrorDto<fslRequisitoEditar>();
 
             response.Result = new fslRequisitoEditar();
             response.Code = 0;
@@ -322,10 +322,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<fslRequisitoEditar> FslRequisito_ActualizarOpcional(int CodCliente, fslRequisitoEditar asignacion)
+        public ErrorDto<fslRequisitoEditar> FslRequisito_ActualizarOpcional(int CodCliente, fslRequisitoEditar asignacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<fslRequisitoEditar>();
+            var response = new ErrorDto<fslRequisitoEditar>();
 
             response.Result = new fslRequisitoEditar();
             response.Code = 0;
@@ -350,10 +350,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<fslRequisitoEditar> FslRequisito_ActualizaAsignado(int CodCliente, fslRequisitoEditar asignacion)
+        public ErrorDto<fslRequisitoEditar> FslRequisito_ActualizaAsignado(int CodCliente, fslRequisitoEditar asignacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<fslRequisitoEditar>();
+            var response = new ErrorDto<fslRequisitoEditar>();
 
             response.Result = new fslRequisitoEditar();
             response.Code = 0;

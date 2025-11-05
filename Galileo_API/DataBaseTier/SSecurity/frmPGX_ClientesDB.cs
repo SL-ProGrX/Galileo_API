@@ -17,7 +17,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -150,9 +150,9 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO Cliente_Modificar(ClienteDTO info)
+        public ErrorDto Cliente_Modificar(ClienteDTO info)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -434,9 +434,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Cliente_Eliminar(int CodEmpresa, string usuario)
+        public ErrorDto Cliente_Eliminar(int CodEmpresa, string usuario)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -594,9 +594,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO ContactoCliente_Actualizar(ContactoDTO contacto)
+        public ErrorDto ContactoCliente_Actualizar(ContactoDTO contacto)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -628,7 +628,7 @@ namespace PgxAPI.DataBaseTier
                     });
 
                     // Return success if the update was executed successfully
-                    return new ErrorDTO
+                    return new ErrorDto
                     {
                         Code = 0,
                         Description = "Contacto actualizado correctamente."
@@ -638,7 +638,7 @@ namespace PgxAPI.DataBaseTier
             catch (Exception ex)
             {
                 // Return failure in case of an exception
-                return new ErrorDTO
+                return new ErrorDto
                 {
                     Code = -1,
                     Description = $"Error al actualizar el contacto: {ex.Message}"
@@ -646,9 +646,9 @@ namespace PgxAPI.DataBaseTier
             }
         }
 
-        public ErrorDTO ContactoCliente_Insertar(ContactoDTO contacto)
+        public ErrorDto ContactoCliente_Insertar(ContactoDTO contacto)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -683,7 +683,7 @@ namespace PgxAPI.DataBaseTier
                     });
 
                     // Return success message
-                    return new ErrorDTO
+                    return new ErrorDto
                     {
                         Code = 0,
                         Description = "Contacto insertado correctamente."
@@ -693,7 +693,7 @@ namespace PgxAPI.DataBaseTier
             catch (Exception ex)
             {
                 // Return failure in case of an exception
-                return new ErrorDTO
+                return new ErrorDto
                 {
                     Code = -1,
                     Description = $"Error al insertar el contacto: {ex.Message}"
@@ -701,9 +701,9 @@ namespace PgxAPI.DataBaseTier
             }
         }
 
-        public ErrorDTO ContactoCliente_Eliminar(int cod_contacto, int cod_empresa)
+        public ErrorDto ContactoCliente_Eliminar(int cod_contacto, int cod_empresa)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -721,7 +721,7 @@ namespace PgxAPI.DataBaseTier
                     // Return success if at least one row was deleted
                     if (rowsAffected > 0)
                     {
-                        return new ErrorDTO
+                        return new ErrorDto
                         {
                             Code = 0,
                             Description = "Contacto eliminado correctamente."
@@ -729,7 +729,7 @@ namespace PgxAPI.DataBaseTier
                     }
                     else
                     {
-                        return new ErrorDTO
+                        return new ErrorDto
                         {
                             Code = -1,
                             Description = "No se encontró el contacto a eliminar."
@@ -740,7 +740,7 @@ namespace PgxAPI.DataBaseTier
             catch (Exception ex)
             {
                 // Return failure in case of an exception
-                return new ErrorDTO
+                return new ErrorDto
                 {
                     Code = -1,
                     Description = $"Error al eliminar el contacto: {ex.Message}"
@@ -775,10 +775,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO SMTP_Autorizar(SMTPDTO smtpAuth)
+        public ErrorDto SMTP_Autorizar(SMTPDTO smtpAuth)
 
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -798,7 +798,7 @@ namespace PgxAPI.DataBaseTier
                     connection.Execute(sql, parameters);
 
                     // Return success if the procedure executed successfully
-                    return new ErrorDTO
+                    return new ErrorDto
                     {
                         Code = 0,
                         Description = "SMTP para el cliente fue actualizado correctamente."
@@ -808,7 +808,7 @@ namespace PgxAPI.DataBaseTier
             catch (Exception ex)
             {
                 // Return error details if something went wrong
-                return new ErrorDTO
+                return new ErrorDto
                 {
                     Code = -1,
                     Description = $"Error al actualizar autorización del SMTP: {ex.Message}"
@@ -821,9 +821,9 @@ namespace PgxAPI.DataBaseTier
 
         #region TEST Y SINC
 
-        public ErrorDTO TestConnection(string connectionName, ConnectionModel connection)
+        public ErrorDto TestConnection(string connectionName, ConnectionModel connection)
         {
-            var error = new ErrorDTO();
+            var error = new ErrorDto();
 
             if (connection == null || string.IsNullOrEmpty(connection.Server) || string.IsNullOrEmpty(connection.Database))
             {
@@ -862,9 +862,9 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDTO Clientes_Sincronizar(int CodEmpresa, bool logos)
+        public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos)
         {
-            var errorResponse = new ErrorDTO(); // Initialize your ErrorDTO
+            var errorResponse = new ErrorDto(); // Initialize your ErrorDto
             int i = 0;
 
             try
@@ -930,7 +930,7 @@ namespace PgxAPI.DataBaseTier
                 errorResponse.Code = -1; // Or however you want to indicate failure
             }
 
-            return errorResponse; // Return the ErrorDTO
+            return errorResponse; // Return the ErrorDto
         }
 
         #endregion
@@ -1247,7 +1247,7 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception ex)
             {
-                // Handle the error and populate the ErrorDTO
+                // Handle the error and populate the ErrorDto
                 resp.HasError = true;
                 resp.ErrorMessage = ex.Message;
             }
@@ -1255,9 +1255,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Cliente_Modificar2(ClienteDTO info)
+        public ErrorDto Cliente_Modificar2(ClienteDTO info)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {

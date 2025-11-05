@@ -1075,11 +1075,11 @@ End Function
             };
         }
 
-        public ErrorDTO<object> ReportesInfo(int CodEmpresa)
+        public ErrorDto<object> ReportesInfo(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             // objeto con string logo y nombre empresa
-            var resp = new ErrorDTO<object> { 
+            var resp = new ErrorDto<object> { 
                 Code = 0,
                 Description = "OK" ,
                 Result = new { LOGO_WEB_SITE = "", Nombre = "" }
@@ -1103,10 +1103,10 @@ End Function
         #endregion
 
         #region VERSION 1 (Proyecto Angular v1)
-        public ErrorDTO<object> ReporteRDLC(frmReporteGlobal data)
+        public ErrorDto<object> ReporteRDLC(frmReporteGlobal data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(data.codEmpresa);
-            ErrorDTO<object> error = new ErrorDTO<object>();
+            ErrorDto<object> error = new ErrorDto<object>();
 
             try
             {

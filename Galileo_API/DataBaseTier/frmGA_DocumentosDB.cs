@@ -23,9 +23,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario"></param>
         /// <param name="Modulo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TiposDocumentosArchivosDTO>> TiposDocumentos_Obtener(int CodEmpresa, string Usuario, string Modulo)
+        public ErrorDto<List<TiposDocumentosArchivosDTO>> TiposDocumentos_Obtener(int CodEmpresa, string Usuario, string Modulo)
         {
-            var resp = new ErrorDTO<List<TiposDocumentosArchivosDTO>>();
+            var resp = new ErrorDto<List<TiposDocumentosArchivosDTO>>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
@@ -55,9 +55,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO Documentos_Insertar(int CodEmpresa, DocumentosArchivoDTO data)
+        public ErrorDto Documentos_Insertar(int CodEmpresa, DocumentosArchivoDTO data)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
 
@@ -164,9 +164,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="llave03"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Documentos_Eliminar(int CodEmpresa, string llave01, string llave02, string llave03, string usuario)
+        public ErrorDto Documentos_Eliminar(int CodEmpresa, string llave01, string llave02, string llave03, string usuario)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 var procedure = "[spGA_EliminarDocumentos]";

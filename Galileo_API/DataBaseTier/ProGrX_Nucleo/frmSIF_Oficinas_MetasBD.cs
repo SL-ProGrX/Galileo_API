@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="anio"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<SifOficinasMetaLista> Sif_OficinasMetasLista_Obtener(int CodEmpresa, string oficina, int anio, string usuario)
+        public ErrorDto<SifOficinasMetaLista> Sif_OficinasMetasLista_Obtener(int CodEmpresa, string oficina, int anio, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SifOficinasMetaLista>()
+            var result = new ErrorDto<SifOficinasMetaLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -66,10 +66,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="oficina"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Sif_OficinasMetasPeriodos_Obtener(int CodEmpresa, string oficina)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasMetasPeriodos_Obtener(int CodEmpresa, string oficina)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -101,10 +101,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="metas"></param>
         /// <returns></returns>
-        public ErrorDTO Sif_OficinasMetas_Actualizar(int CodEmpresa, string oficina, string usuario, List<SifOficinasMetaData> metas)
+        public ErrorDto Sif_OficinasMetas_Actualizar(int CodEmpresa, string oficina, string usuario, List<SifOficinasMetaData> metas)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

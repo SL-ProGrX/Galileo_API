@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<ZonasLista> AF_ZonasLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ZonasLista> AF_ZonasLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<ZonasLista>
+            var result = new ErrorDto<ZonasLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -81,10 +81,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ZonasData>> AF_Zonas_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ZonasData>> AF_Zonas_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ZonasData>>
+            var result = new ErrorDto<List<ZonasData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -124,10 +124,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="zona"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Zonas_Guardar(int CodEmpresa, string usuario, ZonasData zona)
+        public ErrorDto AF_Zonas_Guardar(int CodEmpresa, string usuario, ZonasData zona)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -178,10 +178,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="zona"></param>
         /// <returns></returns>
-        private ErrorDTO AF_Zonas_Actualizar(int CodEmpresa, string usuario, ZonasData zona)
+        private ErrorDto AF_Zonas_Actualizar(int CodEmpresa, string usuario, ZonasData zona)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -226,10 +226,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="zona"></param>
         /// <returns></returns>
-        private ErrorDTO AF_Zonas_Insertar(int CodEmpresa, string usuario, ZonasData zona)
+        private ErrorDto AF_Zonas_Insertar(int CodEmpresa, string usuario, ZonasData zona)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -273,10 +273,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="codZona"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Zonas_Eliminar(int CodEmpresa, string usuario, string codZona)
+        public ErrorDto AF_Zonas_Eliminar(int CodEmpresa, string usuario, string codZona)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -312,10 +312,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="codZona"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Zonas_Valida(int CodEmpresa, string codZona)
+        public ErrorDto AF_Zonas_Valida(int CodEmpresa, string codZona)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -353,10 +353,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="zonaId"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ZonaUsuarioAsignadoData>> AF_Zonas_UsuariosAsignados_Obtener(int CodEmpresa, string zonaId)
+        public ErrorDto<List<ZonaUsuarioAsignadoData>> AF_Zonas_UsuariosAsignados_Obtener(int CodEmpresa, string zonaId)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ZonaUsuarioAsignadoData>>()
+            var result = new ErrorDto<List<ZonaUsuarioAsignadoData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -389,10 +389,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="zonaId"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ZonaInstitucionAsignadaData>> AF_Zonas_InstitucionesAsignadas_Obtener(int CodEmpresa, string zonaId)
+        public ErrorDto<List<ZonaInstitucionAsignadaData>> AF_Zonas_InstitucionesAsignadas_Obtener(int CodEmpresa, string zonaId)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ZonaInstitucionAsignadaData>>()
+            var result = new ErrorDto<List<ZonaInstitucionAsignadaData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -428,10 +428,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="movimiento"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Zonas_InstitucionAsignar_Registrar(int CodEmpresa, string zonaId, int institucionId, string usuario, string movimiento)
+        public ErrorDto AF_Zonas_InstitucionAsignar_Registrar(int CodEmpresa, string zonaId, int institucionId, string usuario, string movimiento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -465,10 +465,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="movimiento"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Zonas_UsuarioAsignar_Registrar(int CodEmpresa, string zonaId, string usuarioId, string usuario, string movimiento)
+        public ErrorDto AF_Zonas_UsuarioAsignar_Registrar(int CodEmpresa, string zonaId, string usuarioId, string usuario, string movimiento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

@@ -17,16 +17,16 @@ namespace PgxAPI.DataBaseTier
         }
 
         /// <summary>
-        /// Autorización de Transacciones de Inventario
+        /// Autorizaciï¿½n de Transacciones de Inventario
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO InvTransacAutoriza_Actualizar(int CodEmpresa, InvTransacAutoriza request)
+        public ErrorDto InvTransacAutoriza_Actualizar(int CodEmpresa, InvTransacAutoriza request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -73,7 +73,7 @@ namespace PgxAPI.DataBaseTier
 
 
                     resp.Code = connection.ExecuteAsync(query, parameters).Result;
-                    resp.Description = "Resolución Ejecutada Satisfactoriamente...";
+                    resp.Description = "Resoluciï¿½n Ejecutada Satisfactoriamente...";
                 }
             }
             catch (Exception ex)

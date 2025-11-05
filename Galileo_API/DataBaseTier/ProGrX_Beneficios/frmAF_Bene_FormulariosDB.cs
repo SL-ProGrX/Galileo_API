@@ -27,10 +27,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_beneficio"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Formulario>> AfBeneFormulario_Obtener(int CodCliente, string cod_beneficio)
+        public ErrorDto<List<Formulario>> AfBeneFormulario_Obtener(int CodCliente, string cod_beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<Formulario>>();
+            var response = new ErrorDto<List<Formulario>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -61,10 +61,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="id_form"></param>
         /// <returns></returns>
-        public ErrorDTO<Form> AfBeneFormularioPregunta_Obtener(int CodCliente, int id_form)
+        public ErrorDto<Form> AfBeneFormularioPregunta_Obtener(int CodCliente, int id_form)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<Form>();
+            var response = new ErrorDto<Form>();
             response.Result = new Form();
             try
             {
@@ -95,10 +95,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="id_frm_pregunta"></param>
         /// <returns></returns>
-        public ErrorDTO<List<OptionabledQuestion>> AfBeneFormularioOpciones_Obtener(int CodCliente, int id_frm_pregunta)
+        public ErrorDto<List<OptionabledQuestion>> AfBeneFormularioOpciones_Obtener(int CodCliente, int id_frm_pregunta)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<OptionabledQuestion>>();
+            var response = new ErrorDto<List<OptionabledQuestion>>();
             response.Result = new List<OptionabledQuestion>();
             try
             {
@@ -126,11 +126,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="formulario"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneFormularios_Agregar(int CodCliente, string formulario)
+        public ErrorDto AfBeneFormularios_Agregar(int CodCliente, string formulario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             Formulario frm = JsonConvert.DeserializeObject<Formulario>(formulario);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -253,11 +253,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="Jformulario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Formulario>> AfBeneFormSocios_Obtener(string Jformulario)
+        public ErrorDto<List<Formulario>> AfBeneFormSocios_Obtener(string Jformulario)
         {
             FrmFiltros formulario = JsonConvert.DeserializeObject<FrmFiltros>(Jformulario) ?? new FrmFiltros();
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(formulario.codCliente);
-            var response = new ErrorDTO<List<Formulario>>();
+            var response = new ErrorDto<List<Formulario>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -380,12 +380,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Jdatos"></param>
         /// <param name="frm"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneFrmRespuesta_Agregar(string Jdatos, Form frm)
+        public ErrorDto AfBeneFrmRespuesta_Agregar(string Jdatos, Form frm)
         {
             FrmFiltros datos = JsonConvert.DeserializeObject<FrmFiltros>(Jdatos) ?? new FrmFiltros();
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(datos.codCliente);
             // Form frm = JsonConvert.DeserializeObject<Form>(formulario);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -417,7 +417,7 @@ namespace PgxAPI.DataBaseTier
                         {
 
                             //actualizar formulario
-                            ErrorDTO<bool> resp = LimpiaRespuestasSocio(datos, frm.id);
+                            ErrorDto<bool> resp = LimpiaRespuestasSocio(datos, frm.id);
                         }
                         catch (Exception ex)
                         {
@@ -437,7 +437,7 @@ namespace PgxAPI.DataBaseTier
                         {
 
                             string respuesta = string.Empty;
-                            ErrorDTO<int> id_opciones = new ErrorDTO<int>();
+                            ErrorDto<int> id_opciones = new ErrorDto<int>();
                             id_opciones.Result = 0;
                             //Valido por tipo de pregunta
                             switch (item.pregunta_tipo)
@@ -538,11 +538,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="question"></param>
         /// <returns></returns>
-        private ErrorDTO<int> GuardarOpcionesRespuesta(int CodCliente, int id_pregunta, int id_respuesta, string usuario, object question)
+        private ErrorDto<int> GuardarOpcionesRespuesta(int CodCliente, int id_pregunta, int id_respuesta, string usuario, object question)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             string objJSon = question.ToString();
-            var response = new ErrorDTO<int>();
+            var response = new ErrorDto<int>();
             List<OptionabledQuestion> qst = new List<OptionabledQuestion>();
             OptionabledQuestion qst2 = new OptionabledQuestion();
             try
@@ -638,7 +638,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="question"></param>
         /// <returns></returns>
-        private ErrorDTO<int> GuardaOpcionSelectRespuesta(int CodCliente, int id_pregunta, int id_respuesta, string usuario, object question)
+        private ErrorDto<int> GuardaOpcionSelectRespuesta(int CodCliente, int id_pregunta, int id_respuesta, string usuario, object question)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             string objJSon = JsonConvert.SerializeObject(question);
@@ -655,7 +655,7 @@ namespace PgxAPI.DataBaseTier
                 qst = JsonConvert.DeserializeObject<List<string>>(objJSon);
             }
 
-            ErrorDTO<int> id_opciones = new ErrorDTO<int>();
+            ErrorDto<int> id_opciones = new ErrorDto<int>();
             id_opciones.Result = 0;
             try
             {
@@ -735,10 +735,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="datos"></param>
         /// <param name="id_frm"></param>
         /// <returns></returns>
-        public ErrorDTO<bool> LimpiaRespuestasSocio(FrmFiltros datos, int id_frm)
+        public ErrorDto<bool> LimpiaRespuestasSocio(FrmFiltros datos, int id_frm)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(datos.codCliente);
-            var info = new ErrorDTO<bool>();
+            var info = new ErrorDto<bool>();
             info.Code = 0;
             try
             {
@@ -787,11 +787,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="formulario"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneFrmEncabezado_Actualizar(int CodCliente, string formulario)
+        public ErrorDto AfBeneFrmEncabezado_Actualizar(int CodCliente, string formulario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             Formulario frm = JsonConvert.DeserializeObject<Formulario>(formulario);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -825,10 +825,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="if_frm"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneFormulario_Eliminar(int CodCliente, int if_frm)
+        public ErrorDto AfBeneFormulario_Eliminar(int CodCliente, int if_frm)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -868,11 +868,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="formulario"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneFrmDetalle_Actualizar(int CodCliente, int id_from, string usuario, string formulario)
+        public ErrorDto AfBeneFrmDetalle_Actualizar(int CodCliente, int id_from, string usuario, string formulario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             FormQuestion frm = JsonConvert.DeserializeObject<FormQuestion>(formulario);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -941,10 +941,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="frm_pregunta"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneFrmDetalle_Elimina(int CodCliente, int frm_pregunta, string usuario)
+        public ErrorDto AfBeneFrmDetalle_Elimina(int CodCliente, int frm_pregunta, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -983,11 +983,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="opcion"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneFrmOpciones_Actualizar(int CodCliente, int frm_pregunta, string usuario, string opcion)
+        public ErrorDto AfBeneFrmOpciones_Actualizar(int CodCliente, int frm_pregunta, string usuario, string opcion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             OptionabledQuestion frm = JsonConvert.DeserializeObject<OptionabledQuestion>(opcion);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -1054,10 +1054,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="id_opciones"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneFrmOpciones_Eliminar(int CodCliente, int frm_pregunta, int id_opciones, string usuario)
+        public ErrorDto AfBeneFrmOpciones_Eliminar(int CodCliente, int frm_pregunta, int id_opciones, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -1088,10 +1088,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO<object> AfBeneficiosReporte_Obtener(FrmReporteDatos datos)
+        public ErrorDto<object> AfBeneficiosReporte_Obtener(FrmReporteDatos datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(datos.codCliente);
-            var info = new ErrorDTO<object>();
+            var info = new ErrorDto<object>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -1121,10 +1121,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ReporteFormularioDatos>> AfBeneficiosReporteSocio_Obtener(FrmReporteDatos datos)
+        public ErrorDto<List<ReporteFormularioDatos>> AfBeneficiosReporteSocio_Obtener(FrmReporteDatos datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(datos.codCliente);
-            var info = new ErrorDTO<List<ReporteFormularioDatos>>();
+            var info = new ErrorDto<List<ReporteFormularioDatos>>();
             try
             {
 

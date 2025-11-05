@@ -25,13 +25,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<InvControlActivosLista> InvControlActivosLista_Obtener(int CodEmpresa, string usuario, string filtros)
+        public ErrorDto<InvControlActivosLista> InvControlActivosLista_Obtener(int CodEmpresa, string usuario, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             InvControlActivosFiltros filtro = JsonConvert.DeserializeObject<InvControlActivosFiltros>(filtros);
 
-            var response = new ErrorDTO<InvControlActivosLista>();
+            var response = new ErrorDto<InvControlActivosLista>();
             response.Result = new InvControlActivosLista();
             response.Result.total = 0;
             try
@@ -98,10 +98,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="activo"></param>
         /// <returns></returns>
-        public ErrorDTO InvControlActivos_Actualizar(int CodEmpresa, InvControlActivosDTO activo)
+        public ErrorDto InvControlActivos_Actualizar(int CodEmpresa, InvControlActivosDTO activo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-             ErrorDTO resp = new();
+             ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -245,10 +245,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO InvNumeroPlacaId_Obtener(int CodEmpresa)
+        public ErrorDto InvNumeroPlacaId_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -270,10 +270,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<InvCntrActvivosCombos>> InvActivosDepartamentos_Obtener(int CodEmpresa)
+        public ErrorDto<List<InvCntrActvivosCombos>> InvActivosDepartamentos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<InvCntrActvivosCombos>>(); 
+            var response = new ErrorDto<List<InvCntrActvivosCombos>>(); 
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -298,10 +298,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="departamento"></param>
         /// <returns></returns>
-        public ErrorDTO<List<InvCntrActvivosCombos>> InvActivosSeccion_Obtener(int CodEmpresa, string? departamento)
+        public ErrorDto<List<InvCntrActvivosCombos>> InvActivosSeccion_Obtener(int CodEmpresa, string? departamento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<InvCntrActvivosCombos>>();
+            var response = new ErrorDto<List<InvCntrActvivosCombos>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -327,10 +327,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="departamento"></param>
         /// <param name="seccion"></param>
         /// <returns></returns>
-        public ErrorDTO<List<InvCntrActvivosCombos>> InvActivosResponsable_Obtener(int CodEmpresa, string? departamento, string? seccion)
+        public ErrorDto<List<InvCntrActvivosCombos>> InvActivosResponsable_Obtener(int CodEmpresa, string? departamento, string? seccion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<InvCntrActvivosCombos>>();
+            var response = new ErrorDto<List<InvCntrActvivosCombos>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -355,10 +355,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<InvCntrActvivosCombos>> InvActivosLocalizaciones_Obtener(int CodEmpresa)
+        public ErrorDto<List<InvCntrActvivosCombos>> InvActivosLocalizaciones_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<InvCntrActvivosCombos>>();
+            var response = new ErrorDto<List<InvCntrActvivosCombos>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);

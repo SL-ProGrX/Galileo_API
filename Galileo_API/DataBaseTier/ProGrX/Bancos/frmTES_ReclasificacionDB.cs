@@ -28,11 +28,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_ReclasificacionBancos_Obtener(int CodEmpresa,string usuario,string gestion)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_ReclasificacionBancos_Obtener(int CodEmpresa,string usuario,string gestion)
         {
             return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
             //string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            //var resp = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            //var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
             //resp.Code = 0;
             //resp.Result = new List<DropDownListaGenericaModel>();
             //try
@@ -78,10 +78,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO<Tes_ReclasificacionDTO> TES_Reclasificacion_Obtener(int CodEmpresa, int solicitud)
+        public ErrorDto<Tes_ReclasificacionDTO> TES_Reclasificacion_Obtener(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<Tes_ReclasificacionDTO>
+            var response = new ErrorDto<Tes_ReclasificacionDTO>
             {
                 Code = 0
             };
@@ -116,10 +116,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="id_banco"></param>
         /// <returns></returns>
-        public ErrorDTO<string> TES_Reclasificacion_CuentaBanco(int CodEmpresa, int id_banco)
+        public ErrorDto<string> TES_Reclasificacion_CuentaBanco(int CodEmpresa, int id_banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<string>
+            var response = new ErrorDto<string>
             {
                 Code = 0
             };
@@ -143,7 +143,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> tes_TiposDocsCargaCboAcceso_Obtener(int CodEmpresa, string usuario, int id_banco, string tipo)
+        public ErrorDto<List<DropDownListaGenericaModel>> tes_TiposDocsCargaCboAcceso_Obtener(int CodEmpresa, string usuario, int id_banco, string tipo)
         {
             return mTesoreria.sbTesTiposDocsCargaCboAcceso(CodEmpresa, usuario, id_banco, tipo);
         }
@@ -154,10 +154,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Reclasificacion_CambiaBanco(int CodEmpresa, Tes_ReclasificaBancoModel data)
+        public ErrorDto TES_Reclasificacion_CambiaBanco(int CodEmpresa, Tes_ReclasificaBancoModel data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };
@@ -228,10 +228,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Reclasificacion_CambiaDocumento(int CodEmpresa, Tes_ReclasificaDocumentoModel data)
+        public ErrorDto TES_Reclasificacion_CambiaDocumento(int CodEmpresa, Tes_ReclasificaDocumentoModel data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };
@@ -327,10 +327,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, Tes_ReclasificaSolicitudModel data)
+        public ErrorDto TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, Tes_ReclasificaSolicitudModel data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };
@@ -395,10 +395,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> TES_Solicitudes_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
+        public ErrorDto<TablasListaGenericaModel> TES_Solicitudes_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Description = "Ok",
@@ -462,7 +462,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TiposIdentificacion_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TiposIdentificacion_Obtener(int CodEmpresa)
         {
             return _AuxiliarDB.TiposIdentificacion_Obtener(CodEmpresa);
         }
@@ -473,10 +473,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<bool> Tes_ReclasificaId_Valida(int CodEmpresa, string? tipo)
+        public ErrorDto<bool> Tes_ReclasificaId_Valida(int CodEmpresa, string? tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<bool>
+            var response = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "Ok",

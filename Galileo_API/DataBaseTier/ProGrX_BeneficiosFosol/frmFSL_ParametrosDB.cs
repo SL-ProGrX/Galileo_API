@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<FDLParametrosListaDTO> FslParametros_Obtener(int CodCliente, string filtros)
+        public ErrorDto<FDLParametrosListaDTO> FslParametros_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<FDLParametrosListaDTO>();
+            var response = new ErrorDto<FDLParametrosListaDTO>();
 
             response.Result = new FDLParametrosListaDTO();
 
@@ -73,10 +73,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO FslParametros_Actualizar(int CodCliente, FDLParametrosDTO parametro)
+        public ErrorDto FslParametros_Actualizar(int CodCliente, FDLParametrosDTO parametro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {

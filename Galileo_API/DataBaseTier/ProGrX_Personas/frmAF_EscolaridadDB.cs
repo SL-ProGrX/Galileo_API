@@ -24,9 +24,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda, orden y paginación</param>
         /// <returns></returns>
-        public ErrorDTO<NivelEscolaridadLista> AF_EscolaridadTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<NivelEscolaridadLista> AF_EscolaridadTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<NivelEscolaridadLista>
+            var result = new ErrorDto<NivelEscolaridadLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -84,9 +84,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="escolaridadTipo">Datos del tipo de escolaridad</param>
         /// <returns></returns>
-        public ErrorDTO AF_EscolaridadTipos_Guardar(int CodEmpresa, string usuario, NivelEscolaridadData escolaridadTipo)
+        public ErrorDto AF_EscolaridadTipos_Guardar(int CodEmpresa, string usuario, NivelEscolaridadData escolaridadTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -122,9 +122,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="escolaridadTipo">Datos del tipo de escolaridad a insertar</param>
         /// <returns></returns>
-        private ErrorDTO AF_EscolaridadTipos_Insertar(int CodEmpresa, string usuario, NivelEscolaridadData escolaridadTipo)
+        private ErrorDto AF_EscolaridadTipos_Insertar(int CodEmpresa, string usuario, NivelEscolaridadData escolaridadTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -163,9 +163,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="escolaridadTipo">Datos del tipo de escolaridad a actualizar</param>
         /// <returns></returns>
-        private ErrorDTO AF_EscolaridadTipos_Actualizar(int CodEmpresa, string usuario, NivelEscolaridadData escolaridadTipo)
+        private ErrorDto AF_EscolaridadTipos_Actualizar(int CodEmpresa, string usuario, NivelEscolaridadData escolaridadTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -205,9 +205,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="escolaridadTipo">Código del tipo de escolaridad a eliminar</param>
         /// <returns></returns>
-        public ErrorDTO AF_EscolaridadTipos_Eliminar(int CodEmpresa, string usuario, string escolaridadTipo)
+        public ErrorDto AF_EscolaridadTipos_Eliminar(int CodEmpresa, string usuario, string escolaridadTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -238,9 +238,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="escolaridadTipo">Código del tipo de escolaridad a validar</param>
         /// <returns></returns>
-        public ErrorDTO AF_EscolaridadTipos_Valida(int CodEmpresa, string escolaridadTipo)
+        public ErrorDto AF_EscolaridadTipos_Valida(int CodEmpresa, string escolaridadTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -272,9 +272,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda</param>
         /// <returns></returns>
-        public ErrorDTO<List<NivelEscolaridadData>> AF_EscolaridadTipos_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<NivelEscolaridadData>> AF_EscolaridadTipos_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<NivelEscolaridadData>>
+            var result = new ErrorDto<List<NivelEscolaridadData>>
             {
                 Code = 0,
                 Description = "Ok",

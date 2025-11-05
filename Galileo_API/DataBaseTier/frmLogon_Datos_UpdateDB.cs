@@ -53,9 +53,9 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO LogonUpdateDatosUsuario(LogonUpdateData Info)
+        public ErrorDto LogonUpdateDatosUsuario(LogonUpdateData Info)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

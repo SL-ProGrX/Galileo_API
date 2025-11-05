@@ -160,10 +160,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="pPlan"></param>
         /// <param name="pContrato"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FndContratosCuponesData>> sbFnd_Contratos_Cupones(int CodEmpresa, int pOperadora,string pPlan, long pContrato)
+        public ErrorDto<List<FndContratosCuponesData>> sbFnd_Contratos_Cupones(int CodEmpresa, int pOperadora,string pPlan, long pContrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FndContratosCuponesData>> 
+            var response = new ErrorDto<List<FndContratosCuponesData>> 
             { 
                 Code = 0,
                 Description = "OK",
@@ -201,10 +201,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="pPlan"></param>
         /// <param name="pContrato"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FndContratoBitacoraData>> sbFnd_Contratos_Bitacora(int CodEmpresa, int pOperadora, string pPlan, long pContrato)
+        public ErrorDto<List<FndContratoBitacoraData>> sbFnd_Contratos_Bitacora(int CodEmpresa, int pOperadora, string pPlan, long pContrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FndContratoBitacoraData>>
+            var response = new ErrorDto<List<FndContratoBitacoraData>>
             {
                 Code = 0,
                 Description = "OK",

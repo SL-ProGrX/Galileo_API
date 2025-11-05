@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysParentescosLista> SYS_ParentescosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysParentescosLista> SYS_ParentescosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysParentescosLista>()
+            var result = new ErrorDto<SysParentescosLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -91,10 +91,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysParentescosData>> SYS_Parentescos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SysParentescosData>> SYS_Parentescos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysParentescosData>>()
+            var result = new ErrorDto<List<SysParentescosData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -140,10 +140,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="cod_parentesco"></param>
         /// <returns></returns>
 
-        public ErrorDTO SYS_Parentescos_Eliminar(int CodEmpresa, string usuario, string cod_parentesco)
+        public ErrorDto SYS_Parentescos_Eliminar(int CodEmpresa, string usuario, string cod_parentesco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -180,10 +180,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="ubicacion"></param>
         /// <returns></returns>
         /// 
-        public ErrorDTO SYS_Parentescos_Guardar(int CodEmpresa, string usuario, SysParentescosData parentesco)
+        public ErrorDto SYS_Parentescos_Guardar(int CodEmpresa, string usuario, SysParentescosData parentesco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -246,10 +246,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="parentesco"></param>
         /// <returns></returns>
-        private ErrorDTO SYS_Parentescos_Actualizar(int CodEmpresa, string usuario, SysParentescosData parentesco)
+        private ErrorDto SYS_Parentescos_Actualizar(int CodEmpresa, string usuario, SysParentescosData parentesco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -296,10 +296,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="parentesco"></param>
         /// <returns></returns>
-        private ErrorDTO SYS_Parentescos_Insertar(int CodEmpresa, string usuario, SysParentescosData parentesco)
+        private ErrorDto SYS_Parentescos_Insertar(int CodEmpresa, string usuario, SysParentescosData parentesco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -347,10 +347,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_parentesco"></param>
         /// <returns></returns>
-        public ErrorDTO SYS_Parentescos_Valida(int CodEmpresa, string cod_parentesco)
+        public ErrorDto SYS_Parentescos_Valida(int CodEmpresa, string cod_parentesco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

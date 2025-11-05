@@ -55,10 +55,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfiBeneSancionesDTO>> BeneSacionesSocio_Obtener(int CodCliente, string cedula)
+        public ErrorDto<List<AfiBeneSancionesDTO>> BeneSacionesSocio_Obtener(int CodCliente, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiBeneSancionesDTO>>();
+            var response = new ErrorDto<List<AfiBeneSancionesDTO>>();
             try
             {
                 using (IDbConnection db = new SqlConnection(clienteConnString))
@@ -84,11 +84,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="sancion"></param>
         /// <returns></returns>
-        public ErrorDTO BeneSancionesSocio_Guardar(int CodCliente, AfiBeneSancionesDTO sancion)
+        public ErrorDto BeneSancionesSocio_Guardar(int CodCliente, AfiBeneSancionesDTO sancion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -136,7 +136,7 @@ namespace PgxAPI.DataBaseTier
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -193,11 +193,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="sancion"></param>
         /// <returns></returns>
-        private ErrorDTO BeneSancion_Actualizar(int CodCliente, AfiBeneSancionesDTO sancion)
+        private ErrorDto BeneSancion_Actualizar(int CodCliente, AfiBeneSancionesDTO sancion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try

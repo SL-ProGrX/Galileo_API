@@ -16,11 +16,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<List<ConsultaMovimientoBodegaCDTO>> Obtener_Bodegas(int CodEmpresa)
+        public ErrorDto<List<ConsultaMovimientoBodegaCDTO>> Obtener_Bodegas(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<ConsultaMovimientoBodegaCDTO>>
+            var response = new ErrorDto<List<ConsultaMovimientoBodegaCDTO>>
             {
                 Code = 0
             };
@@ -46,13 +46,13 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<MovimientosDTOList> consultarMovimientos_Obtener(int CodCliente, string filtroString)
+        public ErrorDto<MovimientosDTOList> consultarMovimientos_Obtener(int CodCliente, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
             MovimientosInventarios_Filtros filtros = JsonConvert.DeserializeObject<MovimientosInventarios_Filtros>(filtroString) ?? new MovimientosInventarios_Filtros();
 
-            var response = new ErrorDTO<MovimientosDTOList>
+            var response = new ErrorDto<MovimientosDTOList>
             {
                 Code = 0,
                 Result = new MovimientosDTOList(),

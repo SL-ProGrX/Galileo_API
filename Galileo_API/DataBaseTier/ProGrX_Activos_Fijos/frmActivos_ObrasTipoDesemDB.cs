@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<Activos_ObrasTipoDesemDataLista> Activos_ObrasTipoDesem_Consultar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<Activos_ObrasTipoDesemDataLista> Activos_ObrasTipoDesem_Consultar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<Activos_ObrasTipoDesemDataLista>()
+            var result = new ErrorDto<Activos_ObrasTipoDesemDataLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -84,10 +84,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Activos_ObrasTipoDesemData>> Activos_ObrasTipoDesem_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<Activos_ObrasTipoDesemData>> Activos_ObrasTipoDesem_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<Activos_ObrasTipoDesemData>>()
+            var result = new ErrorDto<List<Activos_ObrasTipoDesemData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -127,10 +127,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_ObrasTipoDesem_Guardar(int CodEmpresa, string usuario, Activos_ObrasTipoDesemData datos)
+        public ErrorDto Activos_ObrasTipoDesem_Guardar(int CodEmpresa, string usuario, Activos_ObrasTipoDesemData datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -182,10 +182,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_ObrasTipoDesem_Actualizar(int CodEmpresa, string usuario, Activos_ObrasTipoDesemData datos)
+        private ErrorDto Activos_ObrasTipoDesem_Actualizar(int CodEmpresa, string usuario, Activos_ObrasTipoDesemData datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -233,10 +233,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_ObrasTipoDesem_Insertar(int CodEmpresa, string usuario, Activos_ObrasTipoDesemData datos)
+        private ErrorDto Activos_ObrasTipoDesem_Insertar(int CodEmpresa, string usuario, Activos_ObrasTipoDesemData datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -281,10 +281,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="cod_desembolso"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_ObrasTipoDesem_Eliminar(int CodEmpresa, string usuario, string cod_desembolso)
+        public ErrorDto Activos_ObrasTipoDesem_Eliminar(int CodEmpresa, string usuario, string cod_desembolso)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

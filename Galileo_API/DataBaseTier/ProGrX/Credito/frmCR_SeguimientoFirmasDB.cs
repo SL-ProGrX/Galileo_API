@@ -21,10 +21,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="CodEmpresa"></param>
         /// <param name="operacion"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CRSeguimientoFirmasData>> CR_SeguimientoFirmas_Obtener(int CodEmpresa, int operacion)
+        public ErrorDto<List<CRSeguimientoFirmasData>> CR_SeguimientoFirmas_Obtener(int CodEmpresa, int operacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CRSeguimientoFirmasData>>
+            var response = new ErrorDto<List<CRSeguimientoFirmasData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -62,10 +62,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="CodEmpresa"></param>
         /// <param name="firmasData"></param>
         /// <returns></returns>
-        public ErrorDTO CR_SeguimientoFirmas_Guardar(int CodEmpresa, CRSeguimientoFirmasData firmasData)
+        public ErrorDto CR_SeguimientoFirmas_Guardar(int CodEmpresa, CRSeguimientoFirmasData firmasData)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Tipos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Tipos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -57,10 +57,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosPrincipalesData> Activos_DatosActivo_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<ActivosPrincipalesData> Activos_DatosActivo_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<ActivosPrincipalesData>()
+            var result = new ErrorDto<ActivosPrincipalesData>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -95,10 +95,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosData>> Activos_Obtener(int CodEmpresa)
+        public ErrorDto<List<ActivosData>> Activos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ActivosData>>()
+            var result = new ErrorDto<List<ActivosData>>()
             {
                 Code = 0,
                 Description = "Ok",

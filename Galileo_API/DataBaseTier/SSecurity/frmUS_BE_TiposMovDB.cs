@@ -40,9 +40,9 @@ namespace PgxAPI.DataBaseTier
             return types;
         }
 
-        private ErrorDTO MovimientoBE_Insertar(MovimientoBE request)
+        private ErrorDto MovimientoBE_Insertar(MovimientoBE request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -75,9 +75,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO MovimientoBE_Eliminar(string movimiento, int modulo)
+        public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -103,9 +103,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO MovimientoBE_Actualizar(MovimientoBE request)
+        public ErrorDto MovimientoBE_Actualizar(MovimientoBE request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -131,9 +131,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO MovimientoBE_Guardar(MovimientoBE request)
+        public ErrorDto MovimientoBE_Guardar(MovimientoBE request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {

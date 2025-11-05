@@ -40,10 +40,10 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO CapIndv_Insertar(int CodCliente, CapIndvDTO capIndv)
+        public ErrorDto CapIndv_Insertar(int CodCliente, CapIndvDTO capIndv)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -72,10 +72,10 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO capIndv_Actualizar(int CodCliente, CapIndvDTO capIndv)
+        public ErrorDto capIndv_Actualizar(int CodCliente, CapIndvDTO capIndv)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -102,10 +102,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO capIndv_Borrar(int CodCliente, string cod_producto)
+        public ErrorDto capIndv_Borrar(int CodCliente, string cod_producto)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try

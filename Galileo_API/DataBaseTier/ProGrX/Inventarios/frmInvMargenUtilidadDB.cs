@@ -14,11 +14,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<LineaDTO>> Linea_Obtener(int CodEmpresa)
+        public ErrorDto<List<LineaDTO>> Linea_Obtener(int CodEmpresa)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<LineaDTO>>();
+            var response = new ErrorDto<List<LineaDTO>>();
 
             try
             {
@@ -46,11 +46,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<SubLineaDTO>> SubLinea_Obtener(int CodEmpresa)
+        public ErrorDto<List<SubLineaDTO>> SubLinea_Obtener(int CodEmpresa)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<SubLineaDTO>>();
+            var response = new ErrorDto<List<SubLineaDTO>>();
 
             try
             {
@@ -78,11 +78,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<PrecioDTO>> ListadoPrecios_Obtener(int CodEmpresa)
+        public ErrorDto<List<PrecioDTO>> ListadoPrecios_Obtener(int CodEmpresa)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<PrecioDTO>>();
+            var response = new ErrorDto<List<PrecioDTO>>();
 
             try
             {
@@ -105,11 +105,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO cambio_margen(int CodEmpresa, int monto, int cod_linea, int cod_sublinea, string cambio_margen)
+        public ErrorDto cambio_margen(int CodEmpresa, int monto, int cod_linea, int cod_sublinea, string cambio_margen)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

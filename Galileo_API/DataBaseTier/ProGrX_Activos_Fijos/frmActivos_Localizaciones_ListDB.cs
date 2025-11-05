@@ -22,10 +22,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosLocalizacionesLista> Activos_LocalizacionesLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosLocalizacionesLista> Activos_LocalizacionesLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<ActivosLocalizacionesLista>()
+            var result = new ErrorDto<ActivosLocalizacionesLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -93,10 +93,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosLocalizacionesData>> Activos_Localizaciones_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ActivosLocalizacionesData>> Activos_Localizaciones_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ActivosLocalizacionesData>>()
+            var result = new ErrorDto<List<ActivosLocalizacionesData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -147,10 +147,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="localizacion"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Localizaciones_Guardar(int CodEmpresa, string usuario, ActivosLocalizacionesData localizacion)
+        public ErrorDto Activos_Localizaciones_Guardar(int CodEmpresa, string usuario, ActivosLocalizacionesData localizacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -215,10 +215,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="localizacion"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_Localizaciones_Actualizar(int CodEmpresa, string usuario, ActivosLocalizacionesData localizacion)
+        private ErrorDto Activos_Localizaciones_Actualizar(int CodEmpresa, string usuario, ActivosLocalizacionesData localizacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -268,10 +268,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="localizacion"></param>
         /// <returns></returns>
-        private ErrorDTO Activos_Localizaciones_Insertar(int CodEmpresa, string usuario, ActivosLocalizacionesData localizacion)
+        private ErrorDto Activos_Localizaciones_Insertar(int CodEmpresa, string usuario, ActivosLocalizacionesData localizacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -319,10 +319,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="cod_localiza"></param>
-        public ErrorDTO Activos_Localizaciones_Eliminar(int CodEmpresa, string usuario, string cod_localiza)
+        public ErrorDto Activos_Localizaciones_Eliminar(int CodEmpresa, string usuario, string cod_localiza)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -356,10 +356,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_localiza"></param>
-        public ErrorDTO Activos_Localizaciones_Valida(int CodEmpresa, string cod_localiza)
+        public ErrorDto Activos_Localizaciones_Valida(int CodEmpresa, string cod_localiza)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> CR_SolCreacionAgenda_Comites_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> CR_SolCreacionAgenda_Comites_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -55,10 +55,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="CodEmpresa"></param>
         /// <param name="acta"></param>
         /// <returns></returns>
-        public ErrorDTO<CrSolCreacionAgendaReporteData> CR_SolCreacionAgenda_Acta_Generar(int CodEmpresa, CrSolCreacionAgendaActaData acta )
+        public ErrorDto<CrSolCreacionAgendaReporteData> CR_SolCreacionAgenda_Acta_Generar(int CodEmpresa, CrSolCreacionAgendaActaData acta )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<CrSolCreacionAgendaReporteData>
+            var response = new ErrorDto<CrSolCreacionAgendaReporteData>
             {
                 Code = 0,
                 Description = "Ok",
@@ -165,10 +165,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="CodEmpresa"></param>
         /// <param name="id_comite"></param>
         /// <returns></returns>
-        public ErrorDTO<int> CR_SolCreacionAgenda_Acta_Consulta(int CodEmpresa, int id_comite)
+        public ErrorDto<int> CR_SolCreacionAgenda_Acta_Consulta(int CodEmpresa, int id_comite)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<int>
+            var response = new ErrorDto<int>
             {
                 Code = 0,
                 Description = "Ok",

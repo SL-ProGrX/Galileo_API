@@ -20,9 +20,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CRAutorizacion>> AF_CRAutorizaciones_Obtener(int CodEmpresa, AF_CRAutorizacionFiltros filtros)
+        public ErrorDto<List<AF_CRAutorizacion>> AF_CRAutorizaciones_Obtener(int CodEmpresa, AF_CRAutorizacionFiltros filtros)
         {
-            var result = new ErrorDTO<List<AF_CRAutorizacion>>()
+            var result = new ErrorDto<List<AF_CRAutorizacion>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -75,9 +75,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="pAutoriza"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CRAutorizaciones_Autorizar(int CodEmpresa, int CodRenuncia, string Observaciones, int pAutoriza, string Usuario)
+        public ErrorDto AF_CRAutorizaciones_Autorizar(int CodEmpresa, int CodRenuncia, string Observaciones, int pAutoriza, string Usuario)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

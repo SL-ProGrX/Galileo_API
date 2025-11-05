@@ -23,7 +23,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="fecha_Fin"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysCorreosBandejaLista> Correos_Bandeja_Lista_Obtener(
+        public ErrorDto<SysCorreosBandejaLista> Correos_Bandeja_Lista_Obtener(
             int CodEmpresa,
             string para_Buscar,
             string asunto_Buscar,
@@ -33,7 +33,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var dto = new ErrorDTO<SysCorreosBandejaLista>
+            var dto = new ErrorDto<SysCorreosBandejaLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -164,7 +164,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="fecha_Fin"></param>
         /// <param name="filtro_Global"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysCorreosBandejaData>> Correos_Bandeja_Obtener(
+        public ErrorDto<List<SysCorreosBandejaData>> Correos_Bandeja_Obtener(
                    int CodEmpresa,
                    string para_Buscar,
                    string asunto_Buscar,
@@ -174,7 +174,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var dto = new ErrorDTO<List<SysCorreosBandejaData>>
+            var dto = new ErrorDto<List<SysCorreosBandejaData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -270,10 +270,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="fecha_Fin"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysCorreosBandejaResumenLista> Correos_Bandeja_Resumen_Lista_Obtener(int CodEmpresa, string para_Buscar, string asunto_Buscar, string fecha_Inicio, string fecha_Fin, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysCorreosBandejaResumenLista> Correos_Bandeja_Resumen_Lista_Obtener(int CodEmpresa, string para_Buscar, string asunto_Buscar, string fecha_Inicio, string fecha_Fin, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var dto = new ErrorDTO<SysCorreosBandejaResumenLista> { Code = 0, Description = "Ok", Result = new SysCorreosBandejaResumenLista { total = 0, lista = new() } };
+            var dto = new ErrorDto<SysCorreosBandejaResumenLista> { Code = 0, Description = "Ok", Result = new SysCorreosBandejaResumenLista { total = 0, lista = new() } };
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -345,10 +345,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="fecha_Fin"></param>
         /// <param name="filtro_Global"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysCorreosBandejaResumenData>> Correos_Bandeja_Resumen_Obtener(int CodEmpresa, string para_Buscar, string asunto_Buscar, string fecha_Inicio, string fecha_Fin, string filtro_Global)
+        public ErrorDto<List<SysCorreosBandejaResumenData>> Correos_Bandeja_Resumen_Obtener(int CodEmpresa, string para_Buscar, string asunto_Buscar, string fecha_Inicio, string fecha_Fin, string filtro_Global)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var dto = new ErrorDTO<List<SysCorreosBandejaResumenData>> { Code = 0, Description = "Ok", Result = new() };
+            var dto = new ErrorDto<List<SysCorreosBandejaResumenData>> { Code = 0, Description = "Ok", Result = new() };
             try
             {
                 using var connection = new SqlConnection(stringConn);

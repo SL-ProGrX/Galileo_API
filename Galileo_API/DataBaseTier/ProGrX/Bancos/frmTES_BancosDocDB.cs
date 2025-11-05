@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_BancoDocGrupos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancoDocGrupos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -52,10 +52,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="CodGrupo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_BancoDocBancos_Obtener(int CodEmpresa, string CodGrupo)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancoDocBancos_Obtener(int CodEmpresa, string CodGrupo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -82,10 +82,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="id_banco"></param>
         /// <returns></returns>
-        public ErrorDTO<List<tesBancosDocData>> Tes_BancoDocTipos_Obtener(int CodEmpresa, string id_banco)
+        public ErrorDto<List<tesBancosDocData>> Tes_BancoDocTipos_Obtener(int CodEmpresa, string id_banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<tesBancosDocData>>();
+            var response = new ErrorDto<List<tesBancosDocData>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -113,10 +113,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="id_banco"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<tesBancoDocDTO> Tes_BancoDoc_Obtener(int CodEmpresa,int id_banco, string tipo)
+        public ErrorDto<tesBancoDocDTO> Tes_BancoDoc_Obtener(int CodEmpresa,int id_banco, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<tesBancoDocDTO>();
+            var response = new ErrorDto<tesBancoDocDTO>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -142,10 +142,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="bancoDoc"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_BancoDoc_Guardar(int CodEmpresa, tesBancoDocTipoData bancoDoc)
+        public ErrorDto Tes_BancoDoc_Guardar(int CodEmpresa, tesBancoDocTipoData bancoDoc)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -227,10 +227,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="tipo"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO TesBancoDoc_Eliminar(int CodEmpresa, int id_banco, string tipo, string usuario)
+        public ErrorDto TesBancoDoc_Eliminar(int CodEmpresa, int id_banco, string tipo, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

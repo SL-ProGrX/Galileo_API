@@ -24,9 +24,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Instituciones_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Instituciones_Obtener(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -53,9 +53,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_TiposId_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_TiposId_Obtener(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -81,9 +81,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_EstadosPersona_ObtenerActivos(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_EstadosPersona_ObtenerActivos(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -112,9 +112,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cedula"></param>
         /// <param name="nuevoTipoId"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Ajustes_CambiarIdentificacion(int CodEmpresa, string cedula, int nuevoTipoId)
+        public ErrorDto AF_Ajustes_CambiarIdentificacion(int CodEmpresa, string cedula, int nuevoTipoId)
         {
-            var response = new ErrorDTO { Code = 0, Description = "Actualizado correctamente" };
+            var response = new ErrorDto { Code = 0, Description = "Actualizado correctamente" };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -143,9 +143,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="nuevoEstado"></param>
         /// <returns></returns>
 
-        public ErrorDTO AF_Ajustes_CambiarEstado(int CodEmpresa, string cedula, string nuevoEstado)
+        public ErrorDto AF_Ajustes_CambiarEstado(int CodEmpresa, string cedula, string nuevoEstado)
         {
-            var response = new ErrorDTO { Code = -1 };
+            var response = new ErrorDto { Code = -1 };
 
             try
             {
@@ -209,7 +209,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="ut"></param>
         /// <param name="ct"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Ajustes_CambiarInstitucion_ASECCSS(
+        public ErrorDto AF_Ajustes_CambiarInstitucion_ASECCSS(
             int CodEmpresa,
             string cedula,
             int? codInstitucion,
@@ -218,7 +218,7 @@ namespace PgxAPI.DataBaseTier
             string? ct
         )
         {
-            var response = new ErrorDTO { Code = -1 };
+            var response = new ErrorDto { Code = -1 };
 
             try
             {
@@ -283,7 +283,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codSeccion"></param>
         /// <returns></returns>
 
-        public ErrorDTO AF_Ajustes_CambiarInstitucion(
+        public ErrorDto AF_Ajustes_CambiarInstitucion(
             int CodEmpresa,
             string cedula,
             int codInstitucion,
@@ -291,7 +291,7 @@ namespace PgxAPI.DataBaseTier
             string codSeccion
         )
         {
-            var response = new ErrorDTO { Code = -1 };
+            var response = new ErrorDto { Code = -1 };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -343,9 +343,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cedula"></param>
         /// <returns></returns>
 
-        public ErrorDTO<af_ajuste_persona_detalle> AF_Ajustes_CargarDatos(int CodEmpresa, string cedula)
+        public ErrorDto<af_ajuste_persona_detalle> AF_Ajustes_CargarDatos(int CodEmpresa, string cedula)
         {
-            var response = new ErrorDTO<af_ajuste_persona_detalle> { Code = 0 };
+            var response = new ErrorDto<af_ajuste_persona_detalle> { Code = 0 };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -388,7 +388,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO AF_Ajustes_Cambiar(int CodEmpresa, string ajuste, int codigo)
+        public ErrorDto AF_Ajustes_Cambiar(int CodEmpresa, string ajuste, int codigo)
         {
 
             AF_Ajuste request = JsonConvert.DeserializeObject<AF_Ajuste>(ajuste) ?? new AF_Ajuste();
@@ -405,17 +405,17 @@ namespace PgxAPI.DataBaseTier
                     return AF_Ajustes_CambiarInstitucion(CodEmpresa, request.cedula, request.cod_institucion, request.cod_departamento, request.cod_seccion);
 
                 default:
-                    return new ErrorDTO { Code = -1, Description = "C�digo de ajuste no v�lido." };
+                    return new ErrorDto { Code = -1, Description = "C�digo de ajuste no v�lido." };
             }
 
         }
 
 
-        public ErrorDTO<AF_CatalogosGeneralesDTO> AF_Catalogos_Obtener(int CodEmpresa, string? cod_institucion)
+        public ErrorDto<AF_CatalogosGeneralesDTO> AF_Catalogos_Obtener(int CodEmpresa, string? cod_institucion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<AF_CatalogosGeneralesDTO>
+            var response = new ErrorDto<AF_CatalogosGeneralesDTO>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",

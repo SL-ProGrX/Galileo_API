@@ -21,7 +21,7 @@ namespace PgxAPI.DataBaseTier.TES
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <returns>Lista de pendientes del monitor de tesorería</returns>
-        public ErrorDTO<List<TES_MonitorPending>> TES_MonitorPending_Obtener(int CodEmpresa)
+        public ErrorDto<List<TES_MonitorPending>> TES_MonitorPending_Obtener(int CodEmpresa)
         {
             if (_config == null)
             {
@@ -29,7 +29,7 @@ namespace PgxAPI.DataBaseTier.TES
             }
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TES_MonitorPending>>
+            var response = new ErrorDto<List<TES_MonitorPending>>
             {
                 Code = 0
             };

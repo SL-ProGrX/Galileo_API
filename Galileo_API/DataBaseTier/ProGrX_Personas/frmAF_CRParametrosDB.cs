@@ -23,9 +23,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CRParametrosData>> AF_CRParametros_Obtener(int CodEmpresa)
+        public ErrorDto<List<AF_CRParametrosData>> AF_CRParametros_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<AF_CRParametrosData>>()
+            var result = new ErrorDto<List<AF_CRParametrosData>>()
             {
                 Code = 0,
                 Description = "OK",
@@ -54,9 +54,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CRParametros_Guardar(int CodEmpresa, string usuario, AF_CRParametrosData parametros)
+        public ErrorDto AF_CRParametros_Guardar(int CodEmpresa, string usuario, AF_CRParametrosData parametros)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "OK"
@@ -107,9 +107,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <summary>
         /// Inserta un nuevo registro de parámetros.
         /// </summary>
-        private ErrorDTO AF_CRParametros_Insertar(int CodEmpresa, string usuario, AF_CRParametrosData parametros)
+        private ErrorDto AF_CRParametros_Insertar(int CodEmpresa, string usuario, AF_CRParametrosData parametros)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Insertado correctamente"
@@ -152,9 +152,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <summary>
         /// Actualiza un registro de parámetros existente.
         /// </summary>
-        private ErrorDTO AF_CRParametros_Actualizar(int CodEmpresa, string usuario, AF_CRParametrosData parametros)
+        private ErrorDto AF_CRParametros_Actualizar(int CodEmpresa, string usuario, AF_CRParametrosData parametros)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Actualizado correctamente"
