@@ -77,12 +77,12 @@ namespace PgxAPI.Models.ProGrX.Cajas
 
     public class DistribuyeSaldoFavorDto
     {
-        public string cod_caja { get; set; }
+        public string? cod_caja { get; set; }
         public int cod_apertura { get; set; }
-        public string ticket { get; set; }
-        public string usuario { get; set; }
+        public string? ticket { get; set; }
+        public string? usuario { get; set; }
         public decimal total_aplicar { get; set; }
-        public string divisa { get; set; }
+        public string? divisa { get; set; }
     }
 
     public class CajasDesglocePagoRequest
