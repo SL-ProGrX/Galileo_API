@@ -33,5 +33,4 @@
         public string usuario { get; set; } = string.Empty;
         public string codigosOrden { get; set; } = string.Empty;
     }
-
 }

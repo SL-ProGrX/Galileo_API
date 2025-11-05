@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class PersonaBeneficiarioDTO
+    public class PersonaBeneficiarioDto
     {
         public int Linea_Id { get; set; }
         public string Cedula { get; set; } = string.Empty;
@@ -35,10 +35,9 @@
         public string TipoMov { get; set; } = "A";
     }
 
-
-    public class Beneficiarios_CatalogoDTO
+    public class BeneficiariosCatalogoDto
     {
-        public List<DropDownListaGenericaModel> TiposIdentificacion { get; set; }
-        public List<DropDownListaGenericaModel> Parentescos { get; set; }
+        public List<DropDownListaGenericaModel>? TiposIdentificacion { get; set; }
+        public List<DropDownListaGenericaModel>? Parentescos { get; set; }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_ArchivoResultadoDTO
+    public class AfArchivoResultadoDto
     {
         public string? cadena { get; set; }
         public string? cedula { get; set; }
@@ -17,7 +17,4 @@
         public string? col_10 { get; set; }
         public string? col_11 { get; set; }
     }
-
-
-
 }

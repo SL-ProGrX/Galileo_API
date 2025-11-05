@@ -1,20 +1,20 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_CR_Renuncias_TagsData
+    public class AfCrRenunciasTagsData
     {
         public int Cod_Renuncia { get; set; }
-        public string Cedula { get; set; }
-        public string Nombre { get; set; }
-        public string Estado { get; set; }
+        public string? Cedula { get; set; }
+        public string? Nombre { get; set; }
+        public string? Estado { get; set; }
         public string Tipo { get; set; }
         public DateTime? FechaIngreso { get; set; }
         public DateTime? Registro_Fecha { get; set; }
         public DateTime? Vencimiento { get; set; }
-        public string Causa_Desc { get; set; }
-        public string Estado_Desc { get; set; }
+        public string? Causa_Desc { get; set; }
+        public string? Estado_Desc { get; set; }
     }
 
-    public class AF_CR_RenunciaRecepcionAplica
+    public class AfCrRenunciaRecepcionAplica
     {
         public int RenunciaId { get; set; }
         public string Usuario { get; set; } = "";
@@ -23,12 +23,12 @@
         public string Version { get; set; } = "";
     }
 
-    public class AF_CR_RenunciaRevisionAplica : AF_CR_RenunciaRecepcionAplica
+    public class AfCrRenunciaRevisionAplica : AfCrRenunciaRecepcionAplica
     {
-        public string Estado { get; set; }        
+        public string? Estado { get; set; }
     }
 
-    public class AF_CR_RenunciaEtiquetas
+    public class AfCrRenunciaEtiquetas
     {
         public int Id { get; set; }
         public int Cod_Renuncia { get; set; }
@@ -40,9 +40,8 @@
         public DateTime? Fecha_Format { get; set; }
     }
 
-    public class AF_CR_RenunciaReversa : AF_CR_RenunciaRecepcionAplica
+    public class AfCrRenunciaReversa : AfCrRenunciaRecepcionAplica
     {
         public string NotasReversa { get; set; } = "";
     }
-
 }

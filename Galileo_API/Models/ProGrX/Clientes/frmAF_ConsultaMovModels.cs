@@ -18,7 +18,6 @@ namespace PgxAPI.Models.AF
         public string? enviado_archivo { get; set; }
         public string? tipo_ing { get; set; }
         public string? promotor { get; set; }
-
     }
 
     public class AfiConsultaMovRenuncias
@@ -36,7 +35,6 @@ namespace PgxAPI.Models.AF
         public string? ncausaren { get; set; }
         public string? renmor { get; set; }
         public string? descripcion { get; set; }
-
     }
 
     public class AfiConsultaMovLiquidaciones
@@ -108,15 +106,12 @@ namespace PgxAPI.Models.AF
         public string? cj_plan { get; set; }
         public string? cj_contrato { get; set; }
         public string? estadopersona { get; set; }
-
     }
 
-    public class AF_CedulaDTO
+    public class AFCedulaDto
     {
         public string? cedula { get; set; }
         public string? cedulaR { get; set; }
         public string? nombre { get; set; }
-
     }
-
 }

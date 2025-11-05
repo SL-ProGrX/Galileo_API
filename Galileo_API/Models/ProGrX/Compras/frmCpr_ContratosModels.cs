@@ -10,10 +10,10 @@ namespace PgxAPI.Models.CPR
     public class CprContratosLista
     {
         public int total { get; set; }
-        public List<CprContratosDTO>? contratos { get; set; } = new List<CprContratosDTO>();
+        public List<CprContratosDto>? contratos { get; set; } = new List<CprContratosDto>();
     }
 
-    public class CprContratosDTO
+    public class CprContratosDto
     {
         public string cod_contrato { get; set; } = string.Empty;
         public string? descripcion { get; set; } = string.Empty;
@@ -43,7 +43,7 @@ namespace PgxAPI.Models.CPR
         public string? divisa_garantia { get; set; } = string.Empty;
     }
 
-    public class CprContratosAdendumsDTO
+    public class CprContratosAdendumsDto
     {
         public int id_addendum { get; set; }
         public string cod_contrato { get; set; } = string.Empty;
@@ -53,7 +53,7 @@ namespace PgxAPI.Models.CPR
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class CprContratosEstadosDTO
+    public class CprContratosEstadosDto
     {
         public int linea_id { get; set; }
         public string cod_contrato { get; set; } = string.Empty;
@@ -64,7 +64,7 @@ namespace PgxAPI.Models.CPR
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class CprContratosProductosDTO
+    public class CprContratosProductosDto
     {
         public int linea_id { get; set; }
         public string cod_contrato { get; set; } = string.Empty;
@@ -74,7 +74,7 @@ namespace PgxAPI.Models.CPR
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class CprContratosProrrogasDTO
+    public class CprContratosProrrogasDto
     {
         public int id_prorroga { get; set; }
         public string cod_contrato { get; set; } = string.Empty;
@@ -84,7 +84,7 @@ namespace PgxAPI.Models.CPR
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class CprContratosBitacoraDTO
+    public class CprContratosBitacoraDto
     {
         public int id_bitacora { get; set; }
         public string cod_contrato { get; set; } = string.Empty;

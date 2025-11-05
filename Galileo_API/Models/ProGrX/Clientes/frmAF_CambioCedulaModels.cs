@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_CambioCedulaDTO
+    public class AFCambioCedulaDto
     {
         public string? cedulaNueva { get; set; }
         public string? cedulaAnterior { get; set; }
@@ -9,8 +9,7 @@
         public string? nombreNuevo { get; set; }
     }
 
-
-    public class AF_CedulaCambioDTO
+    public class AFCedulaCambioDto
     {
         public string? cedulaActual { get; set; }
         public string? tipoId { get; set; }
@@ -20,10 +19,9 @@
         public string? estado_Persona { get; set; }
     }
 
-    public class AF_UsuarioLogonDTO
+    public class AFUsuarioLogonDto
     {
         public string? usuario { get; set; }
         public string? clave { get; set; }
     }
-
 }

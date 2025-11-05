@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_PromotoresPrincipalDTO
+    public class AfPromotoresPrincipalDto
     {
         public int id_promotor { get; set; }
         public string nombre { get; set; } = string.Empty;
@@ -27,13 +27,13 @@
         public DateTime? fecha { get; set; }
     }
 
-    public class AF_PromotoresPrincipalLista
+    public class AfPromotoresPrincipalLista
     {
         public int total { get; set; }
-        public List<AF_PromotoresPrincipalDTO> lista { get; set; } = new List<AF_PromotoresPrincipalDTO>();
+        public List<AfPromotoresPrincipalDto> lista { get; set; } = new List<AfPromotoresPrincipalDto>();
     }
 
-    public class AF_Promotores_CuentasDTO
+    public class AfPromotoresCuentasDto
     {
         public string banco { get; set; } = string.Empty;
         public string tipoDesc { get; set; } = string.Empty;
@@ -46,7 +46,7 @@
         public string registro_Usuario { get; set; } = string.Empty;
     }
 
-    public class AF_Promotores_BancoDTO
+    public class AfPromotoresBancoDto
     {
         public int id_banco { get; set; }
         public string descripcion { get; set; } = string.Empty;

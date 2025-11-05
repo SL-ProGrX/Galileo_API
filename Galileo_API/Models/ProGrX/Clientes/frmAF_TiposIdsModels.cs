@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_TiposIdsDTO
+    public class AfTiposIdsDto
     {
         public int tipo_Id { get; set; }
         public string descripcion { get; set; } = string.Empty;
@@ -13,9 +13,9 @@
         public int codigo_Sinpe { get; set; }
     }
 
-    public class AF_TiposIdsLista
+    public class AfTiposIdsLista
     {
         public int total { get; set; }
-        public List<AF_TiposIdsDTO> lista { get; set; } = new List<AF_TiposIdsDTO>();
+        public List<AfTiposIdsDto> lista { get; set; } = new List<AfTiposIdsDto>();
     }
 }

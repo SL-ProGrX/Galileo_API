@@ -16,7 +16,7 @@
         public string Autoriza_Comision_Notas { get; set; } = string.Empty;
     }
 
-    public class ComisionAutorizaFiltroDTO
+    public class ComisionAutorizaFiltroDto
     {
         public DateTime Inicio { get; set; }
         public DateTime Corte { get; set; }

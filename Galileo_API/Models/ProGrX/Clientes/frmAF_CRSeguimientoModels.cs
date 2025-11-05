@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_CR_Seguimiento_Data
+    public class AfCrSeguimientoData
     {
         public int CodRenuncia { get; set; }
         public string? EstadoDesc { get; set; }
@@ -15,7 +15,8 @@
         public string? ResueltoUser { get; set; }
         public DateTime? ResueltoFecha { get; set; }
     }
-    public class AF_CR_Seguimiento_Filtros
+
+    public class AfCrSeguimientoFiltros
     {
         public int? RenunciaIni { get; set; }
         public int? RenunciaFin { get; set; }
@@ -39,7 +40,8 @@
         public byte? Volver { get; set; }
         public byte? AumentoTasas { get; set; }
     }
-    public class AF_CR_Seguimiento_Detalle
+
+    public class AfCrSeguimientoDetalle
     {
         public int Cod_Renuncia { get; set; }
         public string? Estado { get; set; }
@@ -57,13 +59,14 @@
         public string? Resuelto_User { get; set; }
         public DateTime? Resuelto_Fecha { get; set; }
         public int? Id_Promotor { get; set; }
-        public string? PromotorX { get; set; }        
+        public string? PromotorX { get; set; }
         public string? Notas { get; set; }
         public int Aplica_Reingreso { get; set; }
         public int Mortalidad { get; set; }
         public int Volver { get; set; }
     }
-    public class AF_CR_Seguimiento_Motivo
+    
+    public class AfCrSeguimientoMotivo
     {
         public string Cod_Motivo { get; set; } = "";
         public string Descripcion { get; set; } = "";
@@ -72,7 +75,7 @@
         public string? Registro_User { get; set; }
     }
 
-    public class AF_CR_Seguimiento_Historial
+    public class AfCrSeguimientoHistorial
     {
         public int ID { get; set; }
         public string Cod_Renuncia { get; set; } = "";
@@ -83,7 +86,7 @@
         public string? Notas { get; set; }
     }
 
-    public class AF_CR_Seguimiento_Motivos_Registrar
+    public class AfCrSeguimientoMotivosRegistrar
     {
         public int RenunciaId { get; set; }
         public string Motivo { get; set; } = "";
@@ -91,7 +94,7 @@
         public string? Usuario { get; set; }
     }
 
-    public class AF_CR_Seguimiento_Renuncia_Estado
+    public class AfCrSeguimientoRenunciaEstado
     {
         public int RenunciaId { get; set; }
         public string Estado { get; set; } = "";

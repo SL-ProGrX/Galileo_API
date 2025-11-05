@@ -1,7 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-
-    public class AF_TelefonoDTO
+    public class AfTelefonoDto
     {
         public int Telefono { get; set; }
         public string Cedula { get; set; } = string.Empty;
@@ -12,5 +11,4 @@
         public string Usuario { get; set; } = string.Empty;
         public DateTime Fecha { get; set; }
     }
-
 }

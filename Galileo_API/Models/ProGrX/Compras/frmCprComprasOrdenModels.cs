@@ -55,9 +55,7 @@
         public string proveedor { get; set; } = string.Empty;
         public string nota { get; set; } = string.Empty;
         public string compraNotas { get; set; } = string.Empty;
-
         public string no_solicitud { get; set; } = string.Empty;
-
     }
 
     public class OrdenCompraDetalleData
@@ -134,17 +132,14 @@
         public string genera_user { get; set; } = "";
         public string forma_pago { get; set; } = "";
         public string notas { get; set; } = "";
-
         public float total { get; set; }
         public float imp_ventas { get; set; }
         public float sub_total { get; set; }
         public float descuento { get; set; }
-
         public List<OrdenCompraDetalleData> lineas { get; set; } = new List<OrdenCompraDetalleData>();
     }
 
-
-    public class FacturasAutorizarDTO
+    public class FacturasAutorizarDto
     {
         public int? id { get; set; }
         public string? cod_documento { get; set; }

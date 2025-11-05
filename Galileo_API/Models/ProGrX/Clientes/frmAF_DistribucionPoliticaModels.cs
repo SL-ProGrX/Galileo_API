@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_DistribucionesDTO
+    public class AfDistribucionesDto
     {
         public string codigo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

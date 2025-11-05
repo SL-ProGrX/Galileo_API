@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.CPR
 {
-    public class cprPlanComprasDTO
+    public class CprPlanComprasDto
     {
         public int id_pc { get; set; }
         public int id_periodo { get; set; }
@@ -21,7 +21,7 @@ namespace PgxAPI.Models.CPR
         public string? pres_extraordinario { get; set; }
     }
 
-    public class cprPlanDTDTO
+    public class CprPlanDTDto
     {
         public int id_plan { get; set; }
         public int id_pc { get; set; }
@@ -39,14 +39,14 @@ namespace PgxAPI.Models.CPR
         public string? modifica_usuario { get; set; }
     }
 
-    public class cprPlanDTCortesDTO
+    public class CprPlanDTCortesDto
     {
         public DateTime corte { get; set; }
         public int cantidad { get; set; }
         public decimal monto { get; set; }
     }
 
-    public class cprPlanDTUpsert
+    public class CprPlanDTUpsert
     {
         public int id_pc { get; set; }
         public string cod_producto { get; set; } = string.Empty;
@@ -57,10 +57,10 @@ namespace PgxAPI.Models.CPR
     public class CprResumenPlanLista
     {
         public int Total { get; set; }
-        public List<cprResumenPlanDTO>? Lineas { get; set; } = new List<cprResumenPlanDTO>();
+        public List<CprResumenPlanDto>? Lineas { get; set; } = new List<CprResumenPlanDto>();
     }
 
-    public class cprResumenPlanDTO
+    public class CprResumenPlanDto
     {
         public string cod_producto { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -69,13 +69,13 @@ namespace PgxAPI.Models.CPR
         public DateTime corte { get; set; }
     }
 
-    public class cprPlanContableLista
+    public class CprPlanContableLista
     {
         public int Total { get; set; }
-        public List<cprPlanContableDTO>? Lineas { get; set; } = new List<cprPlanContableDTO>();
+        public List<CprPlanContableDto>? Lineas { get; set; } = new List<CprPlanContableDto>();
     }
 
-    public class cprPlanContableDTO
+    public class CprPlanContableDto
     {
         public string cuenta { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -85,7 +85,7 @@ namespace PgxAPI.Models.CPR
         public DateTime corte { get; set; }
     }
 
-    public class cprPlanFiltros
+    public class CprPlanFiltros
     {
         public int? planCompras { get; set; } = 0;
         public string? periodo { get; set; } = string.Empty;
@@ -94,13 +94,13 @@ namespace PgxAPI.Models.CPR
         public int? paginacion { get; set; } = 30;
     }
 
-    public class cprBitacoraLista
+    public class CprBitacoraLista
     {
         public int Total { get; set; }
-        public List<cprBitacoraDTO>? Lineas { get; set; }
+        public List<CprBitacoraDto>? Lineas { get; set; }
     }
 
-    public class cprBitacoraDTO
+    public class CprBitacoraDto
     {
         public int id_bitacora { get; set; }
         public DateTime fechahora { get; set; }
@@ -108,7 +108,7 @@ namespace PgxAPI.Models.CPR
         public string detalle { get; set; } = string.Empty;
     }
 
-    public class cprPlanDTTotalesData
+    public class CprPlanDTTotalesData
     {
         public int qty_solicitada { get; set; }
         public int qty_plan_compras { get; set; }

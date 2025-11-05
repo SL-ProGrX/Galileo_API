@@ -1,32 +1,31 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_CatalogosGeneralesDTO
+    public class AfCatalogosGeneralesDto
     {
-        public List<DropDownListaGenericaModel> EstadoCivil { get; set; }
-        public List<DropDownListaGenericaModel> Divisas { get; set; }
-        public List<DropDownListaGenericaModel> TiposIdentificacion { get; set; }
-        public List<DropDownListaGenericaModel> Profesiones { get; set; }
-        public List<DropDownListaGenericaModel> Sectores { get; set; }
-        public List<DropDownListaGenericaModel> Sociedades { get; set; }
-        public List<DropDownListaGenericaModel> ActividadesEconomicas { get; set; }
-        public List<DropDownListaGenericaModel> Paises { get; set; }
-        public List<DropDownListaGenericaModel> EstadosPersonaIngreso { get; set; }
-        public List<DropDownListaGenericaModel> Nacionalidades { get; set; }
-        public List<DropDownListaGenericaModel> NivelAcademico { get; set; }
-        public List<DropDownListaGenericaModel> EstadoLaboral { get; set; }
-        public List<DropDownListaGenericaModel> ActividadLaboral { get; set; }
-        public List<DropDownListaGenericaModel> RelacionParentesco { get; set; }
-        public List<DropDownListaGenericaModel> Promotores { get; set; }
-        public List<DropDownListaGenericaModel> Instituciones { get; set; }
-        public List<DropDownListaGenericaModel> Deductoras { get; set; }
-        public List<DropDownListaGenericaModel> Departamentos { get; set; }
-        public List<DropDownListaGenericaModel> Secciones { get; set; }
-        public List<DropDownListaGenericaModel> Actividades { get; set; }
-        public List<DropDownListaGenericaModel> Unidad { get; set; }
-
+        public List<DropDownListaGenericaModel>? EstadoCivil { get; set; }
+        public List<DropDownListaGenericaModel>? Divisas { get; set; }
+        public List<DropDownListaGenericaModel>? TiposIdentificacion { get; set; }
+        public List<DropDownListaGenericaModel>? Profesiones { get; set; }
+        public List<DropDownListaGenericaModel>? Sectores { get; set; }
+        public List<DropDownListaGenericaModel>? Sociedades { get; set; }
+        public List<DropDownListaGenericaModel>? ActividadesEconomicas { get; set; }
+        public List<DropDownListaGenericaModel>? Paises { get; set; }
+        public List<DropDownListaGenericaModel>? EstadosPersonaIngreso { get; set; }
+        public List<DropDownListaGenericaModel>? Nacionalidades { get; set; }
+        public List<DropDownListaGenericaModel>? NivelAcademico { get; set; }
+        public List<DropDownListaGenericaModel>? EstadoLaboral { get; set; }
+        public List<DropDownListaGenericaModel>? ActividadLaboral { get; set; }
+        public List<DropDownListaGenericaModel>? RelacionParentesco { get; set; }
+        public List<DropDownListaGenericaModel>? Promotores { get; set; }
+        public List<DropDownListaGenericaModel>? Instituciones { get; set; }
+        public List<DropDownListaGenericaModel>? Deductoras { get; set; }
+        public List<DropDownListaGenericaModel>? Departamentos { get; set; }
+        public List<DropDownListaGenericaModel>? Secciones { get; set; }
+        public List<DropDownListaGenericaModel>? Actividades { get; set; }
+        public List<DropDownListaGenericaModel>? Unidad { get; set; }
     }
 
-    public class AF_PersonaDTO
+    public class AfPersonaDto
     {
         public string? Cedula { get; set; }
         public string? Nombre { get; set; }
@@ -203,7 +202,8 @@
         public string? Tra_Canton_Desc { get; set; }
         public string? Tra_Distrito_Desc { get; set; }
     }
-    public class AF_PersonaProductoDTO
+
+    public class AfPersonaProductoDto
     {
         public int Codigo { get; set; }
         public string? Descripcion { get; set; }
@@ -211,7 +211,8 @@
         public DateTime? Registro_Fecha { get; set; }
         public string? Registro_Usuario { get; set; }
     }
-    public class AF_PersonaRelacionDTO
+
+    public class AfPersonaRelacionDto
     {
         public int? pr_id { get; set; }
         public string? cedulasocio { get; set; }
@@ -234,7 +235,8 @@
         public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
     }
-    public class AF_PersonaEmailDTO
+
+    public class AfPersonaEmailDto
     {
         public int? ID_EMAIL { get; set; }
         public string? CEDULA { get; set; }
@@ -247,11 +249,13 @@
         public DateTime? MODIFICA_FECHA { get; set; }
         public string? MODIFICA_USUARIO { get; set; }
     }
-    public class AF_PersonaMovimientoDTO
+
+    public class AfPersonaMovimientoDto
     {
-        public string COD_MOVIMIENTO { get; set; }
+        public string? COD_MOVIMIENTO { get; set; }
     }
-    public class AF_PersonaTelefonoDTO
+
+    public class AfPersonaTelefonoDto
     {
         public int? Telefono { get; set; }
         public int? Tipo { get; set; }
@@ -263,7 +267,8 @@
         public string? TipoDesc { get; set; }
         public DateTime? FechaServidor { get; set; }
     }
-    public class AF_PersonaBeneficiarioDTO
+
+    public class AfPersonaBeneficiarioDto
     {
         public int linea_Id { get; set; }
         public string? cedula { get; set; }
@@ -296,7 +301,8 @@
         public int? tipo_Id_R { get; set; }
         public string? tipo_Id_Desc { get; set; }
     }
-    public class AF_PersonaCuentaBancariaDTO
+
+    public class AfPersonaCuentaBancariaDto
     {
         public string? Banco { get; set; }
         public string? TipoDesc { get; set; }
@@ -308,7 +314,8 @@
         public DateTime? REGISTRO_FECHA { get; set; }
         public string? REGISTRO_USUARIO { get; set; }
     }
-    public class AF_PersonaNombramientoDTO
+
+    public class AfPersonaNombramientoDto
     {
         public int ID_LINEA { get; set; }
         public string? cedula { get; set; }
@@ -318,7 +325,8 @@
         public string? registro_usuario { get; set; }
         public string? EstadoLaboralDesc { get; set; }
     }
-    public class AF_PersonaSalarioDTO
+
+    public class AfPersonaSalarioDto
     {
         public int LINEA_ID { get; set; }
         public string? CEDULA { get; set; }
@@ -333,38 +341,34 @@
         public string? registro_usuario { get; set; }
         public string? tiposalariodesc { get; set; }
     }
-    public class AF_PersonaDireccionDTO
+
+    public class AfPersonaDireccionDto
     {
         public string? CEDULA { get; set; }
         public int? LINEA_ID { get; set; }
-
         public string? PROVINCIA { get; set; }
         public string? CANTON { get; set; }
         public string? DISTRITO { get; set; }
-
         public string? DIRECCION { get; set; }
         public string? EMAIL_01 { get; set; }
         public string? EMAIL_02 { get; set; }
         public string? TELEFONO_01 { get; set; }
         public string? TELEFONO_02 { get; set; }
-
         public DateTime? REGISTRO_FECHA { get; set; }
         public string? REGISTRO_USUARIO { get; set; }
-
         public string? COD_APP { get; set; }
         public bool? SINCRONIZADA { get; set; }
         public string? APROBADA_USUARIO { get; set; }
         public DateTime? APROBADA_FECHA { get; set; }
         public string? APROBADA_ESTADO { get; set; }
-
         public string? ProvinciaDesc { get; set; }
         public string? CantonDesc { get; set; }
         public string? DistritoDesc { get; set; }
-
         public int? Tipo { get; set; }
         public string? TipoDesc { get; set; }
     }
-    public class AF_PersonaIngresoDTO
+
+    public class AfPersonaIngresoDto
     {
         public int? CONSEC { get; set; }
         public string? CEDULA { get; set; }
@@ -384,19 +388,22 @@
         public string? Promotor { get; set; }
         public string? Tipo_Desc { get; set; }
     }
-    public class AF_PersonaRenunciaDTO
+
+    public class AfPersonaRenunciaDto
     {
         public DateTime? Fecha { get; set; }
         public string? Tipo { get; set; }
         public string? Descripcion { get; set; }
     }
-    public class AF_PersonaLiquidacionDTO
+
+    public class AfPersonaLiquidacionDto
     {
         public int Consec { get; set; }
         public DateTime? Fecliq { get; set; }
         public string? EstadoActliq { get; set; }
     }
-    public class AF_PersonaTarjetaDTO
+
+    public class AfPersonaTarjetaDto
     {
         public string? CEDULA { get; set; }
         public string? TARJETA_NUMERO { get; set; }
@@ -407,7 +414,8 @@
         public DateTime? REGISTRO_FECHA { get; set; }
         public string? REGISTRO_USUARIO { get; set; }
     }
-    public class AF_PersonaMotivoDTO
+
+    public class AfPersonaMotivoDto
     {
         public int COD_MOTIVO { get; set; }
         public string? DESCRIPCION { get; set; }
@@ -415,7 +423,8 @@
         public DateTime? REGISTRO_FECHA { get; set; }
         public string? REGISTRO_USUARIO { get; set; }
     }
-    public class AF_PersonaCanalDTO
+
+    public class AfPersonaCanalDto
     {
         public string? CANAL_TIPO { get; set; }
         public string? DESCRIPCION { get; set; }
@@ -423,7 +432,8 @@
         public DateTime? REGISTRO_FECHA { get; set; }
         public string? REGISTRO_USUARIO { get; set; }
     }
-    public class AF_PersonaPreferenciaDTO
+
+    public class AfPersonaPreferenciaDto
     {
         public int COD_PREFERENCIA { get; set; }
         public string? DESCRIPCION { get; set; }
@@ -431,7 +441,8 @@
         public DateTime? REGISTRO_FECHA { get; set; }
         public string? REGISTRO_USUARIO { get; set; }
     }
-    public class AF_PersonaBienDTO
+
+    public class AfPersonaBienDto
     {
         public int COD_BIEN { get; set; }
         public string? DESCRIPCION { get; set; }
@@ -439,7 +450,8 @@
         public DateTime? REGISTRO_FECHA { get; set; }
         public string? REGISTRO_USUARIO { get; set; }
     }
-    public class AF_PersonaEscolaridadDTO
+    
+    public class AfPersonaEscolaridadDto
     {
         public int COD_ESCOLARIDAD { get; set; }
         public string? DESCRIPCION { get; set; }
@@ -448,7 +460,7 @@
         public string? REGISTRO_USUARIO { get; set; }
     }
 
-    public class AF_PersonaAddRequestDTO
+    public class AfPersonaAddRequestDto
     {
         // -------- Bloque Identificación / Estado ----------
         public int TipoId { get; set; }
@@ -568,14 +580,14 @@
         public string? TraDireccion { get; set; }          // hasta 1000 chars
     }
 
-    public class AF_PersonaAddResultDTO
+    public class AfPersonaAddResultDto
     {
         public string? CEDULA { get; set; }
         public int Pass { get; set; }
         public string? Error_Msj { get; set; }
     }
 
-    public class AF_PersonaRelacionAddDTO
+    public class AfPersonaRelacionAddDto
     {
         public string Cedula { get; set; } = default!;
         public int TipoId { get; set; }
@@ -590,13 +602,13 @@
         public int Activo { get; set; } = 1;
     }
 
-    public class AF_PersonaRelacionDelDTO
+    public class AfPersonaRelacionDelDto
     {
         public int IdRelacion { get; set; }
         public string Usuario { get; set; } = default!;
     }
 
-    public class AF_PersonaSalarioAddDTO
+    public class AfPersonaSalarioAddDto
     {
         public string Cedula { get; set; } = default!;
         public string TipoSalario { get; set; } = default!;
@@ -609,7 +621,7 @@
         public string Usuario { get; set; } = default!;
     }
 
-    public class AF_PersonaIngresoEconomicoAddDTO
+    public class AfPersonaIngresoEconomicoAddDto
     {
         public string Cedula { get; set; } = default!;
         public decimal Ingreso { get; set; }
@@ -617,7 +629,7 @@
         public int Tipo { get; set; } = 1;
     }
 
-    public class AF_PersonaDireccionAddDTO
+    public class AfPersonaDireccionAddDto
     {
         public string Cedula { get; set; } = default!;
         public string Provincia { get; set; } = default!;
@@ -634,15 +646,15 @@
         public int Tipo { get; set; } = 2;            // 1=Principal, 2=Trabajo (según tu VB6)
     }
 
-    public class AF_PersonaEscolaridadRegistraDTO
+    public class AfPersonaEscolaridadRegistraDto
     {
         public string Cedula { get; set; } = default!;
-        public string CodEscolaridad { get; set; }
+        public string? CodEscolaridad { get; set; }
         public bool Asignado { get; set; }
         public string Usuario { get; set; } = default!;
     }
 
-    public class AF_PersonaPreferenciaRegistraDTO
+    public class AfPersonaPreferenciaRegistraDto
     {
         public string Cedula { get; set; } = default!;
         public int CodPreferencia { get; set; }
@@ -650,7 +662,7 @@
         public string Usuario { get; set; } = default!;
     }
 
-    public class AF_PersonaCanalRegistraDTO
+    public class AfPersonaCanalRegistraDto
     {
         public string Cedula { get; set; } = default!;
         public string CanalTipo { get; set; } = default!;
@@ -658,20 +670,20 @@
         public string Usuario { get; set; } = default!;
     }
 
-    public class AF_PersonaPatrimonioVinculaDTO
+    public class AfPersonaPatrimonioVinculaDto
     {
         public string Cedula { get; set; } = default!;
     }
 
-    public class AF_PersonaBienesRegistraDTO
+    public class AfPersonaBienesRegistraDto
     {
         public string Cedula { get; set; } = default!;
-        public string CodBien { get; set; }
+        public string? CodBien { get; set; }
         public bool Asignado { get; set; }
         public string Usuario { get; set; } = default!;
     }
 
-    public class AF_PersonaProductosRegistraDTO
+    public class AfPersonaProductosRegistraDto
     {
         public string cedula { get; set; } = default!;
         public int codproducto { get; set; }
@@ -679,121 +691,117 @@
         public string usuario { get; set; } = default!;
     }
 
-    public class AF_RegistroDefaultDTO
+    public class AfRegistroDefaultDto
     {
         public string Cedula { get; set; } = default!;
         public string Usuario { get; set; } = default!;
     }
-    public class AF_CumplimientoDTO
+    
+    public class AfCumplimientoDto
     {
         public int Codigo { get; set; }
-        public string Descripcion { get; set; }
+        public string? Descripcion { get; set; }
         public bool Asignado { get; set; }
         public DateTime? Registro_Fecha { get; set; }
-        public string Registro_Usuario { get; set; }
+        public string? Registro_Usuario { get; set; }
     }
 
-    public class AF_TelefonosDTO
+    public class AfTelefonosDto
     {
-        public string Telefono { get; set; }
-        public string Tipo { get; set; }
-        public string Numero { get; set; }
-        public string Ext { get; set; }
-        public string Contacto { get; set; }
-        public string Usuario { get; set; }
+        public string? Telefono { get; set; }
+        public string? Tipo { get; set; }
+        public string? Numero { get; set; }
+        public string? Ext { get; set; }
+        public string? Contacto { get; set; }
+        public string? Usuario { get; set; }
         public DateTime? Fecha { get; set; }
-        public string TipoDesc { get; set; }
+        public string? TipoDesc { get; set; }
         public DateTime FechaServidor { get; set; }
     }
 
-    public class AF_CuentaBancariaDTO
+    public class AfCuentaBancariaDto
     {
-        public string Banco { get; set; }
-        public string TipoDesc { get; set; }
-        public string Cod_Divisa { get; set; }
-        public string Cuenta_Interna { get; set; }
-        public string Cuenta_Interbanca { get; set; }
+        public string? Banco { get; set; }
+        public string? TipoDesc { get; set; }
+        public string? Cod_Divisa { get; set; }
+        public string? Cuenta_Interna { get; set; }
+        public string? Cuenta_Interbanca { get; set; }
         public bool Activa { get; set; }
-        public string Destino { get; set; }
+        public string? Destino { get; set; }
         public DateTime? Registro_Fecha { get; set; }
-        public string Registro_Usuario { get; set; }
+        public string? Registro_Usuario { get; set; }
     }
 
-    public class AF_TarjetaDTO
+    public class AfTarjetaDto
     {
-        public string Cedula { get; set; }
-        public string Tarjeta_Numero { get; set; }
-        public string Tarjeta_Tipo { get; set; }
-        public string Tarjeta_Mask { get; set; }
-        public string Tarjeta_Code { get; set; }
+        public string? Cedula { get; set; }
+        public string? Tarjeta_Numero { get; set; }
+        public string? Tarjeta_Tipo { get; set; }
+        public string? Tarjeta_Mask { get; set; }
+        public string? Tarjeta_Code { get; set; }
         public DateTime? Tarjeta_Vence { get; set; }
         public DateTime? Registro_Fecha { get; set; }
-        public string Registro_Usuario { get; set; }
+        public string? Registro_Usuario { get; set; }
     }
 
-    public class AF_DireccionDTO
+    public class AfDireccionDto
     {
-        public string Cedula { get; set; }
+        public string? Cedula { get; set; }
         public int Linea_Id { get; set; }
         public int Provincia { get; set; }
-        public string ProvinciaDesc { get; set; }
+        public string? ProvinciaDesc { get; set; }
         public int Canton { get; set; }
-        public string CantonDesc { get; set; }
+        public string? CantonDesc { get; set; }
         public int Distrito { get; set; }
-        public string DistritoDesc { get; set; }
-        public string Direccion { get; set; }
-        public string Email_01 { get; set; }
-        public string Email_02 { get; set; }
-        public string Telefono_01 { get; set; }
-        public string Telefono_02 { get; set; }
+        public string? DistritoDesc { get; set; }
+        public string? Direccion { get; set; }
+        public string? Email_01 { get; set; }
+        public string? Email_02 { get; set; }
+        public string? Telefono_01 { get; set; }
+        public string? Telefono_02 { get; set; }
         public DateTime? Registro_Fecha { get; set; }
-        public string Registro_Usuario { get; set; }
-        public string Cod_App { get; set; }
+        public string? Registro_Usuario { get; set; }
+        public string? Cod_App { get; set; }
         public bool? Sincronizada { get; set; }
-        public string Aprobada_Usuario { get; set; }
+        public string? Aprobada_Usuario { get; set; }
         public DateTime? Aprobada_Fecha { get; set; }
-        public string Aprobada_Estado { get; set; }
+        public string? Aprobada_Estado { get; set; }
         public int Tipo { get; set; }
-        public string TipoDesc { get; set; }
+        public string? TipoDesc { get; set; }
     }
 
-    public class AF_ConsultasGeneralesDTO
+    public class AfConsultasGeneralesDto
     {
-        public List<AF_TelefonosDTO> Telefonos { get; set; }
-        public List<AF_CuentaBancariaDTO> CuentasBancarias { get; set; }
-        public List<AF_PersonaBeneficiarioDTO> Beneficiarios { get; set; }
-        public List<AF_TarjetaDTO> Tarjetas { get; set; }
-        public List<AF_DireccionDTO> Localizaciones { get; set; }
-        public List<AF_PersonaIngresoDTO> Ingresos { get; set; } = new();
-        public List<AF_PersonaRenunciaDTO> Renuncias { get; set; } = new();
-        public List<AF_PersonaLiquidacionDTO> Liquidaciones { get; set; } = new();
-        public List<AF_PersonaNombramientoDTO> Nombramientos { get; set; } = new();
-        public List<AF_PersonaSalarioDTO> Salarios { get; set; } = new();
-        public List<AF_PersonaEmailDTO> Emails { get; set; } = new();
-        public List<AF_MotivosDTO> Motivos { get; set; } = new();
-        public List<AF_CanalesDTO> Canales { get; set; } = new();
-        public List<AF_PreferenciaDTO> Preferencias { get; set; } = new();
-        public List<AF_BienDTO> Bienes { get; set; } = new();
-        public List<AF_EscolaridadDTO> Escolaridad { get; set; } = new();
-        public List<AF_PersonaRelacionDTO> Relaciones { get; set; } = new();
-
-
-
-
+        public List<AfTelefonosDto>? Telefonos { get; set; }
+        public List<AfCuentaBancariaDto>? CuentasBancarias { get; set; }
+        public List<AfPersonaBeneficiarioDto>? Beneficiarios { get; set; }
+        public List<AfTarjetaDto>? Tarjetas { get; set; }
+        public List<AfDireccionDto>? Localizaciones { get; set; }
+        public List<AfPersonaIngresoDto> Ingresos { get; set; } = new();
+        public List<AfPersonaRenunciaDto> Renuncias { get; set; } = new();
+        public List<AfPersonaLiquidacionDto> Liquidaciones { get; set; } = new();
+        public List<AfPersonaNombramientoDto> Nombramientos { get; set; } = new();
+        public List<AfPersonaSalarioAddDto> Salarios { get; set; } = new();
+        public List<AfPersonaEmailDto> Emails { get; set; } = new();
+        public List<AfMotivosDto> Motivos { get; set; } = new();
+        public List<AfCanalesDto> Canales { get; set; } = new();
+        public List<AfPreferenciaDto> Preferencias { get; set; } = new();
+        public List<AfBienDto> Bienes { get; set; } = new();
+        public List<AfEscolaridadDto> Escolaridad { get; set; } = new();
+        public List<AfPersonaRelacionDto> Relaciones { get; set; } = new();
     }
 
-    public class AF_MotivosDTO
+    public class AfMotivosDto
     {
-
         public string cedula { get; set; } = string.Empty;
-        public string cod_motivo { get; set; }
+        public string? cod_motivo { get; set; }
         public string descripcion { get; set; } = string.Empty;
         public bool asignado { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class AF_CanalesDTO
+    public class AfCanalesDto
     {
         public string cedula { get; set; } = string.Empty;
         public int canal_tipo { get; set; }
@@ -803,18 +811,17 @@
         public string? registro_usuario { get; set; }
     }
 
-    public class AF_PreferenciaDTO
+    public class AfPreferenciaDto
     {
-
         public string Cedula { get; set; } = default!;
-        public string cod_preferencia { get; set; }
+        public string? cod_preferencia { get; set; }
         public string descripcion { get; set; } = string.Empty;
         public bool asignado { get; set; }
         public DateTime? registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class AF_BienDTO
+    public class AfBienDto
     {
         public decimal bien_tipo { get; set; }
         public string descripcion { get; set; } = string.Empty;
@@ -823,7 +830,7 @@
         public string? registro_usuario { get; set; }
     }
 
-    public class AF_EscolaridadDTO
+    public class AfEscolaridadDto
     {
         public decimal escolaridad_tipo { get; set; }
         public string descripcion { get; set; } = string.Empty;
@@ -832,8 +839,7 @@
         public string? registro_usuario { get; set; }
     }
 
-
-    public class AF_PersonaIndicadoresDTO
+    public class AfPersonaIndicadoresDto
     {
         public string cedula { get; set; } = default!;
         public int indicador { get; set; }
@@ -842,7 +848,7 @@
         public string nota { get; set; } = string.Empty;
     }
 
-    public class AF_PadronPersonaDTO
+    public class AfPadronPersonaDto
     {
         public string identificacion { get; set; } = default!;
         public string apellido_1 { get; set; } = default!;
@@ -867,43 +873,32 @@
         public decimal salario { get; set; }
     }
 
-
-    public class AF_PersonaRelacionDTOAdd
+    public class AfPersonaRelacionDtoAdd
     {
         public int pr_id { get; set; }
-        public string cedulasocio { get; set; }
-        public string cedula { get; set; }
-        public string apellido1 { get; set; }
-        public string apellido2 { get; set; }
-        public string nombre { get; set; }
+        public string? cedulasocio { get; set; }
+        public string? cedula { get; set; }
+        public string? apellido1 { get; set; }
+        public string? apellido2 { get; set; }
+        public string? nombre { get; set; }
         public int cod_tipo_id { get; set; }
         public int cod_tipo_vinculo { get; set; }
-        public string teltra { get; set; }
-        public string teltraext { get; set; }
-        public string telcell { get; set; }
+        public string? teltra { get; set; }
+        public string? teltraext { get; set; }
+        public string? telcell { get; set; }
         public bool activo { get; set; }
-        public DateTime registro_fecha { get; set; }   
-        public string registro_usuario { get; set; }
+        public DateTime registro_fecha { get; set; }
+        public string? registro_usuario { get; set; }
         public DateTime? modifica_fecha { get; set; }
-        public string modifica_usuario { get; set; }
+        public string? modifica_usuario { get; set; }
         public int empleado { get; set; }
     }
 
-    public class AF_PersonaDimexAddDTO
+    public class AfPersonaDimexAddDto
     {
-        public string cedula { get; set; }
-        public string dimex { get; set; }
+        public string? cedula { get; set; }
+        public string? dimex { get; set; }
         public bool activo { get; set; }
-        public string usuario { get; set; }
+        public string? usuario { get; set; }
     }
-
-
-
-
-
-
 }
-
-
-
-

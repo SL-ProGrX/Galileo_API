@@ -16,7 +16,6 @@ namespace PgxAPI.Models.CPR
         public List<UsuariosAutorizaData> lista { get; set; } = new List<UsuariosAutorizaData>();
     }
 
-
     public class RangosDto
     {
         public string cod_rango { get; set; } = string.Empty;
@@ -29,7 +28,6 @@ namespace PgxAPI.Models.CPR
         public DateTime? modifica_fecha { get; set; }
     }
 
-
     public class RangosUsuariosDto
     {
         public int cod_rango_usuario { get; set; }
@@ -38,12 +36,8 @@ namespace PgxAPI.Models.CPR
         public string usuario { get; set; } = string.Empty;
         public string nombre_usuario { get; set; } = string.Empty;
         public bool activo  { get; set; }
-
         public string uen { get; set; } = string.Empty;
-
         public string nombre_uen { get; set; } = string.Empty;
         public string registro_usuario { get; set; } = string.Empty;
-
-
     }
 }

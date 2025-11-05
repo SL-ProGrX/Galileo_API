@@ -1,7 +1,6 @@
 namespace PgxAPI.Models.CPR
 {
-
-    public class CprSolicitud_Autoriza
+    public class CprSolicitudAutoriza
     {
         public int cpr_id { get; set; }
         public string cpr_id_madre { get; set; } = string.Empty;
@@ -32,13 +31,10 @@ namespace PgxAPI.Models.CPR
         public string adjudica_proveedor { get; set; } = string.Empty;
         public string int_sitio_entrega { get; set; } = string.Empty;
         public string int_forma_pago { get; set; } = string.Empty;
-
     }
 
-    public class CprSolicitud_Filtros
+    public class CprSolicitudFiltros
     {
-
-
         public string? estado { get; set; }
         public string? fecha { get; set; }
         public string? fechaInico { get; set; }
@@ -46,9 +42,6 @@ namespace PgxAPI.Models.CPR
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
         public string vfiltro { get; set; } = string.Empty;
-
         public string cod_unidad { get; set; } = string.Empty;
     }
-
-
 }

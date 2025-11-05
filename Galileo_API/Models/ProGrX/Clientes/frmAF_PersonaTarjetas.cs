@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class PersonaTarjetaDTO
+    public class PersonaTarjetaDto
     {
         public string tarjeta_Numero { get; set; } = string.Empty;
         public string Tarjeta_Mask { get; set; } = string.Empty;
@@ -9,9 +9,7 @@
         public string Tarjeta_Tipo { get; set; } = string.Empty;
     }
 
-
-
-    public class PersonaTarjetaRegistroDTO
+    public class PersonaTarjetaRegistroDto
     {
         public string Cedula { get; set; } = string.Empty;
         public string Tarjeta { get; set; } = string.Empty;
@@ -21,6 +19,4 @@
         public string Usuario { get; set; } = string.Empty;
         public bool ValidaTarjeta { get; set; }
     }
-
-
 }
