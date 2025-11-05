@@ -617,7 +617,7 @@
         public decimal Devengado { get; set; }
         public decimal Rebajos { get; set; }
         public decimal Neto { get; set; }
-        public string Embargos { get; set; }
+        public string? Embargos { get; set; }
         public string Usuario { get; set; } = default!;
     }
 

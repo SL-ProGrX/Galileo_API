@@ -3,7 +3,7 @@
     public class TesBancosGruposLista
     {
         public int total { get; set; } = 0;
-        public List<TesBancosGruposData> data { get; set; } = null;
+        public List<TesBancosGruposData>? data { get; set; }
     }
 
     public class TesBancosGruposData
