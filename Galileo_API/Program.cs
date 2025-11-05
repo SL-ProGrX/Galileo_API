@@ -103,7 +103,7 @@ app.MapPost("/login", (LoginRequest req, IConfiguration cfg) =>
         new Claim(ClaimTypes.Role, "User")
     };
 
-    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(cfg["Jwt:Key"]!));
+    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(cfg["Jwt:Secret"]!));
     var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
     var expiresMinutes = int.TryParse(jwt["AccessTokenMinutes"], out var m) ? m : 60;
