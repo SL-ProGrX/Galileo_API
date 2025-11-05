@@ -1,0 +1,365 @@
+﻿using Dapper;
+using Microsoft.Data.SqlClient;
+using PgxAPI.Models;
+using System.Data;
+
+namespace PgxAPI.DataBaseTier
+{
+    public class AplicacionDB
+    {
+        private readonly IConfiguration _config;
+
+        public AplicacionDB(IConfiguration config)
+        {
+            _config = config;
+        }
+
+
+        #region MÉTODOS APP_BANK
+
+        public List<Aplicacion> Aplicacion_ObtenerTodos()
+        {
+            List<Aplicacion> data = new List<Aplicacion>();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_W_Aplicacion_Obtener]";
+
+                    data = connection.Query<Aplicacion>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    foreach (Aplicacion dt in data)
+                    {
+                        dt.Estado = dt.Activa ? "ACTIVO" : "INACTIVO";
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+            }
+            return data;
+        }
+
+        public ErrorAplicacionDTO Aplicacion_Insertar(Aplicacion request)
+        {
+            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_W_Aplicacion_Insertar]";
+                    var values = new
+                    {
+                        Cod_App = request.Cod_App,
+                        Descripcion = request.Descripcion,
+                        Activa = request.Activa,
+                        Registro_Usuario = request.Registro_Usuario,
+
+                    };
+
+                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+        public ErrorAplicacionDTO Aplicacion_Eliminar(Aplicacion request)
+        {
+            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_W_Aplicacion_Eliminar]";
+                    var values = new
+                    {
+                        Cod_App = request.Cod_App,
+                    };
+
+                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+        public ErrorAplicacionDTO Aplicacion_Actualizar(Aplicacion request)
+        {
+            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_W_Aplicacion_Editar]";
+                    var values = new
+                    {
+                        Cod_App = request.Cod_App,
+                        Descripcion = request.Descripcion,
+                        Activa = request.Activa,
+                    };
+
+                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+        #endregion
+
+
+
+        #region MÉTODOS APP_BLOCK
+
+        public List<Bloqueo> Bloqueo_ObtenerTodos(string Cod_App)
+        {
+            List<Bloqueo> data = new List<Bloqueo>();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_W_Bloqueo_Obtener]";
+
+                    var values = new
+                    {
+                        Cod_App = Cod_App,
+                    };
+                    data = connection.Query<Bloqueo>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+            }
+            return data;
+        }
+
+        public ErrorAplicacionDTO Bloqueo_Insertar(Bloqueo request)
+        {
+            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_W_Bloqueo_Insertar]";
+                    var values = new
+                    {
+                        //Cod_Linea = request.Cod_Linea,
+                        Cod_App = request.Cod_App,
+                        Fecha_Bloqueo = request.Fecha_Bloqueo,
+                        Version_Bloqueada = request.Version_Bloqueada,
+                        Registro_Usuario = request.Registro_Usuario,
+
+                    };
+
+                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+        public ErrorAplicacionDTO Bloqueo_Eliminar(Bloqueo request)
+        {
+            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_W_Bloqueo_Eliminar]";
+                    var values = new
+                    {
+                        Cod_Linea = request.Cod_Linea,
+                        Cod_App = request.Cod_App,
+                    };
+
+                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+        //public ErrorAplicacionDTO Bloqueo_Actualizar(Aplicacion request)
+        //{
+        //    ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+        //    try
+        //    {
+        //        using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+        //        {
+        //            var procedure = "[spPGX_W_Bloqueo_Editar]";
+        //            var values = new
+        //            {
+        //                Cod_App = request.Cod_App,
+        //                //Identificacion = request.Identificacion,
+        //                //Nombre = request.Nombre,
+        //                //Activo = request.Activo,
+        //                //Comision_Tipo = request.Comision_Tipo,
+        //                //Comision_Cliente = request.Comision_Cliente,
+        //                //Cuenta_Cliente = request.Cuenta_Cliente,
+
+        //            };
+
+        //            resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+        //            resp.Description = "Ok";
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        resp.Code = -1;
+        //        resp.Description = ex.Message;
+        //    }
+        //    return resp;
+        //}
+
+        #endregion 
+
+
+
+        #region MÉTODOS APP_UPDATE
+
+        public List<Actualizacion> Actualizacion_ObtenerTodos(string Cod_App)
+        {
+            List<Actualizacion> data = new List<Actualizacion>();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_W_Actualizacion_Obtener]";
+
+                    var values = new
+                    {
+                        Cod_App = Cod_App,
+
+                    };
+
+                    data = connection.Query<Actualizacion>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+            }
+            return data;
+        }
+
+        public ErrorAplicacionDTO Actualizacion_Insertar(Actualizacion request)
+        {
+            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_W_Actualizacion_Insertar]";
+                    var values = new
+                    {
+                        Cod_App = request.Cod_App,
+                        Version = request.Version,
+                        Notas_Descarga = request.Notas_Descarga,
+                        Fecha_Libera = request.Fecha_Libera,
+                        Registro_Usuario = request.Registro_Usuario,
+
+                    };
+
+                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+        public ErrorAplicacionDTO Actualizacion_Eliminar(Actualizacion request)
+        {
+            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_W_Actualizacion_Eliminar]";
+                    var values = new
+                    {
+                        Cod_App = request.Cod_App,
+                        Version = request.Version,
+                    };
+
+                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+        //public ErrorAplicacionDTO Actualizacion_Editar(Actualizacion request)
+        //{
+        //    ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+        //    try
+        //    {
+        //        using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+        //        {
+        //            var procedure = "[spPGX_W_Actualizacion_Editar]";
+        //            var values = new
+        //            {
+        //                Cod_App = request.Cod_App,
+        //                //Identificacion = request.Identificacion,
+        //                //Nombre = request.Nombre,
+        //                //Activo = request.Activo,
+        //                //Comision_Tipo = request.Comision_Tipo,
+        //                //Comision_Cliente = request.Comision_Cliente,
+        //                //Cuenta_Cliente = request.Cuenta_Cliente,
+
+        //            };
+
+        //            resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+        //            resp.Description = "Ok";
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        resp.Code = -1;
+        //        resp.Description = ex.Message;
+        //    }
+        //    return resp;
+        //}
+
+        #endregion 
+
+    }
+}
