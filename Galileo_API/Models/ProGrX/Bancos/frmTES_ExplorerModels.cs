@@ -1,23 +1,21 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class TES_DropDownListaBancosExplorer
+    public class TesDropDownListaBancosExplorer
     {
         public string id_banco { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-
     }
 
-    public class TES_ExplorerFiltros
+    public class TesExplorerFiltros
     {
         public string cod_banco { get; set; } = string.Empty;
         public string tipo_doc { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public DateTime fecha_desde { get; set; }
         public DateTime fecha_hasta { get; set; }
-
     }
 
-    public class TES_ListaExplorerDTO
+    public class TesListaExplorerDto
     {
         public string nsolicitud { get; set; } = string.Empty;
         public string ndocumento { get; set; } = string.Empty;
@@ -32,11 +30,4 @@
         public string descripcion { get; set; } = string.Empty;
         public decimal monto_total { get; set; }
     }
-
-
-
 }
-
-
-
-

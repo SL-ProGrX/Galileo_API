@@ -1,5 +1,3 @@
-using PgxAPI.Models;
-
 namespace PgxAPI.Models.TES
 {
     public class FiltrosBusqueda
@@ -24,7 +22,6 @@ namespace PgxAPI.Models.TES
         public bool ChkProtegido { get; set; }
         public string? Usuario { get; set; }
         public string? TipoUsuario { get; set; }
-
         //Apuntando a tabla
         public string? filtro { get; set; } //filtro del buscar en tablas o buscador
         public int? pagina { get; set; } = 1;//pagina de la tabla
@@ -32,7 +29,6 @@ namespace PgxAPI.Models.TES
         public int? sortOrder { get; set; } = 0; //0: sin orden, 1: ascendente, 2: descendente
         public string? sortField { get; set; } //campo por el cual se ordena
     }
-
 
     public class Desembolsos
     {
@@ -68,15 +64,14 @@ namespace PgxAPI.Models.TES
         public int id_desembolso { get; set; }
         public string? referencia_sinpe { get; set; }
         public string? nombre_origen { get; set; }
-
         public string? user_autoriza { get; set; }
         public DateTime? fecha_autoriza { get; set; }
     }
 
     public class DesembolsosLista
     {
-        public DesembolsoTotales totales { get; set; }
-        public List<Desembolsos> lista { get; set; }
+        public DesembolsoTotales? totales { get; set; }
+        public List<Desembolsos>? lista { get; set; }
     }
 
     public class DesembolsoTotales
@@ -84,6 +79,4 @@ namespace PgxAPI.Models.TES
         public int total { get; set; }
         public decimal montototal { get; set; }
     }
-
 }
-

@@ -1,8 +1,6 @@
-﻿using PgxAPI.Models.TES;
-
-namespace PgxAPI.Models.ProGrX.Bancos
+﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class TES_Bloqueo_TransaccionDTO
+    public class TesBloqueoTransaccionDto
     {
         public int nsolicitud { get; set; }
         public int id_banco { get; set; }
@@ -26,7 +24,7 @@ namespace PgxAPI.Models.ProGrX.Bancos
         public string? tipox { get; set; }
     }
 
-    public class TES_BloqueosFiltros
+    public class TesBloqueosFiltros
     {
         public bool todas_fechas { get; set; }
         public DateTime? fecha_inicio { get; set; }

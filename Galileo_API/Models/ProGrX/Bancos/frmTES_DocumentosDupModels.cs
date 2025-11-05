@@ -1,11 +1,9 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-
     public class DropDownListaBancos
     {
         public string id_banco { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-
     }
 
     public class DropDownListaTipos
@@ -15,7 +13,7 @@
         public string itmx { get; set; } = string.Empty;
     }
 
-    public class TES_DocumentosDuplicadosFiltros
+    public class TesDocumentosDuplicadosFiltros
     {
         public string id_banco { get; set; } = string.Empty;
         public string cod_banco { get; set; } = string.Empty;
@@ -23,7 +21,6 @@
         public string documento { get; set; } = string.Empty;
         public string fecha_desde { get; set; } = string.Empty;
         public string fecha_hasta { get; set; } = string.Empty;
-
     }
 
     public class DocumentoDuplicadosLista
@@ -35,8 +32,5 @@
         public DateTime fecha_emision { get; set; }
         public string beneficiario { get; set; } = string.Empty;
         public string estado_asiento { get; set; } = string.Empty;
-
     }
-
-
 }

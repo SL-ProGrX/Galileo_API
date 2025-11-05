@@ -1,12 +1,12 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class TesAuto_RegistroLista
+    public class TesAutoRegistroLista
     {
         public int total { get; set; } = 0;
-        public List<TesAuto_RegistroDTO> lista { get; set; } = new List<TesAuto_RegistroDTO>();
+        public List<TesAutoRegistroDto> lista { get; set; } = new List<TesAutoRegistroDto>();
     }
 
-    public class TesAuto_RegistroDTO
+    public class TesAutoRegistroDto
     {
         public int? id_auto { get; set; }
         public string? descripcion { get; set; }
@@ -43,41 +43,39 @@
         public string? tipo_doc_desc { get; set; }
         public bool? ignora_registro_id { get; set; }
         public bool? dp_tramite { get; set; }
-
     }
 
     public class TesAutoRegCtaBancariasData
     {
         public int id_banco { get; set; }
-        public string cta { get; set; }
-        public string descripcion { get; set; }
-        public string desc_corta { get; set; }
-        public string cod_divisa { get; set; }
+        public string? cta { get; set; }
+        public string? descripcion { get; set; }
+        public string? desc_corta { get; set; }
+        public string? cod_divisa { get; set; }
         public bool asignado { get; set; }
-        public string cod_cuenta_mask { get; set; }
+        public string? cod_cuenta_mask { get; set; }
     }
 
     public class TesAutoregistroConceptos 
     {
-        public string cod_concepto { get; set; }
-        public string descripcion { get; set; }
-        public string cod_cuenta_mask { get; set; }
+        public string? cod_concepto { get; set; }
+        public string? descripcion { get; set; }
+        public string? cod_cuenta_mask { get; set; }
         public int dp_tramite_apl { get; set; }
-        public string cuenta_desc { get; set; }
+        public string? cuenta_desc { get; set; }
     }
 
     public class TipoMovData
     {
-        public string tipo { get; set; }
-        public string descripcion { get; set; }
+        public string? tipo { get; set; }
+        public string? descripcion { get; set; }
     }
 
     public class AutoRegGuardar
     {
         public int auto_id { get; set; }
-        public string usuario { get; set; }
+        public string? usuario { get; set; }
         public DateTime fecha { get; set; }
-        public string result { get; set; }
+        public string? result { get; set; }
     }
-
 }

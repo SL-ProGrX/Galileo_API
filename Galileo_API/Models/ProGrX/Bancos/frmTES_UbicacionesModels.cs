@@ -14,5 +14,4 @@
         public string usuario { get; set; } = string.Empty;
         public bool isNew { get; set; } = false;
     }
-
 }

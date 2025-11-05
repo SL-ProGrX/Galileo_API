@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class tesBancosDocData
+    public class TesBancosDocData
     {
         public string tipo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -14,7 +14,7 @@
         public string tipoX { get; set; } = string.Empty;
     }
 
-    public class tesBancoDocTipoData
+    public class TesBancoDocTipoData
     {
         public string tipo { get; set; } = string.Empty;
         public string id_banco { get; set; } = string.Empty;
@@ -28,11 +28,11 @@
         public int cuenta_max { get; set; } = 0;
         public int consecutivo_det { get; set; } = 0;
         public Nullable<DateTime> registro_fecha { get; set; } = null;
-        public string registro_usuario = string.Empty;
+        public string registro_usuario { get; set; } = string.Empty;
 
     }
 
-    public class tesBancoDocDTO
+    public class TesBancoDocDto
     {
         public string tipo { get; set; } = string.Empty;
         public string id_banco { get; set; } = string.Empty;
@@ -49,7 +49,5 @@
         public string registro_usuario { get; set; } = string.Empty;
         public Nullable<DateTime> actualiza_fecha { get; set; } = null;
         public string actualiza_usuario { get; set; } = string.Empty;
-
     }
-
 }

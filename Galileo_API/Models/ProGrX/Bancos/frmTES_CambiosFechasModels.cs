@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class TES_CambioFechasData
+    public class TesCambioFechasData
     {
         public int nsolicitud { get; set; }
         public string? tipo { get; set; }
@@ -16,14 +16,13 @@
         public Nullable<DateTime> fecha_anula { get; set; }
     }
 
-    public class TES_CambioFechasModel
+    public class TesCambioFechasModel
     {
         public int nsolicitud { get; set; }
-        public string fecha { get; set; }
+        public string? fecha { get; set; }
         public Nullable<DateTime> fechaActual { get; set; }
         public Nullable<DateTime> fechaNueva { get; set; }
         public string? detalle_Anulacion { get; set; }
         public string? usuario { get; set; }
-
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class TES_BancoDTO
+    public class TesBancoDto
     {
         public int id_banco { get; set; }
         public string descripcion { get; set; } = string.Empty;
@@ -54,7 +54,6 @@
         public string? concepto { get; set; }
         public string? concepto_desc { get; set; }
         public bool? ilocalizable { get; set; }
-
         public bool? int_grupos_asociados { get; set; }
         public bool? int_requiere_cuenta_destino { get; set; }
     }
@@ -65,7 +64,7 @@
         public string itmx { get; set; } = string.Empty;
     }
 
-    public class TES_Bancos_Cierres
+    public class TesBancosCierres
     {
         public int idx { get; set; }
         public int id_banco { get; set; }
@@ -81,7 +80,7 @@
         public decimal? saldo_minimo { get; set; }
     }
 
-    public class Parametros_SaldoFecha
+    public class ParametrosSaldoFecha
     {
         public int id_banco { get; set; } 
         public string desc_corta { get; set; } = string.Empty;
@@ -90,7 +89,7 @@
         public string usuario { get; set; } = string.Empty;
     }
 
-    public class Parametros_Conciliacion
+    public class ParametrosConciliacion
     {
         public int id_banco { get; set; }
         public string desc_corta { get; set; } = string.Empty;
@@ -103,7 +102,7 @@
         public string usuario { get; set; } = string.Empty;
     }
 
-    public class TES_Bancos_GruposAsgDTO
+    public class TesBancosGruposAsgDto
     {
         public int? id_banco { get; set; }
         public string? cod_grupo { get; set; }
@@ -118,7 +117,7 @@
         public bool int_grupos_asociados { get; set; }
     }
 
-    public sealed class ArchivoDTO
+    public sealed class ArchivoDto
     {
         public string FileName { get; init; } = default!;
         public string ContentType { get; init; } = "application/octet-stream";

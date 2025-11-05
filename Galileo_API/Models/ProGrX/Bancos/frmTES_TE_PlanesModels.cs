@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.TES
 {
-    public class TES_Banco_PlanesData
+    public class TesBancoPlanesData
     {
         public int id_banco { get; set; }
         public string cod_plan { get; set; } = string.Empty;
@@ -10,7 +10,7 @@ namespace PgxAPI.Models.TES
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class TES_Bancos_GruposData
+    public class TesBancosGruposData
     {
         public int id_banco { get; set; }
         public string cod_grupo { get; set; } = string.Empty;

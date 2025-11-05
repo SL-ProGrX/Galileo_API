@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.TES
 {
-    public class TES_TransaccionesData
+    public class TesTransaccionesData
     {
         public int total { get; set; }
         public int? minimo { get; set; }
@@ -9,7 +9,7 @@ namespace PgxAPI.Models.TES
         public bool docBloqueo { get; set; }
     }
 
-    public class TES_EmisionDocFiltros
+    public class TesEmisionDocFiltros
     {
         public int cantidad { get; set; }
         public int banco { get; set; }
@@ -27,7 +27,7 @@ namespace PgxAPI.Models.TES
         public bool? docBloqueo { get; set; }
     }
 
-    public class TES_SolicitudesGenData
+    public class TesSolicitudesGenData
     {
         public int nsolicitud { get; set; }
         public string tipo { get; set; } = string.Empty;
@@ -41,13 +41,13 @@ namespace PgxAPI.Models.TES
         public bool? pass { get; set; }
     }
 
-    public class TES_BancoDocsData
+    public class TesBancoDocsData
     {
         public int doc_auto { get; set; }
         public string comprobante { get; set; } = "";
     }
 
-    public class TES_BancoData
+    public class TesBancoData
     {
         public decimal firmas_desde { get; set; }
         public decimal firmas_hasta { get; set; }

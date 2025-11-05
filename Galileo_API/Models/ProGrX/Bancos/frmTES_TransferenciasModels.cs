@@ -21,10 +21,10 @@
         public string? usuario { get; set; }
         public string? bancoConsec { get; set; }
         public string? gstrQuery { get; set; }
-        public TesTransferencias_Parametros? parametros { get; set; }
+        public TesTransferenciasParametros? parametros { get; set; }
     }
 
-    public class TesTransferencias_Parametros
+    public class TesTransferenciasParametros
     {
         public int banco { get; set; }
         public string tipoDoc { get; set; } = string.Empty;

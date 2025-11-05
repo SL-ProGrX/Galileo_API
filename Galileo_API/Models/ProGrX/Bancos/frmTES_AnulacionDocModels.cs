@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class TES_AnulacionDocData
+    public class TesAnulacionDocData
     {
         public int nsolicitud { get; set; }
         public string? tipo { get; set; }
@@ -15,7 +15,7 @@
         public bool? verifica { get; set; }
     }
 
-    public class TES_AnulacionAnulaModel 
+    public class TesAnulacionAnulaModel
     {
         public int nsolicitud { get; set; }
         public string? notas { get; set; }
@@ -23,5 +23,4 @@
         public bool? copia { get; set; }
         public int? cod_concepto_anulacion { get; set; } = 0;
     }
-
 }
