@@ -1,0 +1,199 @@
+using Dapper;
+using Microsoft.Data.SqlClient;
+using PgxAPI.Models;
+using PgxAPI.Models.ERROR;
+using PgxAPI.Models.GA;
+using System.Data;
+
+namespace PgxAPI.DataBaseTier
+{
+    public class frmGA_DocumentosDB
+    {
+        private readonly IConfiguration _config;
+
+        public frmGA_DocumentosDB(IConfiguration config)
+        {
+            _config = config;
+        }
+        
+        /// <summary>
+        /// Obtiene los tipos de documentos
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Usuario"></param>
+        /// <param name="Modulo"></param>
+        /// <returns></returns>
+        public ErrorDTO<List<TiposDocumentosArchivosDTO>> TiposDocumentos_Obtener(int CodEmpresa, string Usuario, string Modulo)
+        {
+            var resp = new ErrorDTO<List<TiposDocumentosArchivosDTO>>();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
+                {
+                    var procedure = "[spGA_Interface_Tipos_Documentos]";
+                    var values = new
+                    {
+                        Empresa = CodEmpresa,
+                        Usuario = Usuario,
+                        Modulo = Modulo
+                    };
+                    resp.Result = connection.Query<TiposDocumentosArchivosDTO>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null!;
+            }
+            return resp;
+        }
+
+        /// <summary>
+        /// Insentar los documentos
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public ErrorDTO Documentos_Insertar(int CodEmpresa, DocumentosArchivoDTO data)
+        {
+            ErrorDTO resp = new ErrorDTO();
+            try
+            {
+
+                using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
+                {
+                    string queryExist = $@"SELECT COUNT(*) FROM GA_Files WHERE Llave_01 = '{data.llave_01}' AND Llave_02 = '{data.llave_02}' AND Llave_03 = '{data.llave_03}'";
+                    int count = connection.QuerySingle<int>(queryExist);
+                    if (count > 0)
+                    {
+                        resp.Code = -1;
+                        resp.Description = "Ya existe un documento con la misma llave.";
+                        return resp;
+                    }
+
+
+                    string query = @"
+                INSERT INTO GA_Files (
+                    EmpresaId, ModuloId, TypeId, Llave_01, Llave_02, Llave_03, FileType, FileName, FileContent, Vencimiento, 
+                    FechaEmision, RegistroFecha, RegistroUsuario
+                ) VALUES (
+                    @EmpresaId, @ModuloId, @TypeId, @Llave_01, @Llave_02, @Llave_03, @FileType, @FileName, @FileContent, @Vencimiento, 
+                    @FechaEmision, @RegistroFecha, @RegistroUsuario
+                )";
+
+                    using (var command = new SqlCommand(query, connection))
+                    {
+
+                        command.Parameters.AddWithValue("@EmpresaId", data.empresaid);
+                        command.Parameters.AddWithValue("@ModuloId", data.moduloid);
+                        command.Parameters.AddWithValue("@TypeId", data.typeid);
+                        command.Parameters.AddWithValue("@Llave_01", data.llave_01);
+                        command.Parameters.AddWithValue("@Llave_02", data.llave_02);
+                        command.Parameters.AddWithValue("@Llave_03", data.llave_03);
+                        command.Parameters.AddWithValue("@FileType", data.filetype);
+                        command.Parameters.AddWithValue("@FileName", data.filename);
+                        command.Parameters.AddWithValue("@FileContent", (object)data.filecontent ?? DBNull.Value); // Maneja datos binarios correctamente
+                        command.Parameters.AddWithValue("@Vencimiento", DateTime.Parse(data.vencimiento));
+                        command.Parameters.AddWithValue("@FechaEmision", DateTime.Parse(data.fechaemision));
+                        command.Parameters.AddWithValue("@RegistroFecha", DateTime.Parse(data.registrofecha));
+                        command.Parameters.AddWithValue("@RegistroUsuario", data.registrousuario);
+
+                        connection.Open();
+                        command.ExecuteNonQuery(); // Usa ExecuteNonQuery para comandos INSERT
+                    }
+                }
+
+                resp.Code = 0; // �xito
+                resp.Description = "Datos insertados correctamente.";
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
+        /// <summary>
+        /// Obtiene los documentos
+        /// </summary>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+        public List<DocumentosArchivoDTO> Documentos_Obtener(GaDocumento filtros)
+        {
+            List<DocumentosArchivoDTO> resp = new List<DocumentosArchivoDTO>();
+            try
+            {
+
+                List<DocumentosArchivoDTO> respGen = null!;
+
+                using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
+                {
+                    string where = " ";
+                    if (filtros.llave2 != null)
+                    {
+                        where += $"AND Llave_02 = '{filtros.llave2}'";
+                    }
+
+                    if (filtros.llave3 != null)
+                    {
+                        where += $"AND Llave_03 = '{filtros.llave3}'";
+                    }
+
+                    string query = $@"select * from GA_Files WHERE Llave_01 = '{filtros.llave1}'" + where;
+                    respGen = connection.Query<DocumentosArchivoDTO>(query).ToList();
+                    resp = respGen;
+
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+            }
+            return resp;
+        }
+
+        /// <summary>
+        /// Elimina los documentos
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="llave01"></param>
+        /// <param name="llave02"></param>
+        /// <param name="llave03"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDTO Documentos_Eliminar(int CodEmpresa, string llave01, string llave02, string llave03, string usuario)
+        {
+            ErrorDTO resp = new ErrorDTO();
+            try
+            {
+                var procedure = "[spGA_EliminarDocumentos]";
+
+                var parameters = new DynamicParameters();
+                parameters.Add("llave01", llave01, DbType.String);
+                parameters.Add("llave02", llave02.Trim(), DbType.String);
+                parameters.Add("llave03", llave03, DbType.String);
+                parameters.Add("usuario", usuario, DbType.String);
+
+
+                using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
+                {
+                    resp.Code = connection.Query<int>(procedure, parameters, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
+    }
+
+}

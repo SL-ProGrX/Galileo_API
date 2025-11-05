@@ -1,0 +1,149 @@
+﻿using Dapper;
+using Microsoft.Data.SqlClient;
+using PgxAPI.Models;
+using PgxAPI.Models.ERROR;
+using System.Data;
+
+namespace PgxAPI.DataBaseTier
+{
+    public class frmUS_FormulariosDB
+    {
+        private readonly IConfiguration _config;
+
+        public frmUS_FormulariosDB(IConfiguration config)
+        {
+            _config = config;
+        }
+
+        public List<FormularioModel> ObtenerFormulariosPorModulo(int moduloId)
+        {
+            List<FormularioModel> result = new List<FormularioModel>();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_Formularios_PorModulo_Obtener]";
+                    var values = new
+                    {
+                        ModuloId = moduloId,
+                    };
+                    result = connection.Query<FormularioModel>(procedure, values, commandType: CommandType.StoredProcedure)! as List<FormularioModel>;
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+            }
+            return result!;
+        }
+
+        private ErrorDTO Formulario_Insertar(FormularioDto request)
+        {
+            ErrorDTO resp = new ErrorDTO();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_Formulario_Insertar]";
+                    var values = new
+                    {
+                        ModuloId = request.ModuloId,
+                        Formulario = request.Nombre,
+                        Descripcion = request.Descripcion,
+                        Usuario = request.Usuario
+                    };
+
+                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+        public ErrorDTO Formulario_Eliminar(int modulo, string formulario)
+        {
+            ErrorDTO resp = new ErrorDTO();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_Formulario_Eliminar]";
+                    var values = new
+                    {
+                        ModuloId = modulo,
+                        Formulario = formulario
+                    };
+
+                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+        private ErrorDTO Formulario_Actualizar(FormularioDto request)
+        {
+            ErrorDTO resp = new ErrorDTO();
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                {
+                    var procedure = "[spPGX_Formulario_Editar]";
+                    var values = new
+                    {
+                        ModuloId = request.ModuloId,
+                        Formulario = request.Nombre,
+                        Descripcion = request.Descripcion,
+                        Usuario = request.Usuario
+                    };
+
+                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+        public ErrorDTO Formulario_Guardar(FormularioDto request)
+        {
+            ErrorDTO resp = new ErrorDTO();
+            resp.Code = 0;
+
+            using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+            {
+                //Valido si el formulario ya existe
+                var query = "SELECT COUNT(*) FROM [US_FORMULARIOS] WHERE Modulo = @ModuloId AND UPPER(Formulario) = @Formulario";
+                var values = new
+                {
+                    ModuloId = request.ModuloId,
+                    Formulario = request.Nombre.ToUpper()
+                };
+                var count = connection.Query<int>(query, values).FirstOrDefault();
+                if (count == 0)
+                {
+                    resp = Formulario_Insertar(request);
+                }
+                else
+                {
+                    resp = Formulario_Actualizar(request);
+                }
+            }
+            return resp;
+        }
+    }
+}
