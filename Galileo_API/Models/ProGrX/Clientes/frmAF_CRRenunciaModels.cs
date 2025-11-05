@@ -58,6 +58,7 @@
         public string Tipo_Apl { get; set; } = string.Empty;
         public byte Ajuste_Tasas { get; set; }
     }
+
     public class AfRenunciaLiqConsultaPatrimonio
     {
         public decimal Ahorro { get; set; }
@@ -130,35 +131,35 @@
     public class AfRenuncia
     {
         public long Cod_Renuncia { get; set; }
-        public string Cedula { get; set; }
-        public string Nombre { get; set; }
-        public string Estado { get; set; }              // "T","R","P","V"
-        public string EstadoActual { get; set; }        // "S","A","P","N"
-        public string Tipo { get; set; }                // "A" (Asociación) o "P" (Patronal)
+        public string? Cedula { get; set; }
+        public string? Nombre { get; set; }
+        public string? Estado { get; set; }              // "T","R","P","V"
+        public string? EstadoActual { get; set; }        // "S","A","P","N"
+        public string? Tipo { get; set; }                // "A" (Asociación) o "P" (Patronal)
         public DateTime? Vencimiento { get; set; }
         public int? Id_Causa { get; set; }
-        public string Causa_Desc { get; set; }
+        public string? Causa_Desc { get; set; }
         public int? Id_Promotor { get; set; }
-        public string Ejecutivo_Desc { get; set; }
+        public string? Ejecutivo_Desc { get; set; }
         public bool? Aplica_Reingreso { get; set; }
         public bool? Mortalidad { get; set; }
         public bool? Volver { get; set; }
         public bool? Aumenta_Puntos { get; set; }
-        public string Notas { get; set; }
+        public string? Notas { get; set; }
         public int? Id_Banco { get; set; }
-        public string? Registro_User {get; set;}
+        public string? Registro_User { get; set; }
         public string? Resuelto_User { get; set; }
         public DateTime Registro_Fecha { get; set; }
         public DateTime resuelto_Fecha { get; set; }
-        public string Banco_Desc { get; set; }
-        public string Tipo_Documento { get; set; }
-        public string Tipo_Documento_Desc { get; set; }
-        public string Cuenta { get; set; }
-        public string Cuenta_Desc { get; set; }
-        public string Boleta { get; set; }
+        public string? Banco_Desc { get; set; }
+        public string? Tipo_Documento { get; set; }
+        public string? Tipo_Documento_Desc { get; set; }
+        public string? Cuenta { get; set; }
+        public string? Cuenta_Desc { get; set; }
+        public string? Boleta { get; set; }
         public DateTime? Ac_Fecha { get; set; }
-
     }
+
     public class AfRenunciaRentaGlobal
     {
         public string Cedula { get; set; } = string.Empty;
@@ -228,25 +229,26 @@
         public int Id_Promotor { get; set; }
         public string PromotorX { get; set; } = string.Empty;
     }
+    
     public class AfRenunciaLiquidacion
     {
-        public int CodRenuncia { get; set; } 
-        public string Cedula { get; set; } = ""; 
+        public int CodRenuncia { get; set; }
+        public string Cedula { get; set; } = "";
         public int IdCausa { get; set; }
         public int IdPromotor { get; set; }
         public bool Mortalidad { get; set; }
-        public bool Reingreso { get; set; } 
+        public bool Reingreso { get; set; }
         public bool AltPlanilla { get; set; }
-        public bool Volver { get; set; } 
-        public bool AumentoPuntos { get; set; } 
-        public bool AporteObrero { get; set; } 
+        public bool Volver { get; set; }
+        public bool AumentoPuntos { get; set; }
+        public bool AporteObrero { get; set; }
         public bool AportePatronal { get; set; }
-        public bool Capitalizacion { get; set; } 
+        public bool Capitalizacion { get; set; }
         public bool AhorroExtraordinario { get; set; }
         public bool AceptaPatronal { get; set; }
         public string Tipo { get; set; } = "";
-        public string Usuario { get; set; } = ""; 
-        public string Notas { get; set; } = ""; 
+        public string Usuario { get; set; } = "";
+        public string Notas { get; set; } = "";
         public string Oficina { get; set; } = "";
         public string Documento { get; set; } = "";
         public int Banco { get; set; }

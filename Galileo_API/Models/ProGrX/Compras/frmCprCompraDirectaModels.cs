@@ -43,7 +43,6 @@
         public float descuento { get; set; }
         public float imp_ventas { get; set; }
         public float total { get; set; }
-
         public bool i_existe { get; set; }
         public bool i_completo { get; set; }
     }
@@ -56,17 +55,13 @@
         public string causa { get; set; } = string.Empty;
         public string? notas { get; set; }
         public int cod_proveedor { get; set; }
-
         public string forma_pago { get; set; } = string.Empty;
         public string tipo_pago { get; set; } = string.Empty;
-
         public string divisa { get; set; } = string.Empty;
-
         public float sub_total { get; set; }
         public float descuento { get; set; }
         public float imp_ventas { get; set; }
         public float total { get; set; }
-
         public List<CompraDirectaDetalle> lineas { get; set; } = new List<CompraDirectaDetalle>();
     }
 

@@ -1,19 +1,19 @@
 namespace PgxAPI.Models.CPR
 {
-    public class CprFacturasXMLFiltros
+    public class CprFacturasXmlFiltros
     {
         public int? pagina { get; set; }
         public int? paginacion { get; set; }
         public string? filtro { get; set; }
     }
 
-    public class CprFacturasXMLLista
+    public class CprFacturasXmlLista
     {
         public int total { get; set; }
-        public List<CprFacturasXML_DTO>? lista { get; set; } = new List<CprFacturasXML_DTO>();
+        public List<CprFacturasXmlDto>? lista { get; set; } = new List<CprFacturasXmlDto>();
     }
 
-    public class CprFacturasXML_DTO
+    public class CprFacturasXmlDto
     {
         public int id { get; set; }
         public string cod_uen { get; set; } = string.Empty;
@@ -27,14 +27,12 @@ namespace PgxAPI.Models.CPR
         public string estado { get; set; } = string.Empty;
         public string registro_usuario { get; set; } = string.Empty;
         public DateTime registro_fecha { get; set; }
-
         public string cod_proveedor { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-
-        public List<CprFacturasLineasXML_Data>? lineas { get; set; }
+        public List<CprFacturasLineasXmlData>? lineas { get; set; }
     }
 
-    public class CprFacturasLineasXML_Data
+    public class CprFacturasLineasXmlData
     {
         public int? numeroLinea { get; set; }
         public string? codigo { get; set; }
@@ -56,5 +54,4 @@ namespace PgxAPI.Models.CPR
         public string? COD_PRODUCTO { get; set; }
         public string? DESCRIPCION { get; set; }
     }
-
 }

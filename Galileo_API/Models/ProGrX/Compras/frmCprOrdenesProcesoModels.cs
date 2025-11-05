@@ -31,5 +31,4 @@
         public string funcion { get; set; } = string.Empty;
         public string cod_proveedor { get; set; } = string.Empty;
     }
-
 }

@@ -15,5 +15,4 @@
         public string reporte { get; set; } = string.Empty;
         public string reg_credito { get; set; } = string.Empty;
     }
-
 }

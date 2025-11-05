@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_CongelarFiltros
+    public class AFCongelarFiltros
     {
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
@@ -8,10 +8,9 @@
         public DateTime fecha_desde { get; set; }
         public DateTime fecha_hasta { get; set; }
         public bool chkTodasFechas { get; set; }
-
     }
 
-    public class TES_ListaCongelarDTO
+    public class TesListaCongelarDto
     {
         public int cod_congelar { get; set; } = 0;
         public string cedula { get; set; } = string.Empty;
@@ -20,18 +19,17 @@
         public string notas { get; set; } = string.Empty;
         public string causa { get; set; } = string.Empty;
         public DateTime? fecha_inicia { get; set; }
-
     }
 
-    public class AF_CongelarDTO
+    public class AFCongelarDto
     {
         public int cod_congelar { get; set; }
-        public string cedula { get; set; }
-        public string cod_causa { get; set; }
+        public string? cedula { get; set; }
+        public string? cod_causa { get; set; }
         public string? notas { get; set; }
         public DateTime? fecha_crea { get; set; }
         public string? usuario_crea { get; set; }
-        public string estado { get; set; }
+        public string? estado { get; set; }
         public DateTime? fecha_finaliza { get; set; }
         public int per_liquidacion { get; set; }
         public int per_cobro_fndsol { get; set; }
@@ -52,7 +50,7 @@
         public string? causadesc { get; set; }
     }
 
-    public class AF_CongelaListaData
+    public class AFCongelaListaData
     {
         public int cod_congelar { get; set; } = 0;
         public string estado { get; set; } = string.Empty;
@@ -60,7 +58,7 @@
         public string nombre { get; set; } = string.Empty;
     }
 
-    public class AF_CongelaCausaDTO
+    public class AFCongelaCausaDto
     {
         public string cod_causa { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

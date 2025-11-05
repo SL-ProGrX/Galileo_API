@@ -6,7 +6,6 @@
         public string? cedula { get; set; }
         public string? nombre { get; set; }
         public bool firma { get; set; }
-
         public int operacion { get; set; }
     }
 }

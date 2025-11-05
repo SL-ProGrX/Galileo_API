@@ -1,3 +1,0 @@
-namespace PgxAPI.Models.CPR
-{
-}

@@ -1,12 +1,12 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_DepartamentosLista
+    public class AfDepartamentosLista
     {
         public int total { get; set; } = 0;
-        public List<AF_DepartamentosDTO> lista { get; set; } = new List<AF_DepartamentosDTO>();
+        public List<AfDepartamentosDto> lista { get; set; } = new List<AfDepartamentosDto>();
     }
 
-    public class AF_DepartamentosDTO
+    public class AfDepartamentosDto
     {
         public string cod_departamento { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -16,13 +16,13 @@
         public string? registro_usuario { get; set; } = string.Empty;
     }
 
-    public class AF_SeccionesLista
+    public class AfSeccionesLista
     {
         public int total { get; set; } = 0;
-        public List<AF_SeccionesDTO> lista { get; set; } = new List<AF_SeccionesDTO>();
+        public List<AfSeccionesDto> lista { get; set; } = new List<AfSeccionesDto>();
     }
 
-    public class AF_SeccionesDTO
+    public class AfSeccionesDto
     {
         public string cod_departamento { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;

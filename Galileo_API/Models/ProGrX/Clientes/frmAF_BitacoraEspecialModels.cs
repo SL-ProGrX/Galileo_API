@@ -1,12 +1,12 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_BitacoraEspecialLista
+    public class AFBitacoraEspecialLista
     {
         public int total { get; set; }
-        public List<AF_BitacoraEspecialData> lista { get; set; }
+        public List<AFBitacoraEspecialData>? lista { get; set; }
     }
 
-    public class AF_BitacoraEspecialData
+    public class AFBitacoraEspecialData
     {
         public int id_bitacora { get; set; }
         public string? cedula { get; set; }
@@ -22,7 +22,7 @@
         public int? revisado { get; set; }
     }
 
-    public class AF_BitacoraEspecialFiltros
+    public class AFBitacoraEspecialFiltros
     {
         public bool? chkFechas { get; set; } = false;
         public DateTime fecha_inicio { get; set; }

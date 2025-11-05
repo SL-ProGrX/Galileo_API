@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class frmAF_LiquidacionWModels
+    public class FrmAfLiquidacionWModels
     {
         public class AfLiquidacionBancos
         {
@@ -57,7 +57,6 @@
             public int BancoId { get; set; }
             public short DivisaCheck { get; set; } = 0;
         }
-
     }   
 
     public class AfLiquidacionRenunciaSinLiquidar

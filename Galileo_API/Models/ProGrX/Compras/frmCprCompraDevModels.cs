@@ -33,7 +33,6 @@
         public string asiento_numero { get; set; } = string.Empty;
         public string anula_asiento_numero { get; set; } = string.Empty;
         public string proveedor { get; set; } = string.Empty;
-
     }
 
     public class FacturaDetalleDto
@@ -87,7 +86,6 @@
         public DateTime asiento_fecha { get; set; }
         public string proveedor { get; set; } = string.Empty;
         public string cargox { get; set; } = string.Empty;
-
     }
 
     public class DevolucionInsert

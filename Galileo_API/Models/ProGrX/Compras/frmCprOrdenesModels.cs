@@ -7,7 +7,7 @@
         public string? nota { get; set; }
     }
 
-    public class OrdenDTO
+    public class OrdenDto
     {
         public string Cod_Orden { get; set; } = string.Empty;
         public string Tipo_Orden { get; set; } = string.Empty;
@@ -41,9 +41,7 @@
         public string? terminos_condiciones { get; set; } = string.Empty;
         public string? multa { get; set; } = string.Empty;
         public string? cod_solicitud { get; set; } = string.Empty;
-
         public string? cod_unidad { get; set; } = string.Empty;
-
         public string? divisa { get; set; } = string.Empty;
     }
 
@@ -103,11 +101,10 @@
         public string? horario_recepcion { get; set; } = string.Empty;
         public string? terminos_condiciones { get; set; } = string.Empty;
         public string? multa { get; set; } = string.Empty;
-
         public List<OrdenLineas> lineas { get; set; } = new List<OrdenLineas>();
     }
 
-    public class Ordenes_UENSData
+    public class OrdenesUensData
     {
         public string cod_orden { get; set; } = string.Empty;
         public string cod_producto { get; set; } = string.Empty;
@@ -117,7 +114,6 @@
         public string? registro_usuario { get; set; } = string.Empty;
         public Nullable<DateTime> registro_fecha { get; set; }
     }
-
 
     public class CprHorarioLista
     {

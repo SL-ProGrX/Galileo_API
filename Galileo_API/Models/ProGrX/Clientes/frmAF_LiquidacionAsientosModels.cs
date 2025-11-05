@@ -8,29 +8,26 @@ namespace PgxAPI.Models.ProGrX.Clientes
         public bool chkTodos { get; set; } = false;
 
         [JsonPropertyName("accion")]
-        public string accion { get; set; }
+        public string? accion { get; set; }
 
         [JsonPropertyName("estado")]
-        public string estado { get; set; }
+        public string? estado { get; set; }
 
         [JsonPropertyName("tipoRenuncia")]
-        public string tipoRenuncia { get; set; }
+        public string? tipoRenuncia { get; set; }
 
         [JsonPropertyName("tipo")]
-        public string tipo { get; set; }
+        public string? tipo { get; set; }
 
         [JsonPropertyName("token")]
-        public string token { get; set; }
+        public string? token { get; set; }
 
         [JsonPropertyName("fechaInicio")]
         public DateTime? fechaInicio { get; set; }
 
         [JsonPropertyName("fechaFin")]
         public DateTime? fechaFin { get; set; }
-
-
         public bool chkFiltros { get; set; } = false;
-
         public int? id_banco { get; set; }
         public string? cod_oficina { get; set; }
         public string? usuario { get; set; }
@@ -51,19 +48,19 @@ namespace PgxAPI.Models.ProGrX.Clientes
     {
         public decimal valor { get; set; }
         public int consec { get; set; }
-        public string cedula { get; set; }
-        public string nombre { get; set; }
+        public string? cedula { get; set; }
+        public string? nombre { get; set; }
         public decimal tneto { get; set; }
         public int cod_banco { get; set; }
-        public string tdocumento { get; set; }
-        public string tipo { get; set; }
-        public string cuenta { get; set; }
+        public string? tdocumento { get; set; }
+        public string? tipo { get; set; }
+        public string? cuenta { get; set; }
         public DateTime fecliq { get; set; }
-        public string usuario { get; set; }
-        public string descripcion { get; set; }
+        public string? usuario { get; set; }
+        public string? descripcion { get; set; }
         public int duplicado { get; set; }
         public DateTime? tes_supervision_fecha { get; set; }
-        public string cod_divisa { get; set; }
+        public string? cod_divisa { get; set; }
         public string? id_token { get; set; }
     }
 }

@@ -7,7 +7,6 @@
         public string Proveedor { get; set; } = string.Empty;
         public string Cod_Orden { get; set; } = string.Empty;
         public string Cod_Compra { get; set; } = string.Empty;
-
     }
 
     public class CompraAnulacionDto
@@ -28,7 +27,6 @@
         public decimal Total { get; set; }
         public string Asiento_Estado { get; set; } = string.Empty;
         public DateTime Asiento_Fecha { get; set; }
-
     }
 
     public class CompraDetalleDto
@@ -70,12 +68,9 @@
         public string Causa { get; set; } = string.Empty;
         public string Proveedor { get; set; } = string.Empty;
         public string Nota { get; set; } = string.Empty;
-
         public DateTime Anula_Fecha { get; set; }
         public DateTime Anula_Fec_Afecta { get; set; }
         public string Genera_User { get; set; } = string.Empty;
-
-
     }
 
     public class CompraAnulacionDatosRequestDto
@@ -92,5 +87,4 @@
         public string Cod_Cuenta { get; set; } = string.Empty;
         public int Activo { get; set; }
     }
-
 }

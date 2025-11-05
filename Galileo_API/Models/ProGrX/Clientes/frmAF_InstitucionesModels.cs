@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Clientes
 {
-    public class AF_Institucion_EmpresasDTO
+    public class AfInstitucionEmpresasDto
     {
         public int cod_institucion { get; set; }
         public string desc_corta { get; set; } = string.Empty;
@@ -10,7 +10,7 @@
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class AF_Institucion_DepartamentosDTO
+    public class AfInstitucionDepartamentosDto
     {
         public int cod_institucion { get; set; }
         public string cod_departamento { get; set; } = string.Empty;
@@ -20,7 +20,7 @@
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class AF_Institucion_SeccionesDTO
+    public class AfInstitucionSeccionesDto
     {
         public int cod_institucion { get; set; }
         public string cod_departamento { get; set; } = string.Empty;
@@ -31,7 +31,7 @@
         public string registro_usuario { get; set; } = string.Empty;
     }
 
-    public class AF_Instituciones_CodigosDTO
+    public class AfInstitucionesCodigosDto
     {
         public int cod_institucion { get; set; }
         public string cod_deduccion { get; set; } = string.Empty;
@@ -39,7 +39,7 @@
         public bool activo { get; set; }
     }
 
-    public class AF_Instituciones_Codigos_LineasDTO
+    public class AfInstitucionesCodigosLineasDto
     {
         public string codigo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -47,7 +47,7 @@
         public bool asignado { get; set; }
     }
 
-    public class AF_Institucion_DTO
+    public class AfInstitucionDto
     {
         public int cod_institucion { get; set; }
         public string descripcion { get; set; } = string.Empty;
