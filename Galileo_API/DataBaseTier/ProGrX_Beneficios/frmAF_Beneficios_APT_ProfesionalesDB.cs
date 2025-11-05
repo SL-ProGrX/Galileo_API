@@ -21,10 +21,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<BeneAptProfesionalesDataLista> AfBeneAptPro_Obtener(int CodCliente, string filtros)
+        public ErrorDto<BeneAptProfesionalesDataLista> AfBeneAptPro_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<BeneAptProfesionalesDataLista>();
+            var response = new ErrorDto<BeneAptProfesionalesDataLista>();
 
             response.Result = new BeneAptProfesionalesDataLista();
 
@@ -93,11 +93,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="profesional"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneAptPro_Insertar(int CodCliente, BeneAptProfesionalesData profesional)
+        public ErrorDto AfBeneAptPro_Insertar(int CodCliente, BeneAptProfesionalesData profesional)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -152,12 +152,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="profesional"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneAptPro_Actualizar(int CodCliente, BeneAptProfesionalesData profesional)
+        public ErrorDto AfBeneAptPro_Actualizar(int CodCliente, BeneAptProfesionalesData profesional)
         {
 
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -192,11 +192,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="id_profesional"></param>
         /// <returns></returns>
-        public ErrorDTO AfBeneAptPro_Eliminar(int CodCliente, int id_profesional)
+        public ErrorDto AfBeneAptPro_Eliminar(int CodCliente, int id_profesional)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
 

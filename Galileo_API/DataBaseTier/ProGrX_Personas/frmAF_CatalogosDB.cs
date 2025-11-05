@@ -25,9 +25,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="tipoId">Tipo de catálogo</param>
         /// <param name="filtros">Filtros de búsqueda, orden y paginación</param>
         /// <returns></returns>
-        public ErrorDTO<CatalogoLista> AF_Catalogos_Obtener(int CodEmpresa, int tipoId, FiltrosLazyLoadData filtros)
+        public ErrorDto<CatalogoLista> AF_Catalogos_Obtener(int CodEmpresa, int tipoId, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<CatalogoLista>
+            var result = new ErrorDto<CatalogoLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -88,9 +88,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="catalogoId">Id del catálogo</param>
         /// <param name="tipoId">Tipo de catálogo</param>
         /// <returns></returns>
-        public ErrorDTO<CatalogoValidate> AF_Catalogos_Valida(int CodEmpresa, string catalogoId, int tipoId)
+        public ErrorDto<CatalogoValidate> AF_Catalogos_Valida(int CodEmpresa, string catalogoId, int tipoId)
         {
-            var result = new ErrorDTO<CatalogoValidate> { Code = 0, Description = "Ok" };
+            var result = new ErrorDto<CatalogoValidate> { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -128,9 +128,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="catalogo">Datos del catálogo</param>
         /// <returns></returns>
-        public ErrorDTO AF_Catalogos_Guardar(int CodEmpresa, string usuario, CatalogoData catalogo)
+        public ErrorDto AF_Catalogos_Guardar(int CodEmpresa, string usuario, CatalogoData catalogo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -163,9 +163,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="catalogo">Datos del catálogo a insertar</param>
         /// <returns></returns>
-        private ErrorDTO AF_Catalogos_Insertar(int CodEmpresa, string usuario, CatalogoData catalogo)
+        private ErrorDto AF_Catalogos_Insertar(int CodEmpresa, string usuario, CatalogoData catalogo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -206,9 +206,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="catalogo">Datos del catálogo a actualizar</param>
         /// <returns></returns>
-        private ErrorDTO AF_Catalogos_Actualizar(int CodEmpresa, string usuario, CatalogoData catalogo)
+        private ErrorDto AF_Catalogos_Actualizar(int CodEmpresa, string usuario, CatalogoData catalogo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -251,9 +251,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="lineaId">Id del catálogo a eliminar</param>
         /// <returns></returns>
-        public ErrorDTO AF_Catalogos_Eliminar(int CodEmpresa, string usuario, int lineaId)
+        public ErrorDto AF_Catalogos_Eliminar(int CodEmpresa, string usuario, int lineaId)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -283,9 +283,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Catalogos_Tipos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Catalogos_Tipos_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -319,9 +319,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda, orden y paginación</param>
         /// <returns></returns>
-        public ErrorDTO<List<CatalogoTipoData>> AF_Catalogos_Tipos_ObtenerTodos(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<CatalogoTipoData>> AF_Catalogos_Tipos_ObtenerTodos(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<CatalogoTipoData>>
+            var result = new ErrorDto<List<CatalogoTipoData>>
             {
                 Code = 0,
                 Description = "Ok",

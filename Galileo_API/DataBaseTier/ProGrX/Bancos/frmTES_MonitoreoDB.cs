@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TES_MonitoreoDTO>> TES_Monitoreo_Obtener(int CodEmpresa, DateTime fechaCorte)
+        public ErrorDto<List<TES_MonitoreoDTO>> TES_Monitoreo_Obtener(int CodEmpresa, DateTime fechaCorte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TES_MonitoreoDTO>>
+            var response = new ErrorDto<List<TES_MonitoreoDTO>>
             {
                 Code = 0,
                 Description = "",
@@ -67,10 +67,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Corte"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TES_MonitoreoDTO>> TES_Monitoreo_Documentos_Obtener(int CodEmpresa, string Corte)
+        public ErrorDto<List<TES_MonitoreoDTO>> TES_Monitoreo_Documentos_Obtener(int CodEmpresa, string Corte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TES_MonitoreoDTO>>
+            var response = new ErrorDto<List<TES_MonitoreoDTO>>
             {
                 Code = 0,
                 Description = "",

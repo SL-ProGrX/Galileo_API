@@ -64,10 +64,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO autorizaciones_Autorizar(int CodEmpresa, string Usuario, int Id_Solicitud)
+        public ErrorDto autorizaciones_Autorizar(int CodEmpresa, string Usuario, int Id_Solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -76,7 +76,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update PAT_AUTORIZACIONES SET ESTADO = 'A', APLICA_FECHA  = Getdate(), APLICA_USUARIO = 'Pedro'
                         where id_autorizacion = {Id_Solicitud}";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorización de operación " + Id_Solicitud + " procesada exitosamente";
+                    resp.Description = "Autorizaciï¿½n de operaciï¿½n " + Id_Solicitud + " procesada exitosamente";
                 }
             }
             catch (Exception ex)
@@ -87,10 +87,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO autorizaciones_Denegar(int CodEmpresa, string Usuario, int Id_Solicitud)
+        public ErrorDto autorizaciones_Denegar(int CodEmpresa, string Usuario, int Id_Solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -99,7 +99,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update PAT_AUTORIZACIONES SET ESTADO = 'D', APLICA_FECHA  = Getdate(), APLICA_USUARIO = 'Pedro'
                         where id_autorizacion = {Id_Solicitud}";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "La operación se ha denegado " + Id_Solicitud + " procesada exitosamente";
+                    resp.Description = "La operaciï¿½n se ha denegado " + Id_Solicitud + " procesada exitosamente";
                 }
             }
             catch (Exception ex)

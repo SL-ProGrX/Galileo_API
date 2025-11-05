@@ -32,9 +32,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="fechaFin"></param>
         /// <param name="codigoLinea"></param>
         /// <param name="cedula"></param>
-        public ErrorDTO<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,string? estado,string? tramite_estado_id,string fechaTipo,DateTime fechaInicio,DateTime fechaFin,string? codigoLinea,string? cedula)
+        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,string? estado,string? tramite_estado_id,string fechaTipo,DateTime fechaInicio,DateTime fechaFin,string? codigoLinea,string? cedula)
         {
-            var result = new ErrorDTO<MonitorAutoGestionLista>
+            var result = new ErrorDto<MonitorAutoGestionLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -185,9 +185,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="fechaFin"></param>
         /// <param name="codigoLinea"></param>
         /// <param name="cedula"></param>
-        public ErrorDTO<List<MonitorAutoGestionListaData>> Sys_Monitor_AutoGestion_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,string? estado,string? tramite_estado_id,string fechaTipo,DateTime fechaInicio,DateTime fechaFin,string? codigoLinea,string? cedula)
+        public ErrorDto<List<MonitorAutoGestionListaData>> Sys_Monitor_AutoGestion_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,string? estado,string? tramite_estado_id,string fechaTipo,DateTime fechaInicio,DateTime fechaFin,string? codigoLinea,string? cedula)
         {
-            var result = new ErrorDTO<List< MonitorAutoGestionListaData>>
+            var result = new ErrorDto<List< MonitorAutoGestionListaData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -295,9 +295,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_solicitud"></param>
-        public ErrorDTO<MonitorAutoGestionCasoDetalle> Sys_Monitor_AutoGestion_Caso_Obtener(int CodEmpresa,long cod_solicitud)
+        public ErrorDto<MonitorAutoGestionCasoDetalle> Sys_Monitor_AutoGestion_Caso_Obtener(int CodEmpresa,long cod_solicitud)
         {
-            var result = new ErrorDTO<MonitorAutoGestionCasoDetalle> { Code = 0, Description = "Ok" };
+            var result = new ErrorDto<MonitorAutoGestionCasoDetalle> { Code = 0, Description = "Ok" };
 
             try
             {
@@ -350,9 +350,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
-        public ErrorDTO<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa,DateTime fechaInicio,DateTime fechaFin)
         {
-            var result = new ErrorDTO<MonitorAutoGestionResumenLista>
+            var result = new ErrorDto<MonitorAutoGestionResumenLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -394,9 +394,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_solicitud"></param>
-        public ErrorDTO<MonitorAutoGestionAdjuntosLista> Sys_Monitor_AutoGestion_Adjuntos_Obtener(int CodEmpresa,long cod_solicitud)
+        public ErrorDto<MonitorAutoGestionAdjuntosLista> Sys_Monitor_AutoGestion_Adjuntos_Obtener(int CodEmpresa,long cod_solicitud)
         {
-            var result = new ErrorDTO<MonitorAutoGestionAdjuntosLista>
+            var result = new ErrorDto<MonitorAutoGestionAdjuntosLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -442,9 +442,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="archivo_id"></param>
-        public ErrorDTO<(byte[] buffer, string nombre, string tipo)> Sys_Monitor_AutoGestion_Adjunto_Descargar(int CodEmpresa,long archivo_id)
+        public ErrorDto<(byte[] buffer, string nombre, string tipo)> Sys_Monitor_AutoGestion_Adjunto_Descargar(int CodEmpresa,long archivo_id)
         {
-            var result = new ErrorDTO<(byte[], string, string)>
+            var result = new ErrorDto<(byte[], string, string)>
             {
                 Code = 0,
                 Description = "Ok",
@@ -556,9 +556,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
-        public ErrorDTO<MonitorAutoGestionResolucionResponse> Sys_Monitor_AutoGestion_Resolucion_Aplicar(int CodEmpresa,MonitorAutoGestionResolucionRequest dto)
+        public ErrorDto<MonitorAutoGestionResolucionResponse> Sys_Monitor_AutoGestion_Resolucion_Aplicar(int CodEmpresa,MonitorAutoGestionResolucionRequest dto)
         {
-            var result = new ErrorDTO<MonitorAutoGestionResolucionResponse>
+            var result = new ErrorDto<MonitorAutoGestionResolucionResponse>
             {
                 Code = 0,
                 Description = "Ok",
@@ -612,9 +612,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// Ejecuta mantenimiento de adjuntos (fix opcional).
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        public ErrorDTO Sys_Monitor_AutoGestion_Adjuntos_Fix(int CodEmpresa)
+        public ErrorDto Sys_Monitor_AutoGestion_Adjuntos_Fix(int CodEmpresa)
         {
-            var res = new ErrorDTO { Code = 0, Description = "Ok" };
+            var res = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);

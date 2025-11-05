@@ -22,10 +22,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfiConsultaMovIngresos>> ConsultaMovIngresos_Obtener(int CodCliente, string cedula)
+        public ErrorDto<List<AfiConsultaMovIngresos>> ConsultaMovIngresos_Obtener(int CodCliente, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiConsultaMovIngresos>>();
+            var response = new ErrorDto<List<AfiConsultaMovIngresos>>();
             try
             {
                 using (IDbConnection db = new SqlConnection(clienteConnString))
@@ -50,10 +50,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfiConsultaMovRenuncias>> ConsultaMovRenuncias_Obtener(int CodCliente, string cedula)
+        public ErrorDto<List<AfiConsultaMovRenuncias>> ConsultaMovRenuncias_Obtener(int CodCliente, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiConsultaMovRenuncias>>();
+            var response = new ErrorDto<List<AfiConsultaMovRenuncias>>();
             try
             {
                 using (IDbConnection db = new SqlConnection(clienteConnString))
@@ -78,10 +78,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfiConsultaMovLiquidaciones>> ConsultaMovLiquidaciones_Obtener(int CodCliente, string cedula)
+        public ErrorDto<List<AfiConsultaMovLiquidaciones>> ConsultaMovLiquidaciones_Obtener(int CodCliente, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiConsultaMovLiquidaciones>>();
+            var response = new ErrorDto<List<AfiConsultaMovLiquidaciones>>();
             try
             {
                 using (IDbConnection db = new SqlConnection(clienteConnString))
@@ -108,10 +108,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="idLiquidacion"></param>
         /// <returns></returns>
-        public ErrorDTO AF_MovLiquidaciones_Reversion(int CodEmpresa, string usuario, string idLiquidacion)
+        public ErrorDto AF_MovLiquidaciones_Reversion(int CodEmpresa, string usuario, string idLiquidacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Guardado correctamente"

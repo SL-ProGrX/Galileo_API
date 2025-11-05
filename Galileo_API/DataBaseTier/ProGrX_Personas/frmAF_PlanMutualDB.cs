@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_PlanMutualLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_PlanMutualLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -60,10 +60,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AfPlanPersonaslLista> AF_PlanMutualPersonas_Obtener(int CodEmpresa, string plan, string estado, FiltrosLazyLoadData filtro)
+        public ErrorDto<AfPlanPersonaslLista> AF_PlanMutualPersonas_Obtener(int CodEmpresa, string plan, string estado, FiltrosLazyLoadData filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<AfPlanPersonaslLista>
+            var result = new ErrorDto<AfPlanPersonaslLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -121,10 +121,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="estado"></param>
         /// <param name="total"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfPlanMutualPersonasData>> AF_PlanMutualPersonas_Exportar(int CodEmpresa, string plan, string estado, int total)
+        public ErrorDto<List<AfPlanMutualPersonasData>> AF_PlanMutualPersonas_Exportar(int CodEmpresa, string plan, string estado, int total)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<AfPlanMutualPersonasData>>
+            var result = new ErrorDto<List<AfPlanMutualPersonasData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -156,10 +156,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<AfPlanMutualLista> AF_PlanMutual_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
+        public ErrorDto<AfPlanMutualLista> AF_PlanMutual_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<AfPlanMutualLista>
+            var result = new ErrorDto<AfPlanMutualLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -227,10 +227,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="persona"></param>
         /// <returns></returns>
-        public ErrorDTO AF_PlanMutualPersona_Guardar(int CodEmpresa, string plan, string usuario, AfPlanMutualPersonasData persona)
+        public ErrorDto AF_PlanMutualPersona_Guardar(int CodEmpresa, string plan, string usuario, AfPlanMutualPersonasData persona)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -261,10 +261,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="plan"></param>
         /// <returns></returns>
-        public ErrorDTO AF_PlanMutual_Guardar(int CodEmpresa, string usuario, AfPlanMutualDTO plan)
+        public ErrorDto AF_PlanMutual_Guardar(int CodEmpresa, string usuario, AfPlanMutualDTO plan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -305,10 +305,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="plan"></param>
         /// <returns></returns>
-        public ErrorDTO AF_PlanMutual_Eliminar(int CodEmpresa, string usuario, string plan)
+        public ErrorDto AF_PlanMutual_Eliminar(int CodEmpresa, string usuario, string plan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -344,10 +344,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="plan"></param>
         /// <returns></returns>
-        public ErrorDTO AF_PlanMutual_Actualizar(int CodEmpresa, string usuario, string plan)
+        public ErrorDto AF_PlanMutual_Actualizar(int CodEmpresa, string usuario, string plan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

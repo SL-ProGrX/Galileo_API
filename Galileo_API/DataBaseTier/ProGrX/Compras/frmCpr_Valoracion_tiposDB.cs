@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<Cpr_Valora_EsquemaDTOList> EsquemaValoracion_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<Cpr_Valora_EsquemaDTOList> EsquemaValoracion_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<Cpr_Valora_EsquemaDTOList>();
+            var response = new ErrorDto<Cpr_Valora_EsquemaDTOList>();
             response.Result = new Cpr_Valora_EsquemaDTOList();
             response.Code = 0;
             try
@@ -55,10 +55,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<Cpr_Valora_ItemsDTOList> ValoracionItems_Obtener(int CodEmpresa, string val_id, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<Cpr_Valora_ItemsDTOList> ValoracionItems_Obtener(int CodEmpresa, string val_id, int? pagina, int? paginacion, string? filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<Cpr_Valora_ItemsDTOList>();
+            var response = new ErrorDto<Cpr_Valora_ItemsDTOList>();
             response.Result = new Cpr_Valora_ItemsDTOList();
             response.Code = 0;
             try
@@ -96,10 +96,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO EsquemaValoracion_Upsert(int CodEmpresa, string usuario, Cpr_Valora_EsquemaDTO request)
+        public ErrorDto EsquemaValoracion_Upsert(int CodEmpresa, string usuario, Cpr_Valora_EsquemaDTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -139,10 +139,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO EsquemaValoracion_Delete(int CodEmpresa, string val_id)
+        public ErrorDto EsquemaValoracion_Delete(int CodEmpresa, string val_id)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -166,10 +166,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO ValoracionItems_Upsert(int CodEmpresa, string usuario, string val_id, Cpr_Valora_ItemsDTO request)
+        public ErrorDto ValoracionItems_Upsert(int CodEmpresa, string usuario, string val_id, Cpr_Valora_ItemsDTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -212,10 +212,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO ValoracionItems_Delete(int CodEmpresa, string val_id, string val_item)
+        public ErrorDto ValoracionItems_Delete(int CodEmpresa, string val_id, string val_item)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };

@@ -25,15 +25,15 @@ namespace PgxAPI.DataBaseTier
             AppVersion = _config.GetSection("AppSettings").GetSection("AppVersion").Value.ToString();
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_BancosGestion_Obtener(int CodEmpresa, string usuario, string gestion)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_BancosGestion_Obtener(int CodEmpresa, string usuario, string gestion)
         {
             return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_Bancos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_Bancos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -52,10 +52,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO<string> TES_CuentaBanco(int CodEmpresa, int id_banco)
+        private ErrorDto<string> TES_CuentaBanco(int CodEmpresa, int id_banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<string>();
+            var response = new ErrorDto<string>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -76,10 +76,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO TES_ChequesBanco_Aplica(int CodEmpresa, int id_banco, int banco, string usuario ,List<ChequesBancoPuenteData> data)
+        public ErrorDto TES_ChequesBanco_Aplica(int CodEmpresa, int id_banco, int banco, string usuario ,List<ChequesBancoPuenteData> data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -140,10 +140,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<ChequesBancoPuenteData>> TES_ChequePuenteLista_Obtener(int CodEmpresa, int id_banco)
+        public ErrorDto<List<ChequesBancoPuenteData>> TES_ChequePuenteLista_Obtener(int CodEmpresa, int id_banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<ChequesBancoPuenteData>>
+            var response = new ErrorDto<List<ChequesBancoPuenteData>>
             {
                 Code = 0
             };

@@ -32,10 +32,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<Af_RemesasLiquidacionesLista> AF_RemesasLiquidaciones_Remesa_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
+        public ErrorDto<Af_RemesasLiquidacionesLista> AF_RemesasLiquidaciones_Remesa_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<Af_RemesasLiquidacionesLista>
+            var result = new ErrorDto<Af_RemesasLiquidacionesLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -97,10 +97,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDTO<Af_RemesaLiquidacionDTO> AF_RemesasLiquidaciones_Remesa_Obtener(int CodEmpresa, int remesa)
+        public ErrorDto<Af_RemesaLiquidacionDTO> AF_RemesasLiquidaciones_Remesa_Obtener(int CodEmpresa, int remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<Af_RemesaLiquidacionDTO>
+            var result = new ErrorDto<Af_RemesaLiquidacionDTO>
             {
                 Code = 0,
                 Description = "Ok",
@@ -131,10 +131,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDTO AF_RemesasLiquidaciones_Remesa_Guardar(int CodEmpresa, Af_RemesaLiquidacionDTO remesa)
+        public ErrorDto AF_RemesasLiquidaciones_Remesa_Guardar(int CodEmpresa, Af_RemesaLiquidacionDTO remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -248,10 +248,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDTO AF_RemesasLiquidaciones_Remesa_Eliminar(int CodEmpresa, string usuario, int cod_remesa, string estado)
+        public ErrorDto AF_RemesasLiquidaciones_Remesa_Eliminar(int CodEmpresa, string usuario, int cod_remesa, string estado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -313,10 +313,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Af_RemesaLiquidacionDTO>> AF_RemesasLiquidaciones_Carga_Obtener(int CodEmpresa)
+        public ErrorDto<List<Af_RemesaLiquidacionDTO>> AF_RemesasLiquidaciones_Carga_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<Af_RemesaLiquidacionDTO>>
+            var result = new ErrorDto<List<Af_RemesaLiquidacionDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -345,10 +345,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDTO<Af_RemesasLiquiCargaDatos> AF_RemesasLiqui_CargaOficinas_Obtener(int CodEmpresa, int remesa)
+        public ErrorDto<Af_RemesasLiquiCargaDatos> AF_RemesasLiqui_CargaOficinas_Obtener(int CodEmpresa, int remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<Af_RemesasLiquiCargaDatos>
+            var result = new ErrorDto<Af_RemesasLiquiCargaDatos>
             {
                 Code = 0,
                 Description = "Ok",
@@ -406,10 +406,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="remesa"></param>
         /// <param name="oficina"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Af_RemesasLiquiCargaLista>> AF_RemesasLiqui_CargaLista_Obtener(int CodEmpresa, int remesa, string oficina)
+        public ErrorDto<List<Af_RemesasLiquiCargaLista>> AF_RemesasLiqui_CargaLista_Obtener(int CodEmpresa, int remesa, string oficina)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<Af_RemesasLiquiCargaLista>>
+            var result = new ErrorDto<List<Af_RemesasLiquiCargaLista>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -480,10 +480,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO AF_RemesasLiquidaciones_Carga_Cargar(int CodEmpresa, int remesa, string usuario, List<Af_RemesasLiquiCargaLista> datos)
+        public ErrorDto AF_RemesasLiquidaciones_Carga_Cargar(int CodEmpresa, int remesa, string usuario, List<Af_RemesasLiquiCargaLista> datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -551,10 +551,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO AF_RemesasLiquidaciones_Carga_Cerrar(int CodEmpresa, int remesa, string usuario)
+        public ErrorDto AF_RemesasLiquidaciones_Carga_Cerrar(int CodEmpresa, int remesa, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -619,10 +619,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="top"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Af_RemesaLiquidacionDTO>> AF_RemesasLiquidaciones_Reporte_Obtener(int CodEmpresa, DateTime fechaInicio, DateTime fechaCorte, int top)
+        public ErrorDto<List<Af_RemesaLiquidacionDTO>> AF_RemesasLiquidaciones_Reporte_Obtener(int CodEmpresa, DateTime fechaInicio, DateTime fechaCorte, int top)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<Af_RemesaLiquidacionDTO>>
+            var result = new ErrorDto<List<Af_RemesaLiquidacionDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -655,10 +655,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDTO AF_RemesasLiquidaciones_Reporte_Aplicar(int CodEmpresa,string usuario, int remesa)
+        public ErrorDto AF_RemesasLiquidaciones_Reporte_Aplicar(int CodEmpresa,string usuario, int remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -716,10 +716,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="consec"></param>
         /// <returns></returns>
-        public ErrorDTO<string> AF_RemesasLiquidaciones_Consultas_Obtener(int CodEmpresa, string consec)
+        public ErrorDto<string> AF_RemesasLiquidaciones_Consultas_Obtener(int CodEmpresa, string consec)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -778,9 +778,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        private ErrorDTO<int> Derecho(int CodEmpresa,string usuario, string formName, string boton)
+        private ErrorDto<int> Derecho(int CodEmpresa,string usuario, string formName, string boton)
         {
-            var result = new ErrorDTO<int>
+            var result = new ErrorDto<int>
             {
                 Code = 0,
                 Description = "Ok",
@@ -803,10 +803,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        private ErrorDTO<bool> sbRequiereAutorizacion(int CodEmpresa)
+        private ErrorDto<bool> sbRequiereAutorizacion(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<bool>
+            var result = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "Ok",

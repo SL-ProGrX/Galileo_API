@@ -16,10 +16,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<TranESData> InvTranES_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
+        public ErrorDto<TranESData> InvTranES_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TranESData>
+            var response = new ErrorDto<TranESData>
             {
                 Code = 0
             };
@@ -62,10 +62,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<InvProducLineas>> InvProducLineas_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
+        public ErrorDto<List<InvProducLineas>> InvProducLineas_Obtener(int CodEmpresa, string CodBoleta, string TipoTran)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<InvProducLineas>>
+            var response = new ErrorDto<List<InvProducLineas>>
             {
                 Code = 0
             };
@@ -96,10 +96,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<TranESData> InvTranES_scroll(int CodEmpresa, int scrollValue, string? CodBoleta, string TipoTran)
+        public ErrorDto<TranESData> InvTranES_scroll(int CodEmpresa, int scrollValue, string? CodBoleta, string TipoTran)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TranESData>
+            var response = new ErrorDto<TranESData>
             {
                 Code = 0
             };
@@ -131,10 +131,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO InvTranES_Insertar(int CodEmpresa, string TipoTran, TranESData request)
+        public ErrorDto InvTranES_Insertar(int CodEmpresa, string TipoTran, TranESData request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -176,11 +176,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO InvTranES_Actualizar(int CodEmpresa, TranESUpdate request)
+        public ErrorDto InvTranES_Actualizar(int CodEmpresa, TranESUpdate request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -214,10 +214,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO InvTranES_Eliminar(int CodEmpresa, string CodBoleta, string TipoTran)
+        public ErrorDto InvTranES_Eliminar(int CodEmpresa, string CodBoleta, string TipoTran)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -246,10 +246,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO InvProducLineas_Insertar(int CodEmpresa, string CodBoleta, string TipoTran, List<InvProducLineasInsert> producLineas)
+        public ErrorDto InvProducLineas_Insertar(int CodEmpresa, string CodBoleta, string TipoTran, List<InvProducLineasInsert> producLineas)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO errorDTO = new()
+            ErrorDto errorDTO = new()
             {
                 Code = 0
             };
@@ -285,7 +285,7 @@ namespace PgxAPI.DataBaseTier
                             connection.Execute(query);
                         }
 
-                        errorDTO.Description = "Información guardada correctamente";
+                        errorDTO.Description = "Informaciï¿½n guardada correctamente";
                     }
                 }
             }
@@ -297,10 +297,10 @@ namespace PgxAPI.DataBaseTier
             return errorDTO;
         }
 
-        public ErrorDTO<List<InvTranPlantilla>> InvTranPlantilla_Obtener(int CodEmpresa, string TipoTran, string? CodBoleta, string? GeneraUser, string? GeneraFecha)
+        public ErrorDto<List<InvTranPlantilla>> InvTranPlantilla_Obtener(int CodEmpresa, string TipoTran, string? CodBoleta, string? GeneraUser, string? GeneraFecha)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<InvTranPlantilla>>
+            var response = new ErrorDto<List<InvTranPlantilla>>
             {
                 Code = 0
             };
@@ -337,10 +337,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO InvProducLineas_Eliminar(int CodEmpresa, string CodBoleta, string TipoTran, int Linea)
+        public ErrorDto InvProducLineas_Eliminar(int CodEmpresa, string CodBoleta, string TipoTran, int Linea)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };

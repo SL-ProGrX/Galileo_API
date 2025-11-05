@@ -28,11 +28,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<AutorizadorDataLista> Autorizadores_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<AutorizadorDataLista> Autorizadores_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<AutorizadorDataLista>
+            var response = new ErrorDto<AutorizadorDataLista>
             {
                 Result = new AutorizadorDataLista()
             };
@@ -84,10 +84,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AutorizadorDTO>> Autorizador_ObtenerTodos(int CodEmpresa)
+        public ErrorDto<List<AutorizadorDTO>> Autorizador_ObtenerTodos(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AutorizadorDTO>>();
+            var response = new ErrorDto<List<AutorizadorDTO>>();
 
             try
             {
@@ -112,10 +112,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AutorizadorDTO>> Autorizador_Obtener(int CodEmpresa)
+        public ErrorDto<List<AutorizadorDTO>> Autorizador_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AutorizadorDTO>>();
+            var response = new ErrorDto<List<AutorizadorDTO>>();
 
             try
             {
@@ -144,11 +144,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Autorizador_Insertar(int CodEmpresa, AutorizadorDTO request)
+        public ErrorDto Autorizador_Insertar(int CodEmpresa, AutorizadorDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -179,10 +179,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Autorizador_Eliminar(int CodEmpresa, string usuario)
+        public ErrorDto Autorizador_Eliminar(int CodEmpresa, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
 
             try
             {
@@ -221,11 +221,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<UsuariosACargoDataLista> UsuariosACargoAut_Obtener(int CodCliente, string usuario, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<UsuariosACargoDataLista> UsuariosACargoAut_Obtener(int CodCliente, string usuario, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<UsuariosACargoDataLista>();
+            var response = new ErrorDto<UsuariosACargoDataLista>();
             response.Result = new UsuariosACargoDataLista();
             response.Result.Total = 0;
             try
@@ -312,11 +312,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO UsuarioACargo_Actualizar(int CodEmpresa, UsuarioaCargoDTO request)
+        public ErrorDto UsuarioACargo_Actualizar(int CodEmpresa, UsuarioaCargoDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -448,11 +448,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO CambioFechas_Insertar(int CodEmpresa, UsuarioaCambioFechaDTO request)
+        public ErrorDto CambioFechas_Insertar(int CodEmpresa, UsuarioaCambioFechaDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -482,11 +482,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO CambioFechas_Eliminar(int CodEmpresa, UsuarioaCambioFechaDTO request)
+        public ErrorDto CambioFechas_Eliminar(int CodEmpresa, UsuarioaCambioFechaDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

@@ -21,13 +21,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="filtroString"></param>
         /// <returns></returns>
-        public ErrorDTO<vBeneficios_IntegralDTOLista> BeneficiosMonitor_Obtener(int CodCliente, string filtroString)
+        public ErrorDto<vBeneficios_IntegralDTOLista> BeneficiosMonitor_Obtener(int CodCliente, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
             BeneficiosMonitor_Filtros filtros = JsonConvert.DeserializeObject<BeneficiosMonitor_Filtros>(filtroString) ?? new BeneficiosMonitor_Filtros();
 
-            var response = new ErrorDTO<vBeneficios_IntegralDTOLista>();
+            var response = new ErrorDto<vBeneficios_IntegralDTOLista>();
             response.Result = new vBeneficios_IntegralDTOLista();
 
             string paginaActual = " ", paginacionActual = " ";
@@ -176,10 +176,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<OpcionesLista>> InstitucionesLista_Obtener(int CodCliente)
+        public ErrorDto<List<OpcionesLista>> InstitucionesLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<OpcionesLista>>();
+            var response = new ErrorDto<List<OpcionesLista>>();
             try
             {
 
@@ -204,10 +204,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<OpcionesLista>> EstadosLista_Obtener(int CodCliente)
+        public ErrorDto<List<OpcionesLista>> EstadosLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<OpcionesLista>>();
+            var response = new ErrorDto<List<OpcionesLista>>();
             try
             {
 
@@ -232,10 +232,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<OpcionesLista>> OficinasLista_Obtener(int CodCliente)
+        public ErrorDto<List<OpcionesLista>> OficinasLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-           var response = new ErrorDTO<List<OpcionesLista>>();
+           var response = new ErrorDto<List<OpcionesLista>>();
             try
             {
 
@@ -260,10 +260,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<OpcionesLista>> BeneficiosLista_Obtener(int CodCliente)
+        public ErrorDto<List<OpcionesLista>> BeneficiosLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<OpcionesLista>>();
+            var response = new ErrorDto<List<OpcionesLista>>();
             try
             {
 

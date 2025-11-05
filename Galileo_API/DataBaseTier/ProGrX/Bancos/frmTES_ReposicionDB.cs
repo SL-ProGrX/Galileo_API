@@ -27,10 +27,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO<tesReposicionData> TES_Reposicion_Obtenet(int CodEmpresa, int solicitud)
+        public ErrorDto<tesReposicionData> TES_Reposicion_Obtenet(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<tesReposicionData>
+            var response = new ErrorDto<tesReposicionData>
             {
                 Code = 0,
                 Result = new tesReposicionData()
@@ -100,10 +100,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Reposicion_Guardar(int CodEmpresa, tesReposicionData data)
+        public ErrorDto TES_Reposicion_Guardar(int CodEmpresa, tesReposicionData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "OK"

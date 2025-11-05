@@ -24,11 +24,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="id_beneficio"></param>
         /// <returns></returns>
-        public ErrorDTO<AfiBeneReconocimientosDatos> BeneReconocimiento_Obtener(int CodCliente, int id_beneficio)
+        public ErrorDto<AfiBeneReconocimientosDatos> BeneReconocimiento_Obtener(int CodCliente, int id_beneficio)
         {
             
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<AfiBeneReconocimientosDatos>();
+            var response = new ErrorDto<AfiBeneReconocimientosDatos>();
             try
             {
                 using (IDbConnection db = new SqlConnection(clienteConnString))
@@ -53,10 +53,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="reconocimiento"></param>
         /// <returns></returns>
-        public ErrorDTO BeneReconocimiento_Guardar(int CodCliente, AfiBeneReconocimientos reconocimiento)
+        public ErrorDto BeneReconocimiento_Guardar(int CodCliente, AfiBeneReconocimientos reconocimiento)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO error = new ErrorDTO();
+            ErrorDto error = new ErrorDto();
             int existeReco = 0;
             try
             {
@@ -101,10 +101,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="reconocimiento"></param>
         /// <returns></returns>
-        public ErrorDTO BeneReconocimiento_Ingresar(int CodCliente, AfiBeneReconocimientos reconocimiento)
+        public ErrorDto BeneReconocimiento_Ingresar(int CodCliente, AfiBeneReconocimientos reconocimiento)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO error = new ErrorDTO();
+            ErrorDto error = new ErrorDto();
 
             string fecha_nacimiento = mAuxiliarDB.validaFechaGlobal(reconocimiento.fecha_nacimiento); 
 
@@ -201,10 +201,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="reconocimiento"></param>
         /// <returns></returns>
-        private ErrorDTO BeneReconocimiento_Actualizar(int CodCliente, AfiBeneReconocimientos reconocimiento)
+        private ErrorDto BeneReconocimiento_Actualizar(int CodCliente, AfiBeneReconocimientos reconocimiento)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO error = new ErrorDTO();
+            ErrorDto error = new ErrorDto();
 
 
             string fecha_nacimiento = mAuxiliarDB.validaFechaGlobal(reconocimiento.fecha_nacimiento);
@@ -270,10 +270,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="id_beneficio"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO BeneReconocimiento_Rechazar(int CodCliente, int id_beneficio, string usuario)
+        public ErrorDto BeneReconocimiento_Rechazar(int CodCliente, int id_beneficio, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             response.Code = 0;
             try
             {
@@ -302,10 +302,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cedula"></param>
         /// <param name="id_beneficio"></param>
         /// <returns></returns>
-        public ErrorDTO ValidaEstudiante_Obtener(int CodCliente, string cedula, string id_beneficio)
+        public ErrorDto ValidaEstudiante_Obtener(int CodCliente, string cedula, string id_beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             response.Code = 0;
             try
             {
@@ -345,10 +345,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO ValidaNotaMinima(int CodCliente)
+        public ErrorDto ValidaNotaMinima(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var  resp = new ErrorDTO();
+            var  resp = new ErrorDto();
             try
             {
                 string notaMinima = _config.GetSection("AFI_Beneficios").GetSection("NotaMinima").Value.ToString();
@@ -381,10 +381,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO ValidaNotaPasaMateria(int CodCliente)
+        public ErrorDto ValidaNotaPasaMateria(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO();
+            var resp = new ErrorDto();
             try
             {
                 string notaMinima = _config.GetSection("AFI_Beneficios").GetSection("NotaPasaAnho").Value.ToString();

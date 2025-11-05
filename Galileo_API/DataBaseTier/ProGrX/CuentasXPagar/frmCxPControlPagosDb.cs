@@ -14,10 +14,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<ControlPagosData>> CxPControlPagos_Obtener(int CodEmpresa, CxPControlPagosParametros pagosParametros)
+        public ErrorDto<List<ControlPagosData>> CxPControlPagos_Obtener(int CodEmpresa, CxPControlPagosParametros pagosParametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<ControlPagosData>>
+            var response = new ErrorDto<List<ControlPagosData>>
             {
                 Code = 0
             };
@@ -106,10 +106,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<ControlPagosResumenData>> CxPCOntrolPagos_Resumen(int CodEmpresa, CxPControlPagosParametros pagosParametros)
+        public ErrorDto<List<ControlPagosResumenData>> CxPCOntrolPagos_Resumen(int CodEmpresa, CxPControlPagosParametros pagosParametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<ControlPagosResumenData>>
+            var response = new ErrorDto<List<ControlPagosResumenData>>
             {
                 Code = 0
             };

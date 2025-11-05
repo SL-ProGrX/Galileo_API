@@ -17,11 +17,11 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO<List<ResolucionTransaccionDTO>> resolucionTransaccion_Obtener(int CodCliente, string filtroString)
+        public ErrorDto<List<ResolucionTransaccionDTO>> resolucionTransaccion_Obtener(int CodCliente, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ResolucionTransaccion_Filtros filtros = JsonConvert.DeserializeObject<ResolucionTransaccion_Filtros>(filtroString) ?? new ResolucionTransaccion_Filtros();
-            var response = new ErrorDTO<List<ResolucionTransaccionDTO>>();
+            var response = new ErrorDto<List<ResolucionTransaccionDTO>>();
             try
             {
                 string where = "";
@@ -109,10 +109,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO ResolucionTransaccion_Autorizar(int CodCliente, string tipo, string usuario ,List<ResolucionTransaccionDTO> lista)
+        public ErrorDto ResolucionTransaccion_Autorizar(int CodCliente, string tipo, string usuario ,List<ResolucionTransaccionDTO> lista)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
 
             try
             {
@@ -155,10 +155,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO ResolucionTransaccion_Rechazo(int CodCliente, string tipo, string usuario, List<ResolucionTransaccionDTO> lista)
+        public ErrorDto ResolucionTransaccion_Rechazo(int CodCliente, string tipo, string usuario, List<ResolucionTransaccionDTO> lista)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
 
             try
             {

@@ -33,9 +33,9 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        private ErrorDTO Modulo_Insertar(ModuloDTO request)
+        private ErrorDto Modulo_Insertar(ModuloDTO request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -63,9 +63,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Modulo_Eliminar(int request)
+        public ErrorDto Modulo_Eliminar(int request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -89,9 +89,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDTO Modulo_Actualizar(ModuloDTO request)
+        private ErrorDto Modulo_Actualizar(ModuloDTO request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -119,9 +119,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Modulo_Guardar(ModuloDTO request)
+        public ErrorDto Modulo_Guardar(ModuloDTO request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

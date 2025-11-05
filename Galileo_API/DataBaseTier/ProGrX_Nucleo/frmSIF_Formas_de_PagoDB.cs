@@ -22,10 +22,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codEmpresa"></param>
         /// <param name="codFormaPago"></param>
         /// <returns></returns>
-        public ErrorDTO<SifFormasPago> SIF_Formas_Pago_Obtener(int codEmpresa, string codFormaPago)
+        public ErrorDto<SifFormasPago> SIF_Formas_Pago_Obtener(int codEmpresa, string codFormaPago)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var result = new ErrorDTO<SifFormasPago>
+            var result = new ErrorDto<SifFormasPago>
             {
                 Code = 0,
                 Description = "Ok",
@@ -61,10 +61,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codFormaPagoActual"></param>
         /// <param name="orden"></param>
         /// <returns></returns>
-        public ErrorDTO<string> SIF_Formas_Pago_Obtener_SigAnt(int codEmpresa, string? codFormaPagoActual, string orden)
+        public ErrorDto<string> SIF_Formas_Pago_Obtener_SigAnt(int codEmpresa, string? codFormaPagoActual, string orden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -139,10 +139,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codEmpresa"></param>
         /// <param name="forma_pago"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_Formas_Pago_Guardar(int codEmpresa, SifFormasPago forma_pago)
+        public ErrorDto SIF_Formas_Pago_Guardar(int codEmpresa, SifFormasPago forma_pago)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -173,9 +173,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
             return result;
         }
 
-        private ErrorDTO SIF_Formas_Pago_Insertar(SqlConnection connection, int codEmpresa, SifFormasPago forma_pago)
+        private ErrorDto SIF_Formas_Pago_Insertar(SqlConnection connection, int codEmpresa, SifFormasPago forma_pago)
         {
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Forma de pago registrada correctamente."
@@ -222,9 +222,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
             return result;
         }
 
-        private ErrorDTO SIF_Formas_Pago_Actualizar(SqlConnection connection, int codEmpresa, SifFormasPago forma_pago)
+        private ErrorDto SIF_Formas_Pago_Actualizar(SqlConnection connection, int codEmpresa, SifFormasPago forma_pago)
         {
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Forma de pago actualizada correctamente."
@@ -288,10 +288,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SifFormasPagoList>> SIF_Formas_Pago_Obtener_Lista(int codEmpresa, string? filtro)
+        public ErrorDto<List<SifFormasPagoList>> SIF_Formas_Pago_Obtener_Lista(int codEmpresa, string? filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var result = new ErrorDTO<List<SifFormasPagoList>>()
+            var result = new ErrorDto<List<SifFormasPagoList>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -367,10 +367,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO CuentasBancarias_Asignar(int codEmpresa, SIF_FormasPagoBancoAsgDTO data)
+        public ErrorDto CuentasBancarias_Asignar(int codEmpresa, SIF_FormasPagoBancoAsgDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {

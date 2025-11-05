@@ -20,10 +20,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_DepartamentosInstituciones_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_DepartamentosInstituciones_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -55,10 +55,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="institucion"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_DepartamentosLista> AF_DepartamentosLista_Obtener(int CodEmpresa, int institucion ,FiltrosLazyLoadData filtros)
+        public ErrorDto<AF_DepartamentosLista> AF_DepartamentosLista_Obtener(int CodEmpresa, int institucion ,FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_DepartamentosLista>
+            var response = new ErrorDto<AF_DepartamentosLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -115,10 +115,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="departamento"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_SeccionesLista> AF_DepartamentosSecciones_Obtener(int CodEmpresa, int institucion, string departamento, FiltrosLazyLoadData filtros)
+        public ErrorDto<AF_SeccionesLista> AF_DepartamentosSecciones_Obtener(int CodEmpresa, int institucion, string departamento, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_SeccionesLista>
+            var response = new ErrorDto<AF_SeccionesLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -174,10 +174,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Departamentos_Guardar(int CodEmpresa, AF_DepartamentosDTO Info)
+        public ErrorDto AF_Departamentos_Guardar(int CodEmpresa, AF_DepartamentosDTO Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -253,10 +253,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDTO AF_DepartamentosSecciones_Guardar(int CodEmpresa, AF_SeccionesDTO Info)
+        public ErrorDto AF_DepartamentosSecciones_Guardar(int CodEmpresa, AF_SeccionesDTO Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -325,10 +325,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Institucion"></param>
         /// <param name="Departamento"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Departamentos_Borrar(int CodEmpresa, int Institucion, string Departamento)
+        public ErrorDto AF_Departamentos_Borrar(int CodEmpresa, int Institucion, string Departamento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -376,10 +376,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Departamento"></param>
         /// <param name="Seccion"></param>
         /// <returns></returns>
-        public ErrorDTO AF_DepartamentosSecciones_Borrar(int CodEmpresa, int Institucion, string Departamento, string Seccion)
+        public ErrorDto AF_DepartamentosSecciones_Borrar(int CodEmpresa, int Institucion, string Departamento, string Seccion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

@@ -22,10 +22,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CntxCData>> CntxContabilidades_Obtener(int CodEmpresa)
+        public ErrorDto<List<CntxCData>> CntxContabilidades_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<CntxCData>>
+            var resp = new ErrorDto<List<CntxCData>>
             {
                 Code = 0,
                 Result = new List<CntxCData>()
@@ -54,10 +54,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodContab"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CntxCData>> CntxCierres_Obtener(int CodEmpresa, int CodContab)
+        public ErrorDto<List<CntxCData>> CntxCierres_Obtener(int CodEmpresa, int CodContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<CntxCData>>
+            var resp = new ErrorDto<List<CntxCData>>
             {
                 Code = 0,
                 Result = new List<CntxCData>()
@@ -87,10 +87,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodModelo"></param>
         /// <param name="CodContab"></param>
         /// <returns></returns>
-        public ErrorDTO<PresModeloData> Pres_Modelo_Obtener(int CodEmpresa, string CodModelo, int CodContab)
+        public ErrorDto<PresModeloData> Pres_Modelo_Obtener(int CodEmpresa, string CodModelo, int CodContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<PresModeloData>
+            var resp = new ErrorDto<PresModeloData>
             {
                 Code = 0,
                 Result = new PresModeloData()
@@ -122,10 +122,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodModelo"></param>
         /// <param name="CodContab"></param>
         /// <returns></returns>
-        public ErrorDTO<PresModeloData> Pres_Modelo_scroll(int CodEmpresa, int scrollValue, string? CodModelo, int CodContab)
+        public ErrorDto<PresModeloData> Pres_Modelo_scroll(int CodEmpresa, int scrollValue, string? CodModelo, int CodContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<PresModeloData>
+            var resp = new ErrorDto<PresModeloData>
             {
                 Code = 0,
                 Result = new PresModeloData()
@@ -165,10 +165,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodContab"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PresModeloData>> Pres_Modelos_Lista(int CodEmpresa, int CodContab)
+        public ErrorDto<List<PresModeloData>> Pres_Modelos_Lista(int CodEmpresa, int CodContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PresModeloData>>
+            var resp = new ErrorDto<List<PresModeloData>>
             {
                 Code = 0,
                 Result = new List<PresModeloData>()
@@ -204,10 +204,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Pres_Modelo_Insertar(int CodEmpresa, PresModeloInsert request)
+        public ErrorDto Pres_Modelo_Insertar(int CodEmpresa, PresModeloInsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -240,11 +240,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodContab"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Pres_MapeaCuentasSinCentroCosto_SP(int CodEmpresa, string CodModelo, int CodContab, string Usuario)
+        public ErrorDto Pres_MapeaCuentasSinCentroCosto_SP(int CodEmpresa, string CodModelo, int CodContab, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -274,11 +274,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodModelo"></param>
         /// <returns></returns>
-        public ErrorDTO Pres_Model_Reiniciar(int CodEmpresa, string CodModelo)
+        public ErrorDto Pres_Model_Reiniciar(int CodEmpresa, string CodModelo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO
+            ErrorDto resp = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -312,10 +312,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodModelo"></param>
         /// <param name="CodContab"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PressModeloUsuarios>> Pres_Modelo_Usuarios_SP(int CodEmpresa, string CodModelo, int CodContab)
+        public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_Usuarios_SP(int CodEmpresa, string CodModelo, int CodContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PressModeloUsuarios>>
+            var resp = new ErrorDto<List<PressModeloUsuarios>>
             {
                 Code = 0,
                 Result = new List<PressModeloUsuarios>()
@@ -345,10 +345,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodModelo"></param>
         /// <param name="CodContab"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PressModeloAjustes>> Pres_Modelo_Ajustes_SP(int CodEmpresa, string CodModelo, int CodContab)
+        public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_Ajustes_SP(int CodEmpresa, string CodModelo, int CodContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PressModeloAjustes>>
+            var resp = new ErrorDto<List<PressModeloAjustes>>
             {
                 Code = 0,
                 Result = new List<PressModeloAjustes>()
@@ -378,10 +378,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodModelo"></param>
         /// <param name="CodContab"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PressModeloAjustes>> Pres_Modelo_Ajustes_Autorizados_SP(int CodEmpresa, string CodModelo, int CodContab)
+        public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_Ajustes_Autorizados_SP(int CodEmpresa, string CodModelo, int CodContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PressModeloAjustes>>
+            var resp = new ErrorDto<List<PressModeloAjustes>>
             {
                 Code = 0,
                 Result = new List<PressModeloAjustes>()
@@ -409,10 +409,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="CodModelo"></param>    
-        public ErrorDTO<List<PressModeloUsuarios>> Pres_Modelo_Usuarios_Autorizados_SP(int CodEmpresa, string CodModelo, int CodContab)
+        public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_Usuarios_Autorizados_SP(int CodEmpresa, string CodModelo, int CodContab)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PressModeloUsuarios>>
+            var resp = new ErrorDto<List<PressModeloUsuarios>>
             {
                 Code = 0,
                 Result = new List<PressModeloUsuarios>()
@@ -443,10 +443,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodContab"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PressModeloAjustes>> Pres_Modelo_AjUs_Ajustes_SP(int CodEmpresa, string CodModelo, int CodContab, string Usuario)
+        public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_AjUs_Ajustes_SP(int CodEmpresa, string CodModelo, int CodContab, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PressModeloAjustes>>
+            var resp = new ErrorDto<List<PressModeloAjustes>>
             {
                 Code = 0,
                 Result = new List<PressModeloAjustes>()
@@ -477,10 +477,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodContab"></param>
         /// <param name="CodAjuste"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PressModeloUsuarios>> Pres_Modelo_AjUs_Usuarios_SP(int CodEmpresa, string CodModelo, int CodContab, string CodAjuste)
+        public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_AjUs_Usuarios_SP(int CodEmpresa, string CodModelo, int CodContab, string CodAjuste)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<PressModeloUsuarios>>
+            var resp = new ErrorDto<List<PressModeloUsuarios>>
             {
                 Code = 0,
                 Result = new List<PressModeloUsuarios>()
@@ -509,10 +509,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Pres_Modelo_AjUs_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
+        public ErrorDto Pres_Modelo_AjUs_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };
@@ -553,10 +553,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Pres_Modelo_Ajustes_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
+        public ErrorDto Pres_Modelo_Ajustes_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };
@@ -597,10 +597,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Pres_Modelo_Usuarios_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
+        public ErrorDto Pres_Modelo_Usuarios_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };
@@ -641,10 +641,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodModelo"></param>
         /// <returns></returns>
-        public ErrorDTO Pres_Model_Eliminar(int CodEmpresa, string CodModelo)
+        public ErrorDto Pres_Model_Eliminar(int CodEmpresa, string CodModelo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };

@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier
             Notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value.ToString();
         }
 
-        public ErrorDTO<List<CprValoracionLista>> CprSolicitudProveedoresLista_Obtener(int CodEmpresa, int consulta, int cpr_id)
+        public ErrorDto<List<CprValoracionLista>> CprSolicitudProveedoresLista_Obtener(int CodEmpresa, int consulta, int cpr_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CprValoracionLista>>();
+            var response = new ErrorDto<List<CprValoracionLista>>();
 
             try
             {
@@ -51,10 +51,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO CprSolicitudProveedor_Invitar(int CodEmpresa, CprSolicitudProvDTO proveedor)
+        public ErrorDto CprSolicitudProveedor_Invitar(int CodEmpresa, CprSolicitudProvDTO proveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -105,10 +105,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDTO CprSolicitudProveedor_Eliminar(int CodEmpresa, int proveedor_codigo, int cpr_id)
+        public ErrorDto CprSolicitudProveedor_Eliminar(int CodEmpresa, int proveedor_codigo, int cpr_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new ErrorDTO();
+            ErrorDto error = new ErrorDto();
             error.Code = 0;
 
             try
@@ -128,10 +128,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDTO<List<CprSolicitudProvDTO>> CprSolicitudProvInvitados_Obtener(int CodEmpresa, int cpr_id)
+        public ErrorDto<List<CprSolicitudProvDTO>> CprSolicitudProvInvitados_Obtener(int CodEmpresa, int cpr_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CprSolicitudProvDTO>>();
+            var response = new ErrorDto<List<CprSolicitudProvDTO>>();
 
             try
             {
@@ -152,10 +152,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<CprSolicitudPrvBs>> CprSolicitudProvContizacionLista_Obtener(int CodEmpresa, int cpr_id, string cod_proveedor)
+        public ErrorDto<List<CprSolicitudPrvBs>> CprSolicitudProvContizacionLista_Obtener(int CodEmpresa, int cpr_id, string cod_proveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CprSolicitudPrvBs>>();
+            var response = new ErrorDto<List<CprSolicitudPrvBs>>();
 
             try
             {
@@ -175,10 +175,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<CprSolicitudProvValItemData>> CprSolicitudProvValItemData_Obtener(int CodEmpresa, string parametros)
+        public ErrorDto<List<CprSolicitudProvValItemData>> CprSolicitudProvValItemData_Obtener(int CodEmpresa, string parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CprSolicitudProvValItemData>>();
+            var response = new ErrorDto<List<CprSolicitudProvValItemData>>();
             var parametro = JsonConvert.DeserializeObject<CprParametrosVal_Busqueda >(parametros);
             try
             {
@@ -203,10 +203,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public async Task<ErrorDTO> CprSolicitudProvCotizacion_Enviar(int CodEmpresa, int cpr_id, string cod_proveedor)
+        public async Task<ErrorDto> CprSolicitudProvCotizacion_Enviar(int CodEmpresa, int cpr_id, string cod_proveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -254,7 +254,7 @@ namespace PgxAPI.DataBaseTier
         private async Task CorreoSolicitaCotizacion_Enviar(int CodEmpresa, CprProveedorDTO proveedor, List<CprSolicitudBsDTO> info, string recepcion)
         {
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
 
@@ -372,10 +372,10 @@ namespace PgxAPI.DataBaseTier
             }
         }
 
-        public ErrorDTO CprSolicitudValoracion_Guardar(int CodEmpresa, CprSolicitusValoracionGuardar datos)
+        public ErrorDto CprSolicitudValoracion_Guardar(int CodEmpresa, CprSolicitusValoracionGuardar datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO response = new() 
+            ErrorDto response = new() 
             { 
                 Code = 0,
                 Description = ""
@@ -447,10 +447,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO CprSolicitudProv_GastoMenor(int CodEmpresa)
+        public ErrorDto CprSolicitudProv_GastoMenor(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO response = new()
+            ErrorDto response = new()
             {
                 Code = 0,
                 Description = ""

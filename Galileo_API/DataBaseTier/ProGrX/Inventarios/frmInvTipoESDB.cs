@@ -22,11 +22,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TipoESList> TipoES_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<TipoESList> TipoES_Obtener(int CodEmpresa, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             TipoESFiltros filtro = JsonConvert.DeserializeObject<TipoESFiltros>(filtros);
-            var response = new ErrorDTO<TipoESList>
+            var response = new ErrorDto<TipoESList>
             {
                 Code = 0,
                 Result = new TipoESList()
@@ -78,12 +78,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TipoESDTO>> TipoES_Buscar(int CodEmpresa, string Tipo)
+        public ErrorDto<List<TipoESDTO>> TipoES_Buscar(int CodEmpresa, string Tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
 
-            var response = new ErrorDTO<List<TipoESDTO>>
+            var response = new ErrorDto<List<TipoESDTO>>
             {
                 Code = 0
             };
@@ -114,11 +114,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO TipoES_Actualizar(int CodEmpresa, TipoESDTO request)
+        public ErrorDto TipoES_Actualizar(int CodEmpresa, TipoESDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };
@@ -155,10 +155,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO TipoES_Insertar(int CodEmpresa, TipoESDTO request)
+        public ErrorDto TipoES_Insertar(int CodEmpresa, TipoESDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };
@@ -194,11 +194,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="codTiposES"></param>
         /// <returns></returns>
-        public ErrorDTO TipoES_Eliminar(int CodEmpresa, string codTiposES)
+        public ErrorDto TipoES_Eliminar(int CodEmpresa, string codTiposES)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };

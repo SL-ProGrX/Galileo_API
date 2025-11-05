@@ -22,9 +22,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_PadronEmpleadosInstituciones_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_PadronEmpleadosInstituciones_Obtener(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>> 
+            var response = new ErrorDto<List<DropDownListaGenericaModel>> 
             { 
                 Code = 0,
                 Description = "OK",
@@ -58,9 +58,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_PadronEmpleadosEstados_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_PadronEmpleadosEstados_Obtener(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "OK",
@@ -93,9 +93,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO AF_PadronEmpleados_Eliminar(int CodEmpresa, string cedula)
+        public ErrorDto AF_PadronEmpleados_Eliminar(int CodEmpresa, string cedula)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "OK"
@@ -123,9 +123,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> AF_PadronEmpleados_Obtener(int CodEmpresa, bool exporta ,AfPadronEmpleadosFiltro filtros, FiltrosLazyLoadData tblFiltros)
+        public ErrorDto<TablasListaGenericaModel> AF_PadronEmpleados_Obtener(int CodEmpresa, bool exporta ,AfPadronEmpleadosFiltro filtros, FiltrosLazyLoadData tblFiltros)
         {
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Description = "OK",

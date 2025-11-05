@@ -20,11 +20,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="Jfiltro"></param>
         /// <returns></returns>
-        public ErrorDTO<BeneConsultaDatosLista> BeneConsultasLista_Obtener(string Jfiltro)
+        public ErrorDto<BeneConsultaDatosLista> BeneConsultasLista_Obtener(string Jfiltro)
         {
             BeneConsultaFiltros filtro = JsonConvert.DeserializeObject<BeneConsultaFiltros>(Jfiltro);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(filtro.codCliente);
-            var response = new ErrorDTO<BeneConsultaDatosLista>();
+            var response = new ErrorDto<BeneConsultaDatosLista>();
             response.Result = new BeneConsultaDatosLista();
             try
             {
@@ -290,10 +290,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="categoria"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfBeneficioIntegralDropsLista>> BeneConsultaEstados_Obtener(int CodCliente, string categoria)
+        public ErrorDto<List<AfBeneficioIntegralDropsLista>> BeneConsultaEstados_Obtener(int CodCliente, string categoria)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfBeneficioIntegralDropsLista>>();
+            var response = new ErrorDto<List<AfBeneficioIntegralDropsLista>>();
             try
             {
 
@@ -336,10 +336,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        public ErrorDTO<BeneficioDTO> BeneficioIntegral_Obtener(int CodCliente, long beneficio)
+        public ErrorDto<BeneficioDTO> BeneficioIntegral_Obtener(int CodCliente, long beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<BeneficioDTO>();
+            var response = new ErrorDto<BeneficioDTO>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);

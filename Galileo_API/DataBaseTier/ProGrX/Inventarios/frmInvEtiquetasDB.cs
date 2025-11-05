@@ -14,10 +14,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<ProductData>> GenerateSato(int CodEmpresa, GenerateSatoRequest request)
+        public ErrorDto<List<ProductData>> GenerateSato(int CodEmpresa, GenerateSatoRequest request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<ProductData>>();
+            var response = new ErrorDto<List<ProductData>>();
             CodBarrasData barData = new();
             try
             {

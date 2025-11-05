@@ -250,9 +250,9 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO UsuarioClienteAsigna(UsuarioClienteAsigna req)
+        public ErrorDto UsuarioClienteAsigna(UsuarioClienteAsigna req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -278,9 +278,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO UsuarioRolAsigna(UsuarioRolAsignaDTO req)
+        public ErrorDto UsuarioRolAsigna(UsuarioRolAsignaDTO req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -297,9 +297,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Acceso_Equipo(EstacionAsignaDTO req)
+        public ErrorDto Acceso_Equipo(EstacionAsignaDTO req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -316,9 +316,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Limita_Equipo(Limita_Acceso req)
+        public ErrorDto Limita_Equipo(Limita_Acceso req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -337,9 +337,9 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO Acceso_Horario(HorarioAsignaDTO req)
+        public ErrorDto Acceso_Horario(HorarioAsignaDTO req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -356,9 +356,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Limita_Horario(Limita_Acceso req)
+        public ErrorDto Limita_Horario(Limita_Acceso req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

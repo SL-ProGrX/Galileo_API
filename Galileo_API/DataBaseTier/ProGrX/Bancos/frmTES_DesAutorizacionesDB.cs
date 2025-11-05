@@ -25,11 +25,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_SolicitudesLista> TES_DesAutorizaciones_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<TES_SolicitudesLista> TES_DesAutorizaciones_Obtener(int CodEmpresa, string filtros)
         {
             TES_DesAutorizacionesFiltros filtro = JsonConvert.DeserializeObject<TES_DesAutorizacionesFiltros>(filtros) ?? new TES_DesAutorizacionesFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_SolicitudesLista>
+            var response = new ErrorDto<TES_SolicitudesLista>
             {
                 Code = 0,
                 Description = "",
@@ -126,11 +126,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="tipo_autorizacion"></param>
         /// <param name="solicitudesLista"></param>
         /// <returns></returns>
-        public ErrorDTO TES_DesAutorizaciones_Aplicar(int CodEmpresa, string clave, string usuario, int tipo_autorizacion, string solicitudesLista)
+        public ErrorDto TES_DesAutorizaciones_Aplicar(int CodEmpresa, string clave, string usuario, int tipo_autorizacion, string solicitudesLista)
         {
             List<int> lista = JsonConvert.DeserializeObject<List<int>>(solicitudesLista) ?? new List<int>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };

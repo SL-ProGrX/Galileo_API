@@ -3,21 +3,22 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mTesoreria
+    public class MTesoreria
     {
         private readonly IConfiguration _config;
-        private string dirRDLC = "";
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly string dirRDLC;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly mProGrX_AuxiliarDB _mProGrX_AuxiliarDB;
 
-        public mTesoreria(IConfiguration config)
+        public MTesoreria(IConfiguration config)
         {
             _config = config;
-            dirRDLC = _config.GetSection("AppSettings").GetSection("RutaRDLC").Value.ToString();
-            _Security_MainDB = new mSecurityMainDb(config);
+            dirRDLC = _config.GetSection("AppSettings").GetSection("RutaRDLC").Value ?? string.Empty;
+            _Security_MainDB = new MSecurityMainDb(config);
             _mProGrX_AuxiliarDB = new mProGrX_AuxiliarDB(config);
         }
 
@@ -26,10 +27,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> tes_TiposDocumentos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> tes_TiposDocumentos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
             resp.Code = 0;
             resp.Result = new List<DropDownListaGenericaModel>();
             try
@@ -57,10 +58,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCbo(int CodEmpresa, string usuario, int banco, int contabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCbo(int CodEmpresa, string usuario, int banco, int contabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
             resp.Code = 0;
             resp.Result = new List<DropDownListaGenericaModel>();
             try
@@ -92,10 +93,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="banco"></param>
         /// <param name="contabilidad"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesConceptosCargaCbo(int CodEmpresa, string usuario, int banco)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesConceptosCargaCbo(int CodEmpresa, string usuario, int banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
             resp.Code = 0;
             resp.Result = new List<DropDownListaGenericaModel>();
             try
@@ -128,10 +129,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="vTipo"></param>
         /// <param name="vGestion"></param>
         /// <returns></returns>
-        public ErrorDTO<bool> fxTesTipoAccesoValida(int CodEmpresa, string vBanco, string vUsuario, string vTipo, string vGestion = "S")
+        public ErrorDto<bool> fxTesTipoAccesoValida(int CodEmpresa, string vBanco, string vUsuario, string vTipo, string vGestion = "S")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<bool>();
+            var resp = new ErrorDto<bool>();
             resp.Code = 0;
             resp.Result = false;
             try
@@ -193,10 +194,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="gestion"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
             resp.Code = 0;
             resp.Result = new List<DropDownListaGenericaModel>();
             try
@@ -226,10 +227,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="vTipo"></param>
         /// <param name="vCampo"></param>
         /// <returns></returns>
-        public ErrorDTO<string> fxTesBancoDocsValor(int CodEmpresa, int vBanco, string vTipo, string vCampo = "Comprobante")
+        public ErrorDto<string> fxTesBancoDocsValor(int CodEmpresa, int vBanco, string vTipo, string vCampo = "Comprobante")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<string>();
+            var resp = new ErrorDto<string>();
             resp.Code = 0;
             resp.Result = "";
             try
@@ -259,10 +260,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Banco"></param>
         /// <param name="Tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCboAcceso(int CodEmpresa, string Usuario, int Banco, string? Tipo = "S")
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCboAcceso(int CodEmpresa, string Usuario, int Banco, string? Tipo = "S")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -321,10 +322,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Banco"></param>
         /// <param name="Tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCboAccesoFirmas(int CodEmpresa, string Usuario, int Banco, string? Tipo = "S")
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCboAccesoFirmas(int CodEmpresa, string Usuario, int Banco, string? Tipo = "S")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -384,10 +385,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="avance"></param>
         /// <param name="plan"></param>
         /// <returns></returns>
-        public ErrorDTO<long> fxTesTipoDocConsec(int CodEmpresa, int id_banco, string tipo, string avance = "+", string plan = "-sp-")
+        public ErrorDto<long> fxTesTipoDocConsec(int CodEmpresa, int id_banco, string tipo, string avance = "+", string plan = "-sp-")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<long>();
+            var resp = new ErrorDto<long>();
             resp.Code = 0;
             resp.Result = 0;
             try
@@ -467,10 +468,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="avance"></param>
         /// <param name="plan"></param>
         /// <returns></returns>
-        public ErrorDTO<long> fxTesTipoDocConsecInterno(int CodEmpresa, int id_banco, string tipo, string avance = "+", string plan = "-sp-")
+        public ErrorDto<long> fxTesTipoDocConsecInterno(int CodEmpresa, int id_banco, string tipo, string avance = "+", string plan = "-sp-")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<long>();
+            var resp = new ErrorDto<long>();
             resp.Code = 0;
             resp.Result = 0;
 
@@ -544,10 +545,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<string> fxTesTipoDocExtraeDato(int CodEmpresa, int Banco, string TipoDoc, string Campo)
+        public ErrorDto<string> fxTesTipoDocExtraeDato(int CodEmpresa, int Banco, string TipoDoc, string Campo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<string>
+            var resp = new ErrorDto<string>
             {
                 Code = 0,
                 Description = ""
@@ -574,21 +575,20 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<TES_ArchivosEspecialesData> sbCargaArchivosEspeciales(int CodEmpresa, int banco)
+        public ErrorDto<TesArchivosEspecialesData> sbCargaArchivosEspeciales(int CodEmpresa, int banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_ArchivosEspecialesData>
+            var response = new ErrorDto<TesArchivosEspecialesData>
             {
                 Code = 0,
-                Result = new TES_ArchivosEspecialesData()
+                Result = new TesArchivosEspecialesData()
             };
-            var archivosData = new TES_Bancos_ArchivosData();
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "Select UTILIZA_FORMATO_ESPECIAL,ARCHIVO_CHEQUES_FIRMAS,ARCHIVO_CHEQUES_SIN_FIRMAS from TES_BANCOS where ID_BANCO = @banco";
-                    archivosData = connection.QueryFirstOrDefault<TES_Bancos_ArchivosData>(query, new { banco = banco });
+                    var archivosData = connection.QueryFirstOrDefault<TesBancosArchivosData>(query, new { banco = banco });
 
                     if (archivosData != null)
                     {
@@ -623,10 +623,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO sbTesBancosAfectacion(int CodEmpresa, int vSolicitud, string vTipo = "E")
+        public ErrorDto sbTesBancosAfectacion(int CodEmpresa, int vSolicitud, string vTipo = "E")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0,
                 Description = ""
@@ -650,10 +650,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGeneral(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGeneral(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -678,10 +678,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO sbTesBitacoraEspecial(int CodEmpresa, int pSolicitud, string pMovimiento, string pDetalle, string Usuario)
+        public ErrorDto sbTesBitacoraEspecial(int CodEmpresa, int pSolicitud, string pMovimiento, string pDetalle, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0,
                 Description = ""
@@ -712,9 +712,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTESCombos(string tipo)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTESCombos(string tipo)
         {
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -770,10 +770,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCboGeneral(int CodEmpresa, int contabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCboGeneral(int CodEmpresa, int contabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
             resp.Code = 0;
             resp.Result = new List<DropDownListaGenericaModel>();
             try
@@ -803,10 +803,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Banco"></param>
         /// <param name="Tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCbo(int CodEmpresa, int Banco)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCbo(int CodEmpresa, int Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -838,10 +838,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesConceptosCargaCboGeneral(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesConceptosCargaCboGeneral(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
             resp.Code = 0;
             resp.Result = new List<DropDownListaGenericaModel>();
             try
@@ -863,16 +863,15 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO sbTESActualizaCC(int CodEmpresa, string Codigo, string Tipo, string Documento,
+        public ErrorDto sbTESActualizaCC(int CodEmpresa, string Codigo, string Tipo, string Documento,
              int Banco, object OP, string Modulo, string SubModulo, int Referencia)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0,
                 Description = ""
             };
-            var query = "";
             try
             {
                 if (Modulo?.Trim() != "CC" || SubModulo?.Trim() != "C")
@@ -884,6 +883,7 @@ namespace PgxAPI.DataBaseTier
 
                 using var connection = new SqlConnection(stringConn);
                 {
+                    string? query;
                     if (Referencia > 0)
                     {
                         // TIENE REFERENCIA
@@ -935,10 +935,10 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO<bool> fxValidaEmpresaSinpe(int CodEmpresa)
+        public ErrorDto<bool> fxValidaEmpresaSinpe(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<bool>()
+            var result = new ErrorDto<bool>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -963,10 +963,10 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO<bool> fxTesBancoValida(int CodEmpresa, int vBanco, string vUsuario)
+        public ErrorDto<bool> fxTesBancoValida(int CodEmpresa, int vBanco, string vUsuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<bool>()
+            var result = new ErrorDto<bool>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -1007,10 +1007,10 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO<bool> fxTesConceptoValida(int CodEmpresa, int vBanco, string vUsuario, string vConcepto)
+        public ErrorDto<bool> fxTesConceptoValida(int CodEmpresa, int vBanco, string vUsuario, string vConcepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<bool>()
+            var result = new ErrorDto<bool>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -1052,10 +1052,10 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO<bool> fxTesUnidadValida(int CodEmpresa, int vBanco, string vUsuario, string vUnidad)
+        public ErrorDto<bool> fxTesUnidadValida(int CodEmpresa, int vBanco, string vUsuario, string vUnidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<bool>()
+            var result = new ErrorDto<bool>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -1097,10 +1097,10 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO<bool> fxTesDocumentoVerifica(int CodEmpresa, int vBanco, string vtipo, string vDocumento)
+        public ErrorDto<bool> fxTesDocumentoVerifica(int CodEmpresa, int vBanco, string vtipo, string vDocumento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<bool>()
+            var result = new ErrorDto<bool>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -1169,7 +1169,6 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
 
             string vResX = "";
             int vSec = 0;
-            int num = 0;
 
             // Procesar bloques de tres caracteres
             for (int i = 0; i < vRes.Length; i += 3)
@@ -1184,7 +1183,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                     sub = vRes.Substring(i, Math.Min(3, vRes.Length - i));
                 }
 
-                num = int.Parse(sub);
+                int num = int.Parse(sub);
 
                 switch (vSec)
                 {
@@ -1286,11 +1285,11 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             return result;
         }
 
-        public ErrorDTO sbTesEmitirDocumento(
+        public ErrorDto sbTesEmitirDocumento(
             int CodEmpresa, string vUsuario, int vModulo, int vSolicitud, string vDocumento = "", DateTime? vFecha = null)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = ""
@@ -1311,7 +1310,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                            INNER JOIN tes_tipos_doc X ON T.tipo = X.tipo
                            WHERE C.nsolicitud = @solicitud";
 
-                    var data = connection.QueryFirstOrDefault<tesTransaccionDTO>(query, new { solicitud = vSolicitud });
+                    var data = connection.QueryFirstOrDefault<TesTransaccionDto>(query, new { solicitud = vSolicitud });
 
                     if (data == null)
                     {
@@ -1355,7 +1354,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
 
                             sbTesBancosAfectacion(CodEmpresa, vSolicitud, "E");
 
-                            _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                            _Security_MainDB.Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodEmpresa,
                                 Usuario = vUsuario,
@@ -1423,10 +1422,10 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             return response;
         }
 
-        public ErrorDTO<bool> fxTesCuentaObligatoriaVerifica(int CodEmpresa, int vBanco)
+        public ErrorDto<bool> fxTesCuentaObligatoriaVerifica(int CodEmpresa, int vBanco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<bool>()
+            var result = new ErrorDto<bool>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -1500,18 +1499,18 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             return "";
         }
 
-        public ErrorDTO<tesReporteTransferenciaDTO> sbTesReporteTransferencia(int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-")
+        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<tesReporteTransferenciaDTO>()
+            var resp = new ErrorDto<TesReporteTransferenciaDto>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new tesReporteTransferenciaDTO()
+                Result = new TesReporteTransferenciaDto()
             };
             decimal curMonto = 0;
             long lngCasos = 0;
-            string strDivisa = "", strNum = "", vLetra = "";
+            string strDivisa = "", vLetra = "";
             try
             {
                 string query = "";
@@ -1524,7 +1523,6 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                     {
                         vLetra = "Sirva la Presente para saludarlo y a la vez solicitarle debitar de nuestra cuenta corriente" 
                             + " # " + banco.item + " la suma de ¢ ";
-                        string vBancoNom = banco.descripcion;
                     }
 
 
@@ -1568,28 +1566,27 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
-                resp.Result = new tesReporteTransferenciaDTO();
+                resp.Result = new TesReporteTransferenciaDto();
             }
             return resp;
         }
 
-        public ErrorDTO<string> fxDescDivisa(int CodEmpresa, string vDivisa)
+        public ErrorDto<string> fxDescDivisa(int CodEmpresa, string vDivisa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<string>()
+            var resp = new ErrorDto<string>()
             {
                 Code = 0,
                 Description = "Ok",
                 Result = ""
             };
-            string descripcion = "";
             try
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
                 {
                     query = $@"select top 1 descripcion from CNTX_DIVISAS where cod_divisa = @vDivisa";
-                    descripcion = connection.QueryFirstOrDefault<string>(query, new { vDivisa }) ?? "";
+                    string descripcion = connection.QueryFirstOrDefault<string>(query, new { vDivisa }) ?? "";
 
                     if (!string.IsNullOrEmpty(descripcion))
                     {
@@ -1640,9 +1637,9 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
         }
 
 
-        public ErrorDTO<List<TokenConsultaModel>> spTes_Token_Consulta(int CodEmpresa, string usuario)
+        public ErrorDto<List<TokenConsultaModel>> spTes_Token_Consulta(int CodEmpresa, string usuario)
         {
-            var response = new ErrorDTO<List<TokenConsultaModel>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<TokenConsultaModel>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -1661,10 +1658,10 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             return response;
         }
 
-        public ErrorDTO spTes_Token_New(int CodEmpresa, string usuario)
+        public ErrorDto spTes_Token_New(int CodEmpresa, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",

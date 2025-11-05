@@ -30,11 +30,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO<List<presVistaPresupuestoData>> PresPlanning_Obtener(int CodCliente, string datos)
+        public ErrorDto<List<presVistaPresupuestoData>> PresPlanning_Obtener(int CodCliente, string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             presVistaPresupuestoBuscar filtros = JsonConvert.DeserializeObject<presVistaPresupuestoBuscar>(datos);
-            var info = new ErrorDTO<List<presVistaPresupuestoData>>
+            var info = new ErrorDto<List<presVistaPresupuestoData>>
             {
                 Code = 0,
                 Description = "OK",
@@ -81,11 +81,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO<List<preVistaPresupuestoCuentaData>> PresPlanningCuenta_Obtener(int CodCliente, string datos)
+        public ErrorDto<List<preVistaPresupuestoCuentaData>> PresPlanningCuenta_Obtener(int CodCliente, string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             presVistaPresupuestoCuentaBuscar filtros = JsonConvert.DeserializeObject<presVistaPresupuestoCuentaBuscar>(datos);
-            var info = new ErrorDTO<List<preVistaPresupuestoCuentaData>>
+            var info = new ErrorDto<List<preVistaPresupuestoCuentaData>>
             { 
                 Code = 0,
                 Description = "OK",
@@ -132,11 +132,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO<List<presVistaPresCuentaRealHistoricoData>> PresPlanningCuentaReal_Obtener(int CodCliente, string datos)
+        public ErrorDto<List<presVistaPresCuentaRealHistoricoData>> PresPlanningCuentaReal_Obtener(int CodCliente, string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             presPresCuentaRealBuscar filtros = JsonConvert.DeserializeObject<presPresCuentaRealBuscar>(datos);
-            var info = new ErrorDTO<List<presVistaPresCuentaRealHistoricoData>>
+            var info = new ErrorDto<List<presVistaPresCuentaRealHistoricoData>>
             {
                 Code = 0,
                 Description = "OK",
@@ -178,10 +178,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO PresAjustes_Guardar(int CodCliente, presAjustesGuarda request)
+        public ErrorDto PresAjustes_Guardar(int CodCliente, presAjustesGuarda request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             presTiposAjustes tipoAjuste = new presTiposAjustes();
             resp.Code = 0;
             try
@@ -274,10 +274,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codContab"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<CntxCierres> Pres_Cierre_Obtener(int CodEmpresa, string codModelo, int codContab, string usuario)
+        public ErrorDto<CntxCierres> Pres_Cierre_Obtener(int CodEmpresa, string codModelo, int codContab, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO<CntxCierres> resp = new ErrorDTO<CntxCierres>();
+            ErrorDto<CntxCierres> resp = new ErrorDto<CntxCierres>();
 
             try
             {
@@ -306,11 +306,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consulta"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDTO<List<preVistaPresupuestoCuentaData>> Pres_Ajustes_Obtener(int CodCliente, int consulta ,string datos)
+        public ErrorDto<List<preVistaPresupuestoCuentaData>> Pres_Ajustes_Obtener(int CodCliente, int consulta ,string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             presVistaPresupuestoBuscar filtros = JsonConvert.DeserializeObject<presVistaPresupuestoBuscar>(datos);
-            var info = new ErrorDTO<List<preVistaPresupuestoCuentaData>>
+            var info = new ErrorDto<List<preVistaPresupuestoCuentaData>>
             {
                 Code = 0,
                 Description = "OK",
@@ -420,10 +420,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodContab"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<presModelisLista>> Pres_Modelos_Obtener(int CodEmpresa, int CodContab, string Usuario)
+        public ErrorDto<List<presModelisLista>> Pres_Modelos_Obtener(int CodEmpresa, int CodContab, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<presModelisLista>>
+            var resp = new ErrorDto<List<presModelisLista>>
             {
                 Code = 0,
                 Description = "OK",
@@ -465,10 +465,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codModelo"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ModeloGenericList>> Pres_Ajustes_Permitidos_Obtener(int CodEmpresa, int codContab, string codModelo, string Usuario)
+        public ErrorDto<List<ModeloGenericList>> Pres_Ajustes_Permitidos_Obtener(int CodEmpresa, int codContab, string codModelo, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<ModeloGenericList>>();
+            var resp = new ErrorDto<List<ModeloGenericList>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -486,10 +486,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
     
-        public ErrorDTO Pres_AjusteMasivo_Guardar(int CodEmpresa, int codContab, string codModelo, string usuario, DateTime periodo, List<presCargaMasivaModel> datos)
+        public ErrorDto Pres_AjusteMasivo_Guardar(int CodEmpresa, int codContab, string codModelo, string usuario, DateTime periodo, List<presCargaMasivaModel> datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO();
+            var resp = new ErrorDto();
             try
             {
                 int vMes = periodo.Month;
@@ -618,7 +618,7 @@ namespace PgxAPI.DataBaseTier
                                 guarda.ajuste_id = linea.movimiento;
                                 //Guardo el ajuste
 
-                                ErrorDTO saveResp = PresAjustes_Guardar(CodEmpresa, guarda);
+                                ErrorDto saveResp = PresAjustes_Guardar(CodEmpresa, guarda);
                                 if (saveResp.Code != 0)
                                 {
                                     if(saveResp.Description.Contains("Ajustes aplicados satisfactoriamente!")){

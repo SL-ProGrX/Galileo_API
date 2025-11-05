@@ -36,10 +36,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Cr_TraspasoTes_Remesas_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Cr_TraspasoTes_Remesas_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -68,7 +68,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TokenConsultaModel>> Cr_TraspasoTesToken_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<TokenConsultaModel>> Cr_TraspasoTesToken_Obtener(int CodEmpresa, string usuario)
         {
             return _mtes.spTes_Token_Consulta(CodEmpresa, usuario);
         }
@@ -79,15 +79,15 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Cr_TraspasoTesToken_Nuevo(int CodEmpresa, string usuario)
+        public ErrorDto Cr_TraspasoTesToken_Nuevo(int CodEmpresa, string usuario)
         {
             return _mtes.spTes_Token_New(CodEmpresa, usuario);
         }
 
-        public ErrorDTO<List<TraspasoModel>> Cr_TraspasoTesTraslado_Buscar(int CodEmpresa, int cod_remesa)
+        public ErrorDto<List<TraspasoModel>> Cr_TraspasoTesTraslado_Buscar(int CodEmpresa, int cod_remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TraspasoModel>>
+            var response = new ErrorDto<List<TraspasoModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -137,10 +137,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
             return response;
         }
 
-        public ErrorDTO CrTraspasoTes_Traslado_Generar(int CodEmpresa, int cod_remesa, string usuario ,string? token)
+        public ErrorDto CrTraspasoTes_Traslado_Generar(int CodEmpresa, int cod_remesa, string usuario ,string? token)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

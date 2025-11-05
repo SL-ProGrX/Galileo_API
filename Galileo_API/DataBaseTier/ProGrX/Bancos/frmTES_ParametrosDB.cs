@@ -17,7 +17,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> TES_Parametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TablasListaGenericaModel> TES_Parametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Result = new TablasListaGenericaModel()
@@ -83,10 +83,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Parametros_Guardar(int CodEmpresa, string Usuario, TES_ParametrosDTO param)
+        public ErrorDto TES_Parametros_Guardar(int CodEmpresa, string Usuario, TES_ParametrosDTO param)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO()
+            var response = new ErrorDto()
             {
                 Code = 0,
                 Description = ""

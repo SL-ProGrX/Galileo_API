@@ -20,11 +20,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<PresAjustestTiposLista> PresAjustestTipos_Obtener(int CodEmpresa)
+        public ErrorDto<PresAjustestTiposLista> PresAjustestTipos_Obtener(int CodEmpresa)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<PresAjustestTiposLista>();
+            var response = new ErrorDto<PresAjustestTiposLista>();
             response.Result = new PresAjustestTiposLista();
             response.Result.total = 0;
 
@@ -51,10 +51,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO PresAjustesTipo_Insertar(int CodEmpresa, PresAjustestTiposDTO request)
+        public ErrorDto PresAjustesTipo_Insertar(int CodEmpresa, PresAjustestTiposDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -107,11 +107,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO PresAjustesTipo_Actualizar(int CodEmpresa, PresAjustestTiposDTO request)
+        public ErrorDto PresAjustesTipo_Actualizar(int CodEmpresa, PresAjustestTiposDTO request)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -147,11 +147,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodAjuste"></param>
         /// <returns></returns>
-        public ErrorDTO PresAjustesTipo_Eliminar(int CodEmpresa, string CodAjuste)
+        public ErrorDto PresAjustesTipo_Eliminar(int CodEmpresa, string CodAjuste)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

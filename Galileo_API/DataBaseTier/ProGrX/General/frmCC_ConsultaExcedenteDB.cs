@@ -19,15 +19,15 @@ namespace PgxAPI.DataBaseTier
             mProGrx_Main = new mProGrx_Main(_config);
         }
 
-        //public ErrorDTO ValidaAccesoExpediente(string Cedula, string Usuario)
+        //public ErrorDto ValidaAccesoExpediente(string Cedula, string Usuario)
         //{
         //    List<ConsultaStatusResultDTO> RA_Consulta = new List<ConsultaStatusResultDTO>();
-        //    ErrorDTO resp = new ErrorDTO();
+        //    ErrorDto resp = new ErrorDto();
         //    RA_Consulta = mProGrx_Main.DatosObtener(Cedula, Usuario);
         //    if (RA_Consulta[0].PERSONA_ID > 0 && RA_Consulta[0].AUTORIZACION_ID == 0)
         //    {
         //        resp.Code = 0;
-        //        resp.Description = "Esta persona se encuentra con -> Expediente Restringido <- Requiere de Autorización para Consultar!";
+        //        resp.Description = "Esta persona se encuentra con -> Expediente Restringido <- Requiere de Autorizaciï¿½n para Consultar!";
         //    }
         //    else
         //    {
@@ -76,10 +76,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_ValidaCedula_Obtener(int CodEmpresa, string Cedula, string Usuario)
+        public ErrorDto CC_ValidaCedula_Obtener(int CodEmpresa, string Cedula, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             ConsultaStatusResultDTO ra_consulta = new ConsultaStatusResultDTO();
 
             try
@@ -99,7 +99,7 @@ namespace PgxAPI.DataBaseTier
                     if (ra_consulta.PERSONA_ID > 0 && ra_consulta.AUTORIZACION_ID == 0)
                     {
                         resp.Code = 0;
-                        resp.Description = "Esta persona se encuentra con -> Expediente Restringido <- Requiere de Autorización para Consultar!";
+                        resp.Description = "Esta persona se encuentra con -> Expediente Restringido <- Requiere de Autorizaciï¿½n para Consultar!";
                         return resp;
                     }
 
@@ -110,7 +110,7 @@ namespace PgxAPI.DataBaseTier
                     if (string.IsNullOrEmpty(resp.Description))
                     {
                         resp.Code = 0;
-                        resp.Description = "No se encontró registro de la persona...";
+                        resp.Description = "No se encontrï¿½ registro de la persona...";
                     }
                     else
                     {

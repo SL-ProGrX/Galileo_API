@@ -16,12 +16,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<TiposOrdenLista> ObtenerTiposOrdenes(int CodEmpresa, string jFiltros)
+        public ErrorDto<TiposOrdenLista> ObtenerTiposOrdenes(int CodEmpresa, string jFiltros)
         {
             TipoOrdenFiltro filtro = JsonConvert.DeserializeObject<TipoOrdenFiltro>(jFiltros) ?? new TipoOrdenFiltro(); ;
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<TiposOrdenLista>
+            var response = new ErrorDto<TiposOrdenLista>
             {
                 Result = new TiposOrdenLista()
             };
@@ -65,10 +65,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO TipoOrden_Actualizar(int CodEmpresa, TiposOrdenDTO tiposOrden)
+        public ErrorDto TipoOrden_Actualizar(int CodEmpresa, TiposOrdenDTO tiposOrden)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             result.Code = 0;
             int activo = 0;
             try
@@ -94,11 +94,11 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO TipoOrden_Eliminar(int CodEmpresa, string tiposOrden)
+        public ErrorDto TipoOrden_Eliminar(int CodEmpresa, string tiposOrden)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             result.Code = 0;
             try
             {
@@ -117,10 +117,10 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO TipoOrden_Insertar(int CodEmpresa, TiposOrdenDTO tiposOrden)
+        public ErrorDto TipoOrden_Insertar(int CodEmpresa, TiposOrdenDTO tiposOrden)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO errorDTO = new ErrorDTO();
+            ErrorDto errorDTO = new ErrorDto();
             errorDTO.Code = 0;
             int activo = 0;
             try
@@ -168,10 +168,10 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO<List<RangosMontos>> rangosMontos_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<RangosMontos>> rangosMontos_Obtener(int CodEmpresa, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<RangosMontos>>();
+            var response = new ErrorDto<List<RangosMontos>>();
 
             try
             {

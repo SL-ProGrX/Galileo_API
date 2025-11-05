@@ -85,9 +85,9 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO EstacionRegistrar(EstacionGuardarDto estacionDto)
+        public ErrorDto EstacionRegistrar(EstacionGuardarDto estacionDto)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -146,9 +146,9 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO EstacionVincular(EstacionVinculaDto estacionDto)
+        public ErrorDto EstacionVincular(EstacionVinculaDto estacionDto)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -174,9 +174,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO EstacionEliminar(EstacionEliminarDto estacionDto)
+        public ErrorDto EstacionEliminar(EstacionEliminarDto estacionDto)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

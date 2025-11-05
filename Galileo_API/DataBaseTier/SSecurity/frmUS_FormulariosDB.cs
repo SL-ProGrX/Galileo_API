@@ -37,9 +37,9 @@ namespace PgxAPI.DataBaseTier
             return result!;
         }
 
-        private ErrorDTO Formulario_Insertar(FormularioDto request)
+        private ErrorDto Formulario_Insertar(FormularioDto request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -65,9 +65,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Formulario_Eliminar(int modulo, string formulario)
+        public ErrorDto Formulario_Eliminar(int modulo, string formulario)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -91,9 +91,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDTO Formulario_Actualizar(FormularioDto request)
+        private ErrorDto Formulario_Actualizar(FormularioDto request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -119,9 +119,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Formulario_Guardar(FormularioDto request)
+        public ErrorDto Formulario_Guardar(FormularioDto request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

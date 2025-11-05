@@ -33,7 +33,7 @@ namespace PgxAPI.DataBaseTier
             Notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value.ToString();
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -44,11 +44,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodOrden"></param>
         /// <returns></returns>
-        public ErrorDTO<OrdenCompraSinFacturaData> Orden_Obtener(int CodEmpresa, string CodOrden)
+        public ErrorDto<OrdenCompraSinFacturaData> Orden_Obtener(int CodEmpresa, string CodOrden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<OrdenCompraSinFacturaData>();
+            var response = new ErrorDto<OrdenCompraSinFacturaData>();
 
             try
             {
@@ -81,11 +81,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodOrden"></param>
         /// <returns></returns>
-        public ErrorDTO<OrdenCompraFacturaData> OrdenFactura_Obtener(int CodEmpresa, string CodOrden)
+        public ErrorDto<OrdenCompraFacturaData> OrdenFactura_Obtener(int CodEmpresa, string CodOrden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<OrdenCompraFacturaData>();
+            var response = new ErrorDto<OrdenCompraFacturaData>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -121,10 +121,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<CompraOrdenLineasData> OrdenesDetalleF_Obtener(int CodEmpresa, CompraOrderLineaTablaFiltros filtros)
+        public ErrorDto<CompraOrdenLineasData> OrdenesDetalleF_Obtener(int CodEmpresa, CompraOrderLineaTablaFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<CompraOrdenLineasData>();
+            var response = new ErrorDto<CompraOrdenLineasData>();
             response.Result = new CompraOrdenLineasData();
 
             string paginaActual = " ", paginacionActual = " ";
@@ -186,10 +186,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<CompraOrdenLineasData> OrdenesDetalleO_Obtener(int CodEmpresa, CompraOrderLineaTablaFiltros filtros)
+        public ErrorDto<CompraOrdenLineasData> OrdenesDetalleO_Obtener(int CodEmpresa, CompraOrderLineaTablaFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<CompraOrdenLineasData>();
+            var response = new ErrorDto<CompraOrdenLineasData>();
             response.Result = new CompraOrdenLineasData();
             string paginaActual = " ", paginacionActual = " ";
             try
@@ -284,9 +284,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCompra"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        private ErrorDTO OrdenCosto_Actualiza(int CodEmpresa, string CodCompra, string Usuario)
+        private ErrorDto OrdenCosto_Actualiza(int CodEmpresa, string CodCompra, string Usuario)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -323,9 +323,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="orden"></param>
         /// <returns></returns>
-        public ErrorDTO ComprasOrden_Guardar(int CodEmpresa, ComprasOrdenDatos orden)
+        public ErrorDto ComprasOrden_Guardar(int CodEmpresa, ComprasOrdenDatos orden)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             result.Code = 0;
             string mensaje = "";
@@ -761,10 +761,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodOrden"></param>
         /// <returns></returns>
-        public ErrorDTO OrdenPin_Obtener(int CodEmpresa, string CodOrden)
+        public ErrorDto OrdenPin_Obtener(int CodEmpresa, string CodOrden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 1;
             try
             {
@@ -796,10 +796,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodOrden"></param>
         /// <param name="OrdPin"></param>
         /// <returns></returns>
-        public ErrorDTO OrdenPin_Verifica(int CodEmpresa, string CodOrden, string OrdPin)
+        public ErrorDto OrdenPin_Verifica(int CodEmpresa, string CodOrden, string OrdPin)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 1;
             try
             {
@@ -825,10 +825,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO OrdenConsecutivo_Obtener(int CodEmpresa)
+        public ErrorDto OrdenConsecutivo_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 1;
             try
             {
@@ -860,7 +860,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_orden"></param>
         /// <param name="cod_proveedor"></param>
         /// <returns></returns>
-        private ErrorDTO BuscoArticulosActivos(
+        private ErrorDto BuscoArticulosActivos(
             int CodEmpresa,
             OrdenCompraDetalleData linea,
             string consecutivo,
@@ -870,7 +870,7 @@ namespace PgxAPI.DataBaseTier
             int cod_proveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -941,9 +941,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="orden"></param>
         /// <returns></returns>
-        public ErrorDTO fxVerificaTotalesFac(int CodEmpresa, ComprasOrdenDatos orden)
+        public ErrorDto fxVerificaTotalesFac(int CodEmpresa, ComprasOrdenDatos orden)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
@@ -1000,10 +1000,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="proveedor"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FacturasAutorizarDTO>> FacturasAutorizar_Obtener(int CodEmpresa, string usuario, int proveedor)
+        public ErrorDto<List<FacturasAutorizarDTO>> FacturasAutorizar_Obtener(int CodEmpresa, string usuario, int proveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FacturasAutorizarDTO>>();
+            var response = new ErrorDto<List<FacturasAutorizarDTO>>();
 
             try
             {
@@ -1050,10 +1050,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_factura"></param>
         /// <param name="justificacion"></param>
         /// <returns></returns>
-        public ErrorDTO Factura_AutorizarRechazar(int CodEmpresa, string usuario, string cod, string cod_factura, string justificacion)
+        public ErrorDto Factura_AutorizarRechazar(int CodEmpresa, string usuario, string cod, string cod_factura, string justificacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -1088,10 +1088,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="cod_orden"></param>
         /// <returns></returns>
-        public ErrorDTO ValidaAutorizacion(int CodEmpresa, string usuario, string cod_orden)
+        public ErrorDto ValidaAutorizacion(int CodEmpresa, string usuario, string cod_orden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -1135,7 +1135,7 @@ namespace PgxAPI.DataBaseTier
         private async Task CorreoNotificaAutorizaFactura_Enviar(int CodEmpresa, string cod_factura, string usuario)
         {
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             List<OrdenLineas> info = new List<OrdenLineas>();
 
@@ -1258,10 +1258,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO BitacoraEnvioCorreo(BitacoraComprasInsertarDTO req)
+        public ErrorDto BitacoraEnvioCorreo(BitacoraComprasInsertarDTO req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -1308,7 +1308,7 @@ namespace PgxAPI.DataBaseTier
         private async Task CorreoNotificaRegistraFactura_Enviar(int CodEmpresa, string cod_factura, string usuario, int cod_proveedor)
         {
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             List<OrdenLineas> info = new List<OrdenLineas>();
 
@@ -1430,9 +1430,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_factura"></param>
         /// <param name="cod_proveedor"></param>
         /// <returns></returns>
-        private ErrorDTO fxVerificaNumeroFactura(int CodEmpresa, string cod_factura, int cod_proveedor)
+        private ErrorDto fxVerificaNumeroFactura(int CodEmpresa, string cod_factura, int cod_proveedor)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try

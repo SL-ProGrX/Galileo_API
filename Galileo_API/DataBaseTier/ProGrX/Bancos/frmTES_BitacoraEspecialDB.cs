@@ -22,9 +22,9 @@ namespace PgxAPI.DataBaseTier.TES
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <returns>Lista de cuentas.</returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_Bancos_Obtener(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_Bancos_Obtener(int codEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -64,9 +64,9 @@ namespace PgxAPI.DataBaseTier.TES
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <returns>Lista de tipos de documentos.</returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_Tipos_Doc_Obtener(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_Tipos_Doc_Obtener(int codEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -106,9 +106,9 @@ namespace PgxAPI.DataBaseTier.TES
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_Tipos_Movimientos_Obtener(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_Tipos_Movimientos_Obtener(int codEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -148,9 +148,9 @@ namespace PgxAPI.DataBaseTier.TES
         /// <param name="codEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<BitacoraEspecialDTO>> BitacoraEspecial_Buscar(int codEmpresa, FiltrosBitacoraEspecial filtros)
+        public ErrorDto<List<BitacoraEspecialDTO>> BitacoraEspecial_Buscar(int codEmpresa, FiltrosBitacoraEspecial filtros)
         {
-            var response = new ErrorDTO<List<BitacoraEspecialDTO>>
+            var response = new ErrorDto<List<BitacoraEspecialDTO>>
             {
                 Code = 0,
                 Description = "OK",
@@ -323,7 +323,7 @@ namespace PgxAPI.DataBaseTier.TES
         /// <param name="usuario">Usuario que realiza la actualización.</param>
         /// <param name="nsolicitud">Número de solicitud asociado al historial.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDTO TES_Historial_Actualizar(int CodEmpresa, string id, string usuario, string nsolicitud)
+        public ErrorDto TES_Historial_Actualizar(int CodEmpresa, string id, string usuario, string nsolicitud)
         {
             if (_config == null)
             {
@@ -331,7 +331,7 @@ namespace PgxAPI.DataBaseTier.TES
             }
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };

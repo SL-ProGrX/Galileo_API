@@ -21,9 +21,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<Sys_MensajesPortal_Lista> Sys_MensajesPortal_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<Sys_MensajesPortal_Lista> Sys_MensajesPortal_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<Sys_MensajesPortal_Lista>
+            var result = new ErrorDto<Sys_MensajesPortal_Lista>
             {
                 Code = 0,
                 Description = "OK",
@@ -108,11 +108,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Sys_MensajesPortal_ListaItem>> Sys_MensajesPortal_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<Sys_MensajesPortal_ListaItem>> Sys_MensajesPortal_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO<List<Sys_MensajesPortal_ListaItem>>()
+            var result = new ErrorDto<List<Sys_MensajesPortal_ListaItem>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -167,9 +167,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="codigo"></param>
         /// <returns></returns>
-        public ErrorDTO<Sys_MensajesPortal_DetalleModel> Sys_MensajesPortal_Detalle_Obtener(int CodEmpresa, string codigo)
+        public ErrorDto<Sys_MensajesPortal_DetalleModel> Sys_MensajesPortal_Detalle_Obtener(int CodEmpresa, string codigo)
         {
-            var r = new ErrorDTO<Sys_MensajesPortal_DetalleModel> { Code = 0 };
+            var r = new ErrorDto<Sys_MensajesPortal_DetalleModel> { Code = 0 };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -238,9 +238,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="dto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_MensajesPortal_Mensaje_Guardar(int CodEmpresa, Sys_MensajesPortal_DetalleModel dto, string usuario)
+        public ErrorDto Sys_MensajesPortal_Mensaje_Guardar(int CodEmpresa, Sys_MensajesPortal_DetalleModel dto, string usuario)
         {
-            var r = new ErrorDTO { Code = 0, Description = "OK" };
+            var r = new ErrorDto { Code = 0, Description = "OK" };
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             if (dto == null || string.IsNullOrWhiteSpace(dto.codigo))
@@ -378,9 +378,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codigo"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_MensajesPortal_Mensaje_Eliminar(int CodEmpresa, string codigo, string usuario)
+        public ErrorDto Sys_MensajesPortal_Mensaje_Eliminar(int CodEmpresa, string codigo, string usuario)
         {
-            var r = new ErrorDTO { Code = 0, Description = "OK" };
+            var r = new ErrorDto { Code = 0, Description = "OK" };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -409,9 +409,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Sys_MensajesPortal_SmtpDto>> Sys_MensajesPortal_Smtps_Obtener(int CodEmpresa)
+        public ErrorDto<List<Sys_MensajesPortal_SmtpDto>> Sys_MensajesPortal_Smtps_Obtener(int CodEmpresa)
         {
-            var r = new ErrorDTO<List<Sys_MensajesPortal_SmtpDto>> { Code = 0, Result = new() };
+            var r = new ErrorDto<List<Sys_MensajesPortal_SmtpDto>> { Code = 0, Result = new() };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -443,9 +443,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Sys_MensajesPortal_FormatoDto>> Sys_MensajesPortal_Formatos_Obtener(int CodEmpresa)
+        public ErrorDto<List<Sys_MensajesPortal_FormatoDto>> Sys_MensajesPortal_Formatos_Obtener(int CodEmpresa)
         {
-            var r = new ErrorDTO<List<Sys_MensajesPortal_FormatoDto>> { Code = 0, Result = new() };
+            var r = new ErrorDto<List<Sys_MensajesPortal_FormatoDto>> { Code = 0, Result = new() };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -475,9 +475,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// Método para obtener el catalogo de activaciones.
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<List<Sys_MensajesPortal_ActivacionDto>> Sys_MensajesPortal_Activaciones_Obtener()
+        public ErrorDto<List<Sys_MensajesPortal_ActivacionDto>> Sys_MensajesPortal_Activaciones_Obtener()
         {
-            var r = new ErrorDTO<List<Sys_MensajesPortal_ActivacionDto>>
+            var r = new ErrorDto<List<Sys_MensajesPortal_ActivacionDto>>
             {
                 Code = 0,
                 Result = new List<Sys_MensajesPortal_ActivacionDto>
@@ -498,9 +498,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Sys_MensajesPortal_EventoDto>> Sys_MensajesPortal_Eventos_Obtener(int CodEmpresa)
+        public ErrorDto<List<Sys_MensajesPortal_EventoDto>> Sys_MensajesPortal_Eventos_Obtener(int CodEmpresa)
         {
-            var r = new ErrorDTO<List<Sys_MensajesPortal_EventoDto>> { Code = 0, Result = new() };
+            var r = new ErrorDto<List<Sys_MensajesPortal_EventoDto>> { Code = 0, Result = new() };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -546,9 +546,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<Sys_MensajesPortal_PreferenciasModel> Sys_MensajesPortal_Portal_Obtener(int CodEmpresa)
+        public ErrorDto<Sys_MensajesPortal_PreferenciasModel> Sys_MensajesPortal_Portal_Obtener(int CodEmpresa)
         {
-            var r = new ErrorDTO<Sys_MensajesPortal_PreferenciasModel> { Code = 0 };
+            var r = new ErrorDto<Sys_MensajesPortal_PreferenciasModel> { Code = 0 };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -582,9 +582,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="dto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_MensajesPortal_Portal_Guardar(int CodEmpresa, Sys_MensajesPortal_PreferenciasModel dto, string usuario)
+        public ErrorDto Sys_MensajesPortal_Portal_Guardar(int CodEmpresa, Sys_MensajesPortal_PreferenciasModel dto, string usuario)
         {
-            var r = new ErrorDTO { Code = 0, Description = "OK" };
+            var r = new ErrorDto { Code = 0, Description = "OK" };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try

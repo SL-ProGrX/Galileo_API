@@ -20,9 +20,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Instituciones_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Instituciones_Obtener(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -53,9 +53,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_PeriodosProceso_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_PeriodosProceso_Obtener(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -93,9 +93,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codinstitucion"></param>
         /// <param name="fechaproceso"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_ArchivoResultadoDTO>> AF_Archivo_Obtener(int CodEmpresa, string codinstitucion, string fechaproceso)
+        public ErrorDto<List<AF_ArchivoResultadoDTO>> AF_Archivo_Obtener(int CodEmpresa, string codinstitucion, string fechaproceso)
         {
-            var response = new ErrorDTO<List<AF_ArchivoResultadoDTO>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<AF_ArchivoResultadoDTO>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);

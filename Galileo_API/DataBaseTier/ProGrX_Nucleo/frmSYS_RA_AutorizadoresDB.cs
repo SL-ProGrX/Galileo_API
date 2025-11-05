@@ -88,10 +88,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO Autorizador_Insertar(int CodCliente, AutorizadoresEXPDTO autorizador)
+        public ErrorDto Autorizador_Insertar(int CodCliente, AutorizadoresEXPDTO autorizador)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -132,11 +132,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO Autorizador_Actualizar(int CodEmpresa, AutorizadoresEXPDTO request)
+        public ErrorDto Autorizador_Actualizar(int CodEmpresa, AutorizadoresEXPDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

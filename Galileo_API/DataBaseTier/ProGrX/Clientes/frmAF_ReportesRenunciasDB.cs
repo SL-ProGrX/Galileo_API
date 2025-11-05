@@ -17,9 +17,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Obtiene la lista de gestiones para seguimiento.
         /// </summary>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Reportes_Renuncias_Oficinas_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Reportes_Renuncias_Oficinas_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",

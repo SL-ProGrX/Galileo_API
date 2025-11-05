@@ -14,12 +14,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<CxpProveedoresDataLista> Proveedores_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<CxpProveedoresDataLista> Proveedores_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<CxpProveedoresDataLista>
+            var response = new ErrorDto<CxpProveedoresDataLista>
             {
                 Code = 0,
                 Result = new CxpProveedoresDataLista()
@@ -69,10 +69,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO Fusion_Aplicar(int CodCliente, int proveedor, List<CxpProveedorData> proveedores)
+        public ErrorDto Fusion_Aplicar(int CodCliente, int proveedor, List<CxpProveedorData> proveedores)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };

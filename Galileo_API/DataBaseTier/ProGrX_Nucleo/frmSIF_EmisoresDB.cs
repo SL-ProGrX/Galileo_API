@@ -9,7 +9,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
     public class frmSIF_EmisoresDB
     {
         private readonly IConfiguration? _config;
-        private readonly int vModulo = 10; // Modulo de Tesorería
+        private readonly int vModulo = 10; // Modulo de Tesorerï¿½a
         private readonly mSecurityMainDb _Security_MainDB;
 
         public frmSIF_EmisoresDB(IConfiguration? config)
@@ -19,15 +19,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene una lista de emisores con paginación y filtros (lazy loading).
+        /// Obtiene una lista de emisores con paginaciï¿½n y filtros (lazy loading).
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SifEmisoresLista> SIF_EmisoresLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SifEmisoresLista> SIF_EmisoresLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SifEmisoresLista>()
+            var result = new ErrorDto<SifEmisoresLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -79,15 +79,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene una lista de emisores con filtros aplicados (sin paginación).
+        /// Obtiene una lista de emisores con filtros aplicados (sin paginaciï¿½n).
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SifEmisoresData>> SIF_Emisores_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SifEmisoresData>> SIF_Emisores_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SifEmisoresData>>()
+            var result = new ErrorDto<List<SifEmisoresData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -127,10 +127,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="emisor"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_Emisores_Guardar(int CodEmpresa, string usuario, SifEmisoresData emisor)
+        public ErrorDto SIF_Emisores_Guardar(int CodEmpresa, string usuario, SifEmisoresData emisor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -161,11 +161,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Inserta un nuevo emisor y registra en bitácora.
+        /// Inserta un nuevo emisor y registra en bitï¿½cora.
         /// </summary>
-        private ErrorDTO SIF_Emisores_Insertar(SqlConnection connection, int CodEmpresa, string usuario, SifEmisoresData emisor)
+        private ErrorDto SIF_Emisores_Insertar(SqlConnection connection, int CodEmpresa, string usuario, SifEmisoresData emisor)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Emisor registrado correctamente."
@@ -200,11 +200,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Actualiza un emisor existente y registra en bitácora.
+        /// Actualiza un emisor existente y registra en bitï¿½cora.
         /// </summary>
-        private ErrorDTO SIF_Emisores_Actualizar(SqlConnection connection, int CodEmpresa, string usuario, SifEmisoresData emisor)
+        private ErrorDto SIF_Emisores_Actualizar(SqlConnection connection, int CodEmpresa, string usuario, SifEmisoresData emisor)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Emisor actualizado correctamente."
@@ -240,15 +240,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Valida si un código o descripción de emisor ya existe en la base de datos.
+        /// Valida si un cï¿½digo o descripciï¿½n de emisor ya existe en la base de datos.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="emisor"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_Emisores_Valida(int CodEmpresa, SifEmisoresData emisor)
+        public ErrorDto SIF_Emisores_Valida(int CodEmpresa, SifEmisoresData emisor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -269,12 +269,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     if (existe > 0)
                     {
                         result.Code = -1;
-                        result.Description = "Ya existe un emisor con ese código o descripción.";
+                        result.Description = "Ya existe un emisor con ese cï¿½digo o descripciï¿½n.";
                     }
                     else
                     {
                         result.Code = 0;
-                        result.Description = "El código y la descripción de emisor son válidos.";
+                        result.Description = "El cï¿½digo y la descripciï¿½n de emisor son vï¿½lidos.";
                     }
                 }
             }
@@ -287,16 +287,16 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Elimina un emisor por su código y registra en bitácora.
+        /// Elimina un emisor por su cï¿½digo y registra en bitï¿½cora.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="cod_emisor"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_Emisores_Eliminar(int CodEmpresa, string usuario, string cod_emisor)
+        public ErrorDto SIF_Emisores_Eliminar(int CodEmpresa, string usuario, string cod_emisor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -312,7 +312,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 if (existe == 0)
                 {
                     result.Code = -2;
-                    result.Description = $"El emisor con el código {cod_emisor} no existe.";
+                    result.Description = $"El emisor con el cï¿½digo {cod_emisor} no existe.";
                     return result;
                 }
 
@@ -337,15 +337,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene la lista de tarjetas y su asignación para un emisor.
+        /// Obtiene la lista de tarjetas y su asignaciï¿½n para un emisor.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_emisor"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SifTarjetasAsignadasData>> SIF_EmisoresTarjetas_Obtener(int CodEmpresa, string cod_emisor)
+        public ErrorDto<List<SifTarjetasAsignadasData>> SIF_EmisoresTarjetas_Obtener(int CodEmpresa, string cod_emisor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SifTarjetasAsignadasData>>()
+            var result = new ErrorDto<List<SifTarjetasAsignadasData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -378,10 +378,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="asignacion"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_EmisorTarjeta_Asignar(int CodEmpresa, string usuario, SifEmisorTarjetaData asignacion)
+        public ErrorDto SIF_EmisorTarjeta_Asignar(int CodEmpresa, string usuario, SifEmisorTarjetaData asignacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -402,7 +402,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
-                    DetalleMovimiento = $"Asignación tarjeta: {asignacion.cod_tarjeta} al emisor: {asignacion.cod_emisor}",
+                    DetalleMovimiento = $"Asignaciï¿½n tarjeta: {asignacion.cod_tarjeta} al emisor: {asignacion.cod_emisor}",
                     Movimiento = "Asigna Tarjeta - WEB",
                     Modulo = vModulo
                 });
@@ -422,10 +422,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="asignacion"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_EmisorTarjeta_Desasignar(int CodEmpresa, string usuario, SifEmisorTarjetaData asignacion)
+        public ErrorDto SIF_EmisorTarjeta_Desasignar(int CodEmpresa, string usuario, SifEmisorTarjetaData asignacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -444,7 +444,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
-                    DetalleMovimiento = $"Desasignación tarjeta: {asignacion.cod_tarjeta} del emisor: {asignacion.cod_emisor}",
+                    DetalleMovimiento = $"Desasignaciï¿½n tarjeta: {asignacion.cod_tarjeta} del emisor: {asignacion.cod_emisor}",
                     Movimiento = "Desasigna Tarjeta - WEB",
                     Modulo = vModulo
                 });

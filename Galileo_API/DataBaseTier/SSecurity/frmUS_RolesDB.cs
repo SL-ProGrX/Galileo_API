@@ -16,7 +16,7 @@ namespace PgxAPI.DataBaseTier
 
         public void RolesVincular(RolesVincularDTO req)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             string strSQL = "";
             try
             {
@@ -75,9 +75,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO RolGuardar(RolInsertarDTO rol)
+        public ErrorDto RolGuardar(RolInsertarDTO rol)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -126,9 +126,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO RolEliminar(string CodRol)
+        public ErrorDto RolEliminar(string CodRol)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {

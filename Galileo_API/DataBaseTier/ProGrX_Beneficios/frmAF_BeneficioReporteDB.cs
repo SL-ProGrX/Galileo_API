@@ -19,10 +19,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<afiBeneficiosData>> BeneficioLista_Obtener(int CodCliente)
+        public ErrorDto<List<afiBeneficiosData>> BeneficioLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<afiBeneficiosData>>();
+            var response = new ErrorDto<List<afiBeneficiosData>>();
 
             try
             {

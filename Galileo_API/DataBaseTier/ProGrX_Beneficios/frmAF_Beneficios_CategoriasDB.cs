@@ -29,12 +29,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<BENE_CATEGORIADataLista> BeneficiosCategorias_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<BENE_CATEGORIADataLista> BeneficiosCategorias_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<BENE_CATEGORIADataLista>();
+            var response = new ErrorDto<BENE_CATEGORIADataLista>();
             response.Result = new BENE_CATEGORIADataLista();
             try
             {
@@ -84,11 +84,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO BeneficiosCategorias_Actualizar(int CodEmpresa, BENE_CATEGORIA request)
+        public ErrorDto BeneficiosCategorias_Actualizar(int CodEmpresa, BENE_CATEGORIA request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -127,10 +127,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO BeneficiosCategorias_Agregar(int CodEmpresa, BENE_CATEGORIA request)
+        public ErrorDto BeneficiosCategorias_Agregar(int CodEmpresa, BENE_CATEGORIA request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -141,7 +141,7 @@ namespace PgxAPI.DataBaseTier
                     if (existe > 0)
                     {
                         resp.Code = -1;
-                        resp.Description = "Ya existe una categoría con el código: " + request.cod_categoria + ", por favor verifique";
+                        resp.Description = "Ya existe una categorï¿½a con el cï¿½digo: " + request.cod_categoria + ", por favor verifique";
                     }
                     else
                     {
@@ -176,11 +176,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ErrorDTO BeneficiosCategorias_Eliminar(int CodEmpresa, string id)
+        public ErrorDto BeneficiosCategorias_Eliminar(int CodEmpresa, string id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -205,10 +205,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_categoria"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Bene_CategoriaPermisos>> BeneficiosCategorias_ObtenerPermisos(int CodCliente, string cod_categoria, string? filtro)
+        public ErrorDto<List<Bene_CategoriaPermisos>> BeneficiosCategorias_ObtenerPermisos(int CodCliente, string cod_categoria, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<Bene_CategoriaPermisos>>();
+            var response = new ErrorDto<List<Bene_CategoriaPermisos>>();
             response.Code = 0;
             try
             {
@@ -235,10 +235,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Cod_Categoria"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO registroPermisosCategoria(int CodCliente, string Cod_Categoria, Bene_CategoriaPermisos request)
+        public ErrorDto registroPermisosCategoria(int CodCliente, string Cod_Categoria, Bene_CategoriaPermisos request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -280,7 +280,7 @@ namespace PgxAPI.DataBaseTier
                     connection.Execute(query);
 
                     resp.Description = "Registro actualizado satisfactoriamente";
-                    // Actualizar el estado a su representación textual de cada campo
+                    // Actualizar el estado a su representaciï¿½n textual de cada campo
 
                     // Cambiar Estado
 
@@ -313,17 +313,17 @@ namespace PgxAPI.DataBaseTier
                         }
                     }
 
-                    // Traslado Tesorería
+                    // Traslado Tesorerï¿½a
                     if (I_TRASLADO_TESORERIA_ANTERIOR != (request.i_traslado_tesoreria ? 1 : 0))
                     {
                         if (request.i_traslado_tesoreria == true)
                     {
-                        string detalle = $@"El usuario [{request.registro_usuario}] actualiza permiso de Traslado Tesorería de [Inactivo] por [Activo] del usuario [{request.nombre}]";
+                        string detalle = $@"El usuario [{request.registro_usuario}] actualiza permiso de Traslado Tesorerï¿½a de [Inactivo] por [Activo] del usuario [{request.nombre}]";
                         RegistrarBitacora(CodCliente, "Actualiza-Web", detalle, Cod_Categoria, request.registro_usuario);
                     }
                     else
                     {
-                        string detalle = $@"El usuario [{request.registro_usuario}] actualiza permiso de Traslado Tesorería de [Activo] por [Inactivo] del usuario [{request.nombre}]";
+                        string detalle = $@"El usuario [{request.registro_usuario}] actualiza permiso de Traslado Tesorerï¿½a de [Activo] por [Inactivo] del usuario [{request.nombre}]";
                         RegistrarBitacora(CodCliente, "Actualiza-Web", detalle, Cod_Categoria, request.registro_usuario);
                     }
                     }
@@ -449,17 +449,17 @@ namespace PgxAPI.DataBaseTier
                     }
                     }
 
-                    // Devolver Resolución
+                    // Devolver Resoluciï¿½n
                     if (I_DEVOLVER_RESOLUCION_ANTERIOR != (request.i_devolver_resolucion ? 1 : 0))
                     {
                         if (request.i_devolver_resolucion == true)
                     {
-                        string detalle = $@"El usuario [{request.registro_usuario}] actualiza permiso de Devolver Resolución de [Inactivo] por [Activo] del usuario [{request.nombre}]";
+                        string detalle = $@"El usuario [{request.registro_usuario}] actualiza permiso de Devolver Resoluciï¿½n de [Inactivo] por [Activo] del usuario [{request.nombre}]";
                         RegistrarBitacora(CodCliente, "Actualiza-Web", detalle, Cod_Categoria, request.registro_usuario);
                     }
                     else
                     {
-                        string detalle = $@"El usuario [{request.registro_usuario}] actualiza permiso de Devolver Resolución de [Activo] por [Inactivo] del usuario [{request.nombre}]";
+                        string detalle = $@"El usuario [{request.registro_usuario}] actualiza permiso de Devolver Resoluciï¿½n de [Activo] por [Inactivo] del usuario [{request.nombre}]";
                         RegistrarBitacora(CodCliente, "Actualiza-Web", detalle, Cod_Categoria, request.registro_usuario);
                     }
                     }
@@ -481,10 +481,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<BeneValidaLista>> BeneValidacionesLista_Obtener(int CodCliente)
+        public ErrorDto<List<BeneValidaLista>> BeneValidacionesLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<BeneValidaLista>>();
+            var response = new ErrorDto<List<BeneValidaLista>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -507,10 +507,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_categoria"></param>
         /// <returns></returns>
-        public ErrorDTO<List<BeneCategoriaValidaLista>> BeneCategoriaValida_Obtener(int CodCliente, string cod_categoria)
+        public ErrorDto<List<BeneCategoriaValidaLista>> BeneCategoriaValida_Obtener(int CodCliente, string cod_categoria)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<BeneCategoriaValidaLista>>();
+            var response = new ErrorDto<List<BeneCategoriaValidaLista>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -533,10 +533,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="valida"></param>
         /// <returns></returns>
-        public ErrorDTO BeneCategoriaValida_Guardar(int CodCliente, BeneCategoriaValidaLista valida)
+        public ErrorDto BeneCategoriaValida_Guardar(int CodCliente, BeneCategoriaValidaLista valida)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);

@@ -16,10 +16,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<List<BodegaReporteInvDTO>> Obtener_Bodegas(int CodEmpresa)
+        public ErrorDto<List<BodegaReporteInvDTO>> Obtener_Bodegas(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<BodegaReporteInvDTO>>();
+            var response = new ErrorDto<List<BodegaReporteInvDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -41,10 +41,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<UnidadesReporteInvDTO>> Obtener_Unidades(int CodEmpresa)
+        public ErrorDto<List<UnidadesReporteInvDTO>> Obtener_Unidades(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<UnidadesReporteInvDTO>>();
+            var response = new ErrorDto<List<UnidadesReporteInvDTO>>();
 
             try
             {
@@ -67,11 +67,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<DepartamentoReporteInvDTO>> Obtener_Departamento(int CodEmpresa)
+        public ErrorDto<List<DepartamentoReporteInvDTO>> Obtener_Departamento(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<DepartamentoReporteInvDTO>>();
+            var response = new ErrorDto<List<DepartamentoReporteInvDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -93,11 +93,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<ProveedoresInvDTO>> Obtener_Proveedor(int CodEmpresa)
+        public ErrorDto<List<ProveedoresInvDTO>> Obtener_Proveedor(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<ProveedoresInvDTO>>();
+            var response = new ErrorDto<List<ProveedoresInvDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -119,11 +119,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<LineasInvDTO>> Obtener_Lineas(int CodEmpresa)
+        public ErrorDto<List<LineasInvDTO>> Obtener_Lineas(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<LineasInvDTO>>();
+            var response = new ErrorDto<List<LineasInvDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -146,10 +146,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<List<CprUensLista>> CprUens_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<CprUensLista>> CprUens_Obtener(int CodEmpresa, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CprUensLista>>();
+            var response = new ErrorDto<List<CprUensLista>>();
 
             try
             {

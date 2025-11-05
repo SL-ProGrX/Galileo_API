@@ -16,10 +16,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO Autorizador_Insertar(int CodCliente, AutorizadorePatrimonioDTO autorizador)
+        public ErrorDto Autorizador_Insertar(int CodCliente, AutorizadorePatrimonioDTO autorizador)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -45,7 +45,7 @@ namespace PgxAPI.DataBaseTier
                 info.Code = 1;
                 if (ex.Message.Contains("Cannot insert duplicate key"))
                 {
-                    info.Description = "El código de beneficio ya existe";
+                    info.Description = "El cï¿½digo de beneficio ya existe";
                 }
                 else
                 {
@@ -128,11 +128,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO Autorizador_Actualizar(int CodEmpresa, AutorizadorePatrimonioDTO request)
+        public ErrorDto Autorizador_Actualizar(int CodEmpresa, AutorizadorePatrimonioDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

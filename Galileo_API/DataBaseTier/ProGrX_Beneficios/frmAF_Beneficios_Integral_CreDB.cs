@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consec"></param>
         /// <param name="cod_beneficio"></param>
         /// <returns></returns>
-        public ErrorDTO<AfiBeneSocioCreceDTO> BeneSocioCrece_Obtener(int CodCliente, int consec, string cod_beneficio)
+        public ErrorDto<AfiBeneSocioCreceDTO> BeneSocioCrece_Obtener(int CodCliente, int consec, string cod_beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<AfiBeneSocioCreceDTO>();
+            var response = new ErrorDto<AfiBeneSocioCreceDTO>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -75,10 +75,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        public ErrorDTO BeneSocioCrece_Guardar(int CodCliente, AfiBeneSocioCreceDTO beneficio)
+        public ErrorDto BeneSocioCrece_Guardar(int CodCliente, AfiBeneSocioCreceDTO beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 //Si el id es 0 es un insert, si no es un update
@@ -105,10 +105,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        private ErrorDTO BeneSocioCrece_Insertar(int CodCliente, AfiBeneSocioCreceDTO beneficio)
+        private ErrorDto BeneSocioCrece_Insertar(int CodCliente, AfiBeneSocioCreceDTO beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -191,10 +191,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        private ErrorDTO BeneSocioCrece_Actualizar(int CodCliente, AfiBeneSocioCreceDTO beneficio)
+        private ErrorDto BeneSocioCrece_Actualizar(int CodCliente, AfiBeneSocioCreceDTO beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -358,10 +358,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consec"></param>
         /// <param name="cod_beneficio"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfiBeneSocioCreceSesionesDTO>> BeneSocioCreceSesiones_Obtener(int CodCliente, int consec, string cod_beneficio)
+        public ErrorDto<List<AfiBeneSocioCreceSesionesDTO>> BeneSocioCreceSesiones_Obtener(int CodCliente, int consec, string cod_beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiBeneSocioCreceSesionesDTO>>();
+            var response = new ErrorDto<List<AfiBeneSocioCreceSesionesDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -400,10 +400,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        public ErrorDTO BeneSocioCreceSesion_Guardar(int CodCliente, AfiBeneSocioCreceSesionesDTO beneficio)
+        public ErrorDto BeneSocioCreceSesion_Guardar(int CodCliente, AfiBeneSocioCreceSesionesDTO beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 //Si el id es 0 es un insert, si no es un update
@@ -430,10 +430,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        private ErrorDTO BeneSocioCreceSession_Insertar(int CodCliente, AfiBeneSocioCreceSesionesDTO beneficio)
+        private ErrorDto BeneSocioCreceSession_Insertar(int CodCliente, AfiBeneSocioCreceSesionesDTO beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -485,10 +485,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        private ErrorDTO BeneSocioCreceSession_Actualizar(int CodCliente, AfiBeneSocioCreceSesionesDTO beneficio)
+        private ErrorDto BeneSocioCreceSession_Actualizar(int CodCliente, AfiBeneSocioCreceSesionesDTO beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {

@@ -19,9 +19,9 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<PerfilUsuarioDTO> UsuarioPerfilConsultar(string usuario)
+        public ErrorDto<PerfilUsuarioDTO> UsuarioPerfilConsultar(string usuario)
         {
-            var response = new ErrorDTO<PerfilUsuarioDTO>();
+            var response = new ErrorDto<PerfilUsuarioDTO>();
 
             try
             {
@@ -77,9 +77,9 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO PerfilUsuario_Actualizar(PerfilUsuarioDTO request)
+        public ErrorDto PerfilUsuario_Actualizar(PerfilUsuarioDTO request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

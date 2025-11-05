@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param> 
         /// <returns></returns>
-        public ErrorDTO<SysOrigen_RecursosLista> Sys_OrigenRecursosLista_Obtener(int CodEmpresa)
+        public ErrorDto<SysOrigen_RecursosLista> Sys_OrigenRecursosLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysOrigen_RecursosLista>()
+            var result = new ErrorDto<SysOrigen_RecursosLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -68,10 +68,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="OrigenRecursos"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_OrigenRecursos_Guardar(int CodEmpresa, SysOrigen_RecursosData OrigenRecursos)
+        public ErrorDto Sys_OrigenRecursos_Guardar(int CodEmpresa, SysOrigen_RecursosData OrigenRecursos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -123,10 +123,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="OrigenRecursos"></param>
         /// <returns></returns>
-        private ErrorDTO Sys_OrigenRecursos_Actualizar(int CodEmpresa, SysOrigen_RecursosData OrigenRecursos)
+        private ErrorDto Sys_OrigenRecursos_Actualizar(int CodEmpresa, SysOrigen_RecursosData OrigenRecursos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -173,10 +173,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="OrigenRecursos"></param>
         /// <returns></returns>
-        private ErrorDTO Sys_OrigenRecursos_Insertar(int CodEmpresa, SysOrigen_RecursosData OrigenRecursos)
+        private ErrorDto Sys_OrigenRecursos_Insertar(int CodEmpresa, SysOrigen_RecursosData OrigenRecursos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -221,10 +221,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="OrigenRecursos"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_OrigenRecursos_Eliminar(int CodEmpresa, string usuario, string OrigenRecursos)
+        public ErrorDto Sys_OrigenRecursos_Eliminar(int CodEmpresa, string usuario, string OrigenRecursos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

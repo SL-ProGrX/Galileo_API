@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<afBeneficiosBancosDataLista> BeneficiosBancosX_Obtener(int CodCliente, string filtros)
+        public ErrorDto<afBeneficiosBancosDataLista> BeneficiosBancosX_Obtener(int CodCliente, string filtros)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<afBeneficiosBancosDataLista>();
+            var response = new ErrorDto<afBeneficiosBancosDataLista>();
 
             response.Result = new afBeneficiosBancosDataLista();
 
@@ -84,11 +84,11 @@ namespace PgxAPI.DataBaseTier
             }
         }
 
-        public ErrorDTO<afBeneficiosBancosData> BeneficiosBancosX_Actualizar(int CodCliente, afBeneficiosBancosData data)
+        public ErrorDto<afBeneficiosBancosData> BeneficiosBancosX_Actualizar(int CodCliente, afBeneficiosBancosData data)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<afBeneficiosBancosData>();
+            var response = new ErrorDto<afBeneficiosBancosData>();
 
 
             bool actualizado = false;

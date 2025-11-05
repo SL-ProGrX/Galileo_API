@@ -25,9 +25,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivoLiteLista> Activos_CambioVU_ActivoLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<ActivoLiteLista> Activos_CambioVU_ActivoLista_Obtener(int CodEmpresa, string filtros)
         {
-            var res = new ErrorDTO<ActivoLiteLista>
+            var res = new ErrorDto<ActivoLiteLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -112,7 +112,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                return new ErrorDTO<ActivoLiteLista>
+                return new ErrorDto<ActivoLiteLista>
                 {
                     Code = -1,
                     Description = ex.Message,
@@ -127,9 +127,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="numPlaca"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivoBuscarResponse> Activos_CambioVU_Activo_Obtener(int CodEmpresa, string numPlaca)
+        public ErrorDto<ActivoBuscarResponse> Activos_CambioVU_Activo_Obtener(int CodEmpresa, string numPlaca)
         {
-            var result = new ErrorDTO<ActivoBuscarResponse>
+            var result = new ErrorDto<ActivoBuscarResponse>
             {
                 Code = 0,
                 Description = "Ok",
@@ -194,9 +194,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_CambioVU_MetodosDepreciacion_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_CambioVU_MetodosDepreciacion_Obtener(int CodEmpresa)
         {
-            return new ErrorDTO<List<DropDownListaGenericaModel>>
+            return new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -221,9 +221,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDTO<CambioVidaUtilAplicarResponse> Activos_CambioVU_Aplicar(int CodEmpresa, string usuario, CambioVidaUtilAplicarRequest dto)
+        public ErrorDto<CambioVidaUtilAplicarResponse> Activos_CambioVU_Aplicar(int CodEmpresa, string usuario, CambioVidaUtilAplicarRequest dto)
         {
-            var res = new ErrorDTO<CambioVidaUtilAplicarResponse>
+            var res = new ErrorDto<CambioVidaUtilAplicarResponse>
             {
                 Code = 0,
                 Description = "Ok",
@@ -233,10 +233,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 if (string.IsNullOrWhiteSpace(dto.numPlaca))
-                    return new ErrorDTO<CambioVidaUtilAplicarResponse> { Code = -1, Description = "numPlaca es requerido" };
+                    return new ErrorDto<CambioVidaUtilAplicarResponse> { Code = -1, Description = "numPlaca es requerido" };
 
                 if (dto.nuevaVidaUtil <= 0)
-                    return new ErrorDTO<CambioVidaUtilAplicarResponse> { Code = -1, Description = "nuevaVidaUtil debe ser > 0" };
+                    return new ErrorDto<CambioVidaUtilAplicarResponse> { Code = -1, Description = "nuevaVidaUtil debe ser > 0" };
 
                 string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
                 using var cn = new SqlConnection(connStr);
@@ -272,7 +272,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (SqlException ex)
             {
-                return new ErrorDTO<CambioVidaUtilAplicarResponse>
+                return new ErrorDto<CambioVidaUtilAplicarResponse>
                 {
                     Code = -1,
                     Description = ex.Message,
@@ -281,7 +281,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                return new ErrorDTO<CambioVidaUtilAplicarResponse>
+                return new ErrorDto<CambioVidaUtilAplicarResponse>
                 {
                     Code = -1,
                     Description = ex.Message,

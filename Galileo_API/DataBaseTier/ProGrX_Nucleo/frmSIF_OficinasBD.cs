@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SifOficinasLista> Sif_OficinasLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SifOficinasLista> Sif_OficinasLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SifOficinasLista>()
+            var result = new ErrorDto<SifOficinasLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -87,10 +87,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Sif_OficinasUnidadContable_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasUnidadContable_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -118,10 +118,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Sif_OficinasCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sif_OficinasCentroCostos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -144,10 +144,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
             }
             return result;
         }
-        public ErrorDTO<List<DropDownListaGenericaModel>> Sif_Oficinas_Lista(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sif_Oficinas_Lista(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
             try
             {
 
@@ -175,10 +175,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="oficinaDatos"></param>
         /// <returns></returns>
 
-        public ErrorDTO Sif_Oficinas_ActualizarDatos(int CodEmpresa, SifOficinasData oficinaDatos)
+        public ErrorDto Sif_Oficinas_ActualizarDatos(int CodEmpresa, SifOficinasData oficinaDatos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -223,10 +223,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="oficinaDatos"></param>
         /// <returns></returns>
-        public ErrorDTO Sif_Oficinas_Guardar(int CodEmpresa, SifOficinasData oficinaDatos)
+        public ErrorDto Sif_Oficinas_Guardar(int CodEmpresa, SifOficinasData oficinaDatos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -294,10 +294,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
      /// <param name="CodEmpresa"></param>
      /// <param name="oficinaDatos"></param>
      /// <returns></returns>
-        private ErrorDTO Sif_Oficinas_Actualizar(int CodEmpresa, SifOficinasData oficinaDatos)
+        private ErrorDto Sif_Oficinas_Actualizar(int CodEmpresa, SifOficinasData oficinaDatos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -355,10 +355,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
      /// <param name="CodEmpresa"></param>
      /// <param name="oficinaDatos"></param>
      /// <returns></returns>
-        private ErrorDTO Sif_Oficinas_Insertar(int CodEmpresa, SifOficinasData oficinaDatos)
+        private ErrorDto Sif_Oficinas_Insertar(int CodEmpresa, SifOficinasData oficinaDatos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -412,10 +412,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="apoyo"></param>
         /// <param name="usuariosEstado"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SifOficinasMiembros>> Sif_OficinasMiembros_Lista(int CodEmpresa, string oficina, string filtro, int apoyo, int usuariosEstado)
+        public ErrorDto<List<SifOficinasMiembros>> Sif_OficinasMiembros_Lista(int CodEmpresa, string oficina, string filtro, int apoyo, int usuariosEstado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SifOficinasMiembros>>()
+            var result = new ErrorDto<List<SifOficinasMiembros>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -451,10 +451,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuarioRegistro"></param>
         /// <param name="accion"></param>
         /// <returns></returns>
-        public ErrorDTO Sif_OficinasMiembros_Agregar(int CodEmpresa, string oficina, string usuario, int apoyo, string usuarioRegistro,string accion)
+        public ErrorDto Sif_OficinasMiembros_Agregar(int CodEmpresa, string oficina, string usuario, int apoyo, string usuarioRegistro,string accion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             try
             {
                 //Info de pruebas
@@ -480,10 +480,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SifOficinasHistorial>> Sif_OficinasHistorial_Lista(int CodEmpresa, string filtro)
+        public ErrorDto<List<SifOficinasHistorial>> Sif_OficinasHistorial_Lista(int CodEmpresa, string filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SifOficinasHistorial>>()
+            var result = new ErrorDto<List<SifOficinasHistorial>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -514,10 +514,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SifOficinasData>> Sif_Oficinas_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SifOficinasData>> Sif_Oficinas_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SifOficinasData>>()
+            var result = new ErrorDto<List<SifOficinasData>>()
             {
                 Code = 0,
                 Description = "Ok",

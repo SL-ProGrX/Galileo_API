@@ -21,9 +21,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_PadronSalariosInstituciones_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_PadronSalariosInstituciones_Obtener(int CodEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "OK",
@@ -60,9 +60,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="padron"></param>
         /// <returns></returns>
-        public ErrorDTO AF_PadronSalarios_Padron_Procesar(int CodEmpresa, string institucion, string usuario  ,List<AfPadronData> padron)
+        public ErrorDto AF_PadronSalarios_Padron_Procesar(int CodEmpresa, string institucion, string usuario  ,List<AfPadronData> padron)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "OK"
@@ -104,9 +104,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="salario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_PadronSalarios_Salario_Procesar(int CodEmpresa, string institucion, string usuario,  List<AfSalarioData> salario)
+        public ErrorDto AF_PadronSalarios_Salario_Procesar(int CodEmpresa, string institucion, string usuario,  List<AfSalarioData> salario)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "OK"

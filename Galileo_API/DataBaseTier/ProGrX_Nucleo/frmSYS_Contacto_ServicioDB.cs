@@ -24,9 +24,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="identificacion"></param>
         /// <param name="codPais"></param>
         /// /// <returns></returns>
-        public ErrorDTO<SysContactoServicioGeneralData>SysContactoServicio_General_Obtener(int CodEmpresa, string identificacion, string codPais = "CRC")
+        public ErrorDto<SysContactoServicioGeneralData>SysContactoServicio_General_Obtener(int CodEmpresa, string identificacion, string codPais = "CRC")
         {
-            var dto = new ErrorDTO<SysContactoServicioGeneralData>
+            var dto = new ErrorDto<SysContactoServicioGeneralData>
             {
                 Code = 0,
                 Description = "Ok",
@@ -128,9 +128,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codPais"></param>
         /// <param name="filtros"></param>
         /// /// <returns></returns>
-        public ErrorDTO<List<SysContactoServicioGeneralData>>SysContactoServicio_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SysContactoServicioGeneralData>>SysContactoServicio_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<SysContactoServicioGeneralData>>
+            var result = new ErrorDto<List<SysContactoServicioGeneralData>>
             { Code = 0, Description = "Ok", Result = new() };
 
             try
@@ -222,9 +222,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codPais"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysContactoServicioTelefonoLista>SysContactoServicio_Telefonos_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysContactoServicioTelefonoLista>SysContactoServicio_Telefonos_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
         {
-            var dto = new ErrorDTO<SysContactoServicioTelefonoLista>
+            var dto = new ErrorDto<SysContactoServicioTelefonoLista>
             { Code = 0, Description = "Ok", Result = new() { total = 0, lista = new() } };
 
             try
@@ -301,9 +301,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="identificacion"></param>
         /// <param name="codPais"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysContactoServicioTelefonoData>>SysContactoServicio_Telefonos_Obtener(int CodEmpresa, string identificacion, string codPais)
+        public ErrorDto<List<SysContactoServicioTelefonoData>>SysContactoServicio_Telefonos_Obtener(int CodEmpresa, string identificacion, string codPais)
         {
-            var dto = new ErrorDTO<List<SysContactoServicioTelefonoData>>
+            var dto = new ErrorDto<List<SysContactoServicioTelefonoData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -351,9 +351,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codPais"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysContactoServicioDireccionLista>SysContactoServicio_Direcciones_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysContactoServicioDireccionLista>SysContactoServicio_Direcciones_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
         {
-            var dto = new ErrorDTO<SysContactoServicioDireccionLista>
+            var dto = new ErrorDto<SysContactoServicioDireccionLista>
             { Code = 0, Description = "Ok", Result = new() { total = 0, lista = new() } };
 
             try
@@ -451,9 +451,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="identificacion"></param>
         /// <param name="codPais"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysContactoServicioDireccionData>>SysContactoServicio_Direcciones_Obtener(int CodEmpresa, string identificacion, string codPais)
+        public ErrorDto<List<SysContactoServicioDireccionData>>SysContactoServicio_Direcciones_Obtener(int CodEmpresa, string identificacion, string codPais)
         {
-            var dto = new ErrorDTO<List<SysContactoServicioDireccionData>>
+            var dto = new ErrorDto<List<SysContactoServicioDireccionData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -510,9 +510,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codPais"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysContactoServicioEmpresaLista>SysContactoServicio_Empresas_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysContactoServicioEmpresaLista>SysContactoServicio_Empresas_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
         {
-            var dto = new ErrorDTO<SysContactoServicioEmpresaLista>
+            var dto = new ErrorDto<SysContactoServicioEmpresaLista>
             { Code = 0, Description = "Ok", Result = new() { total = 0, lista = new() } };
 
             try
@@ -597,9 +597,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="identificacion"></param>
         /// <param name="codPais"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysContactoServicioEmpresaData>>SysContactoServicio_Empresas_Obtener(int CodEmpresa, string identificacion, string codPais)
+        public ErrorDto<List<SysContactoServicioEmpresaData>>SysContactoServicio_Empresas_Obtener(int CodEmpresa, string identificacion, string codPais)
         {
-            var dto = new ErrorDTO<List<SysContactoServicioEmpresaData>>
+            var dto = new ErrorDto<List<SysContactoServicioEmpresaData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -663,11 +663,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codPais"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysContactoServicioPersonaLookupLista> SysContactoServicio_Personas_Lista_Buscar(int CodEmpresa, string codPais, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysContactoServicioPersonaLookupLista> SysContactoServicio_Personas_Lista_Buscar(int CodEmpresa, string codPais, FiltrosLazyLoadData filtros)
         {
             string connectionString = _config.GetConnectionString("BaseConnString");
 
-            var response = new ErrorDTO<SysContactoServicioPersonaLookupLista>
+            var response = new ErrorDto<SysContactoServicioPersonaLookupLista>
             {
                 Code = 0,
                 Description = "Ok",

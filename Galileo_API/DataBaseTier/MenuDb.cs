@@ -245,9 +245,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<UsMenuManual> ManualMenu_Obtener(string key)
+        public ErrorDto<UsMenuManual> ManualMenu_Obtener(string key)
         {
-            var response = new ErrorDTO<UsMenuManual>();
+            var response = new ErrorDto<UsMenuManual>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -265,9 +265,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<string> ManualFormulario_Obtener(string formulario)
+        public ErrorDto<string> ManualFormulario_Obtener(string formulario)
         {
-            var response = new ErrorDTO<string>();
+            var response = new ErrorDto<string>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

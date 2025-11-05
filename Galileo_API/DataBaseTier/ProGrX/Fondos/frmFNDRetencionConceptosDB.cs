@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="enlace"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FNDRetencionConceptoData>> FND_RetencionConceptos_Obtener(int CodEmpresa, string enlace, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<FNDRetencionConceptoData>> FND_RetencionConceptos_Obtener(int CodEmpresa, string enlace, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<FNDRetencionConceptoData>>()
+            var result = new ErrorDto<List<FNDRetencionConceptoData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -79,10 +79,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<FNDRetencionConceptoLista> FND_RetencionConceptosLista_Obtener(int CodEmpresa, string enlace, FiltrosLazyLoadData filtros)
+        public ErrorDto<FNDRetencionConceptoLista> FND_RetencionConceptosLista_Obtener(int CodEmpresa, string enlace, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<FNDRetencionConceptoLista>
+            var result = new ErrorDto<FNDRetencionConceptoLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -141,10 +141,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
-        public ErrorDTO FND_RetencionConceptos_Guardar(int CodEmpresa, string usuario, FNDRetencionConceptoData concepto)
+        public ErrorDto FND_RetencionConceptos_Guardar(int CodEmpresa, string usuario, FNDRetencionConceptoData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -195,10 +195,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
-        private ErrorDTO FND_RetencionConceptos_Insertar(int CodEmpresa, string usuario, FNDRetencionConceptoData concepto)
+        private ErrorDto FND_RetencionConceptos_Insertar(int CodEmpresa, string usuario, FNDRetencionConceptoData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -244,10 +244,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
-        private ErrorDTO FND_RetencionConceptos_Actualizar(int CodEmpresa, string usuario, FNDRetencionConceptoData concepto)
+        private ErrorDto FND_RetencionConceptos_Actualizar(int CodEmpresa, string usuario, FNDRetencionConceptoData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -294,10 +294,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="retencionCodigo"></param>
         /// <returns></returns>
-        public ErrorDTO FND_RetencionConceptos_Eliminar(int CodEmpresa, string usuario, string retencionCodigo)
+        public ErrorDto FND_RetencionConceptos_Eliminar(int CodEmpresa, string usuario, string retencionCodigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -333,10 +333,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="retencionCodigo"></param>
         /// <returns></returns>
-        public ErrorDTO FND_RetencionConceptos_Valida(int CodEmpresa, string retencionCodigo)
+        public ErrorDto FND_RetencionConceptos_Valida(int CodEmpresa, string retencionCodigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

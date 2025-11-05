@@ -85,9 +85,9 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        private ErrorDTO Opcion_Insertar(OpcionDTO request)
+        private ErrorDto Opcion_Insertar(OpcionDTO request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -117,9 +117,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Opcion_Eliminar(string codigo, string formulario, int modulo)
+        public ErrorDto Opcion_Eliminar(string codigo, string formulario, int modulo)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -145,9 +145,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDTO Opcion_Actualizar(OpcionDTO request)
+        private ErrorDto Opcion_Actualizar(OpcionDTO request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -177,9 +177,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Opcion_Guardar(OpcionDTO request)
+        public ErrorDto Opcion_Guardar(OpcionDTO request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             if (request.Cod_Opcion == 0)

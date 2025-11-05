@@ -85,9 +85,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO sbInvInventario(int CodEmpresa, CompraInventarioDTO req)
+        public ErrorDto sbInvInventario(int CodEmpresa, CompraInventarioDTO req)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -134,9 +134,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="ColBod2"></param>
         /// <param name="vGrid"></param>
         /// <returns></returns>
-        public ErrorDTO fxInvVerificaLineaDetalle(int CodEmpresa, int ColCantidad, string vMov, int ColProd, int ColBod1, int ColBod2, List<FacturaDetalleDto> vGrid)
+        public ErrorDto fxInvVerificaLineaDetalle(int CodEmpresa, int ColCantidad, string vMov, int ColProd, int ColBod1, int ColBod2, List<FacturaDetalleDto> vGrid)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             int count = 0;
@@ -336,12 +336,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Cod_Parametro"></param>
         /// <returns></returns>
-        public ErrorDTO<ParametroValor> fxCxPParametro(int CodEmpresa, string Cod_Parametro)
+        public ErrorDto<ParametroValor> fxCxPParametro(int CodEmpresa, string Cod_Parametro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<ParametroValor>
+            var response = new ErrorDto<ParametroValor>
             {
                 Code = 0
             };
@@ -379,12 +379,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="TipoTran"></param>
         /// <param name="AutorizaUser"></param>
         /// <returns></returns>
-        public ErrorDTO fxInvTransaccionesAutoriza(int CodEmpresa, string Boleta, string TipoTran, string AutorizaUser)
+        public ErrorDto fxInvTransaccionesAutoriza(int CodEmpresa, string Boleta, string TipoTran, string AutorizaUser)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO info = new()
+            ErrorDto info = new()
             {
                 Code = 0
             };
@@ -665,7 +665,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public string WCF_ApiTest(int CodEmpresa, int numVal)
         {
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             try
             {
                 var response = client.GetDataAsync(numVal);
@@ -685,10 +685,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<int> ActivosSinAsignar_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<int> ActivosSinAsignar_Obtener(int CodEmpresa, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO<int> result = new ErrorDTO<int>();
+            ErrorDto<int> result = new ErrorDto<int>();
             try
             {
                 using (var connection = new SqlConnection(stringConn))
@@ -736,10 +736,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO BitacoraProducto(BitacoraProductoInsertarDTO req)
+        public ErrorDto BitacoraProducto(BitacoraProductoInsertarDTO req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -779,10 +779,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDTO BitacoraProveedor(BitacoraProveedorInsertarDTO req)
+        public ErrorDto BitacoraProveedor(BitacoraProveedorInsertarDTO req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -818,10 +818,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> TiposIdentificacion_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TiposIdentificacion_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>();
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
             resp.Code = 0;
             resp.Result = new List<DropDownListaGenericaModel>();
             try
@@ -842,9 +842,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<string> NumeroALetras(decimal numero)
+        public ErrorDto<string> NumeroALetras(decimal numero)
         {
-            var resp = new ErrorDTO<string>();
+            var resp = new ErrorDto<string>();
             resp.Code = 0;
             long parteEntera = (long)Math.Floor(numero);
             int parteDecimal = (int)((numero - parteEntera) * 100);
@@ -894,7 +894,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public int FndControlAutoriza_Guardar(FndControlAutorizaData request)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             result.Code = 0;
             
 
@@ -1125,13 +1125,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="jsonOrg"></param>
         /// <param name="jsonNew"></param>
         /// <returns></returns>
-        private ErrorDTO InsertarTablaControl(
+        private ErrorDto InsertarTablaControl(
             int CodEmpresa, int tipoCambio,  
             string tabla, string llave, 
             string usuario, string vQuery,
             string vInsert, DataTable dtDiferencias)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             result.Code = 0;
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
@@ -1197,7 +1197,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public int FndControlCambios_Autoriza(int CodEmpresa, int idCambio, string usuario)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             result.Code = 0;
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -1298,7 +1298,7 @@ namespace PgxAPI.DataBaseTier
 
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             result.Code = 0;
 
 
@@ -1354,7 +1354,7 @@ namespace PgxAPI.DataBaseTier
 
         public int FndControlAutoriza_Insertar(FndControlAutorizaData request)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             result.Code = 0;
 
 

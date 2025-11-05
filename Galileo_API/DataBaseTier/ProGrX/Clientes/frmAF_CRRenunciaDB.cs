@@ -20,9 +20,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfRenunciasSocios>> AF_CR_RenunciasSocios_Obtener(int CodEmpresa)
+        public ErrorDto<List<AfRenunciasSocios>> AF_CR_RenunciasSocios_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<AfRenunciasSocios>>()
+            var result = new ErrorDto<List<AfRenunciasSocios>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -58,9 +58,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="cedula">Cédula del socio.</param>
         /// <returns></returns>
-        public ErrorDTO<AfRenunciasSocioDetalle> AF_CR_Renuncias_Estado_Obtener(int CodEmpresa, string cedula)
+        public ErrorDto<AfRenunciasSocioDetalle> AF_CR_Renuncias_Estado_Obtener(int CodEmpresa, string cedula)
         {
-            var result = new ErrorDTO<AfRenunciasSocioDetalle>()
+            var result = new ErrorDto<AfRenunciasSocioDetalle>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -103,9 +103,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="filtro">Filtro de usuario y divisa.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfRenunciaBancos>> AF_CR_Renuncias_Bancos_Obtener(int CodEmpresa, AfRenunciaBancoFiltro filtro)
+        public ErrorDto<List<AfRenunciaBancos>> AF_CR_Renuncias_Bancos_Obtener(int CodEmpresa, AfRenunciaBancoFiltro filtro)
         {
-            var result = new ErrorDTO<List<AfRenunciaBancos>>()
+            var result = new ErrorDto<List<AfRenunciaBancos>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -144,9 +144,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="filtro">Filtro de banco y mortalidad.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfRenunciaEmiteTDoc>> AF_CR_Renuncias_Emite_TDoc(int CodEmpresa, AfRenunciaEmiteTDocFiltro filtro)
+        public ErrorDto<List<AfRenunciaEmiteTDoc>> AF_CR_Renuncias_Emite_TDoc(int CodEmpresa, AfRenunciaEmiteTDocFiltro filtro)
         {
-            var result = new ErrorDTO<List<AfRenunciaEmiteTDoc>>()
+            var result = new ErrorDto<List<AfRenunciaEmiteTDoc>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -184,9 +184,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CR_Renuncias_TipoAccion_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Renuncias_TipoAccion_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -216,9 +216,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Causa">ID de la causa.</param>
         /// <returns></returns>
-        public ErrorDTO<AfRenunciaCausasDetalle> AF_CR_Renuncias_Causas_ObtenerDetalle(int CodEmpresa, int Causa)
+        public ErrorDto<AfRenunciaCausasDetalle> AF_CR_Renuncias_Causas_ObtenerDetalle(int CodEmpresa, int Causa)
         {
-            var result = new ErrorDTO<AfRenunciaCausasDetalle>()
+            var result = new ErrorDto<AfRenunciaCausasDetalle>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -252,9 +252,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Cedula">Cédula del socio.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfRenunciaLiqConsultaPatrimonio>> AF_CR_Renuncias_Liq_Consulta_Patrimonio(int CodEmpresa, string Cedula)
+        public ErrorDto<List<AfRenunciaLiqConsultaPatrimonio>> AF_CR_Renuncias_Liq_Consulta_Patrimonio(int CodEmpresa, string Cedula)
         {
-            var result = new ErrorDTO<List<AfRenunciaLiqConsultaPatrimonio>>()
+            var result = new ErrorDto<List<AfRenunciaLiqConsultaPatrimonio>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -292,9 +292,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Monto">Monto a consultar.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfRenunciaExcRentaDetallada>> AF_CR_Renuncias_Exc_Renta_Detallada(int CodEmpresa, decimal Monto)
+        public ErrorDto<List<AfRenunciaExcRentaDetallada>> AF_CR_Renuncias_Exc_Renta_Detallada(int CodEmpresa, decimal Monto)
         {
-            var result = new ErrorDTO<List<AfRenunciaExcRentaDetallada>>()
+            var result = new ErrorDto<List<AfRenunciaExcRentaDetallada>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -332,9 +332,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="filtro">Filtro de cédula y tipo de liquidación.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfRenunciaLiquidaListaPlanes>> AF_CR_Renuncias_Liquida_ListaPlanes(int CodEmpresa, AfRenunciaLiquidaListaPlanesFiltro filtro)
+        public ErrorDto<List<AfRenunciaLiquidaListaPlanes>> AF_CR_Renuncias_Liquida_ListaPlanes(int CodEmpresa, AfRenunciaLiquidaListaPlanesFiltro filtro)
         {
-            var result = new ErrorDTO<List<AfRenunciaLiquidaListaPlanes>>()
+            var result = new ErrorDto<List<AfRenunciaLiquidaListaPlanes>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -373,9 +373,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="filtro">Filtro de identificación, banco y divisa.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfRenunciaCuentaBancaria>> AF_CR_Renuncias_CuentasBancarias_Obtener(int CodEmpresa, AfRenunciaCuentaBancariaFiltro filtro)
+        public ErrorDto<List<AfRenunciaCuentaBancaria>> AF_CR_Renuncias_CuentasBancarias_Obtener(int CodEmpresa, AfRenunciaCuentaBancariaFiltro filtro)
         {
-            var result = new ErrorDTO<List<AfRenunciaCuentaBancaria>>()
+            var result = new ErrorDto<List<AfRenunciaCuentaBancaria>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -414,9 +414,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfRenunciaPromotor>> AF_CR_Renuncias_Promotores_Obtener(int CodEmpresa)
+        public ErrorDto<List<AfRenunciaPromotor>> AF_CR_Renuncias_Promotores_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<AfRenunciaPromotor>>()
+            var result = new ErrorDto<List<AfRenunciaPromotor>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -451,9 +451,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="cedula">Cédula del socio.</param>
         /// <returns></returns>
-        public ErrorDTO<int> AF_CR_Renuncias_Activa(int CodEmpresa, string cedula)
+        public ErrorDto<int> AF_CR_Renuncias_Activa(int CodEmpresa, string cedula)
         {
-            var result = new ErrorDTO<int>()
+            var result = new ErrorDto<int>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -484,9 +484,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="cedula">Cédula del socio.</param>
         /// <param name="codigo">Código de renuncia.</param>
         /// <returns></returns>
-        public ErrorDTO<int> AF_CR_Renuncias_Activa_Otra(int CodEmpresa, string cedula, int codigo)
+        public ErrorDto<int> AF_CR_Renuncias_Activa_Otra(int CodEmpresa, string cedula, int codigo)
         {
-            var result = new ErrorDTO<int>()
+            var result = new ErrorDto<int>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -516,9 +516,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="cedula">Cédula del socio.</param>
         /// <returns></returns>
-        public ErrorDTO<int> AF_CR_Renuncias_Socio_Existe(int CodEmpresa, string cedula)
+        public ErrorDto<int> AF_CR_Renuncias_Socio_Existe(int CodEmpresa, string cedula)
         {
-            var result = new ErrorDTO<int>()
+            var result = new ErrorDto<int>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -548,9 +548,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="CodRenuncia">Código de la renuncia.</param>
         /// <returns></returns>
-        public ErrorDTO<AfRenuncia> AF_CR_Renuncias_ObtenerPorId(int CodEmpresa, long CodRenuncia)
+        public ErrorDto<AfRenuncia> AF_CR_Renuncias_ObtenerPorId(int CodEmpresa, long CodRenuncia)
         {
-            var result = new ErrorDTO<AfRenuncia>()
+            var result = new ErrorDto<AfRenuncia>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -584,9 +584,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Tipo">Tipo de aplicación.</param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CR_Renuncia_Obtener_Causas(int CodEmpresa, String Tipo)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Renuncia_Obtener_Causas(int CodEmpresa, String Tipo)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -616,9 +616,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="filtro">Filtros cedula, corte, mnt retiro, plan </param>
         /// <returns></returns>
-        public ErrorDTO<AfRenunciaRentaGlobal> AF_CR_Renuncias_Renta_Global(int CodEmpresa, AfRenunciaRentaGlobalFiltro filtro)
+        public ErrorDto<AfRenunciaRentaGlobal> AF_CR_Renuncias_Renta_Global(int CodEmpresa, AfRenunciaRentaGlobalFiltro filtro)
         {
-            var result = new ErrorDTO<AfRenunciaRentaGlobal>()
+            var result = new ErrorDto<AfRenunciaRentaGlobal>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -659,9 +659,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="filtro">Filtros para la liquidación de créditos</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfRenunciaLiquidacionCreditosPersona>> AF_CR_Renuncias_Liquidacion_CreditosPersona(int CodEmpresa, AfRenunciaLiquidacionCreditosPersonaFiltro filtro)
+        public ErrorDto<List<AfRenunciaLiquidacionCreditosPersona>> AF_CR_Renuncias_Liquidacion_CreditosPersona(int CodEmpresa, AfRenunciaLiquidacionCreditosPersonaFiltro filtro)
         {
-            var result = new ErrorDTO<List<AfRenunciaLiquidacionCreditosPersona>>()
+            var result = new ErrorDto<List<AfRenunciaLiquidacionCreditosPersona>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -700,9 +700,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Cedula">Cédula de una persona</param>
         /// <returns></returns>
-        public ErrorDTO<AfRenunciaSinpeNegativo> AF_CR_Renuncias_Sinpe_Negativo(int CodEmpresa, string Cedula )
+        public ErrorDto<AfRenunciaSinpeNegativo> AF_CR_Renuncias_Sinpe_Negativo(int CodEmpresa, string Cedula )
         {
-            var result = new ErrorDTO<AfRenunciaSinpeNegativo>()
+            var result = new ErrorDto<AfRenunciaSinpeNegativo>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -740,9 +740,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="Cedula">Cédyla de una persona</param>
         /// <returns></returns>
-        public ErrorDTO<List<AfRenunciaDetalleHistorico>> AF_CR_Renuncias_ObtenerHistorico(int CodEmpresa, string Cedula)
+        public ErrorDto<List<AfRenunciaDetalleHistorico>> AF_CR_Renuncias_ObtenerHistorico(int CodEmpresa, string Cedula)
         {
-            var result = new ErrorDTO<List<AfRenunciaDetalleHistorico>>()
+            var result = new ErrorDto<List<AfRenunciaDetalleHistorico>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -783,9 +783,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="CodRenuncia">Código de renuncia</param>
         /// <returns></returns>
-        public ErrorDTO<AfRenuncia> AF_CR_Renuncias_ObtenerPorCodigo(int CodEmpresa, long CodRenuncia)
+        public ErrorDto<AfRenuncia> AF_CR_Renuncias_ObtenerPorCodigo(int CodEmpresa, long CodRenuncia)
         {
-            var result = new ErrorDTO<AfRenuncia>()
+            var result = new ErrorDto<AfRenuncia>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -817,9 +817,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="request">Filtros para guardar la liquidación</param>
         /// <returns></returns>
-        public ErrorDTO<int> AF_CR_Renuncias_Liquidacion_Guarda(int CodEmpresa, AfRenunciaLiquidacion request)
+        public ErrorDto<int> AF_CR_Renuncias_Liquidacion_Guarda(int CodEmpresa, AfRenunciaLiquidacion request)
         {
-            var result = new ErrorDTO<int>()
+            var result = new ErrorDto<int>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -887,9 +887,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="request">Datos del plan a insertar.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDTO<bool> AF_CR_Renuncias_Plan_Insertar(int CodEmpresa, AfRenunciaPlan request)
+        public ErrorDto<bool> AF_CR_Renuncias_Plan_Insertar(int CodEmpresa, AfRenunciaPlan request)
         {
-            var result = new ErrorDTO<bool>()
+            var result = new ErrorDto<bool>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -934,9 +934,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="request">Datos del abono a insertar.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDTO<bool> AF_CR_Renuncias_Abono_Insertar(int CodEmpresa, AfRenunciaAbono request)
+        public ErrorDto<bool> AF_CR_Renuncias_Abono_Insertar(int CodEmpresa, AfRenunciaAbono request)
         {
-            var result = new ErrorDTO<bool>()
+            var result = new ErrorDto<bool>()
             {
                 Code = 0,
                 Description = "Ok",

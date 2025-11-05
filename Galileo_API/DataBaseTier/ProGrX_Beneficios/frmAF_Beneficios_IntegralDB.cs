@@ -34,10 +34,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="tipo"></param>
         /// <param name="modulo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CatalogosLista>> Catalogo_Obtener(int CodEmpresa, int tipo, int modulo)
+        public ErrorDto<List<CatalogosLista>> Catalogo_Obtener(int CodEmpresa, int tipo, int modulo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CatalogosLista>>();
+            var response = new ErrorDto<List<CatalogosLista>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -69,10 +69,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfBeneficioIntegralDropsLista>> BeneIntegralCategorias_Obtener(int CodCliente)
+        public ErrorDto<List<AfBeneficioIntegralDropsLista>> BeneIntegralCategorias_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfBeneficioIntegralDropsLista>>();
+            var response = new ErrorDto<List<AfBeneficioIntegralDropsLista>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -100,10 +100,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consec"></param>
         /// <param name="cod_beneficio"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfiBeneObservaciones>> BeneIntegralObservaciones_Obtener(int CodCliente, int consec, string cod_beneficio)
+        public ErrorDto<List<AfiBeneObservaciones>> BeneIntegralObservaciones_Obtener(int CodCliente, int consec, string cod_beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiBeneObservaciones>>();
+            var response = new ErrorDto<List<AfiBeneObservaciones>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -136,10 +136,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="observacion"></param>
         /// <returns></returns>
-        public ErrorDTO BeneIntegralObservaciones_Guardar(int CodCliente, AfiBeneObservaciones observacion)
+        public ErrorDto BeneIntegralObservaciones_Guardar(int CodCliente, AfiBeneObservaciones observacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             try
             {
                 //Valido si es una nueva observación o una actualización
@@ -167,10 +167,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="observacion"></param>
         /// <returns></returns>
-        private ErrorDTO BeneIntegralObservaciones_Insertar(int CodCliente, AfiBeneObservaciones observacion)
+        private ErrorDto BeneIntegralObservaciones_Insertar(int CodCliente, AfiBeneObservaciones observacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -220,10 +220,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="observacion"></param>
         /// <returns></returns>
-        private ErrorDTO BeneIntegralObservaciones_Actualizar(int CodCliente, AfiBeneObservaciones observacion)
+        private ErrorDto BeneIntegralObservaciones_Actualizar(int CodCliente, AfiBeneObservaciones observacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -266,10 +266,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="id_observacion"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO BeneIntegralObservaciones_Eliminar(int CodCliente, int id_observacion, string usuario)
+        public ErrorDto BeneIntegralObservaciones_Eliminar(int CodCliente, int id_observacion, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -309,10 +309,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Cod_Beneficio"></param>
         /// <param name="Consec"></param>
         /// <returns></returns>
-        public ErrorDTO<List<BitacoraBeneficioIntegralDTO>> BitacoraBeneficioIntegral_Obtener(int CodEmpresa, string Cod_Beneficio, int Consec)
+        public ErrorDto<List<BitacoraBeneficioIntegralDTO>> BitacoraBeneficioIntegral_Obtener(int CodEmpresa, string Cod_Beneficio, int Consec)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<BitacoraBeneficioIntegralDTO>>();
+            var response = new ErrorDto<List<BitacoraBeneficioIntegralDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -342,7 +342,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="id_beneficio"></param>
         /// <param name="categoria"></param>
         /// <returns></returns>
-        public ErrorDTO<object> BeneIntegralRepExpediente_Obtener(int CodEmpresa, string cedula, int id_beneficio, string categoria)
+        public ErrorDto<object> BeneIntegralRepExpediente_Obtener(int CodEmpresa, string cedula, int id_beneficio, string categoria)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             // Crear un objeto DataSet para almacenar las tablas devueltas
@@ -350,7 +350,7 @@ namespace PgxAPI.DataBaseTier
             // Crear un diccionario para almacenar las tablas como JSON
             var tablesAsJson = new Dictionary<string, object>();
 
-            ErrorDTO<object> response = new ErrorDTO<object>();
+            ErrorDto<object> response = new ErrorDto<object>();
             try
             {
                 using (SqlConnection connection = new SqlConnection(clienteConnString))
@@ -400,17 +400,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Categoria"></param>
         /// <param name="filtroString"></param>
         /// <returns></returns>
-        public ErrorDTO<BeneConsultaDatosLista> BeneficiosParaAprobacionMasiva_Obtener(int CodEmpresa, string Categoria, string filtroString)
+        public ErrorDto<BeneConsultaDatosLista> BeneficiosParaAprobacionMasiva_Obtener(int CodEmpresa, string Categoria, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var filtros = JsonConvert.DeserializeObject<AfiBeneFiltros>(filtroString);
-            var response = new ErrorDTO<BeneConsultaDatosLista>
+            var response = new ErrorDto<BeneConsultaDatosLista>
             {
                 Result = new BeneConsultaDatosLista(),
                 Code = 0
             };
             response.Result.total = 0;
-            var validaBeneficio = new ErrorDTO();
+            var validaBeneficio = new ErrorDto();
             var beneficio = new BeneficioGeneralDatos();
             string paginaActual = " ", paginacionActual = " ", where = " ";
             try
@@ -508,11 +508,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="lista"></param>
         /// <returns></returns>
-        public ErrorDTO BeneIntegral_AprobacionMasiva(int CodEmpresa, string lista)
+        public ErrorDto BeneIntegral_AprobacionMasiva(int CodEmpresa, string lista)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var beneficios = JsonConvert.DeserializeObject<List<BeneficioGuadar>>(lista);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -564,11 +564,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Categoria"></param>
         /// <param name="filtroString"></param>
         /// <returns></returns>
-        public ErrorDTO<BeneConsultaDatosLista> BeneficiosControMensual_Obtener(int CodEmpresa, string Categoria, string filtroString)
+        public ErrorDto<BeneConsultaDatosLista> BeneficiosControMensual_Obtener(int CodEmpresa, string Categoria, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var filtros = JsonConvert.DeserializeObject<AfiBeneFiltros>(filtroString);
-            var response = new ErrorDTO<BeneConsultaDatosLista>
+            var response = new ErrorDto<BeneConsultaDatosLista>
             {
                 Result = new BeneConsultaDatosLista(),
                 Code = 0
@@ -745,11 +745,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="lista"></param>
         /// <param name="mes"></param>
         /// <returns></returns>
-        public ErrorDTO BeneSolicitudDeposito_Generar(int CodEmpresa, string lista, int mes)
+        public ErrorDto BeneSolicitudDeposito_Generar(int CodEmpresa, string lista, int mes)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var beneficios = JsonConvert.DeserializeObject<List<BeneficioGuadar>>(lista);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -886,11 +886,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="lista"></param>
         /// <returns></returns>
-        public ErrorDTO BeneSolicitudDeposito_Devolver(int CodEmpresa, string lista)
+        public ErrorDto BeneSolicitudDeposito_Devolver(int CodEmpresa, string lista)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var beneficios = JsonConvert.DeserializeObject<List<BeneficioGuadar>>(lista);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -946,11 +946,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Categoria"></param>
         /// <param name="filtroString"></param>
         /// <returns></returns>
-        public ErrorDTO<BeneConsultaDatosLista> BeneficiosControMensual_Reporte(int CodEmpresa, string Categoria, string filtroString)
+        public ErrorDto<BeneConsultaDatosLista> BeneficiosControMensual_Reporte(int CodEmpresa, string Categoria, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var filtros = JsonConvert.DeserializeObject<AfiBeneFiltros>(filtroString);
-            var response = new ErrorDTO<BeneConsultaDatosLista>
+            var response = new ErrorDto<BeneConsultaDatosLista>
             {
                 Result = new BeneConsultaDatosLista(),
                 Code = 0
@@ -1012,10 +1012,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Categoria"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AfBeneficioIntegralDropsLista>> BeneficioGrupos_Obtener(int CodEmpresa, string Categoria)
+        public ErrorDto<List<AfBeneficioIntegralDropsLista>> BeneficioGrupos_Obtener(int CodEmpresa, string Categoria)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AfBeneficioIntegralDropsLista>>();
+            var response = new ErrorDto<List<AfBeneficioIntegralDropsLista>>();
 
             try
             {
@@ -1039,10 +1039,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="cod_categoria"></param>
         /// <returns></returns>
-        public ErrorDTO<Bene_CategoriaPermisos> ValidaUsuarioBeneficios_Obtener(int CodEmpresa, string usuario, string cod_categoria)
+        public ErrorDto<Bene_CategoriaPermisos> ValidaUsuarioBeneficios_Obtener(int CodEmpresa, string usuario, string cod_categoria)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<Bene_CategoriaPermisos>();
+            var response = new ErrorDto<Bene_CategoriaPermisos>();
 
             try
             {
@@ -1087,10 +1087,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public async Task<ErrorDTO> BeneSolicitudBloqueo_Enviar(int CodCliente, DocArchivoBeneIntegralDTO parametros)
+        public async Task<ErrorDto> BeneSolicitudBloqueo_Enviar(int CodCliente, DocArchivoBeneIntegralDTO parametros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             EnvioCorreoModels eConfig = new();
             string emailCobros = "";

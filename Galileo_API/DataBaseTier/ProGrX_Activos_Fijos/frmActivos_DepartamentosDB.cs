@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="filtros"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<ActivosDepartamentosLista> Activos_DepartamentosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosDepartamentosLista> Activos_DepartamentosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<ActivosDepartamentosLista>
+            var resp = new ErrorDto<ActivosDepartamentosLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -92,10 +92,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="filtros"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosDepartamentosData>> Activos_Departamentos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ActivosDepartamentosData>> Activos_Departamentos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<ActivosDepartamentosData>>
+            var resp = new ErrorDto<List<ActivosDepartamentosData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -146,24 +146,24 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="departamento"></param>
         /// </summary>
-        public ErrorDTO Activos_Departamentos_Guardar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
+        public ErrorDto Activos_Departamentos_Guardar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
                 if (departamento == null)
-                    return new ErrorDTO { Code = -1, Description = "Datos no proporcionados." };
+                    return new ErrorDto { Code = -1, Description = "Datos no proporcionados." };
 
                 if (string.IsNullOrWhiteSpace(departamento.cod_departamento))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar el código de departamento." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar el código de departamento." };
 
                 if (string.IsNullOrWhiteSpace(departamento.descripcion))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar la descripción." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar la descripción." };
 
                 if (string.IsNullOrWhiteSpace(departamento.cod_unidad))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar la unidad contable." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar la unidad contable." };
 
                 using var cn = new SqlConnection(connStr);
 
@@ -175,14 +175,14 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 if (departamento.isNew)
                 {
                     if (existe > 0)
-                        return new ErrorDTO { Code = -2, Description = $"El departamento {departamento.cod_departamento.ToUpper()} ya existe." };
+                        return new ErrorDto { Code = -2, Description = $"El departamento {departamento.cod_departamento.ToUpper()} ya existe." };
 
                     return Activos_Departamentos_Insertar(CodEmpresa, usuario, departamento);
                 }
                 else
                 {
                     if (existe == 0)
-                        return new ErrorDTO { Code = -2, Description = $"El departamento {departamento.cod_departamento.ToUpper()} no existe." };
+                        return new ErrorDto { Code = -2, Description = $"El departamento {departamento.cod_departamento.ToUpper()} no existe." };
 
                     return Activos_Departamentos_Actualizar(CodEmpresa, usuario, departamento);
                 }
@@ -201,10 +201,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="departamento"></param>
         /// </summary>
         /// <returns></returns>
-        private ErrorDTO Activos_Departamentos_Insertar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
+        private ErrorDto Activos_Departamentos_Insertar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -251,10 +251,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="departamento"></param>
         /// </summary>
         /// <returns></returns>
-        private ErrorDTO Activos_Departamentos_Actualizar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
+        private ErrorDto Activos_Departamentos_Actualizar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -302,15 +302,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="cod_departamento"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO Activos_Departamentos_Eliminar(int CodEmpresa, string usuario, string cod_departamento)
+        public ErrorDto Activos_Departamentos_Eliminar(int CodEmpresa, string usuario, string cod_departamento)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
                 if (string.IsNullOrWhiteSpace(cod_departamento))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar el código de departamento." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar el código de departamento." };
 
                 using var cn = new SqlConnection(connStr);
 
@@ -318,7 +318,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 int rows = cn.Execute(query, new { cod = cod_departamento.ToUpper() });
 
                 if (rows == 0)
-                    return new ErrorDTO { Code = -2, Description = $"El departamento {cod_departamento.ToUpper()} no existe." };
+                    return new ErrorDto { Code = -2, Description = $"El departamento {cod_departamento.ToUpper()} no existe." };
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDTO
                 {
@@ -342,10 +342,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa">.</param>
         /// <param name="cod_departamento"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Departamentos_Valida(int CodEmpresa, string cod_departamento)
+        public ErrorDto Activos_Departamentos_Valida(int CodEmpresa, string cod_departamento)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -380,10 +380,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="filtros"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<ActivosSeccionesLista> Activos_SeccionesLista_Obtener(int CodEmpresa, string? cod_departamento, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosSeccionesLista> Activos_SeccionesLista_Obtener(int CodEmpresa, string? cod_departamento, FiltrosLazyLoadData filtros)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<ActivosSeccionesLista>
+            var resp = new ErrorDto<ActivosSeccionesLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -460,10 +460,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="filtros"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosSeccionesData>> Activos_Secciones_Obtener(int CodEmpresa, string? cod_departamento, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ActivosSeccionesData>> Activos_Secciones_Obtener(int CodEmpresa, string? cod_departamento, FiltrosLazyLoadData filtros)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<ActivosSeccionesData>>
+            var resp = new ErrorDto<List<ActivosSeccionesData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -521,21 +521,21 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="seccion"></param>
         /// </summary>
-        public ErrorDTO Activos_Secciones_Guardar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
+        public ErrorDto Activos_Secciones_Guardar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
                 if (seccion == null)
-                    return new ErrorDTO { Code = -1, Description = "Datos no proporcionados." };
+                    return new ErrorDto { Code = -1, Description = "Datos no proporcionados." };
                 if (string.IsNullOrWhiteSpace(seccion.cod_departamento))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar el código de departamento." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar el código de departamento." };
                 if (string.IsNullOrWhiteSpace(seccion.cod_seccion))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar el código de sección." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar el código de sección." };
                 if (string.IsNullOrWhiteSpace(seccion.descripcion))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar la descripción." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar la descripción." };
 
                 using var cn = new SqlConnection(connStr);
                 const string qExiste = @"
@@ -547,14 +547,14 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 if (seccion.isNew)
                 {
                     if (existe > 0)
-                        return new ErrorDTO { Code = -2, Description = $"La sección {seccion.cod_seccion.ToUpper()} ya existe para el departamento {seccion.cod_departamento.ToUpper()}." };
+                        return new ErrorDto { Code = -2, Description = $"La sección {seccion.cod_seccion.ToUpper()} ya existe para el departamento {seccion.cod_departamento.ToUpper()}." };
 
                     resp = Activos_Secciones_Insertar(CodEmpresa, usuario, seccion);
                 }
                 else
                 {
                     if (existe == 0)
-                        return new ErrorDTO { Code = -2, Description = $"La sección {seccion.cod_seccion.ToUpper()} no existe en el departamento {seccion.cod_departamento.ToUpper()}." };
+                        return new ErrorDto { Code = -2, Description = $"La sección {seccion.cod_seccion.ToUpper()} no existe en el departamento {seccion.cod_departamento.ToUpper()}." };
 
                     resp = Activos_Secciones_Actualizar(CodEmpresa, usuario, seccion);
                 }
@@ -574,10 +574,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="seccion"></param>
         /// </summary>
         /// <returns></returns>
-        private ErrorDTO Activos_Secciones_Insertar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
+        private ErrorDto Activos_Secciones_Insertar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -623,10 +623,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="seccion"></param>
         /// </summary>
         /// <returns></returns>
-        private ErrorDTO Activos_Secciones_Actualizar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
+        private ErrorDto Activos_Secciones_Actualizar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -676,15 +676,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="cod_seccion"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO Activos_Secciones_Eliminar(int CodEmpresa, string usuario, string cod_departamento, string cod_seccion)
+        public ErrorDto Activos_Secciones_Eliminar(int CodEmpresa, string usuario, string cod_departamento, string cod_seccion)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
                 if (string.IsNullOrWhiteSpace(cod_departamento) || string.IsNullOrWhiteSpace(cod_seccion))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar departamento y sección." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar departamento y sección." };
 
                 using var cn = new SqlConnection(connStr);
                 string query = @"
@@ -693,7 +693,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 int rows = cn.Execute(query, new { dept = cod_departamento.ToUpper(), sec = cod_seccion.ToUpper() });
 
                 if (rows == 0)
-                    return new ErrorDTO { Code = -2, Description = $"La sección {cod_seccion.ToUpper()} no existe para el departamento {cod_departamento.ToUpper()}." };
+                    return new ErrorDto { Code = -2, Description = $"La sección {cod_seccion.ToUpper()} no existe para el departamento {cod_departamento.ToUpper()}." };
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDTO
                 {
@@ -719,10 +719,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="cod_departamento"></param>
         /// <param name="cod_seccion"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Secciones_Valida(int CodEmpresa, string cod_departamento, string cod_seccion)
+        public ErrorDto Activos_Secciones_Valida(int CodEmpresa, string cod_departamento, string cod_seccion)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -759,10 +759,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="contabilidad"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Secciones_CentrosCostos_Obtener(int CodEmpresa, int contabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Secciones_CentrosCostos_Obtener(int CodEmpresa, int contabilidad)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -793,10 +793,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="contabilidad"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Departamentos_Unidades_Obtener(int CodEmpresa, int contabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Departamentos_Unidades_Obtener(int CodEmpresa, int contabilidad)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -826,10 +826,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Departamentos_Dropdown_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Departamentos_Dropdown_Obtener(int CodEmpresa)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<DropDownListaGenericaModel>> { Code = 0, Description = "Ok", Result = new() };
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Description = "Ok", Result = new() };
             try
             {
                 using var cn = new SqlConnection(connStr);

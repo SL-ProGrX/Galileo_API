@@ -18,10 +18,10 @@ namespace PgxAPI.DataBaseTier
             _mBeneficiosDB = new mBeneficiosDB(_config);
         }
 
-        public ErrorDTO<AfiBeneGruposLista> AfiBeneGrupos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<AfiBeneGruposLista> AfiBeneGrupos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<AfiBeneGruposLista>();
+            var response = new ErrorDto<AfiBeneGruposLista>();
             response.Result = new AfiBeneGruposLista();
             response.Result.Total = 0;
             try
@@ -67,10 +67,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        private ErrorDTO AfiBeneGrupos_Insertar(int CodCliente, AfiBeneGrupos grupo)
+        private ErrorDto AfiBeneGrupos_Insertar(int CodCliente, AfiBeneGrupos grupo)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
 
             try
             {
@@ -110,10 +110,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        private ErrorDTO AfiBeneGrupos_Actualizar(int CodCliente, AfiBeneGrupos grupo)
+        private ErrorDto AfiBeneGrupos_Actualizar(int CodCliente, AfiBeneGrupos grupo)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             try
             {
                 int estado = grupo.estado ? 1 : 0;
@@ -161,10 +161,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO AfiBeneGrupos_Eliminar(int CodCliente, int cod_grupo)
+        public ErrorDto AfiBeneGrupos_Eliminar(int CodCliente, int cod_grupo)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -188,10 +188,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO<AfiBeneGruposAsigandosLista> BeneficioUsuariosLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string cod_grupo)
+        public ErrorDto<AfiBeneGruposAsigandosLista> BeneficioUsuariosLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string cod_grupo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<AfiBeneGruposAsigandosLista>();
+            var response = new ErrorDto<AfiBeneGruposAsigandosLista>();
             response.Result = new AfiBeneGruposAsigandosLista();
             response.Result.Total = 0;
             try
@@ -244,10 +244,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO AfiGrupoBeneficio_Insertar(int CodCliente, AfiGrupoBeneficioData grupo)
+        public ErrorDto AfiGrupoBeneficio_Insertar(int CodCliente, AfiGrupoBeneficioData grupo)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -271,10 +271,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO AfiGrupoBeneficio_Eliminar(int CodCliente, AfiGrupoBeneficioData grupo)
+        public ErrorDto AfiGrupoBeneficio_Eliminar(int CodCliente, AfiGrupoBeneficioData grupo)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -298,10 +298,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO<List<AfiBeneGrupos>> AfiBeneGrupos_lista(int CodCliente)
+        public ErrorDto<List<AfiBeneGrupos>> AfiBeneGrupos_lista(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiBeneGrupos>>();
+            var response = new ErrorDto<List<AfiBeneGrupos>>();
             try
             {
                 var query = "";
@@ -321,10 +321,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<AfiBeneLista>> AfiBeneCategoriaLista_Obtener(int CodCliente)
+        public ErrorDto<List<AfiBeneLista>> AfiBeneCategoriaLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiBeneLista>>();
+            var response = new ErrorDto<List<AfiBeneLista>>();
             try
             {
                 var query = "";
@@ -345,7 +345,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<AfiBeneAsignacionesData>> AfiAsignaciones_Obtener(int CodCliente, int asigna, string grupo)
+        public ErrorDto<List<AfiBeneAsignacionesData>> AfiAsignaciones_Obtener(int CodCliente, int asigna, string grupo)
         {
             switch (asigna)
             {
@@ -358,15 +358,15 @@ namespace PgxAPI.DataBaseTier
                 case 3:
                     return spAsignaGrupo(CodCliente, grupo, "spAFI_Bene_Grupos_Accesos_List");
                 default:
-                    return new ErrorDTO<List<AfiBeneAsignacionesData>>();
+                    return new ErrorDto<List<AfiBeneAsignacionesData>>();
             }
         }
 
 
-        private ErrorDTO<List<AfiBeneAsignacionesData>> spAsignaGrupo(int CodCliente,string grupo, string storeProcedure )
+        private ErrorDto<List<AfiBeneAsignacionesData>> spAsignaGrupo(int CodCliente,string grupo, string storeProcedure )
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiBeneAsignacionesData>>();
+            var response = new ErrorDto<List<AfiBeneAsignacionesData>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -390,7 +390,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO AfiAsignaciones_Actualizar(int CodCliente,
+        public ErrorDto AfiAsignaciones_Actualizar(int CodCliente,
             int asigna,
             string grupo,
             string valor,
@@ -408,14 +408,14 @@ namespace PgxAPI.DataBaseTier
                 case 3:
                     return spAsigGrupoAdd(CodCliente, grupo, valor, "Rol", usuario, mov, "spAFI_Bene_Grupos_Accesos_Add");
                 default:
-                    return new ErrorDTO();
+                    return new ErrorDto();
             }
         }
 
-        private ErrorDTO spAsigGrupoAdd2(int CodCliente, string grupo, string valor, string parametro, string usuario, string mov, string storeProcedure)
+        private ErrorDto spAsigGrupoAdd2(int CodCliente, string grupo, string valor, string parametro, string usuario, string mov, string storeProcedure)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             object values = null;  // Initialize as object to handle anonymous type assignment
 
@@ -482,10 +482,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        private ErrorDTO spAsigGrupoAdd(int CodCliente, string grupo, string valor, string parametro, string usuario, string mov, string storeProcedure)
+        private ErrorDto spAsigGrupoAdd(int CodCliente, string grupo, string valor, string parametro, string usuario, string mov, string storeProcedure)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO { Code = 0 };
+            var resp = new ErrorDto { Code = 0 };
             resp.Code = 0;
             try
             {
@@ -535,9 +535,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO AfiBeneGrupo_Guardar(int CodCliente, AfiBeneGrupos grupo)
+        public ErrorDto AfiBeneGrupo_Guardar(int CodCliente, AfiBeneGrupos grupo)
         {
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             if (grupo.cod_grupo == 0)
@@ -552,10 +552,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO<List<AfiBeneGrupos>> AfiBeneGrupoExportar(int CodCliente)
+        public ErrorDto<List<AfiBeneGrupos>> AfiBeneGrupoExportar(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AfiBeneGrupos>>(); 
+            var response = new ErrorDto<List<AfiBeneGrupos>>(); 
             try
             {
                 using var connection = new SqlConnection(clienteConnString);

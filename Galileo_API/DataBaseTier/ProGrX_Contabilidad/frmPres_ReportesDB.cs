@@ -14,11 +14,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<ModeloGenericList>> fxPres_Periodo_Obtener(int CodEmpresa, int CodContab, string CodModelo)
+        public ErrorDto<List<ModeloGenericList>> fxPres_Periodo_Obtener(int CodEmpresa, int CodContab, string CodModelo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             Pres_PeriodoRequest infoPeriodo = new Pres_PeriodoRequest();
-            ErrorDTO<List<ModeloGenericList>> resp = new ErrorDTO<List<ModeloGenericList>>();
+            ErrorDto<List<ModeloGenericList>> resp = new ErrorDto<List<ModeloGenericList>>();
 
             try
             {
@@ -51,10 +51,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<ModeloGenericList>> spPres_Ajustes_Permitidos_Obtener(int CodEmpresa, int codContab, string codModelo, string Usuario)
+        public ErrorDto<List<ModeloGenericList>> spPres_Ajustes_Permitidos_Obtener(int CodEmpresa, int codContab, string codModelo, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<ModeloGenericList>>();
+            var resp = new ErrorDto<List<ModeloGenericList>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);

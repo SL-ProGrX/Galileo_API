@@ -28,9 +28,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="accion"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_LiqAsientosTipo_Obtener(int CodEmpresa, string accion)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_LiqAsientosTipo_Obtener(int CodEmpresa, string accion)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -72,7 +72,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TokenConsultaModel>> AF_LiqAsientosToken_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<TokenConsultaModel>> AF_LiqAsientosToken_Obtener(int CodEmpresa, string usuario)
         {
             return _mtes.spTes_Token_Consulta(CodEmpresa, usuario);
         }
@@ -83,7 +83,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_LiqAsientoToken_Nuevo(int CodEmpresa, string usuario)
+        public ErrorDto AF_LiqAsientoToken_Nuevo(int CodEmpresa, string usuario)
         {
             return _mtes.spTes_Token_New(CodEmpresa, usuario);
         }
@@ -96,9 +96,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<LiquidacionAsientoModel>> AF_LiquidacionAsiento_Obtener(int CodEmpresa, FiltrosSolicitud filtros)
+        public ErrorDto<List<LiquidacionAsientoModel>> AF_LiquidacionAsiento_Obtener(int CodEmpresa, FiltrosSolicitud filtros)
         {
-            var response = new ErrorDTO<List<LiquidacionAsientoModel>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<LiquidacionAsientoModel>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -203,10 +203,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="liquidaciones"></param>
         /// <returns></returns>
-        public ErrorDTO Af_LiquidacionAsiento_Generar(int CodEmpresa, string usuario, FiltrosSolicitud filtros ,List<LiquidacionAsientoModel> liquidaciones)
+        public ErrorDto Af_LiquidacionAsiento_Generar(int CodEmpresa, string usuario, FiltrosSolicitud filtros ,List<LiquidacionAsientoModel> liquidaciones)
         {
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO { Code = 0 };
+            var response = new ErrorDto { Code = 0 };
             try
             {
                 string vRetencion = "";
@@ -226,7 +226,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         {
                             if (filtros.accion == "D")
                             {
-                                ErrorDTO res = sbTesoreria(CodEmpresa, usuario, "OC", vfecha, filtros.token, liq);
+                                ErrorDto res = sbTesoreria(CodEmpresa, usuario, "OC", vfecha, filtros.token, liq);
                                 if(res.Code == -1)
                                 {
                                     msjError += res.Description + Environment.NewLine;
@@ -270,10 +270,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="pToken"></param>
         /// <param name="row"></param>
         /// <returns></returns>
-        private ErrorDTO sbTesoreria(int CodEmpresa,string usuario, string oficina ,string vFecha, string pToken, LiquidacionAsientoModel row)
+        private ErrorDto sbTesoreria(int CodEmpresa,string usuario, string oficina ,string vFecha, string pToken, LiquidacionAsientoModel row)
         {
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO { Code = 0 };
+            var response = new ErrorDto { Code = 0 };
             try
             {
                 decimal curMonto = 0;

@@ -17,7 +17,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
             _mSecurity = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_EstadosLista> AF_Estados_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<AF_EstadosLista> AF_Estados_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_EstadosLista>
+            var response = new ErrorDto<AF_EstadosLista>
             {
                 Code = 0,
                 Result = new AF_EstadosLista()
@@ -88,10 +88,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Estados_Guardar(int CodEmpresa, string Usuario, AF_EstadosDTO Info)
+        public ErrorDto AF_Estados_Guardar(int CodEmpresa, string Usuario, AF_EstadosDTO Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -183,10 +183,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="CodEstado"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Estados_Eliminar(int CodEmpresa, string Usuario, string CodEstado)
+        public ErrorDto AF_Estados_Eliminar(int CodEmpresa, string Usuario, string CodEstado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -223,10 +223,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_Estados_MovimientosDTO>> AF_Estados_Movimientos_Obtener(int CodEmpresa)
+        public ErrorDto<List<AF_Estados_MovimientosDTO>> AF_Estados_Movimientos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AF_Estados_MovimientosDTO>>
+            var response = new ErrorDto<List<AF_Estados_MovimientosDTO>>
             {
                 Code = 0,
                 Result = new List<AF_Estados_MovimientosDTO>()
@@ -284,10 +284,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Estados_Movimientos_Registrar(int CodEmpresa, AF_Estados_MovimientosDTO Info)
+        public ErrorDto AF_Estados_Movimientos_Registrar(int CodEmpresa, AF_Estados_MovimientosDTO Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -352,10 +352,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Lista"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Estados_Movimientos_Eliminar(int CodEmpresa, List<AF_Estados_MovimientosDTO> Lista)
+        public ErrorDto AF_Estados_Movimientos_Eliminar(int CodEmpresa, List<AF_Estados_MovimientosDTO> Lista)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -425,10 +425,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="CodEstado"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_Estados_EntidadesDTO>> AF_Estados_Entidades_Obtener(int CodEmpresa, string CodEstado)
+        public ErrorDto<List<AF_Estados_EntidadesDTO>> AF_Estados_Entidades_Obtener(int CodEmpresa, string CodEstado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AF_Estados_EntidadesDTO>>
+            var response = new ErrorDto<List<AF_Estados_EntidadesDTO>>
             {
                 Code = 0,
                 Result = new List<AF_Estados_EntidadesDTO>()
@@ -461,10 +461,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Estados_Entidad_Guardar(int CodEmpresa, string Usuario, AF_Estados_EntidadesDTO Info)
+        public ErrorDto AF_Estados_Entidad_Guardar(int CodEmpresa, string Usuario, AF_Estados_EntidadesDTO Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -507,10 +507,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEstado"></param>
         /// <param name="Checked"></param>
         /// <returns></returns>
-        public ErrorDTO AF_Estados_EntidadesTodas_Guardar(int CodEmpresa, string Usuario, string CodEstado, bool Checked)
+        public ErrorDto AF_Estados_EntidadesTodas_Guardar(int CodEmpresa, string Usuario, string CodEstado, bool Checked)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

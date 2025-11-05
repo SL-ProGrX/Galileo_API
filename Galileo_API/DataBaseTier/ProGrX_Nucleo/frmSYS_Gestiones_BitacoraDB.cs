@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="todasFechas"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysGestionesBitacorasLista> Sys_Gestiones_Bitacoras_Lista_Obtener(int CodEmpresa,string cliente_Buscar,string gestion_Cod,string usuario_Buscar,string fecha_Inicio,string fecha_Fin,bool todasFechas,FiltrosLazyLoadData filtros)
+        public ErrorDto<SysGestionesBitacorasLista> Sys_Gestiones_Bitacoras_Lista_Obtener(int CodEmpresa,string cliente_Buscar,string gestion_Cod,string usuario_Buscar,string fecha_Inicio,string fecha_Fin,bool todasFechas,FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysGestionesBitacorasLista>
+            var result = new ErrorDto<SysGestionesBitacorasLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -129,10 +129,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="todasFechas"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysGestionesBitacorasData>> Sys_Gestiones_Bitacoras_Obtener(int CodEmpresa, string cliente_Buscar, string gestion_Cod, string usuario_Buscar, string fecha_Inicio, string fecha_Fin, bool todasFechas, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SysGestionesBitacorasData>> Sys_Gestiones_Bitacoras_Obtener(int CodEmpresa, string cliente_Buscar, string gestion_Cod, string usuario_Buscar, string fecha_Inicio, string fecha_Fin, bool todasFechas, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysGestionesBitacorasData>>
+            var result = new ErrorDto<List<SysGestionesBitacorasData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -204,10 +204,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Sys_Gestiones_Tipos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sys_Gestiones_Tipos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -242,10 +242,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SociosLookupLista> Sys_Socios_Buscar_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SociosLookupLista> Sys_Socios_Buscar_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SociosLookupLista>()
+            var result = new ErrorDto<SociosLookupLista>()
             {
                 Code = 0,
                 Description = "Ok",

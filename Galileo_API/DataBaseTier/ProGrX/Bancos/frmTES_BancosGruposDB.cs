@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_BancosGruposLista> Tes_BancosGruposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
+        public ErrorDto<TES_BancosGruposLista> Tes_BancosGruposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_BancosGruposLista>();
+            var response = new ErrorDto<TES_BancosGruposLista>();
             response.Result = new TES_BancosGruposLista();
             response.Result.data = new List<TES_BancosGruposData>();
             response.Result.total = 0;
@@ -83,10 +83,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TES_BancosGruposData>> Tes_BancosGruposExportar_Obtener(int CodEmpresa)
+        public ErrorDto<List<TES_BancosGruposData>> Tes_BancosGruposExportar_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TES_BancosGruposData>>();
+            var response = new ErrorDto<List<TES_BancosGruposData>>();
 
             try
             {
@@ -123,10 +123,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="firma"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_BancoGrupoFirma_Guardar(TES_BancosGruposImgData firma)
+        public ErrorDto Tes_BancoGrupoFirma_Guardar(TES_BancosGruposImgData firma)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(firma.cod_empresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             string pFirma1 = "";
             byte[] imgByteF1 = null;
             byte[] imgByteF2 = null;
@@ -211,10 +211,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_BancosGrupo_Guardar(int CodEmpresa, TES_BancosGruposData banco)
+        public ErrorDto Tes_BancosGrupo_Guardar(int CodEmpresa, TES_BancosGruposData banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 if (banco.cod_grupo == "")
@@ -254,10 +254,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-        private ErrorDTO BancoGrupoInsertar(int CodEmpresa, TES_BancosGruposData banco)
+        private ErrorDto BancoGrupoInsertar(int CodEmpresa, TES_BancosGruposData banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -324,10 +324,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-        private ErrorDTO BancoGrupoActualizar(int CodEmpresa, TES_BancosGruposData banco)
+        private ErrorDto BancoGrupoActualizar(int CodEmpresa, TES_BancosGruposData banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -380,10 +380,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_grupo"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_BancoGrupo_Eliminar(int CodEmpresa, string cod_grupo)
+        public ErrorDto Tes_BancoGrupo_Eliminar(int CodEmpresa, string cod_grupo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
 
             try
             {
@@ -427,10 +427,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_grupo"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_BancosGrupo_Valida(int CodEmpresa, string cod_grupo)
+        public ErrorDto Tes_BancosGrupo_Valida(int CodEmpresa, string cod_grupo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

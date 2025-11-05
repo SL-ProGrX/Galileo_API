@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PersonaBeneficiarioDTO>> AF_PersonaBeneficiarios_Consulta(int CodEmpresa, string cedula, int? lineaId)
+        public ErrorDto<List<PersonaBeneficiarioDTO>> AF_PersonaBeneficiarios_Consulta(int CodEmpresa, string cedula, int? lineaId)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<PersonaBeneficiarioDTO>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<PersonaBeneficiarioDTO>> { Code = 0, Result = new() };
             try
             {
                 if (lineaId == null)
@@ -56,10 +56,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDTO<int> AF_PersonaBeneficiarios_Registro(int CodEmpresa, PersonaBeneficiarioDTO dto)
+        public ErrorDto<int> AF_PersonaBeneficiarios_Registro(int CodEmpresa, PersonaBeneficiarioDTO dto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<int> { Code = 0 };
+            var response = new ErrorDto<int> { Code = 0 };
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -144,10 +144,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<Beneficiarios_CatalogoDTO> AF_Beneficiarios_Catalogos_Obtener(int CodEmpresa)
+        public ErrorDto<Beneficiarios_CatalogoDTO> AF_Beneficiarios_Catalogos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<Beneficiarios_CatalogoDTO>
+            var response = new ErrorDto<Beneficiarios_CatalogoDTO>
             {
                 Code = 0,
                 Description = "Ok",

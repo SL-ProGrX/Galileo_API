@@ -18,7 +18,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -53,9 +53,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="copiaPermisosUsuarioDto"></param>
         /// <returns></returns>
-        public ErrorDTO UsuarioAccesos_Copiar(UsuarioPermisosCopiar copiaPermisosUsuarioDto)
+        public ErrorDto UsuarioAccesos_Copiar(UsuarioPermisosCopiar copiaPermisosUsuarioDto)
         {
-            ErrorDTO resultado = new ErrorDTO();
+            ErrorDto resultado = new ErrorDto();
             Seguridad_PortalDB seguridadPortal = new Seguridad_PortalDB(_config);
 
             try

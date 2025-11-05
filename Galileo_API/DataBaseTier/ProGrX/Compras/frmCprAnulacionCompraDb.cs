@@ -17,11 +17,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<List<CompraDto>> Compras_Obtener(int CodEmpresa, string filtro)
+        public ErrorDto<List<CompraDto>> Compras_Obtener(int CodEmpresa, string filtro)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CompraDto>>();
+            var response = new ErrorDto<List<CompraDto>>();
 
             try
             {
@@ -50,10 +50,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<CompraAnulacionDatosDto> Compra_Datos_Obtener(int CodEmpresa, string Cod_Compra)
+        public ErrorDto<CompraAnulacionDatosDto> Compra_Datos_Obtener(int CodEmpresa, string Cod_Compra)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<CompraAnulacionDatosDto>();
+            var response = new ErrorDto<CompraAnulacionDatosDto>();
             response.Result = new CompraAnulacionDatosDto();
 
             try
@@ -87,10 +87,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO Compra_Anular(int CodEmpresa, CompraAnulacionDto compraDto)
+        public ErrorDto Compra_Anular(int CodEmpresa, CompraAnulacionDto compraDto)
         {
-            ErrorDTO ErrorDTO = new ErrorDTO();
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto ErrorDto = new ErrorDto();
+            ErrorDto result = new ErrorDto();
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -216,8 +216,8 @@ namespace PgxAPI.DataBaseTier
                         result = new mProGrX_AuxiliarDB(_config).sbInvInventario(CodEmpresa, comp);
                         if (result.Code == -1)
                         {
-                            ErrorDTO.Code = -1;
-                            ErrorDTO.Description = result.Description;
+                            ErrorDto.Code = -1;
+                            ErrorDto.Description = result.Description;
                             break;
                         }
 
@@ -226,17 +226,17 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception ex)
             {
-                ErrorDTO.Code = -1;
-                ErrorDTO.Description = ex.Message;
+                ErrorDto.Code = -1;
+                ErrorDto.Description = ex.Message;
             }
 
-            return ErrorDTO;
+            return ErrorDto;
         }
 
-        public ErrorDTO<List<CompraDetalleDto>> CompraDetalles_Obtener(int CodEmpresa, string Cod_Factura)
+        public ErrorDto<List<CompraDetalleDto>> CompraDetalles_Obtener(int CodEmpresa, string Cod_Factura)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CompraDetalleDto>>();
+            var response = new ErrorDto<List<CompraDetalleDto>>();
 
             try
             {
@@ -263,10 +263,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<CompraAnulacionDto> Compra_Obtener(int CodEmpresa, string codCompra)
+        public ErrorDto<CompraAnulacionDto> Compra_Obtener(int CodEmpresa, string codCompra)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<CompraAnulacionDto>();
+            var response = new ErrorDto<CompraAnulacionDto>();
             response.Result = new CompraAnulacionDto();
 
             try
@@ -293,9 +293,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO Compra_Anular1(int CodEmpresa, CompraAnulacionDto compraDto)
+        public ErrorDto Compra_Anular1(int CodEmpresa, CompraAnulacionDto compraDto)
         {
-            ErrorDTO ErrorDTO = new ErrorDTO();
+            ErrorDto ErrorDto = new ErrorDto();
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -395,18 +395,18 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception ex)
             {
-                ErrorDTO.Code = -1;
-                ErrorDTO.Description = ex.Message;
+                ErrorDto.Code = -1;
+                ErrorDto.Description = ex.Message;
             }
 
-            return ErrorDTO;
+            return ErrorDto;
         }
 
-        public ErrorDTO<CompraAnulacionDatosDto> Compra_Anulacion_Datos_Obtener(int CodEmpresa, CompraAnulacionDatosRequestDto compraAnulacionDatosRequestDto)
+        public ErrorDto<CompraAnulacionDatosDto> Compra_Anulacion_Datos_Obtener(int CodEmpresa, CompraAnulacionDatosRequestDto compraAnulacionDatosRequestDto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<CompraAnulacionDatosDto>();
+            var response = new ErrorDto<CompraAnulacionDatosDto>();
             response.Result = new CompraAnulacionDatosDto();
 
             try

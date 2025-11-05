@@ -17,7 +17,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_RecepcionDoc_Ubicaciones_Obtener(int CodEmpresa, string Usuario)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_RecepcionDoc_Ubicaciones_Obtener(int CodEmpresa, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -63,10 +63,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="scrollCode"></param>
         /// <param name="Remesa"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_Ubi_RemesaDTO> TES_RecepcionDoc_Remesa_Scroll_Obtener(int CodEmpresa, int scrollCode, int Remesa)
+        public ErrorDto<TES_Ubi_RemesaDTO> TES_RecepcionDoc_Remesa_Scroll_Obtener(int CodEmpresa, int scrollCode, int Remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_Ubi_RemesaDTO>
+            var response = new ErrorDto<TES_Ubi_RemesaDTO>
             {
                 Code = 0,
                 Result = new TES_Ubi_RemesaDTO()
@@ -112,10 +112,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Remesa"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_Ubi_RemesaDTO> TES_RecepcionDoc_Remesa_Obtener(int CodEmpresa, int Remesa)
+        public ErrorDto<TES_Ubi_RemesaDTO> TES_RecepcionDoc_Remesa_Obtener(int CodEmpresa, int Remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_Ubi_RemesaDTO>
+            var response = new ErrorDto<TES_Ubi_RemesaDTO>
             {
                 Code = 0,
                 Result = new TES_Ubi_RemesaDTO()
@@ -154,10 +154,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Remesa"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> TES_RecepcionDocumentos_Obtener(int CodEmpresa, int Remesa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TablasListaGenericaModel> TES_RecepcionDocumentos_Obtener(int CodEmpresa, int Remesa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Result = new TablasListaGenericaModel()
@@ -213,10 +213,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDTO TES_RecepcionDocumentos_Aplicar(int CodEmpresa, TES_RecepcionDocumento_Filtros parametros)
+        public ErrorDto TES_RecepcionDocumentos_Aplicar(int CodEmpresa, TES_RecepcionDocumento_Filtros parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

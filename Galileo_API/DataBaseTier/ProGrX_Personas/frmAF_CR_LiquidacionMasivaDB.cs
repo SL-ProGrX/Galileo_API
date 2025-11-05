@@ -21,9 +21,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="Filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_Liquidacion_Masiva>> AF_LiquidacionMasiva_Obtener(int CodEmpresa, AF_LiquidacionMasiva_Filtros Filtro)
+        public ErrorDto<List<AF_Liquidacion_Masiva>> AF_LiquidacionMasiva_Obtener(int CodEmpresa, AF_LiquidacionMasiva_Filtros Filtro)
         {
-            var result = new ErrorDTO<List<AF_Liquidacion_Masiva>>()
+            var result = new ErrorDto<List<AF_Liquidacion_Masiva>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -72,9 +72,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="corte"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_LiquidacionMasiva_Obtener_Causas(int CodEmpresa, string tipoApl = null, DateTime? inicio = null, DateTime? corte = null)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_LiquidacionMasiva_Obtener_Causas(int CodEmpresa, string tipoApl = null, DateTime? inicio = null, DateTime? corte = null)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -144,9 +144,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_LiquidacionMasiva_Obtener_Instituciones(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_LiquidacionMasiva_Obtener_Instituciones(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -181,9 +181,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="Usuario"></param>
         /// <param name="S06"></param>
         /// <returns></returns>
-        public ErrorDTO AF_LiquidacionMasiva(int CodEmpresa, int RenunciaId, string Usuario, short S06 = 1)
+        public ErrorDto AF_LiquidacionMasiva(int CodEmpresa, int RenunciaId, string Usuario, short S06 = 1)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

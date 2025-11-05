@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<PeObjetivosEstrategicosDatosLista> PeObjetivosEstrategicosLista_Obtener(int CodEmpresa, string Jfiltros)
+        public ErrorDto<PeObjetivosEstrategicosDatosLista> PeObjetivosEstrategicosLista_Obtener(int CodEmpresa, string Jfiltros)
         {
             PeObjetivosEstrategicosFiltros filtros = JsonConvert.DeserializeObject<PeObjetivosEstrategicosFiltros>(Jfiltros) ?? new PeObjetivosEstrategicosFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<PeObjetivosEstrategicosDatosLista>();
+            var response = new ErrorDto<PeObjetivosEstrategicosDatosLista>();
             response.Result = new PeObjetivosEstrategicosDatosLista
             {
                 total = 0,
@@ -79,9 +79,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO ObjetivosEstrategicos_Guardar(int CodEmpresa, PeObjetivosEstrategicosDTO objetivo)
+        public ErrorDto ObjetivosEstrategicos_Guardar(int CodEmpresa, PeObjetivosEstrategicosDTO objetivo)
         {
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -106,10 +106,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        private ErrorDTO ObjetivosEstrategicos_Insertar(int CodEmpresa, PeObjetivosEstrategicosDTO objetivo)
+        private ErrorDto ObjetivosEstrategicos_Insertar(int CodEmpresa, PeObjetivosEstrategicosDTO objetivo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -159,10 +159,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        private ErrorDTO ObjetivosEstrategicos_Actualizar(int CodEmpresa, PeObjetivosEstrategicosDTO objetivo)
+        private ErrorDto ObjetivosEstrategicos_Actualizar(int CodEmpresa, PeObjetivosEstrategicosDTO objetivo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -198,10 +198,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDTO ObjetivosEstrategicos_Eliminar(int CodEmpresa, int objetivo_id)
+        public ErrorDto ObjetivosEstrategicos_Eliminar(int CodEmpresa, int objetivo_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -244,10 +244,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDTO<List<PeObjetivosEstrategicosDTO>> PePerspectivaLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<PeObjetivosEstrategicosDTO>> PePerspectivaLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<PeObjetivosEstrategicosDTO>>();
+            var response = new ErrorDto<List<PeObjetivosEstrategicosDTO>>();
             response.Result = new List<PeObjetivosEstrategicosDTO>();
 
             try
@@ -270,10 +270,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO<List<PeObjetivosEstrategicosDTO>> PeObservacionesExportar_Obtener(int CodEmpresa)
+        public ErrorDto<List<PeObjetivosEstrategicosDTO>> PeObservacionesExportar_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<PeObjetivosEstrategicosDTO>>();
+            var response = new ErrorDto<List<PeObjetivosEstrategicosDTO>>();
             response.Result = new List<PeObjetivosEstrategicosDTO>();
 
             try

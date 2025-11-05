@@ -24,11 +24,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<ProductoDataLista> ProductoLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<ProductoDataLista> ProductoLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDTO<ProductoDataLista>();
+            var response = new ErrorDto<ProductoDataLista>();
             response.Result = new ProductoDataLista();
             try
             {
@@ -104,10 +104,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="producto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        private ErrorDTO Producto_Insertar(int CodCliente, ProductoData producto, string usuario)
+        private ErrorDto Producto_Insertar(int CodCliente, ProductoData producto, string usuario)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             string codProdInv = "";
             try
@@ -164,10 +164,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="producto"></param>
         /// <returns></returns>
-        private ErrorDTO Producto_Actualizar(int CodCliente, ProductoData producto)
+        private ErrorDto Producto_Actualizar(int CodCliente, ProductoData producto)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             string codProdInv = "";
             try
@@ -214,10 +214,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_producto"></param>
         /// <returns></returns>
-        public ErrorDTO Producto_Eliminar(int CodCliente, string cod_producto)
+        public ErrorDto Producto_Eliminar(int CodCliente, string cod_producto)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -243,10 +243,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ProductoData>> Producto_Exportar(int CodCliente)
+        public ErrorDto<List<ProductoData>> Producto_Exportar(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<ProductoData>>();
+            var response = new ErrorDto<List<ProductoData>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -271,9 +271,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="producto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Producto_Guardar(int CodCliente, ProductoData producto, string usuario)
+        public ErrorDto Producto_Guardar(int CodCliente, ProductoData producto, string usuario)
         {
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             if (!Producto_Existe(CodCliente, producto.cod_producto))
             {

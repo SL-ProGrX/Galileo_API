@@ -32,10 +32,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="plan"></param>
         /// <param name="contrato"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FNDBeneficiarios_ContratosData>> FND_Beneficiarios_Contratos_Lista_Obtener(int CodEmpresa, string cedula, int operadora, string plan, long contrato)
+        public ErrorDto<List<FNDBeneficiarios_ContratosData>> FND_Beneficiarios_Contratos_Lista_Obtener(int CodEmpresa, string cedula, int operadora, string plan, long contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FNDBeneficiarios_ContratosData>>
+            var response = new ErrorDto<List<FNDBeneficiarios_ContratosData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -76,10 +76,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> FND_Beneficiarios_Contratos_Parentescos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_Beneficiarios_Contratos_Parentescos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -109,10 +109,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO FND_Beneficiarios_Contratos_Guardar(int CodEmpresa, string usuario, FNDBeneficiarios_ContratosData data)
+        public ErrorDto FND_Beneficiarios_Contratos_Guardar(int CodEmpresa, string usuario, FNDBeneficiarios_ContratosData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -125,7 +125,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
 
                     if (data.isNew)
                     {
-                        ErrorDTO<bool> valida = fxValida(CodEmpresa, data);
+                        ErrorDto<bool> valida = fxValida(CodEmpresa, data);
                         if (valida.Code == -1)
                         {
                             response.Code = valida.Code;
@@ -136,7 +136,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                     }
                     else
                     {
-                        ErrorDTO<bool> valida = fxValida(CodEmpresa, data);
+                        ErrorDto<bool> valida = fxValida(CodEmpresa, data);
                         if (valida.Code == -1)
                         {
                             response.Code = valida.Code;
@@ -165,10 +165,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDTO<bool> fxValida(int CodEmpresa, FNDBeneficiarios_ContratosData data)
+        private ErrorDto<bool> fxValida(int CodEmpresa, FNDBeneficiarios_ContratosData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<bool>
+            var response = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "",
@@ -275,10 +275,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDTO FNDBeneficiarios_Contratos_Insertar(int CodEmpresa, string usuario, FNDBeneficiarios_ContratosData data)
+        private ErrorDto FNDBeneficiarios_Contratos_Insertar(int CodEmpresa, string usuario, FNDBeneficiarios_ContratosData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -361,10 +361,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDTO FNDBeneficiarios_Contratos_Actualizar(int CodEmpresa, string usuario, FNDBeneficiarios_ContratosData data)
+        private ErrorDto FNDBeneficiarios_Contratos_Actualizar(int CodEmpresa, string usuario, FNDBeneficiarios_ContratosData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -418,10 +418,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="consec"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO FNDBeneficiarios_Contratos_Borrar(int CodEmpresa, int consec, string usuario)
+        public ErrorDto FNDBeneficiarios_Contratos_Borrar(int CodEmpresa, int consec, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -471,10 +471,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="contrato"></param>
         /// <param name="operadora"></param>
         /// <returns></returns>
-        public ErrorDTO<string> FNDBene_Cnt_CedulaBN_Obtener(int CodEmpresa, string cedula, string plan, long contrato, int operadora)
+        public ErrorDto<string> FNDBene_Cnt_CedulaBN_Obtener(int CodEmpresa, string cedula, string plan, long contrato, int operadora)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<string>
+            var response = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",

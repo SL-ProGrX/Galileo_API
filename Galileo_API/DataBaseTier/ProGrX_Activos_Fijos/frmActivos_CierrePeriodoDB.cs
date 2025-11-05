@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="periodo"></param>
         /// <returns>Desrcripcion del estado del periodo</returns>
-        public ErrorDTO<string> Activos_PeriodoEstado_Obtener(int CodEmpresa, DateTime periodo)
+        public ErrorDto<string> Activos_PeriodoEstado_Obtener(int CodEmpresa, DateTime periodo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -66,10 +66,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="periodo"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Periodo_Cerrar(int CodEmpresa, string usuario, DateTime periodo)
+        public ErrorDto Activos_Periodo_Cerrar(int CodEmpresa, string usuario, DateTime periodo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -99,11 +99,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="contabilidad"></param>
         /// <returns></returns>
-        public ErrorDTO<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
+        public ErrorDto<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
         {
             
 
-              var result = new ErrorDTO<DateTime>
+              var result = new ErrorDto<DateTime>
             {
                 Code = 0,
                 Description = "Ok",

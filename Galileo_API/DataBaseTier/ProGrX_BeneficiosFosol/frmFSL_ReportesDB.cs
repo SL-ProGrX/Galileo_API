@@ -14,10 +14,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<Oficina>> FSL_Oficinas_Obtener(int CodEmpresa)
+        public ErrorDto<List<Oficina>> FSL_Oficinas_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<Oficina>>();
+            var response = new ErrorDto<List<Oficina>>();
             try
             {
                 var query = "";
@@ -41,10 +41,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<Plan>> FSL_Planes_Obtener(int CodEmpresa)
+        public ErrorDto<List<Plan>> FSL_Planes_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<Plan>>();
+            var response = new ErrorDto<List<Plan>>();
 
             try
             {

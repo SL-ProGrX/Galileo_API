@@ -23,11 +23,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="codDivisa"></param>
         /// <returns></returns>
-        public ErrorDTO<decimal> Cajas_TipoCambio(int codEmpresa, string codDivisa)
+        public ErrorDto<decimal> Cajas_TipoCambio(int codEmpresa, string codDivisa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
-            var response = new ErrorDTO<decimal>
+            var response = new ErrorDto<decimal>
             {
                 Code = 0,
                 Description = "Ok",
@@ -70,9 +70,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="ticket"></param>
         /// <param name="linea"></param>
         /// <returns></returns>
-        public ErrorDTO Cajas_DesglocePago_Eliminar(int codEmpresa, string codCaja, int codApertura, string ticket, int linea)
+        public ErrorDto Cajas_DesglocePago_Eliminar(int codEmpresa, string codCaja, int codApertura, string ticket, int linea)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -112,9 +112,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codPlan"></param>
         /// <param name="codContrato"></param>
         /// <returns></returns>
-        public ErrorDTO<CajasDisponibleFondosDTO> Cajas_DisponibleFondos(int codEmpresa, string codCaja, int codApertura, string ticket, string codPlan, int codContrato)
+        public ErrorDto<CajasDisponibleFondosDTO> Cajas_DisponibleFondos(int codEmpresa, string codCaja, int codApertura, string ticket, string codPlan, int codContrato)
         {
-            var response = new ErrorDTO<CajasDisponibleFondosDTO>
+            var response = new ErrorDto<CajasDisponibleFondosDTO>
             {
                 Code = 0,
                 Description = "Ok",
@@ -150,9 +150,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="referencia"></param>
         /// <param name="referencia_texto"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Cajas_SaldoFavorDTO>> Cajas_SaldoFavor_Obtener(int codEmpresa, string clienteid, int referencia, string referencia_texto)
+        public ErrorDto<List<Cajas_SaldoFavorDTO>> Cajas_SaldoFavor_Obtener(int codEmpresa, string clienteid, int referencia, string referencia_texto)
         {
-            var response = new ErrorDTO<List<Cajas_SaldoFavorDTO>>
+            var response = new ErrorDto<List<Cajas_SaldoFavorDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -188,9 +188,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="enlace"></param>
         /// <returns></returns>
-        public ErrorDTO<Cajas_DivisaFuncionalDTO> Cajas_DivisaFuncional_Obtener(int codEmpresa, string enlace)
+        public ErrorDto<Cajas_DivisaFuncionalDTO> Cajas_DivisaFuncional_Obtener(int codEmpresa, string enlace)
         {
-            var response = new ErrorDTO<Cajas_DivisaFuncionalDTO>
+            var response = new ErrorDto<Cajas_DivisaFuncionalDTO>
             {
                 Code = 0,
                 Description = "Ok",
@@ -227,9 +227,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="formaPago"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Cajas_DepositosCuentasCancariasautdDTO>> Cajas_DepositosCuentasBancariasAut_Obtener(int codEmpresa, string formaPago)
+        public ErrorDto<List<Cajas_DepositosCuentasCancariasautdDTO>> Cajas_DepositosCuentasBancariasAut_Obtener(int codEmpresa, string formaPago)
         {
-            var response = new ErrorDTO<List<Cajas_DepositosCuentasCancariasautdDTO>>
+            var response = new ErrorDto<List<Cajas_DepositosCuentasCancariasautdDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -275,9 +275,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codApertura"></param>
         /// <param name="linea"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Cajas_DesglocePagoDTO>> Cajas_DesglocePago_Obtener(int codEmpresa, string codCaja, string ticket, int codApertura, int linea)
+        public ErrorDto<List<Cajas_DesglocePagoDTO>> Cajas_DesglocePago_Obtener(int codEmpresa, string codCaja, string ticket, int codApertura, int linea)
         {
-            var response = new ErrorDTO<List<Cajas_DesglocePagoDTO>>
+            var response = new ErrorDto<List<Cajas_DesglocePagoDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -324,9 +324,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDTO Cajas_DesglocePago_Insert(int codEmpresa, CajasDesglocePagoDTO dto)
+        public ErrorDto Cajas_DesglocePago_Insert(int codEmpresa, CajasDesglocePagoDTO dto)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -338,7 +338,7 @@ namespace PgxAPI.DataBaseTier
 
                 using var connection = new SqlConnection(stringConn);
 
-                // 1?? Obtener la línea siguiente
+                // 1?? Obtener la lï¿½nea siguiente
                 var sqlLinea = @"SELECT ISNULL(MAX(linea), 0) + 1 
                          FROM CAJAS_DESGLOCE_PAGO 
                          WHERE Cod_Caja = @cod_caja AND Ticket = @ticket AND Cod_Apertura = @cod_apertura";
@@ -376,9 +376,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDTO Cajas_DesglocePago_Update(int codEmpresa, CajasDesglocePagoDTO dto)
+        public ErrorDto Cajas_DesglocePago_Update(int codEmpresa, CajasDesglocePagoDTO dto)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -435,9 +435,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDTO Cajas_DistribuyeSaldoFavor(int codEmpresa, DistribuyeSaldoFavorDto dto)
+        public ErrorDto Cajas_DistribuyeSaldoFavor(int codEmpresa, DistribuyeSaldoFavorDto dto)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -476,9 +476,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Cajas_DesglocePago_Guardar(int CodEmpresa, CajasDesglocePagoRequest request)
+        public ErrorDto Cajas_DesglocePago_Guardar(int CodEmpresa, CajasDesglocePagoRequest request)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "OK",
@@ -494,7 +494,7 @@ namespace PgxAPI.DataBaseTier
 
                     // 1. VALIDACIONES
 
-                    // Validar depósito
+                    // Validar depï¿½sito
                     var valDeposito = connection.ExecuteScalar<int>(
                         "select dbo.fxTes_DP_Cargado(@Banco,@Documento,@Cedula,@Monto)",
                         new
@@ -508,7 +508,7 @@ namespace PgxAPI.DataBaseTier
                     if (valDeposito == 0)
                     {
                         response.Code = -1;
-                        response.Description = "Depósito no registrado en Tesorería";
+                        response.Description = "Depï¿½sito no registrado en Tesorerï¿½a";
                         return response;
                     }
 
@@ -559,7 +559,7 @@ namespace PgxAPI.DataBaseTier
                         if (string.IsNullOrEmpty(valFondos))
                         {
                             response.Code = -1;
-                            response.Description = "El fondo no es válido";
+                            response.Description = "El fondo no es vï¿½lido";
                             return response;
                         }
                     }
@@ -574,7 +574,7 @@ namespace PgxAPI.DataBaseTier
                         if (string.IsNullOrEmpty(valSaldoFavor))
                         {
                             response.Code = -1;
-                            response.Description = "Saldo a favor no válido";
+                            response.Description = "Saldo a favor no vï¿½lido";
                             return response;
                         }
                     }
@@ -605,7 +605,7 @@ namespace PgxAPI.DataBaseTier
 
 
         /// <summary>
-        /// Obtiene datos de catálogos de Cajas (Divisas, Emisores, Tarjetas, Pagadores, Origen Recursos, etc.)
+        /// Obtiene datos de catï¿½logos de Cajas (Divisas, Emisores, Tarjetas, Pagadores, Origen Recursos, etc.)
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="codCliente"></param>
@@ -615,12 +615,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="productoCodigo"></param>
         /// <param name="productoNumero"></param>
         /// <returns></returns>
-        public ErrorDTO<CajasCatalogosDto> Cajas_Catalogos_Obtener(int CodEmpresa, string codCliente, string codCaja,
+        public ErrorDto<CajasCatalogosDto> Cajas_Catalogos_Obtener(int CodEmpresa, string codCliente, string codCaja,
             int apertura, string? tiquete, string? productoCodigo, int? productoNumero)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<CajasCatalogosDto>
+            var response = new ErrorDto<CajasCatalogosDto>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -670,9 +670,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="codCaja"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Cajas_FormaPagoDto>> Cajas_FormasPago_Obtener(int CodEmpresa, string codCaja)
+        public ErrorDto<List<Cajas_FormaPagoDto>> Cajas_FormasPago_Obtener(int CodEmpresa, string codCaja)
         {
-            var response = new ErrorDTO<List<Cajas_FormaPagoDto>>
+            var response = new ErrorDto<List<Cajas_FormaPagoDto>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -709,9 +709,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="tiquete"></param>
         /// <param name="apertura"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Cajas_TiqueteDto>> Cajas_Tiquete_Obtener(int CodEmpresa, string codCaja, string tiquete, int apertura)
+        public ErrorDto<List<Cajas_TiqueteDto>> Cajas_Tiquete_Obtener(int CodEmpresa, string codCaja, string tiquete, int apertura)
          {
-            var response = new ErrorDTO<List<Cajas_TiqueteDto>>
+            var response = new ErrorDto<List<Cajas_TiqueteDto>>
             {
                 Code = 0,
                 Description = "Ok",

@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodRequisicion"></param>
         /// <returns></returns>
-        public ErrorDTO<TranRequisicionData> InvTranRequisicion_Obtener(int CodEmpresa, int CodRequisicion)
+        public ErrorDto<TranRequisicionData> InvTranRequisicion_Obtener(int CodEmpresa, int CodRequisicion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TranRequisicionData>
+            var response = new ErrorDto<TranRequisicionData>
             {
                 Code = 0
             };
@@ -79,10 +79,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodRequisicion"></param>
         /// <returns></returns>
-        public ErrorDTO<List<InvReqProduc>> InvRequesicionProduc_Obtener(int CodEmpresa, int CodRequisicion)
+        public ErrorDto<List<InvReqProduc>> InvRequesicionProduc_Obtener(int CodEmpresa, int CodRequisicion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<InvReqProduc>>
+            var response = new ErrorDto<List<InvReqProduc>>
             {
                 Code = 0
             };
@@ -116,10 +116,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="scrollValue"></param>
         /// <param name="CodRequisicion"></param>
         /// <returns></returns>
-        public ErrorDTO<TranRequisicionData> InvTranRequisicion_scroll(int CodEmpresa, int scrollValue, int? CodRequisicion)
+        public ErrorDto<TranRequisicionData> InvTranRequisicion_scroll(int CodEmpresa, int scrollValue, int? CodRequisicion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TranRequisicionData>
+            var response = new ErrorDto<TranRequisicionData>
             {
                 Code = 0
             };
@@ -157,10 +157,10 @@ namespace PgxAPI.DataBaseTier
        /// <param name="CodEmpresa"></param>
        /// <param name="request"></param>
        /// <returns></returns>
-        public ErrorDTO InvTranRequisicion_Insertar(int CodEmpresa, TranRequisicionData request)
+        public ErrorDto InvTranRequisicion_Insertar(int CodEmpresa, TranRequisicionData request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -210,11 +210,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO InvTranRequisicion_Actualizar(int CodEmpresa, TranRequisicionData request)
+        public ErrorDto InvTranRequisicion_Actualizar(int CodEmpresa, TranRequisicionData request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -254,10 +254,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodRequisicion"></param>
         /// <returns></returns>
-        public ErrorDTO InvTranRequesicion_Eliminar(int CodEmpresa, int CodRequisicion)
+        public ErrorDto InvTranRequesicion_Eliminar(int CodEmpresa, int CodRequisicion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -289,10 +289,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodRequisicion"></param>
         /// <param name="producLineas"></param>
         /// <returns></returns>
-        public ErrorDTO InvRequesicionProduc_Insertar(int CodEmpresa, int CodRequisicion, List<InvReqProduc> producLineas)
+        public ErrorDto InvRequesicionProduc_Insertar(int CodEmpresa, int CodRequisicion, List<InvReqProduc> producLineas)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO errorDTO = new()
+            ErrorDto errorDTO = new()
             {
                 Code = 0
             };
@@ -363,10 +363,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="GeneraUser"></param>
         /// <param name="GeneraFecha"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TranRequisicionData>> InvTranPlantilla_Obtener(int CodEmpresa, int? CodRequisicion, string? GeneraUser, string? GeneraFecha)
+        public ErrorDto<List<TranRequisicionData>> InvTranPlantilla_Obtener(int CodEmpresa, int? CodRequisicion, string? GeneraUser, string? GeneraFecha)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TranRequisicionData>>
+            var response = new ErrorDto<List<TranRequisicionData>>
             {
                 Code = 0
             };
@@ -407,10 +407,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TranRequisicionData>> InvTranRequisiciones_Lista(int CodEmpresa, string usuario, string columna, string estado)
+        public ErrorDto<List<TranRequisicionData>> InvTranRequisiciones_Lista(int CodEmpresa, string usuario, string columna, string estado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TranRequisicionData>>
+            var response = new ErrorDto<List<TranRequisicionData>>
             {
                 Code = 0
             };
@@ -479,10 +479,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodRequisicion"></param>
         /// <param name="Linea"></param>
         /// <returns></returns>
-        public ErrorDTO InvRequisicionProduc_Eliminar(int CodEmpresa, int CodRequisicion, int Linea)
+        public ErrorDto InvRequisicionProduc_Eliminar(int CodEmpresa, int CodRequisicion, int Linea)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -509,10 +509,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CatalogosLista>> UENS_Obtener(int CodEmpresa)
+        public ErrorDto<List<CatalogosLista>> UENS_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<CatalogosLista>>
+            var response = new ErrorDto<List<CatalogosLista>>
             {
                 Code = 0
             };
@@ -539,10 +539,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDTO<List<InvRequsUsuarioRecibe>> UsuarioRecibeLista_Obtener(int CodEmpresa, string cod_unidad)
+        public ErrorDto<List<InvRequsUsuarioRecibe>> UsuarioRecibeLista_Obtener(int CodEmpresa, string cod_unidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<InvRequsUsuarioRecibe>>
+            var response = new ErrorDto<List<InvRequsUsuarioRecibe>>
             {
                 Code = 0
             };  
@@ -598,10 +598,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
 
-        public ErrorDTO<List<InvRequsUsuarioRecibe>> UsuariosActivoLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<InvRequsUsuarioRecibe>> UsuariosActivoLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<InvRequsUsuarioRecibe>>
+            var response = new ErrorDto<List<InvRequsUsuarioRecibe>>
             {
                 Code = 0
             };
@@ -659,11 +659,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="invReqFiltros"></param>
         /// <returns></returns>
-        public ErrorDTO<InvRequesicionesActivosLista> ProductosRequesicionesActivo_Obtener(int CodEmpresa, string invReqFiltros)
+        public ErrorDto<InvRequesicionesActivosLista> ProductosRequesicionesActivo_Obtener(int CodEmpresa, string invReqFiltros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             InvReqFiltros filtros = JsonConvert.DeserializeObject<InvReqFiltros>(invReqFiltros);
-            var response = new ErrorDTO<InvRequesicionesActivosLista>
+            var response = new ErrorDto<InvRequesicionesActivosLista>
             {
                 Code = 0
             };
@@ -740,11 +740,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario"></param>
         /// <param name="Estado"></param>
         /// <returns></returns>
-        public ErrorDTO InvRequisicion_Autorizar(int CodEmpresa, int CodRequisicion, string Usuario, string Estado)
+        public ErrorDto InvRequisicion_Autorizar(int CodEmpresa, int CodRequisicion, string Usuario, string Estado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -779,11 +779,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodRequisicion"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDTO InvRequisicion_Procesar(int CodEmpresa, int CodRequisicion, string Usuario, string Estado)
+        public ErrorDto InvRequisicion_Procesar(int CodEmpresa, int CodRequisicion, string Usuario, string Estado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -820,10 +820,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
 
-        public ErrorDTO ValidaAutorizacion(int CodEmpresa, string usuario, string cod_unidad, string cod_proceso)
+        public ErrorDto ValidaAutorizacion(int CodEmpresa, string usuario, string cod_unidad, string cod_proceso)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO { Code = 0 };
+            ErrorDto info = new ErrorDto { Code = 0 };
 
             try
             {
@@ -889,12 +889,12 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<string>> ObtenerUsuario(int CodEmpresa)
+        public ErrorDto<List<string>> ObtenerUsuario(int CodEmpresa)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<string>>();
+            var response = new ErrorDto<List<string>>();
 
             try
             {

@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SIFEntidadesCancelaLista> SIF_EntidadesCancelaLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SIFEntidadesCancelaLista> SIF_EntidadesCancelaLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SIFEntidadesCancelaLista>()
+            var result = new ErrorDto<SIFEntidadesCancelaLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -91,10 +91,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SIFEntidadesCancelaData>> SIF_EntidadesCancela_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SIFEntidadesCancelaData>> SIF_EntidadesCancela_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SIFEntidadesCancelaData>>()
+            var result = new ErrorDto<List<SIFEntidadesCancelaData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -140,10 +140,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="cod_entidad_pago"></param>
         /// <returns></returns>
 
-        public ErrorDTO SIF_EntidadesCancela_Eliminar(int CodEmpresa, string usuario, string cod_entidad_pago)
+        public ErrorDto SIF_EntidadesCancela_Eliminar(int CodEmpresa, string usuario, string cod_entidad_pago)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -180,10 +180,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="entidad"></param>
         /// <returns></returns>
         /// 
-        public ErrorDTO SIF_EntidadesCancela_Guardar(int CodEmpresa, string usuario, SIFEntidadesCancelaData entidad)
+        public ErrorDto SIF_EntidadesCancela_Guardar(int CodEmpresa, string usuario, SIFEntidadesCancelaData entidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -246,10 +246,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="entidad"></param>
         /// <returns></returns>
-        private ErrorDTO SIF_EntidadesCancela_Actualizar(int CodEmpresa, string usuario, SIFEntidadesCancelaData entidad)
+        private ErrorDto SIF_EntidadesCancela_Actualizar(int CodEmpresa, string usuario, SIFEntidadesCancelaData entidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -296,10 +296,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="entidad"></param>
         /// <returns></returns>
-        private ErrorDTO SIF_EntidadesCancela_Insertar(int CodEmpresa, string usuario, SIFEntidadesCancelaData entidad)
+        private ErrorDto SIF_EntidadesCancela_Insertar(int CodEmpresa, string usuario, SIFEntidadesCancelaData entidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -344,10 +344,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_entidad_pago"></param>
         /// <returns></returns>
-        public ErrorDTO SIF_EntidadesCancela_Valida(int CodEmpresa, string cod_entidad_pago)
+        public ErrorDto SIF_EntidadesCancela_Valida(int CodEmpresa, string cod_entidad_pago)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

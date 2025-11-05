@@ -23,12 +23,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<APT_CATEGORIASDataLista> CategoriasApremiante_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<APT_CATEGORIASDataLista> CategoriasApremiante_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<APT_CATEGORIASDataLista>();
+            var response = new ErrorDto<APT_CATEGORIASDataLista>();
             response.Result = new APT_CATEGORIASDataLista();
             try
             {
@@ -73,16 +73,16 @@ namespace PgxAPI.DataBaseTier
 
 
         /// <summary>
-        /// Actualiza una categoría apremiante
+        /// Actualiza una categorï¿½a apremiante
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO CategoriasApremiante_Actualizar(int CodEmpresa, APT_CATEGORIAS request)
+        public ErrorDto CategoriasApremiante_Actualizar(int CodEmpresa, APT_CATEGORIAS request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -107,15 +107,15 @@ namespace PgxAPI.DataBaseTier
 
 
         /// <summary>
-        /// Agrega una categoría apremiante
+        /// Agrega una categorï¿½a apremiante
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO CategoriasApremiante_Agregar(int CodEmpresa, APT_CATEGORIAS request)
+        public ErrorDto CategoriasApremiante_Agregar(int CodEmpresa, APT_CATEGORIAS request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -138,16 +138,16 @@ namespace PgxAPI.DataBaseTier
 
 
         /// <summary>
-        /// Elimina una categoría apremiante
+        /// Elimina una categorï¿½a apremiante
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ErrorDTO CategoriasApremiante_Eliminar(int CodEmpresa, int id)
+        public ErrorDto CategoriasApremiante_Eliminar(int CodEmpresa, int id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);

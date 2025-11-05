@@ -16,12 +16,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<BeneRequisitosDataLista> AfBeneRequisitos_Obtener(int CodCliente, string filtros)
+        public ErrorDto<BeneRequisitosDataLista> AfBeneRequisitos_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
             AfiRequerimientoFiltros filtro = JsonConvert.DeserializeObject<AfiRequerimientoFiltros>(filtros);
-            var response = new ErrorDTO<BeneRequisitosDataLista>();
+            var response = new ErrorDto<BeneRequisitosDataLista>();
             response.Result = new BeneRequisitosDataLista();
             try
             {
@@ -67,10 +67,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO AfBeneRequisitos_Insertar(int CodCliente, BeneRequisitosData requiisto)
+        public ErrorDto AfBeneRequisitos_Insertar(int CodCliente, BeneRequisitosData requiisto)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -87,7 +87,7 @@ namespace PgxAPI.DataBaseTier
                         query = $@"insert into AFI_BENE_REQUISITOS (COD_REQUISITO, descripcion, Registro_Fecha ,Activo,requerido, registro_usuario) 
                                     values ('{requiisto.cod_requisito}', '{requiisto.descripcion}', getdate(),{activo},{requerido},'{requiisto.registro_usuario}') ";
                         connection.Execute(query);
-                        resp.Description = "Catálogo de Requsitos para Beneficios Id " + requiisto.cod_requisito;
+                        resp.Description = "Catï¿½logo de Requsitos para Beneficios Id " + requiisto.cod_requisito;
                     }
                     else
                     {
@@ -104,10 +104,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO AfBeneRequisitos_Actualizar(int CodCliente, BeneRequisitosData requiisto)
+        public ErrorDto AfBeneRequisitos_Actualizar(int CodCliente, BeneRequisitosData requiisto)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -123,7 +123,7 @@ namespace PgxAPI.DataBaseTier
                             Modifica_Fecha = getdate() ,
                             Modifica_Usuario = '{requiisto.registro_usuario}' where COD_REQUISITO = '{requiisto.cod_requisito}' ";
                     connection.Execute(query);
-                    resp.Description = "Catálogo de Requsitos para Beneficios Id " + requiisto.cod_requisito;
+                    resp.Description = "Catï¿½logo de Requsitos para Beneficios Id " + requiisto.cod_requisito;
 
                 }
             }
@@ -135,10 +135,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO AfBeneRequisitos_Eliminar(int CodCliente, string cod_requisito)
+        public ErrorDto AfBeneRequisitos_Eliminar(int CodCliente, string cod_requisito)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -146,7 +146,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"delete from AFI_BENE_REQUISITOS where COD_REQUISITO = '{cod_requisito}' ";
                     connection.Execute(query);
-                    resp.Description = "Catálogo de Requsitos para Beneficios Id " + cod_requisito;
+                    resp.Description = "Catï¿½logo de Requsitos para Beneficios Id " + cod_requisito;
                 }
             }
             catch (Exception ex)

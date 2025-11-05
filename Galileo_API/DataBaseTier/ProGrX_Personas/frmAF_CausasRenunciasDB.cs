@@ -24,9 +24,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CausasRenunciasData>> AF_CausasRenuncias_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<AF_CausasRenunciasData>> AF_CausasRenuncias_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<AF_CausasRenunciasData>>()
+            var result = new ErrorDto<List<AF_CausasRenunciasData>>()
             {
                 Code = 0,
                 Description = "OK",
@@ -76,7 +76,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="causa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CausasRenuncias_Guardar(int CodEmpresa, AF_CausasRenunciasData causa, string usuario)
+        public ErrorDto AF_CausasRenuncias_Guardar(int CodEmpresa, AF_CausasRenunciasData causa, string usuario)
         {
             try
             {
@@ -97,7 +97,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
             }
             catch (Exception ex)
             {
-                return new ErrorDTO
+                return new ErrorDto
                 {
                     Code = -1,
                     Description = ex.Message
@@ -105,9 +105,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
             }
         }
 
-        private ErrorDTO AF_CausasRenuncias_Insertar(SqlConnection connection, AF_CausasRenunciasData causa, int CodEmpresa, string usuario)
+        private ErrorDto AF_CausasRenuncias_Insertar(SqlConnection connection, AF_CausasRenunciasData causa, int CodEmpresa, string usuario)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Insertado correctamente"
@@ -152,9 +152,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
             return result;
         }
 
-        private ErrorDTO AF_CausasRenuncias_Actualizar(SqlConnection connection, AF_CausasRenunciasData causa, int CodEmpresa, string usuario)
+        private ErrorDto AF_CausasRenuncias_Actualizar(SqlConnection connection, AF_CausasRenunciasData causa, int CodEmpresa, string usuario)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Actualizado correctamente"
@@ -212,9 +212,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="id_causa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CausasRenuncias_Eliminar(int CodEmpresa, int id_causa, string usuario)
+        public ErrorDto AF_CausasRenuncias_Eliminar(int CodEmpresa, int id_causa, string usuario)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "OK"

@@ -34,9 +34,9 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        private ErrorDTO Cliente_Clasifica_Insertar(Cliente_Clasifica request)
+        private ErrorDto Cliente_Clasifica_Insertar(Cliente_Clasifica request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -64,9 +64,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Cliente_Clasifica_Eliminar(string request)
+        public ErrorDto Cliente_Clasifica_Eliminar(string request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -91,9 +91,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDTO Cliente_Clasifica_Actualizar(Cliente_Clasifica request)
+        private ErrorDto Cliente_Clasifica_Actualizar(Cliente_Clasifica request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -147,9 +147,9 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        public ErrorDTO Cliente_Clasifica_Guardar(Cliente_Clasifica request)
+        public ErrorDto Cliente_Clasifica_Guardar(Cliente_Clasifica request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             try

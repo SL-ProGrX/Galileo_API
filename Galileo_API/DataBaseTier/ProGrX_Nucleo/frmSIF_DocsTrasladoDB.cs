@@ -26,9 +26,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
         /// <param name="soloBalanceados"></param>
-        public ErrorDTO<SifDocsTrasladoDocumentosLista> Sif_DocsTraslado_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin,bool soloBalanceados)
+        public ErrorDto<SifDocsTrasladoDocumentosLista> Sif_DocsTraslado_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin,bool soloBalanceados)
         {
-            var result = new ErrorDTO<SifDocsTrasladoDocumentosLista>
+            var result = new ErrorDto<SifDocsTrasladoDocumentosLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -125,9 +125,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="filtros"></param>
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
-        public ErrorDTO<SifDocsTrasladoDesbalanceadosLista> Sif_DocsTraslado_Desbalanceados_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<SifDocsTrasladoDesbalanceadosLista> Sif_DocsTraslado_Desbalanceados_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin)
         {
-            var result = new ErrorDTO<SifDocsTrasladoDesbalanceadosLista>
+            var result = new ErrorDto<SifDocsTrasladoDesbalanceadosLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -221,9 +221,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="tipoDocumento"></param>
         /// </summary>
-        public ErrorDTO<SifDocsTrasladoDocumentoConfig> Sif_DocsTraslado_Documento_Config_Obtener(int CodEmpresa,string tipoDocumento)
+        public ErrorDto<SifDocsTrasladoDocumentoConfig> Sif_DocsTraslado_Documento_Config_Obtener(int CodEmpresa,string tipoDocumento)
         {
-            var result = new ErrorDTO<SifDocsTrasladoDocumentoConfig> { Code = 0, Description = "Ok" };
+            var result = new ErrorDto<SifDocsTrasladoDocumentoConfig> { Code = 0, Description = "Ok" };
 
             try
             {
@@ -267,9 +267,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
         /// </summary>
-        public ErrorDTO<string> Sif_DocsTraslado_Reactivar(int CodEmpresa,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<string> Sif_DocsTraslado_Reactivar(int CodEmpresa,DateTime fechaInicio,DateTime fechaFin)
         {
-            var result = new ErrorDTO<string> { Code = 0, Description = "Ok", Result = "Revisión realizada" };
+            var result = new ErrorDto<string> { Code = 0, Description = "Ok", Result = "Revisión realizada" };
 
             try
             {
@@ -302,9 +302,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
         /// </summary>
-        public ErrorDTO<string> Sif_DocsTraslado_Aplica(int CodEmpresa,SifDocsTrasladoEjecutarRequest dto)
+        public ErrorDto<string> Sif_DocsTraslado_Aplica(int CodEmpresa,SifDocsTrasladoEjecutarRequest dto)
         {
-            var result = new ErrorDTO<string> { Code = 0, Description = "Ok", Result = "Traslado realizado" };
+            var result = new ErrorDto<string> { Code = 0, Description = "Ok", Result = "Traslado realizado" };
 
             try
             {
@@ -352,9 +352,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="fechaFin"></param>
         /// <param name="soloBalanceados"></param>
         /// </summary>
-        public ErrorDTO<List<SifDocsTrasladoDocumentosData>> Sif_DocsTraslado_Lista_Export(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin,bool soloBalanceados)
+        public ErrorDto<List<SifDocsTrasladoDocumentosData>> Sif_DocsTraslado_Lista_Export(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin,bool soloBalanceados)
         {
-            var result = new ErrorDTO<List<SifDocsTrasladoDocumentosData>>
+            var result = new ErrorDto<List<SifDocsTrasladoDocumentosData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -444,9 +444,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
         /// </summary>
-        public ErrorDTO<List<SifDocsTrasladoDesbalanceadoData>> Sif_DocsTraslado_Desbalanceados_Export(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<List<SifDocsTrasladoDesbalanceadoData>> Sif_DocsTraslado_Desbalanceados_Export(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin)
         {
-            var result = new ErrorDTO<List<SifDocsTrasladoDesbalanceadoData>>
+            var result = new ErrorDto<List<SifDocsTrasladoDesbalanceadoData>>
             {
                 Code = 0,
                 Description = "Ok",

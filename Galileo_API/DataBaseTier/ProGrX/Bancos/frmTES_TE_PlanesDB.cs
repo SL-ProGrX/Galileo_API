@@ -18,7 +18,7 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -31,10 +31,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codPlan"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_Banco_PlanesData> TES_Planes_Scroll(int CodEmpresa, int scrollCode, string codPlan, int banco)
+        public ErrorDto<TES_Banco_PlanesData> TES_Planes_Scroll(int CodEmpresa, int scrollCode, string codPlan, int banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_Banco_PlanesData>
+            var response = new ErrorDto<TES_Banco_PlanesData>
             {
                 Code = 0
             };
@@ -72,10 +72,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="banco"></param>
         /// <param name="codPlan"></param>
         /// <returns></returns>
-		public ErrorDTO<TES_Banco_PlanesData> TES_PlanesConsulta_Obtener(int CodEmpresa, int banco, string codPlan)
+		public ErrorDto<TES_Banco_PlanesData> TES_PlanesConsulta_Obtener(int CodEmpresa, int banco, string codPlan)
 		{
 			string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-			var response = new ErrorDTO<TES_Banco_PlanesData>
+			var response = new ErrorDto<TES_Banco_PlanesData>
 			{
 				Code = 0,
 				Result = new TES_Banco_PlanesData()
@@ -104,10 +104,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-		public ErrorDTO<TES_Bancos_GruposData> TES_Planes_BancosGrupos_Obtener(int CodEmpresa, int banco)
+		public ErrorDto<TES_Bancos_GruposData> TES_Planes_BancosGrupos_Obtener(int CodEmpresa, int banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_Bancos_GruposData>
+            var response = new ErrorDto<TES_Bancos_GruposData>
             {
                 Code = 0,
                 Result = new TES_Bancos_GruposData()
@@ -139,11 +139,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="infoPlan"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Planes_Guardar(int CodEmpresa, string infoPlan)
+        public ErrorDto TES_Planes_Guardar(int CodEmpresa, string infoPlan)
         {
             TES_Banco_PlanesData request = JsonConvert.DeserializeObject<TES_Banco_PlanesData>(infoPlan) ?? new TES_Banco_PlanesData();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };
@@ -190,11 +190,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="infoPlan"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Planes_Borrar(int CodEmpresa, string infoPlan)
+        public ErrorDto TES_Planes_Borrar(int CodEmpresa, string infoPlan)
         {
             TES_Banco_PlanesData request = JsonConvert.DeserializeObject<TES_Banco_PlanesData>(infoPlan) ?? new TES_Banco_PlanesData();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };

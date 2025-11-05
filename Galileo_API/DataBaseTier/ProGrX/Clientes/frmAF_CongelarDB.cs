@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_Congela_Socios_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_Congela_Socios_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -60,11 +60,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtrosCongelar"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> AF_BloqueosCongelamientos_Obtener(int CodEmpresa, string filtrosCongelar, FiltrosLazyLoadData filtros)
+        public ErrorDto<TablasListaGenericaModel> AF_BloqueosCongelamientos_Obtener(int CodEmpresa, string filtrosCongelar, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             AF_CongelarFiltros filtro = JsonConvert.DeserializeObject<AF_CongelarFiltros>(filtrosCongelar) ?? new AF_CongelarFiltros();
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Description = "Ok",
@@ -170,11 +170,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtrosCongelar"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CongelarDTO>> AF_BloqueosCongelamientos_Exportar(int CodEmpresa, string filtrosCongelar)
+        public ErrorDto<List<AF_CongelarDTO>> AF_BloqueosCongelamientos_Exportar(int CodEmpresa, string filtrosCongelar)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             AF_CongelarFiltros filtro = JsonConvert.DeserializeObject<AF_CongelarFiltros>(filtrosCongelar) ?? new AF_CongelarFiltros();
-            var response = new ErrorDTO<List<AF_CongelarDTO>>
+            var response = new ErrorDto<List<AF_CongelarDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -229,10 +229,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CongelarCausaLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CongelarCausaLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -261,10 +261,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CongelarCausa_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CongelarCausa_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -308,10 +308,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="congelar"></param>
         /// <returns></returns>
-        public ErrorDTO AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AF_CongelarDTO congelar)
+        public ErrorDto AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AF_CongelarDTO congelar)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Guardado correctamente"
@@ -472,10 +472,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CongelaCausaDTO>> AF_CongelarCausaMant_Obtener(int CodEmpresa)
+        public ErrorDto<List<AF_CongelaCausaDTO>> AF_CongelarCausaMant_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<AF_CongelaCausaDTO>>
+            var response = new ErrorDto<List<AF_CongelaCausaDTO>>
             {
                 Code = 0,
                 Result = new List<AF_CongelaCausaDTO>()
@@ -503,10 +503,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_causa"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CongelarCausaMant_Eliminar(int CodEmpresa, string cod_causa)
+        public ErrorDto AF_CongelarCausaMant_Eliminar(int CodEmpresa, string cod_causa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -544,9 +544,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="causa"></param>
         /// <returns></returns>
-        public ErrorDTO AF_CongelarCausaMant_Guardar(int CodEmpresa, string usuario ,AF_CongelaCausaDTO causa)
+        public ErrorDto AF_CongelarCausaMant_Guardar(int CodEmpresa, string usuario ,AF_CongelaCausaDTO causa)
         {
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -579,10 +579,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="causa"></param>
         /// <returns></returns>
-        private ErrorDTO AF_CongelarCausaMant_Insertar(int CodEmpresa, string usuario, AF_CongelaCausaDTO causa)
+        private ErrorDto AF_CongelarCausaMant_Insertar(int CodEmpresa, string usuario, AF_CongelaCausaDTO causa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -627,10 +627,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="causa"></param>
         /// <returns></returns>
-        private ErrorDTO AF_CongelarCausaMant_Actualiza(int CodEmpresa, string usuario, AF_CongelaCausaDTO causa)
+        private ErrorDto AF_CongelarCausaMant_Actualiza(int CodEmpresa, string usuario, AF_CongelaCausaDTO causa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

@@ -28,10 +28,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TesConceptosLista> Tes_ConceptosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TesConceptosLista> Tes_ConceptosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<TesConceptosLista>()
+            var result = new ErrorDto<TesConceptosLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -98,10 +98,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_Conceptos_Guardar(int CodEmpresa, string usuario ,TesConceptosData concepto)
+        public ErrorDto Tes_Conceptos_Guardar(int CodEmpresa, string usuario ,TesConceptosData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -151,10 +151,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="cuenta"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
-        private ErrorDTO Tes_Conceptos_Insertar(int CodEmpresa, string usuario, string cuenta ,TesConceptosData concepto)
+        private ErrorDto Tes_Conceptos_Insertar(int CodEmpresa, string usuario, string cuenta ,TesConceptosData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -211,10 +211,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="cuenta"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
-        private ErrorDTO Tes_Conceptos_Actualizar(int CodEmpresa, string usuario,string cuenta, TesConceptosData concepto)
+        private ErrorDto Tes_Conceptos_Actualizar(int CodEmpresa, string usuario,string cuenta, TesConceptosData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -271,10 +271,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="tipo"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_Conceptos_Eliminar(int CodEmpresa, string tipo ,string usuario)
+        public ErrorDto Tes_Conceptos_Eliminar(int CodEmpresa, string tipo ,string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -311,10 +311,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TesConceptosData>> Tes_Conceptos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<TesConceptosData>> Tes_Conceptos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<TesConceptosData>>()
+            var result = new ErrorDto<List<TesConceptosData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -359,10 +359,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="codigo"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_Concepto_Valida(int CodEmpresa, string codigo)
+        public ErrorDto Tes_Concepto_Valida(int CodEmpresa, string codigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

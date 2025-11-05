@@ -35,10 +35,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO<tesReImpresionModels> TES_ReImpresion_Obtener(int CodEmpresa, int solicitud)
+        public ErrorDto<tesReImpresionModels> TES_ReImpresion_Obtener(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<tesReImpresionModels>
+            var response = new ErrorDto<tesReImpresionModels>
             {
                 Code = 0,
                 Description = "Ok",
@@ -116,10 +116,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO<object> TES_ReImpresion_Guardar(int CodEmpresa, tesReImpresionModels solicitud)
+        public ErrorDto<object> TES_ReImpresion_Guardar(int CodEmpresa, tesReImpresionModels solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<object>
+            var response = new ErrorDto<object>
             {
                 Code = 0
             };
@@ -197,10 +197,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        private ErrorDTO<object> sbReImprime(int CodEmpresa, tesReImpresionModels solicitud)
+        private ErrorDto<object> sbReImprime(int CodEmpresa, tesReImpresionModels solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<object>
+            var response = new ErrorDto<object>
             {
                 Code = 0
             };
@@ -319,8 +319,8 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         //converto res a JSON
                         var Jres = System.Text.Json.JsonSerializer.Serialize(res);
 
-                        // convierto JSON a ErrorDTO
-                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDTO>(Jres);
+                        // convierto JSON a ErrorDto
+                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
 
                         response.Code = err.Code;
                         response.Description = err.Description;

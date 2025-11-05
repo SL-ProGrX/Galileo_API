@@ -21,11 +21,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<coreUsuariosLista> CoreUsuariosLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<coreUsuariosLista> CoreUsuariosLista_Obtener(int CodEmpresa, string filtros)
         {
             var vfiltro = JsonConvert.DeserializeObject<coreUsuarioFiltros>(filtros);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<coreUsuariosLista>();
+            var response = new ErrorDto<coreUsuariosLista>();
             response.Result = new coreUsuariosLista();
             response.Code = 0;
 
@@ -83,10 +83,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO CoreUsuariosExiste_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto CoreUsuariosExiste_Obtener(int CodEmpresa, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO();
+            var resp = new ErrorDto();
             resp.Code = 0;
 
             try
@@ -114,10 +114,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuariosData"></param>
         /// <returns></returns>
-        public ErrorDTO CoreUsuarios_Guardar(int CodEmpresa, coreUsuariosData usuariosData)
+        public ErrorDto CoreUsuarios_Guardar(int CodEmpresa, coreUsuariosData usuariosData)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = string.Empty };
+            var resp = new ErrorDto { Code = 0, Description = string.Empty };
 
             try
             {
@@ -126,7 +126,7 @@ namespace PgxAPI.DataBaseTier
 
                 if (usuariosData == null)
                 {
-                    return new ErrorDTO
+                    return new ErrorDto
                     {
                         Code = -1,
                         Description = "Datos de usuario no proporcionados."
@@ -195,10 +195,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<coreUsuariosData> CoreUsuarios_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<coreUsuariosData> CoreUsuarios_Obtener(int CodEmpresa, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO<coreUsuariosData> resp = new ErrorDTO<coreUsuariosData>();
+            ErrorDto<coreUsuariosData> resp = new ErrorDto<coreUsuariosData>();
             resp.Code = 0;
 
             try
@@ -231,10 +231,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO CoreUsuarios_Importar(int CodEmpresa)
+        public ErrorDto CoreUsuarios_Importar(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             try
@@ -264,10 +264,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="scroll"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<coreUsuariosData> CoreUsuario_Scroll(int CodEmpresa, int scroll, string? usuario)
+        public ErrorDto<coreUsuariosData> CoreUsuario_Scroll(int CodEmpresa, int scroll, string? usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO<coreUsuariosData> resp = new ErrorDTO<coreUsuariosData>();
+            ErrorDto<coreUsuariosData> resp = new ErrorDto<coreUsuariosData>();
             resp.Code = 0;
 
             try
@@ -311,10 +311,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuariosData"></param>
         /// <returns></returns>
-        private ErrorDTO CoreUsuarios_Insertar(int CodEmpresa, coreUsuariosData usuariosData)
+        private ErrorDto CoreUsuarios_Insertar(int CodEmpresa, coreUsuariosData usuariosData)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -343,10 +343,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuariosData"></param>
         /// <returns></returns>
-        private ErrorDTO CoreUsuarios_Actualizar(int CodEmpresa, coreUsuariosData usuariosData)
+        private ErrorDto CoreUsuarios_Actualizar(int CodEmpresa, coreUsuariosData usuariosData)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -377,10 +377,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO CoreUsuarios_Eliminar(int CodEmpresa, string usuario)
+        public ErrorDto CoreUsuarios_Eliminar(int CodEmpresa, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -413,10 +413,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<coreMiembrosData>> CoreUsuariosMiembros_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<coreMiembrosData>> CoreUsuariosMiembros_Obtener(int CodEmpresa, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO<List<coreMiembrosData>> resp = new ErrorDTO<List<coreMiembrosData>>();
+            ErrorDto<List<coreMiembrosData>> resp = new ErrorDto<List<coreMiembrosData>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -441,10 +441,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<coreMiembrosRolData>> CoreUsuariosUENs_Roles_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<coreMiembrosRolData>> CoreUsuariosUENs_Roles_Obtener(int CodEmpresa, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO<List<coreMiembrosRolData>> resp = new ErrorDTO<List<coreMiembrosRolData>>();
+            ErrorDto<List<coreMiembrosRolData>> resp = new ErrorDto<List<coreMiembrosRolData>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -468,11 +468,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="miembro"></param>
         /// <returns></returns>
-        public ErrorDTO CoreUsuariosMiembro_Actualiza(string miembro)
+        public ErrorDto CoreUsuariosMiembro_Actualiza(string miembro)
         {
             CoreMiembro core = JsonConvert.DeserializeObject<CoreMiembro>(miembro);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(core.codEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             try
@@ -500,11 +500,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="miembroRol"></param>
         /// <returns></returns>
-        public ErrorDTO CoreUsuariosMiembroRol_Actualiza(string miembroRol)
+        public ErrorDto CoreUsuariosMiembroRol_Actualiza(string miembroRol)
         {
             CoreMiembroRol core = JsonConvert.DeserializeObject<CoreMiembroRol>(miembroRol);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(core.codEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             try

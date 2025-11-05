@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="CodEmpresa"></param>
         /// <param name="documento"></param>
         /// <returns></returns>
-        public ErrorDTO CR_SeguimientoDoc_Aplicar(int CodEmpresa, FrmCRSeguimientoDocData documento )
+        public ErrorDto CR_SeguimientoDoc_Aplicar(int CodEmpresa, FrmCRSeguimientoDocData documento )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",

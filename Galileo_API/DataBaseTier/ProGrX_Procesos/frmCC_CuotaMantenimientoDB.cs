@@ -39,10 +39,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CuotaMantenimiento_ActualizaCasos(int CodEmpresa, int Cod_Institucion)
+        public ErrorDto CC_CuotaMantenimiento_ActualizaCasos(int CodEmpresa, int Cod_Institucion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             string Codigo = "CMCR";
@@ -69,7 +69,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (result1 == 0 && result2 == 0)
                     {
-                        resp.Description = "No se encontró ningun registro por actualizar";
+                        resp.Description = "No se encontrï¿½ ningun registro por actualizar";
                     }
                     else if (result1 == 0 && result2 != 0)
                     {
@@ -95,10 +95,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CuotaMantenimiento_ProcesaCasosNuevos(int CodEmpresa, int Cod_Institucion, string Usuario)
+        public ErrorDto CC_CuotaMantenimiento_ProcesaCasosNuevos(int CodEmpresa, int Cod_Institucion, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             string Codigo = "CMCR";
@@ -168,10 +168,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_CuotaMantenimiento_CancelaCasos(int CodEmpresa, int Cod_Institucion)
+        public ErrorDto CC_CuotaMantenimiento_CancelaCasos(int CodEmpresa, int Cod_Institucion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             string Codigo = "CMCR";
@@ -198,7 +198,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (result1 == 0 && result2 == 0)
                     {
-                        resp.Description = "No se encontró ningun caso por cancelar";
+                        resp.Description = "No se encontrï¿½ ningun caso por cancelar";
                     }
                     else if (result1 == 0 && result2 != 0)
                     {

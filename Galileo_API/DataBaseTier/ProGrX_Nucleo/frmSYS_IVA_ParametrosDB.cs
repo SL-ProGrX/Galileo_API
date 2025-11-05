@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysIvaParametrosLista> Sys_Iva_Parametros_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysIvaParametrosLista> Sys_Iva_Parametros_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysIvaParametrosLista>
+            var result = new ErrorDto<SysIvaParametrosLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -191,10 +191,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<SysIvaParametrosData>> Sys_Iva_Parametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SysIvaParametrosData>> Sys_Iva_Parametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<SysIvaParametrosData>>
+            var result = new ErrorDto<List<SysIvaParametrosData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -271,10 +271,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="dto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<SysIvaParametrosUpdateResponse> Sys_Iva_Parametro_Actualizar(int CodEmpresa, string codParametro, SysIvaParametrosUpdateRequest dto, string usuario)
+        public ErrorDto<SysIvaParametrosUpdateResponse> Sys_Iva_Parametro_Actualizar(int CodEmpresa, string codParametro, SysIvaParametrosUpdateRequest dto, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysIvaParametrosUpdateResponse> { Code = 0, Description = "Ok" };
+            var result = new ErrorDto<SysIvaParametrosUpdateResponse> { Code = 0, Description = "Ok" };
 
             try
             {
@@ -429,10 +429,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="nivelMask"></param>
         /// <param name="divisaRaw"></param>
         /// <returns></returns>
-        public ErrorDTO<SysIvaCuentasResumenLista> Sys_Iva_Cuentas_Buscar(int CodEmpresa,int codContabilidad,FiltrosLazyLoadData filtros,int? nivelMask = null,string? divisaRaw = null)
+        public ErrorDto<SysIvaCuentasResumenLista> Sys_Iva_Cuentas_Buscar(int CodEmpresa,int codContabilidad,FiltrosLazyLoadData filtros,int? nivelMask = null,string? divisaRaw = null)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysIvaCuentasResumenLista>
+            var result = new ErrorDto<SysIvaCuentasResumenLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -542,10 +542,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codContabilidad"></param>
         /// <param name="codigoSinMask"></param>
         /// <returns></returns>
-        public ErrorDTO<SysIvaCuentasResumenData> Sys_Iva_CuentaPorCodigo_Obtener(int CodEmpresa, int codContabilidad, string codigoSinMask)
+        public ErrorDto<SysIvaCuentasResumenData> Sys_Iva_CuentaPorCodigo_Obtener(int CodEmpresa, int codContabilidad, string codigoSinMask)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysIvaCuentasResumenData> { Code = 0 };
+            var result = new ErrorDto<SysIvaCuentasResumenData> { Code = 0 };
 
             try
             {
@@ -578,10 +578,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="codContabilidad"></param>
         /// <returns></returns
-        public ErrorDTO<SysIvaCuentasResumenLista> Sys_Iva_Cuentas_Todas_Obtener(int CodEmpresa, int codContabilidad)
+        public ErrorDto<SysIvaCuentasResumenLista> Sys_Iva_Cuentas_Todas_Obtener(int CodEmpresa, int codContabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysIvaCuentasResumenLista>
+            var result = new ErrorDto<SysIvaCuentasResumenLista>
             {
                 Code = 0,
                 Description = "Ok",

@@ -16,10 +16,10 @@ namespace PgxAPI.DataBaseTier
             _AuxiliarDB = new mProGrX_AuxiliarDB(_config);
         }
 
-        public ErrorDTO<CprSolicitudCotizacionPrvBsLista> CprValidarCotizacionBs_Obtener(int CodEmpresa, int? cpr_id, int? cod_unidad)
+        public ErrorDto<CprSolicitudCotizacionPrvBsLista> CprValidarCotizacionBs_Obtener(int CodEmpresa, int? cpr_id, int? cod_unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<CprSolicitudCotizacionPrvBsLista>();
+            var response = new ErrorDto<CprSolicitudCotizacionPrvBsLista>();
             response.Result = new CprSolicitudCotizacionPrvBsLista();
 
             try
@@ -44,10 +44,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO CprValidarContizacionBs_Guardar(int CodEmpresa, CprSolicitusCotizacionGuardar datos)
+        public ErrorDto CprValidarContizacionBs_Guardar(int CodEmpresa, CprSolicitusCotizacionGuardar datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -88,10 +88,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO CprValidacionCotizacionBs_Eliminar(int CodEmpresa, int cpr_id, string codigo, string cod_producto)
+        public ErrorDto CprValidacionCotizacionBs_Eliminar(int CodEmpresa, int cpr_id, string codigo, string cod_producto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new()
+            ErrorDto info = new()
             {
                 Code = 0
             };

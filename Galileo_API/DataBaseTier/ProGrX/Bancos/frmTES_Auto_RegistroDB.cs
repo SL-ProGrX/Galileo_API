@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="autoReg"></param> 
         /// <returns></returns>
-        public ErrorDTO<TesAuto_RegistroDTO> Tes_AutoRegistro_Consultar(int CodEmpresa, int autoReg)
+        public ErrorDto<TesAuto_RegistroDTO> Tes_AutoRegistro_Consultar(int CodEmpresa, int autoReg)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TesAuto_RegistroDTO>
+            var response = new ErrorDto<TesAuto_RegistroDTO>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -57,10 +57,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="registro"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_AutoRegistro_Guardar(int CodEmpresa, TesAuto_RegistroDTO registro)
+        public ErrorDto Tes_AutoRegistro_Guardar(int CodEmpresa, TesAuto_RegistroDTO registro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Registro guardado correctamente"
@@ -131,10 +131,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="autoReg"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_AutoRegistro_Eliminar(int CodEmpresa, TesAuto_RegistroDTO registro)
+        public ErrorDto Tes_AutoRegistro_Eliminar(int CodEmpresa, TesAuto_RegistroDTO registro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Registro eliminado correctamente"
@@ -204,10 +204,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="codigo"></param>
         /// <param name="FiltraCtas"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TesAutoRegCtaBancariasData>> Tes_AutoRegistroCtaBancos_Obtener(int CodEmpresa, int? codigo, string? FiltraCtas)
+        public ErrorDto<List<TesAutoRegCtaBancariasData>> Tes_AutoRegistroCtaBancos_Obtener(int CodEmpresa, int? codigo, string? FiltraCtas)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TesAutoRegCtaBancariasData>>
+            var response = new ErrorDto<List<TesAutoRegCtaBancariasData>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -236,10 +236,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="CtaBanco"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_AutoRegistroCtaBancos_Asignar(int CodEmpresa, int codigo , int cta ,bool asignado, string usuario )
+        public ErrorDto Tes_AutoRegistroCtaBancos_Asignar(int CodEmpresa, int codigo , int cta ,bool asignado, string usuario )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -269,10 +269,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_AutoRegistroTipos_Obtener(int CodEmpresa, int? tipo, string? filtro)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_AutoRegistroTipos_Obtener(int CodEmpresa, int? tipo, string? filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -325,10 +325,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_AutoRegistroCentroCostos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_AutoRegistroCentroCostos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -357,10 +357,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="tipo"></param>
         /// <param name="codigo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_AutoRegistroCodigoDesc_Obtener(int CodEmpresa, string tipo, string codigo)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_AutoRegistroCodigoDesc_Obtener(int CodEmpresa, string tipo, string codigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -404,10 +404,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TesAutoregistroConceptos>> Tes_AutoRegistroConceptos_Obtener(int CodEmpresa, string concepto = null)
+        public ErrorDto<List<TesAutoregistroConceptos>> Tes_AutoRegistroConceptos_Obtener(int CodEmpresa, string concepto = null)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TesAutoregistroConceptos>>
+            var response = new ErrorDto<List<TesAutoregistroConceptos>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -443,10 +443,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_AutoRegistroCentroUnidades_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_AutoRegistroCentroUnidades_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -474,10 +474,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="TipoMov"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_AutoRegistroTiposDoc_Obtener(int CodEmpresa, string TipoMov)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_AutoRegistroTiposDoc_Obtener(int CodEmpresa, string TipoMov)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
@@ -515,10 +515,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TesAuto_RegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TesAuto_RegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<TesAuto_RegistroLista>()
+            var result = new ErrorDto<TesAuto_RegistroLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -577,10 +577,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="autoReg"></param>
         /// <returns></returns>
-        public ErrorDTO<TesAuto_RegistroDTO> Tes_AutoRegistro_scroll(int CodEmpresa, int autoReg, int? scroll)
+        public ErrorDto<TesAuto_RegistroDTO> Tes_AutoRegistro_scroll(int CodEmpresa, int autoReg, int? scroll)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TesAuto_RegistroDTO>
+            var response = new ErrorDto<TesAuto_RegistroDTO>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",

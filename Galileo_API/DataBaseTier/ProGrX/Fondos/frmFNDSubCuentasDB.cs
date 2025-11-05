@@ -29,10 +29,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="plan"></param>
         /// <param name="contrato"></param>
         /// <returns></returns>
-        public ErrorDTO<List<FNDSubCuentasData>> FND_SubCuentas_Lista_Obtener(int CodEmpresa, int operadora, string plan, long contrato)
+        public ErrorDto<List<FNDSubCuentasData>> FND_SubCuentas_Lista_Obtener(int CodEmpresa, int operadora, string plan, long contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FNDSubCuentasData>>
+            var response = new ErrorDto<List<FNDSubCuentasData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -72,10 +72,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> FND_SubCuentas_Parentescos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> FND_SubCuentas_Parentescos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -105,10 +105,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO FND_SubCuentas_Guardar(int CodEmpresa, string usuario, FNDSubCuentasData data)
+        public ErrorDto FND_SubCuentas_Guardar(int CodEmpresa, string usuario, FNDSubCuentasData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -121,7 +121,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
 
                     if (data.isNew)
                     {
-                        ErrorDTO<bool> valida = fxValida(CodEmpresa, data);
+                        ErrorDto<bool> valida = fxValida(CodEmpresa, data);
                         if (valida.Code == -1)
                         {
                             response.Code = valida.Code;
@@ -132,7 +132,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                     }
                     else
                     {
-                        ErrorDTO<bool> valida = fxValida(CodEmpresa, data);
+                        ErrorDto<bool> valida = fxValida(CodEmpresa, data);
                         if (valida.Code == -1)
                         {
                             response.Code = valida.Code;
@@ -161,10 +161,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDTO<bool> fxValida(int CodEmpresa, FNDSubCuentasData data)
+        private ErrorDto<bool> fxValida(int CodEmpresa, FNDSubCuentasData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<bool>
+            var response = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "",
@@ -243,10 +243,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDTO FNDSubCuentas_Insertar(int CodEmpresa, string usuario, FNDSubCuentasData data)
+        private ErrorDto FNDSubCuentas_Insertar(int CodEmpresa, string usuario, FNDSubCuentasData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -356,10 +356,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDTO FNDSubCuentas_Actualizar(int CodEmpresa, string usuario, FNDSubCuentasData data)
+        private ErrorDto FNDSubCuentas_Actualizar(int CodEmpresa, string usuario, FNDSubCuentasData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -426,10 +426,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="consec"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO FNDSubCuentas_Borrar(int CodEmpresa, int consec, string usuario)
+        public ErrorDto FNDSubCuentas_Borrar(int CodEmpresa, int consec, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -479,10 +479,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="contrato"></param>
         /// <param name="operadora"></param>
         /// <returns></returns>
-        public ErrorDTO<string> FNDDSubCuentas_Cedula_Obtener(int CodEmpresa, string plan, long contrato, int operadora)
+        public ErrorDto<string> FNDDSubCuentas_Cedula_Obtener(int CodEmpresa, string plan, long contrato, int operadora)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<string>
+            var response = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",

@@ -27,11 +27,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<UnidadesDataLista>  UnidadMedicion_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<UnidadesDataLista>  UnidadMedicion_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<UnidadesDataLista>();
+            var response = new ErrorDto<UnidadesDataLista>();
             response.Result = new UnidadesDataLista();
             response.Result.Total = 0;
             try
@@ -84,11 +84,11 @@ namespace PgxAPI.DataBaseTier
         /// Obtiene la lista de unidades de medición con detalle (OLD version)
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<List<UnidadMedicionDTO>> UnidadMedicion_ObtenerTodosDetalle(int CodEmpresa)
+        public ErrorDto<List<UnidadMedicionDTO>> UnidadMedicion_ObtenerTodosDetalle(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<UnidadMedicionDTO>>();
+            var response = new ErrorDto<List<UnidadMedicionDTO>>();
 
             try
             {
@@ -118,12 +118,12 @@ namespace PgxAPI.DataBaseTier
         /// Obtiene lista de unidades de medición para select
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<List<UnidadMedicion>> UnidadMedicion_ObtenerTodos(int CodEmpresa)
+        public ErrorDto<List<UnidadMedicion>> UnidadMedicion_ObtenerTodos(int CodEmpresa)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<UnidadMedicion>>();
+            var response = new ErrorDto<List<UnidadMedicion>>();
 
             try
             {
@@ -152,11 +152,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO UnidadMedicion_Actualizar(int CodEmpresa, UnidadMedicionDTO request)
+        public ErrorDto UnidadMedicion_Actualizar(int CodEmpresa, UnidadMedicionDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -189,10 +189,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO UnidadMedicion_Agregar(int CodEmpresa, UnidadMedicionDTO request)
+        public ErrorDto UnidadMedicion_Agregar(int CodEmpresa, UnidadMedicionDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -225,11 +225,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="unidad"></param>
         /// <returns></returns>
-        public ErrorDTO UnidadMedicion_Eliminar(int CodEmpresa, string unidad)
+        public ErrorDto UnidadMedicion_Eliminar(int CodEmpresa, string unidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

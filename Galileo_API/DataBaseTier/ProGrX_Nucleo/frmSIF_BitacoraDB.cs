@@ -25,9 +25,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtros"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ErrorDTO<sifBitacoraLista> Bitacora_Obtener(int codEmpresa, string filtros)
+        public ErrorDto<sifBitacoraLista> Bitacora_Obtener(int codEmpresa, string filtros)
         {
-            var response = new ErrorDTO<sifBitacoraLista>
+            var response = new ErrorDto<sifBitacoraLista>
             {
                 Code = 0,
                 Description = "OK",
@@ -109,9 +109,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ErrorDTO<List<DropDownListaGenericaModel>> BitacoraModulos_Obtener(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> BitacoraModulos_Obtener(int codEmpresa)
         {
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Result = new List<DropDownListaGenericaModel>()
@@ -152,9 +152,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> BitacoraUsuarios_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> BitacoraUsuarios_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",

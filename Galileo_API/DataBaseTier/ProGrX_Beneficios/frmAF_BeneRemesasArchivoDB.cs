@@ -17,10 +17,10 @@ namespace PgxAPI.DataBaseTier
             mProGrX_Auxiliar = new mProGrX_AuxiliarDB(_config);
         }
 
-        public ErrorDTO<List<TipoDocumentosLista>> TipoDocumentos_Obtener(int CodCliente)
+        public ErrorDto<List<TipoDocumentosLista>> TipoDocumentos_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<TipoDocumentosLista>>();
+            var response = new ErrorDto<List<TipoDocumentosLista>>();
 
             try
             {
@@ -40,10 +40,10 @@ namespace PgxAPI.DataBaseTier
 
         }
     
-        public ErrorDTO<RmsRemesasDataLista> RemesasArchivo_Obtener(int CodCliente)
+        public ErrorDto<RmsRemesasDataLista> RemesasArchivo_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<RmsRemesasDataLista>
+            var response = new ErrorDto<RmsRemesasDataLista>
             {
                 Code = 0,
                 Result = new RmsRemesasDataLista()
@@ -66,10 +66,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<RmsRemesaDocuementos>> RemesaDocumentos_Obtener(int CodCliente, string filtros) 
+        public ErrorDto<List<RmsRemesaDocuementos>> RemesaDocumentos_Obtener(int CodCliente, string filtros) 
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<RmsRemesaDocuementos>>();
+            var response = new ErrorDto<List<RmsRemesaDocuementos>>();
 ;           response.Code = 0;
 
             RmsCargaFiltros rmsCarga = JsonConvert.DeserializeObject<RmsCargaFiltros>(filtros);
@@ -111,10 +111,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO<RmsRemesasDetalleDataLista> RemesaDetalle_Obtener(int CodCliente, int IdRemesa)
+        public ErrorDto<RmsRemesasDetalleDataLista> RemesaDetalle_Obtener(int CodCliente, int IdRemesa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<RmsRemesasDetalleDataLista>
+            var response = new ErrorDto<RmsRemesasDetalleDataLista>
             {
                 Code = 0,
                 Result = new RmsRemesasDetalleDataLista()
@@ -138,10 +138,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO RemesaArchivo_Guardar(int CodCliente, RmsRemesasData remesa)
+        public ErrorDto RemesaArchivo_Guardar(int CodCliente, RmsRemesasData remesa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             string origen = _config.GetSection("AFI_Beneficios").GetSection("BeneDepOrigen").Value.ToString();
             string destino = _config.GetSection("AFI_Beneficios").GetSection("BeneDepDestino").Value.ToString();
             try
@@ -178,10 +178,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO RemesaDetalle_Guardar(int CodCliente, int idRemesa,string usuario , List<RmsRemesaDocuementos> documentos)
+        public ErrorDto RemesaDetalle_Guardar(int CodCliente, int idRemesa,string usuario , List<RmsRemesaDocuementos> documentos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
 
             try
             {

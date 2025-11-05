@@ -27,10 +27,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<SysRaTiposLista> Sys_RaTiposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysRaTiposLista> Sys_RaTiposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<SysRaTiposLista>()
+            var result = new ErrorDto<SysRaTiposLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -88,10 +88,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_RaTipos_Guardar(int CodEmpresa, string usuario, SysRaTiposData tipo)
+        public ErrorDto Sys_RaTipos_Guardar(int CodEmpresa, string usuario, SysRaTiposData tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -143,10 +143,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        private ErrorDTO Sys_RaTipos_Actualizar(int CodEmpresa, string usuario, SysRaTiposData tipo)
+        private ErrorDto Sys_RaTipos_Actualizar(int CodEmpresa, string usuario, SysRaTiposData tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -191,10 +191,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        private ErrorDTO Sys_RaTipos_Insertar(int CodEmpresa, string usuario, SysRaTiposData tipo)
+        private ErrorDto Sys_RaTipos_Insertar(int CodEmpresa, string usuario, SysRaTiposData tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -239,10 +239,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="codtipo"></param>
         /// <returns></returns>
-        public ErrorDTO Sys_RaTipos_Eliminar(int CodEmpresa, string usuario, string codtipo)
+        public ErrorDto Sys_RaTipos_Eliminar(int CodEmpresa, string usuario, string codtipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

@@ -30,10 +30,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="solicitud"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_CambioFechasData> TES_CambioFechas_Obtener(int CodEmpresa, int solicitud)
+        public ErrorDto<TES_CambioFechasData> TES_CambioFechas_Obtener(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_CambioFechasData>
+            var response = new ErrorDto<TES_CambioFechasData>
             {
                 Code = 0
             };
@@ -98,10 +98,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="fechas"></param>
         /// <returns></returns>
-        public ErrorDTO TES_CambioFecha_Cambiar(int CodEmpresa, TES_CambioFechasModel fechas)
+        public ErrorDto TES_CambioFecha_Cambiar(int CodEmpresa, TES_CambioFechasModel fechas)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };

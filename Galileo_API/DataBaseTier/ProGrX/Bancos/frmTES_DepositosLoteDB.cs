@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TES_Cuenta_BancariaDTO>> TES_DepositosLote_Ctas_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<List<TES_Cuenta_BancariaDTO>> TES_DepositosLote_Ctas_Obtener(int CodEmpresa, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TES_Cuenta_BancariaDTO>>
+            var response = new ErrorDto<List<TES_Cuenta_BancariaDTO>>
             {
                 Code = 0,
                 Result = new List<TES_Cuenta_BancariaDTO>()
@@ -58,11 +58,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="archivoData"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TES_Depositos_TramiteDTO>> TES_DepositosLote_ArchivoCarga(int CodEmpresa, string archivoData)
+        public ErrorDto<List<TES_Depositos_TramiteDTO>> TES_DepositosLote_ArchivoCarga(int CodEmpresa, string archivoData)
         {
             List<TES_Depositos_TramiteDTO> lista = JsonConvert.DeserializeObject <List<TES_Depositos_TramiteDTO>>(archivoData) ?? new List<TES_Depositos_TramiteDTO>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TES_Depositos_TramiteDTO>>
+            var response = new ErrorDto<List<TES_Depositos_TramiteDTO>>
             {
                 Code = 0,
                 Result = new List<TES_Depositos_TramiteDTO>()
@@ -127,11 +127,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="archivoData"></param>
         /// <returns></returns>
-        public ErrorDTO TES_DepositosLote_Procesar(int CodEmpresa, string cuenta, string usuario, string archivoData)
+        public ErrorDto TES_DepositosLote_Procesar(int CodEmpresa, string cuenta, string usuario, string archivoData)
         {
             List<TES_Depositos_TramiteDTO> lista = JsonConvert.DeserializeObject<List<TES_Depositos_TramiteDTO>>(archivoData) ?? new List<TES_Depositos_TramiteDTO>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -212,11 +212,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="fecha_inicio"></param>
         /// <param name="fecha_corte"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> TES_DepositosLote_Inconsistencias_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<TablasListaGenericaModel> TES_DepositosLote_Inconsistencias_Obtener(int CodEmpresa, string filtros)
         {
             Filtros_Inconsistencias param = JsonConvert.DeserializeObject<Filtros_Inconsistencias>(filtros) ?? new Filtros_Inconsistencias();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Result = new TablasListaGenericaModel()
@@ -272,11 +272,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TablasListaGenericaModel> TES_DepositosLote_Registro_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<TablasListaGenericaModel> TES_DepositosLote_Registro_Obtener(int CodEmpresa, string filtros)
         {
             Filtros_Registro param = JsonConvert.DeserializeObject<Filtros_Registro>(filtros) ?? new Filtros_Registro();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TablasListaGenericaModel>
+            var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Description = "",
@@ -371,10 +371,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Categoria"></param>
         /// <returns></returns>
-        public ErrorDTO<string> TES_DepositosLote_CategoriaCta_Obtener(int CodEmpresa, string Categoria)
+        public ErrorDto<string> TES_DepositosLote_CategoriaCta_Obtener(int CodEmpresa, string Categoria)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<string>
+            var response = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -410,11 +410,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="Usuario"></param>
         /// <param name="Datos"></param>
         /// <returns></returns>
-        public ErrorDTO TES_DepositosLote_Registro_Aplicar(int CodEmpresa, string Usuario, string Datos)
+        public ErrorDto TES_DepositosLote_Registro_Aplicar(int CodEmpresa, string Usuario, string Datos)
         {
             List<TES_Depositos_Tramite_BancoDTO> lista = JsonConvert.DeserializeObject<List<TES_Depositos_Tramite_BancoDTO>>(Datos) ?? new List<TES_Depositos_Tramite_BancoDTO>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -455,10 +455,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO TES_DepositosLote_Registro_Actualizar(int CodEmpresa)
+        public ErrorDto TES_DepositosLote_Registro_Actualizar(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -487,11 +487,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="Usuario"></param>
         /// <param name="Datos"></param>
         /// <returns></returns>
-        public ErrorDTO TES_DepositosLote_Registro_Desvincular(int CodEmpresa, string Usuario, string Datos)
+        public ErrorDto TES_DepositosLote_Registro_Desvincular(int CodEmpresa, string Usuario, string Datos)
         {
             List<TES_Depositos_Tramite_BancoDTO> lista = JsonConvert.DeserializeObject<List<TES_Depositos_Tramite_BancoDTO>>(Datos) ?? new List<TES_Depositos_Tramite_BancoDTO>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

@@ -14,12 +14,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<repBodegaDTO>> Obtener_Bodegas(int CodEmpresa)
+        public ErrorDto<List<repBodegaDTO>> Obtener_Bodegas(int CodEmpresa)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<repBodegaDTO>>();
+            var response = new ErrorDto<List<repBodegaDTO>>();
 
             try
             {

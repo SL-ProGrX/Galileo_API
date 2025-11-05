@@ -19,10 +19,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Sif_ParametrosDTO>> obtener_ParametrosSistema(int CodEmpresa)
+        public ErrorDto<List<Sif_ParametrosDTO>> obtener_ParametrosSistema(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<Sif_ParametrosDTO>>();
+            var response = new ErrorDto<List<Sif_ParametrosDTO>>();
             response.Code = 0;
             try
             {

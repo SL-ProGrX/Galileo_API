@@ -19,7 +19,7 @@ namespace PgxAPI.DataBaseTier
             _mMain = new mProGrx_Main(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -30,9 +30,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PersonaTarjetaDTO>> AF_PersonaTarjetas_Consulta(int CodEmpresa, string cedula)
+        public ErrorDto<List<PersonaTarjetaDTO>> AF_PersonaTarjetas_Consulta(int CodEmpresa, string cedula)
         {
-            var response = new ErrorDTO<List<PersonaTarjetaDTO>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<PersonaTarjetaDTO>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -56,9 +56,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="tarjeta"></param>
         /// <returns></returns>
-        public ErrorDTO AF_PersonaTarjetas_Registro(int CodEmpresa, PersonaTarjetaRegistroDTO tarjeta)
+        public ErrorDto AF_PersonaTarjetas_Registro(int CodEmpresa, PersonaTarjetaRegistroDTO tarjeta)
         {
-            var response = new ErrorDTO { Code = 0, Description = "Procesado correctamente" };
+            var response = new ErrorDto { Code = 0, Description = "Procesado correctamente" };
             try
             {
                 string movimiento = "";
@@ -116,9 +116,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="Tarjeta"></param>
         /// <returns></returns>
-        public ErrorDTO<string> AF_PersonaTarjetas_ValidaTipo(string Tarjeta)
+        public ErrorDto<string> AF_PersonaTarjetas_ValidaTipo(string Tarjeta)
         {
-            var response = new ErrorDTO<string> 
+            var response = new ErrorDto<string> 
             {
                 Code = 0, 
                 Description = "Ok",

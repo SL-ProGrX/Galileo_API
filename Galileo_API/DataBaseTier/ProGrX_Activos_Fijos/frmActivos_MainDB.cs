@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Main_Departamentos_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Main_Departamentos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -59,10 +59,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="departamento"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Main_Secciones_Obtener(int CodEmpresa, string departamento)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Main_Secciones_Obtener(int CodEmpresa, string departamento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -92,10 +92,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="departamento"></param>
         /// <param name="seccion"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Main_Responsable_Obtener(int CodEmpresa, string departamento, string seccion)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Main_Responsable_Obtener(int CodEmpresa, string departamento, string seccion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -124,10 +124,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Main_Localizacion_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Main_Localizacion_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -156,10 +156,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Main_TipoActivo_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Main_TipoActivo_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -188,11 +188,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<int> Activos_Main_PermiteRegistros_Validar(int CodEmpresa)
+        public ErrorDto<int> Activos_Main_PermiteRegistros_Validar(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO<int>
+            var result = new ErrorDto<int>
             {
                 Code = 0,
                 Description = "Ok",
@@ -220,11 +220,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<int> Activos_Main_ForzarTipoActivo_Validar(int CodEmpresa)
+        public ErrorDto<int> Activos_Main_ForzarTipoActivo_Validar(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO<int>
+            var result = new ErrorDto<int>
             {
                 Code = 0,
                 Description = "Ok",
@@ -254,11 +254,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="orden"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<string> Activos_Main_NumeroPlaca_Consultar(int CodEmpresa, int orden, string placa)
+        public ErrorDto<string> Activos_Main_NumeroPlaca_Consultar(int CodEmpresa, int orden, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -300,10 +300,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="codigo"></param>
         /// <param name="estadoHistorico"></param>
         /// <returns></returns>
-        public ErrorDTO<List<MainHistoricoData>> Activos_Main_Historico_Consultar(int CodEmpresa, string codigo, string estadoHistorico)
+        public ErrorDto<List<MainHistoricoData>> Activos_Main_Historico_Consultar(int CodEmpresa, string codigo, string estadoHistorico)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<MainHistoricoData>>()
+            var result = new ErrorDto<List<MainHistoricoData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -333,10 +333,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<MainDetalleResponsablesData>> Activos_Main_DetalleResponsables_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<List<MainDetalleResponsablesData>> Activos_Main_DetalleResponsables_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<MainDetalleResponsablesData>>()
+            var result = new ErrorDto<List<MainDetalleResponsablesData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -370,10 +370,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<MainModificacionesData>> Activos_Main_Modificaciones_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<List<MainModificacionesData>> Activos_Main_Modificaciones_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<MainModificacionesData>>()
+            var result = new ErrorDto<List<MainModificacionesData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -410,10 +410,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<MainComposicionData>> Activos_Main_Composicion_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<List<MainComposicionData>> Activos_Main_Composicion_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<MainComposicionData>>()
+            var result = new ErrorDto<List<MainComposicionData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -451,10 +451,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<MainPolizasData>> Activos_Main_Polizas_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<List<MainPolizasData>> Activos_Main_Polizas_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<MainPolizasData>>()
+            var result = new ErrorDto<List<MainPolizasData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -490,10 +490,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<MainGeneralData> Activos_Main_DatosGenerales_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<MainGeneralData> Activos_Main_DatosGenerales_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<MainGeneralData>()
+            var result = new ErrorDto<MainGeneralData>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -541,11 +541,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="placa"></param>
         /// <param name="placaAlternativa"></param>
         /// <returns></returns>
-        public ErrorDTO<string> Activos_Main_Validaciones_Consultar(int CodEmpresa, string placa, string placaAlternativa)
+        public ErrorDto<string> Activos_Main_Validaciones_Consultar(int CodEmpresa, string placa, string placaAlternativa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = -2,
                 Description = "Ok",
@@ -652,11 +652,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="aplicacionTotal"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Main_Modificar(int CodEmpresa, MainGeneralData data, int aplicacionTotal, string usuario)
+        public ErrorDto Activos_Main_Modificar(int CodEmpresa, MainGeneralData data, int aplicacionTotal, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -743,11 +743,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="data"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Main_Guardar(int CodEmpresa, MainGeneralData data, string usuario)
+        public ErrorDto Activos_Main_Guardar(int CodEmpresa, MainGeneralData data, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -829,11 +829,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="codigo"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Main_Eliminar(int CodEmpresa, string codigo, string usuario)
+        public ErrorDto Activos_Main_Eliminar(int CodEmpresa, string codigo, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -869,10 +869,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosData>> Activos_Main_Obtener(int CodEmpresa)
+        public ErrorDto<List<ActivosData>> Activos_Main_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ActivosData>>()
+            var result = new ErrorDto<List<ActivosData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -901,10 +901,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo_activo"></param>
         /// <returns></returns>
-        public ErrorDTO<MainActivosTiposData> Activos_Main_TipoActivo_Consultar(int CodEmpresa, string tipo_activo)
+        public ErrorDto<MainActivosTiposData> Activos_Main_TipoActivo_Consultar(int CodEmpresa, string tipo_activo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<MainActivosTiposData>()
+            var result = new ErrorDto<MainActivosTiposData>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -932,11 +932,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<DateTime> Activos_Main_FechaUltimoCierre(int CodEmpresa)
+        public ErrorDto<DateTime> Activos_Main_FechaUltimoCierre(int CodEmpresa)
         {
 
 
-            var result = new ErrorDTO<DateTime>
+            var result = new ErrorDto<DateTime>
             {
                 Code = 0,
                 Description = "Ok",
@@ -961,10 +961,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Main_Proveedores_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Main_Proveedores_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -992,11 +992,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<string> Activos_Main_PlacaId_Consultar(int CodEmpresa)
+        public ErrorDto<string> Activos_Main_PlacaId_Consultar(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = -2,
                 Description = "Ok",
@@ -1028,10 +1028,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="proveedor"></param>
         /// <param name="adquisicion"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Main_DocCompas_Obtener(int CodEmpresa , string proveedor, DateTime adquisicion)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Main_DocCompas_Obtener(int CodEmpresa , string proveedor, DateTime adquisicion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",

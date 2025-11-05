@@ -105,7 +105,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"Select L.consec,S.cedula,S.nombre,L.TNeto
-                        ,case when L.EstadoActLiq = 'A' then 'Ren.Asociación' when  L.EstadoActLiq = 'P' then 'Ren.Patronal' end as 'Tipo'
+                        ,case when L.EstadoActLiq = 'A' then 'Ren.Asociaciï¿½n' when  L.EstadoActLiq = 'P' then 'Ren.Patronal' end as 'Tipo'
                         from Liquidacion L inner join Socios S on L.cedula = S.cedula
                         where L.FecLiq between '{FechaInicio} 00:00:00' and '{FechaCorte} 23:59:59' and L.Ubicacion='T' 
                         and L.Estado = 'P' and L.TES_SUPERVISION_FECHA is null and dbo.fxTesSupervisa(S.cedula,S.nombre,L.TNeto,0,'L') = 1";
@@ -188,10 +188,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_ModuloCredito_Autorizar(int CodEmpresa, string Usuario, int Id_Solicitud)
+        public ErrorDto CC_ModuloCredito_Autorizar(int CodEmpresa, string Usuario, int Id_Solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -200,7 +200,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update REG_CREDITOS SET TES_SUPERVISION_USUARIO = '{Usuario}', TES_SUPERVISION_FECHA  = Getdate()
                         where id_solicitud = {Id_Solicitud}";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorización de operación " + Id_Solicitud + " procesada exitosamente";
+                    resp.Description = "Autorizaciï¿½n de operaciï¿½n " + Id_Solicitud + " procesada exitosamente";
                 }
             }
             catch (Exception ex)
@@ -211,10 +211,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_ModuloFondos_Autorizar(int CodEmpresa, string Usuario, int Consec)
+        public ErrorDto CC_ModuloFondos_Autorizar(int CodEmpresa, string Usuario, int Consec)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -223,7 +223,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update Fnd_Liquidacion SET TES_SUPERVISION_USUARIO = '{Usuario}' , TES_SUPERVISION_FECHA  = Getdate()
                         where consec = {Consec}";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorización de Id " + Consec + " procesada exitosamente";
+                    resp.Description = "Autorizaciï¿½n de Id " + Consec + " procesada exitosamente";
                 }
             }
             catch (Exception ex)
@@ -234,10 +234,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_ModuloLiquidacion_Autorizar(int CodEmpresa, string Usuario, int Consec)
+        public ErrorDto CC_ModuloLiquidacion_Autorizar(int CodEmpresa, string Usuario, int Consec)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -246,7 +246,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update Liquidacion SET TES_SUPERVISION_USUARIO = '{Usuario}' , TES_SUPERVISION_FECHA  = Getdate()
                         where consec = {Consec}";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorización de Id " + Consec + " procesada exitosamente";
+                    resp.Description = "Autorizaciï¿½n de Id " + Consec + " procesada exitosamente";
                 }
             }
             catch (Exception ex)
@@ -257,10 +257,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_ModuloBeneficios_Autorizar(int CodEmpresa, string Usuario, int Consec, string Cod_Beneficio)
+        public ErrorDto CC_ModuloBeneficios_Autorizar(int CodEmpresa, string Usuario, int Consec, string Cod_Beneficio)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -269,7 +269,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update afi_bene_pago SET TES_SUPERVISION_USUARIO = '{Usuario}' , TES_SUPERVISION_FECHA  = Getdate()
                         where consec = {Consec} and cod_beneficio = '{Cod_Beneficio}'";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorización de Id " + Consec + " procesada exitosamente";
+                    resp.Description = "Autorizaciï¿½n de Id " + Consec + " procesada exitosamente";
                 }
             }
             catch (Exception ex)
@@ -280,10 +280,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_ModuloHipotecario_Autorizar(int CodEmpresa, string Usuario, int CodigoDesembolso)
+        public ErrorDto CC_ModuloHipotecario_Autorizar(int CodEmpresa, string Usuario, int CodigoDesembolso)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -292,7 +292,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update ViviendaDesembolsos SET TES_SUPERVISION_USUARIO = '{Usuario}' , TES_SUPERVISION_FECHA  = Getdate()
                         where CodigoDesembolso = '{CodigoDesembolso}";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorización de Id " + CodigoDesembolso + " procesada exitosamente";
+                    resp.Description = "Autorizaciï¿½n de Id " + CodigoDesembolso + " procesada exitosamente";
                 }
             }
             catch (Exception ex)

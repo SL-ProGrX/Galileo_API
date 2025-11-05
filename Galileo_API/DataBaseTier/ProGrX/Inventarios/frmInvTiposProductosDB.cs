@@ -31,12 +31,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<TipoProductoDataLista> TipoProducto_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, int cod_contabilidad)
+        public ErrorDto<TipoProductoDataLista> TipoProducto_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, int cod_contabilidad)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new ErrorDTO<TipoProductoDataLista>();
+            var info = new ErrorDto<TipoProductoDataLista>();
             info.Result = new TipoProductoDataLista();
             info.Result.Total = 0;
             try
@@ -122,11 +122,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO TipoProducto_Actualizar(int CodEmpresa, TipoProductoDTO request)
+        public ErrorDto TipoProducto_Actualizar(int CodEmpresa, TipoProductoDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -161,10 +161,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO TipoProducto_Insertar(int CodEmpresa, TipoProductoDTO request)
+        public ErrorDto TipoProducto_Insertar(int CodEmpresa, TipoProductoDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -198,11 +198,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="producto"></param>
         /// <returns></returns>
-        public ErrorDTO TipoProducto_Eliminar(int CodEmpresa, string producto)
+        public ErrorDto TipoProducto_Eliminar(int CodEmpresa, string producto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -239,12 +239,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDTO<TipoProductoSubDataLista> TipoProductoSub_Obtener(int CodCliente, int ProdClas, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<TipoProductoSubDataLista> TipoProductoSub_Obtener(int CodCliente, int ProdClas, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new ErrorDTO<TipoProductoSubDataLista>();
+            var info = new ErrorDto<TipoProductoSubDataLista>();
             info.Result = new TipoProductoSubDataLista();
             info.Result.Total = 0;
             try
@@ -342,11 +342,11 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDTO<List<TipoProductoSubGradaData>> TipoProductoSub_ObtenerTodos(int CodEmpresa, string Cod_Prodclas)
+        public ErrorDto<List<TipoProductoSubGradaData>> TipoProductoSub_ObtenerTodos(int CodEmpresa, string Cod_Prodclas)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TipoProductoSubGradaData>>
+            var response = new ErrorDto<List<TipoProductoSubGradaData>>
             {
                 Code = 0,
                 Result = new List<TipoProductoSubGradaData>()
@@ -429,11 +429,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO TipoProductoSub_Actualizar(int CodEmpresa, TipoProductoSubDTO request)
+        public ErrorDto TipoProductoSub_Actualizar(int CodEmpresa, TipoProductoSubDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
 
@@ -467,7 +467,7 @@ namespace PgxAPI.DataBaseTier
 
                         if(nivel > 5)
                         {
-                            return new ErrorDTO { Code = -1, Description = "No se puede agregar mas subcategorias" };
+                            return new ErrorDto { Code = -1, Description = "No se puede agregar mas subcategorias" };
                         }
 
                     }
@@ -511,11 +511,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO TipoProductoSub_Insertar(int CodEmpresa, TipoProductoSubDTO request)
+        public ErrorDto TipoProductoSub_Insertar(int CodEmpresa, TipoProductoSubDTO request)
 
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -548,12 +548,12 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<List<InvCabys>> Cabys_ObtenerTodos(int CodEmpresa)
+        public ErrorDto<List<InvCabys>> Cabys_ObtenerTodos(int CodEmpresa)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var info = new ErrorDTO<List<InvCabys>>();
+            var info = new ErrorDto<List<InvCabys>>();
 
             try
             {
@@ -574,12 +574,12 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO<List<InvCabys>> Cabys_Obtener(int CodEmpresa, string filtro)
+        public ErrorDto<List<InvCabys>> Cabys_Obtener(int CodEmpresa, string filtro)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var info = new ErrorDTO<List<InvCabys>>();
+            var info = new ErrorDto<List<InvCabys>>();
 
             try
             {
@@ -649,10 +649,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        private ErrorDTO fxValidaProfundidadRaiz(int CodCliente, string codigoRaiz)
+        private ErrorDto fxValidaProfundidadRaiz(int CodCliente, string codigoRaiz)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO error = new();
+            ErrorDto error = new();
             try
             {
                 using var connection = new SqlConnection(stringConn);

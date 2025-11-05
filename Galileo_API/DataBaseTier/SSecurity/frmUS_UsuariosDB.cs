@@ -55,9 +55,9 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="usuarioDto"></param>
         /// <returns></returns>
-        public ErrorDTO UsuarioGuardarActualizar(UsuarioDTO usuarioDto)
+        public ErrorDto UsuarioGuardarActualizar(UsuarioDTO usuarioDto)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -232,9 +232,9 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO UsuarioClienteAsignar(UsuarioClienteAsignaDTO usuarioClienteAsignaDto)
+        public ErrorDto UsuarioClienteAsignar(UsuarioClienteAsignaDTO usuarioClienteAsignaDto)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 string valEstado = usuarioClienteAsignaDto.Estado.Trim();
@@ -405,9 +405,9 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO UsuarioClienteRolAsignar(UsuarioClienteRolAsignaDTO usuarioClienteRolAsignaDto)
+        public ErrorDto UsuarioClienteRolAsignar(UsuarioClienteRolAsignaDTO usuarioClienteRolAsignaDto)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<UnidadMedicionConv>>  UnidadMedicion_Obtener(int CodCliente)
+        public ErrorDto<List<UnidadMedicionConv>>  UnidadMedicion_Obtener(int CodCliente)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<UnidadMedicionConv>>
+            var response = new ErrorDto<List<UnidadMedicionConv>>
             {
                 Code = 0
             };
@@ -49,10 +49,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO<UnidadesConvLista> UnidadConvLista_Obtener(int CodCliente, string cod_unidad)
+        public ErrorDto<UnidadesConvLista> UnidadConvLista_Obtener(int CodCliente, string cod_unidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<UnidadesConvLista>
+            var response = new ErrorDto<UnidadesConvLista>
             {
                 Code = 0,
                 Description = "",
@@ -82,10 +82,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO UnidadConv_Guardar(int CodCliente, UnidadMedicionConvData equivalencia)
+        public ErrorDto UnidadConv_Guardar(int CodCliente, UnidadMedicionConvData equivalencia)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
 
             try
             {
@@ -123,10 +123,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO UnidadConv_Eliminar(int CodCliente, string cod_unidad, string cod_unidad_d)
+        public ErrorDto UnidadConv_Eliminar(int CodCliente, string cod_unidad, string cod_unidad_d)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
 
             try
             {

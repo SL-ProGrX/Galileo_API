@@ -45,11 +45,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Actualiza_ConfiguracionPatrimonio(int CodEmpresa, ParametrosPatrimonioDTO data)
+        public ErrorDto Actualiza_ConfiguracionPatrimonio(int CodEmpresa, ParametrosPatrimonioDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);

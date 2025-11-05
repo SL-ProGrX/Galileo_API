@@ -98,9 +98,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO FxGuardar(GuardarDto dto)
+        public ErrorDto FxGuardar(GuardarDto dto)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

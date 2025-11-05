@@ -25,9 +25,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda, orden y paginación</param>
         /// <returns></returns>
-        public ErrorDTO<BienesTipoLista> AF_BienesTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<BienesTipoLista> AF_BienesTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<BienesTipoLista>
+            var result = new ErrorDto<BienesTipoLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -85,9 +85,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="bienTipo">Datos del tipo de bien</param>
         /// <returns></returns>
-        public ErrorDTO AF_BienesTipos_Guardar(int CodEmpresa, string usuario, BienesTipoData bienTipo)
+        public ErrorDto AF_BienesTipos_Guardar(int CodEmpresa, string usuario, BienesTipoData bienTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -123,9 +123,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="bienTipo">Datos del tipo de bien a insertar</param>
         /// <returns></returns>
-        private ErrorDTO AF_BienesTipos_Insertar(int CodEmpresa, string usuario, BienesTipoData bienTipo)
+        private ErrorDto AF_BienesTipos_Insertar(int CodEmpresa, string usuario, BienesTipoData bienTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -164,9 +164,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="bienTipo">Datos del tipo de bien a actualizar</param>
         /// <returns></returns>
-        private ErrorDTO AF_BienesTipos_Actualizar(int CodEmpresa, string usuario, BienesTipoData bienTipo)
+        private ErrorDto AF_BienesTipos_Actualizar(int CodEmpresa, string usuario, BienesTipoData bienTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -206,9 +206,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="bienTipo">Código del tipo de bien a eliminar</param>
         /// <returns></returns>
-        public ErrorDTO AF_BienesTipos_Eliminar(int CodEmpresa, string usuario, string bienTipo)
+        public ErrorDto AF_BienesTipos_Eliminar(int CodEmpresa, string usuario, string bienTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -239,9 +239,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="bienTipo">Código del tipo de bien a validar</param>
         /// <returns></returns>
-        public ErrorDTO AF_BienesTipos_Valida(int CodEmpresa, string bienTipo)
+        public ErrorDto AF_BienesTipos_Valida(int CodEmpresa, string bienTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -273,9 +273,9 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda</param>
         /// <returns></returns>
-        public ErrorDTO<List<BienesTipoData>> AF_BienesTipos_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<BienesTipoData>> AF_BienesTipos_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<BienesTipoData>>
+            var result = new ErrorDto<List<BienesTipoData>>
             {
                 Code = 0,
                 Description = "Ok",

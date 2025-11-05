@@ -25,11 +25,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodModelo">Código del modelo.</param>
         /// <param name="CodUnidad">Código de la unidad.</param>
         /// <param name="CodCentroCosto">Código del centro de costo.</param>
-        /// <returns>Un objeto ErrorDTO que contiene una lista de CuentasCatalogoData. O mensaje de error</returns>
-        public ErrorDTO<List<CuentasCatalogoData>> spPres_CuentasCatalogo_Obtener(int CodEmpresa, int CodContab, string CodModelo, string CodUnidad, string CodCentroCosto)
+        /// <returns>Un objeto ErrorDto que contiene una lista de CuentasCatalogoData. O mensaje de error</returns>
+        public ErrorDto<List<CuentasCatalogoData>> spPres_CuentasCatalogo_Obtener(int CodEmpresa, int CodContab, string CodModelo, string CodUnidad, string CodCentroCosto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<CuentasCatalogoData>>
+            var resp = new ErrorDto<List<CuentasCatalogoData>>
             {
                 Code = 0
             };
@@ -56,11 +56,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="CodContab">Código de la contabilidad.</param>
         /// <param name="Usuario">Nombre de usuario.</param>
-        /// <returns>Un objeto ErrorDTO que contiene una lista de ModeloGenericList. O mensaje de error</returns>
-        public ErrorDTO<List<ModeloGenericList>> Pres_Modelos_Obtener(int CodEmpresa, int CodContab, string Usuario)
+        /// <returns>Un objeto ErrorDto que contiene una lista de ModeloGenericList. O mensaje de error</returns>
+        public ErrorDto<List<ModeloGenericList>> Pres_Modelos_Obtener(int CodEmpresa, int CodContab, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<ModeloGenericList>>
+            var resp = new ErrorDto<List<ModeloGenericList>>
             {
                 Code = 0
             };
@@ -93,11 +93,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="CodContab">Código de la contabilidad.</param>
         /// <param name="Usuario">Nombre de usuario.</param>
-        /// <returns>Un objeto ErrorDTO que contiene una lista de ModeloGenericList. O mensaje de error</returns>
-        public ErrorDTO<List<ModeloGenericList>> Pres_Unidades_Obtener(int CodEmpresa, int CodContab, string Usuario)
+        /// <returns>Un objeto ErrorDto que contiene una lista de ModeloGenericList. O mensaje de error</returns>
+        public ErrorDto<List<ModeloGenericList>> Pres_Unidades_Obtener(int CodEmpresa, int CodContab, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<ModeloGenericList>>
+            var resp = new ErrorDto<List<ModeloGenericList>>
             {
                 Code = 0
             }; try
@@ -127,11 +127,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="CodContab">Código de la contabilidad.</param>
         /// <param name="CodUnidad">Código de la unidad.</param>
-        /// <returns>Un objeto ErrorDTO que contiene una lista de ModeloGenericList. O mensaje de error</returns>   
-        public ErrorDTO<List<ModeloGenericList>> Pres_CentroCosto_Obtener(int CodEmpresa, int CodContab, string CodUnidad)
+        /// <returns>Un objeto ErrorDto que contiene una lista de ModeloGenericList. O mensaje de error</returns>   
+        public ErrorDto<List<ModeloGenericList>> Pres_CentroCosto_Obtener(int CodEmpresa, int CodContab, string CodUnidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<ModeloGenericList>>
+            var resp = new ErrorDto<List<ModeloGenericList>>
             {
                 Code = 0
             };
@@ -161,11 +161,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="request">Lista de datos de cuentas del modelo a cargar.</param>    
-        /// /// <returns>Un objeto ErrorDTO que indica el resultado de la operación.</returns>
-        public ErrorDTO spPres_Modelo_Cuentas_CargaDatos(int CodEmpresa, List<Pres_Modelo_Cuentas_ImportData> request)
+        /// /// <returns>Un objeto ErrorDto que indica el resultado de la operación.</returns>
+        public ErrorDto spPres_Modelo_Cuentas_CargaDatos(int CodEmpresa, List<Pres_Modelo_Cuentas_ImportData> request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };
@@ -212,11 +212,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodContab">Código de la contabilidad.</param>
         /// <param name="CodModelo">Código del modelo a revisar.</param>
         /// <param name="Usuario">Nombre de usuario que realiza la revisión.</param>
-        /// <returns>Un objeto ErrorDTO que contiene una lista de Pres_Modelo_Cuentas_ImportData. O mensaje de error</returns>
-        public ErrorDTO<List<Pres_Modelo_Cuentas_ImportData>> spPres_Modelo_Cuentas_RevisaImport(int CodEmpresa, int CodContab, string CodModelo, string Usuario)
+        /// <returns>Un objeto ErrorDto que contiene una lista de Pres_Modelo_Cuentas_ImportData. O mensaje de error</returns>
+        public ErrorDto<List<Pres_Modelo_Cuentas_ImportData>> spPres_Modelo_Cuentas_RevisaImport(int CodEmpresa, int CodContab, string CodModelo, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<Pres_Modelo_Cuentas_ImportData>>
+            var resp = new ErrorDto<List<Pres_Modelo_Cuentas_ImportData>>
             {
                 Code = 0,
                 Description = "Ok"
@@ -248,11 +248,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodContab">Código de la contabilidad.</param>
         /// <param name="CodModelo">Código del modelo a importar.</param>
         /// <param name="Usuario">Nombre de usuario que realiza la importación.</param>
-        /// <returns>Un objeto ErrorDTO que indica el resultado de la operación.</returns>
-        public ErrorDTO spPres_Modelo_Cuentas_Import(int CodEmpresa, int CodContab, string CodModelo, string Usuario)
+        /// <returns>Un objeto ErrorDto que indica el resultado de la operación.</returns>
+        public ErrorDto spPres_Modelo_Cuentas_Import(int CodEmpresa, int CodContab, string CodModelo, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };
@@ -326,11 +326,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodModelo">Código del modelo de cuentas.</param>
         /// <param name="Usuario">Nombre de usuario que realiza la consulta.</param>
         /// <param name="request">Lista de datos de cuentas del modelo a procesar.</param>
-        /// <returns>Un objeto ErrorDTO que contiene una lista de Pres_Modelo_Cuentas_ImportData. O mensaje de error</returns>
-        public ErrorDTO<List<Pres_Modelo_Cuentas_ImportData>> spCntX_Periodo_Fiscal_Meses(int CodEmpresa, int CodContab, string CodModelo, string Usuario, List<Pres_Modelo_Cuentas_Horizontal> request)
+        /// <returns>Un objeto ErrorDto que contiene una lista de Pres_Modelo_Cuentas_ImportData. O mensaje de error</returns>
+        public ErrorDto<List<Pres_Modelo_Cuentas_ImportData>> spCntX_Periodo_Fiscal_Meses(int CodEmpresa, int CodContab, string CodModelo, string Usuario, List<Pres_Modelo_Cuentas_Horizontal> request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<Pres_Modelo_Cuentas_ImportData>>
+            var resp = new ErrorDto<List<Pres_Modelo_Cuentas_ImportData>>
             {
                 Code = 0,
                 Result = new List<Pres_Modelo_Cuentas_ImportData>()

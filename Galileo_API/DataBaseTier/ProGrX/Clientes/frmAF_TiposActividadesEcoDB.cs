@@ -21,10 +21,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_TiposActividadesEcoLista> AF_TiposActividadesEco_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<AF_TiposActividadesEcoLista> AF_TiposActividadesEco_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_TiposActividadesEcoLista>
+            var response = new ErrorDto<AF_TiposActividadesEcoLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -81,10 +81,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDTO AF_TiposActividadesEco_Guardar(int CodEmpresa, string Usuario, AF_TiposActividadesEcoDTO Info)
+        public ErrorDto AF_TiposActividadesEco_Guardar(int CodEmpresa, string Usuario, AF_TiposActividadesEcoDTO Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -148,10 +148,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="CodActividad"></param>
         /// <returns></returns>
-        public ErrorDTO AF_TiposActividadesEco_Eliminar(int CodEmpresa, string Usuario, string CodActividad)
+        public ErrorDto AF_TiposActividadesEco_Eliminar(int CodEmpresa, string Usuario, string CodActividad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -181,10 +181,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodActividad"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_TiposActividadesEcoLista> AF_TiposActividadesEco_SubActividad_Obtener(int CodEmpresa, string CodActividad, FiltrosLazyLoadData filtros)
+        public ErrorDto<AF_TiposActividadesEcoLista> AF_TiposActividadesEco_SubActividad_Obtener(int CodEmpresa, string CodActividad, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<AF_TiposActividadesEcoLista>
+            var response = new ErrorDto<AF_TiposActividadesEcoLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -243,10 +243,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDTO AF_TiposActividadesEco_SubActividad_Guardar(int CodEmpresa, string Usuario, AF_TiposActividadesEcoDTO Info)
+        public ErrorDto AF_TiposActividadesEco_SubActividad_Guardar(int CodEmpresa, string Usuario, AF_TiposActividadesEcoDTO Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -315,10 +315,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodActividad"></param>
         /// <param name="CodSubAct"></param>
         /// <returns></returns>
-        public ErrorDTO AF_TiposActividadesEco_SubActividad_Eliminar(int CodEmpresa, string Usuario, string CodActividad, string CodSubAct)
+        public ErrorDto AF_TiposActividadesEco_SubActividad_Eliminar(int CodEmpresa, string Usuario, string CodActividad, string CodSubAct)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

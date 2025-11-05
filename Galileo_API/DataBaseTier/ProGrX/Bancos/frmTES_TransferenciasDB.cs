@@ -33,10 +33,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="BancoConsec"></param>
         /// <param name="gstrQuery"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Transferencia_Aceptar(int CodEmpresa, TesTransferenciasInfo transferencia)
+        public ErrorDto TES_Transferencia_Aceptar(int CodEmpresa, TesTransferenciasInfo transferencia)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 long consc = 0;
@@ -155,10 +155,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="TipoDoc"></param>
         /// <param name="plan"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Transferencia_Reversar(int CodEmpresa, TesTransferenciasInfo transferencia)
+        public ErrorDto TES_Transferencia_Reversar(int CodEmpresa, TesTransferenciasInfo transferencia)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 _mTesoreria.fxTesTipoDocConsec(CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc, "-", transferencia.plan);

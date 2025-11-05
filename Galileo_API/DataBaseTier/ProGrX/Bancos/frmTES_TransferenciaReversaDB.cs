@@ -29,10 +29,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO<List<transferenciaSolicitudData>> TES_TransferenciaReversa_Obtener(int CodEmpresa, transferenciaSolicitudData solicitud)
+        public ErrorDto<List<transferenciaSolicitudData>> TES_TransferenciaReversa_Obtener(int CodEmpresa, transferenciaSolicitudData solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<transferenciaSolicitudData>>
+            var response = new ErrorDto<List<transferenciaSolicitudData>>
             {
                 Code = 0
             };
@@ -107,10 +107,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="id_banco"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_ReversaPlanes_Obtener(int CodEmpresa, string id_banco)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_ReversaPlanes_Obtener(int CodEmpresa, string id_banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0
             };
@@ -140,7 +140,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        public ErrorDTO<long> sbNTrasnferencia(int CodEmpresa, int id_banco, string tipo, string avance, string plan)
+        public ErrorDto<long> sbNTrasnferencia(int CodEmpresa, int id_banco, string tipo, string avance, string plan)
         {
             return mTesoreria.fxTesTipoDocConsec(CodEmpresa, id_banco, tipo, avance, plan);
         }
@@ -151,10 +151,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="transferencia"></param>
         /// <returns></returns>
-        public ErrorDTO TES_TransferenciaReversa_Aplicar(int CodEmpresa, transferenciaReversaAplicaModel transferencia)
+        public ErrorDto TES_TransferenciaReversa_Aplicar(int CodEmpresa, transferenciaReversaAplicaModel transferencia)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };
@@ -254,14 +254,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         }
 
 
-        public ErrorDTO<List<tesReversionData>> TES_TransferenciaConsulta_Obtener(
+        public ErrorDto<List<tesReversionData>> TES_TransferenciaConsulta_Obtener(
             int CodEmpresa, 
             int id_banco,
             DateTime fechaInicio,
             DateTime fechaFin)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<tesReversionData>>
+            var response = new ErrorDto<List<tesReversionData>>
             {
                 Code = 0
             };
@@ -298,10 +298,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="id_reversion"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TransferenciaDetalleModel>> TES_TransferenciaReversa_Detalle(int CodEmpresa, string id_reversion)
+        public ErrorDto<List<TransferenciaDetalleModel>> TES_TransferenciaReversa_Detalle(int CodEmpresa, string id_reversion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TransferenciaDetalleModel>>
+            var response = new ErrorDto<List<TransferenciaDetalleModel>>
             {
                 Code = 0
             };
@@ -331,7 +331,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="gestion"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
         {
             return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
         }

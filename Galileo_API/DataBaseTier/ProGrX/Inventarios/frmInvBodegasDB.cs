@@ -21,11 +21,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodBodega"></param>
         /// <returns></returns>
-        public ErrorDTO<List<PermisosBodegasDTO>> Autorizador_ObtenerTodos(int CodEmpresa, string CodBodega)
+        public ErrorDto<List<PermisosBodegasDTO>> Autorizador_ObtenerTodos(int CodEmpresa, string CodBodega)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<PermisosBodegasDTO>>();
+            var response = new ErrorDto<List<PermisosBodegasDTO>>();
 
             try
             {
@@ -63,10 +63,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<BodegasDTO>> Bodegas_Obtener(int CodEmpresa)
+        public ErrorDto<List<BodegasDTO>> Bodegas_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<BodegasDTO>>();
+            var response = new ErrorDto<List<BodegasDTO>>();
 
             try
             {
@@ -101,10 +101,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consecutivo"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<BodegasDTO> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
+        public ErrorDto<BodegasDTO> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<BodegasDTO>();
+            var response = new ErrorDto<BodegasDTO>();
             int result = 0;
 
             try
@@ -157,11 +157,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="consecutivo"></param>
         /// <returns></returns>
-        public ErrorDTO<BodegasDTO> bodegaConsecutivo_Obtener(int CodEmpresa, string consecutivo)
+        public ErrorDto<BodegasDTO> bodegaConsecutivo_Obtener(int CodEmpresa, string consecutivo)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<BodegasDTO>();
+            var response = new ErrorDto<BodegasDTO>();
             response.Result = new BodegasDTO();
 
             try
@@ -191,11 +191,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO bodega_Insertar(int CodEmpresa, BodegasDTO data)
+        public ErrorDto bodega_Insertar(int CodEmpresa, BodegasDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -247,11 +247,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO bodega_Actualizar(int CodEmpresa, BodegasDTO data)
+        public ErrorDto bodega_Actualizar(int CodEmpresa, BodegasDTO data)
          {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -302,11 +302,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_bodega"></param>
         /// <returns></returns>
-        public ErrorDTO bodega_Eliminar(int CodEmpresa, string cod_bodega)
+        public ErrorDto bodega_Eliminar(int CodEmpresa, string cod_bodega)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -340,11 +340,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="request"></param>
         /// <param name="cod_bodega"></param>
         /// <returns></returns>
-        public ErrorDTO permisosBodega_Actualizar(int CodEmpresa, PermisosBodegasDTO request, string cod_bodega)
+        public ErrorDto permisosBodega_Actualizar(int CodEmpresa, PermisosBodegasDTO request, string cod_bodega)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
 
             try

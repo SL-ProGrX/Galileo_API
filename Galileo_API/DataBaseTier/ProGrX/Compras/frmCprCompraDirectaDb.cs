@@ -23,15 +23,15 @@ namespace PgxAPI.DataBaseTier
             mComprasDB = new mComprasDB(config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
 
-        public ErrorDTO<CompraDirectaData> CompraDirecta_Obtener(int CodEmpresa, string CodCompra, string CodOrden, int Codproveedor)
+        public ErrorDto<CompraDirectaData> CompraDirecta_Obtener(int CodEmpresa, string CodCompra, string CodOrden, int Codproveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<CompraDirectaData>();
+            var response = new ErrorDto<CompraDirectaData>();
             response.Result = new CompraDirectaData();
             try
             {
@@ -66,13 +66,13 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<CompraDirectaListaData> CompraDirectaDetalle_Obtener(int CodEmpresa, string jfiltros, string? CodFactura, int? Codproveedor)
+        public ErrorDto<CompraDirectaListaData> CompraDirectaDetalle_Obtener(int CodEmpresa, string jfiltros, string? CodFactura, int? Codproveedor)
         {
             OrderLineaTablaFiltros filtros = JsonConvert.DeserializeObject<OrderLineaTablaFiltros>(jfiltros) ?? new OrderLineaTablaFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             string paginaActual = " ", paginacionActual = " ";
 
-            var response = new ErrorDTO<CompraDirectaListaData>();
+            var response = new ErrorDto<CompraDirectaListaData>();
             response.Result = new CompraDirectaListaData();
 
             try
@@ -155,10 +155,10 @@ as descuento,D.imp_ventas,0 as total
             return response;
         }
 
-        private ErrorDTO Proveedor_Saldo_Actualiza(int CodEmpresa, int CodProveedor, float Saldo)
+        private ErrorDto Proveedor_Saldo_Actualiza(int CodEmpresa, int CodProveedor, float Saldo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -177,10 +177,10 @@ as descuento,D.imp_ventas,0 as total
             return resp;
         }
 
-        private ErrorDTO PagoContado_Regristra(int CodEmpresa, CompraDirectaInsert compra)
+        private ErrorDto PagoContado_Regristra(int CodEmpresa, CompraDirectaInsert compra)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 1;
             try
             {
@@ -230,9 +230,9 @@ as descuento,D.imp_ventas,0 as total
             return resp;
         }
 
-        public ErrorDTO CostoArticulos_Actualiza(int CodEmpresa, string Usuario, string CodCompra)
+        public ErrorDto CostoArticulos_Actualiza(int CodEmpresa, string Usuario, string CodCompra)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -262,19 +262,19 @@ as descuento,D.imp_ventas,0 as total
 
         //Nuevos Metodos de Guardado
 
-        public ErrorDTO CompraDirecta_Insertar(int CodEmpresa, CompraDirectaInsert orden)
+        public ErrorDto CompraDirecta_Insertar(int CodEmpresa, CompraDirectaInsert orden)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             string mensaje = "";
             bool valida = true;
             valida = fxValida(CodEmpresa, orden, ref mensaje);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             if (!valida)
             {
-                return new ErrorDTO
+                return new ErrorDto
                 {
                     Code = -1,
                     Description = mensaje
@@ -466,7 +466,7 @@ as descuento,D.imp_ventas,0 as total
                     connection.Execute(query);
 
                     //Actualiza Saldo Proveedores
-                    ErrorDTO pvSaldo = Proveedor_Saldo_Actualiza(CodEmpresa, orden.cod_proveedor, orden.total);
+                    ErrorDto pvSaldo = Proveedor_Saldo_Actualiza(CodEmpresa, orden.cod_proveedor, orden.total);
                     if (pvSaldo.Code != 0)
                     {
                         resp = pvSaldo;

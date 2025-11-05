@@ -30,9 +30,9 @@ using PgxAPI.Models.ProGrX_Personas;
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda, orden y paginación</param>
         /// <returns></returns>
-        public ErrorDTO<PreferenciaTipoLista> AF_Preferencias_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<PreferenciaTipoLista> AF_Preferencias_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<PreferenciaTipoLista>
+            var result = new ErrorDto<PreferenciaTipoLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -90,9 +90,9 @@ using PgxAPI.Models.ProGrX_Personas;
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="preferenciaTipo">Datos de la preferencia</param>
         /// <returns></returns>
-        public ErrorDTO AF_Preferencias_Guardar(int CodEmpresa, string usuario, PreferenciaTipoData preferenciaTipo)
+        public ErrorDto AF_Preferencias_Guardar(int CodEmpresa, string usuario, PreferenciaTipoData preferenciaTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -128,9 +128,9 @@ using PgxAPI.Models.ProGrX_Personas;
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="preferenciaTipo">Datos de la preferencia a insertar</param>
         /// <returns></returns>
-        private ErrorDTO AF_Preferencias_Insertar(int CodEmpresa, string usuario, PreferenciaTipoData preferenciaTipo)
+        private ErrorDto AF_Preferencias_Insertar(int CodEmpresa, string usuario, PreferenciaTipoData preferenciaTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -169,9 +169,9 @@ using PgxAPI.Models.ProGrX_Personas;
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="preferenciaTipo">Datos de la preferencia a actualizar</param>
         /// <returns></returns>
-        private ErrorDTO AF_Preferencias_Actualizar(int CodEmpresa, string usuario, PreferenciaTipoData preferenciaTipo)
+        private ErrorDto AF_Preferencias_Actualizar(int CodEmpresa, string usuario, PreferenciaTipoData preferenciaTipo)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -211,9 +211,9 @@ using PgxAPI.Models.ProGrX_Personas;
         /// <param name="usuario">Usuario que realiza la operación</param>
         /// <param name="codPreferencia">Código de la preferencia a eliminar</param>
         /// <returns></returns>
-        public ErrorDTO AF_Preferencias_Eliminar(int CodEmpresa, string usuario, string codPreferencia)
+        public ErrorDto AF_Preferencias_Eliminar(int CodEmpresa, string usuario, string codPreferencia)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -244,9 +244,9 @@ using PgxAPI.Models.ProGrX_Personas;
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="codPreferencia">Código de la preferencia a validar</param>
         /// <returns></returns>
-        public ErrorDTO AF_Preferencias_Valida(int CodEmpresa, string codPreferencia)
+        public ErrorDto AF_Preferencias_Valida(int CodEmpresa, string codPreferencia)
         {
-            var result = new ErrorDTO { Code = 0, Description = "Ok" };
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -278,9 +278,9 @@ using PgxAPI.Models.ProGrX_Personas;
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <param name="filtros">Filtros de búsqueda</param>
         /// <returns></returns>
-        public ErrorDTO<List<PreferenciaTipoData>> AF_Preferencias_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<PreferenciaTipoData>> AF_Preferencias_Exportar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDTO<List<PreferenciaTipoData>>
+            var result = new ErrorDto<List<PreferenciaTipoData>>
             {
                 Code = 0,
                 Description = "Ok",

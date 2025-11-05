@@ -25,10 +25,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<TesUbicacionesLista> Tes_UbicacionesLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TesUbicacionesLista> Tes_UbicacionesLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<TesUbicacionesLista>()
+            var result = new ErrorDto<TesUbicacionesLista>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -85,10 +85,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TesUbicacionesData>> Tes_Ubicaciones_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<TesUbicacionesData>> Tes_Ubicaciones_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<TesUbicacionesData>>()
+            var result = new ErrorDto<List<TesUbicacionesData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -128,10 +128,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="ubicacion"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_Ubicaciones_Guardar(int CodEmpresa, string usuario, TesUbicacionesData ubicacion)
+        public ErrorDto Tes_Ubicaciones_Guardar(int CodEmpresa, string usuario, TesUbicacionesData ubicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -192,10 +192,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="ubicacion"></param>
         /// <returns></returns>
-        private ErrorDTO Tes_Ubicaciones_Actualizar(int CodEmpresa, string usuario, TesUbicacionesData ubicacion)
+        private ErrorDto Tes_Ubicaciones_Actualizar(int CodEmpresa, string usuario, TesUbicacionesData ubicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -242,10 +242,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="ubicacion"></param>
         /// <returns></returns>
-        private ErrorDTO Tes_Ubicaciones_Insertar(int CodEmpresa, string usuario ,TesUbicacionesData ubicacion)
+        private ErrorDto Tes_Ubicaciones_Insertar(int CodEmpresa, string usuario ,TesUbicacionesData ubicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -290,10 +290,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="codUbicacion"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_Ubicaciones_Eliminar(int CodEmpresa, string usuario, string codUbicacion)
+        public ErrorDto Tes_Ubicaciones_Eliminar(int CodEmpresa, string usuario, string codUbicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -328,10 +328,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Tes_UbicacionesUsuarios_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_UbicacionesUsuarios_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -360,10 +360,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_ubicacion"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_Ubicaciones_Valida(int CodEmpresa, string cod_ubicacion)
+        public ErrorDto Tes_Ubicaciones_Valida(int CodEmpresa, string cod_ubicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

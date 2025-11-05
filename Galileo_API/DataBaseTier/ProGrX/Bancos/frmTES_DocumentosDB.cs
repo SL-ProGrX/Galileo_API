@@ -27,10 +27,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_DocumentosLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_DocumentosLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "",
@@ -60,10 +60,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="tipo"></param>
         /// <param name="scroll"></param>
         /// <returns></returns>
-        public ErrorDTO<TesTiposDocDTO> Tes_Documentos_Scroll(int CodEmpresa, string tipo, int? scroll)
+        public ErrorDto<TesTiposDocDTO> Tes_Documentos_Scroll(int CodEmpresa, string tipo, int? scroll)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TesTiposDocDTO>
+            var response = new ErrorDto<TesTiposDocDTO>
             {
                 Code = 0,
                 Description = "Ok",
@@ -105,10 +105,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<TesTiposDocDTO> Tes_Documentos_Obtener(int CodEmpresa, string tipo)
+        public ErrorDto<TesTiposDocDTO> Tes_Documentos_Obtener(int CodEmpresa, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TesTiposDocDTO>
+            var response = new ErrorDto<TesTiposDocDTO>
             {
                 Code = 0,
                 Description = "Ok",
@@ -139,10 +139,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_DocumentosTiposAsientos_Obtener(int CodEmpresa, int contabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_DocumentosTiposAsientos_Obtener(int CodEmpresa, int contabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "",
@@ -175,10 +175,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="concepto"></param>
         /// <param name="scroll"></param>
         /// <returns></returns>
-        public ErrorDTO<DropDownListaGenericaModel> Tes_DocAnulaConceptos_Scroll(int CodEmpresa, string concepto, int? scroll)
+        public ErrorDto<DropDownListaGenericaModel> Tes_DocAnulaConceptos_Scroll(int CodEmpresa, string concepto, int? scroll)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<DropDownListaGenericaModel>
+            var response = new ErrorDto<DropDownListaGenericaModel>
             {
                 Code = 0,
                 Description = "Ok",
@@ -220,10 +220,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="documento"></param>
         /// <returns></returns>
-        public ErrorDTO  TES_Documentos_Guardar(int CodEmpresa, string usuario, TesTiposDocDTO documento)
+        public ErrorDto  TES_Documentos_Guardar(int CodEmpresa, string usuario, TesTiposDocDTO documento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Guardado correctamente"
@@ -344,10 +344,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Documentos_Eliminar(int CodEmpresa, string tipo,string usuario)
+        public ErrorDto TES_Documentos_Eliminar(int CodEmpresa, string tipo,string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Eliminado correctamente"
@@ -384,10 +384,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDTO<List<TesDocAnulaConceptosData>> TES_DocAnulaConceptos_Obtener(int CodEmpresa, string tipo)
+        public ErrorDto<List<TesDocAnulaConceptosData>> TES_DocAnulaConceptos_Obtener(int CodEmpresa, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<TesDocAnulaConceptosData>>
+            var response = new ErrorDto<List<TesDocAnulaConceptosData>>
             {
                 Code = 0,
                 Description = "",
@@ -419,10 +419,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="tipo"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
-        public ErrorDTO TES_DocAnulaConcepto_Guardar(int CodEmpresa, string usuario ,string tipo, TesDocAnulaConceptosData concepto)
+        public ErrorDto TES_DocAnulaConcepto_Guardar(int CodEmpresa, string usuario ,string tipo, TesDocAnulaConceptosData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Guardado correctamente"
@@ -468,10 +468,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="id_conceptos"></param>
         /// <returns></returns>
-        public ErrorDTO TES_DocAnulaConcepto_Eliminar(int CodEmpresa, int id_conceptos, string usuario)
+        public ErrorDto TES_DocAnulaConcepto_Eliminar(int CodEmpresa, int id_conceptos, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Eliminado correctamente"

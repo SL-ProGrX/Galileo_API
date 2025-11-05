@@ -24,10 +24,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosProveedoresLista> Activos_ProveedoresLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosProveedoresLista> Activos_ProveedoresLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<ActivosProveedoresLista>
+            var resp = new ErrorDto<ActivosProveedoresLista>
             {
                 Code = 0,
                 Description = "Ok",
@@ -87,10 +87,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="filtros"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosProveedoresData>> Activos_Proveedores_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ActivosProveedoresData>> Activos_Proveedores_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<List<ActivosProveedoresData>>
+            var resp = new ErrorDto<List<ActivosProveedoresData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -136,22 +136,22 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="proveedor"></param>"
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO Activos_Proveedores_Guardar(int CodEmpresa, string usuario, ActivosProveedoresData proveedor)
+        public ErrorDto Activos_Proveedores_Guardar(int CodEmpresa, string usuario, ActivosProveedoresData proveedor)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
                 // Validaciones básicas
                 if (proveedor == null)
-                    return new ErrorDTO { Code = -1, Description = "Datos no proporcionados." };
+                    return new ErrorDto { Code = -1, Description = "Datos no proporcionados." };
 
                 if (string.IsNullOrWhiteSpace(proveedor.cod_proveedor))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar el código de proveedor." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar el código de proveedor." };
 
                 if (string.IsNullOrWhiteSpace(proveedor.descripcion))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar la descripción." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar la descripción." };
 
                 using var cn = new SqlConnection(connStr);
 
@@ -161,7 +161,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 if (proveedor.isNew)
                 {
                     if (existe > 0)
-                        return new ErrorDTO { Code = -2, Description = $"El proveedor {proveedor.cod_proveedor.ToUpper()} ya existe." };
+                        return new ErrorDto { Code = -2, Description = $"El proveedor {proveedor.cod_proveedor.ToUpper()} ya existe." };
 
                     // Insertar
                     return Activos_Proveedores_Insertar(CodEmpresa, usuario, proveedor);
@@ -169,7 +169,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 else
                 {
                     if (existe == 0)
-                        return new ErrorDTO { Code = -2, Description = $"El proveedor {proveedor.cod_proveedor.ToUpper()} no existe." };
+                        return new ErrorDto { Code = -2, Description = $"El proveedor {proveedor.cod_proveedor.ToUpper()} no existe." };
 
                     // Actualizar
                     return Activos_Proveedores_Actualizar(CodEmpresa, usuario, proveedor);
@@ -190,10 +190,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="proveedor"></param>
         /// </summary>
         /// <returns></returns>
-        private ErrorDTO Activos_Proveedores_Insertar(int CodEmpresa, string usuario, ActivosProveedoresData proveedor)
+        private ErrorDto Activos_Proveedores_Insertar(int CodEmpresa, string usuario, ActivosProveedoresData proveedor)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -238,10 +238,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="proveedor"></param>
         /// </summary>
         /// <returns></returns>
-        private ErrorDTO Activos_Proveedores_Actualizar(int CodEmpresa, string usuario, ActivosProveedoresData proveedor)
+        private ErrorDto Activos_Proveedores_Actualizar(int CodEmpresa, string usuario, ActivosProveedoresData proveedor)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -288,15 +288,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="cod_proveedor"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO Activos_Proveedores_Eliminar(int CodEmpresa, string usuario, string cod_proveedor)
+        public ErrorDto Activos_Proveedores_Eliminar(int CodEmpresa, string usuario, string cod_proveedor)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
                 if (string.IsNullOrWhiteSpace(cod_proveedor))
-                    return new ErrorDTO { Code = -1, Description = "Debe indicar el código de proveedor." };
+                    return new ErrorDto { Code = -1, Description = "Debe indicar el código de proveedor." };
 
                 using var cn = new SqlConnection(connStr);
 
@@ -304,7 +304,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 int rows = cn.Execute(query, new { cod = cod_proveedor.ToUpper() });
 
                 if (rows == 0)
-                    return new ErrorDTO { Code = -2, Description = $"El proveedor {cod_proveedor.ToUpper()} no existe." };
+                    return new ErrorDto { Code = -2, Description = $"El proveedor {cod_proveedor.ToUpper()} no existe." };
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDTO
                 {
@@ -329,10 +329,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>"
         /// </summary>
         /// <returns></returns>
-        public ErrorDTO Activos_Proveedores_Importar(int CodEmpresa, string usuario)
+        public ErrorDto Activos_Proveedores_Importar(int CodEmpresa, string usuario)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
@@ -381,10 +381,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa">.</param>
         /// <param name="cod_proveedor"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Proveedores_Valida(int CodEmpresa, string cod_proveedor)
+        public ErrorDto Activos_Proveedores_Valida(int CodEmpresa, string cod_proveedor)
         {
             string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"

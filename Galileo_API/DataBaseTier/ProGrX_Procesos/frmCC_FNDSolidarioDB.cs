@@ -17,10 +17,10 @@ namespace PgxAPI.DataBaseTier
             mProGrx_Main = new mProGrx_Main(_config);
         }
 
-        public ErrorDTO CC_FNDSolidario_ActualizaCasos(int CodEmpresa)
+        public ErrorDto CC_FNDSolidario_ActualizaCasos(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             string Codigo = "FBEN";
             int Monto = 800;
@@ -42,7 +42,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (result1 == 0 && result2 == 0)
                     {
-                        resp.Description = "No se encontró ningun registro por actualizar";
+                        resp.Description = "No se encontrï¿½ ningun registro por actualizar";
                     }
                     else if (result1 == 0 && result2 != 0)
                     {
@@ -67,10 +67,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_FNDSolidario_ProcesaCasosNuevos(int CodEmpresa, string Usuario)
+        public ErrorDto CC_FNDSolidario_ProcesaCasosNuevos(int CodEmpresa, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             string Codigo = "FBEN";
             int Monto = 800;
@@ -127,10 +127,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CC_FNDSolidario_CancelaCasos(int CodEmpresa)
+        public ErrorDto CC_FNDSolidario_CancelaCasos(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             string Codigo = "FBEN";
             try

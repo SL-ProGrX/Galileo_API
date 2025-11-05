@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<List<BancosAutorizadosDTO>> ObtenerBancosAutorizados(int CodCliente)
+        public ErrorDto<List<BancosAutorizadosDTO>> ObtenerBancosAutorizados(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<BancosAutorizadosDTO>>
+            var response = new ErrorDto<List<BancosAutorizadosDTO>>
             {
                 Code = 0
             };
@@ -43,10 +43,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO IngresarTesBancosNuevos(string Usuario, int CodCliente)
+        public ErrorDto IngresarTesBancosNuevos(string Usuario, int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };
@@ -68,10 +68,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO ActualizarTransferencia(int BancoId, bool Valor, int CodCliente)
+        public ErrorDto ActualizarTransferencia(int BancoId, bool Valor, int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };
@@ -98,10 +98,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO ActualizarCheque(int BancoId, bool Valor, int CodCliente)
+        public ErrorDto ActualizarCheque(int BancoId, bool Valor, int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };

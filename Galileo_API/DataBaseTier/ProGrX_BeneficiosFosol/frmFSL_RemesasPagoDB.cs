@@ -19,15 +19,15 @@ namespace PgxAPI.DataBaseTier
             DBBitacora = new mSecurityMainDb(_config);
         }
 
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }
 
-        public ErrorDTO<List<FslRemesasListaDatos>> FslFechas_Obtener(int CodEmpresa, int cod_remesa)
+        public ErrorDto<List<FslRemesasListaDatos>> FslFechas_Obtener(int CodEmpresa, int cod_remesa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FslRemesasListaDatos>>();
+            var response = new ErrorDto<List<FslRemesasListaDatos>>();
             try
             {
                 var query = "";
@@ -51,10 +51,10 @@ namespace PgxAPI.DataBaseTier
         #region REMESAS
         //REMESAS FOSOL
 
-        public ErrorDTO<FslRemesasLista> FslRemesas_Obtener(int CodEmpresa, string? filtro, int? pagina, int? paginacion)
+        public ErrorDto<FslRemesasLista> FslRemesas_Obtener(int CodEmpresa, string? filtro, int? pagina, int? paginacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<FslRemesasLista>();
+            var response = new ErrorDto<FslRemesasLista>();
             response.Result = new FslRemesasLista();
             try
             {
@@ -93,10 +93,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO FslRemesa_Agregar(int CodEmpresa, FslRemesaInsertar remesa)
+        public ErrorDto FslRemesa_Agregar(int CodEmpresa, FslRemesaInsertar remesa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -131,10 +131,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO FslRemesa_Actualizar(int CodEmpresa, FslRemesaInsertar remesa)
+        public ErrorDto FslRemesa_Actualizar(int CodEmpresa, FslRemesaInsertar remesa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             if (remesa.cod_remesa == 0)
@@ -167,10 +167,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO FslRemesa_Eliminar(int CodEmpresa, int cod_remesa)
+        public ErrorDto FslRemesa_Eliminar(int CodEmpresa, int cod_remesa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -192,10 +192,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDTO FslRemesa_Cerrar(int CodEmpresa, int cod_remesa, string usuario)
+        public ErrorDto FslRemesa_Cerrar(int CodEmpresa, int cod_remesa, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -248,10 +248,10 @@ namespace PgxAPI.DataBaseTier
 
         #region Carga
 
-        public ErrorDTO<List<FslRemesasListaDatos>> FslCargas_Obtener(int CodEmpresa)
+        public ErrorDto<List<FslRemesasListaDatos>> FslCargas_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FslRemesasListaDatos>>();
+            var response = new ErrorDto<List<FslRemesasListaDatos>>();
             try
             {
                 var query = "";
@@ -273,10 +273,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<FslCargasLista> FslCargasLista_Obtener(int CodEmpresa, string fecha_inicio, string fecha_corte, string? filtro, int? pagina, int? paginacion)
+        public ErrorDto<FslCargasLista> FslCargasLista_Obtener(int CodEmpresa, string fecha_inicio, string fecha_corte, string? filtro, int? pagina, int? paginacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<FslCargasLista>();
+            var response = new ErrorDto<FslCargasLista>();
             response.Result = new FslCargasLista();
             try
             {
@@ -323,11 +323,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO FslCargas_Aplicar(int CodEmpresa, string cargas)
+        public ErrorDto FslCargas_Aplicar(int CodEmpresa, string cargas)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             FslCargasAplicar carga = JsonConvert.DeserializeObject<FslCargasAplicar>(cargas) ?? new FslCargasAplicar();
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -380,10 +380,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO FslCargas_Cerrar(int CodEmpresa, int cod_remesa, string usuario)
+        public ErrorDto FslCargas_Cerrar(int CodEmpresa, int cod_remesa, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
             try
             {
@@ -437,10 +437,10 @@ namespace PgxAPI.DataBaseTier
 
         #region Traslados
 
-        public ErrorDTO<List<FslRemesasListaDatos>> FslTraslados_Obtener(int CodEmpresa)
+        public ErrorDto<List<FslRemesasListaDatos>> FslTraslados_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FslRemesasListaDatos>>();
+            var response = new ErrorDto<List<FslRemesasListaDatos>>();
             try
             {
                 var query = "";
@@ -463,10 +463,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<FslTrasladoListaData>> FslTrasladoLista_Obtener(int CodEmpresa, string fecha_inicio, string fecha_corte, int cod_remesa)
+        public ErrorDto<List<FslTrasladoListaData>> FslTrasladoLista_Obtener(int CodEmpresa, string fecha_inicio, string fecha_corte, int cod_remesa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<FslTrasladoListaData>>();
+            var response = new ErrorDto<List<FslTrasladoListaData>>();
             try
             {
                 var query = "";
@@ -492,10 +492,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO FslTraslado_Aplicar(int CodEmpresa, string traslados)
+        public ErrorDto FslTraslado_Aplicar(int CodEmpresa, string traslados)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             FslTrasladoAplicar traslado = JsonConvert.DeserializeObject<FslTrasladoAplicar>(traslados) ?? new FslTrasladoAplicar();
             mBeneficiosDB _mBene = new mBeneficiosDB(_config);
 

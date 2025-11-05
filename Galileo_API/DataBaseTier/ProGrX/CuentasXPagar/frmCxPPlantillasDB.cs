@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<PlantillaDTO>> Plantillas_Obtener(int CodEmpresa)
+        public ErrorDto<List<PlantillaDTO>> Plantillas_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<PlantillaDTO>>
+            var response = new ErrorDto<List<PlantillaDTO>>
             {
                 Code = 0
             };
@@ -43,11 +43,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<Unidad>> Unidades_Obtener(int CodEmpresa)
+        public ErrorDto<List<Unidad>> Unidades_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<Unidad>>
+            var response = new ErrorDto<List<Unidad>>
             {
                 Code = 0
             };
@@ -70,11 +70,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<Centro_Costo>> CentrosCosto_Obtener(int CodEmpresa, string Cod_Unidad)
+        public ErrorDto<List<Centro_Costo>> CentrosCosto_Obtener(int CodEmpresa, string Cod_Unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<Centro_Costo>>
+            var response = new ErrorDto<List<Centro_Costo>>
             {
                 Code = 0
             };
@@ -104,12 +104,12 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO<PlantillaDTO> PlantillaDetalle_Obtener(int CodEmpresa, string Cod_Plantilla)
+        public ErrorDto<PlantillaDTO> PlantillaDetalle_Obtener(int CodEmpresa, string Cod_Plantilla)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<PlantillaDTO>
+            var response = new ErrorDto<PlantillaDTO>
             {
                 Code = 0
             };
@@ -133,12 +133,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<PlantillaDTO> PlantillaDetalle_Scroll(int CodEmpresa, int scroll, string Cod_Plantilla)
+        public ErrorDto<PlantillaDTO> PlantillaDetalle_Scroll(int CodEmpresa, int scroll, string Cod_Plantilla)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<PlantillaDTO>
+            var response = new ErrorDto<PlantillaDTO>
             {
                 Code = 0
             };
@@ -173,12 +173,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<Plantilla_AsientoDTO>> PlantillaAsientos_Obtener(int CodEmpresa, string Cod_Plantilla)
+        public ErrorDto<List<Plantilla_AsientoDTO>> PlantillaAsientos_Obtener(int CodEmpresa, string Cod_Plantilla)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<Plantilla_AsientoDTO>>
+            var response = new ErrorDto<List<Plantilla_AsientoDTO>>
             {
                 Code = 0
             };
@@ -208,11 +208,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO Plantilla_Actualizar(int CodEmpresa, PlantillaDTO data)
+        public ErrorDto Plantilla_Actualizar(int CodEmpresa, PlantillaDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -249,11 +249,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Plantilla_Insertar(int CodEmpresa, PlantillaDTO data)
+        public ErrorDto Plantilla_Insertar(int CodEmpresa, PlantillaDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -288,11 +288,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO Plantilla_Borrar(int CodEmpresa, string Cod_Plantilla)
+        public ErrorDto Plantilla_Borrar(int CodEmpresa, string Cod_Plantilla)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -324,11 +324,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO PlantillaAsiento_Insertar(int CodEmpresa, Plantilla_AsientoDTO data)
+        public ErrorDto PlantillaAsiento_Insertar(int CodEmpresa, Plantilla_AsientoDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -354,11 +354,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO PlantillaAsiento_Actualizar(int CodEmpresa, Plantilla_AsientoDTO data)
+        public ErrorDto PlantillaAsiento_Actualizar(int CodEmpresa, Plantilla_AsientoDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -388,11 +388,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO PlantillaAsiento_Borrar(int CodEmpresa, Plantilla_AsientoDTO data)
+        public ErrorDto PlantillaAsiento_Borrar(int CodEmpresa, Plantilla_AsientoDTO data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };

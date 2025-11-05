@@ -30,10 +30,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO<tesCopiaEsquemaModels> Tes_CopiaEsquema_Obtener(int CodEmpresa, int solicitud, int contabilidad)
+        public ErrorDto<tesCopiaEsquemaModels> Tes_CopiaEsquema_Obtener(int CodEmpresa, int solicitud, int contabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<tesCopiaEsquemaModels>();
+            var response = new ErrorDto<tesCopiaEsquemaModels>();
 
             try
             {
@@ -102,10 +102,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO Tes_CopiarEsquema_Guardar(int CodEmpresa, tesCopiaEsquemaModels solicitud)
+        public ErrorDto Tes_CopiarEsquema_Guardar(int CodEmpresa, tesCopiaEsquemaModels solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -149,10 +149,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="contabilidad"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<tesCopiaEsquemaLista> Tes_CopiaEsquemaLista_Obtener(int CodEmpresa, int contabilidad, FiltrosLazyLoadData filtros)
+        public ErrorDto<tesCopiaEsquemaLista> Tes_CopiaEsquemaLista_Obtener(int CodEmpresa, int contabilidad, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<tesCopiaEsquemaLista>()
+            var result = new ErrorDto<tesCopiaEsquemaLista>()
             {
                 Code = 0,
                 Description = "Ok",

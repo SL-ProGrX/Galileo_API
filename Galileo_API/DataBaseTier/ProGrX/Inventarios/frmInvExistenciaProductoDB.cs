@@ -15,13 +15,13 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<ExistenciaProductoDTO>> existenciaProducto_Obtener(int CodCliente, string filtroString)
+        public ErrorDto<List<ExistenciaProductoDTO>> existenciaProducto_Obtener(int CodCliente, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
             ExistenciaProducto_Filtros filtros = JsonConvert.DeserializeObject<ExistenciaProducto_Filtros>(filtroString);
 
-            var response = new ErrorDTO<List<ExistenciaProductoDTO>>();
+            var response = new ErrorDto<List<ExistenciaProductoDTO>>();
             try
             {
                 string where = "";

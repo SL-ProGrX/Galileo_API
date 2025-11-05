@@ -30,10 +30,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDTO<TES_AnulacionDocData> TES_Anulacion_Obtener(int CodEmpresa, int solicitud, string usuario)
+        public ErrorDto<TES_AnulacionDocData> TES_Anulacion_Obtener(int CodEmpresa, int solicitud, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<TES_AnulacionDocData>
+            var response = new ErrorDto<TES_AnulacionDocData>
             {
                 Code = 0
             };
@@ -79,7 +79,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="anula"></param>
         /// <returns></returns>
-        public ErrorDTO TES_Anulacion_Anular(int CodEmpresa, string usuario ,TES_AnulacionAnulaModel anula)
+        public ErrorDto TES_Anulacion_Anular(int CodEmpresa, string usuario ,TES_AnulacionAnulaModel anula)
         {
             /*
              *  ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -90,7 +90,7 @@ namespace PgxAPI.DataBaseTier
                 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
             */
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
 
             try
             {
@@ -132,7 +132,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="anula"></param>
         /// <returns></returns>
-        public ErrorDTO TES_AnulacionCopiaSolicitud(int CodEmpresa, string usuario, TES_AnulacionAnulaModel anula)
+        public ErrorDto TES_AnulacionCopiaSolicitud(int CodEmpresa, string usuario, TES_AnulacionAnulaModel anula)
         {
             /*
                 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -145,7 +145,7 @@ namespace PgxAPI.DataBaseTier
                 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
              */
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO();
+            var response = new ErrorDto();
 
             try
             {
@@ -177,10 +177,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<DropDownListaGenericaModel>> TES_AnulacionConceptos_Obtener(int CodEmpresa, string tipo)
+        public ErrorDto<List<DropDownListaGenericaModel>> TES_AnulacionConceptos_Obtener(int CodEmpresa, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<DropDownListaGenericaModel>>
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "",

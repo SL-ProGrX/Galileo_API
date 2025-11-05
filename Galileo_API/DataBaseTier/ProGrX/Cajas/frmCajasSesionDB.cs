@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cajas
         /// <param name="identificacion"></param>
         /// <returns></returns>
 
-        public ErrorDTO<CajasSesionDTO> Cajas_Sesion_Obtener(int codEmpresa, string usuario, string identificacion)
+        public ErrorDto<CajasSesionDTO> Cajas_Sesion_Obtener(int codEmpresa, string usuario, string identificacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO<CajasSesionDTO>
+            var response = new ErrorDto<CajasSesionDTO>
             {
                 Code = 0,
                 Description = "Ok",
@@ -80,10 +80,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cajas
         /// <param name="cedula"></param>
         /// <param name="nombre"></param>
         /// <returns></returns>
-        public ErrorDTO Cajas_Sesion_Inicia(int codEmpresa, string caja, string usuario,int tipoId, string cedula, string nombre)
+        public ErrorDto Cajas_Sesion_Inicia(int codEmpresa, string caja, string usuario,int tipoId, string cedula, string nombre)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -131,10 +131,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cajas
         /// <param name="sesionId"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO Cajas_Sesion_Finaliza(int codEmpresa, int sesionId, string usuario)
+        public ErrorDto Cajas_Sesion_Finaliza(int codEmpresa, int sesionId, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",
@@ -171,10 +171,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cajas
         /// <param name="codEmpresa"></param>
         /// <param name="sesionId"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CajasSesionMovimientosDTO>> Cajas_Sesion_Movimientos(int codEmpresa, int sesionId)
+        public ErrorDto<List<CajasSesionMovimientosDTO>> Cajas_Sesion_Movimientos(int codEmpresa, int sesionId)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDTO<List<CajasSesionMovimientosDTO>>
+            var response = new ErrorDto<List<CajasSesionMovimientosDTO>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -209,7 +209,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cajas
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> TiposIdentificacion_Obtener(int CodCliente)
+        public ErrorDto<List<DropDownListaGenericaModel>> TiposIdentificacion_Obtener(int CodCliente)
         {
             return _AuxiliarDB.TiposIdentificacion_Obtener(CodCliente);
         }

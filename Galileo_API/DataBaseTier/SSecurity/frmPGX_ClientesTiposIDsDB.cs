@@ -34,9 +34,9 @@ namespace PgxAPI.DataBaseTier
             return types;
         }
 
-        private ErrorDTO TipoId_Insertar(TipoId request)
+        private ErrorDto TipoId_Insertar(TipoId request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -78,9 +78,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO TipoId_Eliminar(string tipo_id)
+        public ErrorDto TipoId_Eliminar(string tipo_id)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -106,9 +106,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDTO TipoId_Actualizar(TipoId request)
+        private ErrorDto TipoId_Actualizar(TipoId request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -135,9 +135,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO TipoId_Guardar(TipoId request)
+        public ErrorDto TipoId_Guardar(TipoId request)
         {
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             if (request.Tipo_Id == "0")
             {
                 resp = TipoId_Insertar(request);

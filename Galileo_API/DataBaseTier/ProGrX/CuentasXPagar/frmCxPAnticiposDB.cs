@@ -18,11 +18,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO ExeAnticipos(int CodCliente, string filtros)
+        public ErrorDto ExeAnticipos(int CodCliente, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             CxpAnticiposFiltros filtro = JsonConvert.DeserializeObject<CxpAnticiposFiltros>(filtros) ?? new CxpAnticiposFiltros();
-            ErrorDTO response = new()
+            ErrorDto response = new()
             {
                 Code = 0
             };
@@ -60,10 +60,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO<List<CargoDTO>> ObtenerCargos(int CodCliente)
+        public ErrorDto<List<CargoDTO>> ObtenerCargos(int CodCliente)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<CargoDTO>>
+            var response = new ErrorDto<List<CargoDTO>>
             {
                 Code = 0
             };
@@ -86,10 +86,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<AdelantoRegistradoDTO>> ObtenerAdelantosRegistrados(int CodCliente, int CodProveedor)
+        public ErrorDto<List<AdelantoRegistradoDTO>> ObtenerAdelantosRegistrados(int CodCliente, int CodProveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<AdelantoRegistradoDTO>>
+            var response = new ErrorDto<List<AdelantoRegistradoDTO>>
             {
                 Code = 0
             };
@@ -120,10 +120,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<HistorialPagoDTO>> ObtenerHistorialDePagos(int CodCliente, int CodProveedor, string Anticipos)
+        public ErrorDto<List<HistorialPagoDTO>> ObtenerHistorialDePagos(int CodCliente, int CodProveedor, string Anticipos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<HistorialPagoDTO>>
+            var response = new ErrorDto<List<HistorialPagoDTO>>
             {
                 Code = 0
             };
@@ -151,10 +151,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<Proveedor>> ObtenerProveedores(int CodEmpresa)
+        public ErrorDto<List<Proveedor>> ObtenerProveedores(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<Proveedor>>();
+            var response = new ErrorDto<List<Proveedor>>();
 
             try
             {
@@ -175,10 +175,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDTO ConsecutivoAdelanto(int CodEmpresa, int Proveedor)
+        public ErrorDto ConsecutivoAdelanto(int CodEmpresa, int Proveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0
             };

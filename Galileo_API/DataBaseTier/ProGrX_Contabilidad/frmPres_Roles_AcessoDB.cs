@@ -22,10 +22,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="contabilidad"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<RolesLista> ObtenerRoles(int CodEmpresa, int contabilidad, string usuario)
+        public ErrorDto<RolesLista> ObtenerRoles(int CodEmpresa, int contabilidad, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDTO<RolesLista>();
+            var resp = new ErrorDto<RolesLista>();
             resp.Result = new RolesLista();
             resp.Result.total = 0;
 
@@ -80,10 +80,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Roles_Upsert(int CodCliente, string usuario, RolesDTO request)
+        public ErrorDto Roles_Upsert(int CodCliente, string usuario, RolesDTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             var activo = 0;
             var control = 0;
@@ -143,11 +143,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtro"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<MiembrosRolDTO>> Rol_Miembros_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<MiembrosRolDTO>> Rol_Miembros_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO<List<MiembrosRolDTO>>();
+            var resp = new ErrorDto<List<MiembrosRolDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -175,10 +175,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Core_Miembros_Registro(int CodCliente, string cod_contabilidad, string rol, string usuario, MiembrosRolDTO request)
+        public ErrorDto Core_Miembros_Registro(int CodCliente, string cod_contabilidad, string rol, string usuario, MiembrosRolDTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             var mov = 'E';
             try
@@ -213,10 +213,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtro"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CuentaRolDTO>> Rol_Cuentas_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<CuentaRolDTO>> Rol_Cuentas_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO<List<CuentaRolDTO>>();
+            var resp = new ErrorDto<List<CuentaRolDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -244,11 +244,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtro"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CuentaRolDTO>> Rol_CuentasRegistrada_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<CuentaRolDTO>> Rol_CuentasRegistrada_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO<List<CuentaRolDTO>>();
+            var resp = new ErrorDto<List<CuentaRolDTO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -275,10 +275,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="rol"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Rol_Cuenta_Registra(int CodCliente, string cod_contabilidad, string rol, CuentaRolDTO request)
+        public ErrorDto Rol_Cuenta_Registra(int CodCliente, string cod_contabilidad, string rol, CuentaRolDTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             var mov = 'A';
             try
@@ -308,10 +308,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="rol"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Rol_Cuenta_Elimina(int CodCliente, string cod_contabilidad, string rol, CuentaRolDTO request)
+        public ErrorDto Rol_Cuenta_Elimina(int CodCliente, string cod_contabilidad, string rol, CuentaRolDTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             rol = "0" + rol;
             try
@@ -338,10 +338,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="codRol"></param>
         /// <returns></returns>
-        public ErrorDTO Rol_Eliminar(int CodEmpresa, string codRol)
+        public ErrorDto Rol_Eliminar(int CodEmpresa, string codRol)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
@@ -369,12 +369,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtro"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<UnidadesRolDTO>> Rol_Unidades_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<UnidadesRolDTO>> Rol_Unidades_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
         {
 
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO<List<UnidadesRolDTO>>();
+            var resp = new ErrorDto<List<UnidadesRolDTO>>();
 
             try
             {
@@ -403,10 +403,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="boolasingado"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDTO Rol_Unidad_Registro(int CodCliente, string cod_contabilidad, string rol, int boolasingado, UnidadesRolDTO request)
+        public ErrorDto Rol_Unidad_Registro(int CodCliente, string cod_contabilidad, string rol, int boolasingado, UnidadesRolDTO request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
             var movimiento = boolasingado == 1 ? "A" : "E";
@@ -440,10 +440,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtro"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO<List<CentroCosto>> Rol_Unidad_CC_Obtener(int CodCliente, string cod_contabilidad, string rol, string unidad, string? filtro, string usuario)
+        public ErrorDto<List<CentroCosto>> Rol_Unidad_CC_Obtener(int CodCliente, string cod_contabilidad, string rol, string unidad, string? filtro, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO<List<CentroCosto>>();
+            var resp = new ErrorDto<List<CentroCosto>>();
 
             try
             {
@@ -474,7 +474,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="request"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ErrorDTO Rol_Unidad_CC_Registro(int CodCliente, string cod_contabilidad, string rol, string unidad, int boolasingado, CentroCosto request)
+        public ErrorDto Rol_Unidad_CC_Registro(int CodCliente, string cod_contabilidad, string rol, string unidad, int boolasingado, CentroCosto request)
         {
             if (_config == null)
             {
@@ -482,7 +482,7 @@ namespace PgxAPI.DataBaseTier
             }
 
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDTO
+            var resp = new ErrorDto
             {
                 Code = 0
             };

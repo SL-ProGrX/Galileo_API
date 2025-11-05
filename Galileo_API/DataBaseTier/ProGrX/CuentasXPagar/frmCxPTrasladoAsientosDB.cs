@@ -27,12 +27,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Inicio"></param>
         /// <param name="Corte"></param>
         /// <returns></returns>
-        public ErrorDTO<DocsPendientesTraslado> DocPendientes_Obtener(int CodEmpresa, string Inicio, string Corte)
+        public ErrorDto<DocsPendientesTraslado> DocPendientes_Obtener(int CodEmpresa, string Inicio, string Corte)
         {
 
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var query = string.Empty;
-            var response = new ErrorDTO<DocsPendientesTraslado>
+            var response = new ErrorDto<DocsPendientesTraslado>
             {
                 Code = 0,
                 Result = new DocsPendientesTraslado()
@@ -127,11 +127,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Inicio"></param>
         /// <param name="Corte"></param>
         /// <returns></returns>
-        public ErrorDTO<List<Desbalanceado>> Desbalanceados_Obtener(int CodEmpresa, string Inicio, string Corte)
+        public ErrorDto<List<Desbalanceado>> Desbalanceados_Obtener(int CodEmpresa, string Inicio, string Corte)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDTO<List<Desbalanceado>>();
+            var response = new ErrorDto<List<Desbalanceado>>();
 
             if (DateTime.TryParse(Inicio, out DateTime dateI))
             {
@@ -182,11 +182,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Inicio"></param>
         /// <param name="Corte"></param>
         /// <returns></returns>
-        public ErrorDTO Reactivar(int CodEmpresa, string Inicio, string Corte)
+        public ErrorDto Reactivar(int CodEmpresa, string Inicio, string Corte)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -254,11 +254,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO CasosCero_Borrar(int CodEmpresa)
+        public ErrorDto CasosCero_Borrar(int CodEmpresa)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -285,17 +285,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO AsientoIndividual_Procesar(int CodEmpresa, AsientoInfo data)
+        public ErrorDto AsientoIndividual_Procesar(int CodEmpresa, AsientoInfo data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             var strSQL = string.Empty;
 
-            ErrorDTO<ParametroValor> UnidadInfo = new ErrorDTO<ParametroValor>();
+            ErrorDto<ParametroValor> UnidadInfo = new ErrorDto<ParametroValor>();
             List<TrasladoData> info = new List<TrasladoData>();
 
 
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -606,7 +606,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDTO data)
         {
             return DBBitacora.Bitacora(data);
         }

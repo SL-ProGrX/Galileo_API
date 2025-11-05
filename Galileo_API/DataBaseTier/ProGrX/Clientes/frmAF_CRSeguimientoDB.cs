@@ -22,9 +22,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CR_Seguimiento_Data>> AF_CR_Seguimiento_Obtener(int CodEmpresa, AF_CR_Seguimiento_Filtros filtros)
+        public ErrorDto<List<AF_CR_Seguimiento_Data>> AF_CR_Seguimiento_Obtener(int CodEmpresa, AF_CR_Seguimiento_Filtros filtros)
         {
-            var result = new ErrorDTO<List<AF_CR_Seguimiento_Data>>()
+            var result = new ErrorDto<List<AF_CR_Seguimiento_Data>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -164,9 +164,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Obtiene la lista de gestiones para seguimiento.
         /// </summary>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Gestiones(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Gestiones(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -193,9 +193,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Obtiene la lista de causas activas para seguimiento.
         /// </summary>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Causas(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Causas(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -222,9 +222,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Obtiene la lista de instituciones para seguimiento.
         /// </summary>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Institucion(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Institucion(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -251,9 +251,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Obtiene la lista de provincias para seguimiento.
         /// </summary>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Provincia(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Provincia(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -280,9 +280,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Obtiene la lista de zonas para seguimiento.
         /// </summary>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Zona(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Zona(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -312,9 +312,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="codRenuncia"></param>
         /// <returns></returns>
-        public ErrorDTO<AF_CR_Seguimiento_Detalle> AF_CR_Seguimiento_Obtener_Detalle_Renuncia(int CodEmpresa, int codRenuncia)
+        public ErrorDto<AF_CR_Seguimiento_Detalle> AF_CR_Seguimiento_Obtener_Detalle_Renuncia(int CodEmpresa, int codRenuncia)
         {
-            var result = new ErrorDTO<AF_CR_Seguimiento_Detalle>()
+            var result = new ErrorDto<AF_CR_Seguimiento_Detalle>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -355,9 +355,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="renunciaId"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CR_Seguimiento_Motivo>> AF_CR_Seguimiento_Obtener_Motivos(int CodEmpresa, int renunciaId)
+        public ErrorDto<List<AF_CR_Seguimiento_Motivo>> AF_CR_Seguimiento_Obtener_Motivos(int CodEmpresa, int renunciaId)
         {
-            var result = new ErrorDTO<List<AF_CR_Seguimiento_Motivo>>()
+            var result = new ErrorDto<List<AF_CR_Seguimiento_Motivo>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -392,9 +392,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="codRenuncia"></param>
         /// <returns></returns>
-        public ErrorDTO<List<AF_CR_Seguimiento_Historial>> AF_CR_Seguimiento_Obtener_Historial(int CodEmpresa, int codRenuncia)
+        public ErrorDto<List<AF_CR_Seguimiento_Historial>> AF_CR_Seguimiento_Obtener_Historial(int CodEmpresa, int codRenuncia)
         {
-            var result = new ErrorDTO<List<AF_CR_Seguimiento_Historial>>()
+            var result = new ErrorDto<List<AF_CR_Seguimiento_Historial>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -422,9 +422,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Obtiene la lista de gestiones para seguimiento (formato IdX/ItmX).
         /// </summary>
-        public ErrorDTO<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Gestion(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> AF_CR_Seguimiento_Obtener_Gestion(int CodEmpresa)
         {
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -451,9 +451,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Registra un motivo de renuncia usando el SP spAFI_CR_Motivos_Registra.
         /// </summary>
-        public ErrorDTO AF_CR_Seguimiento_Motivos_Registrar(int CodEmpresa, AF_CR_Seguimiento_Motivos_Registrar motivos)
+        public ErrorDto AF_CR_Seguimiento_Motivos_Registrar(int CodEmpresa, AF_CR_Seguimiento_Motivos_Registrar motivos)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"
@@ -481,9 +481,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Cambia el estado de una renuncia usando el SP spAFI_Renuncia_CambioEstado.
         /// </summary>
-        public ErrorDTO AF_CR_Seguimiento_Renuncia_Estado(int CodEmpresa, AF_CR_Seguimiento_Renuncia_Estado estado)
+        public ErrorDto AF_CR_Seguimiento_Renuncia_Estado(int CodEmpresa, AF_CR_Seguimiento_Renuncia_Estado estado)
         {
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok"

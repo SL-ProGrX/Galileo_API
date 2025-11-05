@@ -16,10 +16,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<FslTablaAplicacionDataLista> TablaAplicacion_Obtener(int CodCliente, string filtros)
+        public ErrorDto<FslTablaAplicacionDataLista> TablaAplicacion_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<FslTablaAplicacionDataLista>();
+            var response = new ErrorDto<FslTablaAplicacionDataLista>();
 
             response.Result = new FslTablaAplicacionDataLista();
 
@@ -76,11 +76,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO Cobertura_Guardar(int CodCliente, FslTablaAplicacionData aplicacion)
+        public ErrorDto Cobertura_Guardar(int CodCliente, FslTablaAplicacionData aplicacion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -123,11 +123,11 @@ namespace PgxAPI.DataBaseTier
             return existe;
         }
 
-        public ErrorDTO TablaAplicacion_Insertar(int CodCliente, FslTablaAplicacionData aplicacion)
+        public ErrorDto TablaAplicacion_Insertar(int CodCliente, FslTablaAplicacionData aplicacion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -154,12 +154,12 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO TablaAplicacion_Actualizar(int CodCliente, FslTablaAplicacionData aplicacion)
+        public ErrorDto TablaAplicacion_Actualizar(int CodCliente, FslTablaAplicacionData aplicacion)
         {
 
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
@@ -183,11 +183,11 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDTO TablaAplicacion_Eliminar(int CodCliente, string tipo, int linea)
+        public ErrorDto TablaAplicacion_Eliminar(int CodCliente, string tipo, int linea)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO info = new ErrorDTO();
+            ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try

@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<PeProyectosLista> PeProyectoLista_Obtener(int CodEmpresa, string Jfiltros)
+        public ErrorDto<PeProyectosLista> PeProyectoLista_Obtener(int CodEmpresa, string Jfiltros)
         {
             PeProyectosFiltros filtros = JsonConvert.DeserializeObject<PeProyectosFiltros>(Jfiltros) ?? new PeProyectosFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<PeProyectosLista>();
+            var response = new ErrorDto<PeProyectosLista>();
             response.Result = new PeProyectosLista
             {
                 total = 0,
@@ -78,9 +78,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO PeProyecto_Guardar(int CodEmpresa, PeProyectosDTO proyectos)
+        public ErrorDto PeProyecto_Guardar(int CodEmpresa, PeProyectosDTO proyectos)
         {
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -105,10 +105,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        private ErrorDTO PeProyecto_Insertar(int CodEmpresa, PeProyectosDTO proyectos)
+        private ErrorDto PeProyecto_Insertar(int CodEmpresa, PeProyectosDTO proyectos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -164,10 +164,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        private ErrorDTO PeProyecto_Actualizar(int CodEmpresa, PeProyectosDTO proyectos)
+        private ErrorDto PeProyecto_Actualizar(int CodEmpresa, PeProyectosDTO proyectos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -204,10 +204,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDTO PeProyecto_Eliminar(int CodEmpresa, int proyecto_id)
+        public ErrorDto PeProyecto_Eliminar(int CodEmpresa, int proyecto_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -240,10 +240,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
     
-        public ErrorDTO<List<PeProyectoObjetivosLista>> PeObservacionesProyectos_Obtener(int CodEmpresa, int proyecto_id)
+        public ErrorDto<List<PeProyectoObjetivosLista>> PeObservacionesProyectos_Obtener(int CodEmpresa, int proyecto_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO<List<PeProyectoObjetivosLista>> response = new ErrorDTO<List<PeProyectoObjetivosLista>>();
+            ErrorDto<List<PeProyectoObjetivosLista>> response = new ErrorDto<List<PeProyectoObjetivosLista>>();
             response.Result = new List<PeProyectoObjetivosLista>();
 
             try
@@ -278,10 +278,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO PeObjetivoProyecto_Asociar(int CodEmpresa, int proyecto_id, int objetivo_id, string usuario)
+        public ErrorDto PeObjetivoProyecto_Asociar(int CodEmpresa, int proyecto_id, int objetivo_id, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO error = new()
+            ErrorDto error = new()
             {
                 Code = 0
             };
@@ -313,10 +313,10 @@ namespace PgxAPI.DataBaseTier
 
         }
     
-        public ErrorDTO<List<PeProyectoObjetivosExportar>> PeProyectoObj_Exportar(int CodEmpresa)
+        public ErrorDto<List<PeProyectoObjetivosExportar>> PeProyectoObj_Exportar(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO<List<PeProyectoObjetivosExportar>> response = new ErrorDTO<List<PeProyectoObjetivosExportar>>();
+            ErrorDto<List<PeProyectoObjetivosExportar>> response = new ErrorDto<List<PeProyectoObjetivosExportar>>();
             response.Result = new List<PeProyectoObjetivosExportar>();
 
             try

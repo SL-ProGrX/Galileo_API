@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<DropDownListaGenericaModel>> Activos_Deterioros_Justificaciones_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Deterioros_Justificaciones_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -58,10 +58,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosData>> Activos_Deterioros_Activos_Obtener(int CodEmpresa)
+        public ErrorDto<List<ActivosData>> Activos_Deterioros_Activos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ActivosData>>()
+            var result = new ErrorDto<List<ActivosData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -92,10 +92,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="Id_AddRet"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosDeterioroData> Activos_Deterioros_Consultar(int CodEmpresa, int Id_AddRet, string placa)
+        public ErrorDto<ActivosDeterioroData> Activos_Deterioros_Consultar(int CodEmpresa, int Id_AddRet, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<ActivosDeterioroData>()
+            var result = new ErrorDto<ActivosDeterioroData>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -135,11 +135,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="placa"></param>
         /// <param name="fecha"></param>
         /// <returns></returns>
-        public ErrorDTO<string> Activos_Deterioros_Validar(int CodEmpresa, string placa, DateTime fecha)
+        public ErrorDto<string> Activos_Deterioros_Validar(int CodEmpresa, string placa, DateTime fecha)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "",
@@ -209,10 +209,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<ActivosDeterioroDetallaData> Activos_DeteriorosDetalle_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<ActivosDeterioroDetallaData> Activos_DeteriorosDetalle_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<ActivosDeterioroDetallaData>()
+            var result = new ErrorDto<ActivosDeterioroDetallaData>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -258,10 +258,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Deterioros_Guardar(int CodEmpresa, string usuario, ActivosDeterioroData data)
+        public ErrorDto Activos_Deterioros_Guardar(int CodEmpresa, string usuario, ActivosDeterioroData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO()
+            var result = new ErrorDto()
             {
                 Code = 0,
                 Description = "Ok",
@@ -313,10 +313,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<List<ActivosHistoricoData>> Activos_Deterioros_Historico_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<List<ActivosHistoricoData>> Activos_Deterioros_Historico_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDTO<List<ActivosHistoricoData>>()
+            var result = new ErrorDto<List<ActivosHistoricoData>>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -351,11 +351,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDTO<string> Activos_Deterioros_ActivosNombre_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<string> Activos_Deterioros_ActivosNombre_Consultar(int CodEmpresa, string placa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO<string>
+            var result = new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
@@ -388,11 +388,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="placa"></param>
         /// <param name="Id_AddRet"></param>
         /// <returns></returns>
-        public ErrorDTO Activos_Deterioros_Eliminar(int CodEmpresa, string usuario, string placa, int Id_AddRet)
+        public ErrorDto Activos_Deterioros_Eliminar(int CodEmpresa, string usuario, string placa, int Id_AddRet)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var result = new ErrorDTO
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -429,11 +429,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="contabilidad"></param>
         /// <returns></returns>
-        public ErrorDTO<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
+        public ErrorDto<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
         {
 
 
-            var result = new ErrorDTO<DateTime>
+            var result = new ErrorDto<DateTime>
             {
                 Code = 0,
                 Description = "Ok",

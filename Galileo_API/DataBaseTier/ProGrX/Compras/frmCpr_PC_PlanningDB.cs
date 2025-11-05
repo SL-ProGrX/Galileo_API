@@ -16,10 +16,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<List<cprPlanComprasDTO>> CprPlanCompras_Obtener(int CodEmpresa)
+        public ErrorDto<List<cprPlanComprasDTO>> CprPlanCompras_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<cprPlanComprasDTO>>();
+            var response = new ErrorDto<List<cprPlanComprasDTO>>();
             response.Code = 0;
             try
             {
@@ -40,10 +40,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<cprPlanDTDTO> CprPlanDT_Obtener(int CodEmpresa, int PlanCompras, string CodProducto)
+        public ErrorDto<cprPlanDTDTO> CprPlanDT_Obtener(int CodEmpresa, int PlanCompras, string CodProducto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<cprPlanDTDTO>();
+            var response = new ErrorDto<cprPlanDTDTO>();
             response.Code = 0;
             try
             {
@@ -130,17 +130,17 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<List<cprPlanDTCortesDTO>> CprPlanDTCortes_Obtener(int CodEmpresa, int PlanCompras, string CodProducto)
+        public ErrorDto<List<cprPlanDTCortesDTO>> CprPlanDTCortes_Obtener(int CodEmpresa, int PlanCompras, string CodProducto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<List<cprPlanDTCortesDTO>>();
+            var response = new ErrorDto<List<cprPlanDTCortesDTO>>();
             response.Code = 0;
             try
             {
 
                 using var connection = new SqlConnection(stringConn);
                 {
-                    //Valide si existe algún registro
+                    //Valide si existe algï¿½n registro
                     var query = $"SELECT COALESCE((SELECT ID_PLAN FROM CPR_PLAN_DT WHERE ID_PC = {PlanCompras} AND COD_PRODUCTO = '{CodProducto}'), 0) AS ID_PLAN";
                     int idPlan = connection.Query<int>(query).FirstOrDefault();
 
@@ -202,10 +202,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO CprPlanCompras_Insert(int CodEmpresa, cprPlanComprasDTO request)
+        public ErrorDto CprPlanCompras_Insert(int CodEmpresa, cprPlanComprasDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -229,10 +229,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CprPlanCompras_Update(int CodEmpresa, cprPlanComprasDTO request)
+        public ErrorDto CprPlanCompras_Update(int CodEmpresa, cprPlanComprasDTO request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -259,11 +259,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO CprPlanDT_Upsert(int CodEmpresa, string parametros, List<cprPlanDTCortesDTO> cortes)
+        public ErrorDto CprPlanDT_Upsert(int CodEmpresa, string parametros, List<cprPlanDTCortesDTO> cortes)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var plan = JsonConvert.DeserializeObject<cprPlanDTUpsert>(parametros);
-            ErrorDTO resp = new()
+            ErrorDto resp = new()
             {
                 Code = 0
             };
@@ -322,11 +322,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDTO<CprResumenPlanLista> CprResumenPlan_Obtener(int CodEmpresa, string parametros)
+        public ErrorDto<CprResumenPlanLista> CprResumenPlan_Obtener(int CodEmpresa, string parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             cprPlanFiltros filtros = JsonConvert.DeserializeObject<cprPlanFiltros>(parametros) ?? new cprPlanFiltros();
-            var response = new ErrorDTO<CprResumenPlanLista>();
+            var response = new ErrorDto<CprResumenPlanLista>();
             response.Result = new CprResumenPlanLista();
             response.Code = 0;
             try
@@ -376,11 +376,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<cprPlanContableLista> CprPlanContable_Obtener(int CodEmpresa, string parametros)
+        public ErrorDto<cprPlanContableLista> CprPlanContable_Obtener(int CodEmpresa, string parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var filtros = JsonConvert.DeserializeObject<cprPlanFiltros>(parametros);
-            var response = new ErrorDTO<cprPlanContableLista>();
+            var response = new ErrorDto<cprPlanContableLista>();
             response.Result = new cprPlanContableLista();
             response.Code = 0;
             try
@@ -437,11 +437,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<cprBitacoraLista> CprBitacora_Obtener(int CodEmpresa, string parametros)
+        public ErrorDto<cprBitacoraLista> CprBitacora_Obtener(int CodEmpresa, string parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             cprPlanFiltros filtros = JsonConvert.DeserializeObject<cprPlanFiltros>(parametros) ?? new cprPlanFiltros();
-            var response = new ErrorDTO<cprBitacoraLista>();
+            var response = new ErrorDto<cprBitacoraLista>();
             response.Result = new cprBitacoraLista();
             response.Code = 0;
             try
@@ -479,11 +479,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO<CprResumenPlanLista> CprResumenPlan_ObtenerxCuenta(int CodEmpresa, string parametros)
+        public ErrorDto<CprResumenPlanLista> CprResumenPlan_ObtenerxCuenta(int CodEmpresa, string parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             cprPlanFiltros filtros = JsonConvert.DeserializeObject<cprPlanFiltros>(parametros) ?? new cprPlanFiltros();
-            var response = new ErrorDTO<CprResumenPlanLista>();
+            var response = new ErrorDto<CprResumenPlanLista>();
             response.Result = new CprResumenPlanLista();
             response.Code = 0;
             try

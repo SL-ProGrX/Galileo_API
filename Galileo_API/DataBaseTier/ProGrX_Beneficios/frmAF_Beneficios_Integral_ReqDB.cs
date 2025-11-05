@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="consec"></param>
         /// <returns></returns>
-        public ErrorDTO<List<BENE_REG_REQUISITO>> Bene_Registro_Requisitos_Obtener(int CodCliente, int consec)
+        public ErrorDto<List<BENE_REG_REQUISITO>> Bene_Registro_Requisitos_Obtener(int CodCliente, int consec)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDTO<List<BENE_REG_REQUISITO>>();
+            var response = new ErrorDto<List<BENE_REG_REQUISITO>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -58,10 +58,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="requisito"></param>
         /// <returns></returns>
-        public ErrorDTO BeneRegistroRequisitos_Guardar(BeneRequisitosGuardar requisito)
+        public ErrorDto BeneRegistroRequisitos_Guardar(BeneRequisitosGuardar requisito)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(requisito.codCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -109,10 +109,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_requisito"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDTO BeneRegistroRequisitos_Eliminar(int CodCliente,string cod_beneficio, int consec, string cod_requisito, string usuario)
+        public ErrorDto BeneRegistroRequisitos_Eliminar(int CodCliente,string cod_beneficio, int consec, string cod_requisito, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDTO resp = new ErrorDTO();
+            ErrorDto resp = new ErrorDto();
 
             try
             {
@@ -158,11 +158,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="requisito"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDTO BeneRegistroRequisito_Asociar(
+        public ErrorDto BeneRegistroRequisito_Asociar(
             string modulo, 
             string TypeId, string requisito, DocumentosArchivoDTO data)
         {
-            ErrorDTO resp = new();
+            ErrorDto resp = new();
             try
             {
                 BeneRequisitosGuardar beneRequisitos = Newtonsoft.Json.JsonConvert.DeserializeObject<BeneRequisitosGuardar>(requisito);

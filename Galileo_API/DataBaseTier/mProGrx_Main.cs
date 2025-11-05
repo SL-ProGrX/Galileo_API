@@ -212,9 +212,9 @@ namespace PgxAPI.DataBaseTier
             return resultado ?? ""; // Si no se encuentra un valor, se retorna una cadena vacía
         }
 
-        public ErrorDTO SbSIFRegistraTags(SIFRegistraTagsRequestDTO req)
+        public ErrorDto SbSIFRegistraTags(SIFRegistraTagsRequestDTO req)
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -377,9 +377,9 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDTO SbToolBarRead()
+        public ErrorDto SbToolBarRead()
         {
-            ErrorDTO result = new ErrorDTO();
+            ErrorDto result = new ErrorDto();
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "meToolBar.ini");
             string toolBarValue = "00";
 
@@ -514,9 +514,9 @@ namespace PgxAPI.DataBaseTier
              RegexOptions.Compiled
          );
 
-        public ErrorDTO<bool> fxSIFValidaCadena(string pCadena)
+        public ErrorDto<bool> fxSIFValidaCadena(string pCadena)
         {
-            var error = new ErrorDTO<bool>
+            var error = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "Ok",
@@ -537,10 +537,10 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDTO<bool> fxSys_RA_Consulta(int CodEmpresa, string pCedula, string pUsuario)
+        public ErrorDto<bool> fxSys_RA_Consulta(int CodEmpresa, string pCedula, string pUsuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<bool>
+            var response = new ErrorDto<bool>
             {
                 Code = 0,
                 Description = "Ok",
@@ -570,10 +570,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO sbEstadoCuenta_Email_Corte(int CodEmpresa, string pUsuario, string vCedula, string vEmail,DateTime? vCorte )
+        public ErrorDto sbEstadoCuenta_Email_Corte(int CodEmpresa, string pUsuario, string vCedula, string vEmail,DateTime? vCorte )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO
+            var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok",

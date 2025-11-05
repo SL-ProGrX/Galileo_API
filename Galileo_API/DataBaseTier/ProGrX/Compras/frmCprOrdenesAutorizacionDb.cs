@@ -16,11 +16,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDTO<OrdenCompraDto> OrdenesCompra_Autorizacion_Obtener(int CodEmpresa, int pagina, int paginacion, string? filtro, OrdenCompraRequestDto ordenCompraRequestDto)
+        public ErrorDto<OrdenCompraDto> OrdenesCompra_Autorizacion_Obtener(int CodEmpresa, int pagina, int paginacion, string? filtro, OrdenCompraRequestDto ordenCompraRequestDto)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDTO<OrdenCompraDto>();
+            var response = new ErrorDto<OrdenCompraDto>();
             response.Result = new OrdenCompraDto();
 
             string paginaActual = " ", paginacionActual = " ";
@@ -79,9 +79,9 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDTO OrdenCompra_Autorizar(int CodEmpresa, OrdenCompraResolucionRequestDto ordenCompraRequestDto)
+        public ErrorDto OrdenCompra_Autorizar(int CodEmpresa, OrdenCompraResolucionRequestDto ordenCompraRequestDto)
         {
-            ErrorDTO ErrorDTO = new ErrorDTO();
+            ErrorDto ErrorDto = new ErrorDto();
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -116,15 +116,15 @@ namespace PgxAPI.DataBaseTier
 
                         if (montoDolares == 0)
                         {
-                            ErrorDTO.Code = -1;
-                            ErrorDTO.Description = "El monto de la orden de compra no puede ser 0.";
-                            return ErrorDTO;
+                            ErrorDto.Code = -1;
+                            ErrorDto.Description = "El monto de la orden de compra no puede ser 0.";
+                            return ErrorDto;
                         }
 
                         if (montoDolares < montoMinimo || montoDolares > montoMaximo)
                         {
-                            ErrorDTO.Code = -1;
-                            ErrorDTO.Description = "El Usuario actual no está dentro del rango para esta Gestión.";
+                            ErrorDto.Code = -1;
+                            ErrorDto.Description = "El Usuario actual no está dentro del rango para esta Gestión.";
                         }
                         else
                         {
@@ -144,35 +144,35 @@ namespace PgxAPI.DataBaseTier
 
                                 if (res <= 0)
                                 {
-                                    ErrorDTO.Code = -1;
-                                    ErrorDTO.Description = "Error al autorizar ordenes de compra";
+                                    ErrorDto.Code = -1;
+                                    ErrorDto.Description = "Error al autorizar ordenes de compra";
                                     break;
                                 }
 
                             }
-                            ErrorDTO.Code = 1;
-                            ErrorDTO.Description = string.Empty;
+                            ErrorDto.Code = 1;
+                            ErrorDto.Description = string.Empty;
                         }
                     }
                 }
                 else
                     {
-                    ErrorDTO.Code = -1;
-                    ErrorDTO.Description = "Error al autorizar ordenes de compra";
+                    ErrorDto.Code = -1;
+                    ErrorDto.Description = "Error al autorizar ordenes de compra";
                 }
             }
             catch (Exception ex)
             {
-                ErrorDTO.Code = -1;
-                ErrorDTO.Description = ex.Message;
+                ErrorDto.Code = -1;
+                ErrorDto.Description = ex.Message;
             }
 
-            return ErrorDTO;
+            return ErrorDto;
         }
 
-        public ErrorDTO OrdenCompra_Rechazar(int CodEmpresa, OrdenCompraResolucionRequestDto ordenCompraRequestDto)
+        public ErrorDto OrdenCompra_Rechazar(int CodEmpresa, OrdenCompraResolucionRequestDto ordenCompraRequestDto)
         {
-            ErrorDTO ErrorDTO = new ErrorDTO();
+            ErrorDto ErrorDto = new ErrorDto();
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -198,29 +198,29 @@ namespace PgxAPI.DataBaseTier
 
                             if (res <= 0)
                             {
-                                ErrorDTO.Code = -1;
-                                ErrorDTO.Description = "Error al autorizar ordenes de compra";
+                                ErrorDto.Code = -1;
+                                ErrorDto.Description = "Error al autorizar ordenes de compra";
                                 break;
                             }
 
                         }
-                        ErrorDTO.Code = 1;
-                        ErrorDTO.Description = string.Empty;
+                        ErrorDto.Code = 1;
+                        ErrorDto.Description = string.Empty;
                     }
                 }
                 else
                 {
-                    ErrorDTO.Code = -1;
-                    ErrorDTO.Description = "Error al autorizar ordenes de compra";
+                    ErrorDto.Code = -1;
+                    ErrorDto.Description = "Error al autorizar ordenes de compra";
                 }
             }
             catch (Exception ex)
             {
-                ErrorDTO.Code = -1;
-                ErrorDTO.Description = ex.Message;
+                ErrorDto.Code = -1;
+                ErrorDto.Description = ex.Message;
             }
 
-            return ErrorDTO;
+            return ErrorDto;
         }
     }
 }
