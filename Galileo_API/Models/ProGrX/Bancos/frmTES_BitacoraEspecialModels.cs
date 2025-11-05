@@ -1,5 +1,3 @@
-using PgxAPI.Models;
-
 namespace PgxAPI.Models.TES
 {
     public class FiltrosBitacoraEspecial
@@ -18,8 +16,7 @@ namespace PgxAPI.Models.TES
         public string? revision { get; set; }
     }
 
-
-    public class BitacoraEspecialDTO
+    public class BitacoraEspecialDto
     {
         public int nsolicitud { get; set; }
         public string ndocumento { get; set; } = string.Empty;
@@ -35,6 +32,4 @@ namespace PgxAPI.Models.TES
         public int id { get; set; }
         public bool revisado { get; set; }
     }
-
 }
-

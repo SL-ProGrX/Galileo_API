@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.TES
 {
-    public class TES_DesAutorizacionesFiltros
+    public class TesDesAutorizacionesFiltros
     {
         public int id_banco { get; set; }
         public string tipo_doc { get; set; } = string.Empty;

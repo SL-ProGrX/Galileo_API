@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class TES_Ubi_RemesaDTO
+    public class TesUbiRemesaDto
     {
         public int cod_remesa { get; set; }
         public string cod_ubicacion { get; set; } = string.Empty;
@@ -13,7 +13,7 @@
         public string dubicacion { get; set; } = string.Empty;
     }
 
-    public class TES_RecepcionDocumentoDTO
+    public class TesRecepcionDocumentoDto
     {
         public int nsolicitud { get; set; }
         public int id_banco { get; set; }
@@ -28,10 +28,10 @@
         public string usuario_rec { get; set; } = string.Empty;
     }
 
-    public class TES_RecepcionDocumento_Filtros
+    public class TesRecepcionDocumentoFiltros
     {
         public int cod_remesa { get; set; }
         public string usuario { get; set; } = string.Empty;
-        public List<TES_RecepcionDocumentoDTO> solicitudes { get; set; }
+        public List<TesRecepcionDocumentoDto>? solicitudes { get; set; }
     }
 }

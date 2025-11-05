@@ -1,12 +1,12 @@
 ﻿namespace PgxAPI.Models.TES
 {
-    public class TES_Cuenta_BancariaDTO
+    public class TesCuentaBancariaDto
     {
         public int idx { get; set; }
         public string itmx { get; set; } = string.Empty;
     }
 
-    public class TES_Depositos_TramiteDTO
+    public class TesDepositosTramiteDto
     {
         public int id_banco { get; set; }
         public string documento { get; set; } = string.Empty;
@@ -18,7 +18,7 @@
         public bool? requiere_identificacion { get; set; }
     }
 
-    public class TES_Depositos_Tramite_InconsistenciasDTO
+    public class TesDepositosTramiteInconsistenciasDto
     {
         public string documento { get; set; } = string.Empty;
         public decimal monto { get; set; }
@@ -30,7 +30,7 @@
         public string banco { get; set; } = string.Empty;
     }
 
-    public class Filtros_Registro
+    public class FiltrosRegistro
     {
         public int banco { get; set; }
         public string numDoc { get; set; } = string.Empty;
@@ -43,7 +43,7 @@
         public int? paginacion { get; set; } = 30;
     }
 
-    public class TES_Depositos_Tramite_BancoDTO
+    public class TesDepositosTramiteBancoDto
     {
         public int id_banco { get; set; }
         public int dp_tramite_id { get; set; }
@@ -62,7 +62,7 @@
         public int? nsolicitud { get; set; } 
     }
 
-    public class Filtros_Inconsistencias
+    public class FiltrosInconsistencias
     {
         public int banco { get; set; }
         public DateTime fecha_inicio { get; set; }

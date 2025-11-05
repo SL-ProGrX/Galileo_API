@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class transferenciaSolicitudData
+    public class TransferenciaSolicitudData
     {
         public int? nsolicitud { get; set; }
         public int? id_banco { get; set; }
@@ -14,7 +14,7 @@
         public string? cod_plan { get; set; }
     }
 
-    public class transferenciaReversaAplicaModel
+    public class TransferenciaReversaAplicaModel
     {
         public Nullable<DateTime> fecha_emision { get; set; }
         public string? clave { get; set; }
@@ -24,7 +24,6 @@
         public string? ndocumento { get; set; }
         public string? tipo { get; set; } 
         public List<TransferenciaEncabezadoModel> lista { get; set; } = new List<TransferenciaEncabezadoModel>();
-
     }
 
     public class TransferenciaEncabezadoModel
@@ -51,7 +50,7 @@
         public string? tesoreria_id_new { get; set; }
     }
 
-    public class tesAutorizacionesDTO
+    public class TesAutorizacionesDto
     {
         public string? NOMBRE { get; set; }
         public string? NOTAS { get; set; }
@@ -63,7 +62,7 @@
         public long? FIRMAS_GEN_CORTE { get; set; }
     }
 
-    public class tesReversionData
+    public class TesReversionData
     {
         public int id_reversion { get; set; }
         public string? autorizado { get; set; }
@@ -74,5 +73,4 @@
         public int id_banco { get; set; }
         public string? tipo { get; set; }
     }
-
 }

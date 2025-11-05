@@ -1,9 +1,7 @@
 namespace PgxAPI.Models.TES
 {
-
-    public class TES_TransaccionDTO
+    public class TesTransaccionDto
     {
-
         public int nsolicitud { get; set; } = 0;
         public int id_banco { get; set; }
         public string? tipo { get; set; }
@@ -109,7 +107,6 @@ namespace PgxAPI.Models.TES
         public string? divisa_id { get; set; }
         public string? divisa_desc { get; set; }
         public string? currency_sim { get; set; }
-
         // Más campos faltantes
         public string? anula_concepto { get; set; }
         public string? grupo_desc_corta { get; set; }
@@ -122,11 +119,10 @@ namespace PgxAPI.Models.TES
         public string? cta_origen_mask { get; set; }
         public string? cta_destino_mask { get; set; }
         public string? descripcion { get; set; }
-
-        public List<Tes_Trans_AsientoDTO>? asientoDetalle { get; set; }
+        public List<TesTransAsientoDto>? asientoDetalle { get; set; }
     }
 
-    public class Tes_AfectacionDTO
+    public class TesAfectacionDto
     {
         public string identificacion { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -139,7 +135,7 @@ namespace PgxAPI.Models.TES
         public DateTime creacion_fecha { get; set; }
     }
 
-    public class Tes_Trans_AsientoDTO
+    public class TesTransAsientoDto
     {
         public string cod_cuenta { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -155,7 +151,7 @@ namespace PgxAPI.Models.TES
         public string cod_divisa { get; set; } = string.Empty;
     }
 
-    public class Tes_BitacoraDTO
+    public class TesBitacoraDto
     {
         public int id { get; set; }
         public DateTime fecha { get; set; }
@@ -164,7 +160,7 @@ namespace PgxAPI.Models.TES
         public string detalle { get; set; } = string.Empty;
     }
 
-    public class Tes_LocalizacionDTO
+    public class TesLocalizacionDto
     {
         public DateTime fecha_rec { get; set; }
         public string cod_remesa { get; set; } = string.Empty;
@@ -173,7 +169,7 @@ namespace PgxAPI.Models.TES
         public string observacion { get; set; } = string.Empty;
     }
 
-    public class Tes_ReImpresionesDTO
+    public class TesReimpresionesDto
     {
         public DateTime fecha { get; set; }
         public string usuario { get; set; } = string.Empty;
@@ -181,7 +177,7 @@ namespace PgxAPI.Models.TES
         public string notas { get; set; } = string.Empty;
     }
 
-    public class Tes_CambioFechasDTO
+    public class TesCambioFechasDto
     {
         public DateTime fecha { get; set; }
         public string idx { get; set; } = string.Empty;
@@ -189,22 +185,22 @@ namespace PgxAPI.Models.TES
         public string detalle { get; set; } = string.Empty;
     }
 
-    public class Tes_SolicitudesData 
+    public class TesTransacSolicitudesData
     {
         public int nsolicitud { get; set; }
-        public string tipo { get; set; }
-        public string codigo { get; set; }
-        public string beneficiario { get; set; }
+        public string? tipo { get; set; }
+        public string? codigo { get; set; }
+        public string? beneficiario { get; set; }
         public float monto { get; set; }
-        public string estado { get; set; }
-        public string cod_unidad { get; set; }
+        public string? estado { get; set; }
+        public string? cod_unidad { get; set; }
     }
 
-    public class Tes_SolicitudDocParametro
+    public class TesSolicitudDocParametro
     {
-        public string tipo { get; set; }
+        public string? tipo { get; set; }
         public int id_banco { get; set; }
-        public string documento { get; set; }
+        public string? documento { get; set; }
         public int contabilidad { get; set; }
     }
 
@@ -217,7 +213,7 @@ namespace PgxAPI.Models.TES
         public string? divisa { get; set; } = "DOL";
         public string? estado { get; set; } = "P";
         public decimal monto { get; set; } = 0;
-        public int id_banco = 0;
+        public int id_banco { get; set; } = 0;
         public string? cod_unidad { get; set; }
         public string? cod_concepto { get; set; }
         public string? tipo { get; set; } = "";
@@ -241,7 +237,6 @@ namespace PgxAPI.Models.TES
         public float? divisa_local { get; set; } //rs!cod_Divisa
         public string? divisa_desc { get; set; } //rs!CURRENCY_SIM
         public string? currency_sim { get; set; }//rs!divisa_local
-
         public string? Descripcion { get; set; }
     }
 
@@ -263,5 +258,4 @@ namespace PgxAPI.Models.TES
         public string? itmx { get; set; }
         public string? prioridad { get; set; }
     }
-
 }

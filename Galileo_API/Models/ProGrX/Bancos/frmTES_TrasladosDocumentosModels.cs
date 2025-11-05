@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class TES_TrasladoDocumentoDTO
+    public class TesTrasladoDocumentoDto
     {
         public int nsolicitud { get; set; }
         public int id_banco { get; set; }
@@ -14,7 +14,5 @@
         public string tipox { get; set; } = string.Empty;
         public DateTime? fecha_rec { get; set; }
         public string? usuario_rec { get; set; } = string.Empty;
-
     }
-
 }

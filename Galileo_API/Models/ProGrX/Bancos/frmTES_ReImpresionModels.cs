@@ -1,8 +1,7 @@
 ﻿using PgxAPI.Models.ERROR;
-
 namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class tesReImpresionModels
+    public class TesReImpresionModels
     {
         public int nSolicitud { get; set; } = 0;
         public string tipo { get; set; } = string.Empty;
@@ -16,13 +15,12 @@ namespace PgxAPI.Models.ProGrX.Bancos
         public string comprobante { get; set; } = string.Empty;
         public string verifica { get; set; } = string.Empty;
         public string verificaTag { get; set; } = string.Empty;
-
         public string usuario { get; set; } = string.Empty;
         public string clave { get; set; } = string.Empty;
         public string usuarioLogin { get; set; } = string.Empty;
     }
 
-    public class tesReImpresionBancoData
+    public class TesReImpresionBancoData
     {
         public decimal firmas_desde { get; set; } = 0;
         public decimal firmas_hasta { get; set; } =0;
@@ -30,7 +28,7 @@ namespace PgxAPI.Models.ProGrX.Bancos
         public string Lugar_Emision { get; set; } = string.Empty;
     }
 
-    public class tesReImpresionDoc
+    public class TesReImpresionDoc
     {
         public string archivo_especial_ck { get; set; } = string.Empty;
         public string archivo_cheques_firmas { get; set; } = string.Empty;
@@ -39,8 +37,7 @@ namespace PgxAPI.Models.ProGrX.Bancos
 
     public class ResImpresion
     {
-        public ErrorDto Value { get; set; }
+        public ErrorDto? Value { get; set; }
         public int StatusCode { get; set; }
     }
-
 }

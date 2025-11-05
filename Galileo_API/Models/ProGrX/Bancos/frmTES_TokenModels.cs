@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.TES
 {
-    public class TES_TokenDTO
+    public class TesTokenDto
     {
         public required string idtoken { get; set; }
         public required string estado { get; set; }
@@ -10,14 +10,13 @@ namespace PgxAPI.Models.TES
         public decimal monto { get; set; }
     }
 
-    public class TES_TokenSolicitudesData
+    public class TesTokenSolicitudesData
     {
         public int nsolicitud { get; set; }
-        public string codigo { get; set; }
-        public string beneficiario { get; set; }
+        public string? codigo { get; set; }
+        public string? beneficiario { get; set; }
         public DateTime fecha_solicitud { get; set; }
-        public string remesa { get; set; }
+        public string? remesa { get; set; }
         public int remesa_id { get; set; }
     }
-
 }

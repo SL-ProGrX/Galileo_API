@@ -1,6 +1,6 @@
 namespace PgxAPI.Models.TES
 {
-    public class TES_AutorizacionData
+    public class TesAutorizacionData
     {
         public string? nombre { get; set; }
         public string? notas { get; set; }
@@ -12,13 +12,13 @@ namespace PgxAPI.Models.TES
         public decimal? firmas_gen_corte { get; set; }
     }
 
-    public class TES_FirmasAutData
+    public class TesFirmasAutData
     {
         public decimal? firmas_autoriza_inicio { get; set; }
         public decimal? firmas_autoriza_corte { get; set; }
     }
 
-    public class TES_AutorizacionFiltros
+    public class TesAutorizacionFiltros
     {
         public int id_banco { get; set; }
         public string tipo_doc { get; set; } = string.Empty;
@@ -41,13 +41,13 @@ namespace PgxAPI.Models.TES
         public string appid { get; set; } = string.Empty;
     }
 
-    public class TES_SolicitudesLista
+    public class TesSolicitudesLista
     {
         public int total { get; set; }
-        public List<TES_SolicitudesData>? solicitudes { get; set; } = new List<TES_SolicitudesData>();
+        public List<TesSolicitudesData>? solicitudes { get; set; } = new List<TesSolicitudesData>();
     }
 
-    public class TES_SolicitudesData
+    public class TesSolicitudesData
     {
         public int nsolicitud { get; set; }
         public string? codigo { get; set; } = string.Empty;
@@ -63,15 +63,15 @@ namespace PgxAPI.Models.TES
         public string? estadoactual { get; set; } = string.Empty;
     }
 
-    public class TES_AutorizaParametros
+    public class TesAutorizaParametros
     {
         public int codEmpresa { get; set; }
-        public string clave { get; set; }
-        public string usuario { get; set; }
+        public string? clave { get; set; }
+        public string? usuario { get; set; }
         public int tipo_autorizacion { get; set; }
         public bool? estadoSinpe { get; set; }
         public string? tipoGiroSinpe { get; set; }
         public string? tipoDocumento { get; set; }
-        public string solicitudesLista  { get; set; }
+        public string? solicitudesLista { get; set; }
     }
 }

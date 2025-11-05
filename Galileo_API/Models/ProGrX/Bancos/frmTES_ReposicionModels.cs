@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models.ProGrX.Bancos
 {
-    public class tesReposicionData
+    public class TesReposicionData
     {
         public int nSolicitud { get; set; } = 0;
         public string codigo { get; set; } = string.Empty;
@@ -18,14 +18,10 @@
         public string detalle { get; set; } = string.Empty;
         public string tipoBeneficiario { get; set; } = string.Empty;
         public int reposicionPaso { get; set; } = 0;
-
         public string verifica { get; set; } = string.Empty;
         public string verificaTag { get; set; } = "N";
-
         public string usuario { get; set; } = string.Empty;
         public string clave { get; set; } = string.Empty;
-
         public string notas { get; set; } = string.Empty;
-
     }
 }

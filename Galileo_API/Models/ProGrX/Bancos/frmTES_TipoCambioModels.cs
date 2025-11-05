@@ -9,7 +9,6 @@
         public string divisa { get; set; } = "DOL";
         public float tcPermitido { get; set; } = 0;
         public float tcVariacion { get; set; } = 0;
-
     }
 
     public class TesTipoCambioDivisasTipoCambio
@@ -19,5 +18,4 @@
         public float variacion { get; set; } = 0;
         public float tc_actual { get; set; } = 0;
     }
-
 }
