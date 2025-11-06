@@ -23,7 +23,7 @@ namespace PgxAPI.DataBaseTier
             response.Result = new PeProyectosLista
             {
                 total = 0,
-                proyectos = new List<PeProyectosDTO>()
+                proyectos = new List<PeProyectosDto>()
             };
 
             try
@@ -65,7 +65,7 @@ namespace PgxAPI.DataBaseTier
                                       ,[MODIFICA_FECHA]
                                       ,[MODIFICA_USUARIO] from PE_PROYECTOS {where} order 
                             by PROYECTO_ID desc {paginaActual} {paginacionActual}";
-                    response.Result.proyectos = connection.Query<PeProyectosDTO>(query).ToList();
+                    response.Result.proyectos = connection.Query<PeProyectosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -78,7 +78,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto PeProyecto_Guardar(int CodEmpresa, PeProyectosDTO proyectos)
+        public ErrorDto PeProyecto_Guardar(int CodEmpresa, PeProyectosDto proyectos)
         {
             ErrorDto error = new()
             {
@@ -105,7 +105,7 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        private ErrorDto PeProyecto_Insertar(int CodEmpresa, PeProyectosDTO proyectos)
+        private ErrorDto PeProyecto_Insertar(int CodEmpresa, PeProyectosDto proyectos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto error = new()
@@ -164,7 +164,7 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        private ErrorDto PeProyecto_Actualizar(int CodEmpresa, PeProyectosDTO proyectos)
+        private ErrorDto PeProyecto_Actualizar(int CodEmpresa, PeProyectosDto proyectos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto error = new()

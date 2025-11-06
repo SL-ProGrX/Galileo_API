@@ -55,17 +55,17 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="institucion"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AF_DepartamentosLista> AF_DepartamentosLista_Obtener(int CodEmpresa, int institucion ,FiltrosLazyLoadData filtros)
+        public ErrorDto<AfDepartamentosLista> AF_DepartamentosLista_Obtener(int CodEmpresa, int institucion ,FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_DepartamentosLista>
+            var response = new ErrorDto<AfDepartamentosLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new AF_DepartamentosLista()
+                Result = new AfDepartamentosLista()
                 {
                     total = 0,
-                    lista = new List<AF_DepartamentosDTO>()
+                    lista = new List<AfDepartamentosDto>()
                 }
             };
 
@@ -94,7 +94,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         query += $@" OFFSET {filtros.pagina} ROWS
                                 FETCH NEXT {filtros.paginacion} ROWS ONLY";
                     }
-                    response.Result.lista = connection.Query<AF_DepartamentosDTO>(query, new { institucion, filtro = filtros.filtro }).ToList();
+                    response.Result.lista = connection.Query<AfDepartamentosDto>(query, new { institucion, filtro = filtros.filtro }).ToList();
                 }
             }
             catch (Exception ex)
@@ -115,17 +115,17 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="departamento"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AF_SeccionesLista> AF_DepartamentosSecciones_Obtener(int CodEmpresa, int institucion, string departamento, FiltrosLazyLoadData filtros)
+        public ErrorDto<AfSeccionesLista> AF_DepartamentosSecciones_Obtener(int CodEmpresa, int institucion, string departamento, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_SeccionesLista>
+            var response = new ErrorDto<AfSeccionesLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new AF_SeccionesLista()
+                Result = new AfSeccionesLista()
                 {
                     total = 0,
-                    lista = new List<AF_SeccionesDTO>()
+                    lista = new List<AfSeccionesDto>()
                 }
             };
 
@@ -155,7 +155,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                 FETCH NEXT {filtros.paginacion} ROWS ONLY";
                     }
 
-                    response.Result.lista = connection.Query<AF_SeccionesDTO>(query, new { institucion, departamento, filtro = filtros.filtro }).ToList();
+                    response.Result.lista = connection.Query<AfSeccionesDto>(query, new { institucion, departamento, filtro = filtros.filtro }).ToList();
                 }
             }
             catch (Exception ex)
@@ -174,7 +174,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_Departamentos_Guardar(int CodEmpresa, AF_DepartamentosDTO Info)
+        public ErrorDto AF_Departamentos_Guardar(int CodEmpresa, AfDepartamentosDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -253,7 +253,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_DepartamentosSecciones_Guardar(int CodEmpresa, AF_SeccionesDTO Info)
+        public ErrorDto AF_DepartamentosSecciones_Guardar(int CodEmpresa, AfSeccionesDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto

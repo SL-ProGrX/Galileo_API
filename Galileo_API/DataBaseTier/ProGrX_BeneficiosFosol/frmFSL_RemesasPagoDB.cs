@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.FSL;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 
 
 namespace PgxAPI.DataBaseTier
@@ -11,15 +12,15 @@ namespace PgxAPI.DataBaseTier
     public class frmFSL_RemesasPagoDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmFSL_RemesasPagoDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -224,7 +225,7 @@ namespace PgxAPI.DataBaseTier
                         info.Description = "Remesa cerrada correctamente";
 
                         //Incluyo BITACORA
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario.ToUpper(),
@@ -358,7 +359,7 @@ namespace PgxAPI.DataBaseTier
                     }
 
                     //Agrego bitacora
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = carga.usuario.ToUpper(),
@@ -412,7 +413,7 @@ namespace PgxAPI.DataBaseTier
                         info.Description = "Remesa cerrada correctamente";
 
                         //Incluyo BITACORA
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario.ToUpper(),
@@ -557,7 +558,7 @@ namespace PgxAPI.DataBaseTier
                         vCasos = vCasos + 1;
 
                         //Bitacora
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = traslado.usuario.ToUpper(),
@@ -571,7 +572,7 @@ namespace PgxAPI.DataBaseTier
                     if (vCasos > 0)
                     {
                         //Bitacora
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = traslado.usuario.ToUpper(),

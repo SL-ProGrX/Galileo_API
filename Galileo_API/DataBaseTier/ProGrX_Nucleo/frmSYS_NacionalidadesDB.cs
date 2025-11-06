@@ -10,12 +10,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 10; // Modulo de Tesorería
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmSYS_NacionalidadesDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -209,7 +209,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     registro_usuario = usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -258,7 +258,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     registro_usuario = usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -313,7 +313,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 var query = @"DELETE FROM SYS_NACIONALIDADES WHERE UPPER(COD_NACIONALIDAD) = @cod_nacionalidad";
                 connection.Execute(query, new { cod_nacionalidad = cod_nacionalidad.ToUpper() });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,

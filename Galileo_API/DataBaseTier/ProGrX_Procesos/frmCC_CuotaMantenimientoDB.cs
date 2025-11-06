@@ -18,10 +18,10 @@ namespace PgxAPI.DataBaseTier
             mProGrx_Main = new mProGrx_Main(_config);
         }
 
-        public List<CC_CA_InstitucionesData> CC_InstitucionesObtener(int CodEmpresa)
+        public List<CcCaInstitucionesData> CC_InstitucionesObtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CC_CA_InstitucionesData> resp = new List<CC_CA_InstitucionesData>();
+            List<CcCaInstitucionesData> resp = new List<CcCaInstitucionesData>();
 
             try
             {
@@ -29,7 +29,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select cod_institucion as IdX,rtrim(descripcion) as ItmX 
                         from instituciones where activa = 1 and cod_institucion in(1,2) order by descripcion";
-                    resp = connection.Query<CC_CA_InstitucionesData>(query).ToList();
+                    resp = connection.Query<CcCaInstitucionesData>(query).ToList();
                 }
             }
             catch (Exception ex)

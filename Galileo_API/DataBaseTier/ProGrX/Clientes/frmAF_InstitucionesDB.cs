@@ -4,23 +4,24 @@ using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 {
     public class frmAF_InstitucionesDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _mSecurity;
+        private readonly MSecurityMainDb _mSecurity;
         private readonly mCntLinkDB _mCntLink;
 
         public frmAF_InstitucionesDB(IConfiguration config)
         {
             _config = config;
-            _mSecurity = new mSecurityMainDb(_config);
+            _mSecurity = new MSecurityMainDb(_config);
             _mCntLink = new mCntLinkDB(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -63,13 +64,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="ScrollCode"></param>
         /// <param name="CodInstitucion"></param>
         /// <returns></returns>
-        public ErrorDto<AF_Institucion_DTO> AF_Instituciones_Scroll_Obtener(int CodEmpresa, int ScrollCode, int CodInstitucion)
+        public ErrorDto<AfInstitucionDto> AF_Instituciones_Scroll_Obtener(int CodEmpresa, int ScrollCode, int CodInstitucion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_Institucion_DTO>
+            var response = new ErrorDto<AfInstitucionDto>
             {
                 Code = 0,
-                Result = new AF_Institucion_DTO()
+                Result = new AfInstitucionDto()
             };
             try
             {
@@ -104,21 +105,21 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="CodInstitucion"></param>
         /// <returns></returns>
-        public ErrorDto<AF_Institucion_DTO> AF_Institucion_Obtener(int CodEmpresa, int CodInstitucion)
+        public ErrorDto<AfInstitucionDto> AF_Institucion_Obtener(int CodEmpresa, int CodInstitucion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_Institucion_DTO>
+            var response = new ErrorDto<AfInstitucionDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new AF_Institucion_DTO()
+                Result = new AfInstitucionDto()
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "select * from vAFI_Instituciones where cod_institucion = @CodInstitucion";
-                    response.Result = connection.QueryFirstOrDefault<AF_Institucion_DTO>(query, new { CodInstitucion });
+                    response.Result = connection.QueryFirstOrDefault<AfInstitucionDto>(query, new { CodInstitucion });
                 }
             }
             catch (Exception ex)
@@ -234,21 +235,21 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodInstitucion"></param>
         /// <param name="Tipo"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_Institucion_EmpresasDTO>> AF_Institucion_Empresas_Obtener(int CodEmpresa, int CodInstitucion, int Tipo)
+        public ErrorDto<List<AfInstitucionEmpresasDto>> AF_Institucion_Empresas_Obtener(int CodEmpresa, int CodInstitucion, int Tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AF_Institucion_EmpresasDTO>>
+            var response = new ErrorDto<List<AfInstitucionEmpresasDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_Institucion_EmpresasDTO>()
+                Result = new List<AfInstitucionEmpresasDto>()
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "exec spAFI_Institucion_Vinculadas @CodInstitucion, @Tipo";
-                    response.Result = connection.Query<AF_Institucion_EmpresasDTO>(query, new { CodInstitucion, Tipo }).ToList();
+                    response.Result = connection.Query<AfInstitucionEmpresasDto>(query, new { CodInstitucion, Tipo }).ToList();
                 }
             }
             catch (Exception ex)
@@ -266,14 +267,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="CodInstitucion"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_Instituciones_CodigosDTO>> AF_Instituciones_Codigos_Obtener(int CodEmpresa, int CodInstitucion)
+        public ErrorDto<List<AfInstitucionesCodigosDto>> AF_Instituciones_Codigos_Obtener(int CodEmpresa, int CodInstitucion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AF_Instituciones_CodigosDTO>>
+            var response = new ErrorDto<List<AfInstitucionesCodigosDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_Instituciones_CodigosDTO>()
+                Result = new List<AfInstitucionesCodigosDto>()
             };
             try
             {
@@ -283,7 +284,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         from AFI_INSTITUCIONES_CODIGOS 
                         WHERE COD_INSTITUCION = @CodInstitucion
                         order by COD_DEDUCCION";
-                    response.Result = connection.Query<AF_Instituciones_CodigosDTO>(query, new { CodInstitucion }).ToList();
+                    response.Result = connection.Query<AfInstitucionesCodigosDto>(query, new { CodInstitucion }).ToList();
                 }
             }
             catch (Exception ex)
@@ -303,14 +304,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Codigo"></param>
         /// <param name="rbCodigo"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_Instituciones_Codigos_LineasDTO>> AF_Instituciones_Codigos_Lineas_Obtener(int CodEmpresa, int CodInstitucion, string Codigo, int rbCodigo)
+        public ErrorDto<List<AfInstitucionesCodigosLineasDto>> AF_Instituciones_Codigos_Lineas_Obtener(int CodEmpresa, int CodInstitucion, string Codigo, int rbCodigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AF_Instituciones_Codigos_LineasDTO>>
+            var response = new ErrorDto<List<AfInstitucionesCodigosLineasDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_Instituciones_Codigos_LineasDTO>()
+                Result = new List<AfInstitucionesCodigosLineasDto>()
             };
             int? Estado = null;
             try
@@ -330,7 +331,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = @"exec spAFI_Instituciones_Codigos_Lineas @CodInstitucion, @Codigo, @Estado";
-                    response.Result = connection.Query<AF_Instituciones_Codigos_LineasDTO>(query, new { CodInstitucion, Codigo, Estado }).ToList();
+                    response.Result = connection.Query<AfInstitucionesCodigosLineasDto>(query, new { CodInstitucion, Codigo, Estado }).ToList();
                 }
             }
             catch (Exception ex)
@@ -348,21 +349,21 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="CodInstitucion"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_Institucion_DepartamentosDTO>> AF_Institucion_Departamentos_Obtener(int CodEmpresa, int CodInstitucion)
+        public ErrorDto<List<AfInstitucionDepartamentosDto>> AF_Institucion_Departamentos_Obtener(int CodEmpresa, int CodInstitucion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AF_Institucion_DepartamentosDTO>>
+            var response = new ErrorDto<List<AfInstitucionDepartamentosDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_Institucion_DepartamentosDTO>()
+                Result = new List<AfInstitucionDepartamentosDto>()
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "exec spAFI_Institucion_Departamentos @CodInstitucion";
-                    response.Result = connection.Query<AF_Institucion_DepartamentosDTO>(query, new { CodInstitucion }).ToList();
+                    response.Result = connection.Query<AfInstitucionDepartamentosDto>(query, new { CodInstitucion }).ToList();
                 }
             }
             catch (Exception ex)
@@ -381,14 +382,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodInstitucion"></param>
         /// <param name="CodDepartamento"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_Institucion_SeccionesDTO>> AF_Institucion_Secciones_Obtener(int CodEmpresa, int CodInstitucion, string CodDepartamento)
+        public ErrorDto<List<AfInstitucionSeccionesDto>> AF_Institucion_Secciones_Obtener(int CodEmpresa, int CodInstitucion, string CodDepartamento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AF_Institucion_SeccionesDTO>>
+            var response = new ErrorDto<List<AfInstitucionSeccionesDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_Institucion_SeccionesDTO>()
+                Result = new List<AfInstitucionSeccionesDto>()
             };
             try
             {
@@ -399,7 +400,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "exec spAFI_Institucion_Secciones @CodInstitucion, @CodDepartamento";
-                    response.Result = connection.Query<AF_Institucion_SeccionesDTO>(query, new { CodInstitucion, CodDepartamento }).ToList();
+                    response.Result = connection.Query<AfInstitucionSeccionesDto>(query, new { CodInstitucion, CodDepartamento }).ToList();
                 }
             }
             catch (Exception ex)
@@ -447,7 +448,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     connection.Execute(query, new { CodInstitucion, FechaCorte = fechaFormateada });
                 }
 
-                Bitacora(new BitacoraInsertarDTO
+                Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = Usuario.ToUpper(),
@@ -489,7 +490,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     connection.Execute(query, new { CodInstitucion, Proceso, Usuario });
                 }
 
-                Bitacora(new BitacoraInsertarDTO
+                Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = Usuario.ToUpper(),
@@ -513,7 +514,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Info"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDto AF_Instituciones_Codigo_Guardar(int CodEmpresa, AF_Instituciones_CodigosDTO Info, string Usuario)
+        public ErrorDto AF_Instituciones_Codigo_Guardar(int CodEmpresa, AfInstitucionesCodigosDto Info, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -553,7 +554,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         }
                     );
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -601,7 +602,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         }
                     );
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -657,7 +658,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     }
                     connection.Execute(query, new { CodInstitucion, CodDeduccion, Codigo, Usuario });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -711,7 +712,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     }
                     connection.Execute(query, new { CodInstitucion, CodDeductora, Usuario });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -754,7 +755,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             @CopiaDescCorta, @Usuario, 1, 1, 1, 1, 1, 1";
                     int CodInstDest = connection.QueryFirstOrDefault<int>(query, new { CodInstitucion, CopiaDesc, CopiaDescCorta, Usuario });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -782,7 +783,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="vEdita"></param>
         /// <returns></returns>
-        public ErrorDto AF_Institucion_Guardar(int CodEmpresa, AF_Institucion_DTO Info, string Usuario, bool vEdita)
+        public ErrorDto AF_Institucion_Guardar(int CodEmpresa, AfInstitucionDto Info, string Usuario, bool vEdita)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -884,7 +885,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             }
                         );
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -987,7 +988,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         var queryS = "insert AfSecciones(cod_institucion,cod_departamento,cod_seccion,descripcion) values(@Codigo,'','','SIN IDENTIFICAR')";
                         connection.Execute(queryS, new { Codigo = ultimo });
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -1036,7 +1037,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     var query = "delete instituciones where cod_institucion = @CodInstitucion";
                     connection.Execute(query, new { CodInstitucion });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),

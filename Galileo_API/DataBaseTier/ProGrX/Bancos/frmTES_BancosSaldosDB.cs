@@ -124,7 +124,7 @@ namespace PgxAPI.DataBaseTier
                          {paginaActual}
                          {paginacionActual} ";
 
-                    response.Result.lista = connection.Query<TES_BancosSaldos_MonitoreoDTO>(query, new { grupo = CodGrupo }).ToList();
+                    response.Result.lista = connection.Query<TesBancosSaldosMonitoreoDto>(query, new { grupo = CodGrupo }).ToList();
                 }
             }
             catch (Exception ex)
@@ -181,7 +181,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<TablasListaGenericaModel> TES_BancosSaldos_Historico_Obtener(int CodEmpresa, int Banco, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            Historico_Filtros filtrosFechas = JsonConvert.DeserializeObject<Historico_Filtros>((string)filtros.parametros);
+            HistoricoFiltros filtrosFechas = JsonConvert.DeserializeObject<HistoricoFiltros>((string)filtros.parametros);
             var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
@@ -228,7 +228,7 @@ namespace PgxAPI.DataBaseTier
                          {paginaActual}
                          {paginacionActual} ";
 
-                    response.Result.lista = connection.Query<TES_BancosSaldos_HistoricoDTO>(query, new { banco = Banco }).ToList();
+                    response.Result.lista = connection.Query<TesBancosSaldosHistoricoDto>(query, new { banco = Banco }).ToList();
                 }
             }
             catch (Exception ex)
@@ -246,13 +246,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Banco"></param>
         /// <returns></returns>
-        public ErrorDto<TES_BancosSaldos_CierresDTO> TES_BancosSaldos_Cierres_Obtener(int CodEmpresa, int Banco)
+        public ErrorDto<TesBancosSaldosCierresDto> TES_BancosSaldos_Cierres_Obtener(int CodEmpresa, int Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_BancosSaldos_CierresDTO>
+            var response = new ErrorDto<TesBancosSaldosCierresDto>
             {
                 Code = 0,
-                Result = new TES_BancosSaldos_CierresDTO()
+                Result = new TesBancosSaldosCierresDto()
             };
             try
             {
@@ -264,7 +264,7 @@ namespace PgxAPI.DataBaseTier
                     var query = @"select corte,saldo_final,saldo_minimo from TES_BANCOS_CIERRES 
                         where idX = (select max(idX) from TES_BANCOS_CIERRES where id_banco = @Banco)";
                     
-                    var cierre = connection.QueryFirstOrDefault<TES_BancosSaldos_CierresDTO>(query, new { Banco });
+                    var cierre = connection.QueryFirstOrDefault<TesBancosSaldosCierresDto>(query, new { Banco });
 
                     if (cierre != null)
                     {
@@ -298,13 +298,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDto<TES_BancosSaldos_CierresDTO> TES_BancosSaldos_Movimientos_Obtener(int CodEmpresa, TES_BancosSaldos_CierresDTO datos)
+        private ErrorDto<TesBancosSaldosCierresDto> TES_BancosSaldos_Movimientos_Obtener(int CodEmpresa, TesBancosSaldosCierresDto datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_BancosSaldos_CierresDTO>
+            var response = new ErrorDto<TesBancosSaldosCierresDto>
             {
                 Code = 0,
-                Result = new TES_BancosSaldos_CierresDTO()
+                Result = new TesBancosSaldosCierresDto()
             };
             try
             {
@@ -391,7 +391,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto TES_BancosSaldos_Cierres_Actualizar(int CodEmpresa, string Usuario, TES_BancosSaldos_CierresDTO datos)
+        public ErrorDto TES_BancosSaldos_Cierres_Actualizar(int CodEmpresa, string Usuario, TesBancosSaldosCierresDto datos)
         {
             var response = new ErrorDto
             {

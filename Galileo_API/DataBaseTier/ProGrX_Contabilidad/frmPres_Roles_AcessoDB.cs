@@ -38,7 +38,7 @@ namespace PgxAPI.DataBaseTier
                 {
 
                     query = "exec spPres_AC_Rol_List @contabilidad, @usuario";
-                    resp.Result.lista = connection.Query<RolesDTO>(query, new { contabilidad = contabilidad, usuario = usuario }).ToList();
+                    resp.Result.lista = connection.Query<RolesDto>(query, new { contabilidad = contabilidad, usuario = usuario }).ToList();
 
                     resp.Result.total = resp.Result.lista.Count;
                     //Busco Total
@@ -59,7 +59,7 @@ namespace PgxAPI.DataBaseTier
                     //query = $@"Select cod_rol,cod_contabilidad,descripcion, control,activo,registro_fecha,registro_usuario  
                     //            from PRES_AC_ROLES {filtro} order by cod_rol 
                     //            {paginaActual} {paginacionActual}";
-                    //resp.Result.lista = connection.Query<RolesDTO>(query).ToList();
+                    //resp.Result.lista = connection.Query<RolesDto>(query).ToList();
 
                 }
             }
@@ -80,7 +80,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Roles_Upsert(int CodCliente, string usuario, RolesDTO request)
+        public ErrorDto Roles_Upsert(int CodCliente, string usuario, RolesDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -143,17 +143,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtro"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<MiembrosRolDTO>> Rol_Miembros_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<MiembrosRolDto>> Rol_Miembros_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDto<List<MiembrosRolDTO>>();
+            var resp = new ErrorDto<List<MiembrosRolDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = @$"exec [spPres_AC_Miembros_Consulta] '{cod_contabilidad}','{rol}','{filtro}', '{usuario}'";
-                    resp.Result = connection.Query<MiembrosRolDTO>(query).ToList();
+                    resp.Result = connection.Query<MiembrosRolDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -175,7 +175,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Core_Miembros_Registro(int CodCliente, string cod_contabilidad, string rol, string usuario, MiembrosRolDTO request)
+        public ErrorDto Core_Miembros_Registro(int CodCliente, string cod_contabilidad, string rol, string usuario, MiembrosRolDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -213,16 +213,16 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtro"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<CuentaRolDTO>> Rol_Cuentas_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<CuentaRolDto>> Rol_Cuentas_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDto<List<CuentaRolDTO>>();
+            var resp = new ErrorDto<List<CuentaRolDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = @$"exec [spPres_AC_Cuentas_Consulta] '{cod_contabilidad}','{rol}' ,'','','', '{usuario}'";
-                    resp.Result = connection.Query<CuentaRolDTO>(query).ToList();
+                    resp.Result = connection.Query<CuentaRolDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -244,17 +244,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtro"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<CuentaRolDTO>> Rol_CuentasRegistrada_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<CuentaRolDto>> Rol_CuentasRegistrada_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDto<List<CuentaRolDTO>>();
+            var resp = new ErrorDto<List<CuentaRolDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = @$"exec [spPres_AC_Cuentas_Consulta_Asignadas] '{cod_contabilidad}','{rol}','', '{usuario}'";
-                    resp.Result = connection.Query<CuentaRolDTO>(query).ToList();
+                    resp.Result = connection.Query<CuentaRolDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -275,7 +275,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="rol"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Rol_Cuenta_Registra(int CodCliente, string cod_contabilidad, string rol, CuentaRolDTO request)
+        public ErrorDto Rol_Cuenta_Registra(int CodCliente, string cod_contabilidad, string rol, CuentaRolDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -308,7 +308,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="rol"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Rol_Cuenta_Elimina(int CodCliente, string cod_contabilidad, string rol, CuentaRolDTO request)
+        public ErrorDto Rol_Cuenta_Elimina(int CodCliente, string cod_contabilidad, string rol, CuentaRolDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -369,19 +369,19 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtro"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<UnidadesRolDTO>> Rol_Unidades_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<UnidadesRolDto>> Rol_Unidades_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
         {
 
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDto<List<UnidadesRolDTO>>();
+            var resp = new ErrorDto<List<UnidadesRolDto>>();
 
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = @$"exec [spPres_AC_Unidades_Consulta] '{cod_contabilidad}','{rol}' ,'', '{usuario}'";
-                    resp.Result = connection.Query<UnidadesRolDTO>(query).ToList();
+                    resp.Result = connection.Query<UnidadesRolDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -403,7 +403,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="boolasingado"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Rol_Unidad_Registro(int CodCliente, string cod_contabilidad, string rol, int boolasingado, UnidadesRolDTO request)
+        public ErrorDto Rol_Unidad_Registro(int CodCliente, string cod_contabilidad, string rol, int boolasingado, UnidadesRolDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();

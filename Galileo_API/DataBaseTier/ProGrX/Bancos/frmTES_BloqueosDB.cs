@@ -4,23 +4,24 @@ using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
 using Newtonsoft.Json;
 using PgxAPI.Models;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
     public class frmTES_BloqueosDB
     {
         private readonly IConfiguration? _config;
-        private readonly mTesoreria mTesoreria;
-        private mSecurityMainDb DBBitacora;
+        private readonly MTesoreria MTesoreria;
+        private MSecurityMainDb DBBitacora;
 
         public frmTES_BloqueosDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(config);
-            DBBitacora = new mSecurityMainDb(_config);
+            MTesoreria = new MTesoreria(config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -32,13 +33,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Contabilidad"></param>
         /// <param name="Solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<TES_Bloqueo_TransaccionDTO> TES_Bloqueos_Solicitud_Obtener(int CodEmpresa, int Contabilidad, int Solicitud)
+        public ErrorDto<TesBloqueoTransaccionDto> TES_Bloqueos_Solicitud_Obtener(int CodEmpresa, int Contabilidad, int Solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_Bloqueo_TransaccionDTO>
+            var response = new ErrorDto<TesBloqueoTransaccionDto>
             {
                 Code = 0,
-                Result = new TES_Bloqueo_TransaccionDTO()
+                Result = new TesBloqueoTransaccionDto()
             };
             try
             {
@@ -51,7 +52,7 @@ namespace PgxAPI.DataBaseTier
                     inner join CntX_unidades U on C.cod_unidad = U.cod_unidad and U.cod_contabilidad = @contabilidad
                     inner join tes_Tipos_doc T on C.Tipo = T.tipo 
                     where C.estado = 'P' and C.nsolicitud = @nsolicitud";
-                    response.Result = connection.Query<TES_Bloqueo_TransaccionDTO>(query,
+                    response.Result = connection.Query<TesBloqueoTransaccionDto>(query,
                         new { 
                             contabilidad = Contabilidad,
                             nsolicitud = Solicitud
@@ -81,7 +82,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> TES_Bloqueos_SolicitudesBloquedas_Obtener(int CodEmpresa, string filtros)
         {
-            TES_BloqueosFiltros filtro = JsonConvert.DeserializeObject<TES_BloqueosFiltros>(filtros) ?? new TES_BloqueosFiltros();
+            TesBloqueosFiltros filtro = JsonConvert.DeserializeObject<TesBloqueosFiltros>(filtros) ?? new TesBloqueosFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<TablasListaGenericaModel>
             {
@@ -136,7 +137,7 @@ namespace PgxAPI.DataBaseTier
                         paginacion = filtro.paginacion
                     };
                     response.Result.total = connection.QueryFirstOrDefault<int>(queryT, parametros);
-                    response.Result.lista = connection.Query<TES_Bloqueo_TransaccionDTO>(query, parametros).ToList();
+                    response.Result.lista = connection.Query<TesBloqueoTransaccionDto>(query, parametros).ToList();
                 }
             }
             catch (Exception ex)
@@ -179,9 +180,9 @@ namespace PgxAPI.DataBaseTier
 
                     string detalleBitacora = $"Bloqueo de Solicitud : {Solicitud} , por: {razon}";
 
-                    mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Solicitud, "05", detalleBitacora, Usuario.ToUpper());
+                    MTesoreria.sbTesBitacoraEspecial(CodEmpresa, Solicitud, "05", detalleBitacora, Usuario.ToUpper());
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -224,9 +225,9 @@ namespace PgxAPI.DataBaseTier
                         where nsolicitud = @nsolicitud";
                     connection.Execute(query, new { nsolicitud = Solicitud });
 
-                    mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Solicitud, "06", "", Usuario.ToUpper());
+                    MTesoreria.sbTesBitacoraEspecial(CodEmpresa, Solicitud, "06", "", Usuario.ToUpper());
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),

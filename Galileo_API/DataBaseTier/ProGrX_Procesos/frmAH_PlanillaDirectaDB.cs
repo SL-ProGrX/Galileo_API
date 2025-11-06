@@ -13,11 +13,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<InstitucionesConciliarDTO> obtener_InstitucionesConciliar(int CodEmpresa)
+        public List<InstitucionesConciliarDto> obtener_InstitucionesConciliar(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<InstitucionesConciliarDTO> info = new List<InstitucionesConciliarDTO>();
+            List<InstitucionesConciliarDto> info = new List<InstitucionesConciliarDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -33,7 +33,7 @@ namespace PgxAPI.DataBaseTier
                                 ORDER BY 
                                     COD_INSTITUCION;";
 
-                    info = connection.Query<InstitucionesConciliarDTO>(query).ToList();
+                    info = connection.Query<InstitucionesConciliarDto>(query).ToList();
 
                 }
             }

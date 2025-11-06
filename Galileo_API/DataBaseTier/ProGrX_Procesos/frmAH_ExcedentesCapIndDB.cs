@@ -1,6 +1,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.AH;
 using PgxAPI.Models.ERROR;
 
 namespace PgxAPI.DataBaseTier
@@ -15,11 +16,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public List<CapIndvDTO> CapInd_Obtener(int CodEmpresa)
+        public List<CapIndvDto> CapInd_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<CapIndvDTO> info = new List<CapIndvDTO>();
+            List<CapIndvDto> info = new List<CapIndvDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -27,7 +28,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "SELECT  exc_cap_ind, s.cedula, s.nombre, PORCENTAJE, VENCIMIENTO FROM EXC_CAP_INDIVIDUAL A INNER JOIN Socios S ON A.cedula = S.cedula";
 
-                    info = connection.Query<CapIndvDTO>(query).ToList();
+                    info = connection.Query<CapIndvDto>(query).ToList();
 
                 }
             }
@@ -40,7 +41,7 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDto CapIndv_Insertar(int CodCliente, CapIndvDTO capIndv)
+        public ErrorDto CapIndv_Insertar(int CodCliente, CapIndvDto capIndv)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -72,7 +73,7 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDto capIndv_Actualizar(int CodCliente, CapIndvDTO capIndv)
+        public ErrorDto capIndv_Actualizar(int CodCliente, CapIndvDto capIndv)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();

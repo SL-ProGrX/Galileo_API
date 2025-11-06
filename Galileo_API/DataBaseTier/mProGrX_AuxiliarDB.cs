@@ -7,7 +7,7 @@ using PgxAPI.Models;
 using PgxAPI.Models.CPR;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.INV;
-using ServicioDePruebaWCF;
+// using ServicioDePruebaWCF;
 using System.Data;
 using System.Globalization;
 using System.Text.Json;
@@ -22,7 +22,7 @@ namespace PgxAPI.DataBaseTier
     {
         private readonly IConfiguration _config;
 
-        private IService1 client = new Service1Client();
+        // private IService1 client = new Service1Client();
         public string dateFormat = "";
         private string controlAuth = "";
 
@@ -85,7 +85,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDto sbInvInventario(int CodEmpresa, CompraInventarioDTO req)
+        public ErrorDto sbInvInventario(int CodEmpresa, CompraInventarioDto req)
         {
             ErrorDto result = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -156,7 +156,7 @@ namespace PgxAPI.DataBaseTier
                             using var connection = new SqlConnection(stringConn);
                             {
                                 var query = $@"select estado from pv_productos where cod_producto = '{item.cod_producto}' ";
-                                List<ProductoDTO> exist = connection.Query<ProductoDTO>(query).ToList();
+                                List<ProductoDto> exist = connection.Query<ProductoDto>(query).ToList();
 
                                 if (exist.Count == 0)
                                 {
@@ -187,7 +187,7 @@ namespace PgxAPI.DataBaseTier
                                 using var connection = new SqlConnection(stringConn);
                                 {
                                     var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}' ";
-                                    List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                                    List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
 
                                     if (exist.Count == 0)
                                     {
@@ -241,7 +241,7 @@ namespace PgxAPI.DataBaseTier
                                 using var connection = new SqlConnection(stringConn);
                                 {
                                     var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}' ";
-                                    List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                                    List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
 
                                     if (exist.Count == 0)
                                     {
@@ -657,27 +657,27 @@ namespace PgxAPI.DataBaseTier
             return xmlOutput;
         }
 
-        /// <summary>
-        /// Prueba de conexión al servicio WCF
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="numVal"></param>
-        /// <returns></returns>
-        public string WCF_ApiTest(int CodEmpresa, int numVal)
-        {
-            ErrorDto info = new ErrorDto();
-            try
-            {
-                var response = client.GetDataAsync(numVal);
-                return response.Result;
-            }
-            catch (Exception ex)
-            {
-                info.Code = -1;
-                return ex.Message;
-            }
+        // /// <summary>
+        // /// Prueba de conexión al servicio WCF
+        // /// </summary>
+        // /// <param name="CodEmpresa"></param>
+        // /// <param name="numVal"></param>
+        // /// <returns></returns>
+        // public string WCF_ApiTest(int CodEmpresa, int numVal)
+        // {
+        //     ErrorDto info = new ErrorDto();
+        //     try
+        //     {
+        //         var response = client.GetDataAsync(numVal);
+        //         return response.Result;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         info.Code = -1;
+        //         return ex.Message;
+        //     }
 
-        }
+        // }
 
         /// <summary>
         /// Consulta la cantidad de activos sin asignar a un usuario
@@ -736,7 +736,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDto BitacoraProducto(BitacoraProductoInsertarDTO req)
+        public ErrorDto BitacoraProducto(BitacoraProductoInsertarDto req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
             ErrorDto resp = new ErrorDto();
@@ -779,7 +779,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDto BitacoraProveedor(BitacoraProveedorInsertarDTO req)
+        public ErrorDto BitacoraProveedor(BitacoraProveedorInsertarDto req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
             ErrorDto resp = new ErrorDto();
@@ -1207,7 +1207,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     //busco el registro en la tabla de control
                     var query = $@"SELECT * FROM FND_CONTROL_CAMBIOS_APROB WHERE ID_CAMBIO = {idCambio}";
-                    var dtCambio = connection.Query<FndControlCambioAprobDTO>(query).FirstOrDefault();
+                    var dtCambio = connection.Query<FndControlCambioAprobDto>(query).FirstOrDefault();
                     if (dtCambio == null)
                     {
                         result.Code = -1;

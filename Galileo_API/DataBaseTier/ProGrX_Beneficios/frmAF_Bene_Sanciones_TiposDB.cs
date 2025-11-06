@@ -21,11 +21,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AfTipoSancionesDTOLista> afBeneTipoSancionObtener(int CodCliente, string filtros)
+        public ErrorDto<AfTipoSancionesDtoLista> afBeneTipoSancionObtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<AfTipoSancionesDTOLista>();
-            response.Result = new AfTipoSancionesDTOLista();
+            var response = new ErrorDto<AfTipoSancionesDtoLista>();
+            response.Result = new AfTipoSancionesDtoLista();
 
             AfiTipoSancionfiltros filtro = JsonConvert.DeserializeObject<AfiTipoSancionfiltros>(filtros);
 
@@ -72,7 +72,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    response.Result.lista = connection.Query<AfTipoSancionesDTO>(query).ToList();
+                    response.Result.lista = connection.Query<AfTipoSancionesDto>(query).ToList();
 
                 }
             }
@@ -91,7 +91,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="tipo_sancion"></param>
         /// <returns></returns>
-        public ErrorDto AfBeneTipoSancion_Insertar(int CodCliente, AfTipoSancionesDTO tipo_sancion)
+        public ErrorDto AfBeneTipoSancion_Insertar(int CodCliente, AfTipoSancionesDto tipo_sancion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -149,7 +149,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="tipo_sancion"></param>
         /// <returns></returns>
-        public ErrorDto AfBeneTipoSancion_Actualizar(int CodCliente, AfTipoSancionesDTO tipo_sancion)
+        public ErrorDto AfBeneTipoSancion_Actualizar(int CodCliente, AfTipoSancionesDto tipo_sancion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();

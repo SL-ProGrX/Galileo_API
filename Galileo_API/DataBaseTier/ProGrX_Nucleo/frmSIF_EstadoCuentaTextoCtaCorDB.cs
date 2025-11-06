@@ -14,11 +14,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<Sif_EmpresaDTO> NotasEstados_Obtener(int CodEmpresa)
+        public ErrorDto<SifEmpresaDto> NotasEstados_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ErrorDto<Sif_EmpresaDTO> result = new ErrorDto<Sif_EmpresaDTO>();
+            ErrorDto<SifEmpresaDto> result = new ErrorDto<SifEmpresaDto>();
             result.Code = 0;
 
             try
@@ -27,7 +27,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT ID_EMPRESA, EC_Nota01, EC_Nota02 FROM sif_empresa";
 
-                    result.Result = connection.Query<Sif_EmpresaDTO>(query).FirstOrDefault();
+                    result.Result = connection.Query<SifEmpresaDto>(query).FirstOrDefault();
                     if (result.Result == null)
                     {
                         result.Code = -2;
@@ -46,7 +46,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto NotasEstados_Insertar(int CodCliente, Sif_EmpresaDTO notas)
+        public ErrorDto NotasEstados_Insertar(int CodCliente, SifEmpresaDto notas)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();

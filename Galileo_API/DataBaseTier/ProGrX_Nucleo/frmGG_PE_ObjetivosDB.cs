@@ -23,7 +23,7 @@ namespace PgxAPI.DataBaseTier
             response.Result = new PeObjetivosEstrategicosDatosLista
             {
                 total = 0,
-                data = new List<PeObjetivosEstrategicosDTO>()
+                data = new List<PeObjetivosEstrategicosDto>()
             };
 
             try
@@ -66,7 +66,7 @@ namespace PgxAPI.DataBaseTier
                                       ,O.[MODIFICA_USUARIO] from PE_OBJETIVOS O
                             left join PE_PERSPECTIVAS P ON P.PERSPECTIVA_ID = O.PERSPECTIVA_ID {where} order 
                             by O.objetivo_id desc {paginaActual} {paginacionActual}";
-                    response.Result.data = connection.Query<PeObjetivosEstrategicosDTO>(query).ToList();
+                    response.Result.data = connection.Query<PeObjetivosEstrategicosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -79,7 +79,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto ObjetivosEstrategicos_Guardar(int CodEmpresa, PeObjetivosEstrategicosDTO objetivo)
+        public ErrorDto ObjetivosEstrategicos_Guardar(int CodEmpresa, PeObjetivosEstrategicosDto objetivo)
         {
             ErrorDto error = new()
             {
@@ -106,7 +106,7 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        private ErrorDto ObjetivosEstrategicos_Insertar(int CodEmpresa, PeObjetivosEstrategicosDTO objetivo)
+        private ErrorDto ObjetivosEstrategicos_Insertar(int CodEmpresa, PeObjetivosEstrategicosDto objetivo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto error = new()
@@ -159,7 +159,7 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        private ErrorDto ObjetivosEstrategicos_Actualizar(int CodEmpresa, PeObjetivosEstrategicosDTO objetivo)
+        private ErrorDto ObjetivosEstrategicos_Actualizar(int CodEmpresa, PeObjetivosEstrategicosDto objetivo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto error = new()
@@ -244,11 +244,11 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDto<List<PeObjetivosEstrategicosDTO>> PePerspectivaLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<PeObjetivosEstrategicosDto>> PePerspectivaLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PeObjetivosEstrategicosDTO>>();
-            response.Result = new List<PeObjetivosEstrategicosDTO>();
+            var response = new ErrorDto<List<PeObjetivosEstrategicosDto>>();
+            response.Result = new List<PeObjetivosEstrategicosDto>();
 
             try
             {
@@ -256,7 +256,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT PERSPECTIVA_ID, DESCRIPCION AS nombre_pespectiva 
                                     FROM PE_PERSPECTIVAS WHERE ACTIVA = 1 ";
-                    response.Result = connection.Query<PeObjetivosEstrategicosDTO>(query).ToList();
+                    response.Result = connection.Query<PeObjetivosEstrategicosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -270,11 +270,11 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDto<List<PeObjetivosEstrategicosDTO>> PeObservacionesExportar_Obtener(int CodEmpresa)
+        public ErrorDto<List<PeObjetivosEstrategicosDto>> PeObservacionesExportar_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PeObjetivosEstrategicosDTO>>();
-            response.Result = new List<PeObjetivosEstrategicosDTO>();
+            var response = new ErrorDto<List<PeObjetivosEstrategicosDto>>();
+            response.Result = new List<PeObjetivosEstrategicosDto>();
 
             try
             {
@@ -295,7 +295,7 @@ namespace PgxAPI.DataBaseTier
                                       ,O.[MODIFICA_USUARIO] from PE_OBJETIVOS O
                             left join PE_PERSPECTIVAS P ON P.PERSPECTIVA_ID = O.PERSPECTIVA_IDorder 
                             by O.objetivo_id desc ";
-                    response.Result = connection.Query<PeObjetivosEstrategicosDTO>(query).ToList();
+                    response.Result = connection.Query<PeObjetivosEstrategicosDto>(query).ToList();
                 }
             }
             catch (Exception ex)

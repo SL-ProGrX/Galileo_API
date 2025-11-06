@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ResumenPatrimonioDTO obtener_ResumenPatrimonio(int CodEmpresa, string cedula)
+        public ResumenPatrimonioDto obtener_ResumenPatrimonio(int CodEmpresa, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ResumenPatrimonioDTO info = new ResumenPatrimonioDTO();
+            ResumenPatrimonioDto info = new ResumenPatrimonioDto();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -27,7 +27,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = $@"	SELECT * FROM vPAT_Consolidado WHERE cedula = '{cedula}'";
 
-                    info = connection.Query<ResumenPatrimonioDTO>(query).FirstOrDefault();
+                    info = connection.Query<ResumenPatrimonioDto>(query).FirstOrDefault();
 
                 }
             }
@@ -38,11 +38,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public List<PatrimonioPrincipalDTO> obtener_Patrimonio(int CodEmpresa, string cedula)
+        public List<PatrimonioPrincipalDto> obtener_Patrimonio(int CodEmpresa, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<PatrimonioPrincipalDTO> info = new List<PatrimonioPrincipalDTO>();
+            List<PatrimonioPrincipalDto> info = new List<PatrimonioPrincipalDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -63,7 +63,7 @@ namespace PgxAPI.DataBaseTier
                                             LEFT JOIN SIF_Conceptos C ON A.cod_Concepto = C.cod_Concepto  
                                         WHERE A.cedula = '{cedula}' ";
 
-                    info = connection.Query<PatrimonioPrincipalDTO>(query).ToList();
+                    info = connection.Query<PatrimonioPrincipalDto>(query).ToList();
 
                 }
             }
@@ -74,11 +74,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public List<HistoricoPatrimonioDTO> obtener_HistoricoPatrimonio(int CodEmpresa, string cedula)
+        public List<HistoricoPatrimonioDto> obtener_HistoricoPatrimonio(int CodEmpresa, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<HistoricoPatrimonioDTO> info = new List<HistoricoPatrimonioDTO>();
+            List<HistoricoPatrimonioDto> info = new List<HistoricoPatrimonioDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -91,7 +91,7 @@ namespace PgxAPI.DataBaseTier
                                         ON A.EstadoActual = E.cod_Estado
                                      WHERE cedula = '{cedula}' ORDER BY A.anio DESC, A.mes DESC;";
 
-                    info = connection.Query<HistoricoPatrimonioDTO>(query).ToList();
+                    info = connection.Query<HistoricoPatrimonioDto>(query).ToList();
 
 
                 }
@@ -103,11 +103,11 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public List<ExcedentePatrimonioDTO> obtener_ExcedentePatrimonio(int CodEmpresa, string cedula)
+        public List<ExcedentePatrimonioDto> obtener_ExcedentePatrimonio(int CodEmpresa, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<ExcedentePatrimonioDTO> info = new List<ExcedentePatrimonioDTO>();
+            List<ExcedentePatrimonioDto> info = new List<ExcedentePatrimonioDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -120,7 +120,7 @@ namespace PgxAPI.DataBaseTier
                                     INNER JOIN EXC_PERIODOS P ON E.ID_PERIODO = P.ID_PERIODO
                                      WHERE cedula = '{cedula}'";
 
-                    info = connection.Query<ExcedentePatrimonioDTO>(query).ToList();
+                    info = connection.Query<ExcedentePatrimonioDto>(query).ToList();
 
                 }
             }
@@ -132,11 +132,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public List<LiquidacionPatrimonioDTO> LiqudacionesPatrimonio_Obtener(int CodEmpresa, string cedula)
+        public List<LiquidacionPatrimonioDto> LiqudacionesPatrimonio_Obtener(int CodEmpresa, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<LiquidacionPatrimonioDTO> info = new List<LiquidacionPatrimonioDTO>();
+            List<LiquidacionPatrimonioDto> info = new List<LiquidacionPatrimonioDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -147,7 +147,7 @@ namespace PgxAPI.DataBaseTier
                             WHERE estado = 'P' AND cedula = '{cedula}'
                                   ORDER BY FecLiq DESC ";
 
-                    info = connection.Query<LiquidacionPatrimonioDTO>(query).ToList();
+                    info = connection.Query<LiquidacionPatrimonioDto>(query).ToList();
 
                 }
             }

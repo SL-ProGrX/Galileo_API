@@ -9,12 +9,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_CR_NoAumentoTasas_AutorizacionDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -23,13 +23,13 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="Filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_NAT_Autorizacion>> AF_NAT_Autorizacion_Obtener(int CodEmpresa, AF_NAT_Autorizacion_Filtros Filtro)
+        public ErrorDto<List<AfNatAutorizacion>> AF_NAT_Autorizacion_Obtener(int CodEmpresa, AfNatAutorizacionFiltros Filtro)
         {
-            var result = new ErrorDto<List<AF_NAT_Autorizacion>>()
+            var result = new ErrorDto<List<AfNatAutorizacion>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_NAT_Autorizacion>()
+                Result = new List<AfNatAutorizacion>()
             };
 
             try
@@ -49,7 +49,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     Autorizadas = Filtro.Autorizadas
                 };
 
-                result.Result = connection.Query<AF_NAT_Autorizacion>(
+                result.Result = connection.Query<AfNatAutorizacion>(
                     "spAFI_Renuncias_NAT_Control_Consulta",
                     parameters,
                     commandType: System.Data.CommandType.StoredProcedure

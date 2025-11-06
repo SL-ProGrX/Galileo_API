@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<List<FacturaPrecioDetalleDTO>> OrdenesDetalle_Obtener(int CodEmpresa, string CodFactura, int? CodProveedor)
+        public ErrorDto<List<FacturaPrecioDetalleDto>> OrdenesDetalle_Obtener(int CodEmpresa, string CodFactura, int? CodProveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<FacturaPrecioDetalleDTO>>();
+            var response = new ErrorDto<List<FacturaPrecioDetalleDto>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -27,7 +27,7 @@ namespace PgxAPI.DataBaseTier
                                           from cpr_Compras_detalle D inner join pv_productos P on D.cod_producto = P.cod_producto
                                           where D.cod_factura = '{CodFactura}' and D.cod_proveedor = {CodProveedor}
                                           order by D.Linea";
-                    response.Result = connection.Query<FacturaPrecioDetalleDTO>(query).ToList();
+                    response.Result = connection.Query<FacturaPrecioDetalleDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -39,7 +39,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto PreciosFactura_Actualiza(int CodEmpresa, FacturaPrecioDetalleDTO request)
+        public ErrorDto PreciosFactura_Actualiza(int CodEmpresa, FacturaPrecioDetalleDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -68,7 +68,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto CambiosPrecios_Actualizar(int CodEmpresa, PrecioExcelDTO precio)
+        public ErrorDto CambiosPrecios_Actualizar(int CodEmpresa, PrecioExcelDto precio)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 

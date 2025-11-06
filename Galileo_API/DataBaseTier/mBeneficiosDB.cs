@@ -148,7 +148,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDto BitacoraBeneficios(BitacoraBeneInsertarDTO req)
+        public ErrorDto BitacoraBeneficios(BitacoraBeneInsertarDto req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
             ErrorDto resp = new ErrorDto();
@@ -459,7 +459,7 @@ namespace PgxAPI.DataBaseTier
                     }
 
                     
-                    var validaciones = connection.Query<afiBeneCalidaciones>(query).ToList();
+                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
                     foreach (var validacion in validaciones)
                     {
@@ -553,7 +553,7 @@ namespace PgxAPI.DataBaseTier
                     }
 
 
-                    var validaciones = connection.Query<afiBeneCalidaciones>(query).ToList();
+                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
                     foreach (var validacion in validaciones)
                     {
@@ -713,7 +713,7 @@ namespace PgxAPI.DataBaseTier
 	                                SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab 
                                     WHERE ab.COD_BENEFICIO = '{beneficio.cod_beneficio.item}'
                                 ) AND c.ESTADO = 1 AND TIPO = 'G' AND REGISTRO = 1 order by abv.PRIORIDAD asc";
-                    var validaciones = connection.Query<afiBeneCalidaciones>(query).ToList();
+                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
                     foreach (var validacion in validaciones)
                     {
@@ -763,7 +763,7 @@ namespace PgxAPI.DataBaseTier
 	                                SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab 
                                     WHERE ab.COD_BENEFICIO = '{beneficio.cod_beneficio.item}'
                                 ) AND c.ESTADO = 1 AND TIPO = 'G' AND PAGO = 1 order by abv.PRIORIDAD asc";
-                    var validaciones = connection.Query<afiBeneCalidaciones>(query).ToList();
+                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
                     foreach (var validacion in validaciones)
                     {
@@ -816,7 +816,7 @@ namespace PgxAPI.DataBaseTier
 	                                    SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab 
                                         WHERE ab.COD_BENEFICIO = '{beneficio.cod_beneficio.item}'
                                     ) AND c.ESTADO = 1 AND REGISTRO = 1 AND TIPO != 'G' order by abv.PRIORIDAD asc";
-                    var validaciones = connection.Query<afiBeneCalidaciones>(query).ToList();
+                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
                     foreach (var validacion in validaciones)
                     {
@@ -895,7 +895,7 @@ namespace PgxAPI.DataBaseTier
 	                                    SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab 
                                         WHERE ab.COD_BENEFICIO = '{beneficio.cod_beneficio.item}'
                                     ) AND c.ESTADO = 1 AND PAGO = 1 AND TIPO != 'G' order by abv.PRIORIDAD asc";
-                    var validaciones = connection.Query<afiBeneCalidaciones>(query).ToList();
+                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
                     foreach (var validacion in validaciones)
                     {
@@ -974,7 +974,7 @@ namespace PgxAPI.DataBaseTier
 	                                    SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab 
                                         WHERE ab.COD_BENEFICIO = '{beneficio.cod_beneficio.item}'
                                     ) AND c.ESTADO = 1 AND PAGO = 1 AND TIPO != 'G' order by abv.PRIORIDAD asc";
-                    var validaciones = connection.Query<afiBeneCalidaciones>(query).ToList();
+                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
                     foreach (var validacion in validaciones)
                     {

@@ -9,12 +9,12 @@ namespace PgxAPI.DataBaseTier
     public class frmTES_AutorizacionDB
     {
         private readonly IConfiguration? _config;
-        private readonly mTesoreria mTesoreria;
+        private readonly MTesoreria MTesoreria;
 
         public frmTES_AutorizacionDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(config);
+            MTesoreria = new MTesoreria(config);
         }
 
         /// <summary>
@@ -23,14 +23,14 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<TES_SolicitudesLista> TES_SolicitudesPendientes_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<TesSolicitudesLista> TES_SolicitudesPendientes_Obtener(int CodEmpresa, string filtros)
         {
-            TES_AutorizacionFiltros filtro = JsonConvert.DeserializeObject<TES_AutorizacionFiltros>(filtros) ?? new TES_AutorizacionFiltros();
+            TesAutorizacionFiltros filtro = JsonConvert.DeserializeObject<TesAutorizacionFiltros>(filtros) ?? new TesAutorizacionFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_SolicitudesLista>
+            var response = new ErrorDto<TesSolicitudesLista>
             {
                 Code = 0,
-                Result = new TES_SolicitudesLista()
+                Result = new TesSolicitudesLista()
             };
             response.Result.total = 0;
             var fechaInicio = filtro.fecha_inicio.Date;
@@ -42,7 +42,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var queryR = @"select rango_gen_Inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte 
                     from TES_AUTORIZACIONES where NOMBRE = @usuario";
-                    var Rangos = connection.Query<TES_AutorizacionData>(queryR,
+                    var Rangos = connection.Query<TesAutorizacionData>(queryR,
                         new { usuario = filtro.usuario }).FirstOrDefault();
 
                     if (Rangos != null)
@@ -167,7 +167,7 @@ namespace PgxAPI.DataBaseTier
                     }
 
                     query += " order by T.nsolicitud asc, T.fecha_solicitud asc";
-                    response.Result.solicitudes = connection.Query<TES_SolicitudesData>(query,
+                    response.Result.solicitudes = connection.Query<TesSolicitudesData>(query,
                         new
                         {
                             Banco = filtro.id_banco,
@@ -204,7 +204,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="tipo_autorizacion"></param>
         /// <param name="solicitudesLista"></param>
         /// <returns></returns>
-        public ErrorDto TES_Autorizacion_Aplicar(TES_AutorizaParametros nsolicitud)
+        public ErrorDto TES_Autorizacion_Aplicar(TesAutorizaParametros nsolicitud)
         {
             List<int> lista = JsonConvert.DeserializeObject<List<int>>(nsolicitud.solicitudesLista) ?? new List<int>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(nsolicitud.codEmpresa);
@@ -220,7 +220,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var queryAuth = @"Select * From Tes_Autorizaciones Where Clave = @clave and nombre = @usuario and estado = 'A'";
-                    var autorizacion = connection.QueryFirstOrDefault<TES_AutorizacionData>(queryAuth, new
+                    var autorizacion = connection.QueryFirstOrDefault<TesAutorizacionData>(queryAuth, new
                     {
                         clave = nsolicitud.clave,
                         usuario = nsolicitud.usuario
@@ -238,7 +238,7 @@ namespace PgxAPI.DataBaseTier
                     foreach (var solicitud in lista)
                     {
 
-                        if (mTesoreria.fxTesParametro(nsolicitud.codEmpresa, "12") == "S")
+                        if (MTesoreria.fxTesParametro(nsolicitud.codEmpresa, "12") == "S")
                         {
                             //reviso si el código de id es igual al código del usuario
                             query = "SELECT USER_SOLICITA FROM TES_TRANSACCIONES WHERE NSOLICITUD = @nsolicitud";
@@ -309,13 +309,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<TES_AutorizacionData> TES_AutorizacionDoc_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<TesAutorizacionData> TES_AutorizacionDoc_Obtener(int CodEmpresa, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_AutorizacionData>
+            var response = new ErrorDto<TesAutorizacionData>
             {
                 Code = 0,
-                Result = new TES_AutorizacionData()
+                Result = new TesAutorizacionData()
             };
             try
             {
@@ -323,7 +323,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = @"select rango_gen_Inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte 
                     from TES_AUTORIZACIONES where NOMBRE = @usuario";
-                    response.Result = connection.Query<TES_AutorizacionData>(query,
+                    response.Result = connection.Query<TesAutorizacionData>(query,
                         new { usuario = usuario }).FirstOrDefault();
                 }
             }
@@ -343,13 +343,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-        public ErrorDto<TES_FirmasAutData> TES_AutorizacionFirma_Obtener(int CodEmpresa, string usuario, int banco)
+        public ErrorDto<TesFirmasAutData> TES_AutorizacionFirma_Obtener(int CodEmpresa, string usuario, int banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_FirmasAutData>
+            var response = new ErrorDto<TesFirmasAutData>
             {
                 Code = 0,
-                Result = new TES_FirmasAutData()
+                Result = new TesFirmasAutData()
             };
             try
             {
@@ -357,7 +357,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = @"select firmas_autoriza_inicio,firmas_autoriza_corte from TES_BANCO_FIRMASAUT 
                         where USUARIO = @usuario and ID_BANCO = @banco and aplica_rango_autorizacion = 1";
-                    response.Result = connection.Query<TES_FirmasAutData>(query, 
+                    response.Result = connection.Query<TesFirmasAutData>(query, 
                         new { usuario = usuario, banco = banco }).FirstOrDefault();
                 }
             }

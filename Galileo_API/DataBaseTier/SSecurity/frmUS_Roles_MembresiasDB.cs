@@ -1,8 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using PgxAPI.Models.US;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -17,9 +16,9 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public List<UsuariosConsultaDTO> UsuariosConsultar(string? usuario, bool adminView, bool dirGlobal, int codEmpresa)
+        public List<UsuariosConsultaDto> UsuariosConsultar(string? usuario, bool adminView, bool dirGlobal, int codEmpresa)
         {
-            List<UsuariosConsultaDTO> resp = new List<UsuariosConsultaDTO>();
+            List<UsuariosConsultaDto> resp = new List<UsuariosConsultaDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -39,7 +38,7 @@ namespace PgxAPI.DataBaseTier
                                 + " Where cod_Empresa = " + codEmpresa + ")";
                     }
 
-                    resp = connection.Query<UsuariosConsultaDTO>(strSQL).ToList();
+                    resp = connection.Query<UsuariosConsultaDto>(strSQL).ToList();
                 }
             }
             catch (Exception)
@@ -49,9 +48,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<UsuariosVinculadosConsultaDTO> UsuariosVinculadosConsultar(string? usuario, bool contabiliza, bool adminView, int codEmpresa)
+        public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar(string? usuario, bool contabiliza, bool adminView, int codEmpresa)
         {
-            List<UsuariosVinculadosConsultaDTO> resp = new List<UsuariosVinculadosConsultaDTO>();
+            List<UsuariosVinculadosConsultaDto> resp = new List<UsuariosVinculadosConsultaDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -67,7 +66,7 @@ namespace PgxAPI.DataBaseTier
                     strSQL = strSQL + " order by U.Nombre";
 
 
-                    resp = connection.Query<UsuariosVinculadosConsultaDTO>(strSQL).ToList();
+                    resp = connection.Query<UsuariosVinculadosConsultaDto>(strSQL).ToList();
                 }
             }
             catch (Exception)
@@ -109,9 +108,9 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public List<RolConsultaDTO> RolesConsultar(string usuario, string? filtro, int codEmpresa)
+        public List<RolConsultaDto> RolesConsultar(string usuario, string? filtro, int codEmpresa)
         {
-            List<RolConsultaDTO> resp = new List<RolConsultaDTO>();
+            List<RolConsultaDto> resp = new List<RolConsultaDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -145,7 +144,7 @@ namespace PgxAPI.DataBaseTier
                     };
 
                     // Execute the query
-                    resp = connection.Query<RolConsultaDTO>(strSQL, parameters).ToList();
+                    resp = connection.Query<RolConsultaDto>(strSQL, parameters).ToList();
                 }
             }
             catch (Exception)
@@ -155,9 +154,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<HorarioConsultaDTO> HorariosConsultar(string usuario, string? filtro, int codEmpresa)
+        public List<HorarioConsultaDto> HorariosConsultar(string usuario, string? filtro, int codEmpresa)
         {
-            List<HorarioConsultaDTO> resp = new List<HorarioConsultaDTO>();
+            List<HorarioConsultaDto> resp = new List<HorarioConsultaDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -191,7 +190,7 @@ namespace PgxAPI.DataBaseTier
                     };
 
                     // Execute the query
-                    resp = connection.Query<HorarioConsultaDTO>(strSQL, parameters).ToList();
+                    resp = connection.Query<HorarioConsultaDto>(strSQL, parameters).ToList();
                 }
             }
             catch (Exception)
@@ -201,9 +200,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<EstacionConsultaDTO> EstacionesConsultar(string usuario, string? filtro, int codEmpresa)
+        public List<EstacionConsultaDto> EstacionesConsultar(string usuario, string? filtro, int codEmpresa)
         {
-            List<EstacionConsultaDTO> resp = new List<EstacionConsultaDTO>();
+            List<EstacionConsultaDto> resp = new List<EstacionConsultaDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -237,7 +236,7 @@ namespace PgxAPI.DataBaseTier
                     };
 
                     // Execute the query
-                    resp = connection.Query<EstacionConsultaDTO>(strSQL, parameters).ToList();
+                    resp = connection.Query<EstacionConsultaDto>(strSQL, parameters).ToList();
                 }
             }
             catch (Exception)
@@ -278,7 +277,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto UsuarioRolAsigna(UsuarioRolAsignaDTO req)
+        public ErrorDto UsuarioRolAsigna(UsuarioRolAsignaDto req)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -297,7 +296,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Acceso_Equipo(EstacionAsignaDTO req)
+        public ErrorDto Acceso_Equipo(EstacionAsignaDto req)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -316,7 +315,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Limita_Equipo(Limita_Acceso req)
+        public ErrorDto Limita_Equipo(LimitaAcceso req)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -337,7 +336,7 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDto Acceso_Horario(HorarioAsignaDTO req)
+        public ErrorDto Acceso_Horario(HorarioAsignaDto req)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -356,7 +355,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Limita_Horario(Limita_Acceso req)
+        public ErrorDto Limita_Horario(LimitaAcceso req)
         {
             ErrorDto resp = new ErrorDto();
             try

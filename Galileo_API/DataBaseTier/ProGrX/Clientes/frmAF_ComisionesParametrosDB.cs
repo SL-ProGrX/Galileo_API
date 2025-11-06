@@ -4,6 +4,7 @@ using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 {
@@ -13,7 +14,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         private readonly mCntLinkDB _mCnt;
         private readonly mTESFuncionesDB _mFun;
         private readonly mAfilicacionDB _mAfi;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmAF_ComisionesParametrosDB(IConfiguration config)
         {
@@ -21,10 +22,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
             _mCnt = new mCntLinkDB(_config);
             _mFun = new mTESFuncionesDB(_config);
             _mAfi = new mAfilicacionDB(_config);
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -80,7 +81,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                       OFFSET {filtro.pagina} ROWS
                                       FETCH NEXT {filtro.paginacion} ROWS ONLY ";
 
-                        response.Result.lista = connection.Query<AF_Comisiones_ParametrosDTO>(query).ToList();
+                        response.Result.lista = connection.Query<AFComisionesParametrosDto>(query).ToList();
                     }
                 }
             }
@@ -101,7 +102,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public ErrorDto AF_ComisionesParametros_Guardar(int CodEmpresa, int Contabilidad, string Usuario, AF_Comisiones_ParametrosDTO param)
+        public ErrorDto AF_ComisionesParametros_Guardar(int CodEmpresa, int Contabilidad, string Usuario, AFComisionesParametrosDto param)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto()
@@ -128,7 +129,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         valor = param.valor
                     });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -155,7 +156,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Contabilidad"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        private string fxValida(int CodEmpresa, int Contabilidad, AF_Comisiones_ParametrosDTO param)
+        private string fxValida(int CodEmpresa, int Contabilidad, AFComisionesParametrosDto param)
         {
             string vMensaje = "";
             try

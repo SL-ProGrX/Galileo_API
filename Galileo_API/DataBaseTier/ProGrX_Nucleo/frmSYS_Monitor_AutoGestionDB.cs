@@ -4,20 +4,20 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using PgxAPI.Models.ProGrX_Nucleo;
-using static PgxAPI.Models.ProGrX_Nucleo.frmSYS_Monitor_AutoGestionModels;
+using PgxAPI.Models.Security;
+using static PgxAPI.Models.ProGrX_Nucleo.FrmSysMonitorAutoGestionModels;
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
     public class frmSYS_Monitor_AutoGestionDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _security_MainDB;
+        private readonly MSecurityMainDb _security_MainDB;
         private readonly int vModulo = 3;
 
         public frmSYS_Monitor_AutoGestionDB(IConfiguration config)
         {
             _config = config;
-            _security_MainDB = new mSecurityMainDb(_config);
+            _security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -591,7 +591,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 }
 
                 // Bitácora
-                _security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = dto.usuario ?? "",

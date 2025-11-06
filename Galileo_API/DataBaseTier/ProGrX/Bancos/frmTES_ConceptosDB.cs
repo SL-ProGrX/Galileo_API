@@ -4,7 +4,7 @@ using PgxAPI.Models;
 using Microsoft.Data.SqlClient;
 using Dapper;
 using PgxAPI.Models.CxP;
-using PgxAPI.BusinessLogic;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
@@ -13,13 +13,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         private readonly IConfiguration? _config;
         private readonly int vModulo = 9; // Modulo de Tesorería
         private readonly mCntLinkDB _mCnt;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmTES_ConceptosDB(IConfiguration? config)
         {
             _config = config;
             _mCnt = new mCntLinkDB(_config);
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -185,7 +185,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -246,7 +246,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -287,7 +287,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                       WHERE cod_concepto = @cod_concepto";
                     connection.Execute(query, new { cod_concepto = tipo });
                     _Security_MainDB.Bitacora(
-                        new BitacoraInsertarDTO
+                        new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,

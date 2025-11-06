@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Clientes
@@ -10,15 +11,15 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
     public class frmAF_PromotoresPrincipalDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _mSecurity;
+        private readonly MSecurityMainDb _mSecurity;
 
         public frmAF_PromotoresPrincipalDB(IConfiguration config)
         {
             _config = config;
-            _mSecurity = new mSecurityMainDb(_config);
+            _mSecurity = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -90,13 +91,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="ScrollCode"></param>
         /// <param name="Codigo"></param>
         /// <returns></returns>
-        public ErrorDto<AF_PromotoresPrincipalDTO> AF_Promotores_Scroll_Obtener(int CodEmpresa, int ScrollCode, int Codigo)
+        public ErrorDto<AfPromotoresPrincipalDto> AF_Promotores_Scroll_Obtener(int CodEmpresa, int ScrollCode, int Codigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_PromotoresPrincipalDTO>
+            var response = new ErrorDto<AfPromotoresPrincipalDto>
             {
                 Code = 0,
-                Result = new AF_PromotoresPrincipalDTO()
+                Result = new AfPromotoresPrincipalDto()
             };
             try
             {
@@ -131,13 +132,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Codigo"></param>
         /// <returns></returns>
-        public ErrorDto<AF_PromotoresPrincipalDTO> AF_Promotor_Obtener(int CodEmpresa, int Codigo)
+        public ErrorDto<AfPromotoresPrincipalDto> AF_Promotor_Obtener(int CodEmpresa, int Codigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_PromotoresPrincipalDTO>
+            var response = new ErrorDto<AfPromotoresPrincipalDto>
             {
                 Code = 0,
-                Result = new AF_PromotoresPrincipalDTO()
+                Result = new AfPromotoresPrincipalDto()
             };
             try
             {
@@ -146,7 +147,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     var query = @"select P.*,B.descripcion as Banco from promotores P 
                         inner join Tes_Bancos B on P.cod_banco = B.id_banco 
                         where P.id_promotor = @Codigo";
-                    response.Result = connection.Query<AF_PromotoresPrincipalDTO>(query,
+                    response.Result = connection.Query<AfPromotoresPrincipalDto>(query,
                         new { Codigo } ).FirstOrDefault();
                 }
             }
@@ -165,13 +166,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="CodComision"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_Promotores_CuentasDTO>> AF_Promotores_Cuentas_Obtener(int CodEmpresa, string CodComision)
+        public ErrorDto<List<AfPromotoresCuentasDto>> AF_Promotores_Cuentas_Obtener(int CodEmpresa, string CodComision)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AF_Promotores_CuentasDTO>>
+            var response = new ErrorDto<List<AfPromotoresCuentasDto>>
             {
                 Code = 0,
-                Result = new List<AF_Promotores_CuentasDTO>()
+                Result = new List<AfPromotoresCuentasDto>()
             };
             try
             {
@@ -182,7 +183,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         ,C.cod_Divisa,C.CUENTA_INTERNA, C.CUENTA_INTERBANCA, C.ACTIVA, C.DESTINO, C.REGISTRO_FECHA , C.REGISTRO_USUARIO 
                         from SYS_CUENTAS_BANCARIAS C inner join TES_BANCOS_GRUPOS B on C.cod_banco = B.cod_grupo
                         where C.Identificacion = @CodComision and C.Modulo = 'AFI'";
-                    response.Result = connection.Query<AF_Promotores_CuentasDTO>(query,
+                    response.Result = connection.Query<AfPromotoresCuentasDto>(query,
                         new { CodComision }).ToList();
                 }
             }
@@ -201,11 +202,11 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_Promotores_BancoDTO>> AF_Promotores_Bancos_Obtener(int CodEmpresa, string Usuario)
+        public ErrorDto<List<AfPromotoresBancoDto>> AF_Promotores_Bancos_Obtener(int CodEmpresa, string Usuario)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AF_Promotores_BancoDTO>>();
+            var response = new ErrorDto<List<AfPromotoresBancoDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -215,7 +216,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         usuario = Usuario,
                     };
 
-                    response.Result = connection.Query<AF_Promotores_BancoDTO>(
+                    response.Result = connection.Query<AfPromotoresBancoDto>(
                         "spCrd_SGT_Bancos", 
                         values, 
                         commandType: CommandType.StoredProcedure
@@ -238,16 +239,16 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Estado"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AF_PromotoresPrincipalLista> AF_Promotores_ListadoConsulta_Obtener(int CodEmpresa, string Tipo, int Estado, FiltrosLazyLoadData filtros)
+        public ErrorDto<AfPromotoresPrincipalLista> AF_Promotores_ListadoConsulta_Obtener(int CodEmpresa, string Tipo, int Estado, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_PromotoresPrincipalLista>
+            var response = new ErrorDto<AfPromotoresPrincipalLista>
             {
                 Code = 0,
-                Result = new AF_PromotoresPrincipalLista()
+                Result = new AfPromotoresPrincipalLista()
                 {
                     total = 0,
-                    lista = new List<AF_PromotoresPrincipalDTO>()
+                    lista = new List<AfPromotoresPrincipalDto>()
                 }
             };
             try
@@ -273,7 +274,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     {
                         query += $" OFFSET {filtros.pagina} ROWS FETCH NEXT {filtros.paginacion} ROWS ONLY ";
                     }
-                    response.Result.lista = connection.Query<AF_PromotoresPrincipalDTO>(query,
+                    response.Result.lista = connection.Query<AfPromotoresPrincipalDto>(query,
                         new { Tipo, Estado } ).ToList();
                 }
             }
@@ -293,7 +294,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_Promotores_Guardar(int CodEmpresa, string Usuario, AF_PromotoresPrincipalDTO Info)
+        public ErrorDto AF_Promotores_Guardar(int CodEmpresa, string Usuario, AfPromotoresPrincipalDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -351,7 +352,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             }
                         );
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -399,7 +400,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 
                         response.Code = ultimo;
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -442,7 +443,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     var query = "delete promotores where id_promotor = @Codigo";
                     connection.Execute(query, new { Codigo });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),

@@ -3,21 +3,22 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 {
     public class frmAF_TiposSociedadesDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _mSecurity;
+        private readonly MSecurityMainDb _mSecurity;
 
         public frmAF_TiposSociedadesDB(IConfiguration config)
         {
             _config = config;
-            _mSecurity = new mSecurityMainDb(_config);
+            _mSecurity = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -28,17 +29,17 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AF_TiposSociedadesLista> AF_TiposSociedades_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<AfTiposSociedadesLista> AF_TiposSociedades_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_TiposSociedadesLista>
+            var response = new ErrorDto<AfTiposSociedadesLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new AF_TiposSociedadesLista()
+                Result = new AfTiposSociedadesLista()
                 {
                     total = 0,
-                    lista = new List<AF_TiposSociedadesDTO>()
+                    lista = new List<AfTiposSociedadesDto>()
                 }
             };
 
@@ -65,7 +66,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                      order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
                                          OFFSET {filtros.pagina} ROWS 
                                          FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                    response.Result.lista = connection.Query<AF_TiposSociedadesDTO>(query).ToList();
+                    response.Result.lista = connection.Query<AfTiposSociedadesDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -87,7 +88,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_TiposSociedades_Guardar(int CodEmpresa, string Usuario, AF_TiposSociedadesDTO Info)
+        public ErrorDto AF_TiposSociedades_Guardar(int CodEmpresa, string Usuario, AfTiposSociedadesDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -122,7 +123,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             }
                         );
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -145,7 +146,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             }
                         );
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -188,7 +189,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     var query = "delete AFI_Sociedades_Tipos where Cod_Sociedad = @CodSociedad";
                     connection.Execute(query, new { CodSociedad });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),

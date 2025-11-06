@@ -1,6 +1,8 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -14,9 +16,9 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ActivacionCuentaDTO UsuarioEstado_Obtener(string user)
+        public ActivacionCuentaDto UsuarioEstado_Obtener(string user)
         {
-            ActivacionCuentaDTO data = new ActivacionCuentaDTO();
+            ActivacionCuentaDto data = new ActivacionCuentaDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -24,7 +26,7 @@ namespace PgxAPI.DataBaseTier
                     var query = "SELECT * FROM US_USUARIOS WHERE USUARIO = @user";
 
 
-                    data = connection.Query<ActivacionCuentaDTO>(query, new { user }).FirstOrDefault();
+                    data = connection.Query<ActivacionCuentaDto>(query, new { user }).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -35,9 +37,9 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorActivacionCuentaDTO UsuarioEstado_Actualizar(ActivacionCuentaDTO request)
+        public ErrorDto UsuarioEstado_Actualizar(ActivacionCuentaDto request)
         {
-            ErrorActivacionCuentaDTO resp = new ErrorActivacionCuentaDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 var procedure = "[spPGX_W_Usuario_Activacion]";

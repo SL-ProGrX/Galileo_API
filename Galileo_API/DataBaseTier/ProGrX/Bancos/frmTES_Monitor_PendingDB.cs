@@ -21,7 +21,7 @@ namespace PgxAPI.DataBaseTier.TES
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa</param>
         /// <returns>Lista de pendientes del monitor de tesorería</returns>
-        public ErrorDto<List<TES_MonitorPending>> TES_MonitorPending_Obtener(int CodEmpresa)
+        public ErrorDto<List<TesMonitorPending>> TES_MonitorPending_Obtener(int CodEmpresa)
         {
             if (_config == null)
             {
@@ -29,7 +29,7 @@ namespace PgxAPI.DataBaseTier.TES
             }
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TES_MonitorPending>>
+            var response = new ErrorDto<List<TesMonitorPending>>
             {
                 Code = 0
             };
@@ -38,7 +38,7 @@ namespace PgxAPI.DataBaseTier.TES
                 using var connection = new SqlConnection(stringConn);
                 {
                     string query = @"exec spTes_Monitor_Pending";
-                    response.Result = connection.Query<TES_MonitorPending>(query).ToList();
+                    response.Result = connection.Query<TesMonitorPending>(query).ToList();
                 }
             }
             catch (Exception ex)

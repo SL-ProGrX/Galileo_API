@@ -207,17 +207,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Cod_Beneficio"></param>
         /// <param name="Consec"></param>
         /// <returns></returns>
-        public ErrorDto<List<Afi_Bene_Integral_OrP>> AfiBeneficioPagosTabla_Obtener(int CodCliente, string Cedula, string Cod_Beneficio, int Consec)
+        public ErrorDto<List<AfiBeneIntegralOrP>> AfiBeneficioPagosTabla_Obtener(int CodCliente, string Cedula, string Cod_Beneficio, int Consec)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<Afi_Bene_Integral_OrP>>();
+            var response = new ErrorDto<List<AfiBeneIntegralOrP>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"Select * from afi_bene_pago 
                         where cedula = '{Cedula}' and cod_beneficio = '{Cod_Beneficio}' and consec = {Consec}";
-                    response.Result = connection.Query<Afi_Bene_Integral_OrP>(query).ToList();
+                    response.Result = connection.Query<AfiBeneIntegralOrP>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -288,7 +288,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        public ErrorDto AfiBeneficioIntegralOrdenPago_Agregar(int CodCliente, Afi_Bene_Integral_OrP beneficio)
+        public ErrorDto AfiBeneficioIntegralOrdenPago_Agregar(int CodCliente, AfiBeneIntegralOrP beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -391,7 +391,7 @@ namespace PgxAPI.DataBaseTier
                                 ORDER BY ID_PAGO DESC";
                         var idPago = connection.Query<int>(query).FirstOrDefault();
 
-                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                         {
                             EmpresaId = CodCliente,
                             cod_beneficio = beneficio.cod_beneficio,
@@ -422,7 +422,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        public ErrorDto AfiBeneficioIntegralOrdenPago_Actualizar(int CodCliente, Afi_Bene_Integral_OrP beneficio)
+        public ErrorDto AfiBeneficioIntegralOrdenPago_Actualizar(int CodCliente, AfiBeneIntegralOrP beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -501,7 +501,7 @@ namespace PgxAPI.DataBaseTier
                         {
                             //Inserto Bitacora
 
-                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 cod_beneficio = beneficio.cod_beneficio,
@@ -627,7 +627,7 @@ namespace PgxAPI.DataBaseTier
                                 ORDER BY PLAN_ID DESC";
                     var idPlan = connection.Query<int>(query).FirstOrDefault();
 
-                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                     {
                         EmpresaId = CodCliente,
                         cod_beneficio = beneficio.cod_beneficio,
@@ -690,7 +690,7 @@ namespace PgxAPI.DataBaseTier
                     connection.Execute(query);
 
 
-                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                     {
                         EmpresaId = CodCliente,
                         cod_beneficio = beneficio.cod_beneficio,

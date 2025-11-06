@@ -15,12 +15,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<FDLParametrosListaDTO> FslParametros_Obtener(int CodCliente, string filtros)
+        public ErrorDto<FdlParametrosListaDto> FslParametros_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<FDLParametrosListaDTO>();
+            var response = new ErrorDto<FdlParametrosListaDto>();
 
-            response.Result = new FDLParametrosListaDTO();
+            response.Result = new FdlParametrosListaDto();
 
             response.Result.Total = 0;
             try
@@ -29,7 +29,7 @@ namespace PgxAPI.DataBaseTier
                 var query = "";
                 string paginaActual = " ", paginacionActual = " ";
                 string vFiltro = "";
-                FDLParametrosFiltros filtro = JsonConvert.DeserializeObject<FDLParametrosFiltros>(filtros);
+                FdlParametrosFiltros filtro = JsonConvert.DeserializeObject<FdlParametrosFiltros>(filtros);
 
 
                 using var connection = new SqlConnection(clienteConnString);
@@ -59,7 +59,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual}; ";
 
 
-                    response.Result.Comites = connection.Query<FDLParametrosDTO>(query).ToList();
+                    response.Result.Comites = connection.Query<FdlParametrosDto>(query).ToList();
 
                 }
             }
@@ -73,7 +73,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto FslParametros_Actualizar(int CodCliente, FDLParametrosDTO parametro)
+        public ErrorDto FslParametros_Actualizar(int CodCliente, FdlParametrosDto parametro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();

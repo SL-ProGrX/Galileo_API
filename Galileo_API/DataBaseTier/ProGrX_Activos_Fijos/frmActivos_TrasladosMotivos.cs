@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Activos_Fijos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -11,12 +12,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmActivos_TrasladosMotivosDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
         /// <summary>
         /// Metodo para consultar la lista de motivos de traslados
@@ -206,7 +207,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                         usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -253,7 +254,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                         usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -293,7 +294,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     var query = $@"DELETE FROM ACTIVOS_TRASLADOS_MOTIVOS WHERE cod_motivo = @cod_motivo";
                     connection.Execute(query, new { cod_motivo });
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

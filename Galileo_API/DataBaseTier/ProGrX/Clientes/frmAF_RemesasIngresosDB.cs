@@ -21,14 +21,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
         /// 
-        public ErrorDto<List<AFI_RemesaIngDTO>> AFI_Remesas_Obtener(int CodEmpresa)
+        public ErrorDto<List<AdiRemesaIngDto>> AFI_Remesas_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AFI_RemesaIngDTO>>
+            var response = new ErrorDto<List<AdiRemesaIngDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AFI_RemesaIngDTO>()
+                Result = new List<AdiRemesaIngDto>()
             };
 
             try
@@ -53,7 +53,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             FROM AFI_REMESAS_ING
                             ORDER BY FECHA DESC";
 
-                    var result = connection.Query<AFI_RemesaIngDTO>(query).ToList();
+                    var result = connection.Query<AdiRemesaIngDto>(query).ToList();
                     response.Result = result;
                 }
             }
@@ -106,7 +106,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto AFI_Remesa_Registrar(int codEmpresa, AFI_RemesaIngRequestDTO request)
+        public ErrorDto AFI_Remesa_Registrar(int codEmpresa, AdiRemesaIngRequestDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             var response = new ErrorDto
@@ -224,13 +224,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="codRemesa"></param>
         /// <param name="oficina"></param>
         /// <returns></returns>
-        public ErrorDto<List<IngresosPendientesDTO>> AFI_IngresosPendientes_Obtener(int codEmpresa, string codRemesa, string oficina = "")
+        public ErrorDto<List<IngresosPendientesDto>> AFI_IngresosPendientes_Obtener(int codEmpresa, string codRemesa, string oficina = "")
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto<List<IngresosPendientesDTO>>
+            var response = new ErrorDto<List<IngresosPendientesDto>>
             {
                 Code = 0,
-                Result = new List<IngresosPendientesDTO>()
+                Result = new List<IngresosPendientesDto>()
             };
 
             try
@@ -277,7 +277,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     sqlIngresos = sqlIngresos.Replace("/**filtroOficina**/", "");
                 }
 
-                var lista = connection.Query<IngresosPendientesDTO>(sqlIngresos, new
+                var lista = connection.Query<IngresosPendientesDto>(sqlIngresos, new
                 {
                     FechaInicio = fechas.FechaInicio.Date,
                     FechaCorte = fechas.FechaCorte.Date.AddDays(1).AddSeconds(-1), // hasta las 23:59:59
@@ -408,13 +408,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="codEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<List<RemesaConsultaDTO>> AFI_RemesaPorCedula_Obtener(int codEmpresa, string cedula)
+        public ErrorDto<List<RemesaConsultaDto>> AFI_RemesaPorCedula_Obtener(int codEmpresa, string cedula)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto<List<RemesaConsultaDTO>>
+            var response = new ErrorDto<List<RemesaConsultaDto>>
             {
                 Code = 0,
-                Result = new List<RemesaConsultaDTO>()
+                Result = new List<RemesaConsultaDto>()
             };
 
             try
@@ -427,7 +427,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
             INNER JOIN AFI_INGRESOS X ON A.cod_remesa = X.cod_remesa
             WHERE X.cedula = @Cedula";
 
-                var lista = connection.Query<RemesaConsultaDTO>(sql, new { Cedula = cedula }).ToList();
+                var lista = connection.Query<RemesaConsultaDto>(sql, new { Cedula = cedula }).ToList();
 
                     response.Result = lista;
                     response.Description = "Consulta realizada correctamente";

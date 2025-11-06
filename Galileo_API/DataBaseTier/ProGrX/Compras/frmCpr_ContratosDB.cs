@@ -30,10 +30,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_contrato"></param>
         /// <returns></returns>
-        public ErrorDto<CprContratosDTO> CprContrato_Obtener(int CodEmpresa, string cod_contrato)
+        public ErrorDto<CprContratosDto> CprContrato_Obtener(int CodEmpresa, string cod_contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<CprContratosDTO>
+            var response = new ErrorDto<CprContratosDto>
             {
                 Code = 0
             };
@@ -43,7 +43,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select C.*, P.DESCRIPCION as PROVEEDOR from CPR_CONTRATOS C INNER JOIN CXP_PROVEEDORES P 
                     ON C.COD_PROVEEDOR = P.COD_PROVEEDOR WHERE C.COD_CONTRATO = '{cod_contrato}'";
-                    response.Result = connection.Query<CprContratosDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<CprContratosDto>(query).FirstOrDefault();
                 }
 
             }
@@ -97,7 +97,7 @@ namespace PgxAPI.DataBaseTier
                     response.Result.total = connection.Query<int>(query).First();
 
                     query = $"select C.*, P.DESCRIPCION as PROVEEDOR from CPR_CONTRATOS C INNER JOIN CXP_PROVEEDORES P ON C.COD_PROVEEDOR = P.COD_PROVEEDOR {where} order by cod_contrato desc {paginaActual} {paginacionActual}";
-                    response.Result.contratos = connection.Query<CprContratosDTO>(query).ToList();
+                    response.Result.contratos = connection.Query<CprContratosDto>(query).ToList();
 
                     foreach (var item in response.Result.contratos)
                     {
@@ -133,7 +133,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="contrato"></param>
         /// <returns></returns>
-        public ErrorDto CprContrato_Insertar(int CodEmpresa, CprContratosDTO contrato)
+        public ErrorDto CprContrato_Insertar(int CodEmpresa, CprContratosDto contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -238,7 +238,7 @@ namespace PgxAPI.DataBaseTier
                     connection.Query(query2);
 
                     BitacoraContratos( CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                     {
                         cod_contrato = contrato.cod_contrato,
                         movimiento = "Inserta",
@@ -265,7 +265,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="contrato"></param>
         /// <returns></returns>
-        public ErrorDto CprContrato_Actualizar(int CodEmpresa, CprContratosDTO contrato)
+        public ErrorDto CprContrato_Actualizar(int CodEmpresa, CprContratosDto contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -322,7 +322,7 @@ namespace PgxAPI.DataBaseTier
                     connection.Query(query);
 
                     BitacoraContratos( CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                     {
                         cod_contrato = contrato.cod_contrato,
                         movimiento = "Actualiza",
@@ -366,7 +366,7 @@ namespace PgxAPI.DataBaseTier
                     response.Code = connection.Execute(query);
 
                     BitacoraContratos( CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                     {
                         cod_contrato = cod_contrato,
                         movimiento = "Elimina",
@@ -391,10 +391,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_contrato"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprContratosAdendumsDTO>> CprContrato_Adendums_Obtener(int CodEmpresa, string cod_contrato)
+        public ErrorDto<List<CprContratosAdendumsDto>> CprContrato_Adendums_Obtener(int CodEmpresa, string cod_contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprContratosAdendumsDTO>>
+            var response = new ErrorDto<List<CprContratosAdendumsDto>>
             {
                 Code = 0
             };
@@ -403,7 +403,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select * from CPR_CONTRATOS_ADENDUMS WHERE COD_CONTRATO = '{cod_contrato}'";
-                    response.Result = connection.Query<CprContratosAdendumsDTO>(query).ToList();
+                    response.Result = connection.Query<CprContratosAdendumsDto>(query).ToList();
                 }
 
             }
@@ -424,7 +424,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="adendum"></param>
         /// <returns></returns>
-        public ErrorDto CprContrato_Adendum_Guardar(int CodEmpresa, CprContratosAdendumsDTO adendum)
+        public ErrorDto CprContrato_Adendum_Guardar(int CodEmpresa, CprContratosAdendumsDto adendum)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -447,7 +447,7 @@ namespace PgxAPI.DataBaseTier
                             COD_CONTRATO = '{adendum.cod_contrato}' and  COD_CONTRATO_MADRE = '{adendum.cod_contrato_madre}'";
 
                         BitacoraContratos(CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                         {
                             cod_contrato = adendum.cod_contrato,
                             movimiento = "Actualiza",
@@ -472,7 +472,7 @@ namespace PgxAPI.DataBaseTier
                         );";
 
                         BitacoraContratos(CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                         {
                             cod_contrato = adendum.cod_contrato,
                             movimiento = "Insertar",
@@ -522,7 +522,7 @@ namespace PgxAPI.DataBaseTier
                     response.Code = connection.Execute(query);
 
                     BitacoraContratos( CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                     {
                         cod_contrato = cod_contrato,
                         movimiento = "Elimina",
@@ -547,10 +547,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_contrato"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprContratosEstadosDTO>> CprContrato_Estados_Obtener(int CodEmpresa, string cod_contrato)
+        public ErrorDto<List<CprContratosEstadosDto>> CprContrato_Estados_Obtener(int CodEmpresa, string cod_contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprContratosEstadosDTO>>
+            var response = new ErrorDto<List<CprContratosEstadosDto>>
             {
                 Code = 0
             };
@@ -559,7 +559,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select * from CPR_CONTRATOS_ESTADOS WHERE COD_CONTRATO = '{cod_contrato}'";
-                    response.Result = connection.Query<CprContratosEstadosDTO>(query).ToList();
+                    response.Result = connection.Query<CprContratosEstadosDto>(query).ToList();
                 }
 
             }
@@ -579,7 +579,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="estado"></param>
         /// <returns></returns>
-        public ErrorDto CprContrato_Estados_Guardar(int CodEmpresa, CprContratosEstadosDTO estado)
+        public ErrorDto CprContrato_Estados_Guardar(int CodEmpresa, CprContratosEstadosDto estado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -605,7 +605,7 @@ namespace PgxAPI.DataBaseTier
                             COD_CONTRATO = '{estado.cod_contrato}' and ESTADO = '{estado.estado}'";
 
                         BitacoraContratos(CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                         {
                             cod_contrato = estado.cod_contrato,
                             movimiento = "Actualiza",
@@ -632,7 +632,7 @@ namespace PgxAPI.DataBaseTier
                         );";
 
                         BitacoraContratos(CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                         {
                             cod_contrato = estado.cod_contrato,
                             movimiento = "Inserta",
@@ -683,7 +683,7 @@ namespace PgxAPI.DataBaseTier
                     response.Code = connection.Execute(query);
 
                     BitacoraContratos(CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                     {
                         cod_contrato = cod_contrato,
                         movimiento = "Elimina",
@@ -709,10 +709,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_contrato"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprContratosProductosDTO>> CprContrato_Productos_Obtener(int CodEmpresa, string cod_contrato)
+        public ErrorDto<List<CprContratosProductosDto>> CprContrato_Productos_Obtener(int CodEmpresa, string cod_contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprContratosProductosDTO>>
+            var response = new ErrorDto<List<CprContratosProductosDto>>
             {
                 Code = 0
             };
@@ -723,7 +723,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"select C.*, P.DESCRIPCION
                         from CPR_CONTRATOS_PRODUCTOS C LEFT JOIN PV_PRODUCTOS P ON C.COD_PRODUCTO = P.COD_PRODUCTO 
                         WHERE C.COD_CONTRATO = '{cod_contrato}'";
-                    response.Result = connection.Query<CprContratosProductosDTO>(query).ToList();
+                    response.Result = connection.Query<CprContratosProductosDto>(query).ToList();
                 }
 
             }
@@ -743,7 +743,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="producto"></param>
         /// <returns></returns>
-        public ErrorDto CprContrato_Producto_Guardar(int CodEmpresa, CprContratosProductosDTO producto)
+        public ErrorDto CprContrato_Producto_Guardar(int CodEmpresa, CprContratosProductosDto producto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -780,7 +780,7 @@ namespace PgxAPI.DataBaseTier
                     connection.Query(query);
 
                     BitacoraContratos(CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                     {
                         cod_contrato = producto.cod_contrato,
                         movimiento = "Inserta",
@@ -829,7 +829,7 @@ namespace PgxAPI.DataBaseTier
                     response.Code = connection.Execute(query);
 
                     BitacoraContratos(CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                     {
                         cod_contrato = cod_contrato,
                         movimiento = "Elimina",
@@ -856,10 +856,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_contrato"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprContratosProrrogasDTO>> CprContrato_Prorroga_Obtener(int CodEmpresa, string cod_contrato)
+        public ErrorDto<List<CprContratosProrrogasDto>> CprContrato_Prorroga_Obtener(int CodEmpresa, string cod_contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprContratosProrrogasDTO>>
+            var response = new ErrorDto<List<CprContratosProrrogasDto>>
             {
                 Code = 0
             };
@@ -868,7 +868,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select * from CPR_CONTRATOS_PRORROGAS WHERE COD_CONTRATO = '{cod_contrato}'";
-                    response.Result = connection.Query<CprContratosProrrogasDTO>(query).ToList();
+                    response.Result = connection.Query<CprContratosProrrogasDto>(query).ToList();
                 }
 
             }
@@ -888,7 +888,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="prorroga"></param>
         /// <returns></returns>
-        public ErrorDto CprContrato_Prorroga_Guardar(int CodEmpresa, CprContratosProrrogasDTO prorroga)
+        public ErrorDto CprContrato_Prorroga_Guardar(int CodEmpresa, CprContratosProrrogasDto prorroga)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -923,7 +923,7 @@ namespace PgxAPI.DataBaseTier
                         int id_prorroga = connection.Query<int>(query).First();
 
                         BitacoraContratos(CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                         {
                             cod_contrato = prorroga.cod_contrato,
                             movimiento = "Inserta",
@@ -942,7 +942,7 @@ namespace PgxAPI.DataBaseTier
                         connection.Query(query);
 
                         BitacoraContratos(CodEmpresa,
-                        new CprContratosBitacoraDTO
+                        new CprContratosBitacoraDto
                         {
                             cod_contrato = prorroga.cod_contrato,
                             movimiento = "Actualiza",
@@ -989,7 +989,7 @@ namespace PgxAPI.DataBaseTier
                     response.Description = "Prorroga eliminada correctamente";
 
                     BitacoraContratos(CodEmpresa,
-                    new CprContratosBitacoraDTO
+                    new CprContratosBitacoraDto
                     {
                         cod_contrato = cod_contrato,
                         movimiento = "Elimina",
@@ -1013,10 +1013,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_contrato"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprContratosBitacoraDTO>> CprContrato_Bitacora_Obtener(int CodEmpresa, string cod_contrato)
+        public ErrorDto<List<CprContratosBitacoraDto>> CprContrato_Bitacora_Obtener(int CodEmpresa, string cod_contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprContratosBitacoraDTO>>
+            var response = new ErrorDto<List<CprContratosBitacoraDto>>
             {
                 Code = 0
             };
@@ -1025,7 +1025,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select * from CPR_CONTRATOS_BITACORA WHERE COD_CONTRATO = '{cod_contrato}'";
-                    response.Result = connection.Query<CprContratosBitacoraDTO>(query).ToList();
+                    response.Result = connection.Query<CprContratosBitacoraDto>(query).ToList();
                 }
 
             }
@@ -1045,7 +1045,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="req"></param>
         /// <returns></returns>
-        private ErrorDto BitacoraContratos(int CodEmpresa, CprContratosBitacoraDTO req)
+        private ErrorDto BitacoraContratos(int CodEmpresa, CprContratosBitacoraDto req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -1124,7 +1124,7 @@ namespace PgxAPI.DataBaseTier
             {
                 Code = 0
             };
-            var InfoContrato = new CprContratosDTO();
+            var InfoContrato = new CprContratosDto();
             EnvioCorreoModels eConfig = new();
             string emailConfeccionContrato = "";
             try
@@ -1140,7 +1140,7 @@ namespace PgxAPI.DataBaseTier
                         and CATALOGO_ID = C.TIPO_CONTRATO) AS TIPO_CONTRATO,
                         PORCENTAJE_GARANTIA, MONTO_GARANTIA, DIVISA_GARANTIA
                         from CPR_CONTRATOS C where COD_CONTRATO = '{cod_contrato}'";
-                    InfoContrato = connection.Query<CprContratosDTO>(query).First();
+                    InfoContrato = connection.Query<CprContratosDto>(query).First();
 
                     eConfig = _envioCorreoDB.CorreoConfig(CodEmpresa, codNotificaciones);
 
@@ -1266,7 +1266,7 @@ namespace PgxAPI.DataBaseTier
                 response.Description = "Notificación enviada correctamente";
 
                 BitacoraContratos(CodEmpresa,
-                new CprContratosBitacoraDTO
+                new CprContratosBitacoraDto
                 {
                     cod_contrato = cod_contrato,
                     movimiento = "Notifica",
@@ -1289,10 +1289,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cpr_id"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprContratosDTO>> CprContratosPorSolicitud_Obtener(int CodEmpresa, int cpr_id)
+        public ErrorDto<List<CprContratosDto>> CprContratosPorSolicitud_Obtener(int CodEmpresa, int cpr_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprContratosDTO>>
+            var response = new ErrorDto<List<CprContratosDto>>
             {
                 Code = 0
             };
@@ -1304,7 +1304,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"select C.*, P.DESCRIPCION as PROVEEDOR from CPR_CONTRATOS C 
                         INNER JOIN CXP_PROVEEDORES P ON C.COD_PROVEEDOR = P.COD_PROVEEDOR 
                         WHERE C.COD_PROVEEDOR IN (select PROVEEDOR_CODIGO from CPR_SOLICITUD_PROV where CPR_ID = {cpr_id})";
-                    response.Result = connection.Query<CprContratosDTO>(query).ToList();
+                    response.Result = connection.Query<CprContratosDto>(query).ToList();
 
                     foreach (var item in response.Result)
                     {

@@ -77,7 +77,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<List<CodigoCreditoDto>> CodigoCredito_ObtenerTodos(int codEmpresa, string cod_institucion)
         {
 
-            PgxClienteDTO pgxClienteDto;
+            PgxClienteDto pgxClienteDto;
             Seguridad_PortalDB seguridadPortal = new Seguridad_PortalDB(_config);
 
             pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(codEmpresa);
@@ -119,7 +119,7 @@ namespace PgxAPI.DataBaseTier
 
         public ErrorDto EnlaceCredito_Actualizar(EnlaceCreditoDto request)
         {
-            PgxClienteDTO pgxClienteDto;
+            PgxClienteDto pgxClienteDto;
             Seguridad_PortalDB seguridadPortal = new Seguridad_PortalDB(_config);
 
             pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(request.CodEmpresa);

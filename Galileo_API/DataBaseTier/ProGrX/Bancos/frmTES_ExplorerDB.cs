@@ -4,21 +4,22 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
     public class frmTES_ExplorerDB
     {
         private readonly IConfiguration? _config;
-        private mSecurityMainDb DBBitacora;
+        private MSecurityMainDb DBBitacora;
 
         public frmTES_ExplorerDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -28,20 +29,20 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<TES_DropDownListaBancosExplorer>> Tes_Bancos_Obtener(int CodEmpresa)
+        public ErrorDto<List<TesDropDownListaBancosExplorer>> Tes_Bancos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TES_DropDownListaBancosExplorer>>
+            var response = new ErrorDto<List<TesDropDownListaBancosExplorer>>
             {
                 Code = 0,
-                Result = new List<TES_DropDownListaBancosExplorer>()
+                Result = new List<TesDropDownListaBancosExplorer>()
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "SELECT id_banco, descripcion FROM Tes_Bancos WHERE estado = 'A'";
-                    response.Result = connection.Query<TES_DropDownListaBancosExplorer>(query).ToList();
+                    response.Result = connection.Query<TesDropDownListaBancosExplorer>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -63,7 +64,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<TablasListaGenericaModel> TES_explorer_Obtener(int CodEmpresa, string filtrosExplorer, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            TES_ExplorerFiltros filtro = JsonConvert.DeserializeObject<TES_ExplorerFiltros>(filtrosExplorer) ?? new TES_ExplorerFiltros();
+            TesExplorerFiltros filtro = JsonConvert.DeserializeObject<TesExplorerFiltros>(filtrosExplorer) ?? new TesExplorerFiltros();
             var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
@@ -162,7 +163,7 @@ namespace PgxAPI.DataBaseTier
                                 FETCH NEXT {filtros.paginacion} ROWS ONLY";
                     }
 
-                    response.Result.lista = connection.Query<TES_ListaExplorerDTO>(query, new
+                    response.Result.lista = connection.Query<TesListaExplorerDto>(query, new
                     {
                         Estado = filtro.estado,
                         Tipo = filtro.tipo_doc,

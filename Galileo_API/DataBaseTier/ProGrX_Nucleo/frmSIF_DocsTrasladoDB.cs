@@ -3,20 +3,21 @@ using Microsoft.Data.SqlClient;
 using Dapper;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using static PgxAPI.Models.ProGrX_Nucleo.frmSIF_DocsTrasladoModels;
+using static PgxAPI.Models.ProGrX_Nucleo.FrmSifDocsTrasladoModels;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
     public class frmSIF_DocsTrasladoDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _security_MainDB;
+        private readonly MSecurityMainDb _security_MainDB;
         private readonly int vModulo = 10;
 
         public frmSIF_DocsTrasladoDB(IConfiguration config)
         {
             _config = config;
-            _security_MainDB = new mSecurityMainDb(_config);
+            _security_MainDB = new MSecurityMainDb(_config);
         }
         /// <summary>
         /// Obtiene la lista de documentos del control de traslado (pendientes/bloqueados) con paginación y filtros.
@@ -323,7 +324,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 
                 cn.Execute(sp, p, commandType: CommandType.StoredProcedure, commandTimeout: 0);
 
-                _security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = dto.usuario ?? "",

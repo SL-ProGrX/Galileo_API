@@ -112,9 +112,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codPlan"></param>
         /// <param name="codContrato"></param>
         /// <returns></returns>
-        public ErrorDto<CajasDisponibleFondosDTO> Cajas_DisponibleFondos(int codEmpresa, string codCaja, int codApertura, string ticket, string codPlan, int codContrato)
+        public ErrorDto<CajasDisponibleFondosDto> Cajas_DisponibleFondos(int codEmpresa, string codCaja, int codApertura, string ticket, string codPlan, int codContrato)
         {
-            var response = new ErrorDto<CajasDisponibleFondosDTO>
+            var response = new ErrorDto<CajasDisponibleFondosDto>
             {
                 Code = 0,
                 Description = "Ok",
@@ -128,7 +128,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 string sql = "exec spCajas_DisponibleFondos @CodCaja, @CodApertura, @Ticket, @CodPlan, @CodContrato";
 
-                var result = connection.QueryFirstOrDefault<CajasDisponibleFondosDTO>(sql,
+                var result = connection.QueryFirstOrDefault<CajasDisponibleFondosDto>(sql,
                     new { CodCaja = codCaja, CodApertura = codApertura, Ticket = ticket, CodPlan = codPlan, CodContrato = codContrato });
 
                 response.Result = result;
@@ -150,13 +150,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="referencia"></param>
         /// <param name="referencia_texto"></param>
         /// <returns></returns>
-        public ErrorDto<List<Cajas_SaldoFavorDTO>> Cajas_SaldoFavor_Obtener(int codEmpresa, string clienteid, int referencia, string referencia_texto)
+        public ErrorDto<List<CajasSaldoFavorDto>> Cajas_SaldoFavor_Obtener(int codEmpresa, string clienteid, int referencia, string referencia_texto)
         {
-            var response = new ErrorDto<List<Cajas_SaldoFavorDTO>>
+            var response = new ErrorDto<List<CajasSaldoFavorDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<Cajas_SaldoFavorDTO>()
+                Result = new List<CajasSaldoFavorDto>()
             };
 
             try
@@ -166,7 +166,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 string sql = @"exec spCajas_SaldoFavor @clienteid, @referencia, @referenciatexto";
 
-                var result = connection.Query<Cajas_SaldoFavorDTO>(
+                var result = connection.Query<CajasSaldoFavorDto>(
                     sql,
                     new { clienteid, referencia, referenciatexto = referencia_texto }
                 );
@@ -188,13 +188,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="enlace"></param>
         /// <returns></returns>
-        public ErrorDto<Cajas_DivisaFuncionalDTO> Cajas_DivisaFuncional_Obtener(int codEmpresa, string enlace)
+        public ErrorDto<CajasDivisaFuncionalDto> Cajas_DivisaFuncional_Obtener(int codEmpresa, string enlace)
         {
-            var response = new ErrorDto<Cajas_DivisaFuncionalDTO>
+            var response = new ErrorDto<CajasDivisaFuncionalDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new Cajas_DivisaFuncionalDTO()
+                Result = new CajasDivisaFuncionalDto()
             };
 
             try
@@ -204,7 +204,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 string sql = @"select dbo.fxCajas_DivisaFuncional(@enlace) as Divisa";
 
-                var result = connection.QueryFirstOrDefault<Cajas_DivisaFuncionalDTO>(
+                var result = connection.QueryFirstOrDefault<CajasDivisaFuncionalDto>(
                     sql,
                     new { enlace }
                 );
@@ -227,13 +227,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="formaPago"></param>
         /// <returns></returns>
-        public ErrorDto<List<Cajas_DepositosCuentasCancariasautdDTO>> Cajas_DepositosCuentasBancariasAut_Obtener(int codEmpresa, string formaPago)
+        public ErrorDto<List<CajasDepositosCuentasBancariasDto>> Cajas_DepositosCuentasBancariasAut_Obtener(int codEmpresa, string formaPago)
         {
-            var response = new ErrorDto<List<Cajas_DepositosCuentasCancariasautdDTO>>
+            var response = new ErrorDto<List<CajasDepositosCuentasBancariasDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<Cajas_DepositosCuentasCancariasautdDTO>()
+                Result = new List<CajasDepositosCuentasBancariasDto>()
             };
 
             try
@@ -244,7 +244,7 @@ namespace PgxAPI.DataBaseTier
                 string sql = @"exec spCajas_DepositosCuentasBancariasAut @formaPago";
 
 
-                var result = connection.Query<Cajas_DepositosCuentasCancariasautdDTO>(
+                var result = connection.Query<CajasDepositosCuentasBancariasDto>(
                     sql,
                     new { formaPago }
                 );
@@ -275,13 +275,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codApertura"></param>
         /// <param name="linea"></param>
         /// <returns></returns>
-        public ErrorDto<List<Cajas_DesglocePagoDTO>> Cajas_DesglocePago_Obtener(int codEmpresa, string codCaja, string ticket, int codApertura, int linea)
+        public ErrorDto<List<CajasDesglocePagoDto>> Cajas_DesglocePago_Obtener(int codEmpresa, string codCaja, string ticket, int codApertura, int linea)
         {
-            var response = new ErrorDto<List<Cajas_DesglocePagoDTO>>
+            var response = new ErrorDto<List<CajasDesglocePagoDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<Cajas_DesglocePagoDTO>()
+                Result = new List<CajasDesglocePagoDto>()
             };
 
             try
@@ -302,7 +302,7 @@ namespace PgxAPI.DataBaseTier
               and C.Cod_Apertura = @CodApertura
               and C.Linea = @Linea";
 
-                var result = connection.Query<Cajas_DesglocePagoDTO>(
+                var result = connection.Query<CajasDesglocePagoDto>(
                     sql,
                     new { CodCaja = codCaja, Ticket = ticket, CodApertura = codApertura, Linea = linea }
                 );
@@ -324,7 +324,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDto Cajas_DesglocePago_Insert(int codEmpresa, CajasDesglocePagoDTO dto)
+        public ErrorDto Cajas_DesglocePago_Insert(int codEmpresa, CajasDesglocePagoDto dto)
         {
             var response = new ErrorDto
             {
@@ -376,7 +376,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDto Cajas_DesglocePago_Update(int codEmpresa, CajasDesglocePagoDTO dto)
+        public ErrorDto Cajas_DesglocePago_Update(int codEmpresa, CajasDesglocePagoDto dto)
         {
             var response = new ErrorDto
             {
@@ -670,13 +670,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="codCaja"></param>
         /// <returns></returns>
-        public ErrorDto<List<Cajas_FormaPagoDto>> Cajas_FormasPago_Obtener(int CodEmpresa, string codCaja)
+        public ErrorDto<List<CajasFormaPagoDto>> Cajas_FormasPago_Obtener(int CodEmpresa, string codCaja)
         {
-            var response = new ErrorDto<List<Cajas_FormaPagoDto>>
+            var response = new ErrorDto<List<CajasFormaPagoDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<Cajas_FormaPagoDto>()
+                Result = new List<CajasFormaPagoDto>()
             };
 
             try
@@ -690,7 +690,7 @@ namespace PgxAPI.DataBaseTier
                     where C.COD_CAJA = @codCaja
                     order by F.EFECTIVO desc, F.tipo asc, F.COD_FORMA_PAGO asc";
 
-                response.Result = connection.Query<Cajas_FormaPagoDto>(sql, new { codCaja }).ToList();
+                response.Result = connection.Query<CajasFormaPagoDto>(sql, new { codCaja }).ToList();
             }
             catch (Exception ex)
             {
@@ -709,13 +709,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="tiquete"></param>
         /// <param name="apertura"></param>
         /// <returns></returns>
-        public ErrorDto<List<Cajas_TiqueteDto>> Cajas_Tiquete_Obtener(int CodEmpresa, string codCaja, string tiquete, int apertura)
+        public ErrorDto<List<CajasTiqueteDto>> Cajas_Tiquete_Obtener(int CodEmpresa, string codCaja, string tiquete, int apertura)
          {
-            var response = new ErrorDto<List<Cajas_TiqueteDto>>
+            var response = new ErrorDto<List<CajasTiqueteDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<Cajas_TiqueteDto>()
+                Result = new List<CajasTiqueteDto>()
             };
 
             try
@@ -731,7 +731,7 @@ namespace PgxAPI.DataBaseTier
                     inner join CNTX_Divisas D on C.cod_Divisa = D.cod_Divisa and D.cod_Contabilidad = 2
                     where C.cod_caja = @codCaja and C.Ticket = @tiquete and C.Cod_Apertura = @apertura";
 
-                response.Result = connection.Query<Cajas_TiqueteDto>(sql, new { codCaja, tiquete, apertura, CodEmpresa }).ToList();
+                response.Result = connection.Query<CajasTiqueteDto>(sql, new { codCaja, tiquete, apertura, CodEmpresa }).ToList();
             }
             catch (Exception ex)
             {

@@ -10,12 +10,12 @@ namespace PgxAPI.DataBaseTier
     public class frmCajas_AccesosDB
     {
         private readonly IConfiguration _config;
-        private readonly mTesoreria _mtes;
+        private readonly MTesoreria _mtes;
 
         public frmCajas_AccesosDB(IConfiguration config)
         {
             _config = config;
-            _mtes = new mTesoreria(_config);
+            _mtes = new MTesoreria(_config);
         }
 
         /// <summary>
@@ -104,7 +104,7 @@ namespace PgxAPI.DataBaseTier
                 }
 
 
-                var result = connection.QueryFirstOrDefault<CajasAperturaDTO>("spCajas_AbreCaja",
+                var result = connection.QueryFirstOrDefault<CajasAperturaDto>("spCajas_AbreCaja",
                     new
                     {
                         Caja = codCaja,

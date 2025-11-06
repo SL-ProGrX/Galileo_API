@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Activos_Fijos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmActivos_ProveedoresDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -212,7 +213,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario ?? "",
@@ -262,7 +263,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario ?? "",
@@ -306,7 +307,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 if (rows == 0)
                     return new ErrorDto { Code = -2, Description = $"El proveedor {cod_proveedor.ToUpper()} no existe." };
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario ?? "",
@@ -354,7 +355,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 
                 int rows = cn.Execute(query, new { usr = usuario });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario ?? "",

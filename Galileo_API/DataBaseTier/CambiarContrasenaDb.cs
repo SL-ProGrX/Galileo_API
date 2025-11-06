@@ -15,9 +15,9 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ParametrosObtenerDTO ParametrosObtener()
+        public ParametrosObtenerDto ParametrosObtener()
         {
-            ParametrosObtenerDTO resp = new ParametrosObtenerDTO();
+            ParametrosObtenerDto resp = new ParametrosObtenerDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -32,7 +32,7 @@ namespace PgxAPI.DataBaseTier
                                            [TFA_IND], [TFA_METODO]
                                     FROM [PGX_Portal].[dbo].[US_PARAMETROS]";
 
-                    resp = connection.Query<ParametrosObtenerDTO>(strSQL).FirstOrDefault();
+                    resp = connection.Query<ParametrosObtenerDto>(strSQL).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -75,7 +75,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto CambiarClave(ClaveCambiarDTO cambioClave)
+        public ErrorDto CambiarClave(ClaveCambiarDto cambioClave)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -119,7 +119,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto CambiarClave3(ClaveCambiarDTO cambioClave)
+        public ErrorDto CambiarClave3(ClaveCambiarDto cambioClave)
         {
             ErrorDto resp = new ErrorDto();
             try

@@ -1,6 +1,5 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.AF;
 using PgxAPI.Models.ERROR;
@@ -26,10 +25,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="consec"></param>
         /// <returns></returns>
-        public ErrorDto<List<BENE_REG_REQUISITO>> Bene_Registro_Requisitos_Obtener(int CodCliente, int consec)
+        public ErrorDto<List<BeneRegRequisito>> Bene_Registro_Requisitos_Obtener(int CodCliente, int consec)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<BENE_REG_REQUISITO>>();
+            var response = new ErrorDto<List<BeneRegRequisito>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -41,7 +40,7 @@ namespace PgxAPI.DataBaseTier
                         Consec_Bene = consec,
                     };
 
-                    response.Result = connection.Query<BENE_REG_REQUISITO>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<BeneRegRequisito>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -81,7 +80,7 @@ namespace PgxAPI.DataBaseTier
 
                     resp.Code = connection.Execute(Query);
 
-                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                     {
                         EmpresaId = requisito.codCliente,
                         cod_beneficio = requisito.cod_beneficio,
@@ -125,7 +124,7 @@ namespace PgxAPI.DataBaseTier
 
                         resp.Code = connection.Execute(query);
 
-                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                         {
                             EmpresaId = CodCliente,
                             cod_beneficio = cod_beneficio,
@@ -160,7 +159,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto BeneRegistroRequisito_Asociar(
             string modulo, 
-            string TypeId, string requisito, DocumentosArchivoDTO data)
+            string TypeId, string requisito, DocumentosArchivoDto data)
         {
             ErrorDto resp = new();
             try

@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Fondos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Fondos
 {
@@ -10,13 +11,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 18; // Modulo de Fondo de Inversion
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly mProGrX_AuxiliarDB _AuxiliarDB;
 
         public frmFNDSubCuentasDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
             _AuxiliarDB = new mProGrX_AuxiliarDB(_config);
         }
 
@@ -29,14 +30,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="plan"></param>
         /// <param name="contrato"></param>
         /// <returns></returns>
-        public ErrorDto<List<FNDSubCuentasData>> FND_SubCuentas_Lista_Obtener(int CodEmpresa, int operadora, string plan, long contrato)
+        public ErrorDto<List<FndSubCuentasData>> FND_SubCuentas_Lista_Obtener(int CodEmpresa, int operadora, string plan, long contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<FNDSubCuentasData>>
+            var response = new ErrorDto<List<FndSubCuentasData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<FNDSubCuentasData>()
+                Result = new List<FndSubCuentasData>()
             };
             try
             {
@@ -48,7 +49,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                                       cod_Operadora = @operadora
                                       and cod_Plan = @plan 
                                       and cod_Contrato = @contrato";
-                    response.Result = connection.Query<FNDSubCuentasData>(query, new
+                    response.Result = connection.Query<FndSubCuentasData>(query, new
                     {
                         operadora = operadora,
                         plan = plan,
@@ -105,7 +106,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto FND_SubCuentas_Guardar(int CodEmpresa, string usuario, FNDSubCuentasData data)
+        public ErrorDto FND_SubCuentas_Guardar(int CodEmpresa, string usuario, FndSubCuentasData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -161,7 +162,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDto<bool> fxValida(int CodEmpresa, FNDSubCuentasData data)
+        private ErrorDto<bool> fxValida(int CodEmpresa, FndSubCuentasData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<bool>
@@ -243,7 +244,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDto FNDSubCuentas_Insertar(int CodEmpresa, string usuario, FNDSubCuentasData data)
+        private ErrorDto FNDSubCuentas_Insertar(int CodEmpresa, string usuario, FndSubCuentasData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -331,7 +332,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         estado = "A"
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -356,7 +357,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDto FNDSubCuentas_Actualizar(int CodEmpresa, string usuario, FNDSubCuentasData data)
+        private ErrorDto FNDSubCuentas_Actualizar(int CodEmpresa, string usuario, FndSubCuentasData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -400,7 +401,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         cuota = data.cuota
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -440,7 +441,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                 {
                     //Consulto la informacion de la sub cuenta
                     var query = $@"Select * from FND_SubCUENTAS where IDX = @consec";
-                    var existe = connection.QueryFirstOrDefault<FNDSubCuentasData>(query, new
+                    var existe = connection.QueryFirstOrDefault<FndSubCuentasData>(query, new
                     {
                         consec = consec
                     });
@@ -451,7 +452,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         consec = consec
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

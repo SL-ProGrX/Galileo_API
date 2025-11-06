@@ -1,9 +1,9 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Fondos;
+using PgxAPI.Models.Security;
 using System.Diagnostics.Contracts;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -13,13 +13,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 18; // Modulo de Fondo de Inversion
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly mProGrX_AuxiliarDB _AuxiliarDB;
 
         public frmFNDBeneficiarios_ContratosDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
             _AuxiliarDB = new mProGrX_AuxiliarDB(_config);
         }
 
@@ -32,14 +32,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="plan"></param>
         /// <param name="contrato"></param>
         /// <returns></returns>
-        public ErrorDto<List<FNDBeneficiarios_ContratosData>> FND_Beneficiarios_Contratos_Lista_Obtener(int CodEmpresa, string cedula, int operadora, string plan, long contrato)
+        public ErrorDto<List<FndBeneficiariosContratosData>> FND_Beneficiarios_Contratos_Lista_Obtener(int CodEmpresa, string cedula, int operadora, string plan, long contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<FNDBeneficiarios_ContratosData>>
+            var response = new ErrorDto<List<FndBeneficiariosContratosData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<FNDBeneficiarios_ContratosData>()
+                Result = new List<FndBeneficiariosContratosData>()
             };
             try
             {
@@ -51,7 +51,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                                          and cod_Operadora = @operadora
                                          and cod_Plan = @plan
                                          and cod_Contrato = @contrato";
-                    response.Result = connection.Query<FNDBeneficiarios_ContratosData>(query, new
+                    response.Result = connection.Query<FndBeneficiariosContratosData>(query, new
                     {
                         cedula = cedula,
                         operadora = operadora,
@@ -109,7 +109,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto FND_Beneficiarios_Contratos_Guardar(int CodEmpresa, string usuario, FNDBeneficiarios_ContratosData data)
+        public ErrorDto FND_Beneficiarios_Contratos_Guardar(int CodEmpresa, string usuario, FndBeneficiariosContratosData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -165,7 +165,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDto<bool> fxValida(int CodEmpresa, FNDBeneficiarios_ContratosData data)
+        private ErrorDto<bool> fxValida(int CodEmpresa, FndBeneficiariosContratosData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<bool>
@@ -275,7 +275,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDto FNDBeneficiarios_Contratos_Insertar(int CodEmpresa, string usuario, FNDBeneficiarios_ContratosData data)
+        private ErrorDto FNDBeneficiarios_Contratos_Insertar(int CodEmpresa, string usuario, FndBeneficiariosContratosData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -361,7 +361,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private ErrorDto FNDBeneficiarios_Contratos_Actualizar(int CodEmpresa, string usuario, FNDBeneficiarios_ContratosData data)
+        private ErrorDto FNDBeneficiarios_Contratos_Actualizar(int CodEmpresa, string usuario, FndBeneficiariosContratosData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -432,7 +432,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                 {
                     //Consulto la informacion del beneficiario
                     var query = $@"Select * from FND_CONTRATOS_BENEFICIARIOS where consec = @consec";
-                    var existe = connection.QueryFirstOrDefault<FNDBeneficiarios_ContratosData>(query, new
+                    var existe = connection.QueryFirstOrDefault<FndBeneficiariosContratosData>(query, new
                     {
                         consec = consec
                     });
@@ -443,7 +443,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         consec = consec
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

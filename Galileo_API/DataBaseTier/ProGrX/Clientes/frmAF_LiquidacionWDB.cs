@@ -3,8 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
-using static Org.BouncyCastle.Math.EC.ECCurve;
-using static PgxAPI.Models.ProGrX.Clientes.frmAF_LiquidacionWModels;
+using static PgxAPI.Models.ProGrX.Clientes.FrmAfLiquidacionWModels;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 {

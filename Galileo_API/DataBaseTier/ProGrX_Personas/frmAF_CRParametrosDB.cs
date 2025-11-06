@@ -3,19 +3,20 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Personas;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Personas
 {
     public class frmAF_CRParametrosDB
     {
         private readonly IConfiguration? _config;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly int vModulo = 1;
 
         public frmAF_CRParametrosDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -23,20 +24,20 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CRParametrosData>> AF_CRParametros_Obtener(int CodEmpresa)
+        public ErrorDto<List<AfCrParametrosData>> AF_CRParametros_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<AF_CRParametrosData>>()
+            var result = new ErrorDto<List<AfCrParametrosData>>()
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<AF_CRParametrosData>()
+                Result = new List<AfCrParametrosData>()
             };
             try
             {
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
                 using var connection = new SqlConnection(stringConn);
                 string query = "SELECT * FROM afi_cr_parametros";
-                result.Result = connection.Query<AF_CRParametrosData>(query).ToList();
+                result.Result = connection.Query<AfCrParametrosData>(query).ToList();
             }
             catch (Exception ex)
             {
@@ -54,7 +55,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDto AF_CRParametros_Guardar(int CodEmpresa, string usuario, AF_CRParametrosData parametros)
+        public ErrorDto AF_CRParametros_Guardar(int CodEmpresa, string usuario, AfCrParametrosData parametros)
         {
             var result = new ErrorDto()
             {
@@ -107,7 +108,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <summary>
         /// Inserta un nuevo registro de parámetros.
         /// </summary>
-        private ErrorDto AF_CRParametros_Insertar(int CodEmpresa, string usuario, AF_CRParametrosData parametros)
+        private ErrorDto AF_CRParametros_Insertar(int CodEmpresa, string usuario, AfCrParametrosData parametros)
         {
             var result = new ErrorDto()
             {
@@ -132,7 +133,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     activar_control = parametros.activar_control ? 1 : 0
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -152,7 +153,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <summary>
         /// Actualiza un registro de parámetros existente.
         /// </summary>
-        private ErrorDto AF_CRParametros_Actualizar(int CodEmpresa, string usuario, AF_CRParametrosData parametros)
+        private ErrorDto AF_CRParametros_Actualizar(int CodEmpresa, string usuario, AfCrParametrosData parametros)
         {
             var result = new ErrorDto()
             {
@@ -183,7 +184,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     activar_control = parametros.activar_control ? 1 : 0
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,

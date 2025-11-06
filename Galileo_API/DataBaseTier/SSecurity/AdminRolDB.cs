@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
+using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -141,9 +142,9 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorAdminRol AdminLocal_Insertar(AdminLocalInsert request)
+        public ErrorDto AdminLocal_Insertar(AdminLocalInsert request)
         {
-            ErrorAdminRol resp = new ErrorAdminRol();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -179,9 +180,9 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorAdminRol AdminClienteRoles_Insertar(AdminLocalRolesInsert request)
+        public ErrorDto AdminClienteRoles_Insertar(AdminLocalRolesInsert request)
         {
-            ErrorAdminRol resp = new ErrorAdminRol();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

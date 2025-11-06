@@ -1,31 +1,29 @@
 using Dapper;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
-using static System.Net.Mime.MediaTypeNames;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
     public class frmTES_BancosDB
     {
         private readonly IConfiguration? _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         mCntLinkDB mCntLink;
         private string dirRDLC = "";
 
         public frmTES_BancosDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
             mCntLink = new mCntLinkDB(_config);
             dirRDLC = _config.GetSection("AppSettings").GetSection("RutaRDLC").Value.ToString();
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -37,13 +35,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Contabilidad"></param>
         /// <param name="Banco"></param>
         /// <returns></returns>
-        public ErrorDto<TES_BancoDTO> TES_Banco_Obtener(int CodEmpresa, int Contabilidad, int Banco)
+        public ErrorDto<TesBancoDto> TES_Banco_Obtener(int CodEmpresa, int Contabilidad, int Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_BancoDTO>
+            var response = new ErrorDto<TesBancoDto>
             {
                 Code = 0,
-                Result = new TES_BancoDTO()
+                Result = new TesBancoDto()
             };
             try
             {
@@ -68,7 +66,7 @@ namespace PgxAPI.DataBaseTier
                      left join CntX_Centro_Costos Cct on B.CONCILIA_AR_CENTRO_COM = Cct.Cod_Centro_Costo AND Cct.COD_CONTABILIDAD =  @contabilidad
                      left join TES_CONCEPTOS Tc on B.CONCILIA_AR_CONCEPTO = Tc.COD_CONCEPTO
                      where B.id_Banco = @banco";
-                    response.Result = connection.Query<TES_BancoDTO>(query,
+                    response.Result = connection.Query<TesBancoDto>(query,
                         new
                         {
                             contabilidad = Contabilidad,
@@ -93,13 +91,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="scrollCode"></param>
         /// <param name="Banco"></param>
         /// <returns></returns>
-        public ErrorDto<TES_BancoDTO> TES_Bancos_Scroll_Obtener(int CodEmpresa, int Contabilidad, int scrollCode, int Banco)
+        public ErrorDto<TesBancoDto> TES_Bancos_Scroll_Obtener(int CodEmpresa, int Contabilidad, int scrollCode, int Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_BancoDTO>
+            var response = new ErrorDto<TesBancoDto>
             {
                 Code = 0,
-                Result = new TES_BancoDTO()
+                Result = new TesBancoDto()
             };
             try
             {
@@ -167,7 +165,7 @@ namespace PgxAPI.DataBaseTier
                             OFFSET {filtros.pagina} ROWS
                             FETCH NEXT {filtros.paginacion} ROWS ONLY ";
 
-                        response.Result.lista = connection.Query<TES_BancoDTO>(query).ToList();
+                        response.Result.lista = connection.Query<TesBancoDto>(query).ToList();
                     }
                 }
             }
@@ -379,20 +377,20 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Banco"></param>
         /// <returns></returns>
-        public ErrorDto<List<TES_Bancos_Cierres>> TES_Bancos_Cierres_Obtener(int CodEmpresa, int Banco)
+        public ErrorDto<List<TesBancosCierres>> TES_Bancos_Cierres_Obtener(int CodEmpresa, int Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TES_Bancos_Cierres>>
+            var response = new ErrorDto<List<TesBancosCierres>>
             {
                 Code = 0,
-                Result = new List<TES_Bancos_Cierres>()
+                Result = new List<TesBancosCierres>()
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "select Top 30 * from TES_BANCOS_CIERRES where id_banco = @banco order by corte desc";
-                    response.Result = connection.Query<TES_Bancos_Cierres>(query,
+                    response.Result = connection.Query<TesBancosCierres>(query,
                         new
                         {
                             banco = Banco
@@ -418,7 +416,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public ErrorDto TES_Bancos_Guardar(int CodEmpresa, bool vEdita, string Usuario, TES_BancoDTO param)
+        public ErrorDto TES_Bancos_Guardar(int CodEmpresa, bool vEdita, string Usuario, TesBancoDto param)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -506,7 +504,7 @@ namespace PgxAPI.DataBaseTier
                                 int_requiere_cuenta_destino = (param.int_requiere_cuenta_destino == true) ? 1 : 0
                             });
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -572,7 +570,7 @@ namespace PgxAPI.DataBaseTier
                         var queryId = "select isnull(max(id_Banco),0) as ultimo from Tes_Bancos";
                         int idBanco = connection.QueryFirst<int>(queryId);
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -617,7 +615,7 @@ namespace PgxAPI.DataBaseTier
                     var query = "delete Tes_Bancos where id_banco = @banco";
                     connection.Execute(query, new { banco = Banco });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -675,7 +673,7 @@ namespace PgxAPI.DataBaseTier
                             banco = Banco
                         });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -703,7 +701,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto TES_Bancos_SaldoFecha_Actualizar(int CodEmpresa, string Parametros)
         {
-            Parametros_SaldoFecha param = JsonConvert.DeserializeObject<Parametros_SaldoFecha>(Parametros) ?? new Parametros_SaldoFecha();
+            ParametrosSaldoFecha param = JsonConvert.DeserializeObject<ParametrosSaldoFecha>(Parametros) ?? new ParametrosSaldoFecha();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
             {
@@ -724,7 +722,7 @@ namespace PgxAPI.DataBaseTier
                             banco = param.id_banco
                         });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = param.usuario.ToUpper(),
@@ -752,7 +750,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto TES_Bancos_Conciliacion_Actualizar(int CodEmpresa, string Parametros)
         {
-            Parametros_Conciliacion param = JsonConvert.DeserializeObject<Parametros_Conciliacion>(Parametros) ?? new Parametros_Conciliacion();
+            ParametrosConciliacion param = JsonConvert.DeserializeObject<ParametrosConciliacion>(Parametros) ?? new ParametrosConciliacion();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
             {
@@ -782,7 +780,7 @@ namespace PgxAPI.DataBaseTier
                             concepto = param.concepto,
                             banco = param.id_banco
                         });
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = param.usuario.ToUpper(),
@@ -803,14 +801,14 @@ namespace PgxAPI.DataBaseTier
         }
     
     
-        public ErrorDto<List<TES_Bancos_GruposAsgDTO>> TES_BancosGrupos_Lista(int CodEmpresa, int id_banco)
+        public ErrorDto<List<TesBancosGruposAsgDto>> TES_BancosGrupos_Lista(int CodEmpresa, int id_banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TES_Bancos_GruposAsgDTO>>
+            var response = new ErrorDto<List<TesBancosGruposAsgDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<TES_Bancos_GruposAsgDTO>()
+                Result = new List<TesBancosGruposAsgDto>()
 
             };
             try
@@ -822,7 +820,7 @@ namespace PgxAPI.DataBaseTier
                                  left join TES_BANCOS_GRUPOS_ASG B ON B.COD_GRUPO = G.COD_GRUPO AND B.ID_BANCO = @banco
                                  WHERE G.ACTIVO = 1
                                     order by B.ID_BANCO DESC";
-                    response.Result = connection.Query<TES_Bancos_GruposAsgDTO>(query, new { banco = id_banco }).ToList();
+                    response.Result = connection.Query<TesBancosGruposAsgDto>(query, new { banco = id_banco }).ToList();
                 }
             }
             catch (Exception ex)
@@ -834,7 +832,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
    
-        public ErrorDto TES_BancosGrupos_Asignar(int CodEmpresa, int id_banco, bool asigna,TES_Bancos_GruposAsgDTO grupo )
+        public ErrorDto TES_BancosGrupos_Asignar(int CodEmpresa, int id_banco, bool asigna,TesBancosGruposAsgDto grupo )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -932,10 +930,10 @@ namespace PgxAPI.DataBaseTier
         }
 
         // Resuelve qué archivo devolver (SIN exponerlo al cliente)
-        public ErrorDto<ArchivoDTO> ResolverDocumento(int codEmpresa, int codBanco, string documento)
+        public ErrorDto<ArchivoDto> ResolverDocumento(int codEmpresa, int codBanco, string documento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var error = new ErrorDto<ArchivoDTO> { Code = 0, Description = "Ok" };
+            var error = new ErrorDto<ArchivoDto> { Code = 0, Description = "Ok" };
 
             // 1) Validar columna para evitar inyección
             var columna = documento switch
@@ -985,7 +983,7 @@ namespace PgxAPI.DataBaseTier
                 fileName = fileName[(fileName.IndexOf('_') + 1)..];
 
             var bytes = System.IO.File.ReadAllBytes(ruta);
-            error.Result = new ArchivoDTO
+            error.Result = new ArchivoDto
             {
                 FileName = fileName,
                 ContentType = "application/octet-stream",

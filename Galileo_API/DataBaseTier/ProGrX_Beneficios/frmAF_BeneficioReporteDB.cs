@@ -19,17 +19,17 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDto<List<afiBeneficiosData>> BeneficioLista_Obtener(int CodCliente)
+        public ErrorDto<List<AfiBeneficiosData>> BeneficioLista_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<afiBeneficiosData>>();
+            var response = new ErrorDto<List<AfiBeneficiosData>>();
 
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"select rtrim(cod_Beneficio) as item, rtrim(descripcion) as descripcion from afi_beneficios ";
-                    response.Result = connection.Query<afiBeneficiosData>(query).ToList();
+                    response.Result = connection.Query<AfiBeneficiosData>(query).ToList();
                 }
             }
             catch (Exception ex)

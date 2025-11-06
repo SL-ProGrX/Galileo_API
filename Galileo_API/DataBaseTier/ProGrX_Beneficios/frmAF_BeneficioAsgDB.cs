@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.AF;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Collections.Generic;
 using System.Data;
 
@@ -11,8 +12,8 @@ namespace PgxAPI.DataBaseTier
     public class frmAF_BeneficioAsgDB
     {
         private readonly IConfiguration _config;
-        private fxMontoModel datosBase = new fxMontoModel();
-        mSecurityMainDb DBBitacora;
+        private FxMontoModel datosBase = new FxMontoModel();
+        MSecurityMainDb DBBitacora;
         mProGrx_Main mProGrx_Main;
 
         private bool bAplicaParcial = false;
@@ -20,16 +21,16 @@ namespace PgxAPI.DataBaseTier
         public frmAF_BeneficioAsgDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
             mProGrx_Main = new mProGrx_Main(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
 
-        public ErrorDto SbSIFRegistraTags(SIFRegistraTagsRequestDTO data)
+        public ErrorDto SbSIFRegistraTags(SifRegistraTagsRequestDto data)
         {
             return mProGrx_Main.SbSIFRegistraTags(data);
         }
@@ -88,10 +89,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_beneficio"></param>
         /// <returns></returns>
-        public ErrorDto<List<Afi_BeneficiosDTO>> BeneficioDetalle_Obtener(int CodCliente, string cod_beneficio)
+        public ErrorDto<List<AfiBeneficiosDto>> BeneficioDetalle_Obtener(int CodCliente, string cod_beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<Afi_BeneficiosDTO>>();
+            var response = new ErrorDto<List<AfiBeneficiosDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -99,7 +100,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"select rtrim(cod_Beneficio) as  cod_Beneficio, rtrim(descripcion) as descripcion,tipo,monto 
                                        ,modifica_diferencia,aplica_beneficiarios,aplica_parcial 
                                         from afi_beneficios where cod_beneficio  = '{cod_beneficio}'";
-                    response.Result = connection.Query<Afi_BeneficiosDTO>(query).ToList();
+                    response.Result = connection.Query<AfiBeneficiosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -251,11 +252,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public fxMontosResult fxMonto(int CodCliente, fxMontoModel datos)
+        public FxMontosResult fxMonto(int CodCliente, FxMontoModel datos)
         {
             datosBase = datos;
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            fxMontosResult info = new()
+            FxMontosResult info = new()
             {
                 Code = 0
             };
@@ -482,10 +483,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<SIFOficinasUsuarioResultDTO>> CargaOficinas(int CodCliente, string usuario)
+        public ErrorDto<List<SifOficinasUsuarioResultDto>> CargaOficinas(int CodCliente, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<SIFOficinasUsuarioResultDTO>>();
+            var response = new ErrorDto<List<SifOficinasUsuarioResultDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -497,7 +498,7 @@ namespace PgxAPI.DataBaseTier
                         Usuario = usuario,
                     };
 
-                    response.Result = connection.Query<SIFOficinasUsuarioResultDTO>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<SifOficinasUsuarioResultDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -740,7 +741,7 @@ namespace PgxAPI.DataBaseTier
                  }
                  else
                  {
-                     AfiBeneficiosDTO afiBeneficios = AfiBeneficioDTO_Obtener(CodCliente, datos.cod_beneficio).Result;
+                     AfiBeneficiosDto afiBeneficios = AfiBeneficioDto_Obtener(CodCliente, datos.cod_beneficio).Result;
                      bAplicaParcial = afiBeneficios.aplica_parcial == 1 ? true : false;
 
                      if (afiBeneficios.aplica_beneficiarios == 1)
@@ -814,16 +815,16 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="Cod_Beneficio"></param>
         /// <returns></returns>
-        public ErrorDto<AfiBeneficiosDTO> AfiBeneficioDTO_Obtener(int CodCliente, string Cod_Beneficio)
+        public ErrorDto<AfiBeneficiosDto> AfiBeneficioDto_Obtener(int CodCliente, string Cod_Beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<AfiBeneficiosDTO>();
+            var response = new ErrorDto<AfiBeneficiosDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"select * from afi_beneficios where Cod_Beneficio = '{Cod_Beneficio}'";
-                    response.Result = connection.Query<AfiBeneficiosDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<AfiBeneficiosDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -846,7 +847,7 @@ namespace PgxAPI.DataBaseTier
         private ErrorDto Guardar_Beneficio(int CodCliente, AfiBeneficioAsgInsertar datos, string modificaMonto, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDto<List<SIFOficinasUsuarioResultDTO>> empresa = CargaOficinas(CodCliente, usuario);
+            ErrorDto<List<SifOficinasUsuarioResultDto>> empresa = CargaOficinas(CodCliente, usuario);
 
             ErrorDto info = new()
             {
@@ -893,7 +894,7 @@ namespace PgxAPI.DataBaseTier
                         if (resp > 0)
                         {
 
-                            Bitacora(new BitacoraInsertarDTO
+                            Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 Usuario = usuario.ToUpper(),
@@ -927,7 +928,7 @@ namespace PgxAPI.DataBaseTier
 
                             resp = connection.Execute(query);
 
-                            SbSIFRegistraTags(new SIFRegistraTagsRequestDTO
+                            SbSIFRegistraTags(new SifRegistraTagsRequestDto
                             {
                                 Codigo = vBeneConsec.ToString(),
                                 Tag = "S.BEN.01",
@@ -965,7 +966,7 @@ namespace PgxAPI.DataBaseTier
                         int resp = connection.Execute(query);
                         if (resp > 0)
                         {
-                            Bitacora(new BitacoraInsertarDTO
+                            Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 Usuario = usuario.ToUpper(),
@@ -1056,7 +1057,7 @@ namespace PgxAPI.DataBaseTier
                         if (resp > 0)
                         {
 
-                            Bitacora(new BitacoraInsertarDTO
+                            Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 Usuario = usuario.ToUpper(),
@@ -1101,7 +1102,7 @@ namespace PgxAPI.DataBaseTier
                         int resp = connection.Execute(query);
                         if (resp > 0)
                         {
-                            Bitacora(new BitacoraInsertarDTO
+                            Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 Usuario = usuario.ToUpper(),

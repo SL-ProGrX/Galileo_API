@@ -3,8 +3,6 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
-using System.Runtime.CompilerServices;
-using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
@@ -24,21 +22,21 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="autoReg"></param> 
         /// <returns></returns>
-        public ErrorDto<TesAuto_RegistroDTO> Tes_AutoRegistro_Consultar(int CodEmpresa, int autoReg)
+        public ErrorDto<TesAutoRegistroDto> Tes_AutoRegistro_Consultar(int CodEmpresa, int autoReg)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TesAuto_RegistroDTO>
+            var response = new ErrorDto<TesAutoRegistroDto>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
-                Result = new TesAuto_RegistroDTO()
+                Result = new TesAutoRegistroDto()
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select * from vTES_AUTO_REGISTRO where ID_Auto = {autoReg} ";
-                    response.Result = connection.QueryFirstOrDefault<TesAuto_RegistroDTO>(query);
+                    response.Result = connection.QueryFirstOrDefault<TesAutoRegistroDto>(query);
                 }
             }
             catch (Exception ex)
@@ -57,7 +55,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="registro"></param>
         /// <returns></returns>
-        public ErrorDto Tes_AutoRegistro_Guardar(int CodEmpresa, TesAuto_RegistroDTO registro)
+        public ErrorDto Tes_AutoRegistro_Guardar(int CodEmpresa, TesAutoRegistroDto registro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -131,7 +129,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="autoReg"></param>
         /// <returns></returns>
-        public ErrorDto Tes_AutoRegistro_Eliminar(int CodEmpresa, TesAuto_RegistroDTO registro)
+        public ErrorDto Tes_AutoRegistro_Eliminar(int CodEmpresa, TesAutoRegistroDto registro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -515,17 +513,17 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<TesAuto_RegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TesAutoRegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<TesAuto_RegistroLista>()
+            var result = new ErrorDto<TesAutoRegistroLista>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new TesAuto_RegistroLista()
+                Result = new TesAutoRegistroLista()
                 {
                     total = 0,
-                    lista = new List<TesAuto_RegistroDTO>()
+                    lista = new List<TesAutoRegistroDto>()
                 }
             };
             try
@@ -557,7 +555,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                        ORDER BY id_auto
                                         {paginaActual}
                                         {paginacionActual} ";
-                    result.Result.lista = connection.Query<TesAuto_RegistroDTO>(query).ToList();
+                    result.Result.lista = connection.Query<TesAutoRegistroDto>(query).ToList();
                 }
 
             }
@@ -577,14 +575,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="autoReg"></param>
         /// <returns></returns>
-        public ErrorDto<TesAuto_RegistroDTO> Tes_AutoRegistro_scroll(int CodEmpresa, int autoReg, int? scroll)
+        public ErrorDto<TesAutoRegistroDto> Tes_AutoRegistro_scroll(int CodEmpresa, int autoReg, int? scroll)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TesAuto_RegistroDTO>
+            var response = new ErrorDto<TesAutoRegistroDto>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
-                Result = new TesAuto_RegistroDTO()
+                Result = new TesAutoRegistroDto()
             };
             try
             {
@@ -612,7 +610,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     }
 
                         var query = $@"select top 1 * from vTES_AUTO_REGISTRO {where} ";
-                    response.Result = connection.QueryFirstOrDefault<TesAuto_RegistroDTO>(query);
+                    response.Result = connection.QueryFirstOrDefault<TesAutoRegistroDto>(query);
                 }
             }
             catch (Exception ex)

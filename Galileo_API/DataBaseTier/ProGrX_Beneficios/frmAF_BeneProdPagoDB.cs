@@ -235,7 +235,7 @@ namespace PgxAPI.DataBaseTier
                                     AND COD_PRODUCTO = '{item.Cod_Producto}'";
                             connection.Execute(query);
 
-                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 cod_beneficio = item.cod_beneficio,

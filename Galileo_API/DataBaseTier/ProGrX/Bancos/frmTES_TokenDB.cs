@@ -12,12 +12,12 @@ namespace PgxAPI.DataBaseTier.TES
     public class frmTES_TokenDB
     {
         private readonly IConfiguration? _config;
-        private mTesoreria _mtes;
+        private MTesoreria _mtes;
 
         public frmTES_TokenDB(IConfiguration? config)
         {
             _config = config;
-            _mtes = new mTesoreria(_config);
+            _mtes = new MTesoreria(_config);
         }
 
         /// <summary>
@@ -25,7 +25,7 @@ namespace PgxAPI.DataBaseTier.TES
         /// </summary>
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <returns>Lista de tokens.</returns>
-        public ErrorDto<List<TES_TokenDTO>> TES_Token_Top_Obtener(int CodEmpresa)
+        public ErrorDto<List<TesTokenDto>> TES_Token_Top_Obtener(int CodEmpresa)
         {
             if (_config == null)
             {
@@ -33,7 +33,7 @@ namespace PgxAPI.DataBaseTier.TES
             }
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TES_TokenDTO>>
+            var response = new ErrorDto<List<TesTokenDto>>
             {
                 Code = 0
             };
@@ -54,7 +54,7 @@ namespace PgxAPI.DataBaseTier.TES
                                     GROUP BY Tok.ID_TOKEN, Tok.ESTADO, Tok.REGISTRO_FECHA, Tok.REGISTRO_USUARIO
                                     ORDER BY Tok.REGISTRO_FECHA DESC";
 
-                    response.Result = connection.Query<TES_TokenDTO>(query).ToList();
+                    response.Result = connection.Query<TesTokenDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -118,14 +118,14 @@ namespace PgxAPI.DataBaseTier.TES
 
         }
     
-        public ErrorDto<List<TES_TokenSolicitudesData>> TES_Token_Pen_Obtener(int CodEmpresa)
+        public ErrorDto<List<TesTokenSolicitudesData>> TES_Token_Pen_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TES_TokenSolicitudesData>>
+            var response = new ErrorDto<List<TesTokenSolicitudesData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<TES_TokenSolicitudesData>()
+                Result = new List<TesTokenSolicitudesData>()
             };
             try
             {
@@ -134,7 +134,7 @@ namespace PgxAPI.DataBaseTier.TES
                     // Verificar si el token está activo
                     var procedure = $@"[spPres_TokenPendientes_Obtener]";
 
-                    response.Result = connection.Query<TES_TokenSolicitudesData>(procedure, commandType: System.Data.CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<TesTokenSolicitudesData>(procedure, commandType: System.Data.CommandType.StoredProcedure).ToList();
 
                 }
             }

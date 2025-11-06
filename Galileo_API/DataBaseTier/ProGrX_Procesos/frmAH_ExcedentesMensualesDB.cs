@@ -1,6 +1,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.AH;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Procesos
 {
@@ -13,11 +14,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Procesos
             _config = config;
         }
 
-        public List<excParametrosDTO> obtener_ParametrosExcedentes(int CodEmpresa)
+        public List<ExcParametrosDto> obtener_ParametrosExcedentes(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<excParametrosDTO> info = new List<excParametrosDTO>();
+            List<ExcParametrosDto> info = new List<ExcParametrosDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -25,7 +26,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Procesos
 
                     var query = "select * from EXC_PARAMETROS order by cod_parametro asc";
 
-                    info = connection.Query<excParametrosDTO>(query).ToList();
+                    info = connection.Query<ExcParametrosDto>(query).ToList();
 
                 }
             }
@@ -37,11 +38,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Procesos
         }
 
 
-        public List<excPeriodosDTO> obtener_PeriodosExcedentes(int CodEmpresa)
+        public List<ExcPeriodosDto> obtener_PeriodosExcedentes(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<excPeriodosDTO> info = new List<excPeriodosDTO>();
+            List<ExcPeriodosDto> info = new List<ExcPeriodosDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -49,7 +50,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Procesos
 
                     var query = "SELECT * FROM vExc_Periodos order by IDX desc";
 
-                    info = connection.Query<excPeriodosDTO>(query).ToList();
+                    info = connection.Query<ExcPeriodosDto>(query).ToList();
 
                 }
             }
@@ -60,11 +61,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Procesos
             return info;
         }
 
-        public List<excPeriodosCorte> obtener_PeriodosCorte(int CodEmpresa)
+        public List<ExcPeriodosCorte> obtener_PeriodosCorte(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<excPeriodosCorte> info = new List<excPeriodosCorte>();
+            List<ExcPeriodosCorte> info = new List<ExcPeriodosCorte>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -72,7 +73,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Procesos
 
                     var query = "select CORTE_DATETIME_STR as 'IdX', CORTE_DATE_STR as 'ItmX'  from vExc_Periodos_Cortes order by idx desc";
 
-                    info = connection.Query<excPeriodosCorte>(query).ToList();
+                    info = connection.Query<ExcPeriodosCorte>(query).ToList();
 
                 }
             }
@@ -84,11 +85,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Procesos
         }
 
 
-        public List<excPeriodosCorte> aplicar_PeriodoExcedente(int CodEmpresa)
+        public List<ExcPeriodosCorte> aplicar_PeriodoExcedente(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<excPeriodosCorte> info = new List<excPeriodosCorte>();
+            List<ExcPeriodosCorte> info = new List<ExcPeriodosCorte>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -96,7 +97,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Procesos
 
                     var query = "select CORTE_DATETIME_STR as 'IdX', CORTE_DATE_STR as 'ItmX'  from vExc_Periodos_Cortes order by idx desc";
 
-                    info = connection.Query<excPeriodosCorte>(query).ToList();
+                    info = connection.Query<ExcPeriodosCorte>(query).ToList();
 
                 }
             }
@@ -108,11 +109,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Procesos
         }
 
 
-        public List<ResumenExcedenteMDTO> obtener_ResumenMensual(int CodEmpresa, string CodPeriodo)
+        public List<ResumenExcedenteMDto> obtener_ResumenMensual(int CodEmpresa, string CodPeriodo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<ResumenExcedenteMDTO> info = new List<ResumenExcedenteMDTO>();
+            List<ResumenExcedenteMDto> info = new List<ResumenExcedenteMDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -124,7 +125,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Procesos
                                         WHERE id_periodo = '{CodPeriodo}'
                                                            ORDER BY corte DESC;";
 
-                    info = connection.Query<ResumenExcedenteMDTO>(query).ToList();
+                    info = connection.Query<ResumenExcedenteMDto>(query).ToList();
 
                 }
             }

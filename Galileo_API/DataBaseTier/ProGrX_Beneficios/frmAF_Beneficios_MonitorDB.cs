@@ -21,14 +21,14 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="filtroString"></param>
         /// <returns></returns>
-        public ErrorDto<vBeneficios_IntegralDTOLista> BeneficiosMonitor_Obtener(int CodCliente, string filtroString)
+        public ErrorDto<VBeneficiosIntegralDtoLista> BeneficiosMonitor_Obtener(int CodCliente, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            BeneficiosMonitor_Filtros filtros = JsonConvert.DeserializeObject<BeneficiosMonitor_Filtros>(filtroString) ?? new BeneficiosMonitor_Filtros();
+            BeneficiosMonitorFiltros filtros = JsonConvert.DeserializeObject<BeneficiosMonitorFiltros>(filtroString) ?? new BeneficiosMonitorFiltros();
 
-            var response = new ErrorDto<vBeneficios_IntegralDTOLista>();
-            response.Result = new vBeneficios_IntegralDTOLista();
+            var response = new ErrorDto<VBeneficiosIntegralDtoLista>();
+            response.Result = new VBeneficiosIntegralDtoLista();
 
             string paginaActual = " ", paginacionActual = " ";
             try
@@ -157,14 +157,14 @@ namespace PgxAPI.DataBaseTier
                                    , Empresa_Desc, Departamento_Desc, Oficina_Desc
                                    from vBeneficios_Integral {where}  Order by Registra_fecha desc, Beneficio_Desc, Consec desc
                                     {paginaActual} {paginacionActual}";
-                    response.Result.Beneficios = connection.Query<vBeneficios_IntegralDTO>(query).ToList();
+                    response.Result.Beneficios = connection.Query<VBeneficiosIntegralDto>(query).ToList();
                 }
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = new vBeneficios_IntegralDTOLista();
+                response.Result = new VBeneficiosIntegralDtoLista();
             }
 
             return response;

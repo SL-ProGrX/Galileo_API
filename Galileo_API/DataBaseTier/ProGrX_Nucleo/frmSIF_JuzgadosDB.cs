@@ -15,7 +15,7 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto Juzgado_Insertar(int CodCliente, JuzgadosDTO juzgado)
+        public ErrorDto Juzgado_Insertar(int CodCliente, JuzgadosDto juzgado)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -130,11 +130,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public JuzgadosDTO Juzgado_Obtener(int CodEmpresa, int Cod_Proveedor)
+        public JuzgadosDto Juzgado_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            JuzgadosDTO info = new JuzgadosDTO();
+            JuzgadosDto info = new JuzgadosDto();
 
             try
             {
@@ -142,7 +142,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT * FROM sif_juzgados WHERE COD_JUZGADO = '{Cod_Proveedor}'";
 
-                    info = connection.Query<JuzgadosDTO>(query).FirstOrDefault();
+                    info = connection.Query<JuzgadosDto>(query).FirstOrDefault();
 
                 }
             }
@@ -155,7 +155,7 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDto Juzgado_Actualizar(int CodEmpresa, JuzgadosDTO request)
+        public ErrorDto Juzgado_Actualizar(int CodEmpresa, JuzgadosDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 

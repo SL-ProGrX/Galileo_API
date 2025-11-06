@@ -29,13 +29,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<BENE_CATEGORIADataLista> BeneficiosCategorias_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<BEeneCategoriaDataLista> BeneficiosCategorias_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<BENE_CATEGORIADataLista>();
-            response.Result = new BENE_CATEGORIADataLista();
+            var response = new ErrorDto<BEeneCategoriaDataLista>();
+            response.Result = new BEeneCategoriaDataLista();
             try
             {
                 var query = "";
@@ -64,7 +64,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginaActual}
                                         {paginacionActual} ";
 
-                    response.Result.Lista = connection.Query<BENE_CATEGORIA>(query).ToList();
+                    response.Result.Lista = connection.Query<BeneCategoria>(query).ToList();
 
                 }
             }
@@ -84,7 +84,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto BeneficiosCategorias_Actualizar(int CodEmpresa, BENE_CATEGORIA request)
+        public ErrorDto BeneficiosCategorias_Actualizar(int CodEmpresa, BeneCategoria request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -127,7 +127,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto BeneficiosCategorias_Agregar(int CodEmpresa, BENE_CATEGORIA request)
+        public ErrorDto BeneficiosCategorias_Agregar(int CodEmpresa, BeneCategoria request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -205,17 +205,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_categoria"></param>
         /// <returns></returns>
-        public ErrorDto<List<Bene_CategoriaPermisos>> BeneficiosCategorias_ObtenerPermisos(int CodCliente, string cod_categoria, string? filtro)
+        public ErrorDto<List<BeneCategoriaPermisos>> BeneficiosCategorias_ObtenerPermisos(int CodCliente, string cod_categoria, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<Bene_CategoriaPermisos>>();
+            var response = new ErrorDto<List<BeneCategoriaPermisos>>();
             response.Code = 0;
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = @$"exec spAFI_Bene_CategoriaPermisos '{cod_categoria}', '{filtro}'";
-                    response.Result = connection.Query<Bene_CategoriaPermisos>(query).ToList();
+                    response.Result = connection.Query<BeneCategoriaPermisos>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -235,7 +235,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Cod_Categoria"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto registroPermisosCategoria(int CodCliente, string Cod_Categoria, Bene_CategoriaPermisos request)
+        public ErrorDto registroPermisosCategoria(int CodCliente, string Cod_Categoria, BeneCategoriaPermisos request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -579,7 +579,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="registraUser"></param>
         private void RegistrarBitacora(int CodCliente, string movimiento, string detalle, string codBeneficio, string registraUser)
         {
-            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
             {
                 EmpresaId = CodCliente,
                 cod_beneficio = codBeneficio,

@@ -3,24 +3,24 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
     public class frmTES_TransferenciaReversaDB
     {
         private readonly IConfiguration _config;
-        private readonly mTesoreria mTesoreria;
+        private readonly MTesoreria MTesoreria;
         private readonly mProGrX_AuxiliarDB _utils;
         private readonly int module = 9;
-        private readonly mSecurityMainDb _mSecurity;
+        private readonly MSecurityMainDb _mSecurity;
 
         public frmTES_TransferenciaReversaDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(_config);
+            MTesoreria = new MTesoreria(_config);
             _utils = new mProGrX_AuxiliarDB(_config);
-            _mSecurity = new mSecurityMainDb(_config);
+            _mSecurity = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -29,10 +29,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<List<transferenciaSolicitudData>> TES_TransferenciaReversa_Obtener(int CodEmpresa, transferenciaSolicitudData solicitud)
+        public ErrorDto<List<TransferenciaSolicitudData>> TES_TransferenciaReversa_Obtener(int CodEmpresa, TransferenciaSolicitudData solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<transferenciaSolicitudData>>
+            var response = new ErrorDto<List<TransferenciaSolicitudData>>
             {
                 Code = 0
             };
@@ -73,7 +73,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                                 Ndocumento
                                    from Tes_Transacciones 
                                     where TRIM(documento_base) = @documento and id_banco = @id_banco {whereClause}";
-                    response.Result = connection.Query<transferenciaSolicitudData>(query,
+                    response.Result = connection.Query<TransferenciaSolicitudData>(query,
                         new
                         {
                             documento = solicitud.documento.Trim() ?? string.Empty,
@@ -142,7 +142,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 
         public ErrorDto<long> sbNTrasnferencia(int CodEmpresa, int id_banco, string tipo, string avance, string plan)
         {
-            return mTesoreria.fxTesTipoDocConsec(CodEmpresa, id_banco, tipo, avance, plan);
+            return MTesoreria.fxTesTipoDocConsec(CodEmpresa, id_banco, tipo, avance, plan);
         }
 
         /// <summary>
@@ -151,7 +151,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="transferencia"></param>
         /// <returns></returns>
-        public ErrorDto TES_TransferenciaReversa_Aplicar(int CodEmpresa, transferenciaReversaAplicaModel transferencia)
+        public ErrorDto TES_TransferenciaReversa_Aplicar(int CodEmpresa, TransferenciaReversaAplicaModel transferencia)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -183,7 +183,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     }
 
                     query = $@"Select * From Tes_Autorizaciones Where Clave= @clave and nombre = @usuario and estado = 'A'";
-                    var autorizacion = connection.QueryFirstOrDefault<tesAutorizacionesDTO>(query,
+                    var autorizacion = connection.QueryFirstOrDefault<TesAutorizacionesDto>(query,
                         new { clave = transferencia.clave, usuario = transferencia.usuario });
 
                     if (autorizacion == null)
@@ -235,7 +235,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     response.Description = ReversionId.ToString();
 
                     //bitacora
-                    _mSecurity.Bitacora(new BitacoraInsertarDTO
+                    _mSecurity.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = transferencia.usuario,
@@ -254,14 +254,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         }
 
 
-        public ErrorDto<List<tesReversionData>> TES_TransferenciaConsulta_Obtener(
+        public ErrorDto<List<TesReversionData>> TES_TransferenciaConsulta_Obtener(
             int CodEmpresa, 
             int id_banco,
             DateTime fechaInicio,
             DateTime fechaFin)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<tesReversionData>>
+            var response = new ErrorDto<List<TesReversionData>>
             {
                 Code = 0
             };
@@ -275,7 +275,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     var query = $@"select * from tes_te_reversion where id_banco = @id_banco
                                    and fecha_genera between '{fechaIni} 00:00:00' and '{fechaCorte} 23:59:59'";
 
-                    response.Result = connection.Query<tesReversionData>(query,
+                    response.Result = connection.Query<TesReversionData>(query,
                         new
                         {
                             id_banco = id_banco
@@ -333,7 +333,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
         {
-            return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
+            return MTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
         }
     }
 }

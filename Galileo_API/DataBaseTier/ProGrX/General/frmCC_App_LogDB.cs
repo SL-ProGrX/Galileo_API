@@ -32,16 +32,16 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<Estadistica_DetalleData> CC_Estadistica_Detalle_SP(int CodEmpresa, string Codigo, string FechaInicio, string FechaCorte)
+        public List<EstadisticaDetalleData> CC_Estadistica_Detalle_SP(int CodEmpresa, string Codigo, string FechaInicio, string FechaCorte)
         {
 
-            List<Estadistica_DetalleData> resp = new List<Estadistica_DetalleData>();
+            List<EstadisticaDetalleData> resp = new List<EstadisticaDetalleData>();
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
                 {
                     var query = $@"exec spAPP_Estadistica_Detalle {CodEmpresa}, {Codigo}, '{FechaInicio} 00:00:00','{FechaCorte} 23:59:59'";
-                    resp = connection.Query<Estadistica_DetalleData>(query).ToList();
+                    resp = connection.Query<EstadisticaDetalleData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -51,15 +51,15 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<Estadistica_AnalisisData> CC_Estadistica_Analisis_SP(int CodEmpresa, string FechaInicio, string FechaCorte, int Ingreso)
+        public List<EstadisticaAnalisisData> CC_Estadistica_Analisis_SP(int CodEmpresa, string FechaInicio, string FechaCorte, int Ingreso)
         {
-            List<Estadistica_AnalisisData> resp = new List<Estadistica_AnalisisData>();
+            List<EstadisticaAnalisisData> resp = new List<EstadisticaAnalisisData>();
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
                 {
                     var query = $@"exec spAPP_Estadistica_Analisis {CodEmpresa}, '{FechaInicio} 00:00:00','{FechaCorte} 23:59:59', {Ingreso}";
-                    resp = connection.Query<Estadistica_AnalisisData>(query).ToList();
+                    resp = connection.Query<EstadisticaAnalisisData>(query).ToList();
                 }
             }
             catch (Exception ex)

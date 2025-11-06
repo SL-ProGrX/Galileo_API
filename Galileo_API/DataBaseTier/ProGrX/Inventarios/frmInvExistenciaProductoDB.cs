@@ -15,13 +15,13 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<List<ExistenciaProductoDTO>> existenciaProducto_Obtener(int CodCliente, string filtroString)
+        public ErrorDto<List<ExistenciaProductoDto>> existenciaProducto_Obtener(int CodCliente, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            ExistenciaProducto_Filtros filtros = JsonConvert.DeserializeObject<ExistenciaProducto_Filtros>(filtroString);
+            ExistenciaProductoFiltros filtros = JsonConvert.DeserializeObject<ExistenciaProductoFiltros>(filtroString);
 
-            var response = new ErrorDto<List<ExistenciaProductoDTO>>();
+            var response = new ErrorDto<List<ExistenciaProductoDto>>();
             try
             {
                 string where = "";
@@ -47,7 +47,7 @@ namespace PgxAPI.DataBaseTier
                                     JOIN pv_inventario_proceso ip ON b.Cod_Bodega = ip.cod_bodega 
                                     {where} GROUP BY b.COD_BODEGA, b.DESCRIPCION";
 
-                    response.Result = connection.Query<ExistenciaProductoDTO>(query).ToList();
+                    response.Result = connection.Query<ExistenciaProductoDto>(query).ToList();
                 }
             }
             catch (Exception ex)

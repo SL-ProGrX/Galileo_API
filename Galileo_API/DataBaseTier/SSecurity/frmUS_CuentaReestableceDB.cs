@@ -2,7 +2,7 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using PgxAPI.Models.US;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -10,15 +10,15 @@ namespace PgxAPI.DataBaseTier
     public class frmUS_CuentaReestableceDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmUS_CuentaReestableceDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }

@@ -67,7 +67,7 @@ namespace PgxAPI.DataBaseTier
                                     {paginaActual}
                                     {paginacionActual}";
 
-                    response.Result.lista = connection.Query<InvControlActivosDTO>(query).ToList();
+                    response.Result.lista = connection.Query<InvControlActivosDto>(query).ToList();
 
                     foreach (var item in response.Result.lista)
                     {
@@ -98,7 +98,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="activo"></param>
         /// <returns></returns>
-        public ErrorDto InvControlActivos_Actualizar(int CodEmpresa, InvControlActivosDTO activo)
+        public ErrorDto InvControlActivos_Actualizar(int CodEmpresa, InvControlActivosDto activo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
              ErrorDto resp = new();

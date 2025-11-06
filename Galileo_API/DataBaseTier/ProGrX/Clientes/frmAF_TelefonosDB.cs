@@ -53,9 +53,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_TelefonoDTO>> AF_Telefonos_ObtenerPorCedula(int CodEmpresa, string cedula)
+        public ErrorDto<List<AfTelefonoDto>> AF_Telefonos_ObtenerPorCedula(int CodEmpresa, string cedula)
         {
-            var response = new ErrorDto<List<AF_TelefonoDTO>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<AfTelefonoDto>> { Code = 0, Result = new() };
             try
             {
                 var conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -74,7 +74,7 @@ namespace PgxAPI.DataBaseTier
             FROM Telefonos T
             WHERE cedula = @Cedula;";
 
-                response.Result = connection.Query<AF_TelefonoDTO>(query, new { Cedula = cedula }).ToList();
+                response.Result = connection.Query<AfTelefonoDto>(query, new { Cedula = cedula }).ToList();
             }
             catch (Exception ex)
             {

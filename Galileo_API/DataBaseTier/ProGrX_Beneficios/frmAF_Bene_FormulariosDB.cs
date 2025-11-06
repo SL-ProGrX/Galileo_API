@@ -224,7 +224,7 @@ namespace PgxAPI.DataBaseTier
                         }
                     }
 
-                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                     {
                         EmpresaId = CodCliente,
                         cod_beneficio = frm.cod_beneficio,
@@ -506,7 +506,7 @@ namespace PgxAPI.DataBaseTier
 
                             var encabezado = connection.Execute(query);
 
-                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                             {
                                 EmpresaId = datos.codCliente,
                                 cod_beneficio = datos.cod_beneficio,
@@ -758,7 +758,7 @@ namespace PgxAPI.DataBaseTier
                               AND ID_BENEFICIO = '{datos.id_beneficio}'  AND CEDULA = '{datos.socio}' AND ID_FRM = '{id_frm}' ";
                     info.Code = connection.Execute(query);
 
-                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                     {
                         EmpresaId = datos.codCliente,
                         cod_beneficio = datos.cod_beneficio,

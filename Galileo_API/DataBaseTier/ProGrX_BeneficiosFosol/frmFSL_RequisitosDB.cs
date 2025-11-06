@@ -16,12 +16,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<fslRequisitosDataLista> FslRequisitos_Obtener(int CodCliente, string filtros)
+        public ErrorDto<FslRequisitosDataLista> FslRequisitos_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<fslRequisitosDataLista>();
+            var response = new ErrorDto<FslRequisitosDataLista>();
 
-            response.Result = new fslRequisitosDataLista();
+            response.Result = new FslRequisitosDataLista();
 
             response.Result.Total = 0;
             try
@@ -30,7 +30,7 @@ namespace PgxAPI.DataBaseTier
                 var query = "";
                 string paginaActual = " ", paginacionActual = " ";
                 string vFiltro = "";
-                fslRequisitosFiltros filtro = JsonConvert.DeserializeObject<fslRequisitosFiltros>(filtros) ?? new fslRequisitosFiltros();
+                FslRequisitosFiltros filtro = JsonConvert.DeserializeObject<FslRequisitosFiltros>(filtros) ?? new FslRequisitosFiltros();
 
 
                 using var connection = new SqlConnection(clienteConnString);
@@ -60,7 +60,7 @@ namespace PgxAPI.DataBaseTier
                             {paginacionActual}; ";
 
 
-                    response.Result.requisitos = connection.Query<fslRequisitosData>(query).ToList();
+                    response.Result.requisitos = connection.Query<FslRequisitosData>(query).ToList();
 
                 }
             }
@@ -74,10 +74,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<fslPanesCausasLista>> FslPlanesCausa_Obtener(int CodCliente, string cod_plan)
+        public ErrorDto<List<FslPanesCausasLista>> FslPlanesCausa_Obtener(int CodCliente, string cod_plan)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<fslPanesCausasLista>>();
+            var response = new ErrorDto<List<FslPanesCausasLista>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -85,7 +85,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"select rtrim(cod_Causa) as 'item', rtrim(descripcion) as 'descripcion'
 		                                  from FSL_Planes_Causas where activa = 1 and cod_plan = '{cod_plan}' ";
 
-                    response.Result = connection.Query<fslPanesCausasLista>(query).ToList();
+                    response.Result = connection.Query<FslPanesCausasLista>(query).ToList();
                 }
 
             }
@@ -100,10 +100,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDto<List<fslRequisitoCausa>> FslRequisitoCausa_Obtener(int CodCliente, string cod_plan, string cod_causa)
+        public ErrorDto<List<FslRequisitoCausa>> FslRequisitoCausa_Obtener(int CodCliente, string cod_plan, string cod_causa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<fslRequisitoCausa>>();
+            var response = new ErrorDto<List<FslRequisitoCausa>>();
 
             try
             {
@@ -112,7 +112,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"select Rq.COD_REQUISITO, Rq.DESCRIPCION, isnull(Rc.OPCIONAL,0) as 'Opcional' , RC.COD_CAUSA, RC.COD_PLAN,isnull(Rc.ASIGNADO,0) as 'Asignado'
 		                            from FSL_REQUISITOS Rq left join FSL_REQUISITOS_CAUSAS Rc on Rq.COD_REQUISITO = Rc.COD_REQUISITO
 		                             Where Rq.ACTIVO = 1 AND RC.COD_CAUSA = '{cod_causa}' and Rc.COD_PLAN = '{cod_plan}'";
-                    response.Result = connection.Query<fslRequisitoCausa>(query).ToList();
+                    response.Result = connection.Query<FslRequisitoCausa>(query).ToList();
                 }
 
             }
@@ -126,17 +126,17 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<fslPlanes>> FslPlanes_Obtener(int CodCliente)
+        public ErrorDto<List<FslPlanes>> FslPlanes_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<fslPlanes>>(); ;
+            var response = new ErrorDto<List<FslPlanes>>(); ;
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = "select rtrim(cod_Plan) as 'item', rtrim(descripcion) as 'descripcion' from FSL_Planes where activo = 1 ";
 
-                    response.Result = connection.Query<fslPlanes>(query).ToList();
+                    response.Result = connection.Query<FslPlanes>(query).ToList();
                 }
 
             }
@@ -152,7 +152,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto Requisito_Guardar(int CodCliente, fslRequisitosData requisito)
+        public ErrorDto Requisito_Guardar(int CodCliente, FslRequisitosData requisito)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -178,7 +178,7 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDto FslRequisito_Insertar(int CodCliente, fslRequisitosData requisito)
+        public ErrorDto FslRequisito_Insertar(int CodCliente, FslRequisitosData requisito)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -240,7 +240,7 @@ namespace PgxAPI.DataBaseTier
             return existe;
         }
 
-        public ErrorDto FslRequisito_Actualizar(int CodCliente, fslRequisitosData requisito)
+        public ErrorDto FslRequisito_Actualizar(int CodCliente, FslRequisitosData requisito)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -298,11 +298,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<fslRequisitoEditar> FslAsignacion_Editar(int CodCliente, fslRequisitoEditar asignacion)
+        public ErrorDto<FslRequisitoEditar> FslAsignacion_Editar(int CodCliente, FslRequisitoEditar asignacion)
         {
-            var response = new ErrorDto<fslRequisitoEditar>();
+            var response = new ErrorDto<FslRequisitoEditar>();
 
-            response.Result = new fslRequisitoEditar();
+            response.Result = new FslRequisitoEditar();
             response.Code = 0;
             try
             {
@@ -322,12 +322,12 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<fslRequisitoEditar> FslRequisito_ActualizarOpcional(int CodCliente, fslRequisitoEditar asignacion)
+        public ErrorDto<FslRequisitoEditar> FslRequisito_ActualizarOpcional(int CodCliente, FslRequisitoEditar asignacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<fslRequisitoEditar>();
+            var response = new ErrorDto<FslRequisitoEditar>();
 
-            response.Result = new fslRequisitoEditar();
+            response.Result = new FslRequisitoEditar();
             response.Code = 0;
             try
             {
@@ -350,12 +350,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<fslRequisitoEditar> FslRequisito_ActualizaAsignado(int CodCliente, fslRequisitoEditar asignacion)
+        public ErrorDto<FslRequisitoEditar> FslRequisito_ActualizaAsignado(int CodCliente, FslRequisitoEditar asignacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<fslRequisitoEditar>();
+            var response = new ErrorDto<FslRequisitoEditar>();
 
-            response.Result = new fslRequisitoEditar();
+            response.Result = new FslRequisitoEditar();
             response.Code = 0;
             try
             {

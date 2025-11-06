@@ -1308,8 +1308,8 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
                                               FROM PV_PROD_CLASIFICA_SUB 
                                         WHERE Cod_Prodclas IN ({Cod_Prodclas})";
 
-                    var info = connection.Query<TipoProductoSubDTO>(query).ToList();
-                    foreach (TipoProductoSubDTO dt in info)
+                    var info = connection.Query<TipoProductoSubDto>(query).ToList();
+                    foreach (TipoProductoSubDto dt in info)
                     {
                         dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
 
@@ -1337,7 +1337,7 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
             return response;
         }
 
-        public List<TipoProductoSubGradaData> TipoProductoSub_SeguienteNivel(int CodEmpresa, TipoProductoSubDTO padre)
+        public List<TipoProductoSubGradaData> TipoProductoSub_SeguienteNivel(int CodEmpresa, TipoProductoSubDto padre)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new List<TipoProductoSubGradaData>();
@@ -1351,8 +1351,8 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
                                           WHERE Cod_Prodclas = '{padre.Cod_Prodclas}' 
                                           AND COD_LINEA_SUB_MADRE = '{padre.Cod_Linea_Sub}' ";
 
-                    var info = connection.Query<TipoProductoSubDTO>(query).ToList();
-                    foreach (TipoProductoSubDTO dt in info)
+                    var info = connection.Query<TipoProductoSubDto>(query).ToList();
+                    foreach (TipoProductoSubDto dt in info)
                     {
                         dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
 
@@ -1420,7 +1420,7 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
                                       OFFSET {filtro.pagina} ROWS
                                       FETCH NEXT {filtro.paginacion} ROWS ONLY ";
 
-                        response.Result.lista = connection.Query<AF_CedulaDTO>(query).ToList();
+                        response.Result.lista = connection.Query<AFCedulaDto>(query).ToList();
                     }
                 }
             }

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.CPR;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 using System.Web;
 
@@ -12,7 +13,7 @@ namespace PgxAPI.DataBaseTier
     public class frmCprOrdenesDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         mProGrx_Main mProGrx_Main;
         private readonly EnvioCorreoDB _envioCorreoDB;
         public string sendEmail = "";
@@ -22,14 +23,14 @@ namespace PgxAPI.DataBaseTier
         public frmCprOrdenesDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
             mProGrx_Main = new mProGrx_Main(_config);
             _envioCorreoDB = new EnvioCorreoDB(_config);
             sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value.ToString();
             Notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value.ToString();
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -40,11 +41,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodOrden"></param>
         /// <returns></returns>
-        public ErrorDto<OrdenDTO> OrdenesSeleccionada(int CodEmpresa, string CodOrden, string usuario)
+        public ErrorDto<OrdenDto> OrdenesSeleccionada(int CodEmpresa, string CodOrden, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<OrdenDTO>();
-            response.Result = new OrdenDTO();
+            var response = new ErrorDto<OrdenDto>();
+            response.Result = new OrdenDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -59,7 +60,7 @@ namespace PgxAPI.DataBaseTier
                                         left join CPR_SOLICITUD_PROV sp ON sp.ADJUDICA_ORDEN  = O.COD_ORDEN AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR 
 										left join CPR_SOLICITUD s ON s.CPR_ID = sp.CPR_ID
                                         where O.cod_orden ='{CodOrden}'";
-                    response.Result = connection.Query<OrdenDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<OrdenDto>(query).FirstOrDefault();
 
                     string UEN = response.Result.cod_unidad;
                     decimal monto = 0;
@@ -244,8 +245,8 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto Orden_Insertar(int CodEmpresa, object jOrdenes)
         {
-            ErrorDto errorDTO = new ErrorDto();
-            errorDTO.Code = 0;
+            ErrorDto errorDto = new ErrorDto();
+            errorDto.Code = 0;
             OrdenDatosAcciones ordenes = new OrdenDatosAcciones();
             try
             {
@@ -254,9 +255,9 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception ex)
             {
-                errorDTO.Code = 1;
-                errorDTO.Description = ex.Message;
-                return errorDTO;
+                errorDto.Code = 1;
+                errorDto.Description = ex.Message;
+                return errorDto;
             }
             return OrdenesGuardar(CodEmpresa, ordenes);
         }
@@ -270,8 +271,8 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto Orden_Actualiza(int CodEmpresa, OrdenDatosAcciones jOrdenes)
         {
 
-            ErrorDto errorDTO = new ErrorDto();
-            errorDTO.Code = 0;
+            ErrorDto errorDto = new ErrorDto();
+            errorDto.Code = 0;
             return OrdenesGuardar(CodEmpresa, jOrdenes);
         }
 
@@ -285,15 +286,15 @@ namespace PgxAPI.DataBaseTier
         private ErrorDto OrdenesGuardar(int CodEmpresa, OrdenDatosAcciones ordenes)
         {
             string mjs = "";
-            ErrorDto errorDTO = new ErrorDto();
-            errorDTO.Code = 0;
+            ErrorDto errorDto = new ErrorDto();
+            errorDto.Code = 0;
 
             mjs = fxInvVerificaLineaDetalle(CodEmpresa, ordenes.lineas, "E");
 
             if (mjs != "")
             {
-                errorDTO.Code = 1;
-                errorDTO.Description = mjs;
+                errorDto.Code = 1;
+                errorDto.Description = mjs;
             }
             else
             {
@@ -320,9 +321,9 @@ namespace PgxAPI.DataBaseTier
                         {
                             if (ordenes.estado != "S")
                             {
-                                errorDTO.Code = 1;
-                                errorDTO.Description = "No puede Modificar esta Orden, ya que no se encuentra Solicitada...";
-                                return errorDTO;
+                                errorDto.Code = 1;
+                                errorDto.Description = "No puede Modificar esta Orden, ya que no se encuentra Solicitada...";
+                                return errorDto;
                             }
                             else
                             {
@@ -344,7 +345,7 @@ namespace PgxAPI.DataBaseTier
                                 var result = connection.Execute(query);
 
                                 //Bitacora
-                                Bitacora(new BitacoraInsertarDTO
+                                Bitacora(new BitacoraInsertarDto
                                 {
                                     EmpresaId = CodEmpresa,
                                     Usuario = ordenes.usuario,
@@ -353,7 +354,7 @@ namespace PgxAPI.DataBaseTier
                                     Modulo = 35
                                 });
 
-                                errorDTO.Description = ordenes.cod_orden;
+                                errorDto.Description = ordenes.cod_orden;
 
                             }
                         }
@@ -407,7 +408,7 @@ namespace PgxAPI.DataBaseTier
 
                             var result = connection.Execute(query);
                             //Bitacora
-                            Bitacora(new BitacoraInsertarDTO
+                            Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodEmpresa,
                                 Usuario = ordenes.usuario,
@@ -416,7 +417,7 @@ namespace PgxAPI.DataBaseTier
                                 Modulo = 35
                             });
                             ordenes.cod_orden = vConsecutivo;
-                            errorDTO.Description = vConsecutivo;
+                            errorDto.Description = vConsecutivo;
                         }
 
                         //Guarda Detalle
@@ -451,11 +452,11 @@ namespace PgxAPI.DataBaseTier
                 }
                 catch (Exception ex)
                 {
-                    errorDTO.Code = -1;
-                    errorDTO.Description = ex.Message;
+                    errorDto.Code = -1;
+                    errorDto.Description = ex.Message;
                 }
             }
-            return errorDTO;
+            return errorDto;
 
         }
 
@@ -503,7 +504,7 @@ namespace PgxAPI.DataBaseTier
                         if (ColBod1 > 0)
                         {
                             var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{ColBod1}'";
-                            List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                            List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
                             if (exist.Count == 0)
                             {
                                 return "La bodega " + ColBod1 + " - No existe";
@@ -540,7 +541,7 @@ namespace PgxAPI.DataBaseTier
                         if (ColBod2 > 0)
                         {
                             var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{ColBod1}'";
-                            List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                            List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
                             if (exist.Count == 0)
                             {
                                 return "La bodega " + ColBod2 + " - No existe";
@@ -625,10 +626,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodOrden"></param>
         /// <param name="CodProducto"></param>
         /// <returns></returns>
-        public ErrorDto<List<Ordenes_UENSData>> OrdenesUENs_Obtener(int CodEmpresa, string CodOrden, string CodProducto)
+        public ErrorDto<List<OrdenesUensData>> OrdenesUENs_Obtener(int CodEmpresa, string CodOrden, string CodProducto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<Ordenes_UENSData>>
+            var response = new ErrorDto<List<OrdenesUensData>>
             {
                 Code = 0
             };
@@ -654,7 +655,7 @@ namespace PgxAPI.DataBaseTier
                 LEFT JOIN CPR_SOLICITUD_BS BS ON BS.CPR_ID = S.CPR_ID AND BS.COD_PRODUCTO = D.COD_PRODUCTO
                 where O.COD_ORDEN = '{CodOrden}' AND D.COD_PRODUCTO = '{CodProducto}'";
                     }
-                    response.Result = connection.Query<Ordenes_UENSData>(query).ToList();
+                    response.Result = connection.Query<OrdenesUensData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -673,7 +674,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="lista"></param>
         /// <returns></returns>
-        public ErrorDto OrdenesUENs_Guardar(int CodEmpresa, List<Ordenes_UENSData> lista)
+        public ErrorDto OrdenesUENs_Guardar(int CodEmpresa, List<OrdenesUensData> lista)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto

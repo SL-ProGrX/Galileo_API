@@ -14,7 +14,7 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        private ErrorDto Bitacora(mProGrXSecurity_MainBitacora bitacora)
+        private ErrorDto Bitacora(MProGrXSecurityMainBitacora bitacora)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(bitacora.CodEmpresa);
             var response = new ErrorDto();

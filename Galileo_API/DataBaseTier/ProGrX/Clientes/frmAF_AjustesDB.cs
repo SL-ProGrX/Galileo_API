@@ -343,9 +343,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cedula"></param>
         /// <returns></returns>
 
-        public ErrorDto<af_ajuste_persona_detalle> AF_Ajustes_CargarDatos(int CodEmpresa, string cedula)
+        public ErrorDto<AfAjustePersonaDetalle> AF_Ajustes_CargarDatos(int CodEmpresa, string cedula)
         {
-            var response = new ErrorDto<af_ajuste_persona_detalle> { Code = 0 };
+            var response = new ErrorDto<AfAjustePersonaDetalle> { Code = 0 };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -370,7 +370,7 @@ namespace PgxAPI.DataBaseTier
                             LEFT JOIN AFI_TIPOS_IDS Tid        ON S.tipo_id = Tid.tipo_id
                             WHERE cedula = @Cedula;";
 
-                response.Result = connection.QueryFirstOrDefault<af_ajuste_persona_detalle>(sql, new { Cedula = cedula });
+                response.Result = connection.QueryFirstOrDefault<AfAjustePersonaDetalle>(sql, new { Cedula = cedula });
 
                 if (response.Result == null)
                 {
@@ -391,7 +391,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto AF_Ajustes_Cambiar(int CodEmpresa, string ajuste, int codigo)
         {
 
-            AF_Ajuste request = JsonConvert.DeserializeObject<AF_Ajuste>(ajuste) ?? new AF_Ajuste();
+            AFAjuste request = JsonConvert.DeserializeObject<AFAjuste>(ajuste) ?? new AFAjuste();
 
             switch (codigo)
             {
@@ -411,15 +411,15 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<AF_CatalogosGeneralesDTO> AF_Catalogos_Obtener(int CodEmpresa, string? cod_institucion)
+        public ErrorDto<AfCatalogosGeneralesDto> AF_Catalogos_Obtener(int CodEmpresa, string? cod_institucion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<AF_CatalogosGeneralesDTO>
+            var response = new ErrorDto<AfCatalogosGeneralesDto>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
-                Result = new AF_CatalogosGeneralesDTO()
+                Result = new AfCatalogosGeneralesDto()
             };
 
             try

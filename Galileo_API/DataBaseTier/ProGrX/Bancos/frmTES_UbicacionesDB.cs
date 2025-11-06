@@ -1,9 +1,9 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
@@ -11,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 9; // Modulo de Tesorería
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmTES_UbicacionesDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -217,7 +217,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         usuario = ubicacion.usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -264,7 +264,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         usuario = ubicacion.usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -304,7 +304,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                 {
                     var query = $@"DELETE FROM tes_ubicaciones WHERE cod_ubicacion = @cod_ubicacion";
                     connection.Execute(query, new { cod_ubicacion = codUbicacion.ToUpper() });
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

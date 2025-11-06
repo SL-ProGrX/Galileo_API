@@ -9,19 +9,20 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Personas;
+using PgxAPI.Models.Security;
 
-    namespace PgxAPI.DataBaseTier.ProGrX_Personas
+namespace PgxAPI.DataBaseTier.ProGrX_Personas
 {
     public class frmAF_Preferencias_TiposDB
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1; // Modulo de Tesorería
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_Preferencias_TiposDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -62,8 +63,8 @@ using PgxAPI.Models.ProGrX_Personas;
                 string sortOrder = filtros.sortOrder == 0 ? "DESC" : "ASC";
 
                 // Paginación
-                int pagina = filtros.pagina ?? 0;
-                int paginacion = filtros.paginacion ?? 10;
+                int pagina = filtros.pagina != 0 ? filtros.pagina : 0;
+                int paginacion = filtros.paginacion != 0 ? filtros.paginacion : 10;
 
                 var query = $@"select COD_PREFERENCIA, descripcion, ACTIVA, Registro_Fecha, Registro_Usuario
                                from AFI_PREFERENCIAS
@@ -145,7 +146,7 @@ using PgxAPI.Models.ProGrX_Personas;
                     Usuario = usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -187,7 +188,7 @@ using PgxAPI.Models.ProGrX_Personas;
                     ACTIVA = preferenciaTipo.Activa
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -221,7 +222,7 @@ using PgxAPI.Models.ProGrX_Personas;
                 var query = @"DELETE FROM AFI_PREFERENCIAS WHERE COD_PREFERENCIA = @COD_PREFERENCIA";
                 connection.Execute(query, new { COD_PREFERENCIA = codPreferencia.ToUpper() });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,

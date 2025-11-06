@@ -2,7 +2,7 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using PgxAPI.Models.US;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -55,7 +55,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="usuarioDto"></param>
         /// <returns></returns>
-        public ErrorDto UsuarioGuardarActualizar(UsuarioDTO usuarioDto)
+        public ErrorDto UsuarioGuardarActualizar(UsuarioModel usuarioDto)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -141,9 +141,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="AdminView"></param>
         /// <param name="DirGlobal"></param>
         /// <returns></returns>
-        public UsuarioDTO UsuarioConsultar(string paramUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
+        public UsuarioModel UsuarioConsultar(string paramUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
         {
-            UsuarioDTO result = null!;
+            UsuarioModel result = null!;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -156,7 +156,7 @@ namespace PgxAPI.DataBaseTier
                         AdminView = AdminView,
                         DirGlobal = DirGlobal
                     };
-                    result = connection.QueryFirstOrDefault<UsuarioDTO>(procedure, values, commandType: CommandType.StoredProcedure)!;
+                    result = connection.QueryFirstOrDefault<UsuarioModel>(procedure, values, commandType: CommandType.StoredProcedure)!;
 
                     if (result != null && result.FechaIngreso != null)
                     {
@@ -184,9 +184,9 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public List<UsuarioDTO> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
+        public List<UsuarioModel> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
         {
-            List<UsuarioDTO> result = null!;
+            List<UsuarioModel> result = null!;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -198,7 +198,7 @@ namespace PgxAPI.DataBaseTier
                         AdminView = AdminView,
                         DirGlobal = DirGlobal
                     };
-                    result = connection.Query<UsuarioDTO>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<UsuarioModel>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
                 }
             }
             catch (Exception ex)
@@ -210,9 +210,9 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public List<UsuarioClienteDTO> UsuarioClientesConsultar(string nombreUsuario)
+        public List<UsuarioClienteDto> UsuarioClientesConsultar(string nombreUsuario)
         {
-            List<UsuarioClienteDTO> result = null!;
+            List<UsuarioClienteDto> result = null!;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -222,7 +222,7 @@ namespace PgxAPI.DataBaseTier
                     {
                         Usuario = nombreUsuario
                     };
-                    result = connection.Query<UsuarioClienteDTO>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<UsuarioClienteDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
                 }
             }
             catch (Exception ex)
@@ -232,7 +232,7 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDto UsuarioClienteAsignar(UsuarioClienteAsignaDTO usuarioClienteAsignaDto)
+        public ErrorDto UsuarioClienteAsignar(UsuarioClienteAsignaDto usuarioClienteAsignaDto)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -382,9 +382,9 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public List<UsuarioClienteRolDTO> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)
+        public List<UsuarioClienteRolDto> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)
         {
-            List<UsuarioClienteRolDTO> result = null!;
+            List<UsuarioClienteRolDto> result = null!;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -395,7 +395,7 @@ namespace PgxAPI.DataBaseTier
                         Usuario = nombreUsuario,
                         CodEmpresa = codEmpresa
                     };
-                    result = connection.Query<UsuarioClienteRolDTO>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
+                    result = connection.Query<UsuarioClienteRolDto>(procedure, values, commandType: CommandType.StoredProcedure)!.ToList();
                 }
             }
             catch (Exception ex)
@@ -405,7 +405,7 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDto UsuarioClienteRolAsignar(UsuarioClienteRolAsignaDTO usuarioClienteRolAsignaDto)
+        public ErrorDto UsuarioClienteRolAsignar(UsuarioClienteRolAsignaDto usuarioClienteRolAsignaDto)
         {
             ErrorDto resp = new ErrorDto();
             try

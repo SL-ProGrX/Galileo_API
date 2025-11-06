@@ -22,13 +22,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CR_Seguimiento_Data>> AF_CR_Seguimiento_Obtener(int CodEmpresa, AF_CR_Seguimiento_Filtros filtros)
+        public ErrorDto<List<AfCrSeguimientoData>> AF_CR_Seguimiento_Obtener(int CodEmpresa, AfCrSeguimientoFiltros filtros)
         {
-            var result = new ErrorDto<List<AF_CR_Seguimiento_Data>>()
+            var result = new ErrorDto<List<AfCrSeguimientoData>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_CR_Seguimiento_Data>()
+                Result = new List<AfCrSeguimientoData>()
             };
 
             try
@@ -150,7 +150,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 
                 sb.AppendLine("ORDER BY R.cod_renuncia");
 
-                result.Result = connection.Query<AF_CR_Seguimiento_Data>(sb.ToString(), parameters).ToList();
+                result.Result = connection.Query<AfCrSeguimientoData>(sb.ToString(), parameters).ToList();
             }
             catch (Exception ex)
             {
@@ -312,9 +312,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="codRenuncia"></param>
         /// <returns></returns>
-        public ErrorDto<AF_CR_Seguimiento_Detalle> AF_CR_Seguimiento_Obtener_Detalle_Renuncia(int CodEmpresa, int codRenuncia)
+        public ErrorDto<AfCrSeguimientoDetalle> AF_CR_Seguimiento_Obtener_Detalle_Renuncia(int CodEmpresa, int codRenuncia)
         {
-            var result = new ErrorDto<AF_CR_Seguimiento_Detalle>()
+            var result = new ErrorDto<AfCrSeguimientoDetalle>()
             {
                 Code = 0,
                 Description = "Ok",
@@ -338,7 +338,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     LEFT  JOIN Promotores      P ON R.id_Promotor = P.id_Promotor
                     WHERE R.cod_renuncia = @codRenuncia";
 
-                result.Result = connection.QueryFirstOrDefault<AF_CR_Seguimiento_Detalle>(query, new { codRenuncia });
+                result.Result = connection.QueryFirstOrDefault<AfCrSeguimientoDetalle>(query, new { codRenuncia });
             }
             catch (Exception ex)
             {
@@ -355,13 +355,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="renunciaId"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CR_Seguimiento_Motivo>> AF_CR_Seguimiento_Obtener_Motivos(int CodEmpresa, int renunciaId)
+        public ErrorDto<List<AfCrSeguimientoMotivo>> AF_CR_Seguimiento_Obtener_Motivos(int CodEmpresa, int renunciaId)
         {
-            var result = new ErrorDto<List<AF_CR_Seguimiento_Motivo>>()
+            var result = new ErrorDto<List<AfCrSeguimientoMotivo>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_CR_Seguimiento_Motivo>()
+                Result = new List<AfCrSeguimientoMotivo>()
             };
 
             try
@@ -371,7 +371,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 
                 var parameters = new { RenunciaId = renunciaId, Todos = 1 };
 
-                result.Result = connection.Query<AF_CR_Seguimiento_Motivo>(
+                result.Result = connection.Query<AfCrSeguimientoMotivo>(
                     "spAFI_CR_Motivos_Consulta",
                     parameters,
                     commandType: System.Data.CommandType.StoredProcedure
@@ -392,13 +392,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="codRenuncia"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CR_Seguimiento_Historial>> AF_CR_Seguimiento_Obtener_Historial(int CodEmpresa, int codRenuncia)
+        public ErrorDto<List<AfCrSeguimientoHistorial>> AF_CR_Seguimiento_Obtener_Historial(int CodEmpresa, int codRenuncia)
         {
-            var result = new ErrorDto<List<AF_CR_Seguimiento_Historial>>()
+            var result = new ErrorDto<List<AfCrSeguimientoHistorial>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_CR_Seguimiento_Historial>()
+                Result = new List<AfCrSeguimientoHistorial>()
             };
 
             try
@@ -408,7 +408,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 
                 string query = @"SELECT * FROM afi_cr_seguimiento WHERE cod_renuncia = @codRenuncia";
 
-                result.Result = connection.Query<AF_CR_Seguimiento_Historial>(query, new { codRenuncia }).ToList();
+                result.Result = connection.Query<AfCrSeguimientoHistorial>(query, new { codRenuncia }).ToList();
             }
             catch (Exception ex)
             {
@@ -451,7 +451,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Registra un motivo de renuncia usando el SP spAFI_CR_Motivos_Registra.
         /// </summary>
-        public ErrorDto AF_CR_Seguimiento_Motivos_Registrar(int CodEmpresa, AF_CR_Seguimiento_Motivos_Registrar motivos)
+        public ErrorDto AF_CR_Seguimiento_Motivos_Registrar(int CodEmpresa, AfCrSeguimientoMotivosRegistrar motivos)
         {
             var result = new ErrorDto()
             {
@@ -481,7 +481,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <summary>
         /// Cambia el estado de una renuncia usando el SP spAFI_Renuncia_CambioEstado.
         /// </summary>
-        public ErrorDto AF_CR_Seguimiento_Renuncia_Estado(int CodEmpresa, AF_CR_Seguimiento_Renuncia_Estado estado)
+        public ErrorDto AF_CR_Seguimiento_Renuncia_Estado(int CodEmpresa, AfCrSeguimientoRenunciaEstado estado)
         {
             var result = new ErrorDto()
             {

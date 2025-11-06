@@ -1,9 +1,9 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.CPR;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -13,7 +13,7 @@ namespace PgxAPI.DataBaseTier
         private readonly IConfiguration _config;
 
         mProGrX_AuxiliarDB mProGrxAuxiliar;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         mComprasDB mComprasDB;
         public string sendEmail = "";
         public string TestMail = "";
@@ -25,7 +25,7 @@ namespace PgxAPI.DataBaseTier
         public frmCprComprasOrdenDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(config);
+            DBBitacora = new MSecurityMainDb(config);
             mProGrxAuxiliar = new mProGrX_AuxiliarDB(config);
             mComprasDB = new mComprasDB(config);
             _envioCorreoDB = new EnvioCorreoDB(_config);
@@ -33,7 +33,7 @@ namespace PgxAPI.DataBaseTier
             Notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value.ToString();
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -422,7 +422,7 @@ namespace PgxAPI.DataBaseTier
                         var insert = connection.Execute(query);
 
                         //Bitacora
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = orden.genera_user,
@@ -493,7 +493,7 @@ namespace PgxAPI.DataBaseTier
 
                             //LLAMO mProGrX_AuxiliarDB para actualizar el inventario
                             mProGrX_AuxiliarDB mProGrX_AuxiliarDB = new mProGrX_AuxiliarDB(_config);
-                            CompraInventarioDTO compraInventario = new CompraInventarioDTO();
+                            CompraInventarioDto compraInventario = new CompraInventarioDto();
                             compraInventario.CodProducto = item.cod_producto;
                             compraInventario.Cantidad = item.cantidad;
                             compraInventario.CodBodega = item.cod_bodega;
@@ -640,7 +640,7 @@ namespace PgxAPI.DataBaseTier
                         if (item.cod_bodega.Length > 0)
                         {
                             var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}'";
-                            List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                            List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
                             if (exist.Count == 0)
                             {
                                 return "La bodega " + item.cod_bodega + " - No existe";
@@ -677,7 +677,7 @@ namespace PgxAPI.DataBaseTier
                         if (item.cod_bodega.Length > 0)
                         {
                             var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}'";
-                            List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                            List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
                             if (exist.Count == 0)
                             {
                                 return "La bodega " + item.cod_bodega + " - No existe";
@@ -1000,10 +1000,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="proveedor"></param>
         /// <returns></returns>
-        public ErrorDto<List<FacturasAutorizarDTO>> FacturasAutorizar_Obtener(int CodEmpresa, string usuario, int proveedor)
+        public ErrorDto<List<FacturasAutorizarDto>> FacturasAutorizar_Obtener(int CodEmpresa, string usuario, int proveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<FacturasAutorizarDTO>>();
+            var response = new ErrorDto<List<FacturasAutorizarDto>>();
 
             try
             {
@@ -1028,7 +1028,7 @@ namespace PgxAPI.DataBaseTier
                                     WHERE 
                                         f.ESTADO IN ('P', 'E')
                                         AND cod_proveedor = {proveedor};";
-                    response.Result = connection.Query<FacturasAutorizarDTO>(query).ToList();
+                    response.Result = connection.Query<FacturasAutorizarDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -1236,7 +1236,7 @@ namespace PgxAPI.DataBaseTier
                         await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
                     }
 
-                    BitacoraEnvioCorreo(new BitacoraComprasInsertarDTO
+                    BitacoraEnvioCorreo(new BitacoraComprasInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         consec = 0,
@@ -1258,7 +1258,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDto BitacoraEnvioCorreo(BitacoraComprasInsertarDTO req)
+        public ErrorDto BitacoraEnvioCorreo(BitacoraComprasInsertarDto req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
             ErrorDto resp = new ErrorDto();
@@ -1406,7 +1406,7 @@ namespace PgxAPI.DataBaseTier
                         await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
                     }
 
-                    BitacoraEnvioCorreo(new BitacoraComprasInsertarDTO
+                    BitacoraEnvioCorreo(new BitacoraComprasInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         consec = 0,

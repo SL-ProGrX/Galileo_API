@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<Toma_FisicaDTO>> TomaFisica_Obtener(int CodEmpresa, int Cod_Proveedor, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<List<TomaFisicaDto>> TomaFisica_Obtener(int CodEmpresa, int Cod_Proveedor, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<Toma_FisicaDTO>>();
+            var response = new ErrorDto<List<TomaFisicaDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -34,8 +34,8 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "Select * From pv_InvTomaFisica";
 
-                    response.Result = connection.Query<Toma_FisicaDTO>(query).ToList();
-                    foreach (Toma_FisicaDTO dt in response.Result)
+                    response.Result = connection.Query<TomaFisicaDto>(query).ToList();
+                    foreach (TomaFisicaDto dt in response.Result)
                     {
                         dt.consecutivo = dt.consecutivo;
 
@@ -62,11 +62,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<Toma_FisicaDetalleDTO>> tomasFisicasDetalle_Obtener(int CodEmpresa, int consecutivo, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<List<TomaFisicaDetalleDto>> tomasFisicasDetalle_Obtener(int CodEmpresa, int consecutivo, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<Toma_FisicaDetalleDTO>>();
+            var response = new ErrorDto<List<TomaFisicaDetalleDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -90,8 +90,8 @@ namespace PgxAPI.DataBaseTier
                                     PV_BODEGAS b ON d.COD_BODEGA = b.COD_BODEGA 
                                 where consecutivo = '{consecutivo}'";
 
-                    response.Result = connection.Query<Toma_FisicaDetalleDTO>(query).ToList();
-                    foreach (Toma_FisicaDetalleDTO dt in response.Result)
+                    response.Result = connection.Query<TomaFisicaDetalleDto>(query).ToList();
+                    foreach (TomaFisicaDetalleDto dt in response.Result)
                     {
                         dt.consecutivo = dt.consecutivo;
 
@@ -115,7 +115,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto tomaFisica_Insertar(int CodEmpresa, Toma_FisicaDTO data)
+        public ErrorDto tomaFisica_Insertar(int CodEmpresa, TomaFisicaDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -169,7 +169,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto tomaFisicaDetalle_Insertar(int CodEmpresa, Toma_FisicaDetalleDTO data)
+        public ErrorDto tomaFisicaDetalle_Insertar(int CodEmpresa, TomaFisicaDetalleDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -201,13 +201,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consecutivo"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDto<Toma_FisicaDTO> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
+        public ErrorDto<TomaFisicaDto> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             int result = 0;
 
-            var response = new ErrorDto<Toma_FisicaDTO>();
+            var response = new ErrorDto<TomaFisicaDto>();
 
             try
             {
@@ -237,7 +237,7 @@ namespace PgxAPI.DataBaseTier
 
 
                     result = connection.Query<int>(query).FirstOrDefault();
-                    response.Result = connection.Query<Toma_FisicaDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<TomaFisicaDto>(query).FirstOrDefault();
 
                 }
             }
@@ -256,12 +256,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="consecutivo"></param>
         /// <returns></returns>
-        public ErrorDto<Toma_FisicaDTO> tomaFisicaConsecutivo_Obtener(int CodEmpresa, int consecutivo)
+        public ErrorDto<TomaFisicaDto> tomaFisicaConsecutivo_Obtener(int CodEmpresa, int consecutivo)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<Toma_FisicaDTO>();
-            response.Result = new Toma_FisicaDTO();
+            var response = new ErrorDto<TomaFisicaDto>();
+            response.Result = new TomaFisicaDto();
 
             try
             {
@@ -270,7 +270,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"SELECT * FROM PV_INVTOMAFISICA
                                 WHERE CONSECUTIVO = {consecutivo}";
 
-                    response.Result = connection.Query<Toma_FisicaDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<TomaFisicaDto>(query).FirstOrDefault();
 
                 }
             }
@@ -290,7 +290,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto actualizarTomaFisica(int CodEmpresa, Toma_FisicaDTO request)
+        public ErrorDto actualizarTomaFisica(int CodEmpresa, TomaFisicaDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -329,7 +329,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto actualizarTomaFisicaDetalle(int CodEmpresa, Toma_FisicaDetalleDTO request)
+        public ErrorDto actualizarTomaFisicaDetalle(int CodEmpresa, TomaFisicaDetalleDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -442,12 +442,12 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto<Toma_FisicaDetalleDTO> TomaFisicaProdBarras_Obtener(
+        public ErrorDto<TomaFisicaDetalleDto> TomaFisicaProdBarras_Obtener(
             int CodEmpresa, string cod_bodega, string cod_barras, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var resp = new ErrorDto<Toma_FisicaDetalleDTO>();
+            var resp = new ErrorDto<TomaFisicaDetalleDto>();
             try
             {
                 var query = "";
@@ -485,13 +485,13 @@ namespace PgxAPI.DataBaseTier
                                     pp.TIPO_PRODUCTO";
                     }
                     
-                    resp.Result = connection.Query<Toma_FisicaDetalleDTO>(query).FirstOrDefault();
+                    resp.Result = connection.Query<TomaFisicaDetalleDto>(query).FirstOrDefault();
 
                     if(resp.Result == null)
                     {
                         resp.Code = -1;
                         resp.Description = "No existe Producto con este codigo";
-                        resp.Result = new Toma_FisicaDetalleDTO();
+                        resp.Result = new TomaFisicaDetalleDto();
                     }
                 }
             }
@@ -504,7 +504,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto TomaFisicaBarras_Guardar(int CodEmpresa, Toma_FisicaDetalleDTO linea )
+        public ErrorDto TomaFisicaBarras_Guardar(int CodEmpresa, TomaFisicaDetalleDto linea )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 

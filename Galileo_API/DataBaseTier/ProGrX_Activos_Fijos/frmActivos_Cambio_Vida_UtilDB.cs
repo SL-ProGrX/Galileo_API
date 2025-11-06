@@ -3,8 +3,9 @@ using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.ProGrX_Activos_Fijos;
+using PgxAPI.Models.Security;
 using System.Data;
-using static PgxAPI.Models.ProGrX_Activos_Fijos.frmActivos_Cambio_Vida_UtilModels;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -12,12 +13,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36;
-        private readonly mSecurityMainDb _security_MainDB;
+        private readonly MSecurityMainDb _security_MainDB;
 
         public frmActivos_Cambio_Vida_UtilDB(IConfiguration? config)
         {
             _config = config;
-            _security_MainDB = new mSecurityMainDb(_config);
+            _security_MainDB = new MSecurityMainDb(_config);
         }
         /// <summary>
         /// Obtiene una lista de activos con paginacion y filtros.
@@ -255,7 +256,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     commandTimeout: 90
                 );
 
-                _security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,

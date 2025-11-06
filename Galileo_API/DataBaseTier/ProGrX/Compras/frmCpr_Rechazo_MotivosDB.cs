@@ -24,18 +24,18 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente">Código del cliente</param>
         /// <param name="vFiltros">Filtros en formato JSON</param>
         /// <returns>Lista de motivos de rechazo</returns>
-        public ErrorDto<cprRechazosMotivosLista> cprRechazoMotivoLista_Obtener(int CodCliente, string vFiltros)
+        public ErrorDto<CprRechazosMotivosLista> cprRechazoMotivoLista_Obtener(int CodCliente, string vFiltros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(vFiltros);
-            var response = new ErrorDto<cprRechazosMotivosLista>()
+            var response = new ErrorDto<CprRechazosMotivosLista>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new cprRechazosMotivosLista()
+                Result = new CprRechazosMotivosLista()
                 {
                     total = 0,
-                    lista = new List<cprRechazosMotivosDTO>()
+                    lista = new List<CprRechazosMotivosDto>()
                 }
             };
 
@@ -64,7 +64,7 @@ namespace PgxAPI.DataBaseTier
                                         OFFSET {filtro.pagina} ROWS 
                                          FETCH NEXT {filtro.paginacion} ROWS ONLY  ";
 
-                    response.Result.lista = connection.Query<cprRechazosMotivosDTO>(query).ToList();
+                    response.Result.lista = connection.Query<CprRechazosMotivosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -85,7 +85,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente">Código del cliente</param>
         /// <param name="motivo">Motivo de rechazo a guardar</param>
         /// <returns>Resultado de la operación</returns>    
-        public ErrorDto cprRechazoMotivo_Guardar(int CodCliente, cprRechazosMotivosDTO motivo)
+        public ErrorDto cprRechazoMotivo_Guardar(int CodCliente, CprRechazosMotivosDto motivo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var result = new ErrorDto()
@@ -143,7 +143,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente">Código del cliente</param>
         /// <param name="motivo">Motivo de rechazo a insertar</param>
         /// <returns>Resultado de la operación</returns>
-        private ErrorDto cprRechazoMotivo_Insertar(int CodCliente, cprRechazosMotivosDTO motivo)
+        private ErrorDto cprRechazoMotivo_Insertar(int CodCliente, CprRechazosMotivosDto motivo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto error = new ErrorDto();
@@ -189,7 +189,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente">Código del cliente</param>
         /// <param name="motivo">Motivo de rechazo a actualizar</param>
         /// <returns>Resultado de la operación</returns>    
-        private ErrorDto cprRechazoMotivo_Actualizar(int CodCliente, cprRechazosMotivosDTO motivo)
+        private ErrorDto cprRechazoMotivo_Actualizar(int CodCliente, CprRechazosMotivosDto motivo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto error = new ErrorDto();

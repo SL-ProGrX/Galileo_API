@@ -30,13 +30,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Banco"></param>
         /// <returns></returns>
-        public ErrorDto<TransferenciaRepControl_CatalogoDTO> TES_TransferenciaRepControl_Catalogos_Obtener(int CodEmpresa, int Banco)
+        public ErrorDto<TransferenciaRepControlCatalogoDto> TES_TransferenciaRepControl_Catalogos_Obtener(int CodEmpresa, int Banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TransferenciaRepControl_CatalogoDTO>
+            var response = new ErrorDto<TransferenciaRepControlCatalogoDto>
             {
                 Code = 0,
-                Result = new TransferenciaRepControl_CatalogoDTO()
+                Result = new TransferenciaRepControlCatalogoDto()
             };
             try
             {
@@ -116,12 +116,12 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                             int vMonto = connection.QueryFirstOrDefault<int?>(queryA, parametros) ?? 0;
 
                             //Consulta del Detalle
-                            var transaccionesList = connection.Query<TES_TransaccionDTO>(queryTransac, parametros).ToList();
+                            var transaccionesList = connection.Query<TesTransaccionDto>(queryTransac, parametros).ToList();
                             response = sbTeBancoNacional(CodEmpresa, Banco, TipoDoc, NTransac, transaccionesList, vMonto);
                             break;
                         case "B": //B - Banco Popular
 
-                            transaccionesList = connection.Query<TES_TransaccionDTO>(queryTransac, parametros).ToList();
+                            transaccionesList = connection.Query<TesTransaccionDto>(queryTransac, parametros).ToList();
                             response = sbTeBancoPopular(CodEmpresa, Banco, TipoDoc, NTransac, transaccionesList);
 
                             break;
@@ -142,7 +142,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                 totalMonto = resultC.Monto ?? 0;
                             }
 
-                            transaccionesList = connection.Query<TES_TransaccionDTO>(queryTransac, parametros).ToList();
+                            transaccionesList = connection.Query<TesTransaccionDto>(queryTransac, parametros).ToList();
 
                             response = sbTeBCR(CodEmpresa, Banco, TipoDoc, NTransac, transaccionesList, xTestKey, totalMonto);
 
@@ -200,7 +200,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="transaccionesList"></param>
         /// <param name="curPlanilla"></param>
         /// <returns></returns>
-        public ErrorDto<object> sbTeBancoNacional(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TES_TransaccionDTO> transaccionesList, int? curPlanilla)
+        public ErrorDto<object> sbTeBancoNacional(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TesTransaccionDto> transaccionesList, int? curPlanilla)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>
@@ -337,7 +337,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vNTransac"></param>
         /// <param name="transaccionesList"></param>
         /// <returns></returns>
-        public ErrorDto<object> sbTeBancoPopular(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TES_TransaccionDTO> transaccionesList)
+        public ErrorDto<object> sbTeBancoPopular(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TesTransaccionDto> transaccionesList)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>
@@ -462,7 +462,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="vTestKey"></param>
         /// <param name="vMontoTotal"></param>
         /// <returns></returns>
-        public ErrorDto<object> sbTeBCR(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TES_TransaccionDTO> transaccionesList, long vTestKey, decimal vMontoTotal)
+        public ErrorDto<object> sbTeBCR(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac, List<TesTransaccionDto> transaccionesList, long vTestKey, decimal vMontoTotal)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>

@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Galileo_API;
+using System.Text.Json;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,9 +15,17 @@ builder.Services.AddControllers();
 
 // Swagger + Bearer
 builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddMemoryCache();
+
+builder.Services.AddMvcCore()
+    .AddAuthorization();
+
+builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new() { Title = "Galileo API", Version = "v1" });
+    c.SwaggerDoc("v2", new() { Title = "Galileo API", Version = "v2", Description = "API para gestión de Galileo" });
 
     var securityScheme = new OpenApiSecurityScheme
     {
@@ -37,9 +47,9 @@ builder.Services.AddSwaggerGen(c =>
 
 // === JWT Auth (SIN clave en appsettings) ===
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var keyString = builder.Configuration["Jwt:Key"]; // viene de user-secrets (dev) o env var Jwt__Key (prod)
+var keyString = builder.Configuration["Jwt:Secret"]; // viene de user-secrets (dev) o env var Jwt__Secret (prod)
 if (string.IsNullOrWhiteSpace(keyString))
-    throw new InvalidOperationException("Jwt:Key no está configurada. Define la key con 'dotnet user-secrets set \"Jwt:Key\" \"...\"' en dev, o como variable Jwt__Key en prod.");
+    throw new InvalidOperationException("Jwt:Secret no está configurada. Define la key con 'dotnet user-secrets set \"Jwt:Secret\" \"...\"' en dev, o como variable Jwt__Secret en prod.");
 
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
 
@@ -65,12 +75,76 @@ builder.Services
         // No loguear contenido sensible
         options.Events = new JwtBearerEvents
         {
-            OnAuthenticationFailed = _ => Task.CompletedTask,
-            OnTokenValidated = _ => Task.CompletedTask
+            OnAuthenticationFailed = context =>
+        {
+            Console.WriteLine("Token inválido: " + context.Exception.Message);
+            return Task.CompletedTask;
+        },
+            OnTokenValidated = context =>
+            {
+                Console.WriteLine("Token válido: " + context.SecurityToken);
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                context.HandleResponse();
+
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+
+                var result = JsonSerializer.Serialize(new
+                {
+                    error = "Token inválido o no autorizado"
+                });
+
+                return context.Response.WriteAsync(result);
+            }
+
         };
     });
 
-builder.Services.AddAuthorization();
+string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins, policy =>
+    {
+        var devOrigins = new[]
+        {
+            "http://localhost:4200",
+            "http://localhost:4201",
+            "http://localhost:4202",
+            "http://localhost:61968",
+            "http://localhost:61969"
+        };
+
+        var prodOrigins = new[]
+        {
+            "https://progrxpruebas.aseccss.com",
+            "https://progrxweb.com"
+        };
+
+        policy.SetIsOriginAllowed(origin =>
+        {
+            if (builder.Environment.IsDevelopment())
+                return devOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
+
+            return prodOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
+        })
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+    });
+});
+
+// Establecer la cultura global
+var cultureInfo = new CultureInfo("en-US"); // Cambia a "en-US" para MM/dd/yyyy
+cultureInfo.DateTimeFormat.ShortDatePattern = "MM/dd/yyyy"; // Configura el patr�n de fecha
+cultureInfo.DateTimeFormat.LongTimePattern = "HH:mm:ss"; // Configura el patr�n de hora
+
+CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
+CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+
 
 var app = builder.Build();
 
@@ -79,6 +153,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseCors(MyAllowSpecificOrigins);
 
 app.UseHttpsRedirection();
 app.UseAuthentication();

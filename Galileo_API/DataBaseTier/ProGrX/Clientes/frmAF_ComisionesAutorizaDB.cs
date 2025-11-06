@@ -1,9 +1,8 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
-using PgxAPI.BusinessLogic;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 {
@@ -11,12 +10,12 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_ComisionesAutorizaDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -25,7 +24,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<ComisionAutorizaData>> AF_ComisionesAutoriza_Obtener(int CodEmpresa, ComisionAutorizaFiltroDTO filtro)
+        public ErrorDto<List<ComisionAutorizaData>> AF_ComisionesAutoriza_Obtener(int CodEmpresa, ComisionAutorizaFiltroDto filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto<List<ComisionAutorizaData>>()
@@ -131,7 +130,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         cedula
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

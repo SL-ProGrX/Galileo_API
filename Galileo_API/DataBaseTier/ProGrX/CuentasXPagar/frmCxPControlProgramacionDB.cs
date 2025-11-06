@@ -108,9 +108,9 @@ namespace PgxAPI.DataBaseTier
                             {paginacionActual} ";
 
 
-                    response.Result.FacturasPago = connection.Query<ProgramacionPagoDTO>(query).ToList();
+                    response.Result.FacturasPago = connection.Query<ProgramacionPagoDto>(query).ToList();
 
-                    foreach (ProgramacionPagoDTO ft in response.Result.FacturasPago)
+                    foreach (ProgramacionPagoDto ft in response.Result.FacturasPago)
                     {
                         ft.DataKey = ft.Cod_Factura + '-' + ft.Cod_Proveedor;
                     }

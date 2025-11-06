@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -10,15 +11,15 @@ namespace PgxAPI.DataBaseTier
     public class frmCxPControlReprogramacionDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmCxPControlReprogramacionDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -83,12 +84,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<vCxP_ProgramacionPago> ProgramacionDetalle_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
+        public ErrorDto<VCxpProgramacionPago> ProgramacionDetalle_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<vCxP_ProgramacionPago>();
+            var response = new ErrorDto<VCxpProgramacionPago>();
 
             try
             {
@@ -96,7 +97,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT *  FROM vCxP_ProgramacionPago WHERE cxp_estado = 'G' AND Cod_Factura = '{Cod_Factura}' AND Cod_Proveedor = {Cod_Proveedor}";
 
-                    response.Result = connection.Query<vCxP_ProgramacionPago>(query).FirstOrDefault();
+                    response.Result = connection.Query<VCxpProgramacionPago>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -158,7 +159,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (resp.Code == 0)
                     {
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = data.Registro_Usuario,

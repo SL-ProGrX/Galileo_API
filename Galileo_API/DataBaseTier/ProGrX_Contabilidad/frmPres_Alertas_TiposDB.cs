@@ -61,7 +61,7 @@ namespace PgxAPI.DataBaseTier
                                          {paginaActual}
                                          {paginacionActual} ";
 
-                    response.Result.lista = connection.Query<AlertasTiposDTO>(query).ToList();
+                    response.Result.lista = connection.Query<AlertasTiposDto>(query).ToList();
 
                 }
             }
@@ -83,7 +83,7 @@ namespace PgxAPI.DataBaseTier
         /// /// <param name="CodCliente"></param>
         /// <param name="alertatipo"></param>
         /// <returns></returns>
-        public ErrorDto AlertasTipos_Insertar(int CodCliente, AlertasTiposDTO alertatipo)
+        public ErrorDto AlertasTipos_Insertar(int CodCliente, AlertasTiposDto alertatipo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -146,7 +146,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="alertatipo"></param>
         /// <returns></returns>
-        public ErrorDto AlertasTipos_Actualizar(int CodCliente, AlertasTiposDTO alertatipo)
+        public ErrorDto AlertasTipos_Actualizar(int CodCliente, AlertasTiposDto alertatipo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();

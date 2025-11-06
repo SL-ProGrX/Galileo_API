@@ -1,13 +1,12 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using Microsoft.Reporting.Map.WebForms.BingMaps;
 using PdfSharp.Drawing;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.FSL;
 using PgxAPI.Models.ProGrX.Fondos;
+using PgxAPI.Models.Security;
 using System;
 using System.Diagnostics.Contracts;
 using System.Numerics;
@@ -18,7 +17,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 18; // Modulo de Fondo de Inversion
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly mFNDFuncionesDB _mFNDFunciones;
         private readonly mProGrx_Main _mProGrxMain;
         private readonly mProGrX_AuxiliarDB _AuxiliarDB;
@@ -31,7 +30,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         public frmFNDContratosDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
             _mFNDFunciones = new mFNDFuncionesDB(_config);
             _mProGrxMain = new mProGrx_Main(_config);
             _AuxiliarDB = new mProGrX_AuxiliarDB(_config);
@@ -494,7 +493,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         cod_plan = codigo
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -988,7 +987,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                             registro_fecha = DateTime.Now
                         });
 
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = destino.usu_modifica,
@@ -1012,7 +1011,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                             cod_destino = destino.id_destino
                         });
 
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = destino.usu_modifica,
@@ -1303,7 +1302,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         cod_beneficiario = 0
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -1356,7 +1355,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
 
                     sbGuardaCambios(CodEmpresa, subCuenta.cod_operadora, subCuenta.cod_plan, subCuenta.cod_contrato, usuario, 04, $@"Modifica a SubCuenta: {subCuenta.cedula}");
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -1891,7 +1890,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                     }
 
                     //Bitacora
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -1901,7 +1900,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                     });
 
                     //Bitacora de cambios
-                    _mProGrxMain.SbSIFRegistraTags( new SIFRegistraTagsRequestDTO
+                    _mProGrxMain.SbSIFRegistraTags( new SifRegistraTagsRequestDto
                             {
                                 Codigo = contrato.cod_plan,
                                 Tag = "S09",
@@ -2015,7 +2014,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                     });
 
                     //Bitacora
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

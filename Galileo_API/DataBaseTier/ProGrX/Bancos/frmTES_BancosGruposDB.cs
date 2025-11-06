@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
@@ -12,13 +13,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         private readonly IConfiguration? _config;
         private readonly int vModulo = 9; // Modulo de Tesorería
         private readonly mImagenes mImagenes;
-        private readonly mSecurityMainDb DBBitacora;
+        private readonly MSecurityMainDb DBBitacora;
 
         public frmTES_BancosGruposDB(IConfiguration config)
         {
             _config = config;
             mImagenes = new mImagenes(config);
-            DBBitacora = new mSecurityMainDb(config);
+            DBBitacora = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -26,12 +27,12 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<TES_BancosGruposLista> Tes_BancosGruposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
+        public ErrorDto<TesBancosGruposLista> Tes_BancosGruposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_BancosGruposLista>();
-            response.Result = new TES_BancosGruposLista();
-            response.Result.data = new List<TES_BancosGruposData>();
+            var response = new ErrorDto<TesBancosGruposLista>();
+            response.Result = new TesBancosGruposLista();
+            response.Result.data = new List<TesBancosGruposData>();
             response.Result.total = 0;
             
 
@@ -66,14 +67,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                   TCta_UTiliza,Activo, Firma_N1, Firma_N2 from Tes_Bancos_Grupos  {valWhere}
                                     order by {filtro.sortField} {(filtro.sortOrder == 1 ? "DESC" : "ASC")} {paginaActual} {paginacionActual}";
 
-                    response.Result.data = connection.Query<TES_BancosGruposData>(query).ToList();
+                    response.Result.data = connection.Query<TesBancosGruposData>(query).ToList();
                 }
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result.data = new List<TES_BancosGruposData>();
+                response.Result.data = new List<TesBancosGruposData>();
             }
             return response;
         }
@@ -83,10 +84,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<TES_BancosGruposData>> Tes_BancosGruposExportar_Obtener(int CodEmpresa)
+        public ErrorDto<List<TesBancosGruposData>> Tes_BancosGruposExportar_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TES_BancosGruposData>>();
+            var response = new ErrorDto<List<TesBancosGruposData>>();
 
             try
             {
@@ -106,14 +107,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                 from Tes_Bancos_Grupos
                                     order by cod_grupo";
 
-                    response.Result = connection.Query<TES_BancosGruposData>(query).ToList();
+                    response.Result = connection.Query<TesBancosGruposData>(query).ToList();
                 }
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = new List<TES_BancosGruposData>();
+                response.Result = new List<TesBancosGruposData>();
             }
             return response;
         }
@@ -123,7 +124,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="firma"></param>
         /// <returns></returns>
-        public ErrorDto Tes_BancoGrupoFirma_Guardar(TES_BancosGruposImgData firma)
+        public ErrorDto Tes_BancoGrupoFirma_Guardar(TesBancosGruposImgData firma)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(firma.cod_empresa);
             var response = new ErrorDto();
@@ -211,7 +212,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-        public ErrorDto Tes_BancosGrupo_Guardar(int CodEmpresa, TES_BancosGruposData banco)
+        public ErrorDto Tes_BancosGrupo_Guardar(int CodEmpresa, TesBancosGruposData banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto();
@@ -254,7 +255,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-        private ErrorDto BancoGrupoInsertar(int CodEmpresa, TES_BancosGruposData banco)
+        private ErrorDto BancoGrupoInsertar(int CodEmpresa, TesBancosGruposData banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto();
@@ -300,7 +301,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     });
 
                     //bitácora
-                    DBBitacora.Bitacora(new BitacoraInsertarDTO
+                    DBBitacora.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = banco.registro_usuario,
@@ -324,7 +325,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-        private ErrorDto BancoGrupoActualizar(int CodEmpresa, TES_BancosGruposData banco)
+        private ErrorDto BancoGrupoActualizar(int CodEmpresa, TesBancosGruposData banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto();
@@ -356,7 +357,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     });
 
                     //bitácora
-                    DBBitacora.Bitacora(new BitacoraInsertarDTO
+                    DBBitacora.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = banco.registro_usuario,
@@ -402,7 +403,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     var query = $@"delete from Tes_Bancos_Grupos where cod_grupo = @cod_grupo";
                     response.Code = connection.Execute(query, new { cod_grupo });
                     //bitácora
-                    DBBitacora.Bitacora(new BitacoraInsertarDTO
+                    DBBitacora.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = "Sistema", // Usuario que elimina

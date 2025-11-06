@@ -1,6 +1,5 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.SYS;
 
@@ -64,11 +63,11 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public AutorizadoresEXPDTO Autorizador_Obtener(int CodEmpresa, int Cod_Proveedor)
+        public AutorizadoresExpDto Autorizador_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            AutorizadoresEXPDTO info = new AutorizadoresEXPDTO();
+            AutorizadoresExpDto info = new AutorizadoresExpDto();
 
             try
             {
@@ -76,7 +75,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT * FROM sif_juzgados WHERE COD_JUZGADO = '{Cod_Proveedor}'";
 
-                    info = connection.Query<AutorizadoresEXPDTO>(query).FirstOrDefault();
+                    info = connection.Query<AutorizadoresExpDto>(query).FirstOrDefault();
 
                 }
             }
@@ -88,7 +87,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto Autorizador_Insertar(int CodCliente, AutorizadoresEXPDTO autorizador)
+        public ErrorDto Autorizador_Insertar(int CodCliente, AutorizadoresExpDto autorizador)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -132,7 +131,7 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDto Autorizador_Actualizar(int CodEmpresa, AutorizadoresEXPDTO request)
+        public ErrorDto Autorizador_Actualizar(int CodEmpresa, AutorizadoresExpDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 

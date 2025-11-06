@@ -31,7 +31,7 @@ namespace PgxAPI.DataBaseTier
             nofiticacionCobros = _config.GetSection("AFI_Beneficios").GetSection("NotificacionCobros").Value.ToString();
         }
 
-        public ErrorDto SbSIFRegistraTags(SIFRegistraTagsRequestDTO data)
+        public ErrorDto SbSIFRegistraTags(SifRegistraTagsRequestDto data)
         {
             return mProGrx_Main.SbSIFRegistraTags(data);
         }
@@ -194,7 +194,7 @@ namespace PgxAPI.DataBaseTier
                         await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, response);
                     }
 
-                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                     {
                         EmpresaId = CodCliente,
                         cod_beneficio = cod_beneficio,
@@ -221,7 +221,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public async Task<ErrorDto> BeneficioNotificaResolucion_Enviar(List<DocArchivoBeneIntegralDTO> parametros)
+        public async Task<ErrorDto> BeneficioNotificaResolucion_Enviar(List<DocArchivoBeneIntegralDto> parametros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(Convert.ToInt32(parametros[0].codCliente));
             ErrorDto info = new ErrorDto();
@@ -291,7 +291,7 @@ namespace PgxAPI.DataBaseTier
 
                 List<IFormFile> Attachments = new List<IFormFile>();
                 var file = new List<IFormFile>();
-                foreach (DocArchivoBeneIntegralDTO fileE in parametros)
+                foreach (DocArchivoBeneIntegralDto fileE in parametros)
                 {
                     //Convierto de base64 a byte[]
                     byte[] fileContent = Convert.FromBase64String(fileE.filecontent);
@@ -318,7 +318,7 @@ namespace PgxAPI.DataBaseTier
 
                 }
 
-                _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                 {
                     EmpresaId = Convert.ToInt32(parametros[0].codCliente),
                     cod_beneficio = parametros[0].cod_beneficio,
@@ -440,10 +440,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consec"></param>
         /// <param name="cod_beneficio"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfiBenProductoDTO>> BeneIntegralGenProductos_Obtener(int CodCliente, int consec, string cod_beneficio)
+        public ErrorDto<List<AfiBenProductoDto>> BeneIntegralGenProductos_Obtener(int CodCliente, int consec, string cod_beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<AfiBenProductoDTO>>();
+            var response = new ErrorDto<List<AfiBenProductoDto>>();
 
             try
             {
@@ -457,7 +457,7 @@ namespace PgxAPI.DataBaseTier
                                           ,A.[COSTO_UNIDAD]
                                       FROM [AFI_BENE_PRODASG] A left join AFI_BENE_PRODUCTOS B
                                       ON A.COD_PRODUCTO = B.COD_PRODUCTO WHERE CONSEC = {consec} AND COD_BENEFICIO = '{cod_beneficio}' ";
-                    response.Result = connection.Query<AfiBenProductoDTO>(query).ToList();
+                    response.Result = connection.Query<AfiBenProductoDto>(query).ToList();
 
                 }
             }
@@ -517,7 +517,7 @@ namespace PgxAPI.DataBaseTier
 
 
             //Valida si el beneficio aplica parcial
-            AfiBeneficiosDTO afiBeneficios = frmAF_BeneficioAsgDB.AfiBeneficioDTO_Obtener(CodCliente, beneficioGeneral.cod_beneficio.item).Result;
+            AfiBeneficiosDto afiBeneficios = frmAF_BeneficioAsgDB.AfiBeneficioDto_Obtener(CodCliente, beneficioGeneral.cod_beneficio.item).Result;
             bAplicaParcial = afiBeneficios.aplica_parcial == 1 ? true : false;
 
             //valida requisitos
@@ -584,7 +584,7 @@ namespace PgxAPI.DataBaseTier
             }
 
             //busco COD de la oficina donde se realiza el registro.
-            List<SIFOficinasUsuarioResultDTO> empresa = frmAF_BeneficioAsgDB.CargaOficinas(CodCliente, beneficio.registra_user).Result;
+            List<SifOficinasUsuarioResultDto> empresa = frmAF_BeneficioAsgDB.CargaOficinas(CodCliente, beneficio.registra_user).Result;
             try
             {
                 //Busco el consecutivo del beneficio (este depende de la categoria)
@@ -701,7 +701,7 @@ namespace PgxAPI.DataBaseTier
 
                     string tipo = beneficio.tipo.item == "P" ? "Producto" : beneficio.tipo.item == "M" ? "Monetario" : "Mixto";
 
-                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                     {
                         EmpresaId = CodCliente,
                         cod_beneficio = beneficio.cod_beneficio.item,
@@ -820,7 +820,7 @@ namespace PgxAPI.DataBaseTier
                     switch (fuente)
                     {
                         case "DB":
-                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 cod_beneficio = beneficio.cod_beneficio.item,
@@ -907,7 +907,7 @@ namespace PgxAPI.DataBaseTier
                         if (monto != beneficio.monto_aplicado)
                         {
 
-                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 cod_beneficio = beneficio.cod_beneficio.item,
@@ -940,7 +940,7 @@ namespace PgxAPI.DataBaseTier
 
                         connection.Execute(queryI);
 
-                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                         {
                             EmpresaId = CodCliente,
                             cod_beneficio = beneficio.cod_beneficio.item,
@@ -1107,7 +1107,7 @@ namespace PgxAPI.DataBaseTier
 
                         if (cod_estado != beneficio.estado.item)
                         {
-                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 cod_beneficio = beneficio.cod_beneficio.item,
@@ -1140,7 +1140,7 @@ namespace PgxAPI.DataBaseTier
 
                         connection.Execute(query);
 
-                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                         {
                             EmpresaId = CodCliente,
                             cod_beneficio = beneficio.cod_beneficio.item,
@@ -1217,7 +1217,7 @@ namespace PgxAPI.DataBaseTier
 
                         if (cod_motivo != beneficio.cod_motivo.item)
                         {
-                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 cod_beneficio = beneficio.cod_beneficio.item,
@@ -1245,7 +1245,7 @@ namespace PgxAPI.DataBaseTier
 
                         connection.Execute(query);
 
-                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                         {
                             EmpresaId = CodCliente,
                             cod_beneficio = beneficio.cod_beneficio.item,
@@ -1465,7 +1465,7 @@ namespace PgxAPI.DataBaseTier
                                     (
 	                                    SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab WHERE ab.COD_BENEFICIO = '{beneficio}'
                                     ) AND ESTADO = 1 AND REGISTRO_JUSTIFICA = 1 )";
-                    var validaciones = connection.Query<afiBeneCalidaciones>(query).ToList();
+                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
                     foreach (var validacion in validaciones)
                     {
@@ -1636,10 +1636,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consec"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        public ErrorDto<BeneRegistroMoraDTO> BeneRegistroMora_Obtener(int CodCliente, int consec, string beneficio)
+        public ErrorDto<BeneRegistroMoraDto> BeneRegistroMora_Obtener(int CodCliente, int consec, string beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<BeneRegistroMoraDTO>();
+            var response = new ErrorDto<BeneRegistroMoraDto>();
 
             try
             {
@@ -1652,7 +1652,7 @@ namespace PgxAPI.DataBaseTier
                         from AFI_BENE_REGISTRO_MORA 
 	                    where CONSEC = {consec} and COD_BENEFICIO = '{beneficio}'";
 
-                    response.Result = connection.Query<BeneRegistroMoraDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<BeneRegistroMoraDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -1706,7 +1706,7 @@ namespace PgxAPI.DataBaseTier
 
                         response.Code = connection.Execute(updateQuery);
 
-                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                         {
                             EmpresaId = CodCliente,
                             cod_beneficio = cobroMora.cod_beneficio,
@@ -1751,7 +1751,7 @@ namespace PgxAPI.DataBaseTier
 
                         response.Code = connection.Execute(insertQuery);
 
-                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                         {
                             EmpresaId = CodCliente,
                             cod_beneficio = cobroMora.cod_beneficio,
@@ -1779,7 +1779,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public async Task<ErrorDto> BeneRegistroMora_Enviar(int CodCliente, DocArchivoBeneIntegralDTO parametros)
+        public async Task<ErrorDto> BeneRegistroMora_Enviar(int CodCliente, DocArchivoBeneIntegralDto parametros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -1864,7 +1864,7 @@ namespace PgxAPI.DataBaseTier
 
                 }
 
-                _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                 {
                     EmpresaId = CodCliente,
                     cod_beneficio = parametros.cod_beneficio,

@@ -79,7 +79,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="miembro"></param>
         /// <returns></returns>
-        public ErrorDto MiembroFamiliar_Guardar(int CodCliente, BeneIntNucleoFamDTO miembro)
+        public ErrorDto MiembroFamiliar_Guardar(int CodCliente, BeneIntNucleoFamDto miembro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -133,7 +133,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="miembro"></param>
         /// <returns></returns>
-        public ErrorDto MiembroFamiliar_Agregar(int CodCliente, BeneIntNucleoFamDTO miembro)
+        public ErrorDto MiembroFamiliar_Agregar(int CodCliente, BeneIntNucleoFamDto miembro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -232,7 +232,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="miembro"></param>
         /// <returns></returns>
-        private ErrorDto<bool> MiembroFamiliar_Actualizar(int CodCliente, BeneIntNucleoFamDTO miembro)
+        private ErrorDto<bool> MiembroFamiliar_Actualizar(int CodCliente, BeneIntNucleoFamDto miembro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var response = new ErrorDto<bool>();

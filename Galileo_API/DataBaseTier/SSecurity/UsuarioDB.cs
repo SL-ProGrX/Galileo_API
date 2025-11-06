@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
+using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -15,9 +16,9 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorUsuarioDTO UsuarioCuentaRevisar(UsuarioCuentaRevisarDto cuentaUsuarioRevisarDto)
+        public ErrorDto UsuarioCuentaRevisar(UsuarioCuentaRevisarDto cuentaUsuarioRevisarDto)
         {
-            ErrorUsuarioDTO resultado = new ErrorUsuarioDTO();
+            ErrorDto resultado = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

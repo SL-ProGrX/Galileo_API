@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -9,15 +10,15 @@ namespace PgxAPI.DataBaseTier
     public class frmPGX_ClientesDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmPGX_ClientesDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -60,7 +61,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    info.Lista = connection.Query<ClienteDTO>(query).ToList();
+                    info.Lista = connection.Query<ClienteDto>(query).ToList();
 
                 }
             }
@@ -71,16 +72,16 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ClienteDTO Cliente_Obtener(int CodEmpresa)
+        public ClienteDto Cliente_Obtener(int CodEmpresa)
         {
-            ClienteDTO resp = new();
+            ClienteDto resp = new();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
                 {
                     var query = "SELECT * FROM PGX_CLIENTES WHERE cod_empresa = @CodEmpresa";
                     var parameters = new { CodEmpresa };
-                    resp = connection.Query<ClienteDTO>(query, parameters).FirstOrDefault();
+                    resp = connection.Query<ClienteDto>(query, parameters).FirstOrDefault();
                     //var procedure = "[spPGX_Obtener_Empresa]";
                     //var values = new
                     //{
@@ -105,11 +106,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ClienteDTO ConsultaAscDesc(int CodEmpresa, string tipo)
+        public ClienteDto ConsultaAscDesc(int CodEmpresa, string tipo)
         {
 
 
-            ClienteDTO info = new ClienteDTO();
+            ClienteDto info = new ClienteDto();
 
             try
             {
@@ -138,7 +139,7 @@ namespace PgxAPI.DataBaseTier
                     }
 
 
-                    info = connection.Query<ClienteDTO>(query).FirstOrDefault();
+                    info = connection.Query<ClienteDto>(query).FirstOrDefault();
 
                 }
             }
@@ -150,7 +151,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto Cliente_Modificar(ClienteDTO info)
+        public ErrorDto Cliente_Modificar(ClienteDto info)
         {
             ErrorDto resp = new ErrorDto();
 
@@ -284,7 +285,7 @@ namespace PgxAPI.DataBaseTier
                     {
                         resp.Code = 0; // Success code
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = info.cod_empresa,
                             Usuario = info.modifica_usuario,
@@ -314,9 +315,9 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public RespuestaDTO Cliente_Crear(ClienteDTO info)
+        public RespuestaDto Cliente_Crear(ClienteDto info)
         {
-            var resp = new RespuestaDTO();
+            var resp = new RespuestaDto();
 
             try
             {
@@ -412,7 +413,7 @@ namespace PgxAPI.DataBaseTier
                     resp.HasError = false;
 
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = info.cod_empresa,
                         Usuario = info.registro_usuario,
@@ -446,7 +447,7 @@ namespace PgxAPI.DataBaseTier
                     var parameters = new { CodEmpresa };
                     connection.Execute(query, parameters);
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -540,9 +541,9 @@ namespace PgxAPI.DataBaseTier
 
         #region SERVICIOS
 
-        public List<ServicioDTO> ServiciosCliente_Obtener(int CodEmpresa)
+        public List<ServicioDto> ServiciosCliente_Obtener(int CodEmpresa)
         {
-            List<ServicioDTO> resp = null!;
+            List<ServicioDto> resp = null!;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -553,7 +554,7 @@ namespace PgxAPI.DataBaseTier
                     INNER JOIN PGX_Servicios_ASG A ON S.Cod_Servicio = A.Cod_Servicio
                     WHERE A.Cod_Empresa = @CodEmpresa AND A.Activo = 1";
 
-                    resp = connection.Query<ServicioDTO>(sql, new { CodEmpresa = CodEmpresa }).ToList();
+                    resp = connection.Query<ServicioDto>(sql, new { CodEmpresa = CodEmpresa }).ToList();
 
                 }
 
@@ -570,9 +571,9 @@ namespace PgxAPI.DataBaseTier
 
         #region CONTACTOS CLIENTE
 
-        public List<ContactoDTO> ContactosCliente_Obtener(int CodEmpresa)
+        public List<ContactoDto> ContactosCliente_Obtener(int CodEmpresa)
         {
-            List<ContactoDTO> resp = null!;
+            List<ContactoDto> resp = null!;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -582,7 +583,7 @@ namespace PgxAPI.DataBaseTier
                                 FROM PGX_Clientes_Contactos
                                 WHERE cod_Empresa = @CodEmpresa";
 
-                    resp = connection.Query<ContactoDTO>(sql, new { CodEmpresa = CodEmpresa }).ToList();
+                    resp = connection.Query<ContactoDto>(sql, new { CodEmpresa = CodEmpresa }).ToList();
 
                 }
 
@@ -594,7 +595,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto ContactoCliente_Actualizar(ContactoDTO contacto)
+        public ErrorDto ContactoCliente_Actualizar(ContactoDto contacto)
         {
             ErrorDto resp = new ErrorDto();
 
@@ -618,7 +619,7 @@ namespace PgxAPI.DataBaseTier
                     // Execute the query with the contact data
                     connection.Execute(sql, contacto);
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = contacto.cod_empresa,
                         Usuario = contacto.registro_usuario,
@@ -646,7 +647,7 @@ namespace PgxAPI.DataBaseTier
             }
         }
 
-        public ErrorDto ContactoCliente_Insertar(ContactoDTO contacto)
+        public ErrorDto ContactoCliente_Insertar(ContactoDto contacto)
         {
             ErrorDto resp = new ErrorDto();
 
@@ -673,7 +674,7 @@ namespace PgxAPI.DataBaseTier
                     // Execute the insert query with the contact data
                     connection.Execute(insertSql, contacto);
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = contacto.cod_empresa,
                         Usuario = contacto.registro_usuario,
@@ -753,9 +754,9 @@ namespace PgxAPI.DataBaseTier
 
         #region SMTP CLIENTE
 
-        public List<SMTPDTO> ListaSMTP(int CodEmpresa)
+        public List<SmtpDto> ListaSMTP(int CodEmpresa)
         {
-            List<SMTPDTO> resp = [];
+            List<SmtpDto> resp = [];
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -765,7 +766,7 @@ namespace PgxAPI.DataBaseTier
                     {
                         Cliente = CodEmpresa
                     };
-                    resp = connection.Query<SMTPDTO>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    resp = connection.Query<SmtpDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -775,7 +776,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto SMTP_Autorizar(SMTPDTO smtpAuth)
+        public ErrorDto SMTP_Autorizar(SmtpDto smtpAuth)
 
         {
             ErrorDto resp = new ErrorDto();
@@ -894,7 +895,7 @@ namespace PgxAPI.DataBaseTier
                         sql += " AND COD_EMPRESA = @CodEmpresa";
                     }
 
-                    var clientes = connection.Query<ClienteDTO>(sql, new { CodEmpresa = CodEmpresa }).ToList();
+                    var clientes = connection.Query<ClienteDto>(sql, new { CodEmpresa = CodEmpresa }).ToList();
 
                     foreach (var cliente in clientes)
                     {
@@ -1026,9 +1027,9 @@ namespace PgxAPI.DataBaseTier
         #region YA NO SE USAN
 
 
-        public List<ClienteDTO> ObtenerTodasEmpresas()
+        public List<ClienteDto> ObtenerTodasEmpresas()
         {
-            List<ClienteDTO> resp = [];
+            List<ClienteDto> resp = [];
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -1038,7 +1039,7 @@ namespace PgxAPI.DataBaseTier
                     {
 
                     };
-                    resp = connection.Query<ClienteDTO>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    resp = connection.Query<ClienteDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -1092,7 +1093,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public int CrearEmpresa(ClienteDTO info)
+        public int CrearEmpresa(ClienteDto info)
         {
             int resp = 0;
             try
@@ -1170,9 +1171,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public RespuestaDTO Cliente_Crear2(ClienteDTO info)
+        public RespuestaDto Cliente_Crear2(ClienteDto info)
         {
-            var resp = new RespuestaDTO();
+            var resp = new RespuestaDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -1255,7 +1256,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Cliente_Modificar2(ClienteDTO info)
+        public ErrorDto Cliente_Modificar2(ClienteDto info)
         {
             ErrorDto resp = new ErrorDto();
 

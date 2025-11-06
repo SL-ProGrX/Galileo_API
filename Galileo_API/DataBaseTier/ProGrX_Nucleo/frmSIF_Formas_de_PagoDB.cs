@@ -326,10 +326,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="codFormaPago"></param>
         /// <returns></returns>
-        public List<SYS_Cuentas_Bancarias_List> CuentasBancarias_Obtener_Lista(int CodEmpresa, string codFormaPago)
+        public List<SysCuentasBancariasList> CuentasBancarias_Obtener_Lista(int CodEmpresa, string codFormaPago)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<SYS_Cuentas_Bancarias_List> info = new List<SYS_Cuentas_Bancarias_List>();
+            List<SysCuentasBancariasList> info = new List<SysCuentasBancariasList>();
 
             try
             {
@@ -351,7 +351,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     where Ban.ESTADO = 'A'
                     order by Fp.id_Banco desc, Ban.ID_BANCO asc;";
 
-                info = connection.Query<SYS_Cuentas_Bancarias_List>(query, new { codFormaPago }).ToList();
+                info = connection.Query<SysCuentasBancariasList>(query, new { codFormaPago }).ToList();
             }
             catch (Exception ex)
             {
@@ -367,7 +367,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="codEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto CuentasBancarias_Asignar(int codEmpresa, SIF_FormasPagoBancoAsgDTO data)
+        public ErrorDto CuentasBancarias_Asignar(int codEmpresa, SifFormasPagoBancoAsgDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             var result = new ErrorDto { Code = 0, Description = "Ok" };

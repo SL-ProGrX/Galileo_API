@@ -25,13 +25,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtros"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public ErrorDto<sifBitacoraLista> Bitacora_Obtener(int codEmpresa, string filtros)
+        public ErrorDto<SifBitacoraLista> Bitacora_Obtener(int codEmpresa, string filtros)
         {
-            var response = new ErrorDto<sifBitacoraLista>
+            var response = new ErrorDto<SifBitacoraLista>
             {
                 Code = 0,
                 Description = "OK",
-                Result = new sifBitacoraLista
+                Result = new SifBitacoraLista
                 {
                     total = 0,
                     lista = new List<BitacoraResultadoDto>()
@@ -43,7 +43,7 @@ namespace PgxAPI.DataBaseTier
                 if (_config == null)
                     throw new ArgumentNullException(nameof(_config), "La configuración no puede ser nula.");
 
-                var bitacora = JsonConvert.DeserializeObject<BitacoraDTO>(filtros);
+                var bitacora = JsonConvert.DeserializeObject<BitacoraDto>(filtros);
 
                 DateTime fechaInicio, fechaCorte;
 
@@ -128,7 +128,7 @@ namespace PgxAPI.DataBaseTier
 
                 const string procedure = "[spSEG_Modulos_Consulta]";
 
-                var rows = connection.Query<BitacoraModuloDTO>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                var rows = connection.Query<BitacoraModuloDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
 
                 response.Result = rows.Select(r => new DropDownListaGenericaModel
                 {

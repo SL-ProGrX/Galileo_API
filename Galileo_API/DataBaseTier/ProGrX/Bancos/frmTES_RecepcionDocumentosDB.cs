@@ -3,21 +3,22 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
     public class frmTES_RecepcionDocumentosDB
     {
         private readonly IConfiguration? _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmTES_RecepcionDocumentosDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -63,13 +64,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="scrollCode"></param>
         /// <param name="Remesa"></param>
         /// <returns></returns>
-        public ErrorDto<TES_Ubi_RemesaDTO> TES_RecepcionDoc_Remesa_Scroll_Obtener(int CodEmpresa, int scrollCode, int Remesa)
+        public ErrorDto<TesUbiRemesaDto> TES_RecepcionDoc_Remesa_Scroll_Obtener(int CodEmpresa, int scrollCode, int Remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_Ubi_RemesaDTO>
+            var response = new ErrorDto<TesUbiRemesaDto>
             {
                 Code = 0,
-                Result = new TES_Ubi_RemesaDTO()
+                Result = new TesUbiRemesaDto()
             };
             try
             {
@@ -112,13 +113,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Remesa"></param>
         /// <returns></returns>
-        public ErrorDto<TES_Ubi_RemesaDTO> TES_RecepcionDoc_Remesa_Obtener(int CodEmpresa, int Remesa)
+        public ErrorDto<TesUbiRemesaDto> TES_RecepcionDoc_Remesa_Obtener(int CodEmpresa, int Remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_Ubi_RemesaDTO>
+            var response = new ErrorDto<TesUbiRemesaDto>
             {
                 Code = 0,
-                Result = new TES_Ubi_RemesaDTO()
+                Result = new TesUbiRemesaDto()
             };
             try
             {
@@ -129,7 +130,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         from tes_ubi_remesa R inner join tes_ubicaciones X on R.cod_ubicacion = X.cod_ubicacion
                         inner join tes_ubicaciones Y on R.cod_ubicacion_Destino = Y.cod_ubicacion
                         where R.cod_remesa = @codigo";
-                    response.Result = connection.QueryFirstOrDefault<TES_Ubi_RemesaDTO>(query,
+                    response.Result = connection.QueryFirstOrDefault<TesUbiRemesaDto>(query,
                         new { codigo = Remesa });
 
                     if (response.Result == null)
@@ -194,7 +195,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                             OFFSET {filtros.pagina} ROWS
                             FETCH NEXT {filtros.paginacion} ROWS ONLY ";
                     }
-                    response.Result.lista = connection.Query<TES_RecepcionDocumentoDTO>(query,
+                    response.Result.lista = connection.Query<TesRecepcionDocumentoDto>(query,
                     new { codigo = Remesa }).ToList();
                 }
             }
@@ -213,7 +214,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDto TES_RecepcionDocumentos_Aplicar(int CodEmpresa, TES_RecepcionDocumento_Filtros parametros)
+        public ErrorDto TES_RecepcionDocumentos_Aplicar(int CodEmpresa, TesRecepcionDocumentoFiltros parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -242,10 +243,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     }
 
                     query = @"update tes_ubi_remesa set estado = 'R' where cod_remesa = @remesa";
-                    connection.Query<TES_RecepcionDocumentoDTO>(query,
+                    connection.Query<TesRecepcionDocumentoDto>(query,
                         new { remesa = parametros.cod_remesa });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = parametros.usuario.ToUpper(),

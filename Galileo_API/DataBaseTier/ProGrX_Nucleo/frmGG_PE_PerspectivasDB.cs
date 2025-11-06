@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<PePerspectivasDTO> PePerspectiva_Obtener(int CodEmpresa, int perspectiva)
+        public ErrorDto<PePerspectivasDto> PePerspectiva_Obtener(int CodEmpresa, int perspectiva)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<PePerspectivasDTO>();
+            var response = new ErrorDto<PePerspectivasDto>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -35,7 +35,7 @@ namespace PgxAPI.DataBaseTier
                                           ,[REGISTRO_FECHA]
                                           ,[MODIFICA_FECHA]
                                           ,[MODIFICA_USUARIO] from PE_PERSPECTIVAS WHERE PERSPECTIVA_ID = '{perspectiva}' ";
-                    response.Result = connection.Query<PePerspectivasDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<PePerspectivasDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -47,10 +47,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<PePerspectivasDTO> PePerspectiva_Scroll(int CodEmpresa, int scroll, int? perspectiva)
+        public ErrorDto<PePerspectivasDto> PePerspectiva_Scroll(int CodEmpresa, int scroll, int? perspectiva)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<PePerspectivasDTO>();
+            var response = new ErrorDto<PePerspectivasDto>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -68,7 +68,7 @@ namespace PgxAPI.DataBaseTier
                     }
 
                     var query = $@"select top 1 * from PE_PERSPECTIVAS {where} {orderBy}";
-                    response.Result = connection.Query<PePerspectivasDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<PePerspectivasDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -80,7 +80,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
     
-        public ErrorDto PePerspectiva_Guardar(int CodEmpresa, PePerspectivasDTO perspectiva)
+        public ErrorDto PePerspectiva_Guardar(int CodEmpresa, PePerspectivasDto perspectiva)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()
@@ -117,7 +117,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDto Perspectiva_Insertar(int CodEmpresa, PePerspectivasDTO perspectiva)
+        private ErrorDto Perspectiva_Insertar(int CodEmpresa, PePerspectivasDto perspectiva)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()
@@ -165,7 +165,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDto Perspectiva_Actualizar(int CodEmpresa, PePerspectivasDTO perspectiva)
+        private ErrorDto Perspectiva_Actualizar(int CodEmpresa, PePerspectivasDto perspectiva)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()
@@ -233,10 +233,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto<List<PePerspectivasDTO>> PePlanesLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<PePerspectivasDto>> PePlanesLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PePerspectivasDTO>>();
+            var response = new ErrorDto<List<PePerspectivasDto>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -244,7 +244,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"select [PE_ID]
                                       ,[DESCRIPCION] from PE_PLANES Where ESTADO = 'A' 
                                        AND FINALIZACION > getDate() ";
-                    response.Result = connection.Query<PePerspectivasDTO>(query).ToList();
+                    response.Result = connection.Query<PePerspectivasDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -264,7 +264,7 @@ namespace PgxAPI.DataBaseTier
             response.Result = new PePerspectivasDatosLista
             {
                 total = 0,
-                data = new List<PePerspectivasDTO>()
+                data = new List<PePerspectivasDto>()
             };
 
             try
@@ -300,7 +300,7 @@ namespace PgxAPI.DataBaseTier
                                       ,[REGISTRO_FECHA]
                                       ,[MODIFICA_FECHA]
                                       ,[MODIFICA_USUARIO] from PE_PERSPECTIVAS {where} order by PERSPECTIVA_ID desc {paginaActual} {paginacionActual}";
-                    response.Result.data = connection.Query<PePerspectivasDTO>(query).ToList();
+                    response.Result.data = connection.Query<PePerspectivasDto>(query).ToList();
                 }
             }
             catch (Exception ex)

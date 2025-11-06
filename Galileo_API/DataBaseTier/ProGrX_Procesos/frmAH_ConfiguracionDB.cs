@@ -17,9 +17,9 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ParametrosPatrimonioDTO ParametrosPatrimonio_Obtener(int CodEmpresa, string Divisa)
+        public ParametrosPatrimonioDto ParametrosPatrimonio_Obtener(int CodEmpresa, string Divisa)
         {
-            ParametrosPatrimonioDTO resp = new ParametrosPatrimonioDTO();
+            ParametrosPatrimonioDto resp = new ParametrosPatrimonioDto();
 
             try
             {
@@ -35,7 +35,7 @@ namespace PgxAPI.DataBaseTier
                     };
 
 
-                    resp = connection.Query<ParametrosPatrimonioDTO>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp = connection.Query<ParametrosPatrimonioDto>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -45,7 +45,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Actualiza_ConfiguracionPatrimonio(int CodEmpresa, ParametrosPatrimonioDTO data)
+        public ErrorDto Actualiza_ConfiguracionPatrimonio(int CodEmpresa, ParametrosPatrimonioDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -78,7 +78,7 @@ namespace PgxAPI.DataBaseTier
 
                     //if (resp.Code == 0)
                     //{
-                    //    Bitacora(new BitacoraInsertarDTO
+                    //    Bitacora(new BitacoraInsertarDto
                     //    {
                     //        EmpresaId = CodEmpresa,
                     //        Usuario = data.Creacion_User,

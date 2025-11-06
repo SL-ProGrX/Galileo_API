@@ -714,12 +714,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<fslExpedienteListaData> FslExpedientesLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<FslExpedienteListaData> FslExpedientesLista_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDto<fslExpedienteListaData>();
-            response.Result = new fslExpedienteListaData();
+            var response = new ErrorDto<FslExpedienteListaData>();
+            response.Result = new FslExpedienteListaData();
             try
             {
                 var query = "";
@@ -748,7 +748,7 @@ namespace PgxAPI.DataBaseTier
                                        ORDER BY COD_EXPEDIENTE
                                         {paginaActual}
                                         {paginacionActual} ";
-                    response.Result.expediente = connection.Query<fslExpedienteData>(query).ToList();
+                    response.Result.expediente = connection.Query<FslExpedienteData>(query).ToList();
                 }
 
             }

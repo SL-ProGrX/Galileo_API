@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier
     {
 
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmCxPProvCargoPerDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
         public ErrorDto<List<Secuencia>> Secuencias_Obtener(int CodEmpresa, int Cod_Proveedor)
@@ -76,12 +77,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<CargoPerDTO> CargoDetalle_Obtener(int CodEmpresa, int Cod_Proveedor, int Id)
+        public ErrorDto<CargoPerDto> CargoDetalle_Obtener(int CodEmpresa, int Cod_Proveedor, int Id)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<CargoPerDTO>
+            var response = new ErrorDto<CargoPerDto>
             {
                 Code = 0
             };
@@ -96,7 +97,7 @@ namespace PgxAPI.DataBaseTier
                                  inner join cxp_cargos D on C.cod_cargo = D.cod_cargo
                                  where C.ID = {Id} and C.cod_proveedor = {Cod_Proveedor}";
 
-                    response.Result = connection.Query<CargoPerDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<CargoPerDto>(query).FirstOrDefault();
 
                 }
             }
@@ -139,14 +140,14 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<CargoPerDTOList> CargosPer_Obtener(int CodEmpresa, int Cod_Proveedor, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<CargoPerDtoList> CargosPer_Obtener(int CodEmpresa, int Cod_Proveedor, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<CargoPerDTOList>
+            var response = new ErrorDto<CargoPerDtoList>
             {
                 Code = 0,
-                Result = new CargoPerDTOList()
+                Result = new CargoPerDtoList()
             };
             string paginaActual = " ", paginacionActual = " ";
             try
@@ -173,7 +174,7 @@ namespace PgxAPI.DataBaseTier
                                 WHERE C.cod_proveedor = {Cod_Proveedor} {filtro} ORDER BY C.ID desc
                                 {paginaActual} {paginacionActual}";
 
-                    response.Result.Cargoper = connection.Query<CargoPerDTO>(query).ToList();
+                    response.Result.Cargoper = connection.Query<CargoPerDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -186,14 +187,14 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<PagoProvCargosDTOList> Pagos_Obtener(int CodEmpresa, int Cod_Proveedor, int Id, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<PagoProvCargosDtoList> Pagos_Obtener(int CodEmpresa, int Cod_Proveedor, int Id, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<PagoProvCargosDTOList>
+            var response = new ErrorDto<PagoProvCargosDtoList>
             {
                 Code = 0,
-                Result = new PagoProvCargosDTOList()
+                Result = new PagoProvCargosDtoList()
             };
             string paginaActual = " ", paginacionActual = " ";
             try
@@ -222,7 +223,7 @@ namespace PgxAPI.DataBaseTier
                                 AND P.cod_factura = C.cod_factura AND P.tesoreria IS NOT NULL
                                 WHERE C.id = {Id} AND C.cod_proveedor = {Cod_Proveedor}";
 
-                    response.Result.Pagos = connection.Query<PagoProvCargosDTO>(query).ToList();
+                    response.Result.Pagos = connection.Query<PagoProvCargosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -235,7 +236,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto Cargo_Actualizar(int CodEmpresa, CargoPerDTO data)
+        public ErrorDto Cargo_Actualizar(int CodEmpresa, CargoPerDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -257,7 +258,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (resp.Code == 0)
                     {
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = data.Usuario_Sesion,
@@ -277,7 +278,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Cargo_Insertar(int CodEmpresa, CargoPerDTO data)
+        public ErrorDto Cargo_Insertar(int CodEmpresa, CargoPerDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var query = string.Empty;
@@ -312,7 +313,7 @@ namespace PgxAPI.DataBaseTier
 
                         if (resp.Code == 0)
                         {
-                            Bitacora(new BitacoraInsertarDTO
+                            Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodEmpresa,
                                 Usuario = data.Registro_Usuario,
@@ -334,7 +335,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Cargo_Eliminar(int CodEmpresa, CargoPerDTO data)
+        public ErrorDto Cargo_Eliminar(int CodEmpresa, CargoPerDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -363,7 +364,7 @@ namespace PgxAPI.DataBaseTier
 
                         if (resp.Code == 0)
                         {
-                            Bitacora(new BitacoraInsertarDTO
+                            Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodEmpresa,
                                 Usuario = data.Usuario_Sesion,
@@ -385,7 +386,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }

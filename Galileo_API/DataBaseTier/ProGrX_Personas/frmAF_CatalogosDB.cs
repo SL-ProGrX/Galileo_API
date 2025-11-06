@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Personas;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Personas
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_CatalogosDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -60,8 +61,8 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 // Orden
                 string sortField = string.IsNullOrEmpty(filtros.sortField) ? "Catalogo_Id" : filtros.sortField;
                 string sortOrder = filtros.sortOrder == 0 ? "DESC" : "ASC";
-                int pagina = filtros.pagina ?? 0;
-                int paginacion = filtros.paginacion ?? 10;
+                int pagina = filtros.pagina != 0 ? filtros.pagina : 0;
+                int paginacion = filtros.paginacion != 0 ? filtros.paginacion : 10;
 
                 var query = $@"SELECT Linea_Id, Catalogo_Id, Descripcion, Activo, Tipo_Id, Registro_Fecha, Registro_Usuario
                        FROM AFI_CATALOGOS
@@ -182,7 +183,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     Usuario = usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -227,7 +228,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     Usuario = usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -261,7 +262,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 var query = @"DELETE FROM AFI_CATALOGOS WHERE Linea_Id = @Linea_Id";
                 connection.Execute(query, new { Linea_Id = lineaId });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -347,8 +348,8 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 // Orden y paginación opcional
                 string sortField = string.IsNullOrEmpty(filtros.sortField) ? "Descripcion" : filtros.sortField;
                 string sortOrder = filtros.sortOrder == 0 ? "DESC" : "ASC";
-                int pagina = filtros.pagina ?? 0;
-                int paginacion = filtros.paginacion ?? 1000; // o el valor que prefieras
+                int pagina = filtros.pagina != 0 ? filtros.pagina : 0;
+                int paginacion = filtros.paginacion != 0 ? filtros.paginacion : 1000; // o el valor que prefieras
 
                 var query = $@"SELECT Tipo_Id, Descripcion, Activo, Registro_Fecha, Registro_Usuario
                        FROM AFI_CATALOGOS_TIPOS

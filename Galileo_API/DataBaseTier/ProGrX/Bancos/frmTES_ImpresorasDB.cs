@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 using System.Reflection;
 
 namespace PgxAPI.DataBaseTier
@@ -11,15 +12,15 @@ namespace PgxAPI.DataBaseTier
     public class frmTES_ImpresorasDB
     {
         private readonly IConfiguration? _config;
-        private mSecurityMainDb DBBitacora;
+        private MSecurityMainDb DBBitacora;
 
         public frmTES_ImpresorasDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -31,7 +32,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="impresora"></param>
         /// <returns></returns>
-        public ErrorDto Tes_Impresoras_Guardar(int CodEmpresa, string usuario, TES_ImpresorasDTO impresora)
+        public ErrorDto Tes_Impresoras_Guardar(int CodEmpresa, string usuario, TesImpresorasDto impresora)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -80,14 +81,14 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<TES_ImpresorasDTO> Tes_Impresoras_Obtener(int CodEmpresa)
+        public ErrorDto<TesImpresorasDto> Tes_Impresoras_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_ImpresorasDTO>
+            var response = new ErrorDto<TesImpresorasDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new TES_ImpresorasDTO()
+                Result = new TesImpresorasDto()
             };
 
             try
@@ -95,7 +96,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"SELECT COD_IMPRESORA_CHEQUES as cod_impresora_cheque, COD_IMPRESORA_RECIBO, DESCRIPCION_CHEQUE, DESCRIPCION_RECIBO FROM SYS_IMPRESORAS_TES";
-                    response.Result = connection.QueryFirstOrDefault<TES_ImpresorasDTO>(query);
+                    response.Result = connection.QueryFirstOrDefault<TesImpresorasDto>(query);
                 }
             }
             catch (Exception ex)

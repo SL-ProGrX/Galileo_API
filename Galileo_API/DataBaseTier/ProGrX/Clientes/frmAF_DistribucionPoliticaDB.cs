@@ -1,24 +1,24 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 {
     public class frmAF_DistribucionPoliticaDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _mSecurity;
+        private readonly MSecurityMainDb _mSecurity;
 
         public frmAF_DistribucionPoliticaDB(IConfiguration config)
         {
             _config = config;
-            _mSecurity = new mSecurityMainDb(_config);
+            _mSecurity = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -179,7 +179,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_DistribucionPolitica_Guardar(int CodEmpresa, string Usuario, AF_DistribucionesDTO Info)
+        public ErrorDto AF_DistribucionPolitica_Guardar(int CodEmpresa, string Usuario, AfDistribucionesDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -209,7 +209,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                     Usuario
                                 });
 
-                                Bitacora(new BitacoraInsertarDTO
+                                Bitacora(new BitacoraInsertarDto
                                 {
                                     EmpresaId = CodEmpresa,
                                     Usuario = Usuario.ToUpper(),
@@ -227,7 +227,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                     Descripcion = Info.descripcion
                                 });
 
-                                Bitacora(new BitacoraInsertarDTO
+                                Bitacora(new BitacoraInsertarDto
                                 {
                                     EmpresaId = CodEmpresa,
                                     Usuario = Usuario.ToUpper(),
@@ -253,7 +253,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                     Usuario
                                 });
 
-                                Bitacora(new BitacoraInsertarDTO
+                                Bitacora(new BitacoraInsertarDto
                                 {
                                     EmpresaId = CodEmpresa,
                                     Usuario = Usuario.ToUpper(),
@@ -272,7 +272,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                     Descripcion = Info.descripcion
                                 });
 
-                                Bitacora(new BitacoraInsertarDTO
+                                Bitacora(new BitacoraInsertarDto
                                 {
                                     EmpresaId = CodEmpresa,
                                     Usuario = Usuario.ToUpper(),
@@ -302,7 +302,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                     Usuario
                                 });
 
-                                Bitacora(new BitacoraInsertarDTO
+                                Bitacora(new BitacoraInsertarDto
                                 {
                                     EmpresaId = CodEmpresa,
                                     Usuario = Usuario.ToUpper(),
@@ -322,7 +322,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                     Descripcion = Info.descripcion
                                 });
 
-                                Bitacora(new BitacoraInsertarDTO
+                                Bitacora(new BitacoraInsertarDto
                                 {
                                     EmpresaId = CodEmpresa,
                                     Usuario = Usuario.ToUpper(),

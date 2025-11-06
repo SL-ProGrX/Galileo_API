@@ -14,9 +14,9 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<List<CargosAdicionalDTO>> ObtenerCargosAdicionales(int CodEmpresa)
+        public ErrorDto<List<CargosAdicionalDto>> ObtenerCargosAdicionales(int CodEmpresa)
         {
-            var response = new ErrorDto<List<CargosAdicionalDTO>>();
+            var response = new ErrorDto<List<CargosAdicionalDto>>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             mCntLinkDB obj = new mCntLinkDB(_config);
 
@@ -25,7 +25,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                response.Result = connection.Query<CargosAdicionalDTO>(sql).ToList();
+                response.Result = connection.Query<CargosAdicionalDto>(sql).ToList();
                 foreach (var item in response.Result)
                 {
                     item.Cod_Cuenta = obj.fxgCntCuentaFormato(CodEmpresa, true, item.Cod_Cuenta, 1);
@@ -99,7 +99,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto InsertarCargoAdicional(int CodEmpresa, CargosAdicionalDTO Info)
+        public ErrorDto InsertarCargoAdicional(int CodEmpresa, CargosAdicionalDto Info)
         {
             ErrorDto resp = new()
             {
@@ -131,7 +131,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto ActualizarCargoAdicional(int CodEmpresa, CargosAdicionalDTO Info)
+        public ErrorDto ActualizarCargoAdicional(int CodEmpresa, CargosAdicionalDto Info)
         {
             ErrorDto resp = new()
             {

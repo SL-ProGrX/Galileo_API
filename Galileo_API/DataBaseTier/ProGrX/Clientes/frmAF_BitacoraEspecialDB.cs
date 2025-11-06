@@ -57,7 +57,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="bitacora"></param>
         /// <returns></returns>
-        public ErrorDto AF_BitacoraEspecial_Revisar(int CodEmpresa, string usuario, List<AF_BitacoraEspecialData> bitacora )
+        public ErrorDto AF_BitacoraEspecial_Revisar(int CodEmpresa, string usuario, List<AFBitacoraEspecialData> bitacora )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto
@@ -134,14 +134,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_BitacoraEspecialData>> AF_BitacoraEspecial_Obtener(int CodEmpresa, AF_BitacoraEspecialFiltros filtros)
+        public ErrorDto<List<AFBitacoraEspecialData>> AF_BitacoraEspecial_Obtener(int CodEmpresa, AFBitacoraEspecialFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<AF_BitacoraEspecialData>>
+            var result = new ErrorDto<List<AFBitacoraEspecialData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_BitacoraEspecialData>()
+                Result = new List<AFBitacoraEspecialData>()
             };
             try
             {
@@ -230,7 +230,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         order += $" order by C.fecha";
                     }
 
-                    result.Result = connection.Query<AF_BitacoraEspecialData>(query + whereClause + order).ToList();
+                    result.Result = connection.Query<AFBitacoraEspecialData>(query + whereClause + order).ToList();
 
                 }
 

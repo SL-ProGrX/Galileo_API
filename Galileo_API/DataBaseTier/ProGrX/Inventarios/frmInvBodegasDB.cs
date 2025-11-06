@@ -21,11 +21,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodBodega"></param>
         /// <returns></returns>
-        public ErrorDto<List<PermisosBodegasDTO>> Autorizador_ObtenerTodos(int CodEmpresa, string CodBodega)
+        public ErrorDto<List<PermisosBodegasDto>> Autorizador_ObtenerTodos(int CodEmpresa, string CodBodega)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PermisosBodegasDTO>>();
+            var response = new ErrorDto<List<PermisosBodegasDto>>();
 
             try
             {
@@ -45,7 +45,7 @@ namespace PgxAPI.DataBaseTier
                             WHERE U.estado = 'A' 
                             ORDER BY U.nombre ASC;
 ";
-                    response.Result = connection.Query<PermisosBodegasDTO>(query).ToList();
+                    response.Result = connection.Query<PermisosBodegasDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -63,10 +63,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<BodegasDTO>> Bodegas_Obtener(int CodEmpresa)
+        public ErrorDto<List<BodegasDto>> Bodegas_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<BodegasDTO>>();
+            var response = new ErrorDto<List<BodegasDto>>();
 
             try
             {
@@ -75,8 +75,8 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "select * from  PV_BODEGAS";
 
-                    response.Result = connection.Query<BodegasDTO>(query).ToList();
-                    foreach (BodegasDTO dt in response.Result)
+                    response.Result = connection.Query<BodegasDto>(query).ToList();
+                    foreach (BodegasDto dt in response.Result)
                     {
                         dt.Cod_Bodega = dt.Cod_Bodega;
 
@@ -101,10 +101,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consecutivo"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDto<BodegasDTO> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
+        public ErrorDto<BodegasDto> ConsultaAscDesc(int CodEmpresa, int consecutivo, string tipo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<BodegasDTO>();
+            var response = new ErrorDto<BodegasDto>();
             int result = 0;
 
             try
@@ -136,7 +136,7 @@ namespace PgxAPI.DataBaseTier
 
                     result = connection.Query<int>(query).FirstOrDefault();
 
-                    response.Result = connection.Query<BodegasDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<BodegasDto>(query).FirstOrDefault();
 
 
 
@@ -157,12 +157,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="consecutivo"></param>
         /// <returns></returns>
-        public ErrorDto<BodegasDTO> bodegaConsecutivo_Obtener(int CodEmpresa, string consecutivo)
+        public ErrorDto<BodegasDto> bodegaConsecutivo_Obtener(int CodEmpresa, string consecutivo)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<BodegasDTO>();
-            response.Result = new BodegasDTO();
+            var response = new ErrorDto<BodegasDto>();
+            response.Result = new BodegasDto();
 
             try
             {
@@ -171,7 +171,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"SELECT * FROM PV_BODEGAS
                                 WHERE COD_BODEGA = {consecutivo}";
 
-                    response.Result = connection.Query<BodegasDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<BodegasDto>(query).FirstOrDefault();
 
                 }
             }
@@ -191,7 +191,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto bodega_Insertar(int CodEmpresa, BodegasDTO data)
+        public ErrorDto bodega_Insertar(int CodEmpresa, BodegasDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -247,7 +247,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto bodega_Actualizar(int CodEmpresa, BodegasDTO data)
+        public ErrorDto bodega_Actualizar(int CodEmpresa, BodegasDto data)
          {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -276,7 +276,7 @@ namespace PgxAPI.DataBaseTier
 
                     //if (resp.Code == 0)
                     //{
-                    //    Bitacora(new BitacoraInsertarDTO
+                    //    Bitacora(new BitacoraInsertarDto
                     //    {
                     //        EmpresaId = CodEmpresa,
                     //        Usuario = data.Creacion_User,
@@ -340,7 +340,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="request"></param>
         /// <param name="cod_bodega"></param>
         /// <returns></returns>
-        public ErrorDto permisosBodega_Actualizar(int CodEmpresa, PermisosBodegasDTO request, string cod_bodega)
+        public ErrorDto permisosBodega_Actualizar(int CodEmpresa, PermisosBodegasDto request, string cod_bodega)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 

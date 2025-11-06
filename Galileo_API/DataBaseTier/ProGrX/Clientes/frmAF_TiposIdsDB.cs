@@ -3,21 +3,22 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 {
     public class frmAF_TiposIdsDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _mSecurity;
+        private readonly MSecurityMainDb _mSecurity;
 
         public frmAF_TiposIdsDB(IConfiguration config)
         {
             _config = config;
-            _mSecurity = new mSecurityMainDb(_config);
+            _mSecurity = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -28,17 +29,17 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AF_TiposIdsLista> AF_TiposIds_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<AfTiposIdsLista> AF_TiposIds_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_TiposIdsLista>
+            var response = new ErrorDto<AfTiposIdsLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new AF_TiposIdsLista()
+                Result = new AfTiposIdsLista()
                 {
                     total = 0,
-                    lista = new List<AF_TiposIdsDTO>()
+                    lista = new List<AfTiposIdsDto>()
                 }
             };
 
@@ -68,7 +69,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                      order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
                                          OFFSET {filtros.pagina} ROWS 
                                          FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                    response.Result.lista = connection.Query<AF_TiposIdsDTO>(query).ToList();
+                    response.Result.lista = connection.Query<AfTiposIdsDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -90,7 +91,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_TiposIds_Guardar(int CodEmpresa, string Usuario, AF_TiposIdsDTO Info)
+        public ErrorDto AF_TiposIds_Guardar(int CodEmpresa, string Usuario, AfTiposIdsDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -134,7 +135,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             }
                         );
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -166,7 +167,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             }
                         );
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -209,7 +210,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     var query = "delete afi_Tipos_IDs where Tipo_ID = @TipoId";
                     connection.Execute(query, new { TipoId } );
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),

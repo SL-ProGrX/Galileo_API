@@ -66,7 +66,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    response.Result.Autorizadores = connection.Query<AutorizadorDTO>(query).ToList();
+                    response.Result.Autorizadores = connection.Query<AutorizadorDto>(query).ToList();
 
                 }
             }
@@ -84,17 +84,17 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<AutorizadorDTO>> Autorizador_ObtenerTodos(int CodEmpresa)
+        public ErrorDto<List<AutorizadorDto>> Autorizador_ObtenerTodos(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AutorizadorDTO>>();
+            var response = new ErrorDto<List<AutorizadorDto>>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "SELECT U.nombre as Usuario,U.descripcion,A.fecha FROM usuarios U LEFT JOIN pv_orden_autorizadores A  on U.nombre = A.usuario WHERE U.Estado = 'A' ORDER BY A.fecha DESC";
-                    response.Result = connection.Query<AutorizadorDTO>(query).ToList();
+                    response.Result = connection.Query<AutorizadorDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -112,10 +112,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<AutorizadorDTO>> Autorizador_Obtener(int CodEmpresa)
+        public ErrorDto<List<AutorizadorDto>> Autorizador_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AutorizadorDTO>>();
+            var response = new ErrorDto<List<AutorizadorDto>>();
 
             try
             {
@@ -125,7 +125,7 @@ namespace PgxAPI.DataBaseTier
                                     FROM usuarios U INNER JOIN pv_orden_autorizadores A 
                                         ON U.nombre = A.usuario WHERE U.Estado = 'A' 
                                    ORDER BY U.nombre";
-                    response.Result = connection.Query<AutorizadorDTO>(query).ToList();
+                    response.Result = connection.Query<AutorizadorDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -144,7 +144,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Autorizador_Insertar(int CodEmpresa, AutorizadorDTO request)
+        public ErrorDto Autorizador_Insertar(int CodEmpresa, AutorizadorDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -258,7 +258,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    response.Result.Usuarios = connection.Query<UsuarioaCargoDTO>(query).ToList();
+                    response.Result.Usuarios = connection.Query<UsuarioaCargoDto>(query).ToList();
 
                 }
             }
@@ -278,11 +278,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public List<UsuarioaCargoDTO> UsuariosACargo_Obtener(int CodEmpresa, string usuario)
+        public List<UsuarioaCargoDto> UsuariosACargo_Obtener(int CodEmpresa, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<UsuarioaCargoDTO> info = new List<UsuarioaCargoDTO>();
+            List<UsuarioaCargoDto> info = new List<UsuarioaCargoDto>();
 
             try
             {
@@ -295,7 +295,7 @@ namespace PgxAPI.DataBaseTier
                     parameters.Add("Usuario", usuario, DbType.String);
 
 
-                    info = connection.Query<UsuarioaCargoDTO>(query, parameters).ToList();
+                    info = connection.Query<UsuarioaCargoDto>(query, parameters).ToList();
                 }
             }
             catch (Exception ex)
@@ -312,7 +312,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto UsuarioACargo_Actualizar(int CodEmpresa, UsuarioaCargoDTO request)
+        public ErrorDto UsuarioACargo_Actualizar(int CodEmpresa, UsuarioaCargoDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -397,7 +397,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    info.Usuarios = connection.Query<UsuarioaCambioFechaDTO>(query).ToList();
+                    info.Usuarios = connection.Query<UsuarioaCambioFechaDto>(query).ToList();
 
                 }
             }
@@ -415,11 +415,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public List<UsuarioaCambioFechaDTO> UsuariosCambioFecha_Obtener(int CodEmpresa, string tipo)
+        public List<UsuarioaCambioFechaDto> UsuariosCambioFecha_Obtener(int CodEmpresa, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<UsuarioaCambioFechaDTO> info = new List<UsuarioaCambioFechaDTO>();
+            List<UsuarioaCambioFechaDto> info = new List<UsuarioaCambioFechaDto>();
 
             try
             {
@@ -431,7 +431,7 @@ namespace PgxAPI.DataBaseTier
                     parameters.Add("Tipo", tipo, DbType.String);
 
 
-                    info = connection.Query<UsuarioaCambioFechaDTO>(query, parameters).ToList();
+                    info = connection.Query<UsuarioaCambioFechaDto>(query, parameters).ToList();
                 }
             }
             catch (Exception ex)
@@ -448,7 +448,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto CambioFechas_Insertar(int CodEmpresa, UsuarioaCambioFechaDTO request)
+        public ErrorDto CambioFechas_Insertar(int CodEmpresa, UsuarioaCambioFechaDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -482,7 +482,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto CambioFechas_Eliminar(int CodEmpresa, UsuarioaCambioFechaDTO request)
+        public ErrorDto CambioFechas_Eliminar(int CodEmpresa, UsuarioaCambioFechaDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 

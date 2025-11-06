@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Nucleo;
 using PgxAPI.Models;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 10; // Modulo de Tesorer�a
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmSIF_TarjetasDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -182,7 +183,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     registro_usuario = usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -222,7 +223,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     tarjeta.activa
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -272,7 +273,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 var queryDelete = @"DELETE FROM sif_tarjetas WHERE UPPER(cod_tarjeta) = @cod_tarjeta";
                 connection.Execute(queryDelete, new { cod_tarjeta = cod_tarjeta.ToUpper() });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,

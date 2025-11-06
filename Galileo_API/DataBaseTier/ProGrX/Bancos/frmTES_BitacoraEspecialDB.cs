@@ -148,13 +148,13 @@ namespace PgxAPI.DataBaseTier.TES
         /// <param name="codEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<BitacoraEspecialDTO>> BitacoraEspecial_Buscar(int codEmpresa, FiltrosBitacoraEspecial filtros)
+        public ErrorDto<List<BitacoraEspecialDto>> BitacoraEspecial_Buscar(int codEmpresa, FiltrosBitacoraEspecial filtros)
         {
-            var response = new ErrorDto<List<BitacoraEspecialDTO>>
+            var response = new ErrorDto<List<BitacoraEspecialDto>>
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<BitacoraEspecialDTO>()
+                Result = new List<BitacoraEspecialDto>()
             };
 
             try
@@ -301,7 +301,7 @@ namespace PgxAPI.DataBaseTier.TES
                     sql.Append(" ORDER BY H.Fecha ");
 
                 using var connection = new SqlConnection(connectionString);
-                var resultado = connection.Query<BitacoraEspecialDTO>(sql.ToString(), parameters);
+                var resultado = connection.Query<BitacoraEspecialDto>(sql.ToString(), parameters);
                 response.Result = resultado.ToList();
             }
             catch (Exception ex)

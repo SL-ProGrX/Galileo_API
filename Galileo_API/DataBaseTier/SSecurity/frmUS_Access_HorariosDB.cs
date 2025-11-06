@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models.US;
+using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -42,9 +43,9 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorHorarioDTO HorarioRegistrar(HorarioDto horarioDto)
+        public ErrorDto HorarioRegistrar(HorarioDto horarioDto)
         {
-            ErrorHorarioDTO resp = new ErrorHorarioDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -85,9 +86,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorHorarioDTO HorarioEliminar(HorarioDto request)
+        public ErrorDto HorarioEliminar(HorarioDto request)
         {
-            ErrorHorarioDTO resp = new ErrorHorarioDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

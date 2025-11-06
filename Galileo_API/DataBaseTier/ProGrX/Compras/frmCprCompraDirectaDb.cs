@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.CPR;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -12,18 +13,18 @@ namespace PgxAPI.DataBaseTier
     {
         private readonly IConfiguration _config;
         mProGrX_AuxiliarDB mProGrxAuxiliar;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         mComprasDB mComprasDB;
 
         public frmCprCompraDirectaDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(config);
+            DBBitacora = new MSecurityMainDb(config);
             mProGrxAuxiliar = new mProGrX_AuxiliarDB(config);
             mComprasDB = new mComprasDB(config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -366,7 +367,7 @@ as descuento,D.imp_ventas,0 as total
                     result = connection.Execute(query);
 
                     //Bitacora
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = orden.usuario,
@@ -478,7 +479,7 @@ as descuento,D.imp_ventas,0 as total
                     }
 
                     //Bitacora
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = orden.usuario,
@@ -523,7 +524,7 @@ as descuento,D.imp_ventas,0 as total
 
                         //LLAMO mProGrX_AuxiliarDB para actualizar el inventario
                         mProGrX_AuxiliarDB mProGrX_AuxiliarDB = new mProGrX_AuxiliarDB(_config);
-                        CompraInventarioDTO compraInventario = new CompraInventarioDTO();
+                        CompraInventarioDto compraInventario = new CompraInventarioDto();
                         compraInventario.CodProducto = item.cod_producto;
                         compraInventario.Cantidad = Decimal.Parse(item.cantidad.ToString());
                         compraInventario.CodBodega = item.cod_bodega;
@@ -610,7 +611,7 @@ as descuento,D.imp_ventas,0 as total
                         if (ColBod1 > 0)
                         {
                             var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}'";
-                            List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                            List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
                             if (exist.Count == 0)
                             {
                                 return "La bodega " + item.cod_bodega + " - No existe";
@@ -647,7 +648,7 @@ as descuento,D.imp_ventas,0 as total
                         if (ColBod2 > 0)
                         {
                             var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}'";
-                            List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                            List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
                             if (exist.Count == 0)
                             {
                                 return "La bodega " + item.cod_bodega + " - No existe";

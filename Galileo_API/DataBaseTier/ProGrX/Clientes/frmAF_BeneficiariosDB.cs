@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<List<PersonaBeneficiarioDTO>> AF_PersonaBeneficiarios_Consulta(int CodEmpresa, string cedula, int? lineaId)
+        public ErrorDto<List<PersonaBeneficiarioDto>> AF_PersonaBeneficiarios_Consulta(int CodEmpresa, string cedula, int? lineaId)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PersonaBeneficiarioDTO>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<PersonaBeneficiarioDto>> { Code = 0, Result = new() };
             try
             {
                 if (lineaId == null)
@@ -36,7 +36,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
 
                 string sql = "exec spAFI_PERSONA_BENEFICIARIOS_Consulta @Cedula, @LineaId";
-                response.Result = connection.Query<PersonaBeneficiarioDTO>(sql, new
+                response.Result = connection.Query<PersonaBeneficiarioDto>(sql, new
                 {
                     cedula,
                     lineaId
@@ -56,7 +56,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDto<int> AF_PersonaBeneficiarios_Registro(int CodEmpresa, PersonaBeneficiarioDTO dto)
+        public ErrorDto<int> AF_PersonaBeneficiarios_Registro(int CodEmpresa, PersonaBeneficiarioDto dto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<int> { Code = 0 };
@@ -144,14 +144,14 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<Beneficiarios_CatalogoDTO> AF_Beneficiarios_Catalogos_Obtener(int CodEmpresa)
+        public ErrorDto<BeneficiariosCatalogoDto> AF_Beneficiarios_Catalogos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<Beneficiarios_CatalogoDTO>
+            var response = new ErrorDto<BeneficiariosCatalogoDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new Beneficiarios_CatalogoDTO()
+                Result = new BeneficiariosCatalogoDto()
             };
             try
             {

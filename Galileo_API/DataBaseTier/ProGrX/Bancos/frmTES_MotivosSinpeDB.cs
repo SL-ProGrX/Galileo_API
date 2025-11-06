@@ -32,7 +32,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                 Result = new TesMotivosSinpeLista()
                 {
                     total = 0,
-                    lista = new List<TesMotivosSinpeDTO>()
+                    lista = new List<TesMotivosSinpeDto>()
                 }
             };
             try
@@ -61,7 +61,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                      order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
                                          OFFSET {filtros.pagina} ROWS 
                                          FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                    response.Result.lista = connection.Query<TesMotivosSinpeDTO>(query).ToList();
+                    response.Result.lista = connection.Query<TesMotivosSinpeDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -81,14 +81,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<TesMotivosSinpeDTO>> TES_MotivoSinpeExportar_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<TesMotivosSinpeDto>> TES_MotivoSinpeExportar_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TesMotivosSinpeDTO>>
+            var response = new ErrorDto<List<TesMotivosSinpeDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<TesMotivosSinpeDTO>()
+                Result = new List<TesMotivosSinpeDto>()
             };
             try
             {
@@ -110,7 +110,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     query = $@"select cod_motivo, descripcion, usuario_registro from SINPE_MOTIVOS 
                                      {filtros.filtro} 
                                      order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")} ";
-                    response.Result = connection.Query<TesMotivosSinpeDTO>(query).ToList();
+                    response.Result = connection.Query<TesMotivosSinpeDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -130,7 +130,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="motivo"></param>
         /// <returns></returns>
-        public ErrorDto TES_MotivoSinpe_Guardar(int CodEmpresa, string usuario, TesMotivosSinpeDTO motivo)
+        public ErrorDto TES_MotivoSinpe_Guardar(int CodEmpresa, string usuario, TesMotivosSinpeDto motivo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -184,7 +184,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="motivo"></param>
         /// <returns></returns>
-        private ErrorDto TES_MotivoSinpe_Insertar(int CodEmpresa, string usuario, TesMotivosSinpeDTO motivo)
+        private ErrorDto TES_MotivoSinpe_Insertar(int CodEmpresa, string usuario, TesMotivosSinpeDto motivo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -216,7 +216,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="motivo"></param>
         /// <returns></returns>
-        private ErrorDto TES_MotivoSinpe_Actualizar(int CodEmpresa, string usuario, TesMotivosSinpeDTO motivo)
+        private ErrorDto TES_MotivoSinpe_Actualizar(int CodEmpresa, string usuario, TesMotivosSinpeDto motivo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()

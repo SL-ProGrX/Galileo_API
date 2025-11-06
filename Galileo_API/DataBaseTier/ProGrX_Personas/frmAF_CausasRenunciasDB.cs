@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Personas;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Personas
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_CausasRenunciasDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -24,13 +25,13 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CausasRenunciasData>> AF_CausasRenuncias_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<AfCausasRenunciasData>> AF_CausasRenuncias_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<AF_CausasRenunciasData>>()
+            var result = new ErrorDto<List<AfCausasRenunciasData>>()
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<AF_CausasRenunciasData>()
+                Result = new List<AfCausasRenunciasData>()
             };
             try
             {
@@ -58,7 +59,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 }
 
                 string query = $"SELECT Id_Causa AS id_causa, Descripcion AS descripcion, Tipo_Apl AS tipo_apl, mortalidad, AJUSTE_TASAS AS ajuste_tasas, liq_alterna, tasa_planilla, tasa_ventanilla, institucion, cod_Plan AS cod_plan, activo FROM vAFI_Causas_Renuncias{where}{orderBy}{paginacion}";
-                result.Result = connection.Query<AF_CausasRenunciasData>(query, param).ToList();
+                result.Result = connection.Query<AfCausasRenunciasData>(query, param).ToList();
             }
             catch (Exception ex)
             {
@@ -76,7 +77,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="causa"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto AF_CausasRenuncias_Guardar(int CodEmpresa, AF_CausasRenunciasData causa, string usuario)
+        public ErrorDto AF_CausasRenuncias_Guardar(int CodEmpresa, AfCausasRenunciasData causa, string usuario)
         {
             try
             {
@@ -105,7 +106,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
             }
         }
 
-        private ErrorDto AF_CausasRenuncias_Insertar(SqlConnection connection, AF_CausasRenunciasData causa, int CodEmpresa, string usuario)
+        private ErrorDto AF_CausasRenuncias_Insertar(SqlConnection connection, AfCausasRenunciasData causa, int CodEmpresa, string usuario)
         {
             var result = new ErrorDto()
             {
@@ -135,7 +136,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 });
                 result.Description += $" (Id: {newId})";
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -152,7 +153,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
             return result;
         }
 
-        private ErrorDto AF_CausasRenuncias_Actualizar(SqlConnection connection, AF_CausasRenunciasData causa, int CodEmpresa, string usuario)
+        private ErrorDto AF_CausasRenuncias_Actualizar(SqlConnection connection, AfCausasRenunciasData causa, int CodEmpresa, string usuario)
         {
             var result = new ErrorDto()
             {
@@ -188,7 +189,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     causa.activo
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -228,7 +229,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 if (rows > 0)
                 {
                     result.Description = "Eliminado correctamente";
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

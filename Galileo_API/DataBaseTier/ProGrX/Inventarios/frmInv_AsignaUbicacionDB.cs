@@ -23,10 +23,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodAsignaUbicacion"></param>
         /// <returns></returns>
-        public ErrorDto<AsignaUbicacionDTO> InvUbicaciones_Obtener(int CodEmpresa, int CodAsignaUbicacion)
+        public ErrorDto<AsignaUbicacionDto> InvUbicaciones_Obtener(int CodEmpresa, int CodAsignaUbicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AsignaUbicacionDTO>
+            var response = new ErrorDto<AsignaUbicacionDto>
             {
                 Code = 0
             };
@@ -36,7 +36,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT COD_ASIGNAUBICACION,ESTADO,COD_BODEGA,RESPONSABLE,FECHA,NOTAS FROM INV_UBICACIONES
                                 WHERE COD_ASIGNAUBICACION = {CodAsignaUbicacion}";
-                    response.Result = connection.Query<AsignaUbicacionDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<AsignaUbicacionDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -55,10 +55,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="CodAsignaUbicacion"></param>
         /// <returns></returns>
-        public ErrorDto<List<AsignaUbicacionDetalleDTO>> InvUbicacionProduc_Obtener(int CodEmpresa, int CodAsignaUbicacion)
+        public ErrorDto<List<AsignaUbicacionDetalleDto>> InvUbicacionProduc_Obtener(int CodEmpresa, int CodAsignaUbicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AsignaUbicacionDetalleDTO>>
+            var response = new ErrorDto<List<AsignaUbicacionDetalleDto>>
             {
                 Code = 0
             };
@@ -71,7 +71,7 @@ namespace PgxAPI.DataBaseTier
                                     from INV_UBICACIONES_DETALLE D inner join pv_productos P on D.cod_producto = P.cod_producto
                                          where D.COD_ASIGNAUBICACION = {CodAsignaUbicacion}
                                     order by D.Linea";
-                    response.Result = connection.Query<AsignaUbicacionDetalleDTO>(query).ToList();
+                    response.Result = connection.Query<AsignaUbicacionDetalleDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -91,10 +91,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="scrollValue"></param>
         /// <param name="CodAsignaUbicacion"></param>
         /// <returns></returns>
-        public ErrorDto<AsignaUbicacionDTO> InvUbicacion_scroll(int CodEmpresa, int scrollValue, int? CodAsignaUbicacion)
+        public ErrorDto<AsignaUbicacionDto> InvUbicacion_scroll(int CodEmpresa, int scrollValue, int? CodAsignaUbicacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AsignaUbicacionDTO>
+            var response = new ErrorDto<AsignaUbicacionDto>
             {
                 Code = 0
             };
@@ -114,7 +114,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select Top 1 COD_ASIGNAUBICACION from INV_UBICACIONES {filtro}";
-                    response.Result = connection.Query<AsignaUbicacionDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<AsignaUbicacionDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -133,7 +133,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto InvAsignaUbicacion_Insertar(int CodEmpresa, AsignaUbicacionDTO request)
+        public ErrorDto InvAsignaUbicacion_Insertar(int CodEmpresa, AsignaUbicacionDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()
@@ -183,7 +183,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto InvAsignaUbicacion_Actualizar(int CodEmpresa, AsignaUbicacionDTO request)
+        public ErrorDto InvAsignaUbicacion_Actualizar(int CodEmpresa, AsignaUbicacionDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -264,10 +264,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodAsignaUbicacion"></param>
         /// <param name="producLineas"></param>
         /// <returns></returns>
-        public ErrorDto InvAsignaUbicacionProduc_Insertar(int CodEmpresa, int CodAsignaUbicacion, List<AsignaUbicacionDetalleDTO> producLineas)
+        public ErrorDto InvAsignaUbicacionProduc_Insertar(int CodEmpresa, int CodAsignaUbicacion, List<AsignaUbicacionDetalleDto> producLineas)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto errorDTO = new()
+            ErrorDto errorDto = new()
             {
                 Code = 0
             };
@@ -283,27 +283,27 @@ namespace PgxAPI.DataBaseTier
                     {
 
                         int contador = 0;
-                        foreach (AsignaUbicacionDetalleDTO item in producLineas)
+                        foreach (AsignaUbicacionDetalleDto item in producLineas)
                         {
                             contador++;
 
                             query = $@"insert INV_UBICACIONES_DETALLE(linea,COD_ASIGNAUBICACION,COD_PRODUCTO,CANTIDAD,UBICACION)
                                 values( {contador}, '{CodAsignaUbicacion}', '{item.cod_producto}', {item.existencia}, '{item.ubicacion}' )";
 
-                            errorDTO.Code = connection.Execute(query);
+                            errorDto.Code = connection.Execute(query);
 
                         }
 
-                        errorDTO.Description = "Informacion guardada satisfactoriamente...";
+                        errorDto.Description = "Informacion guardada satisfactoriamente...";
                     }
                 }
             }
             catch (Exception ex)
             {
-                errorDTO.Code = -1;
-                errorDTO.Description = ex.Message;
+                errorDto.Code = -1;
+                errorDto.Description = ex.Message;
             }
-            return errorDTO;
+            return errorDto;
         }
 
         /// <summary>
@@ -311,10 +311,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<AsignaUbicacionDTO>> InvAsignaUbicacion_Lista(int CodEmpresa)
+        public ErrorDto<List<AsignaUbicacionDto>> InvAsignaUbicacion_Lista(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AsignaUbicacionDTO>>
+            var response = new ErrorDto<List<AsignaUbicacionDto>>
             {
                 Code = 0
             };
@@ -332,7 +332,7 @@ namespace PgxAPI.DataBaseTier
                                     PV_BODEGAS B ON U.COD_BODEGA = B.COD_BODEGA";
 
 
-                    response.Result = connection.Query<AsignaUbicacionDTO>(query).ToList();
+                    response.Result = connection.Query<AsignaUbicacionDto>(query).ToList();
                 }
 
             }

@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -78,7 +79,7 @@ namespace PgxAPI.DataBaseTier
 
             ErrorGeneralDto resp = new ErrorGeneralDto();
             int res = -1;
-            PgxClienteDTO pgxClienteDto;
+            PgxClienteDto pgxClienteDto;
             Seguridad_PortalDB seguridadPortal = new Seguridad_PortalDB(_config);
 
             pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(validaCuentaRequestDto.CodEmpresa);

@@ -369,7 +369,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="telefono"></param>
         /// <returns></returns>
-        public ErrorDto Telefono_Guardar(int CodCliente, AFIBeneTelefonoGuardar telefono)
+        public ErrorDto Telefono_Guardar(int CodCliente, AfiBeneTelefonoGuardar telefono)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -416,7 +416,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="telefono"></param>
         /// <returns></returns>
-        private ErrorDto Telefono_Agregar(int CodCliente, AFIBeneTelefonoGuardar telefono)
+        private ErrorDto Telefono_Agregar(int CodCliente, AfiBeneTelefonoGuardar telefono)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var response = new ErrorDto();
@@ -469,10 +469,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="telefono"></param>
         /// <returns></returns>
-        private bool Telefono_Actualizar(int CodCliente, AFIBeneTelefonoGuardar telefono)
+        private bool Telefono_Actualizar(int CodCliente, AfiBeneTelefonoGuardar telefono)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<AFIBeneTelefonoGuardar>();
+            var response = new ErrorDto<AfiBeneTelefonoGuardar>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -510,10 +510,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<List<AFIBeneTelefono>> Telefonos_Obtener(int CodCliente, string cedula)
+        public ErrorDto<List<AfiBeneTelefono>> Telefonos_Obtener(int CodCliente, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<AFIBeneTelefono>>();
+            var response = new ErrorDto<List<AfiBeneTelefono>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -552,7 +552,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = $@"select * from AFI_BENE_REGISTRO_TELEFONOS WHERE CEDULA = '{cedula}'";
 
-                    response.Result = connection.Query<AFIBeneTelefono>(query).ToList();
+                    response.Result = connection.Query<AfiBeneTelefono>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -615,7 +615,7 @@ namespace PgxAPI.DataBaseTier
                         "AND COD_VAL IN (" +
                         "SELECT COD_VAL FROM AFI_BENE_VALIDA_CATEGORIA WHERE ESTADO = 1" +
                         ") ORDER BY PRIORIDAD ASC";
-                    var validaciones = connection.Query<afiBeneCalidaciones>(query).ToList();
+                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
                     foreach (var validacion in validaciones)
                     {

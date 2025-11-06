@@ -17,7 +17,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<List<ModeloGenericList>> fxPres_Periodo_Obtener(int CodEmpresa, int CodContab, string CodModelo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            Pres_PeriodoRequest infoPeriodo = new Pres_PeriodoRequest();
+            PresPeriodoRequest infoPeriodo = new PresPeriodoRequest();
             ErrorDto<List<ModeloGenericList>> resp = new ErrorDto<List<ModeloGenericList>>();
 
             try
@@ -29,7 +29,7 @@ namespace PgxAPI.DataBaseTier
                     where Pm.COD_CONTABILIDAD = {CodContab}
                     and Pm.COD_MODELO = '{CodModelo}'
                     order by Cc.INICIO_ANIO desc";
-                    infoPeriodo = connection.Query<Pres_PeriodoRequest>(query1).FirstOrDefault();
+                    infoPeriodo = connection.Query<PresPeriodoRequest>(query1).FirstOrDefault();
 
                     var query2 = $@"select dbo.fxSys_FechaAnioMesToDatetime(anio,mes) as 'ItmX'
                     From dbo.fxPres_Periodo('{infoPeriodo.Inicio_Anio}','{infoPeriodo.Inicio_Mes}','{infoPeriodo.Corte_Anio}','{infoPeriodo.Corte_Mes}',{CodContab})";

@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<List<BancosAutorizadosDTO>> ObtenerBancosAutorizados(int CodCliente)
+        public ErrorDto<List<BancosAutorizadosDto>> ObtenerBancosAutorizados(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<BancosAutorizadosDTO>>
+            var response = new ErrorDto<List<BancosAutorizadosDto>>
             {
                 Code = 0
             };
@@ -30,7 +30,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                response.Result = connection.Query<BancosAutorizadosDTO>(sql, values).ToList();
+                response.Result = connection.Query<BancosAutorizadosDto>(sql, values).ToList();
             }
             catch (Exception ex)
             {

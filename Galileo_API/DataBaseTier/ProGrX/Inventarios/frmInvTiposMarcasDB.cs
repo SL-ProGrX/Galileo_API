@@ -65,7 +65,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    response.Result.Marcas = connection.Query<MarcasDTO>(query).ToList();
+                    response.Result.Marcas = connection.Query<MarcasDto>(query).ToList();
 
                 }
             }
@@ -83,11 +83,11 @@ namespace PgxAPI.DataBaseTier
         /// Obtiene la lista de marcas 
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<List<MarcasDTO>> Marcas_ObtenerTodos(int CodEmpresa)
+        public ErrorDto<List<MarcasDto>> Marcas_ObtenerTodos(int CodEmpresa)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<MarcasDTO>>();
+            var response = new ErrorDto<List<MarcasDto>>();
 
             try
             {
@@ -95,8 +95,8 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = "SELECT cod_marca,descripcion, activo  FROM pv_marcas order by cod_marca";
 
-                    response.Result = connection.Query<MarcasDTO>(query).ToList();
-                    foreach (MarcasDTO dt in response.Result)
+                    response.Result = connection.Query<MarcasDto>(query).ToList();
+                    foreach (MarcasDto dt in response.Result)
                     {
                         dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
                     }
@@ -119,7 +119,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Marcas_Actualizar(int CodEmpresa, MarcasDTO request)
+        public ErrorDto Marcas_Actualizar(int CodEmpresa, MarcasDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -154,7 +154,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Marcas_Insertar(int CodEmpresa, MarcasDTO request)
+        public ErrorDto Marcas_Insertar(int CodEmpresa, MarcasDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();

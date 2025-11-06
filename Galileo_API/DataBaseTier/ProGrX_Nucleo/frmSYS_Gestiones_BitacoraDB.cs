@@ -2,7 +2,7 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using static PgxAPI.Models.ProGrX_Nucleo.frmSYS_Gestiones_BitacoraModels;
+using static PgxAPI.Models.ProGrX_Nucleo.FrmSysGestionesBitacoraModels;
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
     public class frmSYS_Gestiones_BitacoraDB

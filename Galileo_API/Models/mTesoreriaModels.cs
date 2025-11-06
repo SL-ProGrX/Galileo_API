@@ -1,6 +1,6 @@
 ﻿namespace PgxAPI.Models
 {
-    public class TesTransaccionDto
+    public class MTesTransaccionDto
     {
         public decimal monto { get; set; }
         public long nSolicitud { get; set; }

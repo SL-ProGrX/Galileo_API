@@ -1,7 +1,6 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.CPR;
 using PgxAPI.Models.ERROR;
@@ -51,7 +50,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto CprSolicitudProveedor_Invitar(int CodEmpresa, CprSolicitudProvDTO proveedor)
+        public ErrorDto CprSolicitudProveedor_Invitar(int CodEmpresa, CprSolicitudProvDto proveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto error = new()
@@ -65,7 +64,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     //Obtengo el tipo de la solicitud
                     var qrySolicitud = @$"SELECT * FROM CPR_SOLICITUD WHERE CPR_ID = {proveedor.cpr_id}";
-                    CprSolicitudDTO solicitud = connection.Query<CprSolicitudDTO>(qrySolicitud).FirstOrDefault();
+                    CprSolicitudDto solicitud = connection.Query<CprSolicitudDto>(qrySolicitud).FirstOrDefault();
 
                     
                     if(solicitud.tipo_orden == frmCpr_Solicitud.CprSolicitud_TipoExcepcion(CodEmpresa).Description)
@@ -128,17 +127,17 @@ namespace PgxAPI.DataBaseTier
             return error;
         }
 
-        public ErrorDto<List<CprSolicitudProvDTO>> CprSolicitudProvInvitados_Obtener(int CodEmpresa, int cpr_id)
+        public ErrorDto<List<CprSolicitudProvDto>> CprSolicitudProvInvitados_Obtener(int CodEmpresa, int cpr_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprSolicitudProvDTO>>();
+            var response = new ErrorDto<List<CprSolicitudProvDto>>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spCPR_SolicitudProvInvitados_Obtener {cpr_id}";
-                    response.Result = connection.Query<CprSolicitudProvDTO>(query).ToList();
+                    response.Result = connection.Query<CprSolicitudProvDto>(query).ToList();
 
                 }
             }
@@ -179,7 +178,7 @@ namespace PgxAPI.DataBaseTier
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<List<CprSolicitudProvValItemData>>();
-            var parametro = JsonConvert.DeserializeObject<CprParametrosVal_Busqueda >(parametros);
+            var parametro = JsonConvert.DeserializeObject<CprParametrosValBusqueda >(parametros);
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -210,21 +209,21 @@ namespace PgxAPI.DataBaseTier
             {
                 Code = 0
             };
-            List<CprSolicitudBsDTO> infoProducto = new List<CprSolicitudBsDTO>();
-            CprProveedorDTO proveedor = new CprProveedorDTO();
+            List<CprSolicitudBsDto> infoProducto = new List<CprSolicitudBsDto>();
+            CprProveedorDto proveedor = new CprProveedorDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $"SELECT DESCRIPCION, CEDJUR, EMAIL FROM CPR_PROVEEDORES_TEMPO WHERE COD_PROVEEDOR = {cod_proveedor}";
-                    proveedor = connection.Query<CprProveedorDTO>(query).FirstOrDefault();
+                    proveedor = connection.Query<CprProveedorDto>(query).FirstOrDefault();
 
 
                     query = @$"SELECT B.CPR_ID, B.COD_PRODUCTO, P.DESCRIPCION, B.CANTIDAD, B.MONTO, (B.CANTIDAD * B.MONTO) AS TOTAL, P.COD_UNIDAD
                     FROM CPR_SOLICITUD_BS B left JOIN PV_PRODUCTOS P ON P.COD_PRODUCTO = B.COD_PRODUCTO
                     WHERE B.CPR_ID = {cpr_id}";
 
-                    infoProducto = connection.Query<CprSolicitudBsDTO>(query).ToList();
+                    infoProducto = connection.Query<CprSolicitudBsDto>(query).ToList();
 
 
                     string queryRecepcion = $"SELECT recepcion_ofertas FROM CPR_SOLICITUD WHERE cpr_id = {cpr_id}";
@@ -251,7 +250,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private async Task CorreoSolicitaCotizacion_Enviar(int CodEmpresa, CprProveedorDTO proveedor, List<CprSolicitudBsDTO> info, string recepcion)
+        private async Task CorreoSolicitaCotizacion_Enviar(int CodEmpresa, CprProveedorDto proveedor, List<CprSolicitudBsDto> info, string recepcion)
         {
 
             ErrorDto resp = new ErrorDto();

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.CPR;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 
 
 namespace PgxAPI.DataBaseTier

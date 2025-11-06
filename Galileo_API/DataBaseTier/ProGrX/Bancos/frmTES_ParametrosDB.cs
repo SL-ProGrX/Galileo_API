@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using PgxAPI.Models.TES;
 
 namespace PgxAPI.DataBaseTier
@@ -9,15 +10,15 @@ namespace PgxAPI.DataBaseTier
     public class frmTES_ParametrosDB
     {
         private readonly IConfiguration? _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmTES_ParametrosDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -64,7 +65,7 @@ namespace PgxAPI.DataBaseTier
                          {paginaActual}
                          {paginacionActual} ";
 
-                    response.Result.lista = connection.Query<TES_ParametrosDTO>(query).ToList();
+                    response.Result.lista = connection.Query<TesParametrosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -83,7 +84,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario"></param>
         /// <param name="param"></param>
         /// <returns></returns>
-        public ErrorDto TES_Parametros_Guardar(int CodEmpresa, string Usuario, TES_ParametrosDTO param)
+        public ErrorDto TES_Parametros_Guardar(int CodEmpresa, string Usuario, TesParametrosDto param)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto()
@@ -102,7 +103,7 @@ namespace PgxAPI.DataBaseTier
                         valor = param.valor
                     });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),

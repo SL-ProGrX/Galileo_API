@@ -35,12 +35,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Cod_Proveedor"></param>
         /// <returns></returns>
-        public ErrorDto<ProveedorDTO> ProveedorDetalle_Obtener(int CodEmpresa, int Cod_Proveedor)
+        public ErrorDto<ProveedorDto> ProveedorDetalle_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<ProveedorDTO>
+            var response = new ErrorDto<ProveedorDto>
             {
                 Code = 0
             };
@@ -53,7 +53,7 @@ namespace PgxAPI.DataBaseTier
                                 FROM cxp_proveedores P INNER JOIN cxp_prov_clas C ON P.cod_clasificacion = C.cod_clasificacion LEFT JOIN CntX_Cuentas Cta ON P.cod_Cuenta = Cta.cod_Cuenta and Cta.cod_contabilidad = 1 
                                 WHERE P.cod_proveedor = {Cod_Proveedor}";
 
-                    response.Result = connection.Query<ProveedorDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<ProveedorDto>(query).FirstOrDefault();
 
                 }
             }
@@ -173,7 +173,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Proveedor_Actualizar(int CodEmpresa, ProveedorDTO request)
+        public ErrorDto Proveedor_Actualizar(int CodEmpresa, ProveedorDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -234,7 +234,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (cod_estado != request.Estado)
                     {
-                        mAuxiliarDB.BitacoraProveedor(new BitacoraProveedorInsertarDTO
+                        mAuxiliarDB.BitacoraProveedor(new BitacoraProveedorInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             cod_proveedor = $@"{request.Cod_Proveedor.ToString()}",
@@ -261,7 +261,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Proveedor_Insertar(int CodEmpresa, ProveedorDTO request)
+        public ErrorDto Proveedor_Insertar(int CodEmpresa, ProveedorDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -1037,10 +1037,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_proveedor"></param>
         /// <returns></returns>
-        public ErrorDto<List<BitacoraProveedorDTO>> BitacoraProducto_Obtener(int CodEmpresa, int cod_proveedor)
+        public ErrorDto<List<BitacoraProveedorDto>> BitacoraProducto_Obtener(int CodEmpresa, int cod_proveedor)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<BitacoraProveedorDTO>>();
+            var response = new ErrorDto<List<BitacoraProveedorDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -1049,7 +1049,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"SELECT ID_BITACORA, CONSEC, REGISTRO_FECHA, COD_PROVEEDOR,REGISTRO_USUARIO, DETALLE, MOVIMIENTO
                   FROM BITACORA_PROVEEDOR WHERE cod_proveedor = '{cod_proveedor}' ORDER BY 1 ASC";
 
-                    response.Result = connection.Query<BitacoraProveedorDTO>(query).ToList();
+                    response.Result = connection.Query<BitacoraProveedorDto>(query).ToList();
 
                 }
             }
@@ -1067,10 +1067,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<ProveedorDTO>> Proveedor_NotificacionVencimiento(int CodEmpresa)
+        public ErrorDto<List<ProveedorDto>> Proveedor_NotificacionVencimiento(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<ProveedorDTO>>();
+            var response = new ErrorDto<List<ProveedorDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -1079,7 +1079,7 @@ namespace PgxAPI.DataBaseTier
                     int dias = connection.QueryFirstOrDefault<int>(querydias);
 
                     var query = $@"SELECT * FROM cxp_proveedores WHERE fecha_vencimiento BETWEEN GETDATE() AND DATEADD(DAY, {dias}, GETDATE());";
-                    response.Result = connection.Query<ProveedorDTO>(query).ToList();
+                    response.Result = connection.Query<ProveedorDto>(query).ToList();
 
                     CorreoNotificacionVencimiento_Enviar(CodEmpresa, response.Result, dias);
 
@@ -1101,7 +1101,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="proveedores"></param>
         /// <param name="dias"></param>
         /// <returns></returns>
-        public async Task<ErrorDto> CorreoNotificacionVencimiento_Enviar(int CodCliente, List<ProveedorDTO> proveedores, int dias)
+        public async Task<ErrorDto> CorreoNotificacionVencimiento_Enviar(int CodCliente, List<ProveedorDto> proveedores, int dias)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -1245,12 +1245,12 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDto<List<ProveedorDTO>> ObtenerProveedores(int CodCliente)
+        public ErrorDto<List<ProveedorDto>> ObtenerProveedores(int CodCliente)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDto<List<ProveedorDTO>>();
+            var response = new ErrorDto<List<ProveedorDto>>();
 
             try
             {
@@ -1258,7 +1258,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = "SELECT COD_PROVEEDOR, DESCRIPCION FROM CXP_PROVEEDORES WHERE ESTADO = 'A' ORDER BY COD_PROVEEDOR";
 
-                    response.Result = connection.Query<ProveedorDTO>(query).ToList();
+                    response.Result = connection.Query<ProveedorDto>(query).ToList();
 
                 }
             }

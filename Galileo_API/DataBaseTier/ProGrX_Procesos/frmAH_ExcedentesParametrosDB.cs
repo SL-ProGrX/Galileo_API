@@ -1,6 +1,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.AH;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -15,11 +16,11 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public List<ParametroExcedenteDTO> obtener_ParametrosExcedentes(int CodEmpresa)
+        public List<ParametroExcedenteDto> obtener_ParametrosExcedentes(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<ParametroExcedenteDTO> info = new List<ParametroExcedenteDTO>();
+            List<ParametroExcedenteDto> info = new List<ParametroExcedenteDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -27,7 +28,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "select * from EXC_PARAMETROS order by cod_parametro asc";
 
-                    info = connection.Query<ParametroExcedenteDTO>(query).ToList();
+                    info = connection.Query<ParametroExcedenteDto>(query).ToList();
 
                 }
             }

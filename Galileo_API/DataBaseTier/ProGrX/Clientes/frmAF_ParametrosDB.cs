@@ -3,21 +3,22 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 {
     public class frmAF_ParametrosDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _mSecurity;
+        private readonly MSecurityMainDb _mSecurity;
 
         public frmAF_ParametrosDB(IConfiguration config)
         {
             _config = config;
-            _mSecurity = new mSecurityMainDb(_config);
+            _mSecurity = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -28,17 +29,17 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AF_ParametrosLista> AF_Parametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<AfParametrosLista> AF_Parametros_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_ParametrosLista>
+            var response = new ErrorDto<AfParametrosLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new AF_ParametrosLista()
+                Result = new AfParametrosLista()
                 {
                     total = 0,
-                    lista = new List<AF_ParametrosDTO>()
+                    lista = new List<AfParametrosDto>()
                 }
             };
 
@@ -69,7 +70,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                      order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
                                          OFFSET {filtros.pagina} ROWS 
                                          FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                    response.Result.lista = connection.Query<AF_ParametrosDTO>(query).ToList();
+                    response.Result.lista = connection.Query<AfParametrosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -107,7 +108,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     var query = "update afi_parametros set valor = @Valor where cod_parametro = @Codigo";
                     connection.Execute(query, new { Codigo, Valor } );
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),

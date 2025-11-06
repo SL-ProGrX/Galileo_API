@@ -21,13 +21,13 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="Filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_Liquidacion_Masiva>> AF_LiquidacionMasiva_Obtener(int CodEmpresa, AF_LiquidacionMasiva_Filtros Filtro)
+        public ErrorDto<List<AfLiquidacionMasiva>> AF_LiquidacionMasiva_Obtener(int CodEmpresa, AfLiquidacionMasivaFiltros Filtro)
         {
-            var result = new ErrorDto<List<AF_Liquidacion_Masiva>>()
+            var result = new ErrorDto<List<AfLiquidacionMasiva>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_Liquidacion_Masiva>()
+                Result = new List<AfLiquidacionMasiva>()
             };
 
             try
@@ -48,7 +48,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     Usuario = Filtro.Usuario ?? ""
                 };
 
-                result.Result = connection.Query<AF_Liquidacion_Masiva>(
+                result.Result = connection.Query<AfLiquidacionMasiva>(
                     "spAFI_Renuncia_Liquidacion_Pendiente",
                     parameters,
                     commandType: System.Data.CommandType.StoredProcedure

@@ -1,21 +1,21 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
     public class frmTES_CopiaEsquemaDB
     {
         private readonly IConfiguration? _config;
-        private readonly mSecurityMainDb BitacoraDb;
+        private readonly MSecurityMainDb BitacoraDb;
 
         public frmTES_CopiaEsquemaDB(IConfiguration config)
         {
             _config = config;
-            BitacoraDb = new mSecurityMainDb(_config);
+            BitacoraDb = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -30,10 +30,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<tesCopiaEsquemaModels> Tes_CopiaEsquema_Obtener(int CodEmpresa, int solicitud, int contabilidad)
+        public ErrorDto<TesCopiaEsquemaModels> Tes_CopiaEsquema_Obtener(int CodEmpresa, int solicitud, int contabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<tesCopiaEsquemaModels>();
+            var response = new ErrorDto<TesCopiaEsquemaModels>();
 
             try
             {
@@ -51,7 +51,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                     inner join Tes_Bancos B on C.id_banco = B.id_banco
                                     where C.nsolicitud = @solicitud ";
 
-                    response.Result = connection.Query<tesCopiaEsquemaModels>(
+                    response.Result = connection.Query<TesCopiaEsquemaModels>(
                          query,
                          new
                          {
@@ -102,7 +102,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto Tes_CopiarEsquema_Guardar(int CodEmpresa, tesCopiaEsquemaModels solicitud)
+        public ErrorDto Tes_CopiarEsquema_Guardar(int CodEmpresa, TesCopiaEsquemaModels solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto();
@@ -115,7 +115,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 
                     if (tesoleria > 0)
                     {
-                        BitacoraDb.Bitacora(new Models.BitacoraInsertarDTO
+                        BitacoraDb.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = solicitud.usuario.ToUpper(),
@@ -149,17 +149,17 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="contabilidad"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<tesCopiaEsquemaLista> Tes_CopiaEsquemaLista_Obtener(int CodEmpresa, int contabilidad, FiltrosLazyLoadData filtros)
+        public ErrorDto<TesCopiaEsquemaLista> Tes_CopiaEsquemaLista_Obtener(int CodEmpresa, int contabilidad, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<tesCopiaEsquemaLista>()
+            var result = new ErrorDto<TesCopiaEsquemaLista>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new tesCopiaEsquemaLista()
+                Result = new TesCopiaEsquemaLista()
                 {
                     total = 0,
-                    lista = new List<tesCopiaEsquemaModels>()
+                    lista = new List<TesCopiaEsquemaModels>()
                 }
             };
             try
@@ -221,7 +221,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                      ORDER BY {filtros.sortField} {(filtros.sortOrder == -1 ? "ASC" : "DESC")} 
                                         OFFSET {filtros.pagina} ROWS
                                       FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                    result.Result.lista = connection.Query<tesCopiaEsquemaModels>(query, new { contabilidad = contabilidad }).ToList();
+                    result.Result.lista = connection.Query<TesCopiaEsquemaModels>(query, new { contabilidad = contabilidad }).ToList();
                 }
             }
             catch (Exception ex)

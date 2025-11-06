@@ -14,13 +14,13 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<MovimientosPatrimonioDTO> consultarMovimientos_Obtener(int CodCliente, string filtroString)
+        public List<MovimientosPatrimonioDto> consultarMovimientos_Obtener(int CodCliente, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            MovimientosPatrimonio_Filtros filtros = JsonConvert.DeserializeObject<MovimientosPatrimonio_Filtros>(filtroString);
+            MovimientosPatrimonioFiltros filtros = JsonConvert.DeserializeObject<MovimientosPatrimonioFiltros>(filtroString);
 
-            List<MovimientosPatrimonioDTO> info = new List<MovimientosPatrimonioDTO>();
+            List<MovimientosPatrimonioDto> info = new List<MovimientosPatrimonioDto>();
             try
             {
                 string where = "";
@@ -68,12 +68,12 @@ namespace PgxAPI.DataBaseTier
                                         LEFT JOIN AFI_SECTORES Sec ON S.COD_SECTOR = Sec.COD_SECTOR
                                         {where}; ";
 
-                    info = connection.Query<MovimientosPatrimonioDTO>(query).ToList();
+                    info = connection.Query<MovimientosPatrimonioDto>(query).ToList();
                 }
             }
             catch (Exception)
             {
-                info = new List<MovimientosPatrimonioDTO>();
+                info = new List<MovimientosPatrimonioDto>();
             }
 
             return info;
@@ -82,11 +82,11 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public List<DocumentosTransaccionSifDTO> Obtener_TipoTransaccion(int CodEmpresa)
+        public List<DocumentosTransaccionSifDto> Obtener_TipoTransaccion(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<DocumentosTransaccionSifDTO> info = new List<DocumentosTransaccionSifDTO>();
+            List<DocumentosTransaccionSifDto> info = new List<DocumentosTransaccionSifDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -102,7 +102,7 @@ namespace PgxAPI.DataBaseTier
                                 ORDER BY 
                                     Descripcion;";
 
-                    info = connection.Query<DocumentosTransaccionSifDTO>(query).ToList();
+                    info = connection.Query<DocumentosTransaccionSifDto>(query).ToList();
 
                 }
             }

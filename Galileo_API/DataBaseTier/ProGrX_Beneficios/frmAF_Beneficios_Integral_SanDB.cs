@@ -55,17 +55,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfiBeneSancionesDTO>> BeneSacionesSocio_Obtener(int CodCliente, string cedula)
+        public ErrorDto<List<AfiBeneSancionesDto>> BeneSacionesSocio_Obtener(int CodCliente, string cedula)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<AfiBeneSancionesDTO>>();
+            var response = new ErrorDto<List<AfiBeneSancionesDto>>();
             try
             {
                 using (IDbConnection db = new SqlConnection(clienteConnString))
                 {
                     var query = $@"exec spAFI_Bene_Socio_Sanciones '{cedula}' ";
 
-                    response.Result = db.Query<AfiBeneSancionesDTO>(query).ToList();
+                    response.Result = db.Query<AfiBeneSancionesDto>(query).ToList();
 
                 }
             }
@@ -84,7 +84,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="sancion"></param>
         /// <returns></returns>
-        public ErrorDto BeneSancionesSocio_Guardar(int CodCliente, AfiBeneSancionesDTO sancion)
+        public ErrorDto BeneSancionesSocio_Guardar(int CodCliente, AfiBeneSancionesDto sancion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -132,7 +132,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="sancion"></param>
         /// <returns></returns>
-        private bool BeneSancion_Insertar(int CodCliente, AfiBeneSancionesDTO sancion)
+        private bool BeneSancion_Insertar(int CodCliente, AfiBeneSancionesDto sancion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -161,12 +161,12 @@ namespace PgxAPI.DataBaseTier
 
                     };
 
-                    connection.Query<AfiBeneSancionesDTO>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    connection.Query<AfiBeneSancionesDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
 
                     var query = $@"SELECT TOP 1 SANCION_ID FROM AFI_BENE_SANCIONES WHERE CEDULA = '{sancion.cedula}' ORDER BY SANCION_ID DESC";
                     sancion.sancion_id = connection.Query<int>(query).FirstOrDefault();
 
-                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                     {
                         EmpresaId = CodCliente,
                         cod_beneficio = sancion.cod_beneficio,
@@ -193,7 +193,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="sancion"></param>
         /// <returns></returns>
-        private ErrorDto BeneSancion_Actualizar(int CodCliente, AfiBeneSancionesDTO sancion)
+        private ErrorDto BeneSancion_Actualizar(int CodCliente, AfiBeneSancionesDto sancion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -225,7 +225,7 @@ namespace PgxAPI.DataBaseTier
                     connection.Query<BeneficiosSancionesLista>(query).ToList();
                     connection.Query(query1);
 
-                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                     {
                         EmpresaId = CodCliente,
                         cod_beneficio = sancion.cod_beneficio,

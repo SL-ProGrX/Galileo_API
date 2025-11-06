@@ -4,6 +4,7 @@ using PdfSharp.Pdf.Filters;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Personas;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Personas
 {
@@ -11,12 +12,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_PlanMutualDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(config);
+            _Security_MainDB = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -166,7 +167,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 Result = new AfPlanMutualLista()
                 {
                     total = 0,
-                    lista = new List<AfPlanMutualDTO>()
+                    lista = new List<AfPlanMutualDto>()
                 }
             };
             try
@@ -205,7 +206,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
 		                                order by {filtro.sortField} {(filtro.sortOrder == -1 ? "ASC" : "DESC")}
                                         OFFSET {filtro.pagina} ROWS
                                         FETCH NEXT {filtro.paginacion} ROWS ONLY ";
-                        result.Result.lista = connection.Query<AfPlanMutualDTO>(query).ToList();
+                        result.Result.lista = connection.Query<AfPlanMutualDto>(query).ToList();
                     }
                 }
 
@@ -261,7 +262,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="usuario"></param>
         /// <param name="plan"></param>
         /// <returns></returns>
-        public ErrorDto AF_PlanMutual_Guardar(int CodEmpresa, string usuario, AfPlanMutualDTO plan)
+        public ErrorDto AF_PlanMutual_Guardar(int CodEmpresa, string usuario, AfPlanMutualDto plan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto
@@ -278,7 +279,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     var query = @$"exec spAFI_PM_Registro '{plan.cod_plan}', '{plan.descripcion}', {plan.monto}, '{plan.codigio_retencion}', {activo}, '{usuario}','A' ";
                     connection.Execute(query);
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -319,7 +320,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 {
                     var query = @$"exec spAFI_PM_Registro '{plan}', '', 0, '', 0, '{usuario}', 'E'";
                     connection.Execute(query);
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -358,7 +359,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 {
                     var query = @$"exec spAFI_PM_Recaudos_Update '{plan}', '{usuario}' ";
                     connection.Execute(query);
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

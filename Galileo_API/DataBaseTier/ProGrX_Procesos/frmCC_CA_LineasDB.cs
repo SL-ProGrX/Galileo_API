@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.GEN;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -11,24 +12,24 @@ namespace PgxAPI.DataBaseTier
     public class frmCC_CA_LineasDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmCC_CA_LineasDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
 
-        public List<PRM_CA_LineasData> CC_CA_Lineas_Obtener(int CodEmpresa, string Filtros)
+        public List<PrmCaLineasData> CC_CA_Lineas_Obtener(int CodEmpresa, string Filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             FiltroLazy filtros = JsonConvert.DeserializeObject<FiltroLazy>(Filtros);
-            List<PRM_CA_LineasData> resp = new List<PRM_CA_LineasData>();
+            List<PrmCaLineasData> resp = new List<PrmCaLineasData>();
             string paginaActual = " ", paginacionActual = " ";
 
             try
@@ -53,7 +54,7 @@ namespace PgxAPI.DataBaseTier
                             {filtro}
                         order by Cod_Linea
                             {paginaActual} {paginacionActual}";
-                    resp = connection.Query<PRM_CA_LineasData>(query).ToList();
+                    resp = connection.Query<PrmCaLineasData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -63,17 +64,17 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<CC_CA_Lineas_ActivasData> CC_CA_Lineas_ActivasObtener(int CodEmpresa)
+        public List<CcCaLineasActivasData> CC_CA_Lineas_ActivasObtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CC_CA_Lineas_ActivasData> resp = new List<CC_CA_Lineas_ActivasData>();
+            List<CcCaLineasActivasData> resp = new List<CcCaLineasActivasData>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select rtrim(Cod_Linea) + ' - ' + descripcion as 'ItmX' from PRM_CA_LINEAS where activo = 1";
-                    resp = connection.Query<CC_CA_Lineas_ActivasData>(query).ToList();
+                    resp = connection.Query<CcCaLineasActivasData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -83,7 +84,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto CC_CA_Linea_Upsert(int CodEmpresa, PRM_CA_LineaUpsert request)
+        public ErrorDto CC_CA_Linea_Upsert(int CodEmpresa, PrmCaLineaUpsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -108,7 +109,7 @@ namespace PgxAPI.DataBaseTier
                         resp.Code = connection.ExecuteAsync(query1, parameters1).Result;
                         resp.Description = "Linea agregada exitosamente!";
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = request.registro_usuario.ToUpper(),
@@ -129,7 +130,7 @@ namespace PgxAPI.DataBaseTier
                         resp.Code = connection.ExecuteAsync(query2, parameters2).Result;
                         resp.Description = "Linea actualizada exitosamente!";
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = request.registro_usuario.ToUpper(),
@@ -176,7 +177,7 @@ namespace PgxAPI.DataBaseTier
                     resp.Code = connection.Execute(query);
                     resp.Description = "Linea eliminada exitosamente!";
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -194,11 +195,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<CC_CA_CodigosAsignadosData> CC_CA_CodigosAsignados_Obtener(int CodEmpresa, string Filtros, string Codigo)
+        public List<CcCaCodigosAsignadosData> CC_CA_CodigosAsignados_Obtener(int CodEmpresa, string Filtros, string Codigo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             FiltroLazy filtros = JsonConvert.DeserializeObject<FiltroLazy>(Filtros);
-            List<CC_CA_CodigosAsignadosData> resp = new List<CC_CA_CodigosAsignadosData>();
+            List<CcCaCodigosAsignadosData> resp = new List<CcCaCodigosAsignadosData>();
             string paginaActual = " ", paginacionActual = " ";
 
             try
@@ -223,7 +224,7 @@ namespace PgxAPI.DataBaseTier
                             {filtro}
                         Order by isnull(Dt.Codigo,'ZZZZZZZ'),Cat.Codigo
                             {paginaActual} {paginacionActual}";
-                    resp = connection.Query<CC_CA_CodigosAsignadosData>(query).ToList();
+                    resp = connection.Query<CcCaCodigosAsignadosData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -233,7 +234,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto CC_CA_CodigoAsignado_Insert(int CodEmpresa, PRM_CA_Lineas_DtInsert request)
+        public ErrorDto CC_CA_CodigoAsignado_Insert(int CodEmpresa, PrmCaLineasDtInsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -253,7 +254,7 @@ namespace PgxAPI.DataBaseTier
 
                     resp.Description = "C�digo " + request.codigo + " asignado!";
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = request.registro_usuario.ToUpper(),
@@ -284,7 +285,7 @@ namespace PgxAPI.DataBaseTier
                     resp.Code = connection.Execute(query);
                     resp.Description = "C�digo " + Codigo + " desasignado!";
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),

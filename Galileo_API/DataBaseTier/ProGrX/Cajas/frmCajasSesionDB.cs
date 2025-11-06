@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cajas
         /// <param name="identificacion"></param>
         /// <returns></returns>
 
-        public ErrorDto<CajasSesionDTO> Cajas_Sesion_Obtener(int codEmpresa, string usuario, string identificacion)
+        public ErrorDto<CajasSesionDto> Cajas_Sesion_Obtener(int codEmpresa, string usuario, string identificacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto<CajasSesionDTO>
+            var response = new ErrorDto<CajasSesionDto>
             {
                 Code = 0,
                 Description = "Ok",
@@ -46,7 +46,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cajas
                           AND estado = 1
                           AND identificacion = @Identificacion";
 
-                    var result = connection.QueryFirstOrDefault<CajasSesionDTO>(
+                    var result = connection.QueryFirstOrDefault<CajasSesionDto>(
                         sql,
                         new { Usuario = usuario, Identificacion = identificacion }
                     );
@@ -108,7 +108,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cajas
                     parameters.Add("@Identificacion", cedula, DbType.String);
                     parameters.Add("@Nombre", nombre, DbType.String);
 
-                    var result = connection.QueryFirstOrDefault<CajaSesionDTO>(
+                    var result = connection.QueryFirstOrDefault<CajaSesionDto>(
                         "spCajas_Sesion_Inicia",
                         parameters,
                         commandType: CommandType.StoredProcedure);
@@ -171,14 +171,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cajas
         /// <param name="codEmpresa"></param>
         /// <param name="sesionId"></param>
         /// <returns></returns>
-        public ErrorDto<List<CajasSesionMovimientosDTO>> Cajas_Sesion_Movimientos(int codEmpresa, int sesionId)
+        public ErrorDto<List<CajasSesionMovimientosDto>> Cajas_Sesion_Movimientos(int codEmpresa, int sesionId)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto<List<CajasSesionMovimientosDTO>>
+            var response = new ErrorDto<List<CajasSesionMovimientosDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<CajasSesionMovimientosDTO>()
+                Result = new List<CajasSesionMovimientosDto>()
             };
 
             try
@@ -188,7 +188,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cajas
                     var parameters = new DynamicParameters();
                     parameters.Add("@SesionId", sesionId, DbType.Int32);
 
-                    response.Result = connection.Query<CajasSesionMovimientosDTO>(
+                    response.Result = connection.Query<CajasSesionMovimientosDto>(
                         "spCajas_Sesion_Aplicaciones",
                         parameters,
                         commandType: CommandType.StoredProcedure

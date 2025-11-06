@@ -781,7 +781,7 @@
         public List<AfPersonaRenunciaDto> Renuncias { get; set; } = new();
         public List<AfPersonaLiquidacionDto> Liquidaciones { get; set; } = new();
         public List<AfPersonaNombramientoDto> Nombramientos { get; set; } = new();
-        public List<AfPersonaSalarioAddDto> Salarios { get; set; } = new();
+        public List<AfPersonaSalarioDto> Salarios { get; set; } = new();
         public List<AfPersonaEmailDto> Emails { get; set; } = new();
         public List<AfMotivosDto> Motivos { get; set; } = new();
         public List<AfCanalesDto> Canales { get; set; } = new();

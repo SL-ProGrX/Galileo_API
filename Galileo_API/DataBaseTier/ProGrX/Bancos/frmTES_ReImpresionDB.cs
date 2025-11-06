@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 using PgxAPI.Models.TES;
 using System.Reflection;
 using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
@@ -14,18 +15,18 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
     public class frmTES_ReImpresionDB
     {
         private readonly IConfiguration? _config;
-        private readonly mTesoreria mTesoreria;
+        private readonly MTesoreria MTesoreria;
         private readonly int module = 9;
-        private readonly mSecurityMainDb mSecurity;
-        private readonly mReportingServicesDB srvReportes;
+        private readonly MSecurityMainDb mSecurity;
+        //private readonly mReportingServicesDB srvReportes;
         private readonly mProGrX_AuxiliarDB mProGrX_Auxiliar;
 
         public frmTES_ReImpresionDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(config);
-            mSecurity = new mSecurityMainDb(config);
-            srvReportes = new mReportingServicesDB(config);
+            MTesoreria = new MTesoreria(config);
+            mSecurity = new MSecurityMainDb(config);
+            //srvReportes = new mReportingServicesDB(config);
             mProGrX_Auxiliar = new mProGrX_AuxiliarDB(config);
         }
 
@@ -35,14 +36,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<tesReImpresionModels> TES_ReImpresion_Obtener(int CodEmpresa, int solicitud)
+        public ErrorDto<TesReImpresionModels> TES_ReImpresion_Obtener(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<tesReImpresionModels>
+            var response = new ErrorDto<TesReImpresionModels>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new tesReImpresionModels
+                Result = new TesReImpresionModels
                 {
                     verifica = " - El Documento se puede ReImprimir...",
                     verificaTag = "S"
@@ -59,7 +60,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                     inner join tes_banco_docs Y on C.id_banco = Y.id_Banco and C.tipo = Y.tipo
                                     where C.nsolicitud = @solicitud ";
 
-                    response.Result = connection.Query<tesReImpresionModels>(query,
+                    response.Result = connection.Query<TesReImpresionModels>(query,
                         new
                         {solicitud = solicitud }).FirstOrDefault();
 
@@ -88,7 +89,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         }
                         else
                         {
-                            response.Result = new tesReImpresionModels();
+                            response.Result = new TesReImpresionModels();
                         }
                     }
                     else
@@ -116,7 +117,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<object> TES_ReImpresion_Guardar(int CodEmpresa, tesReImpresionModels solicitud)
+        public ErrorDto<object> TES_ReImpresion_Guardar(int CodEmpresa, TesReImpresionModels solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<object>
@@ -168,9 +169,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         });
 
                         //bitacora
-                        mTesoreria.sbTesBitacoraEspecial(CodEmpresa, solicitud.nSolicitud, "17", solicitud.detalle_Anulacion, solicitud.usuario);
+                        MTesoreria.sbTesBitacoraEspecial(CodEmpresa, solicitud.nSolicitud, "17", solicitud.detalle_Anulacion, solicitud.usuario);
 
-                        mSecurity.Bitacora(new BitacoraInsertarDTO
+                        mSecurity.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = solicitud.usuario,
@@ -197,7 +198,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        private ErrorDto<object> sbReImprime(int CodEmpresa, tesReImpresionModels solicitud)
+        private ErrorDto<object> sbReImprime(int CodEmpresa, TesReImpresionModels solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<object>
@@ -206,12 +207,12 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             };
             try
             {
-               var archivoEspecial = mTesoreria.sbCargaArchivosEspeciales(CodEmpresa, solicitud.id_banco);
+               var archivoEspecial = MTesoreria.sbCargaArchivosEspeciales(CodEmpresa, solicitud.id_banco);
                 var query = "";
                 using var connection = new SqlConnection(stringConn);
                 {
                     query = $@"select firmas_desde,firmas_hasta,formato_transferencia,Lugar_Emision  from Tes_Bancos where id_banco = @banco ";
-                    var banco = connection.QueryFirstOrDefault<tesReImpresionBancoData>(query, new { banco = solicitud.id_banco });
+                    var banco = connection.QueryFirstOrDefault<TesReImpresionBancoData>(query, new { banco = solicitud.id_banco });
 
                     query = $@"select isnull(count(*),0) as Existe from TES_BANCO_FIRMASAUT where id_Banco = @banco
                                       and usuario = @usuario ";
@@ -225,10 +226,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     bool vFirmas = existe > 0 ? true : false;
 
                     query = $@"select * from Tes_Transacciones where nsolicitud = @solicitud ";
-                    var transaccion = connection.QueryFirstOrDefault<TES_TransaccionDTO>(query, new { solicitud = solicitud.nSolicitud });
+                    var transaccion = connection.QueryFirstOrDefault<Models.TES.TesTransaccionDto>(query, new { solicitud = solicitud.nSolicitud });
 
                     //Imprime reporte
-                    frmReporteGlobal data = new frmReporteGlobal();
+                    FrmReporteGlobal data = new FrmReporteGlobal();
                     data.codEmpresa = CodEmpresa;
                     data.parametros = null;
                     data.nombreReporte = "";
@@ -245,7 +246,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     query = $@"SELECT ARCHIVO_ESPECIAL_CK, ARCHIVO_CHEQUES_FIRMAS  ,ARCHIVO_CHEQUES_SIN_FIRMAS  FROM Tes_Bancos
                                   WHERE ID_BANCO = @bancos";
 
-                    var docFormatos = connection.QueryFirstOrDefault<tesReImpresionDoc>(query, new { bancos = solicitud.id_banco });
+                    var docFormatos = connection.QueryFirstOrDefault<TesReImpresionDoc>(query, new { bancos = solicitud.id_banco });
 
                     if(existe > 0) 
                     {
@@ -288,7 +289,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     }
 
                     decimal vMonto = Convert.ToDecimal(transaccion.monto);
-                    string vMesLetras = mTesoreria.fxTesMesDescripcion(transaccion.fecha_emision.Value.Month);
+                    string vMesLetras = MTesoreria.fxTesMesDescripcion(transaccion.fecha_emision.Value.Month);
 
                     var parametrosJson = new
                     {
@@ -301,30 +302,30 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 
                     data.parametros = System.Text.Json.JsonSerializer.Serialize(parametrosJson);
 
-                    var actionResult = srvReportes.ReporteRDLC_v2(data);
+                    //var actionResult = srvReportes.ReporteRDLC_v2(data);
 
                     // Asegúrate de castear a ObjectResult, no a ResImpresion
-                    var objectResult = actionResult as ObjectResult;
-                    if (objectResult == null)
-                    {
-                        //response.Code = -1;
-                        //response.Description = "Error al generar el reporte, verifique...";
-                        //return response;
-                        response.Result = actionResult;
-                    }
-                    else
-                    {
-                        // Si tu action hace: return StatusCode(200, resImpresion);
-                        var res = objectResult.Value;
-                        //converto res a JSON
-                        var Jres = System.Text.Json.JsonSerializer.Serialize(res);
+                    // var objectResult = actionResult as ObjectResult;
+                    // if (objectResult == null)
+                    // {
+                    //     //response.Code = -1;
+                    //     //response.Description = "Error al generar el reporte, verifique...";
+                    //     //return response;
+                    //     response.Result = actionResult;
+                    // }
+                    // else
+                    // {
+                    //     // Si tu action hace: return StatusCode(200, resImpresion);
+                    //     var res = objectResult.Value;
+                    //     //converto res a JSON
+                    //     var Jres = System.Text.Json.JsonSerializer.Serialize(res);
 
-                        // convierto JSON a ErrorDto
-                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
+                    //     // convierto JSON a ErrorDto
+                    //     var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
 
-                        response.Code = err.Code;
-                        response.Description = err.Description;
-                    }
+                    //     response.Code = err.Code;
+                    //     response.Description = err.Description;
+                    // }
                 }
             }
             catch (Exception)

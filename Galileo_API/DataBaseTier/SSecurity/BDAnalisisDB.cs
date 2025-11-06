@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -83,9 +84,9 @@ namespace PgxAPI.DataBaseTier
         //    TablasCargar(connectionString);
         //}
 
-        public ResultadoConsultaDTO sbCargaResultados(string pObjeto)
+        public ResultadoConsultaDto sbCargaResultados(string pObjeto)
         {
-            ResultadoConsultaDTO resultado = new ResultadoConsultaDTO();
+            ResultadoConsultaDto resultado = new ResultadoConsultaDto();
 
             try
             {

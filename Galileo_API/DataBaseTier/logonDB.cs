@@ -22,9 +22,9 @@ namespace PgxAPI.DataBaseTier
             Notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value.ToString();
         }
 
-        public IntentosObtenerDTO IntentosObtener()
+        public IntentosObtenerDto IntentosObtener()
         {
-            IntentosObtenerDTO resp = new IntentosObtenerDTO();
+            IntentosObtenerDto resp = new IntentosObtenerDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -32,7 +32,7 @@ namespace PgxAPI.DataBaseTier
 
                     var strSQL = "select KEY_INTENTOS,TIME_LOCK  from US_PARAMETROS";
 
-                    resp = connection.Query<IntentosObtenerDTO>(strSQL).FirstOrDefault();
+                    resp = connection.Query<IntentosObtenerDto>(strSQL).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -43,7 +43,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto LoginObtener(LoginObtenerDTO req)
+        public ErrorDto LoginObtener(LoginObtenerDto req)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -72,11 +72,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto<List<ClientesEmpresasObtenerDTO>> ClientesObtener(string usuario)
+        public ErrorDto<List<ClientesEmpresasObtenerDto>> ClientesObtener(string usuario)
         {
-            var response = new ErrorDto<List<ClientesEmpresasObtenerDTO>>()
+            var response = new ErrorDto<List<ClientesEmpresasObtenerDto>>()
             {
-                Result = new List<ClientesEmpresasObtenerDTO>()
+                Result = new List<ClientesEmpresasObtenerDto>()
             };
 
             try
@@ -88,7 +88,7 @@ namespace PgxAPI.DataBaseTier
                         Usuario = usuario
                     };
 
-                    response.Result = connection.Query<ClientesEmpresasObtenerDTO>("spPGX_Usuario_Consultar_Clientes", values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<ClientesEmpresasObtenerDto>("spPGX_Usuario_Consultar_Clientes", values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -178,9 +178,9 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public TFA_Data TFA_Data_Load(string usuario)
+        public TfaData TFA_Data_Load(string usuario)
         {
-            TFA_Data info = new TFA_Data();
+            TfaData info = new TfaData();
 
             try
             {
@@ -192,7 +192,7 @@ namespace PgxAPI.DataBaseTier
                         Usuario = usuario,
 
                     };
-                    info = connection.QueryFirstOrDefault<TFA_Data>(procedure, values, commandType: CommandType.StoredProcedure)!;
+                    info = connection.QueryFirstOrDefault<TfaData>(procedure, values, commandType: CommandType.StoredProcedure)!;
 
                 }
             }
@@ -223,10 +223,10 @@ namespace PgxAPI.DataBaseTier
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
 
-                    TFADatosCorreo datos = new TFADatosCorreo();
+                    TfaDatosCorreo datos = new TfaDatosCorreo();
                     datos.codigo = codigo2FA;
                     datos.email = email;
-                    await TFACodigoEmail_Enviar(datos);
+                    await TfaCodigoEmail_Enviar(datos);
 
                 }
             }
@@ -274,7 +274,7 @@ namespace PgxAPI.DataBaseTier
             return code.ToString("D6"); // Formats it as a 6-digit string
         }
 
-        private async Task TFACodigoEmail_Enviar(TFADatosCorreo datos)
+        private async Task TfaCodigoEmail_Enviar(TfaDatosCorreo datos)
         {
             ErrorDto response = new ErrorDto();
             EnvioCorreoModels eConfig = _envioCorreoDB.CorreoConfigCuenta(Notificaciones);

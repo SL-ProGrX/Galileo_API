@@ -249,7 +249,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<List<FslConsultaExpedienteDatos>> FslConsultaExpedientes_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            fslConsultaFiltros _filtro = JsonConvert.DeserializeObject<fslConsultaFiltros>(filtros);
+            FslConsultaFiltros _filtro = JsonConvert.DeserializeObject<FslConsultaFiltros>(filtros);
 
             var response = new ErrorDto<List<FslConsultaExpedienteDatos>>();
             try

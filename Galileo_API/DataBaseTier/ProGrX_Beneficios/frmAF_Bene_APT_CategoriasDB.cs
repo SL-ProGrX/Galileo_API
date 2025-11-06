@@ -23,13 +23,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<APT_CATEGORIASDataLista> CategoriasApremiante_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<AptCategoriasDataLista> CategoriasApremiante_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<APT_CATEGORIASDataLista>();
-            response.Result = new APT_CATEGORIASDataLista();
+            var response = new ErrorDto<AptCategoriasDataLista>();
+            response.Result = new AptCategoriasDataLista();
             try
             {
                 var query = "";
@@ -58,7 +58,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginaActual}
                                         {paginacionActual} ";
 
-                    response.Result.Lista = connection.Query<APT_CATEGORIAS>(query).ToList();
+                    response.Result.Lista = connection.Query<AptCategorias>(query).ToList();
 
                 }
             }
@@ -78,7 +78,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto CategoriasApremiante_Actualizar(int CodEmpresa, APT_CATEGORIAS request)
+        public ErrorDto CategoriasApremiante_Actualizar(int CodEmpresa, AptCategorias request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -112,7 +112,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto CategoriasApremiante_Agregar(int CodEmpresa, APT_CATEGORIAS request)
+        public ErrorDto CategoriasApremiante_Agregar(int CodEmpresa, AptCategorias request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new();

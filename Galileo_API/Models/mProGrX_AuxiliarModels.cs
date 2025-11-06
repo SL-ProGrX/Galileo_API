@@ -117,7 +117,7 @@
 
     public class DropDownListaGenericaModel
     {
-        public required object item { get; set; }
+        public object? item { get; set; }
         public string descripcion { get; set; } = string.Empty;
     }
 

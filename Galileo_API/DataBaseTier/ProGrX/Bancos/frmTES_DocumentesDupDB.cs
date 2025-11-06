@@ -1,24 +1,24 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
     public class frmTES_DocumentesDupDB
     {
         private readonly IConfiguration? _config;
-        private mSecurityMainDb DBBitacora;
+        private MSecurityMainDb DBBitacora;
 
         public frmTES_DocumentesDupDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -107,7 +107,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<List<DocumentoDuplicadosLista>> Documentos_Duplicados_Obtener(int CodEmpresa, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            TES_DocumentosDuplicadosFiltros filtro = JsonConvert.DeserializeObject<TES_DocumentosDuplicadosFiltros>(filtros) ?? new TES_DocumentosDuplicadosFiltros();
+            TesDocumentosDuplicadosFiltros filtro = JsonConvert.DeserializeObject<TesDocumentosDuplicadosFiltros>(filtros) ?? new TesDocumentosDuplicadosFiltros();
 
             var response = new ErrorDto<List<DocumentoDuplicadosLista>>
             {

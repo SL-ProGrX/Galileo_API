@@ -15,13 +15,13 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<afBeneficiosBancosDataLista> BeneficiosBancosX_Obtener(int CodCliente, string filtros)
+        public ErrorDto<AfBeneficiosBancosDataLista> BeneficiosBancosX_Obtener(int CodCliente, string filtros)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<afBeneficiosBancosDataLista>();
+            var response = new ErrorDto<AfBeneficiosBancosDataLista>();
 
-            response.Result = new afBeneficiosBancosDataLista();
+            response.Result = new AfBeneficiosBancosDataLista();
 
             response.Result.Total = 0;
             try
@@ -60,7 +60,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    response.Result.bancosX = connection.Query<afBeneficiosBancosData>(query).ToList();
+                    response.Result.bancosX = connection.Query<AfBeneficiosBancosData>(query).ToList();
 
                 }
             }
@@ -84,11 +84,11 @@ namespace PgxAPI.DataBaseTier
             }
         }
 
-        public ErrorDto<afBeneficiosBancosData> BeneficiosBancosX_Actualizar(int CodCliente, afBeneficiosBancosData data)
+        public ErrorDto<AfBeneficiosBancosData> BeneficiosBancosX_Actualizar(int CodCliente, AfBeneficiosBancosData data)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<afBeneficiosBancosData>();
+            var response = new ErrorDto<AfBeneficiosBancosData>();
 
 
             bool actualizado = false;

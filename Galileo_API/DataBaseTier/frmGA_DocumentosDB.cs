@@ -23,9 +23,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Usuario"></param>
         /// <param name="Modulo"></param>
         /// <returns></returns>
-        public ErrorDto<List<TiposDocumentosArchivosDTO>> TiposDocumentos_Obtener(int CodEmpresa, string Usuario, string Modulo)
+        public ErrorDto<List<TiposDocumentosArchivosDto>> TiposDocumentos_Obtener(int CodEmpresa, string Usuario, string Modulo)
         {
-            var resp = new ErrorDto<List<TiposDocumentosArchivosDTO>>();
+            var resp = new ErrorDto<List<TiposDocumentosArchivosDto>>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
@@ -37,7 +37,7 @@ namespace PgxAPI.DataBaseTier
                         Usuario = Usuario,
                         Modulo = Modulo
                     };
-                    resp.Result = connection.Query<TiposDocumentosArchivosDTO>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    resp.Result = connection.Query<TiposDocumentosArchivosDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -55,7 +55,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto Documentos_Insertar(int CodEmpresa, DocumentosArchivoDTO data)
+        public ErrorDto Documentos_Insertar(int CodEmpresa, DocumentosArchivoDto data)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -121,13 +121,13 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public List<DocumentosArchivoDTO> Documentos_Obtener(GaDocumento filtros)
+        public List<DocumentosArchivoDto> Documentos_Obtener(GaDocumento filtros)
         {
-            List<DocumentosArchivoDTO> resp = new List<DocumentosArchivoDTO>();
+            List<DocumentosArchivoDto> resp = new List<DocumentosArchivoDto>();
             try
             {
 
-                List<DocumentosArchivoDTO> respGen = null!;
+                List<DocumentosArchivoDto> respGen = null!;
 
                 using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
                 {
@@ -143,7 +143,7 @@ namespace PgxAPI.DataBaseTier
                     }
 
                     string query = $@"select * from GA_Files WHERE Llave_01 = '{filtros.llave1}'" + where;
-                    respGen = connection.Query<DocumentosArchivoDTO>(query).ToList();
+                    respGen = connection.Query<DocumentosArchivoDto>(query).ToList();
                     resp = respGen;
 
                 }

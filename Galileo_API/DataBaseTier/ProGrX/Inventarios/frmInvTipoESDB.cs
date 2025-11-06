@@ -56,7 +56,7 @@ namespace PgxAPI.DataBaseTier
                     query = $@"SELECT T.cod_entsal,T.descripcion as descripcion,T.tipo,T.cod_cuenta,T.activo,C.descripcion AS ctaDesc, T.mancomunado
                     FROM pv_entrada_salida T LEFT JOIN CntX_cuentas C ON T.cod_cuenta = C.cod_cuenta {filtro.filtro}  
                     ORDER BY T.cod_entsal {paginaActual} {paginacionActual}";
-                    response.Result.Lista = connection.Query<TipoESDTO>(query).ToList();
+                    response.Result.Lista = connection.Query<TipoEsDto>(query).ToList();
 
                     //elimina duplicados
                     response.Result.Lista = response.Result.Lista.GroupBy(x => x.Cod_Entsal).Select(x => x.FirstOrDefault()).ToList();
@@ -78,12 +78,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Tipo"></param>
         /// <returns></returns>
-        public ErrorDto<List<TipoESDTO>> TipoES_Buscar(int CodEmpresa, string Tipo)
+        public ErrorDto<List<TipoEsDto>> TipoES_Buscar(int CodEmpresa, string Tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
 
-            var response = new ErrorDto<List<TipoESDTO>>
+            var response = new ErrorDto<List<TipoEsDto>>
             {
                 Code = 0
             };
@@ -96,7 +96,7 @@ namespace PgxAPI.DataBaseTier
                     FROM pv_entrada_salida T LEFT JOIN CntX_cuentas C ON T.cod_cuenta = C.cod_cuenta WHERE T.tipo = '{Tipo}'
                     ORDER BY T.cod_entsal";
 
-                    response.Result = connection.Query<TipoESDTO>(query).ToList();
+                    response.Result = connection.Query<TipoEsDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -114,7 +114,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto TipoES_Actualizar(int CodEmpresa, TipoESDTO request)
+        public ErrorDto TipoES_Actualizar(int CodEmpresa, TipoEsDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -155,7 +155,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto TipoES_Insertar(int CodEmpresa, TipoESDTO request)
+        public ErrorDto TipoES_Insertar(int CodEmpresa, TipoEsDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto

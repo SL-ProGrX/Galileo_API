@@ -12,12 +12,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmActivos_Cambio_TipoDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
         /// <summary>
         /// Obtiene la lista de tipos de activos.

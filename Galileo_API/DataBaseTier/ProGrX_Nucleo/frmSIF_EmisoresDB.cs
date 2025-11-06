@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Nucleo;
 using PgxAPI.Models;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 10; // Modulo de Tesorer�a
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmSIF_EmisoresDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -182,7 +183,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     registro_usuario = usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -222,7 +223,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     emisor.activo
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -319,7 +320,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 var queryDelete = @"DELETE FROM sif_emisores WHERE UPPER(cod_emisor) = @cod_emisor";
                 connection.Execute(queryDelete, new { cod_emisor = cod_emisor.ToUpper() });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -398,7 +399,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     registro_usuario = usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -440,7 +441,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     cod_tarjeta = asignacion.cod_tarjeta
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,

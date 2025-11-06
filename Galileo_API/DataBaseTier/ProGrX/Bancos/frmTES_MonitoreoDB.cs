@@ -2,8 +2,6 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
-using System.Threading;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
@@ -25,14 +23,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<TES_MonitoreoDTO>> TES_Monitoreo_Obtener(int CodEmpresa, DateTime fechaCorte)
+        public ErrorDto<List<TesMonitoreoDto>> TES_Monitoreo_Obtener(int CodEmpresa, DateTime fechaCorte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TES_MonitoreoDTO>>
+            var response = new ErrorDto<List<TesMonitoreoDto>>
             {
                 Code = 0,
                 Description = "",
-                Result = new List<TES_MonitoreoDTO>(),
+                Result = new List<TesMonitoreoDto>(),
             };
             try
             {
@@ -42,7 +40,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     string fechaCorteStr = _AuxiliarDB.validaFechaGlobal(fechaCorte);
 
                     var query = $@"exec spTes_Monitoreo_Saldos_Movimientos @pFechaCorte ";
-                    response.Result = connection.Query<TES_MonitoreoDTO>(query,
+                    response.Result = connection.Query<TesMonitoreoDto>(query,
                     new
                         {
                         pFechaCorte = fechaCorteStr
@@ -67,14 +65,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="Corte"></param>
         /// <returns></returns>
-        public ErrorDto<List<TES_MonitoreoDTO>> TES_Monitoreo_Documentos_Obtener(int CodEmpresa, string Corte)
+        public ErrorDto<List<TesMonitoreoDto>> TES_Monitoreo_Documentos_Obtener(int CodEmpresa, string Corte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TES_MonitoreoDTO>>
+            var response = new ErrorDto<List<TesMonitoreoDto>>
             {
                 Code = 0,
                 Description = "",
-                Result = new List<TES_MonitoreoDTO>(),
+                Result = new List<TesMonitoreoDto>(),
             };
             try
             {
@@ -96,7 +94,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         and D.cuenta_contable = @ctaconta 
                         and D.Tipo_Cambio <> 0
                         group by D.debehaber";
-                        var emisionesDoc = connection.Query<TES_Monitoreo_DocumentosDTO>(queryE,
+                        var emisionesDoc = connection.Query<TesMonitoreoDocumentosDto>(queryE,
                             new
                             {
                                 inicio = fechaInicio,
@@ -123,7 +121,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         and D.cuenta_contable = @ctaconta 
                         and D.Tipo_Cambio <> 0
                         group by D.debehaber";
-                        var anulacionesDoc = connection.Query<TES_Monitoreo_DocumentosDTO>(queryA,
+                        var anulacionesDoc = connection.Query<TesMonitoreoDocumentosDto>(queryA,
                             new
                             {
                                 inicio = fechaInicio,

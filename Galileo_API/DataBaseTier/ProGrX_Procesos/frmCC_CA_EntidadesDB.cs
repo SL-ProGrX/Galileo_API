@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.GEN;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -11,24 +12,24 @@ namespace PgxAPI.DataBaseTier
     public class frmCC_CA_EntidadesDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmCC_CA_EntidadesDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
 
-        public List<PRM_CA_EntidadData> CC_CA_Entidades_Obtener(int CodEmpresa, string Filtros)
+        public List<PrmCaEntidadData> CC_CA_Entidades_Obtener(int CodEmpresa, string Filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             FiltroLazy filtros = JsonConvert.DeserializeObject<FiltroLazy>(Filtros);
-            List<PRM_CA_EntidadData> resp = new List<PRM_CA_EntidadData>();
+            List<PrmCaEntidadData> resp = new List<PrmCaEntidadData>();
             string paginaActual = " ", paginacionActual = " ";
 
             try
@@ -53,7 +54,7 @@ namespace PgxAPI.DataBaseTier
                             {filtro}
                         order by cod_entidad
                             {paginaActual} {paginacionActual}";
-                    resp = connection.Query<PRM_CA_EntidadData>(query).ToList();
+                    resp = connection.Query<PrmCaEntidadData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -63,7 +64,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto CC_CA_Entidad_Upsert(int CodEmpresa, PRM_CA_EntidadUpsert request)
+        public ErrorDto CC_CA_Entidad_Upsert(int CodEmpresa, PrmCaEntidadUpsert request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -90,7 +91,7 @@ namespace PgxAPI.DataBaseTier
                         resp.Code = connection.ExecuteAsync(query1, parameters1).Result;
                         resp.Description = "Entidad agregada exitosamente!";
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = request.registro_usuario.ToUpper(),
@@ -114,7 +115,7 @@ namespace PgxAPI.DataBaseTier
                         resp.Code = connection.ExecuteAsync(query2, parameters2).Result;
                         resp.Description = "Entidad actualizada exitosamente!";
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = request.registro_usuario.ToUpper(),
@@ -148,7 +149,7 @@ namespace PgxAPI.DataBaseTier
                     resp.Code = connection.Execute(query);
                     resp.Description = "Entidad eliminada exitosamente!";
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
