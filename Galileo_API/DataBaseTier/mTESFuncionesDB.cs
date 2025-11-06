@@ -28,7 +28,7 @@ namespace PgxAPI.DataBaseTier
                     detalle1 = (tesoreria.vDetalle1.Length > 26) ? tesoreria.vDetalle1.Substring(0, 26) : tesoreria.vDetalle1;
                     detalle2 = (tesoreria.vDetalle2.Length > 26) ? tesoreria.vDetalle2.Substring(0, 26) : tesoreria.vDetalle2;
 
-                    if (tesoreria.vTipoDocumento.ToUpper() == "CK")
+                    if (tesoreria.vTipoDocumento.Equals("CK", StringComparison.CurrentCultureIgnoreCase))
                     {
                         query = $@"INSERT INTO Tes_Transacciones (
                                         id_banco,

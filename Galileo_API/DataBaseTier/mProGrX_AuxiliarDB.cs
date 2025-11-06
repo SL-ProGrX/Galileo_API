@@ -710,7 +710,7 @@ namespace PgxAPI.DataBaseTier
             int parteDecimal = (int)((numero - parteEntera) * 100);
 
             string letrasEntera = parteEntera.ToWords(new System.Globalization.CultureInfo("es"));
-            if (letrasEntera.ToLower() == "uno")
+            if (letrasEntera.Equals("uno", StringComparison.CurrentCultureIgnoreCase))
             {
                 letrasEntera = "Un";
             }
@@ -930,7 +930,7 @@ namespace PgxAPI.DataBaseTier
                 return num1 == num2;
 
             // Comparar como string ignorando espacios y mayúsculas
-            var strOriginal = valorOriginal?.ToString()?.Trim() ?? string.Empty;
+            var strOriginal = valorOriginal.ToString()?.Trim() ?? string.Empty;
             var strNuevo = valorNuevo?.ToString()?.Trim() ?? string.Empty;
             return strOriginal.Equals(strNuevo, StringComparison.OrdinalIgnoreCase);
         }
@@ -1167,7 +1167,7 @@ VALUES (
             if (valor is string s)
                 return $"'{s.Replace("'", "''")}'";
 
-            return valor?.ToString() ?? string.Empty;
+            return valor.ToString() ?? string.Empty;
         }
 
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)

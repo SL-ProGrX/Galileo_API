@@ -235,7 +235,7 @@ namespace PgxAPI.DataBaseTier
                         var sb = new System.Text.StringBuilder(result);
                         for (int i = result.Length; i < intCaracteres; i++)
                         {
-                            sb.Append("0");
+                            sb.Append('0');
                         }
                         result = sb.ToString();
                     }

@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class MProGrxMain
+    public partial class MProGrxMain
     {
         private readonly IConfiguration _config;
         private readonly MSecurityMainDb _Security_MainDB;
@@ -35,6 +35,7 @@ namespace PgxAPI.DataBaseTier
             if (pCardNumer.Substring(0, 1) == "4")
             {
                 vResultado = "VISA";
+                bDetected = true;
             }
 
             if (!bDetected)
@@ -65,6 +66,7 @@ namespace PgxAPI.DataBaseTier
                     case "34":
                     case "37":
                         vResultado = "American Express";
+                        bDetected = true;
                         break;
                 }
             }
@@ -115,7 +117,7 @@ namespace PgxAPI.DataBaseTier
 
                 vPar = !vPar;
 
-                sbCadenaZ.Insert(0, vNum.ToString());
+                sbCadenaZ.Insert(0, vNum);
             }
             vCadenaZ = sbCadenaZ.ToString();
 
@@ -521,10 +523,21 @@ namespace PgxAPI.DataBaseTier
             return glngFechaCR;
         }
 
-        private static readonly Regex _patronPeligroso = new(
-             @"(?i)\b(SELECT|DELETE|UPDATE|INSERT|EXEC|DROP|CREATE|ALTER)\b|sp_|'",
-             RegexOptions.Compiled
-         );
+        // private static readonly Regex _patronPeligroso = new(
+        //      @"(?i)\b(SELECT|DELETE|UPDATE|INSERT|EXEC|DROP|CREATE|ALTER)\b|sp_|'",
+        //      RegexOptions.Compiled
+        //  );
+
+        public static partial class SeguridadSqlHelper
+        {
+            [GeneratedRegex(@"(?i)\b(SELECT|DELETE|UPDATE|INSERT|EXEC|DROP|CREATE|ALTER)\b|sp_|'", RegexOptions.Compiled)]
+            private static partial Regex PatronPeligrosoRegex();
+
+            public static bool ContieneSqlPeligroso(string texto)
+            {
+                return PatronPeligrosoRegex().IsMatch(texto);
+            }
+        }
 
         public ErrorDto<bool> fxSIFValidaCadena(string pCadena)
         {
@@ -540,7 +553,7 @@ namespace PgxAPI.DataBaseTier
                 return error;
             }
 
-            if (_patronPeligroso.IsMatch(pCadena))
+            if (SeguridadSqlHelper.ContieneSqlPeligroso(pCadena))
             {
                 error.Code = -1;
                 error.Description = "!Error: El criterio de busqueda contiene información o datos que pueden afectar potencialmente la integridad de la información..!";

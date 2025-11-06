@@ -90,7 +90,7 @@ namespace PgxAPI.DataBaseTier
 
                     int? resQuery1 = connectionCore.Query<int>(query, param).FirstOrDefault();
 
-                    if (resQuery1 != null && resQuery1 > 0)
+                    if (resQuery1.HasValue && resQuery1.Value > 0)
                     {
                         var procedure = "[spSIFValidaCuentas]";
 
