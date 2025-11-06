@@ -5,12 +5,14 @@ using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_DerechosDB
+    public class FrmUsDerechosDb
     {
 
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_DerechosDB(IConfiguration config)
+
+        public FrmUsDerechosDb(IConfiguration config)
         {
             _config = config;
         }
@@ -18,11 +20,12 @@ namespace PgxAPI.DataBaseTier
 
         public List<UsDerechosNewDto> ObtenerUsDerechosNewDTOs(string Rol, string Estado) //opciones
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (stringConn is null)
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
 
             List<UsDerechosNewDto> Result = [];
 
-            //string sql = "SELECT DISTINCT O.*, ISNULL(P.ESTADO, 'Z') AS 'PermisoEstado' FROM US_opciones O INNER JOIN US_formularios F ON O.formulario = F.formulario LEFT JOIN US_ROL_Permisos P ON O.cod_Opcion = P.cod_Opcion ORDER BY O.Opcion_descripcion";
             string sql = "SELECT DISTINCT O.*, ISNULL(P.ESTADO, 'Z') AS 'PermisoEstado' " +
                           "FROM US_OPCIONES O " +
                           "INNER JOIN US_FORMULARIOS F ON O.FORMULARIO = F.FORMULARIO " +
@@ -49,7 +52,9 @@ namespace PgxAPI.DataBaseTier
 
         public List<UsRolDto> ObtenerUsRoles()
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (stringConn is null)
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
 
             List<UsRolDto> Result = [];
             string sql = "SELECT * FROM US_ROLES";
@@ -72,7 +77,9 @@ namespace PgxAPI.DataBaseTier
 
         public int CrearUsDerechosNewDTO(CrearUsDerechosNewDto info)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (stringConn is null)
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
             int Result = 0;
             try
             {
@@ -110,7 +117,9 @@ namespace PgxAPI.DataBaseTier
 
         public int EliminarUsDerechosNewDTO(int COD_OPCION, string ESTADO, string COD_ROL)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (stringConn is null)
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
 
             int Result = 0;
             try
@@ -133,11 +142,13 @@ namespace PgxAPI.DataBaseTier
         public int EditarUsDerechosNew(int COD_OPCION, string ESTADO, string COD_ROL, string NUEVO_ESTADO)
         {
 
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (stringConn is null)
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' not found.");
 
             int Result = 0;
             string sql = "UPDATE US_ROL_PERMISOS SET COD_OPCION = COD_OPCION, COD_ROL = COD_ROL, ESTADO = @NUEVO_ESTADO, REGISTRO_FECHA = REGISTRO_FECHA, REGISTRO_USUARIO = REGISTRO_USUARIO" +
-                         "WHERE  COD_OPCION = @COD_OPCION AND ESTADO = @ESTADO AND COD_ROL = @COD_ROL";
+                         " WHERE  COD_OPCION = @COD_OPCION AND ESTADO = @ESTADO AND COD_ROL = @COD_ROL";
             var values = new
             {
 

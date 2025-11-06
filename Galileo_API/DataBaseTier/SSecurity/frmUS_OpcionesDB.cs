@@ -1,17 +1,17 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_OpcionesDB
+    public class FrmUsOpcionesDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_OpcionesDB(IConfiguration config)
+        public FrmUsOpcionesDb(IConfiguration config)
         {
             _config = config;
         }
@@ -21,7 +21,7 @@ namespace PgxAPI.DataBaseTier
             List<ModuloDto> data = new List<ModuloDto>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Opciones_Modulos_Obtener]";
 
@@ -41,7 +41,7 @@ namespace PgxAPI.DataBaseTier
             List<FormularioDto> data = new List<FormularioDto>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Opciones_Modulo_Forms_Obtener]";
 
@@ -66,7 +66,7 @@ namespace PgxAPI.DataBaseTier
             List<OpcionDto> data = new List<OpcionDto>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Opciones_Obtener]";
 
@@ -91,7 +91,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Opciones_Insertar]";
                     var values = new
@@ -123,7 +123,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Opciones_Eliminar]";
                     var values = new
@@ -151,7 +151,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Opciones_Editar]";
                     var values = new

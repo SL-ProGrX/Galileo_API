@@ -7,10 +7,8 @@ using PgxAPI.Models;
 using PgxAPI.Models.CPR;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.INV;
-// using ServicioDePruebaWCF;
 using System.Data;
 using System.Globalization;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using PdfSharp.Pdf;
@@ -18,19 +16,22 @@ using PdfSharp.Pdf.IO;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mProGrX_AuxiliarDB
+    public class MProGrXAuxiliarDB
     {
         private readonly IConfiguration _config;
 
-        // private IService1 client = new Service1Client();
-        public string dateFormat = "";
-        private string controlAuth = "";
+        public string dateFormat { get; set; }
+        public string controlAuth { get; set; }
 
-        public mProGrX_AuxiliarDB(IConfiguration config)
+        private const string DescripcionColumn = "@descripcion";
+
+        public MProGrXAuxiliarDB(IConfiguration config)
         {
             _config = config;
-            dateFormat = _config.GetSection("AppSettings").GetSection("DateTimeFormat").Value.ToString();
-            controlAuth = _config.GetSection("AppSettings").GetSection("ControlAutorizacion").Value.ToString();
+            var dateFormatValue = _config.GetSection("AppSettings").GetSection("DateTimeFormat").Value;
+            dateFormat = dateFormatValue != null ? dateFormatValue.ToString() : string.Empty;
+            var controlAuthValue = _config.GetSection("AppSettings").GetSection("ControlAutorizacion").Value;
+            controlAuth = controlAuthValue != null ? controlAuthValue.ToString() : string.Empty;
         }
 
         /// <summary>
@@ -137,162 +138,123 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto fxInvVerificaLineaDetalle(int CodEmpresa, int ColCantidad, string vMov, int ColProd, int ColBod1, int ColBod2, List<FacturaDetalleDto> vGrid)
         {
             ErrorDto result = new ErrorDto();
-
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            int count = 0;
             result.Code = 1;
 
             if (ColProd > 0 && vGrid.Count > 0)
             {
+                int count = 0;
                 foreach (FacturaDetalleDto item in vGrid)
                 {
                     count++;
-                    //Verifica la Cantidad de Articulos
                     if (item.cantidad > 0)
                     {
-                        // Verifica que el Producto este Activo, y Que Existe
-                        try
-                        {
-                            using var connection = new SqlConnection(stringConn);
-                            {
-                                var query = $@"select estado from pv_productos where cod_producto = '{item.cod_producto}' ";
-                                List<ProductoDto> exist = connection.Query<ProductoDto>(query).ToList();
-
-                                if (exist.Count == 0)
-                                {
-                                    result.Code = 0;
-                                    result.Description += $"\nL {count} - Producto : {item.cod_producto} - No Existe";
-                                }
-                                else
-                                {
-                                    if (exist[0].Estado == "I")
-                                    {
-                                        result.Code = 0;
-                                        result.Description += $"\nL {count} - Producto : {item.cod_producto} - Se encuentra Inactivo";
-                                    }
-                                }
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            result.Code = -1;
-                            result.Description = ex.Message;
-                        }
-
+                        VerificaProducto(item, stringConn, ref result, count);
                         if (ColBod1 > 0)
                         {
-                            //Verifica que la Bodega Exista y que Permita Registrar el Tipo de Movimiento
-                            try
-                            {
-                                using var connection = new SqlConnection(stringConn);
-                                {
-                                    var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}' ";
-                                    List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
-
-                                    if (exist.Count == 0)
-                                    {
-                                        result.Code = 0;
-                                        result.Description += $"\r\nL {count} - Bodega : {item.cod_bodega} - No Existe";
-                                    }
-                                    else
-                                    {
-                                        if (exist[0].estado == "I")
-                                        {
-                                            result.Code = 0;
-                                            result.Description += $"\r\nL {count} - Bodega : {item.cod_bodega} - Se encuentra Inactiva";
-                                        }
-                                        else
-                                        {
-                                            switch (vMov)
-                                            {
-                                                case "E":
-                                                    if (exist[0].permite_entradas == "0")
-                                                    {
-                                                        result.Code = 0;
-                                                        result.Description += $"\r\nL {count} - Bodega : {item.cod_bodega} - No Permite Entradas";
-                                                    }
-                                                    break;
-                                                case "S":
-                                                case "R":
-                                                case "T":
-                                                    if (exist[0].permite_salidas == "0")
-                                                    {
-                                                        result.Code = 0;
-                                                        result.Description += $"\r\nL {count} - Bodega : {item.cod_bodega} - No Permite Salidas";
-                                                    }
-                                                    break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                result.Code = -1;
-                                result.Description = ex.Message;
-                            }
+                            VerificaBodega(item, stringConn, vMov, ref result, count, true);
                         }
-
-                        //Verifica que el Producto Exista en la Bodega
                         if (ColBod2 > 0)
                         {
-                            try
-                            {
-                                using var connection = new SqlConnection(stringConn);
-                                {
-                                    var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}' ";
-                                    List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
-
-                                    if (exist.Count == 0)
-                                    {
-                                        result.Code = 0;
-                                        result.Description += $"\r\nL {count} - Bodega : {item.cod_bodega} - No Existe";
-                                    }
-                                    else
-                                    {
-                                        if (exist[0].estado == "I")
-                                        {
-                                            result.Code = 0;
-                                            result.Description += $"\r\nL {count} - Bodega : {item.cod_bodega} - Se encuentra Inactiva";
-                                        }
-                                        else
-                                        {
-                                            switch (vMov)
-                                            {
-                                                case "E":
-                                                case "T":
-
-                                                    if (exist[0].permite_entradas == "0")
-                                                    {
-                                                        result.Code = 0;
-                                                        result.Description += $"\r\nL {count} - Bodega : {item.cod_bodega} - No Permite Entradas";
-                                                    }
-                                                    break;
-
-                                                case "R":
-                                                case "S":
-                                                    if (exist[0].permite_salidas == "0")
-                                                    {
-                                                        result.Code = 0;
-                                                        result.Description += $"\r\nL {count} - Bodega : {item.cod_bodega} - No Permite Salidas";
-                                                    }
-                                                    break;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            catch (Exception)
-                            {
-
-                                throw;
-                            }
+                            VerificaBodega(item, stringConn, vMov, ref result, count, false);
                         }
                     }
                 }
             }
-
             return result;
+        }
+
+        private static void VerificaProducto(FacturaDetalleDto item, string stringConn, ref ErrorDto result, int count)
+        {
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                var query = $@"select estado from pv_productos where cod_producto = '{item.cod_producto}' ";
+                List<ProductoDto> exist = connection.Query<ProductoDto>(query).ToList();
+
+                if (exist.Count == 0)
+                {
+                    result.Code = 0;
+                    result.Description += $"\nL {count} - Producto : {item.cod_producto} - No Existe";
+                }
+                else if (exist[0].Estado == "I")
+                {
+                    result.Code = 0;
+                    result.Description += $"\nL {count} - Producto : {item.cod_producto} - Se encuentra Inactivo";
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+        }
+
+        private static void VerificaBodega(FacturaDetalleDto item, string stringConn, string vMov, ref ErrorDto result, int count, bool isEntrada)
+        {
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}' ";
+                var bodega = connection.Query<Models.BodegaDto>(query).FirstOrDefault();
+
+                if (bodega == null)
+                {
+                    result.Code = 0;
+                    result.Description += $"\r\nL {count} - Bodega : {item.cod_bodega} - No Existe";
+                    return;
+                }
+                if (bodega.estado == "I")
+                {
+                    result.Code = 0;
+                    result.Description += $"\r\nL {count} - Bodega : {item.cod_bodega} - Se encuentra Inactiva";
+                    return;
+                }
+
+                if (isEntrada)
+                {
+                    VerificaPermisosEntradaSalida(bodega, vMov, ref result, count, item.cod_bodega, true);
+                }
+                else
+                {
+                    VerificaPermisosEntradaSalida(bodega, vMov, ref result, count, item.cod_bodega, false);
+                }
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+        }
+
+        private static void VerificaPermisosEntradaSalida(Models.BodegaDto bodega, string vMov, ref ErrorDto result, int count, string cod_bodega, bool isEntrada)
+        {
+            if (isEntrada)
+            {
+                if (vMov == "E" && bodega.permite_entradas == "0")
+                {
+                    result.Code = 0;
+                    result.Description += $"\r\nL {count} - Bodega : {cod_bodega} - No Permite Entradas";
+                }
+                else if ((vMov == "S" || vMov == "R" || vMov == "T") && bodega.permite_salidas == "0")
+                {
+                    result.Code = 0;
+                    result.Description += $"\r\nL {count} - Bodega : {cod_bodega} - No Permite Salidas";
+                }
+            }
+            else
+            {
+                if ((vMov == "E" || vMov == "T") && bodega.permite_entradas == "0")
+                {
+                    result.Code = 0;
+                    result.Description += $"\r\nL {count} - Bodega : {cod_bodega} - No Permite Entradas";
+                }
+                else if ((vMov == "R" || vMov == "S") && bodega.permite_salidas == "0")
+                {
+                    result.Code = 0;
+                    result.Description += $"\r\nL {count} - Bodega : {cod_bodega} - No Permite Salidas";
+                }
+            }
         }
 
         /// <summary>
@@ -304,7 +266,7 @@ namespace PgxAPI.DataBaseTier
         public bool fxInvPeriodoEstado(int CodEmpresa, string vfecha)
         {
             bool vPasa = false;
-            string vNum = "";
+            string? vNum = "";
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             //Verificar si existen posteriores Cerrados
             try
@@ -354,10 +316,13 @@ namespace PgxAPI.DataBaseTier
 
                     response.Result = connection.Query<ParametroValor>(query).FirstOrDefault();
 
-                    if (response.Result.Valor == null)
+                    if (response.Result == null || response.Result.Valor == null)
                     {
-                        response.Result.Valor = "GEN";
-                        response.Result.Cod_Parametro = Cod_Parametro;
+                        response.Result = new ParametroValor
+                        {
+                            Cod_Parametro = Cod_Parametro,
+                            Valor = "GEN"
+                        };
                     }
 
                 }
@@ -440,179 +405,16 @@ namespace PgxAPI.DataBaseTier
         public ConsultaDescripcion fxSIFCCodigos(int CodEmpresa, string vTipoDC, string vCodDesX, string vTabla, int Cod_Conta)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
             ConsultaDescripcion info = new ConsultaDescripcion();
 
-            string strSQL = "";
             string tableName = vTabla.ToUpper();
-            string codeFilter = vCodDesX.ToString();
-            string descFilter = vCodDesX.ToString();
-
-            switch (tableName)
-            {
-                case "PROVEEDORES":
-                    strSQL = "select Cod_proveedor as CodX, Descripcion as DescX from cxp_proveedores";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_proveedor = " + codeFilter;
-                    }
-                    else
-                    {
-                        strSQL += " where descripcion = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "PRODUCTOS":
-                    strSQL = "select cod_Producto as CodX, Descripcion as DescX from pv_Productos";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_producto = '" + codeFilter + "'";
-                    }
-                    else
-                    {
-                        strSQL += " where descripcion = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "CARGOSPROV":
-                    strSQL = "select Cod_cargo as CodX, Descripcion as DescX from cxp_cargos";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_cargo = '" + codeFilter + "'";
-                    }
-                    else
-                    {
-                        strSQL += " where descripcion = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "UNIDADES":
-                    strSQL = "select Cod_Unidad as CodX, Descripcion as DescX from pv_unidades";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_unidad = '" + codeFilter + "'";
-                    }
-                    else
-                    {
-                        strSQL += " where descripcion = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "MARCAS":
-                    strSQL = "select Cod_Marca as CodX, Descripcion as DescX from pv_marcas";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_marca = '" + codeFilter + "'";
-                    }
-                    else
-                    {
-                        strSQL += " where descripcion = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "LINEAPRODUCTO":
-                    strSQL = "select cod_prodclas as CodX, Descripcion as DescX from pv_prod_clasifica";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_prodclas = " + codeFilter;
-                    }
-                    else
-                    {
-                        strSQL += " where descripcion = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "BANCOS":
-                    strSQL = "select id_banco as CodX, Descripcion as DescX from Tes_Bancos";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where id_banco = " + codeFilter;
-                    }
-                    else
-                    {
-                        strSQL += " where descripcion = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "CLIENTES":
-                    strSQL = "select cedula as CodX, nombre as DescX from pv_clientes";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cedula = '" + codeFilter + "'";
-                    }
-                    else
-                    {
-                        strSQL += " where nombre = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "BODEGAS":
-                    strSQL = "select cod_bodega as CodX, Descripcion as DescX from pv_bodegas";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_bodega = '" + codeFilter + "'";
-                    }
-                    else
-                    {
-                        strSQL += " where descripcion = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "PRECIOS":
-                    strSQL = "select cod_precio as CodX, Descripcion as DescX from pv_tipos_precios";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_precio = '" + codeFilter + "'";
-                    }
-                    else
-                    {
-                        strSQL += " where descripcion = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "AGENTES":
-                    strSQL = "select cod_agente as CodX, Nombre as DescX from pv_agentes";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_agente = '" + codeFilter + "'";
-                    }
-                    else
-                    {
-                        strSQL += " where nombre = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "CAJAS":
-                    strSQL = "select cod_caja as CodX, Nombre as DescX from pv_cajas";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_caja = '" + codeFilter + "'";
-                    }
-                    else
-                    {
-                        strSQL += " where nombre = '" + descFilter + "'";
-                    }
-                    break;
-
-                case "CUENTAS":
-                    strSQL = "select cod_Cuenta as CodX, Descripcion as DescX from CntX_cuentas";
-                    if (vTipoDC == "D")
-                    {
-                        strSQL += " where cod_cuenta = '" + codeFilter + "'";
-                    }
-                    else
-                    {
-                        strSQL += " where descripcion = '" + descFilter + "'";
-                    }
-                    strSQL += " and cod_contabilidad = " + Cod_Conta;
-                    break;
-            }
+            string strSQL = GetSqlForTable(tableName, vTipoDC, vCodDesX, Cod_Conta);
 
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
-                    info = connection.Query<ConsultaDescripcion>(strSQL).FirstOrDefault();
+                    info = connection.Query<ConsultaDescripcion>(strSQL).FirstOrDefault() ?? new ConsultaDescripcion();
                 }
             }
             catch (Exception ex)
@@ -622,7 +424,82 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public bool fxCorreoValido(string correo)
+
+        private static string GetSqlForTable(string tableName, string vTipoDC, string vCodDesX, int Cod_Conta)
+        {
+            string codeFilter = vCodDesX.ToString();
+            string descFilter = vCodDesX.ToString();
+
+            switch (tableName)
+            {
+                case "PROVEEDORES":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "Cod_proveedor", DescColumn = DescripcionColumn, Table = "cxp_proveedores", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = false, CodConta = null });
+                case "PRODUCTOS":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_Producto", DescColumn = DescripcionColumn, Table = "pv_Productos", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
+                case "CARGOSPROV":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "Cod_cargo", DescColumn = DescripcionColumn, Table = "cxp_cargos", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
+                case "UNIDADES":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "Cod_Unidad", DescColumn = DescripcionColumn, Table = "pv_unidades", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
+                case "MARCAS":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "Cod_Marca", DescColumn = DescripcionColumn, Table = "pv_marcas", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
+                case "LINEAPRODUCTO":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_prodclas", DescColumn = DescripcionColumn, Table = "pv_prod_clasifica", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = false, CodConta = null });
+                case "BANCOS":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "id_banco", DescColumn = DescripcionColumn, Table = "Tes_Bancos", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = false, CodConta = null });
+                case "CLIENTES":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "cedula", DescColumn = "nombre", Table = "pv_clientes", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
+                case "BODEGAS":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_bodega", DescColumn = DescripcionColumn, Table = "pv_bodegas", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
+                case "PRECIOS":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_precio", DescColumn = DescripcionColumn, Table = "pv_tipos_precios", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
+                case "AGENTES":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_agente", DescColumn = "Nombre", Table = "pv_agentes", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
+                case "CAJAS":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_caja", DescColumn = "Nombre", Table = "pv_cajas", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
+                case "CUENTAS":
+                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_Cuenta", DescColumn = DescripcionColumn, Table = "CntX_cuentas", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = Cod_Conta });
+                default:
+                    return string.Empty;
+            }
+        }
+
+        private sealed class BuildSqlParams
+        {
+            public string? CodeColumn { get; set; }
+            public string? DescColumn { get; set; }
+            public string? Table { get; set; }
+            public string? VTipoDC { get; set; }
+            public string? CodeFilter { get; set; }
+            public string? DescFilter { get; set; }
+            public bool QuoteCode { get; set; }
+            public int? CodConta { get; set; }
+        }
+
+        private static string BuildSql(BuildSqlParams p)
+        {
+            string sql = $"select {p.CodeColumn} as CodX, {p.DescColumn} as DescX from {p.Table}";
+            string where = "";
+
+            if (p.VTipoDC == "D")
+            {
+                where = p.QuoteCode ? $" where {p.CodeColumn} = '{p.CodeFilter}'" : $" where {p.CodeColumn} = {p.CodeFilter}";
+            }
+            else
+            {
+                where = $" where {p.DescColumn} = '{p.DescFilter}'";
+            }
+
+            sql += where;
+
+            if (p.CodConta.HasValue)
+            {
+                sql += $" and cod_contabilidad = {p.CodConta.Value}";
+            }
+
+            return sql;
+        }
+
+        public static bool fxCorreoValido(string correo)
         {
             string patron = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
             return Regex.IsMatch(correo, patron);
@@ -635,9 +512,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="model"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
-        public string fxConvertModelToXml<T>(T model)
+        public static string fxConvertModelToXml<T>(T model)
         {
-            if (model == null) throw new ArgumentNullException(nameof(model));
+            if (EqualityComparer<T>.Default.Equals(model, default(T))) throw new ArgumentNullException(nameof(model));
 
             string xmlOutput;
             XmlSerializer serializer = new XmlSerializer(typeof(T));
@@ -657,27 +534,6 @@ namespace PgxAPI.DataBaseTier
             return xmlOutput;
         }
 
-        // /// <summary>
-        // /// Prueba de conexión al servicio WCF
-        // /// </summary>
-        // /// <param name="CodEmpresa"></param>
-        // /// <param name="numVal"></param>
-        // /// <returns></returns>
-        // public string WCF_ApiTest(int CodEmpresa, int numVal)
-        // {
-        //     ErrorDto info = new ErrorDto();
-        //     try
-        //     {
-        //         var response = client.GetDataAsync(numVal);
-        //         return response.Result;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         info.Code = -1;
-        //         return ex.Message;
-        //     }
-
-        // }
 
         /// <summary>
         /// Consulta la cantidad de activos sin asignar a un usuario
@@ -713,15 +569,19 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="fecha"></param>
         /// <returns></returns>
-        public string validaFechaGlobal(DateTime? fecha)
+        public string? validaFechaGlobal(DateTime? fecha)
         {
-            string fechaValdiada = "";
+            string? fechaValdiada = "";
             try
             {
                 if (fecha != null)
                 {
                     DateTime fechaActual = (DateTime)fecha;
                     fechaValdiada = fechaActual.ToString(dateFormat);
+                }
+                else
+                {
+                    fechaValdiada = null;
                 }
             }
             catch (Exception)
@@ -789,7 +649,7 @@ namespace PgxAPI.DataBaseTier
 
                 using var connection = new SqlConnection(stringConn);
                 {
-                    
+
 
                     var strSQL = $@"INSERT INTO [dbo].[BITACORA_PROVEEDOR]
                                            ([COD_PROVEEDOR]
@@ -842,7 +702,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto<string> NumeroALetras(decimal numero)
+        public static ErrorDto<string> NumeroALetras(decimal numero)
         {
             var resp = new ErrorDto<string>();
             resp.Code = 0;
@@ -869,7 +729,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="pdfs"></param>
         /// <returns></returns>
-        public byte[] CombinarBytesPdfSharp(params byte[][] pdfs)
+        public static byte[] CombinarBytesPdfSharp(params byte[][] pdfs)
         {
             using var outDoc = new PdfDocument();
             foreach (var pdf in pdfs)
@@ -894,134 +754,125 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public int FndControlAutoriza_Guardar(FndControlAutorizaData request)
         {
-            ErrorDto result = new ErrorDto();
-            result.Code = 0;
-            
+            if (controlAuth != "Y")
+                return 3;
 
-            if (controlAuth == "Y")
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(request.CodEmpresa);
+            ErrorDto result = new ErrorDto { Code = 0 };
+
+            try
             {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(request.CodEmpresa);
-                /*
-                 COD_TIPO_CAMBIO:
-                 1 = Insertar
-                 2 = Modificar
-                 3 = Eliminar
-                 */
+                var match = ParseUpdateSql(request.strSQL);
+                if (match == null)
+                    return SetErrorResult(result, "La sentencia SQL no es válida o no se puede analizar.");
 
-                try
-                {
-                    //Obtengo el where de la consulta
-                    string pattern = @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$";
-                    var match = Regex.Match(request.strSQL, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                    if (!match.Success)
-                    {
-                        result.Code = -1;
-                        result.Description = "La sentencia SQL no es válida o no se puede analizar.";
-                        return result.Code.Value;
-                    }
+                string table = match.Groups["table"].Value.Trim();
+                string setClause = match.Groups["setClause"].Value.Trim();
+                string whereClause = match.Groups["whereClause"].Value.Trim();
 
-                    string table = match.Groups["table"].Value.Trim();
-                    string setClause = match.Groups["setClause"].Value.Trim();
-                    string whereClause = match.Groups["whereClause"].Value.Trim();
+                using var connection = new SqlConnection(stringConn);
+                var dtTable = connection.Query($"SELECT * FROM {table} WHERE {whereClause}").FirstOrDefault();
+                if (dtTable == null)
+                    return SetErrorResult(result, $"❌ No se encontró información en {table} con la condición: {whereClause}");
 
-                    // Construir query para campos actuales
-                    string query = $"SELECT * FROM {table} WHERE {whereClause}";
+                var diferencias = ObtenerDiferencias(connection, table, setClause, whereClause, dtTable);
+                if (diferencias == null)
+                    return SetErrorResult(result, "No se pudo obtener los valores nuevos para comparar.");
 
-                    using (var connection = new SqlConnection(stringConn))
-                    {
-                        //valores originales
-                        var dtTable = connection.Query(query).FirstOrDefault();
-                        if (dtTable == null)
-                        {
-                            result.Code = -1;
-                            result.Description = $"❌ No se encontró información en {table} con la condición: {whereClause}";
-                            return result.Code.Value;
-                        }
+                var dtDiferencias = CrearDataTableDiferencias(diferencias);
+                if (dtDiferencias.Rows.Count == 0)
+                    return SetErrorResult(result, "No se encontraron diferencias entre los valores originales y los nuevos.", 2);
 
-                        //procesa Update para realizar comparacion de valores
+                // Crear el contexto general
+                var ctx = new ControlCambioContext(
+                    CodEmpresa: request.CodEmpresa,
+                    Usuario: request.usuario
+                );
 
-                        
-                        List<string> selectParts = new List<string>();
-                        foreach (var assignment in SplitSetClauseSafely(setClause))
-                        {
-                            var splitIndex = assignment.IndexOf('=');
-                            if (splitIndex > 0)
-                            {
-                                var column = assignment.Substring(0, splitIndex).Trim();
-                                var expression = assignment.Substring(splitIndex + 1).Trim();
-                                selectParts.Add($"{expression} AS {column.ToUpper()}");
-                            }
-                        }
+                // Crear el payload con la información específica del cambio
+                var payload = new ControlCambioPayload(
+                    TipoCambio: request.tipoCambio,
+                    Tabla: table,
+                    Llave: whereClause,      // la llave o condición
+                    EventoQuery: "UPDATE",   // tipo de operación
+                    InsertSql: "",           // en este caso no hay un INSERT literal
+                    Diferencias: dtDiferencias
+                );
 
-                        string selectStatement = $"SELECT {string.Join(", ", selectParts)} FROM {table} WHERE {whereClause};";
-                        var dtTableNew = connection.Query(selectStatement).FirstOrDefault();
-
-                        var diferencias = new List<(string Campo, object ValorOriginal, object ValorNuevo)>();
-
-                        // Convertir los resultados a diccionarios para facilitar la comparación
-                        var dicOriginal = ((IDictionary<string, object>)dtTable);
-                        var dicNuevo = ((IDictionary<string, object>)dtTableNew);
-
-                        foreach (var kvp in dicOriginal)
-                        {
-                            var key = kvp.Key;
-                            var valorOriginal = kvp.Value;
-
-                            if (dicNuevo.TryGetValue(key, out var valorNuevo))
-                            {
-                                if (!SonIguales(valorOriginal, valorNuevo))
-                                {
-                                    diferencias.Add((key, valorOriginal, valorNuevo));
-                                }
-                            }
-                            
-                        }
-
-                        var dtDiferencias = new DataTable();
-
-                        dtDiferencias.Columns.Add("Campo", typeof(string));
-                        dtDiferencias.Columns.Add("ValorOriginal", typeof(object));
-                        dtDiferencias.Columns.Add("ValorNuevo", typeof(object));
-
-                        foreach (var dif in diferencias)
-                        {
-                            dtDiferencias.Rows.Add(dif.Campo, dif.ValorOriginal, dif.ValorNuevo);
-                        }
-
-                        if(dtDiferencias.Rows.Count == 0)
-                        {
-                            result.Code = 2;
-                            result.Description = "No se encontraron diferencias entre los valores originales y los nuevos.";
-                            return result.Code.Value;
-                        }
-                        
-
-                        result = InsertarTablaControl(
-                            request.CodEmpresa, 
-                            request.tipoCambio, 
-                            table, 
-                            whereClause, 
-                            request.usuario, 
-                            "UPDATE",
-                            null,
-                            dtDiferencias) ;
-                        
-
-                    }
-
-                }
-                catch (Exception ex)
-                {
-                    result.Code = -1;
-                    result.Description = ex.Message;
-                }
+                // Llamada al método refactorizado
+                result = InsertarTablaControl(ctx, payload);
+              
             }
-            else
+            catch (Exception ex)
             {
-                result.Code = 3;
+                result.Code = -1;
+                result.Description = ex.Message;
             }
 
-            return result.Code.Value;
+            return result.Code.HasValue ? result.Code.Value : -1;
+        }
+
+        private static Match? ParseUpdateSql(string sql)
+        {
+            string pattern = @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$";
+            var match = Regex.Match(sql, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            return match.Success ? match : null;
+        }
+
+        private static int SetErrorResult(ErrorDto result, string description, int code = -1)
+        {
+            result.Code = code;
+            result.Description = description;
+            return result.Code ?? -1;
+        }
+
+        private static List<(string Campo, object ValorOriginal, object ValorNuevo)> ObtenerDiferencias(SqlConnection connection, string table, string setClause, string whereClause, object dtTable)
+        {
+            var selectParts = new List<string>();
+            foreach (var assignment in SplitSetClauseSafely(setClause))
+            {
+                var splitIndex = assignment.IndexOf('=');
+                if (splitIndex > 0)
+                {
+                    var column = assignment.Substring(0, splitIndex).Trim();
+                    var expression = assignment.Substring(splitIndex + 1).Trim();
+                    selectParts.Add($"{expression} AS {column.ToUpper()}");
+                }
+            }
+
+            string selectStatement = $"SELECT {string.Join(", ", selectParts)} FROM {table} WHERE {whereClause};";
+            var dtTableNew = connection.Query(selectStatement).FirstOrDefault();
+
+            var dicOriginal = ((IDictionary<string, object>)dtTable);
+            IDictionary<string, object>? dicNuevo = dtTableNew as IDictionary<string, object>;
+            if (dicNuevo == null)
+                return new List<(string Campo, object ValorOriginal, object ValorNuevo)>();
+
+            var diferencias = new List<(string Campo, object ValorOriginal, object ValorNuevo)>();
+            foreach (var kvp in dicOriginal)
+            {
+                var key = kvp.Key;
+                var valorOriginal = kvp.Value;
+                if (dicNuevo.TryGetValue(key, out var valorNuevo) && !SonIguales(valorOriginal, valorNuevo))
+                {
+                    diferencias.Add((key, valorOriginal, valorNuevo));
+                }
+            }
+            return diferencias;
+        }
+
+        private static DataTable CrearDataTableDiferencias(List<(string Campo, object ValorOriginal, object ValorNuevo)> diferencias)
+        {
+            var dtDiferencias = new DataTable();
+            dtDiferencias.Columns.Add("Campo", typeof(string));
+            dtDiferencias.Columns.Add("ValorOriginal", typeof(object));
+            dtDiferencias.Columns.Add("ValorNuevo", typeof(object));
+
+            foreach (var dif in diferencias)
+            {
+                dtDiferencias.Rows.Add(dif.Campo, dif.ValorOriginal, dif.ValorNuevo);
+            }
+            return dtDiferencias;
         }
 
         private static List<string> SplitSetClauseSafely(string input)
@@ -1079,8 +930,9 @@ namespace PgxAPI.DataBaseTier
                 return num1 == num2;
 
             // Comparar como string ignorando espacios y mayúsculas
-            return valorOriginal.ToString().Trim().Equals(
-                   valorNuevo.ToString().Trim(), StringComparison.OrdinalIgnoreCase);
+            var strOriginal = valorOriginal?.ToString()?.Trim() ?? string.Empty;
+            var strNuevo = valorNuevo?.ToString()?.Trim() ?? string.Empty;
+            return strOriginal.Equals(strNuevo, StringComparison.OrdinalIgnoreCase);
         }
 
         private static object ConvertirBoolANumero(object valor)
@@ -1091,7 +943,7 @@ namespace PgxAPI.DataBaseTier
             if (bool.TryParse(valor?.ToString(), out var parsedBool))
                 return parsedBool ? 1 : 0;
 
-            return valor;
+            return valor ?? string.Empty;
         }
 
         private static bool TryConvertToDateTime(object valor, out DateTime fecha)
@@ -1114,72 +966,92 @@ namespace PgxAPI.DataBaseTier
                                           DateTimeStyles.None, out fecha);
         }
 
-        /// <summary>
-        /// Inserta un registro en la tabla de control de cambios
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="tipoCambio"></param>
-        /// <param name="tabla"></param>
-        /// <param name="llave"></param>
-        /// <param name="usuario"></param>
-        /// <param name="jsonOrg"></param>
-        /// <param name="jsonNew"></param>
-        /// <returns></returns>
-        private ErrorDto InsertarTablaControl(
-            int CodEmpresa, int tipoCambio,  
-            string tabla, string llave, 
-            string usuario, string vQuery,
-            string vInsert, DataTable dtDiferencias)
+
+        public record ControlCambioContext(
+            int CodEmpresa,
+            string Usuario
+        );
+
+        public record ControlCambioPayload(
+            int TipoCambio,
+            string Tabla,
+            object Llave,              // mejor que string si luego lo serializas a JSON
+            string EventoQuery,
+            string? InsertSql,         // nullable: solo aplica cuando no hay diferencias
+            DataTable? Diferencias     // nullable: si viene null usamos InsertSql
+        );
+
+        private ErrorDto InsertarTablaControl(ControlCambioContext ctx, ControlCambioPayload payload)
         {
-            ErrorDto result = new ErrorDto();
-            result.Code = 0;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = new ErrorDto { Code = 0 };
+            string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(ctx.CodEmpresa);
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                {
-                    //Convierto llave a Json
-                    var jsonLlave = JsonConvert.SerializeObject(llave);
-                    string jsonOriginal = string.Empty;
-                    string jsonNew = string.Empty;
-                    if (dtDiferencias != null)
-                    {
-                        jsonOriginal = JsonConvert.SerializeObject(dtDiferencias, Formatting.Indented);
-                        //Obtengo solo valores neuvos.
-                        dtDiferencias.Columns.Remove("ValorOriginal");
-                        dtDiferencias.AcceptChanges();
-                        DataTable dtEjecuta = dtDiferencias;
-                        jsonNew = JsonConvert.SerializeObject(dtEjecuta, Formatting.Indented);
-                    }
-                    else
-                    {
-                        jsonOriginal = JsonConvert.SerializeObject(vInsert, Formatting.Indented);
-                    }
-                   
+                using var connection = new SqlConnection(connStr);
 
-                    var query = $@"INSERT INTO FND_CONTROL_CAMBIOS_APROB (
-                                        COD_TIPO_CAMBIO,
-                                        NOM_TABLA,
-                                        LLAVES,
-                                        COD_EVENTO,
-                                        USUARIO_CAMBIO, 
-                                        VALORESJSONACT, 
-                                        VALORESJSONDIF, 
-                                        COD_ESTADO , 
-                                        FECHA_CAMBIO)
-                                  VALUES (
-                                        {tipoCambio}, 
-                                        '{tabla}',
-                                        '{jsonLlave.Replace("'", "''")}', 
-                                        '{vQuery}', 
-                                        '{usuario}', 
-                                        '{jsonOriginal.Replace("'", "''")}', 
-                                        '{jsonNew.Replace("'", "''")}', 
-                                        'P' ,GETDATE())";
-                    connection.Execute(query);
-                    result.Code = 1;
-                    result.Description = "ok";
+                // --- Preparación de JSON ---
+                var jsonLlave = JsonConvert.SerializeObject(payload.Llave);
+                string valoresJsonAct;
+                string? valoresJsonDif = null;
+
+                if (payload.Diferencias != null)
+                {
+                    // snapshot original
+                    var original = payload.Diferencias.Copy();
+                    valoresJsonAct = JsonConvert.SerializeObject(original, Formatting.Indented);
+
+                    // diferencias sin "ValorOriginal"
+                    var dif = payload.Diferencias.Copy();
+                    if (dif.Columns.Contains("ValorOriginal"))
+                    {
+                        dif.Columns.Remove("ValorOriginal");
+                        dif.AcceptChanges();
+                    }
+                    valoresJsonDif = JsonConvert.SerializeObject(dif, Formatting.Indented);
                 }
+                else
+                {
+                    valoresJsonAct = JsonConvert.SerializeObject(payload.InsertSql, Formatting.Indented);
+                }
+
+                // --- SQL parametrizado (Dapper) ---
+                const string sql = @"
+INSERT INTO FND_CONTROL_CAMBIOS_APROB (
+    COD_TIPO_CAMBIO,
+    NOM_TABLA,
+    LLAVES,
+    COD_EVENTO,
+    USUARIO_CAMBIO, 
+    VALORESJSONACT, 
+    VALORESJSONDIF, 
+    COD_ESTADO , 
+    FECHA_CAMBIO)
+VALUES (
+    @TipoCambio, 
+    @Tabla,
+    @Llaves, 
+    @Evento, 
+    @Usuario, 
+    @ValoresJsonAct, 
+    @ValoresJsonDif, 
+    'P' ,
+    GETDATE()
+);";
+
+                connection.Execute(sql, new
+                {
+                    TipoCambio = payload.TipoCambio,
+                    Tabla = payload.Tabla,
+                    Llaves = jsonLlave,
+                    Evento = payload.EventoQuery,
+                    Usuario = ctx.Usuario,
+                    ValoresJsonAct = valoresJsonAct,
+                    ValoresJsonDif = (object?)valoresJsonDif ?? DBNull.Value
+                });
+
+                result.Code = 1;
+                result.Description = "ok";
             }
             catch (Exception ex)
             {
@@ -1212,34 +1084,36 @@ namespace PgxAPI.DataBaseTier
                     {
                         result.Code = -1;
                         result.Description = "No se encontró el registro en la tabla de control.";
-                        return result.Code.Value;
+                        return result.Code ?? -1;
                     }
 
                     switch (dtCambio.cod_evento)
                     {
                         case "UPDATE":
                             // Parsear el JSON
-                            var cambios = JsonConvert.DeserializeObject<List<CampoCambio>>(dtCambio.valoresjsondif);
+                            var cambios = JsonConvert.DeserializeObject<List<CampoCambio>>(dtCambio.valoresjsondif ?? string.Empty);
 
                             //Armo el query de update 
-                            var setParts = cambios.Select(c => $"{c.Campo} = {FormatearValorSql(c.ValorNuevo)}");
+                            var setParts = (cambios ?? new List<CampoCambio>()).Select(c => $"{c.Campo} = {FormatearValorSql(c.ValorNuevo ?? string.Empty)}");
 
-                            query = $"UPDATE {dtCambio.nom_tabla} SET {string.Join(", ", setParts)} WHERE {dtCambio.llaves.Trim('"')};";
+                            var llaves = dtCambio.llaves != null ? dtCambio.llaves.Trim('"') : string.Empty;
+                            query = $"UPDATE {dtCambio.nom_tabla} SET {string.Join(", ", setParts)} WHERE {llaves};";
                             result.Code = connection.Execute(query);
 
                             break;
                         case "INSERT":
-                            query = dtCambio.valoresjsonact.Trim('"'); 
+                            query = dtCambio.valoresjsonact != null ? dtCambio.valoresjsonact.Trim('"') : string.Empty;
                             result.Code = connection.Execute(query);
                             break;
                         case "DELETE":
-                            query = $"DELETE {dtCambio.nom_tabla} WHERE {dtCambio.llaves.Trim('"')};";
+                            var llavesDelete = dtCambio.llaves != null ? dtCambio.llaves.Trim('"') : string.Empty;
+                            query = $"DELETE {dtCambio.nom_tabla} WHERE {llavesDelete};";
                             result.Code = connection.Execute(query);
                             break;
                         default:
                             result.Code = -1;
                             result.Description = "Tipo de evento no soportado.";
-                            return result.Code.Value;
+                            return result.Code ?? -1;
                     }
 
                     if (result.Code != -1)
@@ -1264,7 +1138,7 @@ namespace PgxAPI.DataBaseTier
                 result.Description = ex.Message;
             }
 
-            return result.Code.Value;
+            return result.Code ?? -1;
         }
 
         private static string FormatearValorSql(object valor)
@@ -1293,7 +1167,7 @@ namespace PgxAPI.DataBaseTier
             if (valor is string s)
                 return $"'{s.Replace("'", "''")}'";
 
-            return valor.ToString();
+            return valor?.ToString() ?? string.Empty;
         }
 
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)
@@ -1304,13 +1178,7 @@ namespace PgxAPI.DataBaseTier
 
             if (controlAuth == "Y")
             {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(request.CodEmpresa);
-                /*
-                 COD_TIPO_CAMBIO:
-                 1 = Insertar
-                 2 = Modificar
-                 3 = Eliminar
-                 */
+
 
                 try
                 {
@@ -1321,22 +1189,31 @@ namespace PgxAPI.DataBaseTier
                     {
                         result.Code = -1;
                         result.Description = "La sentencia SQL no es válida o no se puede analizar.";
-                        return result.Code.Value;
+                        return result.Code ?? -1;
                     }
 
                     var table = matchDelete.Groups["table"].Value;
                     var whereClause = matchDelete.Groups["whereClause"].Value;
 
+                    // Crear el contexto (empresa + usuario)
+                    var ctx = new ControlCambioContext(
+                        CodEmpresa: request.CodEmpresa,
+                        Usuario: request.usuario
+                    );
 
-                    result = InsertarTablaControl(
-                          request.CodEmpresa,
-                          request.tipoCambio,
-                          table,
-                          whereClause,
-                          request.usuario,
-                          "DELETE",
-                          null,
-                          null);
+                    // Crear el payload (datos del cambio)
+                    var payload = new ControlCambioPayload(
+                        TipoCambio: request.tipoCambio,
+                        Tabla: table,
+                        Llave: whereClause,     // condición o llave del registro
+                        EventoQuery: "DELETE",  // tipo de operación
+                        InsertSql: "",          // sin SQL de inserción
+                        Diferencias: new DataTable() // tabla vacía
+                    );
+
+                    // Ejecutar
+                    result = InsertarTablaControl(ctx, payload);
+
                 }
                 catch (Exception ex)
                 {
@@ -1349,7 +1226,7 @@ namespace PgxAPI.DataBaseTier
                 result.Code = 3;
             }
 
-            return result.Code.Value;
+            return result.Code ?? -1;
         }
 
         public int FndControlAutoriza_Insertar(FndControlAutorizaData request)
@@ -1360,13 +1237,6 @@ namespace PgxAPI.DataBaseTier
 
             if (controlAuth == "Y")
             {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(request.CodEmpresa);
-                /*
-                 COD_TIPO_CAMBIO:
-                 1 = Insertar
-                 2 = Modificar
-                 3 = Eliminar
-                 */
 
                 try
                 {
@@ -1377,23 +1247,31 @@ namespace PgxAPI.DataBaseTier
                     {
                         result.Code = -1;
                         result.Description = "La sentencia SQL no es válida o no se puede analizar.";
-                        return result.Code.Value;
+                        return result.Code ?? -1;
                     }
 
                     var table = matchInsert.Groups["table"].Value;
-                    var columns = matchInsert.Groups["columns"].Value;
-                    var values = matchInsert.Groups["values"].Value;
 
 
-                    result = InsertarTablaControl(
-                          request.CodEmpresa,
-                          request.tipoCambio,
-                          table,
-                          null,
-                          request.usuario,
-                          "INSERT",
-                          request.strSQL,
-                          null);
+                    // Crear el contexto
+                    var ctx = new ControlCambioContext(
+                        CodEmpresa: request.CodEmpresa,
+                        Usuario: request.usuario
+                    );
+
+                    // Crear el payload
+                    var payload = new ControlCambioPayload(
+                        TipoCambio: request.tipoCambio,
+                        Tabla: table,
+                        Llave: "",               // no hay llave previa (nuevo registro)
+                        EventoQuery: "INSERT",   // tipo de operación
+                        InsertSql: request.strSQL, // los valores o SQL que se insertan
+                        Diferencias: null        // sin diferencias, ya que es un alta
+                    );
+
+                    // Llamada al método
+                    result = InsertarTablaControl(ctx, payload);
+
                 }
                 catch (Exception ex)
                 {
@@ -1406,7 +1284,7 @@ namespace PgxAPI.DataBaseTier
                 result.Code = 3;
             }
 
-            return result.Code.Value;
+            return result.Code ?? -1;
         }
         #endregion
     }

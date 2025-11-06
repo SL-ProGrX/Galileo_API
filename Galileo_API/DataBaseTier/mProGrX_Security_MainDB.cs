@@ -5,11 +5,11 @@ using System.Net.NetworkInformation;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mProGrX_Security_MainDB
+    public class MProGrXSecurityMainDb
     {
         private readonly IConfiguration _config;
 
-        private mProGrX_Security_MainDB(IConfiguration config)
+        public MProGrXSecurityMainDb(IConfiguration config)
         {
             _config = config;
         }
@@ -40,7 +40,7 @@ namespace PgxAPI.DataBaseTier
                                         .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
                                                       nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
                                         .Select(nic => nic.GetPhysicalAddress().ToString())
-                                        .FirstOrDefault();
+                                        .FirstOrDefault() ?? string.Empty;
 
                     string query = $@"exec spSEG_Bitacora_Add  
                                                 {bitacora.pCliente} ,
@@ -53,6 +53,9 @@ namespace PgxAPI.DataBaseTier
                                                 '{nombreMaquina}',
                                                 '',
                                                 '{macAddress}'";
+
+                    using var command = new SqlCommand(query, connection);
+                    command.ExecuteNonQuery();
                     
                 }
                 response.Code = 0;

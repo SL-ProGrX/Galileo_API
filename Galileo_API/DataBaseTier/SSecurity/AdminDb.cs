@@ -3,12 +3,10 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models.Security;
 using System.Data;
 
-
 namespace PgxAPI.DataBaseTier
 {
     public class AdminDb
     {
-
         private readonly IConfiguration _config;
 
         public AdminDb(IConfiguration config)
@@ -39,9 +37,5 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-
-
-
-
-    }//end class
-}//end namespace
+    }
+}

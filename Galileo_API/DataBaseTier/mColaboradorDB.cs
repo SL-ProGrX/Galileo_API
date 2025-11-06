@@ -6,12 +6,12 @@ using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mColaboradorDB
+    public class MColaboradorDB
     {
         private readonly IConfiguration _config;
-        MSecurityMainDb DBBitacora;
+        readonly MSecurityMainDb DBBitacora;
 
-        public mColaboradorDB(IConfiguration config)
+        public MColaboradorDB(IConfiguration config)
         {
             _config = config;
             DBBitacora = new MSecurityMainDb(_config);
@@ -97,7 +97,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public string ConvierteMes(int numeroMes)
+        public static string ConvierteMes(int numeroMes)
         {
             string nombreMes;
 

@@ -40,7 +40,5 @@ namespace PgxAPI.DataBaseTier
             }
             return types;
         }
-
-
     }
 }

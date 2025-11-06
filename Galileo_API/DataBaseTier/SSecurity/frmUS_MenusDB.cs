@@ -7,12 +7,13 @@ using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_MenusDB
+    public class FrmUsMenusDb
     {
 
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_MenusDB(IConfiguration config)
+        public FrmUsMenusDb(IConfiguration config)
         {
             _config = config;
         }
@@ -20,11 +21,12 @@ namespace PgxAPI.DataBaseTier
 
         public List<UsMenuDto> ObtenerUsMenusPorTipoYNodoPadreEsNull(string? Tipo)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             Tipo ??= "M";
             List<UsMenuDto> Result = [];
-            //string sql = "  select * from US_Menus order by PRIORIDAD";
             string sql = "select * from US_Menus where tipo = @Tipo and nodo_padre is null order by prioridad";
             var values = new
             {
@@ -45,7 +47,9 @@ namespace PgxAPI.DataBaseTier
 
         public List<UsMenuDto> ObtenerUsMenus()
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             List<UsMenuDto> Result = [];
             string sql = "select * from US_Menus order by MENU_NODO";
@@ -68,7 +72,9 @@ namespace PgxAPI.DataBaseTier
 
         public List<UsModuloDto> ObtenerUsModulos()
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             List<UsModuloDto> Result = [];
             string sql = "select * from us_modulos order by modulo";
@@ -91,7 +97,9 @@ namespace PgxAPI.DataBaseTier
 
         public List<UsFormularioDto> ObtenerUsFormularios()
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             List<UsFormularioDto> Result = [];
             string sql = "select *,dbo.fxSEG_OpcionAsignada(Formulario,0) as 'Existe' from US_FORMULARIOS order by formulario";
@@ -114,7 +122,9 @@ namespace PgxAPI.DataBaseTier
 
         public int? ObtenerMenuNodoPorNodoPadreYPrioridad(int NodoPadre, int Prioridad)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             int? Result = null;
             string sql = "select MENU_NODO  from US_MENUS where NODO_PADRE = @NodoPadre and PRIORIDAD = @Prioridad";
@@ -141,7 +151,9 @@ namespace PgxAPI.DataBaseTier
 
         public ResultadoCrearYEditarUsMenuDto? ActualizarUsMenu(UsMenuDto info)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             ResultadoCrearYEditarUsMenuDto? resultado = null;
             try
@@ -181,7 +193,9 @@ namespace PgxAPI.DataBaseTier
 
         public int? ObtenerMenuPrioridadPorMenuNodoPadre(int NodoPadre)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             int? Result = null;
             string sql = "select isnull(max(prioridad),1000) + 1 as 'Prioridad' from us_menus where Nodo_Padre is null";
@@ -213,7 +227,9 @@ namespace PgxAPI.DataBaseTier
 
         public int? ObtenerMenuNodoConIsNull()
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             int? Result = null;
             string sql = "select isnull(max(menu_nodo),0) + 1 as MenuNodo from us_Menus";
@@ -237,13 +253,15 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerMenuNodoConIsNull
 
-        public UsModuloDto ObtenerUsModulosOrdenadosPorTipo(string Tipo)
+        public UsModuloDto? ObtenerUsModulosOrdenadosPorTipo(string Tipo)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             //Tipo ??= "M"; //si Tipo es null, asignar "M"
 
-            UsModuloDto Result = new UsModuloDto();
+            UsModuloDto? Result = null;
             string sql = "select * from US_modulos where modulo not in(select modulo from us_menus where tipo = @Tipo) order by modulo";
             var values = new
             {
@@ -264,7 +282,9 @@ namespace PgxAPI.DataBaseTier
 
         public ResultadoCrearYEditarUsMenuDto? CrearUsMenu(UsMenuDto info)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             ResultadoCrearYEditarUsMenuDto? resultado = null;
             try
@@ -304,7 +324,9 @@ namespace PgxAPI.DataBaseTier
 
         public int? EliminarUnMenuPorNodoPadre(int NodoPadre)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             int? result = null;
             string sql = "delete us_menus where menu_nodo = @NodoPadre";
@@ -329,7 +351,9 @@ namespace PgxAPI.DataBaseTier
 
         public int? EliminarTodosLosMenusPorNodoPadre(int NodoPadre)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             int? result = null;
             string sql = "delete us_menus_usos where menu_nodo in(select menu_nodo from us_menus where nodo_padre = @NodoPadre)";
@@ -355,7 +379,9 @@ namespace PgxAPI.DataBaseTier
         public int? EliminarUsMenusPorMenuNodo(int MenuNodo)
         {
 
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             int? result = null;
             string sql = "DELETE FROM US_MENUS WHERE MENU_NODO = @MenuNodo OR NODO_PADRE = @MenuNodo";
@@ -381,7 +407,9 @@ namespace PgxAPI.DataBaseTier
 
         public int? ObtenerMenuNodoPorMenuFormulario(string Formulario)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             int? result = null;
             string sql = "select menu_nodo from us_menus where formulario = @Formulario";
@@ -406,7 +434,9 @@ namespace PgxAPI.DataBaseTier
 
         public UsFormularioDto ObtenerUsFormularioPorFormulario(string Formulario)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             UsFormularioDto result = new UsFormularioDto();
             string sql = "select * from us_formularios where formulario = @Formulario";
@@ -418,7 +448,11 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                result = connection.Query<UsFormularioDto?>(sql, values).FirstOrDefault();
+                var queryResult = connection.Query<UsFormularioDto?>(sql, values).FirstOrDefault();
+                if (queryResult != null)
+                {
+                    result = queryResult;
+                }
             }
 
             catch (Exception ex)
@@ -432,7 +466,9 @@ namespace PgxAPI.DataBaseTier
 
         public UsMenuDto ObtenerUsMenuPorMenuNodo(int MenuNodo)
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             UsMenuDto result = new UsMenuDto();
             string sql = "Select * from US_Menus where Menu_Nodo = @MenuNodo";
@@ -444,7 +480,11 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                result = connection.Query<UsMenuDto?>(sql, values).FirstOrDefault();
+                var queryResult = connection.Query<UsMenuDto?>(sql, values).FirstOrDefault();
+                if (queryResult != null)
+                {
+                    result = queryResult;
+                }
             }
 
             catch (Exception ex)
@@ -457,7 +497,9 @@ namespace PgxAPI.DataBaseTier
 
         public List<UsIconWeb> ObtenerUsMenu_IconosWeb()
         {
-            string stringConn = _config.GetConnectionString("DefaultConnString");
+            string? stringConn = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(stringConn))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
 
             List<UsIconWeb> result = [];
             string sql = @"select DISTINCT ICONO_WEB as 'label',ICONO_WEB as 'value', ICONO_WEB as 'iconMenu' 

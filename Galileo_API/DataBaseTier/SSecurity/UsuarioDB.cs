@@ -10,6 +10,7 @@ namespace PgxAPI.DataBaseTier
     {
 
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
         public UsuarioDB(IConfiguration config)
         {
@@ -21,7 +22,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resultado = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Cuenta_Revisar]";
                     var datosCtaRevisar = new
@@ -55,11 +56,10 @@ namespace PgxAPI.DataBaseTier
 
         public UsuarioCuentaRevisarDto UsuarioCuentaObtener(string nombreUsuario)
         {
-            //List<CuentaUsuarioRevisarDto> result = new List<CuentaUsuarioRevisarDto>();
             UsuarioCuentaRevisarDto result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Cuenta_Obtener]";
                     var values = new
@@ -81,7 +81,7 @@ namespace PgxAPI.DataBaseTier
             List<UsuarioCuentaMovimientoResultDto> resultado = new List<UsuarioCuentaMovimientoResultDto>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Cuenta_Log_Movimientos_Obtener]";
                     var values = new
@@ -89,9 +89,9 @@ namespace PgxAPI.DataBaseTier
                         Usuario = usuarioCuentaMovimientoRequestDto.Usuario.Trim(),
                         FechaInicio = usuarioCuentaMovimientoRequestDto.FechaInicio,
                         FechaCorte = usuarioCuentaMovimientoRequestDto.FechaCorte,
-                        Estacion = usuarioCuentaMovimientoRequestDto.Estacion.Trim(),
+                        Estacion = usuarioCuentaMovimientoRequestDto.Estacion != null ? usuarioCuentaMovimientoRequestDto.Estacion.Trim() : string.Empty,
                         ListaCodTransacciones = usuarioCuentaMovimientoRequestDto.ListaCodTransacciones.Trim(),
-                        AppName = usuarioCuentaMovimientoRequestDto.AppName.Trim(),
+                        AppName = usuarioCuentaMovimientoRequestDto.AppName != null ? usuarioCuentaMovimientoRequestDto.AppName.Trim() : string.Empty,
                         AppVersion = usuarioCuentaMovimientoRequestDto.AppVersion,
                         UsuarioBusqueda = usuarioCuentaMovimientoRequestDto.UsuarioBusqueda,
                         Revision = usuarioCuentaMovimientoRequestDto.Revision.Trim(),
@@ -112,7 +112,7 @@ namespace PgxAPI.DataBaseTier
             List<LoginDbResult> resp = [];
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spGA_ObtenerUsuario]";
                     var values = new

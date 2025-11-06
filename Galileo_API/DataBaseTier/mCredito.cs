@@ -1,14 +1,9 @@
 ﻿namespace PgxAPI.DataBaseTier
 {
-    public class mCredito
+    public static class MCredito
     {
-        private readonly IConfiguration _config;
-        public mCredito(IConfiguration config)
-        {
-            _config = config;
-        }
 
-        public string fxMembresia(DateTime vFecha)
+        public static string fxMembresia(DateTime vFecha)
         {
             DateTime fechaServidor = DateTime.Now;
 

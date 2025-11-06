@@ -6,12 +6,12 @@ using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class Seguridad_PortalDB
+    public class SeguridadPortalDb
     {
-
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public Seguridad_PortalDB(IConfiguration config)
+        public SeguridadPortalDb(IConfiguration config)
         {
             _config = config;
         }
@@ -21,7 +21,7 @@ namespace PgxAPI.DataBaseTier
             int resp = 0;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var query = "SELECT dbo.fxSEG_Admin_Portal_Autenticate(@Usuario, @Token)";
                     var values = new
@@ -30,22 +30,14 @@ namespace PgxAPI.DataBaseTier
                         Token = "#MyMasterK3y#"
                     };
                     resp = connection.Query<int>(query, values).FirstOrDefault();
-                    //var procedure = "[fxSEG_Admin_Portal_Autenticate]";
-                    //var values = new
-                    //{
-                    //    Usuario = Usuario,
-                    //    Token = "#MyMasterK3y#"
-                    //};
-                    //resp = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                 }
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
             }
-            return resp == 1 ? true : false;
+            return resp == 1;
         }
-
 
         public int UsuarioObtenerKeyAdmin(string Usuario)
         {
@@ -57,7 +49,7 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 Result = connection.Query<int>(sql, values).FirstOrDefault();
             }
             catch (Exception ex)
@@ -78,8 +70,12 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                Result = connection.Query<UsAdminClientesDto>(sql, values).FirstOrDefault();
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var queryResult = connection.Query<UsAdminClientesDto>(sql, values).FirstOrDefault();
+                if (queryResult != null)
+                {
+                    Result = queryResult;
+                }
 
             }
             catch (Exception ex)
@@ -100,9 +96,17 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                Result = connection.Query<UsuarioBloqueoDto>(sql, values).FirstOrDefault();
-                Result.Usuario = Usuario;
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var queryResult = connection.Query<UsuarioBloqueoDto>(sql, values).FirstOrDefault();
+                if (queryResult != null)
+                {
+                    Result = queryResult;
+                    Result.Usuario = Usuario;
+                }
+                else
+                {
+                    Result.Usuario = Usuario;
+                }
 
             }
             catch (Exception ex)
@@ -124,9 +128,17 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                Result = connection.Query<UsuarioCondicionDto>(sql, values).FirstOrDefault();
-                Result.Usuario = Usuario;
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var queryResult = connection.Query<UsuarioCondicionDto>(sql, values).FirstOrDefault();
+                if (queryResult != null)
+                {
+                    Result = queryResult;
+                    Result.Usuario = Usuario;
+                }
+                else
+                {
+                    Result.Usuario = Usuario;
+                }
 
             }
             catch (Exception ex)
@@ -148,9 +160,17 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                Result = connection.Query<UsuarioVencimientoDto>(sql, values).FirstOrDefault();
-                Result.Usuario = Usuario;
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var queryResult = connection.Query<UsuarioVencimientoDto>(sql, values).FirstOrDefault();
+                if (queryResult != null)
+                {
+                    Result = queryResult;
+                    Result.Usuario = Usuario;
+                }
+                else
+                {
+                    Result.Usuario = Usuario;
+                }
 
             }
             catch (Exception ex)
@@ -173,7 +193,7 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 Result = connection.Query<int>(sql, values).FirstOrDefault();
 
             }
@@ -199,7 +219,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
 
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 Result = connection.Query(sql, values).FirstOrDefault();
 
             }
@@ -226,7 +246,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
 
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                     Result = connection.Query(sql, values).FirstOrDefault();
 
             }
@@ -239,34 +259,6 @@ namespace PgxAPI.DataBaseTier
             return Result;
         }
 
-        /// <summary>
-        /// Método que crea la conexión a la BD dependiendo de la empresa seleccionada
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
-        //public PgxClienteDTO SeleccionarPgxClientePorCodEmpresa2(int CodEmpresa)
-        //{
-
-        //    PgxClienteDTO Result = new PgxClienteDTO();
-        //    string sql = "select * from PGX_Clientes where cod_empresa = @CodEmpresa";
-        //    var values = new
-        //    {
-        //        CodEmpresa = CodEmpresa,
-        //    };
-        //    try
-        //    {
-        //        using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-        //        Result = connection.Query<PgxClienteDTO>(sql, values).FirstOrDefault();
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _ = ex.Message;
-        //    }
-        //    return Result;
-
-        //}
-
         public PgxClienteDto SeleccionarPgxClientePorCodEmpresa(int CodEmpresa)
         {
             PgxClienteDto Result = new PgxClienteDto();
@@ -275,8 +267,12 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                Result = connection.Query<PgxClienteDto>(sql, parameters, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var queryResult = connection.Query<PgxClienteDto>(sql, parameters, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                if (queryResult != null)
+                {
+                    Result = queryResult;
+                }
             }
             catch (Exception ex)
             {
@@ -286,29 +282,24 @@ namespace PgxAPI.DataBaseTier
             return Result;
         }
 
-
         public void spCore_Usuario_Sincroniza(string PGX_Core_Server, string PGX_Core_Key, string pCliente, string pUsuario, string pNombre, string pEstado) //REVISAR Y TRABAJAR EN ESTO (CONN A DB DIFERENTE)
         {
-            //string sql = "spSEG_SincronizaUsuarios";
-            var values = new
-            {
-                pCliente = pCliente,
-                pUsuario = pUsuario,
-                pNombre = pNombre,
-                pEstado = pEstado,
-            };
+            const string spName = "spSEG_SincronizaUsuarios";
+
+            var parameters = new DynamicParameters();
+            parameters.Add("@pCliente", pCliente);
+            parameters.Add("@pUsuario", pUsuario);
+            parameters.Add("@pNombre", pNombre);
+            parameters.Add("@pEstado", pEstado);
             try
             {
-                //using var connection = new SqlConnection(stringConn);
-                //Result = connection.Query<UsuarioVencimientoDTO>(sql, values).FirstOrDefault();
-
+                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                connection.Execute(spName, parameters, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
             }
-
-
         }
 
         public UsMenuDto ObtenerMenuPorNodoYUsuario(int pNodo, string Usuario)
@@ -323,8 +314,8 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                respuesta = connection.Query<UsMenuDto>(sql, values).FirstOrDefault();
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                respuesta = connection.Query<UsMenuDto>(sql, values).FirstOrDefault() ?? new UsMenuDto();
 
             }
             catch (Exception ex)
@@ -333,8 +324,6 @@ namespace PgxAPI.DataBaseTier
             }
 
             return respuesta;
-
-
         }
 
         public int ActualizarEstadisticasFavoritos(int menuNodo, int? Cliente, string Usuario)
@@ -354,7 +343,7 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 Result = connection.Query<int>(sql, values).FirstOrDefault();
 
             }
@@ -365,12 +354,6 @@ namespace PgxAPI.DataBaseTier
             return Result;
 
         }
-
-
-
-
-
-
 
     }//end class
 }//end namespace

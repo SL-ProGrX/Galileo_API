@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using System.Data;
 
@@ -52,16 +51,13 @@ namespace PgxAPI.DataBaseTier
                             Cedula = ""
                         };
                         // Lógica para el Paso 1
-                        connection.Execute("spPortal_Sincroniza_WebApps", new { }, commandType: CommandType.StoredProcedure);
+                        connection.Execute("spPortal_Sincroniza_WebApps", values, commandType: CommandType.StoredProcedure);
                         resp.Code = 1;
                         resp.Description = "Paso 1 ok";
                     }
                 }
                 else if (paso == 2)
                 {
-                    // Lógica para el Paso 2 con conexión separada
-                    /* string connectionString = $"PROVIDER=MSDASQL;Driver={{SQL Server}};Server={server};" +
-                         $"Database=PGX_BASE;APP=PGX_Portal;tcp:{server},{SIFGlobal.PuertosDisponibles};";*/
 
                     string connectionString = $"PROVIDER=MSDASQL;Driver={{SQL Server}};Server={server};" +
                        $"Database=PGX_BASE;APP=PGX_Portal;tcp:{server};";
@@ -98,7 +94,7 @@ namespace PgxAPI.DataBaseTier
                             Empresa = 0,
                             Cedula = ""
                         };
-                        connection.Execute("spPortal_Sincroniza_WebApps", new { }, commandType: CommandType.StoredProcedure);
+                        connection.Execute("spPortal_Sincroniza_WebApps", values, commandType: CommandType.StoredProcedure);
                         resp.Code = 1;
                         resp.Description = "Paso 3 ok";
                     }

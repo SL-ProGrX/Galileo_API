@@ -8,17 +8,18 @@ using System.Text.RegularExpressions;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mProGrx_Main
+    public class MProGrxMain
     {
         private readonly IConfiguration _config;
         private readonly MSecurityMainDb _Security_MainDB;
-        private mProGrX_AuxiliarDB _AuxiliarDB;
+        private readonly MProGrXAuxiliarDB _AuxiliarDB;
+        private const string connectionStringName = "DefaultConnString";
 
-        public mProGrx_Main(IConfiguration config)
+        public MProGrxMain(IConfiguration config)
         {
             _config = config;
             _Security_MainDB = new MSecurityMainDb(_config);
-            _AuxiliarDB = new mProGrX_AuxiliarDB(_config);
+            _AuxiliarDB = new MProGrXAuxiliarDB(_config);
         }
 
         /// <summary>
@@ -26,7 +27,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="pCardNumer"></param>
         /// <returns></returns>
-        public string FxTarjetaTipo(string pCardNumer) // cambiar a angular
+        public static string FxTarjetaTipo(string pCardNumer) // cambiar a angular
         {
             string vResultado = "Tarjeta Inválida";
             bool bDetected = false;
@@ -34,7 +35,6 @@ namespace PgxAPI.DataBaseTier
             if (pCardNumer.Substring(0, 1) == "4")
             {
                 vResultado = "VISA";
-                bDetected = true;
             }
 
             if (!bDetected)
@@ -65,7 +65,6 @@ namespace PgxAPI.DataBaseTier
                     case "34":
                     case "37":
                         vResultado = "American Express";
-                        bDetected = true;
                         break;
                 }
             }
@@ -78,7 +77,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="pCardNumer"></param>
         /// <returns></returns>
-        public bool FxTarjetaValida(string pCardNumer) // cambiar a angular
+        public static bool FxTarjetaValida(string pCardNumer) // cambiar a angular
         {
             bool vResultado = false;
             int vNum = 0;
@@ -97,7 +96,7 @@ namespace PgxAPI.DataBaseTier
             vCardLargo = pCardNumer.Length;
             vCadenaX = pCardNumer.Substring(0, vCardLargo - 1);
             vCadenaY = pCardNumer.Substring(vCardLargo - 1);
-            vCadenaZ = "";
+            var sbCadenaZ = new System.Text.StringBuilder();
 
             // Algoritmo de Luhn
             for (int i = 1; i <= vCardLargo - 1; i++)
@@ -116,8 +115,9 @@ namespace PgxAPI.DataBaseTier
 
                 vPar = !vPar;
 
-                vCadenaZ = Convert.ToString(vNum) + vCadenaZ;
+                sbCadenaZ.Insert(0, vNum.ToString());
             }
+            vCadenaZ = sbCadenaZ.ToString();
 
             vNum = 0;
             // Suma números paso 2
@@ -145,10 +145,10 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public List<ConsultaStatusResultDto> DatosObtener(string pCedula, string pUsuario)
         {
-            List<ConsultaStatusResultDto> resp = new List<ConsultaStatusResultDto>();
+            List<ConsultaStatusResultDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var procedure = "[spSYS_RA_Consulta_Status]";
@@ -163,7 +163,7 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception ex)
             {
-                resp = null;
+                resp = new List<ConsultaStatusResultDto>();
                 _ = ex.Message;
             }
             return resp;
@@ -174,7 +174,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="pTipoCambio"></param>
         /// <returns></returns>
-        public double fxSys_Tipo_Cambio_Apl(decimal pTipoCambio)
+        public static double fxSys_Tipo_Cambio_Apl(decimal pTipoCambio)
         {
             double resultado = 1;
 
@@ -203,7 +203,7 @@ namespace PgxAPI.DataBaseTier
             using (var connection = new SqlConnection(stringConn))
             {
                 string query = "SELECT valor FROM SIF_parametros WHERE cod_parametro = @Codigo";
-                resultado = connection.QueryFirstOrDefault<string>(query, new { Codigo = pCodigo });
+                resultado = connection.QueryFirstOrDefault<string>(query, new { Codigo = pCodigo }) ?? string.Empty;
             }
 
             return resultado ?? ""; // Si no se encuentra un valor, se retorna una cadena vacía
@@ -214,7 +214,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto result = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "spSIFRegistraTags";
                     var parameters = new
@@ -248,10 +248,10 @@ namespace PgxAPI.DataBaseTier
             List<MenuUsoResultDto> result = new List<MenuUsoResultDto>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     string query = "select *,dbo.fxSEG_MenuAccess(" + req.Empresa_Id + "," + req.Usuario + "," + req.Modulo + "," + req.Formulario + "," + req.Tipo + ") as Acceso FROM SIF_parametros WHERE cod_parametro = @Codigo";
-                    ParametroDto resultado = connection.QueryFirstOrDefault<ParametroDto>(query);
+                    ParametroDto? resultado = connection.QueryFirstOrDefault<ParametroDto>(query);
 
                     if (resultado != null)
                     {
@@ -263,24 +263,24 @@ namespace PgxAPI.DataBaseTier
                             Usuario = req.Usuario
                         };
 
-                        result = connection.Query<MenuUsoResultDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                        result = connection.Query<MenuUsoResultDto>(procedure, parameters, commandType: CommandType.StoredProcedure).ToList();
                     }
                 }
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
-                result = null;
+                result = new List<MenuUsoResultDto>();
             }
             return result;
         }
 
         public List<MenuFavoritosResultDto> SbSIFRegistraTags(MenuFavoritosRequestDto req)
         {
-            List<MenuFavoritosResultDto> result = new List<MenuFavoritosResultDto>();
+            List<MenuFavoritosResultDto> result;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "spSEG_MenuFavoritos";
                     var parameters = new
@@ -289,12 +289,12 @@ namespace PgxAPI.DataBaseTier
                         Usuario = req.Usuario
                     };
 
-                    result = connection.Query<MenuFavoritosResultDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    result = connection.Query<MenuFavoritosResultDto>(procedure, parameters, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception)
             {
-                result = null;
+                result = new List<MenuFavoritosResultDto>();
             }
             return result;
         }
@@ -304,7 +304,7 @@ namespace PgxAPI.DataBaseTier
             string result = "";
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     string query = "select O.modulo"
                                    + " from permisos P inner join  opciones O on P.id_opt = O.id_opt"
@@ -315,14 +315,14 @@ namespace PgxAPI.DataBaseTier
                                    + " from permisos P inner join  opciones O on P.id_opt = O.id_opt"
                                    + " and P.tipo = 'G' and P.nombre in(select id_Grupo from miembros where nombre = '" + usuario + "')"
                                    + " group by O.modulo";
-                    result = connection.QueryFirstOrDefault<string>(query);
+                    result = connection.QueryFirstOrDefault<string>(query) ?? string.Empty;
 
                 }
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
-                result = null;
+                result = "";
             }
             return result;
         }
@@ -334,7 +334,7 @@ namespace PgxAPI.DataBaseTier
             string strSQL = "";
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     switch (vTipo)
                     {
@@ -363,18 +363,18 @@ namespace PgxAPI.DataBaseTier
                             strSQL = "select distrito as xLlave,descripcion as xDesc from distritos";
                             break;
                     }
-                    result = connection.QueryFirstOrDefault<string>(strSQL);
+                    result = connection.QueryFirstOrDefault<string>(strSQL) ?? string.Empty;
 
                 }
             }
             catch (Exception)
             {
-                result = null;
+                result = "";
             }
             return result;
         }
 
-        public ErrorDto SbToolBarRead()
+        public static ErrorDto SbToolBarRead()
         {
             ErrorDto result = new ErrorDto();
             string filePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "meToolBar.ini");
@@ -386,7 +386,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     File.WriteAllText(filePath, toolBarValue);
                 }
-                toolBarValue = File.ReadAllText(filePath);
+                File.ReadAllText(filePath);
                 result.Code = 1;
                 result.Description = "ok";
             }
@@ -404,31 +404,31 @@ namespace PgxAPI.DataBaseTier
             string result = "";
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "spSEG_Usuario_Theme";
                     var parameters = new
                     {
                         Usuario = usuario
                     };
-                    result = connection.Query<string>(procedure, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    result = connection.Query<string>(procedure, parameters, commandType: CommandType.StoredProcedure).FirstOrDefault() ?? "";
                 }
             }
             catch (Exception)
             {
-                result = null;
+                result = "";
             }
             return result;
         }
 
         public List<EmpresaEnlaceResultDto> EmpresaEnlaceObtener()
         {
-            List<EmpresaEnlaceResultDto> result = new List<EmpresaEnlaceResultDto>();
+            List<EmpresaEnlaceResultDto> result;
 
             string strSQL = "";
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     strSQL = $@"select 
                                     cod_empresa_enlace,
@@ -448,20 +448,28 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                result = null;
+                result = new List<EmpresaEnlaceResultDto>();
             }
             return result;
         }
 
         public List<SifOficinasUsuarioResultDto> CargaOficinas(string usuario, int codEmpresa)
         {
-            List<SifOficinasUsuarioResultDto> result = new List<SifOficinasUsuarioResultDto>();
+            List<SifOficinasUsuarioResultDto> result;
             try
             {
-                string stringConn = _config.GetConnectionString("DefaultConnString");
+                string stringConn = _config.GetConnectionString(connectionStringName) ?? string.Empty;
+                if (string.IsNullOrEmpty(stringConn))
+                {
+                    throw new InvalidOperationException("Connection string cannot be null or empty.");
+                }
                 if (codEmpresa != 0)
                 {
-                    stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+                    stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa) ?? string.Empty;
+                    if (string.IsNullOrEmpty(stringConn))
+                    {
+                        throw new InvalidOperationException("Empresa connection string cannot be null or empty.");
+                    }
                 }
                 using (var connection = new SqlConnection(stringConn))
                 {
@@ -470,12 +478,12 @@ namespace PgxAPI.DataBaseTier
                     {
                         Usuario = usuario
                     };
-                    result = connection.Query<SifOficinasUsuarioResultDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    result = connection.Query<SifOficinasUsuarioResultDto>(procedure, parameters, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception)
             {
-                result = null;
+                result = new List<SifOficinasUsuarioResultDto>();
             }
             return result;
         }
@@ -483,7 +491,7 @@ namespace PgxAPI.DataBaseTier
         public decimal glngFechaCR(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ParAhcr par_ahcr = new ParAhcr();
+            ParAhcr? par_ahcr;
             decimal glngFechaCR = 0;
 
             try
@@ -492,11 +500,18 @@ namespace PgxAPI.DataBaseTier
                 {
                     var queryPar_Ahcr = "Select *,Getdate() as FechaAlterna from par_ahcr";
                     par_ahcr = connection.Query<ParAhcr>(queryPar_Ahcr).FirstOrDefault();
-                    DateTime vFecha = par_ahcr.cr_fecha_calculo.GetValueOrDefault(par_ahcr.fechaalterna);
-                    int year = vFecha.Year;
-                    int month = vFecha.Month;
-                    string fechaStr = year.ToString() + month.ToString("00");
-                    glngFechaCR = decimal.Parse(fechaStr);
+                    if (par_ahcr != null)
+                    {
+                        DateTime vFecha = par_ahcr.cr_fecha_calculo.GetValueOrDefault(par_ahcr.fechaalterna);
+                        int year = vFecha.Year;
+                        int month = vFecha.Month;
+                        string fechaStr = year.ToString() + month.ToString("00");
+                        glngFechaCR = decimal.Parse(fechaStr);
+                    }
+                    else
+                    {
+                        glngFechaCR = 0;
+                    }
                 }
             }
             catch (Exception)
@@ -545,13 +560,13 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-             
+
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spSYS_RA_Consulta_Status @cedula , @usuario";
                     var result = connection.Query<ConsultaStatusResultDto>(query, new { cedula = pCedula, usuario = pUsuario }).FirstOrDefault();
 
-                    if(result.PERSONA_ID > 0 && result.AUTORIZACION_ID == 0)
+                    if (result != null && result.PERSONA_ID > 0 && result.AUTORIZACION_ID == 0)
                     {
                         response.Result = false;
                     }
@@ -567,7 +582,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto sbEstadoCuenta_Email_Corte(int CodEmpresa, string pUsuario, string vCedula, string vEmail,DateTime? vCorte )
+        public ErrorDto sbEstadoCuenta_Email_Corte(int CodEmpresa, string pUsuario, string vCedula, string vEmail, DateTime? vCorte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -577,7 +592,7 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                if(string.IsNullOrEmpty(vCedula))
+                if (string.IsNullOrEmpty(vCedula))
                 {
                     response.Code = -1;
                     response.Description = "Especifique la Identificación de la Persona";
@@ -593,10 +608,14 @@ namespace PgxAPI.DataBaseTier
 
                 using var connection = new SqlConnection(stringConn);
                 {
-                    string vFechaCorte = _AuxiliarDB.validaFechaGlobal(vCorte);
+                    string? vFechaCorteNullable = _AuxiliarDB.validaFechaGlobal(vCorte);
+                    string vFechaCorte = vFechaCorteNullable ?? string.Empty;
 
                     var query = $@"exec spSys_Estado_Cuenta_Corte @cedula , @corte, @email,@usuario ";
-                    var result = connection.Query(query, new { cedula = vCedula, corte = vFechaCorte, email = vEmail, usuario = pUsuario }).FirstOrDefault();
+                    response.Code = connection.Query(query, new { cedula = vCedula, corte = vFechaCorte, email = vEmail, usuario = pUsuario }).FirstOrDefault();
+
+
+                    // You can use queryResult here if needed
 
                     _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {

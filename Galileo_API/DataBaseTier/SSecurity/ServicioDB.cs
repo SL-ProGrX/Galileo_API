@@ -9,6 +9,7 @@ namespace PgxAPI.DataBaseTier
     public class ServicioDB
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
         public ServicioDB(IConfiguration config)
         {
@@ -20,7 +21,7 @@ namespace PgxAPI.DataBaseTier
             List<ServicioSuscripcion> servs = new List<ServicioSuscripcion>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Servicios_Obtener]";
 
@@ -44,7 +45,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Servicios_Insertar]";
                     var values = new
@@ -75,7 +76,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Servicios_Eliminar]";
                     var values = new
@@ -102,7 +103,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Servicios_Editar]";
                     var values = new

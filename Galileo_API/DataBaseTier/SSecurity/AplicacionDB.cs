@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.Security;
 using System.Data;
@@ -10,7 +9,7 @@ namespace PgxAPI.DataBaseTier
     public class AplicacionDB
     {
         private readonly IConfiguration _config;
-
+        private const string connectionStringName = "DefaultConnString";
         public AplicacionDB(IConfiguration config)
         {
             _config = config;
@@ -24,7 +23,7 @@ namespace PgxAPI.DataBaseTier
             List<Aplicacion> data = new List<Aplicacion>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Aplicacion_Obtener]";
 
@@ -48,7 +47,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Aplicacion_Insertar]";
                     var values = new
@@ -77,7 +76,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Aplicacion_Eliminar]";
                     var values = new
@@ -102,7 +101,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Aplicacion_Editar]";
                     var values = new
@@ -124,9 +123,8 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
+
         #endregion
-
-
 
         #region MÉTODOS APP_BLOCK
 
@@ -135,7 +133,7 @@ namespace PgxAPI.DataBaseTier
             List<Bloqueo> data = new List<Bloqueo>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Bloqueo_Obtener]";
 
@@ -159,7 +157,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Bloqueo_Insertar]";
                     var values = new
@@ -189,7 +187,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Bloqueo_Eliminar]";
                     var values = new
@@ -210,41 +208,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        //public ErrorAplicacionDTO Bloqueo_Actualizar(Aplicacion request)
-        //{
-        //    ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
-        //    try
-        //    {
-        //        using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
-        //        {
-        //            var procedure = "[spPGX_W_Bloqueo_Editar]";
-        //            var values = new
-        //            {
-        //                Cod_App = request.Cod_App,
-        //                //Identificacion = request.Identificacion,
-        //                //Nombre = request.Nombre,
-        //                //Activo = request.Activo,
-        //                //Comision_Tipo = request.Comision_Tipo,
-        //                //Comision_Cliente = request.Comision_Cliente,
-        //                //Cuenta_Cliente = request.Cuenta_Cliente,
-
-        //            };
-
-        //            resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-        //            resp.Description = "Ok";
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        resp.Code = -1;
-        //        resp.Description = ex.Message;
-        //    }
-        //    return resp;
-        //}
-
         #endregion 
-
-
 
         #region MÉTODOS APP_UPDATE
 
@@ -253,7 +217,7 @@ namespace PgxAPI.DataBaseTier
             List<Actualizacion> data = new List<Actualizacion>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Actualizacion_Obtener]";
 
@@ -278,7 +242,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Actualizacion_Insertar]";
                     var values = new
@@ -308,7 +272,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Actualizacion_Eliminar]";
                     var values = new
@@ -328,38 +292,6 @@ namespace PgxAPI.DataBaseTier
             }
             return resp;
         }
-
-        //public ErrorAplicacionDTO Actualizacion_Editar(Actualizacion request)
-        //{
-        //    ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
-        //    try
-        //    {
-        //        using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
-        //        {
-        //            var procedure = "[spPGX_W_Actualizacion_Editar]";
-        //            var values = new
-        //            {
-        //                Cod_App = request.Cod_App,
-        //                //Identificacion = request.Identificacion,
-        //                //Nombre = request.Nombre,
-        //                //Activo = request.Activo,
-        //                //Comision_Tipo = request.Comision_Tipo,
-        //                //Comision_Cliente = request.Comision_Cliente,
-        //                //Cuenta_Cliente = request.Cuenta_Cliente,
-
-        //            };
-
-        //            resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-        //            resp.Description = "Ok";
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        resp.Code = -1;
-        //        resp.Description = ex.Message;
-        //    }
-        //    return resp;
-        //}
 
         #endregion 
 

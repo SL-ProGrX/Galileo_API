@@ -9,6 +9,8 @@ namespace PgxAPI.DataBaseTier
     public class AdminRolDB
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
+
 
         public AdminRolDB(IConfiguration config)
         {
@@ -20,7 +22,7 @@ namespace PgxAPI.DataBaseTier
             List<UsuarioPlataforma> data = new List<UsuarioPlataforma>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Usuarios_List]";
 
@@ -44,7 +46,7 @@ namespace PgxAPI.DataBaseTier
             List<UsuarioAdmin> data = new List<UsuarioAdmin>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Admin_Local_List]";
 
@@ -68,7 +70,7 @@ namespace PgxAPI.DataBaseTier
             List<ClienteAsignado> data = new List<ClienteAsignado>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Admin_Clients_Load]";
 
@@ -95,7 +97,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Admin_Local_Load]";
 
@@ -103,7 +105,7 @@ namespace PgxAPI.DataBaseTier
                     {
                         Usuario = usuario,
                     };
-                    data = connection.Query<AdminLocalRoles>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    data = connection.Query<AdminLocalRoles>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault() ?? new AdminLocalRoles();
 
                 }
             }
@@ -120,7 +122,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Admin_Clients_Roles_Load]";
 
@@ -129,7 +131,7 @@ namespace PgxAPI.DataBaseTier
                         Usuario = usuario,
                         EmpresaId = cliente,
                     };
-                    data = connection.Query<AdminLocalRolesCliente>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    data = connection.Query<AdminLocalRolesCliente>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault() ?? new AdminLocalRolesCliente();
 
                 }
             }
@@ -147,7 +149,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Admin_Local_Add]";
                     var values = new
@@ -185,7 +187,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Admin_Clients_Roles_Add]";
                     var values = new

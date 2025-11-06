@@ -6,21 +6,20 @@ using MimeKit;
 using PgxAPI.Models;
 using PgxAPI.Models.AF;
 using PgxAPI.Models.ERROR;
-using System.Net;
 
 namespace PgxAPI.DataBaseTier
 {
     public class EnvioCorreoDB
     {
         private readonly IConfiguration _config;
-        private string produccion;
-        private string TestEmail;
+        private readonly string produccion;
+        private readonly string TestEmail;
 
         public EnvioCorreoDB(IConfiguration config)
         {
             _config = config;
-            produccion = _config.GetSection("AppSettings").GetSection("Produccion").Value.ToString();
-            TestEmail = _config.GetSection("AppSettings").GetSection("TestEmail").Value.ToString();
+            produccion = _config.GetSection("AppSettings").GetSection("Produccion").Value ?? string.Empty;
+            TestEmail = _config.GetSection("AppSettings").GetSection("TestEmail").Value ?? string.Empty;
         }
 
         /// <summary>
@@ -76,16 +75,11 @@ namespace PgxAPI.DataBaseTier
                 // Configurar el cliente SMTP
                 using (var client = new SmtpClient())
                 {
-                    ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
-                    ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
-
-                    client.Connect(eConfig.Host, eConfig.Port, SecureSocketOptions.Auto);
-                    client.Authenticate(eConfig.User, eConfig.Password);
+                    await client.ConnectAsync(eConfig.Host, eConfig.Port, SecureSocketOptions.Auto);
+                    await client.AuthenticateAsync(eConfig.User, eConfig.Password);
 
                     await client.SendAsync(message);
-                    client.Disconnect(true);
-
-                    //BitacoraCorreo(eConfig, message);
+                    await client.DisconnectAsync(true);
                 }
             }
             catch (Exception ex)
@@ -100,7 +94,7 @@ namespace PgxAPI.DataBaseTier
         public EnvioCorreoModels CorreoConfig(int CodCliente, string cod_smtp)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            EnvioCorreoModels correo = new EnvioCorreoModels();
+            EnvioCorreoModels correo;
 
             try
             {
@@ -117,13 +111,13 @@ namespace PgxAPI.DataBaseTier
                           FROM SYS_MAIL_CONF_SMTP
                         WHERE [ESTADO] = 1 AND COD_SMTP = '{cod_smtp}' ";
 
-                    correo = connection.Query<EnvioCorreoModels>(query).FirstOrDefault();
+                    correo = connection.Query<EnvioCorreoModels>(query).FirstOrDefault() ?? new EnvioCorreoModels();
 
                 }
             }
             catch (Exception)
             {
-                return null;
+                return new EnvioCorreoModels();
             }
             return correo;
         }
@@ -136,7 +130,7 @@ namespace PgxAPI.DataBaseTier
         public EnvioCorreoModels CorreoConfigCuenta(string smtpcode)
         {
 
-            EnvioCorreoModels correo = new EnvioCorreoModels();
+            EnvioCorreoModels correo;
 
             try
             {
@@ -152,13 +146,13 @@ namespace PgxAPI.DataBaseTier
                           FROM SYS_MAIL_CONF_SMTP
                         WHERE [COD_SMTP] = '{smtpcode}'";
 
-                    correo = connection.Query<EnvioCorreoModels>(query).FirstOrDefault();
+                    correo = connection.Query<EnvioCorreoModels>(query).FirstOrDefault() ?? new EnvioCorreoModels();
 
                 }
             }
             catch (Exception)
             {
-                return null;
+                return new EnvioCorreoModels();
             }
             return correo;
         }
@@ -173,30 +167,30 @@ namespace PgxAPI.DataBaseTier
         public AfiBeneDatosCorreo BuscoDatosSocioBeneficio(int CodCliente, string cedula, string beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            AfiBeneDatosCorreo correo = new AfiBeneDatosCorreo();
+            AfiBeneDatosCorreo correo;
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     //Busco el correo del socio
                     var query = $@"SELECT
-	                               [NOMBREV2] + ' ' + [APELLIDO1] + ' ' + [APELLIDO2] AS nombre
+                                   [NOMBREV2] + ' ' + [APELLIDO1] + ' ' + [APELLIDO2] AS nombre
                                   ,[CEDULA] as cedula
                                   ,[AF_EMAIL] as email
-	                              , (
-	                                      SELECT 
+                                  , (
+                                          SELECT 
                                            [DESCRIPCION]
                                       FROM [dbo].[AFI_BENEFICIOS]
                                       WHERE COD_BENEFICIO = '{beneficio}'
-	                                      ) AS beneficio
+                                          ) AS beneficio
                               FROM SOCIOS
                               WHERE  CEDULA = '{cedula}'";
-                    correo = connection.Query<AfiBeneDatosCorreo>(query).FirstOrDefault();
+                    correo = connection.Query<AfiBeneDatosCorreo>(query).FirstOrDefault() ?? new AfiBeneDatosCorreo();
                 }
             }
             catch (Exception)
             {
-                return null;
+                return new AfiBeneDatosCorreo();
             }
 
 
@@ -241,9 +235,11 @@ namespace PgxAPI.DataBaseTier
 
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
+                // Exception intentionally ignored because failure to log email should not interrupt main flow.
+                // Optionally, log the exception using your logging framework, e.g.:
+                 Console.WriteLine($"Failed to log email: {ex.Message}");
             }
         }
     }

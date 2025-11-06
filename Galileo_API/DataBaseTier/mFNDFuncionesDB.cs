@@ -7,10 +7,10 @@ using PgxAPI.Models.ProGrX.Fondos;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mFNDFuncionesDB
+    public class MFndFuncionesDb
     {
         private readonly IConfiguration _config;
-        public mFNDFuncionesDB(IConfiguration config)
+        public MFndFuncionesDb(IConfiguration config)
         {
             _config = config;
         }
@@ -52,7 +52,7 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                return null;
+                return "";
             }
             return result;
         }
@@ -76,7 +76,7 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public string fxTipoDocumento(string vTipo)
+        public static string fxTipoDocumento(string vTipo)
         {
             switch (vTipo)
             {
@@ -136,18 +136,19 @@ namespace PgxAPI.DataBaseTier
         public string fxFndParametro(int CodEmpresa, string pParametro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            string result = "";
+            string? result = "";
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "select valor from Fnd_parametros where cod_parametro = @pParametro";
-                    result = connection.QueryFirstOrDefault<string>(query, new { pParametro });
+                    var queryResult = connection.QueryFirstOrDefault<string>(query, new { pParametro });
+                    result = queryResult ?? "";
                 }
             }
             catch (Exception)
             {
-                return null;
+                return "";
             }
             return result;
         }

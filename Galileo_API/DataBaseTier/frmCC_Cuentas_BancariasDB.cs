@@ -6,11 +6,11 @@ using PgxAPI.Models.ERROR;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmCC_Cuentas_BancariasDB
+    public class FrmCcCuentasBancariasDb
     {
         private readonly IConfiguration _config;
 
-        public frmCC_Cuentas_BancariasDB(IConfiguration config)
+        public FrmCcCuentasBancariasDb(IConfiguration config)
         {
             _config = config;
         }
@@ -63,7 +63,7 @@ namespace PgxAPI.DataBaseTier
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ValidacionCC info = new ValidacionCC();
+            ValidacionCC? info = null;
 
             try
             {
@@ -81,7 +81,7 @@ namespace PgxAPI.DataBaseTier
             {
                 _ = ex.Message;
             }
-            return info;
+            return info ?? new ValidacionCC();
         }
 
 

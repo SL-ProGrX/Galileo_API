@@ -1,91 +1,91 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_DerechoXOpcionDB
+    public class FrmUsDerechoXOpcionDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_DerechoXOpcionDB(IConfiguration config)
+        public FrmUsDerechoXOpcionDb(IConfiguration config)
         {
             _config = config;
         }
 
         public List<ModuloResultDto> ModulosObtener()
         {
-            List<ModuloResultDto> resp = new List<ModuloResultDto>();
+            List<ModuloResultDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var strSQL = "SELECT [MODULO],[NOMBRE],[DESCRIPCION],[ACTIVO],[KEYENT]" +
                         " FROM [PGX_Portal].[dbo].[US_MODULOS]" +
-                        "ORDER BY modulo";
+                        " ORDER BY modulo";
 
                     resp = connection.Query<ModuloResultDto>(strSQL).ToList();
                 }
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<ModuloResultDto>();
             }
             return resp;
         }
 
         public List<FormularioResultDto> FormulariosObtener()
         {
-            List<FormularioResultDto> resp = new List<FormularioResultDto>();
+            List<FormularioResultDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var strSQL = "SELECT [FORMULARIO],[MODULO],[DESCRIPCION],[REGISTRO_FECHA],[REGISTRO_USUARIO]" +
-                                  "FROM[PGX_Portal].[dbo].[US_FORMULARIOS]" +
-                                  "ORDER BY modulo,Descripcion";
+                                  " FROM[PGX_Portal].[dbo].[US_FORMULARIOS]" +
+                                  " ORDER BY modulo,Descripcion";
 
                     resp = connection.Query<FormularioResultDto>(strSQL).ToList();
                 }
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<FormularioResultDto>();
             }
             return resp;
         }
 
         public List<OpcionResultDto> OpcionesObtener()
         {
-            List<OpcionResultDto> resp = new List<OpcionResultDto>();
+            List<OpcionResultDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var strSQL = "SELECT [COD_OPCION],[FORMULARIO],[MODULO],[OPCION],[OPCION_DESCRIPCION],[REGISTRO_FECHA],[REGISTRO_USUARIO]" +
-                                 "FROM[PGX_Portal].[dbo].[US_OPCIONES]";
+                                 " FROM[PGX_Portal].[dbo].[US_OPCIONES]";
 
                     resp = connection.Query<OpcionResultDto>(strSQL).ToList();
                 }
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<OpcionResultDto>();
             }
             return resp;
         }
 
         public List<DatosResultDto> DatosObtener(int opcion, char estado)
         {
-            List<DatosResultDto> resp = new List<DatosResultDto>();
+            List<DatosResultDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var strSQL = "Select R.cod_rol,R.descripcion, isnull(P.Estado,'Z') as 'Estado'"
@@ -99,7 +99,7 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<DatosResultDto>();
             }
             return resp;
         }
@@ -109,7 +109,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     if (req.check)
                     {

@@ -1,17 +1,17 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_BE_TiposMovDB
+    public class FrmUsBeTiposMovDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_BE_TiposMovDB(IConfiguration config)
+        public FrmUsBeTiposMovDb(IConfiguration config)
         {
             _config = config;
         }
@@ -21,7 +21,7 @@ namespace PgxAPI.DataBaseTier
             List<MovimientoBE> types = new List<MovimientoBE>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_MovimientoBE_Obtener]";
 
@@ -46,7 +46,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var Query = $"SELECT TOP 1 MOVIMIENTO + 1  FROM US_MOVIMIENTOS_BE WHERE MODULO = {request.Modulo} ORDER BY MOVIMIENTO DESC";
                     var id = connection.Query<int>(Query).FirstOrDefault();
@@ -75,14 +75,14 @@ namespace PgxAPI.DataBaseTier
             }
             return resp;
         }
-
+        
         public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_MovimientoBE_Eliminar]";
                     var values = new
@@ -109,7 +109,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_MovimientoBE_Editar]";
                     var values = new
@@ -131,7 +131,7 @@ namespace PgxAPI.DataBaseTier
             }
             return resp;
         }
-
+        
         public ErrorDto MovimientoBE_Guardar(MovimientoBE request)
         {
             ErrorDto resp = new ErrorDto();

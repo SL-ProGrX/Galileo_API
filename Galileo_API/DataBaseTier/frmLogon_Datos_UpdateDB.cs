@@ -7,19 +7,19 @@ using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmLogon_Datos_UpdateDB
+    public class FrmLogonDatosUpdateDb
     {
 
         private readonly IConfiguration _config;
 
-        public frmLogon_Datos_UpdateDB(IConfiguration config)
+        public FrmLogonDatosUpdateDb(IConfiguration config)
         {
             _config = config;
         }
 
         public LogonUpdateData LogonObtenerDatosUsuario(string usuario)
         {
-            LogonUpdateData result = null!;
+            LogonUpdateData? result = null;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -35,13 +35,6 @@ namespace PgxAPI.DataBaseTier
                     // Execute the query and map the result to LogonUpdateData
                     result = connection.QueryFirstOrDefault<LogonUpdateData>(query, new { Usuario = usuario });
 
-                    //            var procedure = "[spSEG_Logon_Info]";
-                    //            var values = new
-                    //            {
-                    //                Usuario = NombreUsuario,
-                    //                Token = ""
-                    //            };
-                    //            result = connection.Query<LogonUpdateDataDto>(procedure, values, commandType: CommandType.StoredProcedure)!.FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -49,7 +42,7 @@ namespace PgxAPI.DataBaseTier
                 // Optionally log or handle the exception
                 _ = ex.Message;
             }
-            return result;
+            return result ?? new LogonUpdateData();
         }
 
 

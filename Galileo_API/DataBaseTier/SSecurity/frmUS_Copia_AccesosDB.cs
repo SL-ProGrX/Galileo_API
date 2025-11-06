@@ -6,12 +6,15 @@ using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_Copia_AccesosDB
+    public class FrmUsCopiaAccesosDb
     {
         private readonly IConfiguration _config;
-        MSecurityMainDb DBBitacora;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_Copia_AccesosDB(IConfiguration config)
+
+        readonly MSecurityMainDb DBBitacora;
+
+        public FrmUsCopiaAccesosDb(IConfiguration config)
         {
             _config = config;
             DBBitacora = new MSecurityMainDb(_config);
@@ -32,7 +35,7 @@ namespace PgxAPI.DataBaseTier
             List<UsuarioEmpresa> info = new List<UsuarioEmpresa>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var query = $@"SELECT usuario,nombre FROM vPGX_Usuarios_Empresa WHERE cod_Empresa = {codEmpresa}";
 
@@ -54,85 +57,29 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto UsuarioAccesos_Copiar(UsuarioPermisosCopiar copiaPermisosUsuarioDto)
         {
-            ErrorDto resultado = new ErrorDto();
-            Seguridad_PortalDB seguridadPortal = new Seguridad_PortalDB(_config);
+            var resultado = new ErrorDto();
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                resultado.Code = CopiarPermisos(copiaPermisosUsuarioDto, out var errorMsg);
+
+                if (resultado.Code == 0)
                 {
-                    try
+                    resultado.Code = CopiarRolesCore(copiaPermisosUsuarioDto, out var coreErrorMsg);
+
+                    if (resultado.Code == 0)
                     {
-                        var copiaAccesos = new
-                        {
-                            EmpresaId = copiaPermisosUsuarioDto.Cliente,
-                            Us_Origen = copiaPermisosUsuarioDto.UsBase,
-                            Us_Destino = copiaPermisosUsuarioDto.UsDestino,
-                            Usuario = copiaPermisosUsuarioDto.Usuario,
-                            Copy_Rol = copiaPermisosUsuarioDto.RS_Roles ? 1 : 0,
-                            Copy_Estacion = copiaPermisosUsuarioDto.RS_Estaciones ? 1 : 0,
-                            Copy_Horario = copiaPermisosUsuarioDto.RS_Horarios ? 1 : 0,
-                            Inicializa = copiaPermisosUsuarioDto.RS_Inicializa ? 1 : 0
-                        };
-
-                        //resultado.Code = connection.Execute("spSEG_Copia_Permisos", copiaAccesos, commandType: CommandType.StoredProcedure);
-                        resultado.Code = connection.Query<int>("spSEG_Copia_Permisos", copiaAccesos, commandType: CommandType.StoredProcedure).FirstOrDefault();
-
-                        if (resultado.Code == 0)
-                        {
-                            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(copiaPermisosUsuarioDto.Cliente);
-
-                            using var connectionCliente = new SqlConnection(stringConn);
-                            {
-                                try
-                                {
-                                    var copiaAccesosCore = new
-                                    {
-                                        Us_Destino = copiaPermisosUsuarioDto.UsDestino,
-                                        Us_Origen = copiaPermisosUsuarioDto.UsBase,
-                                        Usuairo = copiaPermisosUsuarioDto.Usuario.ToUpper(),
-                                        R_Oficina = 1,
-                                        R_Deducciones = copiaPermisosUsuarioDto.RO_Deducciones ? 1 : 0,
-                                        R_Contabilidad = copiaPermisosUsuarioDto.RO_Contabilidad ? 1 : 0,
-                                        R_Gestion_Crd = copiaPermisosUsuarioDto.RO_Creditos ? 1 : 0,
-                                        R_Resolucion_Crd = copiaPermisosUsuarioDto.RO_Resolucion_Crd ? 1 : 0,
-                                        R_Cobros = copiaPermisosUsuarioDto.RO_Cobros ? 1 : 0,
-                                        R_Cajas = copiaPermisosUsuarioDto.RO_Cajas ? 1 : 0,
-                                        R_Bancos = copiaPermisosUsuarioDto.RO_Bancos ? 1 : 0,
-                                        R_Presupuesto = copiaPermisosUsuarioDto.RO_Presupuesto ? 1 : 0,
-                                        R_Inventario = copiaPermisosUsuarioDto.RO_Inventarios ? 1 : 0,
-                                        R_Compras = copiaPermisosUsuarioDto.RO_Compras ? 1 : 0,
-                                        R_Inicializa = copiaPermisosUsuarioDto.RO_Inicializa ? 1 : 0
-                                    };
-
-                                    //resultado.Code = connectionCliente.Execute("spSys_Users_Copy_Roles", copiaAccesosCore,commandType: CommandType.StoredProcedure);
-                                    resultado.Code = connectionCliente.Query<int>("spSys_Users_Copy_Roles", copiaAccesosCore, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                                    resultado.Description = "Ok";
-
-                                    if (resultado.Code == 0)
-                                    {
-                                        Bitacora(new BitacoraInsertarDto
-                                        {
-                                            EmpresaId = copiaPermisosUsuarioDto.Cliente,
-                                            Usuario = copiaPermisosUsuarioDto.Usuario,
-                                            DetalleMovimiento = "Copia de Permisos Empresa [" + copiaPermisosUsuarioDto.Cliente + "] del Usuario " + copiaPermisosUsuarioDto.UsBase + " -> " + copiaPermisosUsuarioDto.UsDestino,
-                                            Movimiento = "APLICA - WEB",
-                                            Modulo = 13
-                                        });
-                                    }
-                                }
-                                catch (Exception exCore)
-                                {
-                                    throw new Exception("Hubo un problema al sincronizar accesos de usuario en el Core: " + exCore.Message);
-                                }
-                            }
-                        }
+                        RegistrarBitacoraCopia(copiaPermisosUsuarioDto);
+                        resultado.Description = "Ok";
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        resultado.Code = -1;
-                        resultado.Description = ex.Message;
+                        resultado.Description = coreErrorMsg;
                     }
+                }
+                else
+                {
+                    resultado.Description = errorMsg;
                 }
             }
             catch (Exception ex)
@@ -140,11 +87,83 @@ namespace PgxAPI.DataBaseTier
                 resultado.Code = -1;
                 resultado.Description = ex.Message;
             }
-            finally
-            {
-                seguridadPortal = null!;
-            }
+
             return resultado;
+        }
+
+        private int CopiarPermisos(UsuarioPermisosCopiar dto, out string errorMsg)
+        {
+            errorMsg = string.Empty;
+            try
+            {
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var copiaAccesos = new
+                {
+                    EmpresaId = dto.Cliente,
+                    Us_Origen = dto.UsBase,
+                    Us_Destino = dto.UsDestino,
+                    Usuario = dto.Usuario,
+                    Copy_Rol = dto.RS_Roles ? 1 : 0,
+                    Copy_Estacion = dto.RS_Estaciones ? 1 : 0,
+                    Copy_Horario = dto.RS_Horarios ? 1 : 0,
+                    Inicializa = dto.RS_Inicializa ? 1 : 0
+                };
+
+                return connection.Query<int>("spSEG_Copia_Permisos", copiaAccesos, commandType: CommandType.StoredProcedure).FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                errorMsg = ex.Message;
+                return -1;
+            }
+        }
+
+        private int CopiarRolesCore(UsuarioPermisosCopiar dto, out string errorMsg)
+        {
+            errorMsg = string.Empty;
+            try
+            {
+                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(dto.Cliente);
+                using var connectionCliente = new SqlConnection(stringConn);
+
+                var copiaAccesosCore = new
+                {
+                    Us_Destino = dto.UsDestino,
+                    Us_Origen = dto.UsBase,
+                    Usuairo = dto.Usuario.ToUpper(),
+                    R_Oficina = 1,
+                    R_Deducciones = dto.RO_Deducciones ? 1 : 0,
+                    R_Contabilidad = dto.RO_Contabilidad ? 1 : 0,
+                    R_Gestion_Crd = dto.RO_Creditos ? 1 : 0,
+                    R_Resolucion_Crd = dto.RO_Resolucion_Crd ? 1 : 0,
+                    R_Cobros = dto.RO_Cobros ? 1 : 0,
+                    R_Cajas = dto.RO_Cajas ? 1 : 0,
+                    R_Bancos = dto.RO_Bancos ? 1 : 0,
+                    R_Presupuesto = dto.RO_Presupuesto ? 1 : 0,
+                    R_Inventario = dto.RO_Inventarios ? 1 : 0,
+                    R_Compras = dto.RO_Compras ? 1 : 0,
+                    R_Inicializa = dto.RO_Inicializa ? 1 : 0
+                };
+
+                return connectionCliente.Query<int>("spSys_Users_Copy_Roles", copiaAccesosCore, commandType: CommandType.StoredProcedure).FirstOrDefault();
+            }
+            catch (Exception exCore)
+            {
+                errorMsg = "Hubo un problema al sincronizar accesos de usuario en el Core: " + exCore.Message;
+                return -1;
+            }
+        }
+
+        private void RegistrarBitacoraCopia(UsuarioPermisosCopiar dto)
+        {
+            Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = dto.Cliente,
+                Usuario = dto.Usuario,
+                DetalleMovimiento = $"Copia de Permisos Empresa [{dto.Cliente}] del Usuario {dto.UsBase} -> {dto.UsDestino}",
+                Movimiento = "APLICA - WEB",
+                Modulo = 13
+            });
         }
 
         /// <summary>
@@ -158,7 +177,7 @@ namespace PgxAPI.DataBaseTier
             UsuarioEmpresa result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Usuario_Empresa_Consultar]";
                     var values = new

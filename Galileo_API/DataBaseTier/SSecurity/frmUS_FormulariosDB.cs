@@ -1,17 +1,18 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_FormulariosDB
+    public class FrmUsFormulariosDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_FormulariosDB(IConfiguration config)
+
+        public FrmUsFormulariosDb(IConfiguration config)
         {
             _config = config;
         }
@@ -21,14 +22,14 @@ namespace PgxAPI.DataBaseTier
             List<FormularioModel> result = new List<FormularioModel>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Formularios_PorModulo_Obtener]";
                     var values = new
                     {
                         ModuloId = moduloId,
                     };
-                    result = connection.Query<FormularioModel>(procedure, values, commandType: CommandType.StoredProcedure)! as List<FormularioModel>;
+                    result = connection.Query<FormularioModel>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -43,7 +44,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Formulario_Insertar]";
                     var values = new
@@ -71,7 +72,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Formulario_Eliminar]";
                     var values = new
@@ -97,7 +98,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Formulario_Editar]";
                     var values = new
@@ -125,7 +126,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;
 
-            using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+            using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
             {
                 //Valido si el formulario ya existe
                 var query = "SELECT COUNT(*) FROM [US_FORMULARIOS] WHERE Modulo = @ModuloId AND UPPER(Formulario) = @Formulario";

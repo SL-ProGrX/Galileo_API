@@ -1,17 +1,17 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmPGX_ClientesClasificaDB
+    public class FrmPgxClientesClasificaDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmPGX_ClientesClasificaDB(IConfiguration config)
+        public FrmPgxClientesClasificaDb(IConfiguration config)
         {
             _config = config;
         }
@@ -21,7 +21,7 @@ namespace PgxAPI.DataBaseTier
             List<ClienteClasifica> data = new List<ClienteClasifica>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Clientes_Clasifica_Obtener]";
 
@@ -41,7 +41,7 @@ namespace PgxAPI.DataBaseTier
             resp.Code = 0;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Clientes_Clasifica_Insertar]";
                     var values = new
@@ -71,7 +71,7 @@ namespace PgxAPI.DataBaseTier
             resp.Code = 0;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Clientes_Clasifica_Eliminar]";
                     var values = new
@@ -91,14 +91,14 @@ namespace PgxAPI.DataBaseTier
             }
             return resp;
         }
-
+        
         private ErrorDto Cliente_Clasifica_Actualizar(ClienteClasifica request)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Clientes_Clasifica_Editar]";
                     var values = new
@@ -127,7 +127,7 @@ namespace PgxAPI.DataBaseTier
             List<ClienteSelecciona> data = new List<ClienteSelecciona>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Admin_Client_Access_List]";
                     var values = new
@@ -155,7 +155,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     //valido si existe codigo
                     var query = "SELECT COUNT(*) FROM PGX_CLIENTES_CLASIFICACION WHERE Cod_Clasificacion = @Cod_Clasificacion";
@@ -170,10 +170,10 @@ namespace PgxAPI.DataBaseTier
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                resp.Code = -1;
+                resp.Description = ex.Message;
             }
 
             return resp;

@@ -9,6 +9,7 @@ namespace PgxAPI.DataBaseTier
     public class VendedorDB
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
         public VendedorDB(IConfiguration config)
         {
@@ -20,7 +21,7 @@ namespace PgxAPI.DataBaseTier
             List<Vendedor> servs = new List<Vendedor>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Vendedor_Obtener]";
 
@@ -44,7 +45,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Vendedor_Insertar]";
                     var values = new
@@ -77,7 +78,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Vendedor_Eliminar]";
                     var values = new
@@ -102,7 +103,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Vendedor_Editar]";
                     var values = new
