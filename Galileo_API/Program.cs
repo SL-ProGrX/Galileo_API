@@ -25,7 +25,7 @@ builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v2", new() { Title = "Galileo API", Version = "v2", Description = "API para gestión de Galileo" });
+    c.SwaggerDoc("v1", new() { Title = "Galileo API", Version = "v1", Description = "API para gestión de Galileo" });
 
     var securityScheme = new OpenApiSecurityScheme
     {
@@ -179,6 +179,23 @@ app.MapPost("/login", (LoginRequest req, IConfiguration cfg) =>
     return Results.Ok(new { token = tokenString });
 })
 .WithName("Login");
+
+app.MapGet("/whoami", (ClaimsPrincipal user) =>
+{
+    var name = user.Identity?.Name;
+    var sub  = user.FindFirstValue(ClaimTypes.NameIdentifier) 
+               ?? user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+
+    var claims = user.Claims.Select(c => new { c.Type, c.Value });
+    return Results.Ok(new
+    {
+        message = "Token válido",
+        name,
+        sub,
+        claims
+    });
+})
+.RequireAuthorization();
 
 app.MapControllers();
 
