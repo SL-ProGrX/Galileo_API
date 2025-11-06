@@ -8,6 +8,8 @@ namespace PgxAPI.DataBaseTier
 {
     public class CambiarContrasenaDB
     {
+        private const string connectionStringName = "DefaultConnString";
+
         private readonly IConfiguration _config;
 
         public CambiarContrasenaDB(IConfiguration config)
@@ -15,12 +17,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ParametrosObtenerDto ParametrosObtener()
+        public ParametrosObtenerDto? ParametrosObtener()
         {
-            ParametrosObtenerDto resp = new ParametrosObtenerDto();
+            ParametrosObtenerDto? resp = null;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var strSQL = @"
@@ -45,10 +47,10 @@ namespace PgxAPI.DataBaseTier
 
         public List<string> KeyHistoryObtener(string Usuario, int topQuantity)
         {
-            List<string> resp = new List<string>();
+            List<string> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var strSQL = @"
                                 SELECT TOP (@TopQuantity) [KEYSEC]
@@ -57,19 +59,12 @@ namespace PgxAPI.DataBaseTier
                                 WHERE U.USUARIO = @Usuario";
 
                     resp = connection.Query<string>(strSQL, new { TopQuantity = topQuantity, Usuario }).ToList();
-
-                    //var strSQL = "SELECT TOP ("+ topQuantity + ") [KEYSEC]"+
-                    //             "FROM US_KEYHISTORY KH"+
-                    //             "INNER JOIN US_usuarios U ON KH.IDKEYSEC = U.USERID"+
-                    //             "WHERE U.USUARIO = @Usuario";
-
-                    //resp = connection.Query<string>(strSQL, new { Usuario }).ToList();
                 }
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
-                resp = null;
+                resp = new List<string>();
             }
             return resp;
         }
@@ -124,7 +119,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     resp.Code = connection.QueryFirst<int>("spSEG_Password", cambioClave, commandType: CommandType.StoredProcedure);

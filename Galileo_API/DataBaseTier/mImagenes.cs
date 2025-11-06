@@ -1,15 +1,13 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models.ERROR;
 using System.Data;
-using System.Data.SqlTypes;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mImagenes
+    public class MImagenes
     {
         private readonly IConfiguration _config;
-        public mImagenes(IConfiguration config)
+        public MImagenes(IConfiguration config)
         {
             _config = config;
         }
@@ -78,12 +76,9 @@ namespace PgxAPI.DataBaseTier
                 connection.Open();
 
                 using var reader = command.ExecuteReader();
-                if (reader.Read())
+                if (reader.Read() && !reader.IsDBNull(reader.GetOrdinal(campoImagen)))
                 {
-                    if (!reader.IsDBNull(reader.GetOrdinal(campoImagen)))
-                    {
-                        return (byte[])reader[campoImagen];
-                    }
+                    return (byte[])reader[campoImagen];
                 }
             }
             catch (Exception ex)

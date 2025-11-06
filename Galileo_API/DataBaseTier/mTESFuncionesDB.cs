@@ -5,10 +5,10 @@ using PgxAPI.Models.ERROR;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mTESFuncionesDB
+    public class MTesFuncionesDb
     {
         private readonly IConfiguration _config;
-        public mTESFuncionesDB(IConfiguration config)
+        public MTesFuncionesDb(IConfiguration config)
         {
             _config = config;
         }
@@ -164,7 +164,7 @@ namespace PgxAPI.DataBaseTier
                     query = $@"select * from Tes_Transacciones where nsolicitud = {resp1} ";
                     var resp2 = connection.Query<TesTransaccionesDto>(query).FirstOrDefault();
 
-                    if (resp2.CODIGO.Trim() == tesoreria.vCodigo.Trim())
+                    if (resp2 != null && resp2.CODIGO.Trim() == tesoreria.vCodigo.Trim())
                     {
                         lngSol = resp1;
                     }
@@ -212,14 +212,13 @@ namespace PgxAPI.DataBaseTier
                     connection.Execute(query);
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
-                throw;
+                _ = ex.Message;
             }
         }
 
-        public string fxTipoDocumento(string tipo)
+        public static string fxTipoDocumento(string tipo)
         {
             switch (tipo)
             {
@@ -299,7 +298,7 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                return null;
+                return string.Empty;
             }
             return strToken;
         }

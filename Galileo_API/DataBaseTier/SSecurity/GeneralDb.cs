@@ -19,57 +19,41 @@ namespace PgxAPI.DataBaseTier
         {
             List<PadronConsultarResponseDto> resp = null!;
 
-            Seguridad_PortalDB seguridadPortal = new Seguridad_PortalDB(_config);
 
-            try
+            using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
             {
+                var procedure = "[spSYS_Consulta_Padron]";
 
-                using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
+                var sincroUsuarioCore = new
                 {
-                    var procedure = "[spSYS_Consulta_Padron]";
+                    Identificacion = padronConsultarDto.Identificacion,
+                    Pais = padronConsultarDto.Pais,
+                    TInfo = padronConsultarDto.TInfo
+                };
 
-                    var sincroUsuarioCore = new
-                    {
-                        Identificacion = padronConsultarDto.Identificacion,
-                        Pais = padronConsultarDto.Pais,
-                        TInfo = padronConsultarDto.TInfo
-                    };
-
-                    switch (padronConsultarDto.TInfo)
-                    {
-                        case "General":
-                            //List<PadronGeneralConsultarResponseDto> respGen = null!;
-                            List<PadronConsultarResponseDto> respGen = null!;
-                            //respGen = connectionCore.Query<PadronGeneralConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
-                            respGen = connection.Query<PadronConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
-                            //resp = respGen.Cast<PadronConsultarResponseDto>().ToList();
-                            resp = respGen;
-                            break;
-                        case "Telefonos":
-                            List<PadronTelefonosConsultarResponseDto> respTel = null!;
-                            respTel = connection.Query<PadronTelefonosConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
-                            resp = respTel.Cast<PadronConsultarResponseDto>().ToList();
-                            break;
-                        case "Direccion":
-                            List<PadronDireccionesConsultarResponseDto> respDir = null!;
-                            respDir = connection.Query<PadronDireccionesConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
-                            resp = respDir.Cast<PadronConsultarResponseDto>().ToList();
-                            break;
-                        case "Empresas":
-                            List<PadronEmpresasConsultarResponseDto> respEmp = null!;
-                            respEmp = connection.Query<PadronEmpresasConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
-                            resp = respEmp.Cast<PadronConsultarResponseDto>().ToList();
-                            break;
-                    }
+                switch (padronConsultarDto.TInfo)
+                {
+                    case "General":
+                        List<PadronConsultarResponseDto> respGen = null!;
+                        respGen = connection.Query<PadronConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
+                        resp = respGen;
+                        break;
+                    case "Telefonos":
+                        List<PadronTelefonosConsultarResponseDto> respTel = null!;
+                        respTel = connection.Query<PadronTelefonosConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
+                        resp = respTel.Cast<PadronConsultarResponseDto>().ToList();
+                        break;
+                    case "Direccion":
+                        List<PadronDireccionesConsultarResponseDto> respDir = null!;
+                        respDir = connection.Query<PadronDireccionesConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
+                        resp = respDir.Cast<PadronConsultarResponseDto>().ToList();
+                        break;
+                    case "Empresas":
+                        List<PadronEmpresasConsultarResponseDto> respEmp = null!;
+                        respEmp = connection.Query<PadronEmpresasConsultarResponseDto>(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure).ToList();
+                        resp = respEmp.Cast<PadronConsultarResponseDto>().ToList();
+                        break;
                 }
-            }
-            catch (Exception)
-            {
-                throw;
-            }
-            finally
-            {
-                seguridadPortal = null!;
             }
             return resp;
         }
@@ -80,7 +64,7 @@ namespace PgxAPI.DataBaseTier
             ErrorGeneralDto resp = new ErrorGeneralDto();
             int res = -1;
             PgxClienteDto pgxClienteDto;
-            Seguridad_PortalDB seguridadPortal = new Seguridad_PortalDB(_config);
+            SeguridadPortalDb seguridadPortal = new SeguridadPortalDb(_config);
 
             pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(validaCuentaRequestDto.CodEmpresa);
             string nombreServidorCore = pgxClienteDto.PGX_CORE_SERVER;
@@ -97,12 +81,6 @@ namespace PgxAPI.DataBaseTier
 
                 using (var connectionCore = new SqlConnection(connectionString))
                 {
-
-                    /*strSQL = "select isnull(count(*),0) as Existe from CntX_cuentas where cod_cuenta = '" +
-                 vCuenta.Trim() + "' and acepta_movimientos = 1 and cod_contabilidad = " + GLOBALES.gEnlace;*/
-
-                    //var query = "SELECT * FROM US_USUARIOS WHERE USUARIO = @user";
-
                     var query = "select isnull(count(*),0) as Existe from CntX_cuentas where cod_cuenta = @CodCuenta and acepta_movimientos = 1 and cod_contabilidad = @CodContabilidad";
                     var param = new
                     {
@@ -120,7 +98,7 @@ namespace PgxAPI.DataBaseTier
                         {
                             Cuenta = validaCuentaRequestDto.Cuenta
                         };
-                        res = connectionCore.Execute(procedure, parameters, commandType: CommandType.StoredProcedure);
+                        connectionCore.Execute(procedure, parameters, commandType: CommandType.StoredProcedure);
                     }
 
                     res = 1;
@@ -132,7 +110,6 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception ex)
             {
-                //throw;
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }

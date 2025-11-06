@@ -10,6 +10,7 @@ namespace PgxAPI.DataBaseTier
     public class MenuDB
     {
         private readonly IConfiguration _config;
+        private const string _connStrg = "DefaultConnString";
 
         public MenuDB(IConfiguration config)
         {
@@ -18,111 +19,114 @@ namespace PgxAPI.DataBaseTier
 
         public List<PrimeTreeDtoV2> Obtener_Menu(string Usuario, int Cliente)
         {
-            //RAIZ
-            List<PrimeTreeDtoV2> primeTreeDtos = new List<PrimeTreeDtoV2>();
-            primeTreeDtos = MenuPrincipal();
-            //MENU PABRE
-            List<MenuDto> ModulosPadre = [];
-            //MENU HIJOS 
-            List<MenuDto> ModulosHijos = [];
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
-                {
-                    var procedure = "[Obtener_MenuModulHijos_Por_Usuario]";
-                    var values = new
-                    {
-                        Usuario = Usuario,
-                        Cliente = Cliente
-                    };
-                    ModulosHijos = connection.Query<MenuDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
+            List<PrimeTreeDtoV2> primeTreeDtos = MenuPrincipal();
+            List<MenuDto> modulosPadre;
+            List<MenuDto> modulosHijos;
+            List<MenuDto> modulosFavoritos;
 
-            ModulosPadre = ModulosHijos
-                        .Where(e => e.TIPO == "M")
-                        .OrderBy(e => e.PRIORIDAD) // Para orden ascendente
-                        .ToList();
+            modulosHijos = ObtenerModulosHijos(Usuario, Cliente);
+            modulosPadre = modulosHijos
+                .Where(e => e.TIPO == "M")
+                .OrderBy(e => e.PRIORIDAD)
+                .ToList();
+            modulosFavoritos = ObtenerModulosFavoritos(Usuario, Cliente);
 
-            List<MenuDto> ModulosFavoritos = [];
-            //Menu Favoritos
-            try
+            foreach (PrimeTreeDtoV2 opcion in primeTreeDtos)
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                if (opcion.Key == "0")
                 {
-                    var procedure = "[spSEG_MenuFavoritos]";
-                    var values = new
+                    if (opcion.Children != null)
                     {
-                        Usuario = Usuario,
-                        Cliente = Cliente,
-                    };
-                    ModulosFavoritos = connection.Query<MenuDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                        opcion.Children.AddRange(CrearFavoritos(modulosFavoritos));
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            try
-            {
-                // Primero, mapea todas las opciones principales.
-                foreach (PrimeTreeDtoV2 opcion in primeTreeDtos)
+                else
                 {
-                    switch (opcion.Key)
+                    if (opcion.Children != null)
                     {
-                        case "0":
-                            foreach (MenuDto itemLvl2 in ModulosFavoritos)
-                            {
-                                opcion.Children.Add(new PrimeTreeDtoV2
-                                {
-                                    Expanded = false,
-                                    Key = itemLvl2.MODULO.ToString() + '-' + itemLvl2.MENU_NODO.ToString(),
-                                    Label = itemLvl2.NODO_DESCRIPCION,
-                                    Selectable = true,
-                                    Icon = itemLvl2.ICONO_WEB,
-                                    Children = [],
-                                    Data = itemLvl2,
-                                    badge = 0,
-                                    leaf = IsLeaf(itemLvl2.TIPO)
-                                });
-                            }
-                            break;
-                        default:
-                            foreach (MenuDto itemLvl2 in ModulosPadre)
-                            {
-                                foreach (var item in opcion.modules)
-                                {
-                                    if (item == itemLvl2.MODULO)
-                                    {
-                                        opcion.Children.Add(new PrimeTreeDtoV2
-                                        {
-                                            Expanded = false,
-                                            Key = itemLvl2.MODULO.ToString() + '-' + itemLvl2.MENU_NODO.ToString(),
-                                            Label = itemLvl2.NODO_DESCRIPCION,
-                                            Selectable = true,
-                                            Icon = itemLvl2.ICONO_WEB,
-                                            Children = BuscaHijos(itemLvl2, ModulosHijos),
-                                            Data = itemLvl2.TIPO,
-                                            badge = 0,
-                                            leaf = IsLeaf(itemLvl2.TIPO)
-                                        });
-                                    }
-                                }
-                            }
-                            break;
+                        opcion.Children.AddRange(CrearPadres(opcion.modules != null ? opcion.modules.ToList() : new List<int>(), modulosPadre, modulosHijos));
                     }
                 }
             }
-            catch (Exception)
-            {
-                throw;
-            }
 
             return primeTreeDtos;
+        }
+
+        private List<MenuDto> ObtenerModulosHijos(string usuario, int cliente)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString(_connStrg)))
+                {
+                    var procedure = "[Obtener_MenuModulHijos_Por_Usuario]";
+                    var values = new { Usuario = usuario, Cliente = cliente };
+                    return connection.Query<MenuDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+                return [];
+            }
+        }
+
+        private List<MenuDto> ObtenerModulosFavoritos(string usuario, int cliente)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(_config.GetConnectionString(_connStrg)))
+                {
+                    var procedure = "[spSEG_MenuFavoritos]";
+                    var values = new { Usuario = usuario, Cliente = cliente };
+                    return connection.Query<MenuDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                _ = ex.Message;
+                return [];
+            }
+        }
+
+        private List<PrimeTreeDtoV2> CrearFavoritos(List<MenuDto> modulosFavoritos)
+        {
+            var favoritos = new List<PrimeTreeDtoV2>();
+            foreach (MenuDto item in modulosFavoritos)
+            {
+                favoritos.Add(new PrimeTreeDtoV2
+                {
+                    Expanded = false,
+                    Key = item.MODULO.ToString() + '-' + item.MENU_NODO.ToString(),
+                    Label = item.NODO_DESCRIPCION,
+                    Selectable = true,
+                    Icon = item.ICONO_WEB,
+                    Children = [],
+                    Data = item,
+                    badge = 0,
+                    leaf = IsLeaf(item.TIPO)
+                });
+            }
+            return favoritos;
+        }
+
+        private List<PrimeTreeDtoV2> CrearPadres(List<int> modules, List<MenuDto> modulosPadre, List<MenuDto> modulosHijos)
+        {
+            var padres = modulosPadre
+                .Where(padre => modules.Contains(padre.MODULO))
+                .Select(padre => new PrimeTreeDtoV2
+                {
+                    Expanded = false,
+                    Key = padre.MODULO.ToString() + '-' + padre.MENU_NODO.ToString(),
+                    Label = padre.NODO_DESCRIPCION,
+                    Selectable = true,
+                    Icon = padre.ICONO_WEB,
+                    Children = BuscaHijos(padre, modulosHijos),
+                    Data = padre.TIPO,
+                    badge = 0,
+                    leaf = IsLeaf(padre.TIPO)
+                })
+                .ToList();
+            return padres;
         }
 
         private List<PrimeTreeDtoV2> MenuPrincipal()
@@ -152,7 +156,7 @@ namespace PgxAPI.DataBaseTier
             return menu;
         }
 
-        private bool IsLeaf(string tipo)
+        private static bool IsLeaf(string tipo)
         {
             if (tipo == "A")
             {
@@ -202,7 +206,7 @@ namespace PgxAPI.DataBaseTier
             List<MenuDto> resp = [];
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(_connStrg)))
                 {
                     var procedure = "[spSEG_MenuFavoritos]";
                     var values = new
@@ -226,7 +230,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 opcion = (opcion == "mas") ? "+" : "-";
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(_connStrg)))
                 {
                     var procedure = "[spSEG_MenuFavoritosAdd]";
                     var values = new
@@ -251,7 +255,7 @@ namespace PgxAPI.DataBaseTier
             var response = new ErrorDto<UsMenuManual>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(_connStrg)))
                 {
                     var query = $"SELECT MENU_NODO AS 'key', [FRAME_WEB] AS FRAME FROM [dbo].[US_MANUALES]  WHERE MENU_NODO = {key}";
                     response.Result = connection.Query<UsMenuManual>(query).FirstOrDefault();
@@ -271,7 +275,7 @@ namespace PgxAPI.DataBaseTier
             var response = new ErrorDto<string>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(_connStrg)))
                 {
                     var query = $@"select um.FRAME_WEB   from US_MENUS m left join US_MANUALES um 
                                         ON m.MENU_NODO = um.MENU_NODO 
@@ -282,7 +286,7 @@ namespace PgxAPI.DataBaseTier
                         );
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 response.Code = -1;
                 response.Description = "No se encontró URL de Manual en este momento";

@@ -5,11 +5,14 @@ using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmCntX_ConsultaCuentasDB
+    public class FrmCntXConsultaCuentasDb
     {
         private readonly IConfiguration _config;
+        private const string _icon = "pi pi-fw pi-folder";
+        private const string _expandedIcon = "pi pi-fw pi-folder-open";
+        private const string _collapsedIcon = "pi pi-fw pi-folder";
 
-        public frmCntX_ConsultaCuentasDB(IConfiguration config)
+        public FrmCntXConsultaCuentasDb(IConfiguration config)
         {
             _config = config;
         }
@@ -48,12 +51,6 @@ namespace PgxAPI.DataBaseTier
                         _ = ex.Message;
                     }
                     return info;
-
-
-                    //Query = $@"select cod_cuenta,cod_cuenta_Mask,descripcion,acepta_movimientos from CntX_Cuentas 
-                    //                 where cuenta_madre = '{cuenta.cuentaMadre}'
-                    //                  and cod_contabilidad = '{cuenta.Contabilidad}' order by cod_cuenta";
-
             }
 
             try
@@ -69,13 +66,12 @@ namespace PgxAPI.DataBaseTier
             }
             return info;
 
-            //return resp;
         }
 
         public List<CtnxCuentasArbolModel> ObtenerCuentasArbol(int CodEmpresa, CuentaVarModel cuenta)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CtnxCuentasDto> info = new List<CtnxCuentasDto>();
+            List<CtnxCuentasDto> info ;
             List<CtnxCuentasArbolModel> resp = new List<CtnxCuentasArbolModel>();
             try
             {
@@ -96,13 +92,12 @@ namespace PgxAPI.DataBaseTier
                             Key = item.cod_cuenta,
                             Label = item.cod_cuenta_Mask + "-" + item.descripcion,
                             Data = item.cod_cuenta_Mask,
-                            Icon = "pi pi-fw pi-folder",
-                            ExpandedIcon = "pi pi-fw pi-folder-open",
-                            CollapsedIcon = "pi pi-fw pi-folder",
+                            Icon = _icon,
+                            ExpandedIcon = _expandedIcon,
+                            CollapsedIcon = _collapsedIcon,
                             Children = AddCuentasArbol(info, item),
-                            leaf = (AddCuentasArbol(info, item).Count == 0) ? true : false
+                            leaf = AddCuentasArbol(info, item).Count == 0
                         });
-                        // A;
                     }
                 }
             }
@@ -164,11 +159,11 @@ namespace PgxAPI.DataBaseTier
                         Key = item.cod_cuenta,
                         Label = item.cod_cuenta_Mask + "-" + item.descripcion,
                         Data = item.cod_cuenta_Mask,
-                        Icon = "pi pi-fw pi-folder",
-                        ExpandedIcon = "pi pi-fw pi-folder-open",
-                        CollapsedIcon = "pi pi-fw pi-folder",
+                        Icon = _icon,
+                        ExpandedIcon = _expandedIcon,
+                        CollapsedIcon = _collapsedIcon,
                         Children = AddCuentasArbol(cuentas, item),
-                        leaf = (AddCuentasArbol(cuentas, item).Count == 0) ? true : false
+                        leaf = AddCuentasArbol(cuentas, item).Count == 0
                     });
                 }
             }

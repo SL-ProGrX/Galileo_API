@@ -11,20 +11,25 @@ namespace PgxAPI.DataBaseTier
 
         private readonly IConfiguration _config;
         private readonly EnvioCorreoDB _envioCorreoDB;
-        public string sendEmail = "";
-        public string Notificaciones = "";
+        private readonly string sendEmail = "";
+        private readonly string Notificaciones = "";
+        private const string connectionStringName = "DefaultConnString";
 
         public LogonDB(IConfiguration config)
         {
             _config = config;
             _envioCorreoDB = new EnvioCorreoDB(_config);
-            sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value.ToString();
-            Notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value.ToString();
+            var enviaEmailValue = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value;
+            sendEmail = enviaEmailValue != null
+                ? enviaEmailValue.ToString()
+                : string.Empty;
+            var notificacionesValue = _config.GetSection("AppSettings").GetSection("Notificaciones").Value;
+            Notificaciones = notificacionesValue != null ? notificacionesValue.ToString() : string.Empty;
         }
 
-        public IntentosObtenerDto IntentosObtener()
+        public IntentosObtenerDto? IntentosObtener()
         {
-            IntentosObtenerDto resp = new IntentosObtenerDto();
+            IntentosObtenerDto? resp;
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -48,7 +53,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     int existe = connection.Query<int>("spSEG_Logon", req, commandType: CommandType.StoredProcedure).FirstOrDefault();
 
@@ -81,7 +86,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var values = new
                     {
@@ -113,7 +118,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                     Result = connection.Query<int>(sql, values).FirstOrDefault();
             }
             catch (Exception ex)
@@ -124,7 +129,6 @@ namespace PgxAPI.DataBaseTier
             return Result;
 
         }
-
 
         public int ValidarToken(string usuario, string token)
         {
@@ -139,7 +143,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                     Result = connection.Query<int>(sql, values).FirstOrDefault();
             }
             catch (Exception ex)
@@ -150,7 +154,6 @@ namespace PgxAPI.DataBaseTier
             return Result;
 
         }
-
 
         public int EnviarToken(string usuario, string token, string tokenKey)
         {
@@ -165,7 +168,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                     Result = connection.Query<int>("spSEG_Token_Registra", values, commandType: CommandType.StoredProcedure).FirstOrDefault();
             }
 
@@ -184,7 +187,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[sp2FA_Usuario_Cfg]";
                     var values = new
@@ -209,7 +212,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var codigo2FA = Generate2FACode();
@@ -220,7 +223,7 @@ namespace PgxAPI.DataBaseTier
                         Codigo = codigo2FA
                     };
 
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    resp.Code = (await connection.QueryAsync<int>(procedure, values, commandType: CommandType.StoredProcedure)).FirstOrDefault();
                     resp.Description = "Ok";
 
                     TfaDatosCorreo datos = new TfaDatosCorreo();
@@ -244,7 +247,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var procedure = "[sp2FA_Usuario_Codigo_Valida]";
@@ -267,7 +270,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public string Generate2FACode()
+        public static string Generate2FACode()
         {
             Random random = new Random();
             int code = random.Next(100000, 1000000); // Generates a 6-digit number

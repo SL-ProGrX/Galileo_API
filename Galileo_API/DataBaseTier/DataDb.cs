@@ -11,7 +11,13 @@ namespace PgxAPI.DataBaseTier
 {
     public class DataDB
     {
-        private readonly IConfiguration _config;
+            private readonly IConfiguration _config;
+        const string AndOperator = " AND ";
+        const string Offset = " OFFSET ";
+        const string FetchNext = " FETCH NEXT ";
+        const string RowsOnly = " ROWS ONLY ";
+        const string Rows = " ROWS ";
+
 
         public DataDB(IConfiguration config)
         {
@@ -34,9 +40,8 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 var query = "";
-                string paginaActual = " ", paginacionActual = " ", valWhere = " ";
-                int autoGestion = jFiltros.autoGestion == true ? 1 : 0;
-                int ferias = jFiltros.ventas == true ? 1 : 0;
+                string paginaActual = " ", paginacionActual = " ",
+                valWhere;
                 using var connection = new SqlConnection(clienteConnString);
                 {
 
@@ -68,8 +73,8 @@ namespace PgxAPI.DataBaseTier
 
                     if (jFiltros.pagina != null)
                     {
-                        paginaActual = " OFFSET " + jFiltros.pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + jFiltros.paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + jFiltros.pagina + Rows;
+                        paginacionActual = FetchNext + jFiltros.paginacion + RowsOnly;
                     }
 
                     query = $@"SELECT COD_PROVEEDOR, DESCRIPCION, CEDJUR FROM CXP_PROVEEDORES
@@ -126,8 +131,8 @@ namespace PgxAPI.DataBaseTier
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
                     query = $@"select COD_CARGO, DESCRIPCION, 0 as MONTO from CXP_CARGOS where ACTIVO = 1
@@ -180,8 +185,8 @@ namespace PgxAPI.DataBaseTier
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
                     query = $@"select  cod_bodega,descripcion from pv_bodegas where permite_salidas = 1
@@ -222,90 +227,20 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 var query = "";
-                string paginaActual = " ", paginacionActual = " ", whereEstado = " ";
+                string paginaActual = " ", paginacionActual = " ";
                 string joinProdUen = "";
+                string whereEstado = BuildArticulosWhereClause(filtro, ref joinProdUen);
 
                 using var connection = new SqlConnection(clienteConnString);
                 {
-
-                    if (filtro.catalogo != 0)
-                    {
-                        whereEstado = " WHERE P.ESTADO = 'A' ";
-                    }
-
                     query = $@"SELECT COUNT(P.COD_PRODUCTO) 
                        FROM pv_productos P {whereEstado}";
                     response.Result.Total = connection.Query<int>(query).FirstOrDefault();
 
-                    if (!string.IsNullOrEmpty(filtro.cod_unidad) && filtro.cod_unidad != "T")
-                    {
-                        joinProdUen = " LEFT JOIN CPR_PRODUCTOS_UENS PU ON PU.COD_PRODUCTO = P.COD_PRODUCTO ";
-
-                        if (string.IsNullOrWhiteSpace(whereEstado))
-                        {
-                            whereEstado = " WHERE ";
-                        }
-                        else
-                        {
-                            whereEstado += " AND ";
-                        }
-
-                        whereEstado += $"PU.COD_UNIDAD = '{filtro.cod_unidad}'";
-                    }
-
-                    if (!string.IsNullOrEmpty(filtro.filtro))
-                    {
-                        if (string.IsNullOrWhiteSpace(whereEstado))
-                        {
-                            whereEstado = " WHERE ";
-                        }
-                        else
-                        {
-                            whereEstado += " AND ";
-                        }
-
-                        whereEstado +=
-                            "( P.DESCRIPCION LIKE '%" + filtro.filtro + "%' " +
-                            "OR CONCAT( FORMAT(Cs.COD_PRODCLAS, ' 0') , " +
-                            "FORMAT(ISNULL(Cs.NIVEL,' 00'), ' 0'), " +
-                            "FORMAT(ISNULL(Cs.COD_LINEA_SUB_MADRE,1) , ' 0'), " +
-                            "FORMAT(ISNULL(Cs.COD_LINEA_SUB,1) , ' ') " +
-                            ",P.COD_PRODUCTO ) LIKE '%" + filtro.filtro + "%' " +
-                            "OR P.COD_BARRAS LIKE '%" + filtro.filtro + "%' ) ";
-                    }
-
                     if (filtro.pagina != null)
                     {
-                        paginaActual = " OFFSET " + filtro.pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + filtro.paginacion + " ROWS ONLY ";
-                    }
-
-                    if (filtro.familia > 0)
-                    {
-                        if (string.IsNullOrWhiteSpace(whereEstado))
-                        {
-                            whereEstado = " WHERE ";
-                        }
-                        else
-                        {
-                            whereEstado += " AND ";
-                        }
-
-                        whereEstado += $"P.COD_PRODCLAS = '{filtro.familia}'";
-                    }
-
-                    if (!string.IsNullOrEmpty(filtro.sublinea))
-                    {
-                        if (string.IsNullOrWhiteSpace(whereEstado))
-                        {
-                            whereEstado = " WHERE ";
-                        }
-                        else
-                        {
-                            whereEstado += " AND ";
-                        }
-
-                        whereEstado += $"P.COD_LINEA_SUB = '{filtro.sublinea}'";
+                        paginaActual = Offset + filtro.pagina + Rows;
+                        paginacionActual = FetchNext + filtro.paginacion + RowsOnly;
                     }
 
                     query = $@"
@@ -323,11 +258,11 @@ namespace PgxAPI.DataBaseTier
                 FROM pv_productos P
                 LEFT JOIN PV_PROD_CLASIFICA_SUB Cs ON Cs.COD_PRODCLAS = P.COD_PRODCLAS 
                     AND Cs.COD_LINEA_SUB = P.COD_LINEA_SUB
-                " + joinProdUen + @"
-                " + whereEstado + @"
+                {joinProdUen}
+                {whereEstado}
                 ORDER BY P.COD_PRODUCTO
-                " + paginaActual + @"
-                " + paginacionActual;
+                {paginaActual}
+                {paginacionActual}";
 
                     response.Result.Articulos = connection.Query<ArticuloData>(query).ToList();
                 }
@@ -337,67 +272,59 @@ namespace PgxAPI.DataBaseTier
                 response.Code = -1;
                 response.Description = ex.Message;
                 response.Result.Total = 0;
-                response.Result.Articulos = null;
+                response.Result.Articulos = new List<ArticuloData>();
             }
 
             return response;
         }
 
-        /// <summary>
-        /// Método para obtener las cuentas contables
-        /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="pagina"></param>
-        /// <param name="paginacion"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
-        public CargoDataLista Cuentas_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        private static string BuildArticulosWhereClause(ArticuloDataFiltros filtro, ref string joinProdUen)
         {
+            
+            var clauses = new List<string>();
 
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-
-            CargoDataLista info = new CargoDataLista();
-            info.Total = 0;
-            try
+            if (filtro.catalogo != 0)
             {
-                var query = "";
-                string paginaActual = " ", paginacionActual = " ";
-                using var connection = new SqlConnection(clienteConnString);
-                {
-
-                    //Busco Total
-                    query = "select COUNT(COD_CARGO) from CXP_CARGOS where ACTIVO = 1";
-                    info.Total = connection.Query<int>(query).FirstOrDefault();
-
-                    if (filtro != null)
-                    {
-                        filtro = " AND COD_CARGO LIKE '%" + filtro + "%' OR DESCRIPCION LIKE '%" + filtro + "%' ";
-                    }
-
-                    if (pagina != null)
-                    {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
-                    }
-
-                    query = $@"select COD_CARGO, DESCRIPCION, 0 as MONTO from CXP_CARGOS where ACTIVO = 1
-                                         {filtro} 
-                                        ORDER BY COD_CARGO
-                                        {paginaActual}
-                                        {paginacionActual} ";
-
-
-                    info.Cargos = connection.Query<CargoData>(query).ToList();
-
-                }
+                clauses.Add("P.ESTADO = 'A'");
             }
-            catch (Exception)
+
+            if (!string.IsNullOrEmpty(filtro.cod_unidad) && filtro.cod_unidad != "T")
             {
-                info.Total = 0;
-                info.Cargos = new List<CargoData>();
+                joinProdUen = " LEFT JOIN CPR_PRODUCTOS_UENS PU ON PU.COD_PRODUCTO = P.COD_PRODUCTO ";
+                clauses.Add($"PU.COD_UNIDAD = '{filtro.cod_unidad}'");
             }
-            return info;
+
+            if (!string.IsNullOrEmpty(filtro.filtro))
+            {
+                clauses.Add(
+                    "( P.DESCRIPCION LIKE '%" + filtro.filtro + "%' " +
+                    "OR CONCAT( FORMAT(Cs.COD_PRODCLAS, ' 0') , " +
+                    "FORMAT(ISNULL(Cs.NIVEL,' 00'), ' 0'), " +
+                    "FORMAT(ISNULL(Cs.COD_LINEA_SUB_MADRE,1) , ' 0'), " +
+                    "FORMAT(ISNULL(Cs.COD_LINEA_SUB,1) , ' ') " +
+                    ",P.COD_PRODUCTO ) LIKE '%" + filtro.filtro + "%' " +
+                    "OR P.COD_BARRAS LIKE '%" + filtro.filtro + "%' )"
+                );
+            }
+
+            if (filtro.familia > 0)
+            {
+                clauses.Add($"P.COD_PRODCLAS = '{filtro.familia}'");
+            }
+
+            if (!string.IsNullOrEmpty(filtro.sublinea))
+            {
+                clauses.Add($"P.COD_LINEA_SUB = '{filtro.sublinea}'");
+            }
+
+            if (clauses.Count > 0)
+            {
+                return " WHERE " + string.Join(AndOperator, clauses);
+            }
+            return "";
         }
+
+        
         /// <summary>
         /// Método para obtener las ordenes de compra
         /// </summary>
@@ -423,13 +350,14 @@ namespace PgxAPI.DataBaseTier
                     query = "select COUNT(cod_orden) from cpr_ordenes";
                     info.Total = connection.Query<int>(query).FirstOrDefault();
 
+                    const string LikeOr = "%' OR ";
                     if (filtro != null)
                     {
-                        filtro = " where (cod_orden LIKE '%" + filtro + "%' OR " +
-                                    "genera_user LIKE '%" + filtro + "%' OR " +
-                                     "cod_solicitud LIKE '%" + filtro + "%' OR " +
-                                        " nota LIKE '%" + filtro + "%' OR " +
-                                        " familia LIKE '%" + filtro + "%' OR " +
+                        filtro = " where (cod_orden LIKE '%" + filtro + LikeOr +
+                                    "genera_user LIKE '%" + filtro + LikeOr +
+                                     "cod_solicitud LIKE '%" + filtro + LikeOr +
+                                        " nota LIKE '%" + filtro + LikeOr +
+                                        " familia LIKE '%" + filtro + LikeOr +
                                         "proveedor LIKE '%" + filtro + "%' )";
                     }
                     proveedor = (proveedor != null) ? proveedor.Replace("null", "").Trim() : null;
@@ -443,7 +371,7 @@ namespace PgxAPI.DataBaseTier
                         }
                         else
                         {
-                            filtro += " AND ";
+                            filtro += AndOperator;
                         }
                         filtro += " proveedor LIKE '%" + proveedor + "%'";
                     }
@@ -456,15 +384,15 @@ namespace PgxAPI.DataBaseTier
                         }
                         else
                         {
-                            filtro += " AND ";
+                            filtro += AndOperator;
                         }
                         filtro += " familia LIKE '%" + familia + "%'";
                     }
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
                     query = $@"
@@ -505,6 +433,8 @@ namespace PgxAPI.DataBaseTier
             }
             return info;
         }
+       
+       
         /// <summary>
         /// Método para obtener las ordenes de compra por filtro
         /// </summary>
@@ -522,98 +452,26 @@ namespace PgxAPI.DataBaseTier
             info.Total = 0;
             try
             {
-                var query = "";
                 string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
                 {
-
-                    //Busco Total
-                    query = $@"select COUNT(O.cod_orden) from cpr_ordenes O                       
+                    // Busco Total
+                    var totalQuery = @"select COUNT(O.cod_orden) from cpr_ordenes O                       
                                       left join CPR_SOLICITUD_PROV sp ON 
                                       sp.ADJUDICA_ORDEN  = O.COD_ORDEN 
                                       AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
                                where O.Estado in('A') and O.Proceso in('A','X')";
-                    info.Total = connection.Query<int>(query).FirstOrDefault();
+                    info.Total = connection.Query<int>(totalQuery).FirstOrDefault();
 
-
-
-                    if (filtro != null)
-                    {
-                        filtro = " where (cod_orden LIKE '%" + filtro + "%' OR " +
-                                    "genera_user LIKE '%" + filtro + "%' OR " +
-                                     "cod_solicitud LIKE '%" + filtro + "%' OR " +
-                                        " nota LIKE '%" + filtro + "%' OR " +
-                                        " familia LIKE '%" + filtro + "%' OR " +
-                                        "proveedor LIKE '%" + filtro + "%' )";
-                    }
-
-                    proveedor = (proveedor != null) ? proveedor.Replace("null", "").Trim() : null;
-                    familia = (familia != null) ? familia.Replace("null", "").Trim() : null;
-                    subfamilia = (subfamilia != null) ? subfamilia.Replace("null", "").Trim() : null;
-
-                    if (proveedor != null)
-                    {
-                        if (filtro == null)
-                        {
-                            filtro += " WHERE ";
-                        }
-                        else
-                        {
-                            filtro += " AND ";
-                        }
-                        filtro += " proveedor LIKE '%" + proveedor + "%'";
-                    }
-
-                    if (familia != null)
-                    {
-                        if (filtro == null)
-                        {
-                            filtro += " WHERE ";
-                        }
-                        else
-                        {
-                            filtro += " AND ";
-                        }
-                        filtro += " familia LIKE '%" + familia + "%'";
-                    }
-
-                    if (subfamilia != null)
-                    {
-                        if (subfamilia == "5")
-                        {
-                            if (filtro == null)
-                            {
-                                filtro += " WHERE ";
-                            }
-                            else
-                            {
-                                filtro += " AND ";
-                            }
-                            filtro += " subfamilia like '%%'";
-                        }
-                        else
-                        {
-
-                            if (filtro == null)
-                            {
-                                filtro += " WHERE ";
-                            }
-                            else
-                            {
-                                filtro += " AND ";
-                            }
-                            filtro += " subfamilia LIKE '%" + subfamilia + "%'";
-
-                        }
-                    }
+                    string whereClause = BuildOrdenesFiltroWhereClause(filtro, proveedor, familia, subfamilia);
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
-                    query = $@"SELECT * FROM (  
+                    var query = $@"SELECT * FROM (  
                                     SELECT 
                                         RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS cod_solicitud, 
                                         O.cod_orden, 
@@ -647,13 +505,12 @@ namespace PgxAPI.DataBaseTier
                                         AND O.Proceso IN ('A', 'X')
                                     GROUP BY 
                                         sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION) T 
-                                        {filtro} 
+                                        {whereClause} 
                                     ORDER BY cod_orden
                                         {paginaActual}
                                         {paginacionActual}";
 
                     info.Ordenes = connection.Query<OrdenData>(query).ToList();
-
                 }
             }
             catch (Exception)
@@ -663,6 +520,52 @@ namespace PgxAPI.DataBaseTier
             }
             return info;
         }
+
+        private static string BuildOrdenesFiltroWhereClause(string? filtro, string? proveedor, string? familia, string? subfamilia)
+        {
+            var clauses = new List<string>();
+            string where = "";
+
+            if (!string.IsNullOrWhiteSpace(filtro))
+            {
+                clauses.Add($"(cod_orden LIKE '%{filtro}%' OR genera_user LIKE '%{filtro}%' OR cod_solicitud LIKE '%{filtro}%' OR nota LIKE '%{filtro}%' OR familia LIKE '%{filtro}%' OR proveedor LIKE '%{filtro}%')");
+            }
+
+            proveedor = (proveedor != null) ? proveedor.Replace("null", "").Trim() : null;
+            familia = (familia != null) ? familia.Replace("null", "").Trim() : null;
+            subfamilia = (subfamilia != null) ? subfamilia.Replace("null", "").Trim() : null;
+
+            if (!string.IsNullOrWhiteSpace(proveedor))
+            {
+                clauses.Add($"proveedor LIKE '%{proveedor}%'");
+            }
+
+            if (!string.IsNullOrWhiteSpace(familia))
+            {
+                clauses.Add($"familia LIKE '%{familia}%'");
+            }
+
+            if (!string.IsNullOrWhiteSpace(subfamilia))
+            {
+                if (subfamilia == "5")
+                {
+                    clauses.Add("subfamilia like '%%'");
+                }
+                else
+                {
+                    clauses.Add($"subfamilia LIKE '%{subfamilia}%'");
+                }
+            }
+
+            if (clauses.Count > 0)
+            {
+                where = "WHERE " + string.Join(AndOperator, clauses);
+            }
+
+            return where;
+        }
+
+
         /// <summary>
         /// Método para obtener las facturas
         /// </summary>
@@ -699,8 +602,8 @@ namespace PgxAPI.DataBaseTier
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
                     query = $@"select  E.cod_factura,P.descripcion as Proveedor,E.total
@@ -724,6 +627,8 @@ namespace PgxAPI.DataBaseTier
             }
             return info;
         }
+        
+        
         /// <summary>
         /// Método para obtener los usuarios
         /// </summary>
@@ -762,8 +667,8 @@ namespace PgxAPI.DataBaseTier
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
                     query = $@"select nombre,descripcion from usuarios
@@ -820,10 +725,10 @@ namespace PgxAPI.DataBaseTier
                         filtrosModel.filtro += " AND P.cod_proveedor = " + filtrosModel.cod_proveedor;
                     }
 
-                    if (filtrosModel.pagina != null)
+                    if (filtrosModel.pagina == 0)
                     {
-                        paginaActual = " OFFSET " + filtrosModel.pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + filtrosModel.paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + filtrosModel.pagina + Rows;
+                        paginacionActual = FetchNext + filtrosModel.paginacion + RowsOnly;
                     }
 
                     query = $@"select E.cod_compra,E.cod_orden,E.cod_factura, P.descripcion as Proveedor, 
@@ -884,8 +789,8 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
                     query = $@"select D.cod_compra_dev,P.descripcion as Proveedor,D.cod_factura,D.notas,D.fecha
@@ -940,8 +845,8 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
                     query = $@"select cod_beneficio,descripcion from afi_beneficios
@@ -1001,8 +906,8 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
                     query = $@"Select S.cedula,S.cedular,S.nombre, M.Membresia from SOCIOS S
@@ -1025,6 +930,74 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
             return response;
         }
 
+
+                /// <summary>
+        /// Método para obtener los socios
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="jfiltro"></param>
+        /// <returns></returns>
+        public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string jfiltro)
+        {
+            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro) ?? new FiltrosLazyLoadData();
+
+            var response = new ErrorDto<TablasListaGenericaModel>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new TablasListaGenericaModel()
+            };
+
+            try
+            {
+                using var connection = new SqlConnection(clienteConnString);
+                {
+
+
+                    if (!string.IsNullOrEmpty(filtro.filtro))
+                    {
+                        filtro.filtro = $@"WHERE ( 
+                                                 S.cedula like '%{filtro.filtro}%' 
+                                              OR S.cedular like '%{filtro.filtro}%'
+                                              OR S.nombre like '%{filtro.filtro}%'
+                                              OR M.membresia like '%{filtro.filtro}%'
+                                          )";
+                    }
+
+                    if (filtro.sortField == "" || filtro.sortField == null)
+                    {
+                        filtro.sortField = "cedula";
+                    }
+
+
+                    //Busco Total
+                    var query = $"Select count(*) from SOCIOS S left join vAFI_Membresias M ON M.Cedula = S.CEDULA {filtro.filtro}";
+                    response.Result.total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtro.pagina == 0)
+                    {
+                        query = $@"Select S.cedula,S.cedular,S.nombre, M.Membresia from SOCIOS S
+                                      left join vAFI_Membresias M ON M.Cedula = S.CEDULA
+                           {filtro.filtro} order by {filtro.sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}  
+                                      OFFSET {filtro.pagina} ROWS
+                                      FETCH NEXT {filtro.paginacion} ROWS ONLY ";
+
+                        response.Result.lista = connection.Query<SociosData>(query).ToList();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result.total = 0;
+                response.Result.lista = new List<SociosData>();
+            }
+            return response;
+        }
+    
+    
 
         /// <summary>
         /// Método para obtener los productos de beneficios
@@ -1059,8 +1032,8 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
                     query = $@"Select cod_producto,descripcion, COSTO_UNIDAD From afi_bene_productos
@@ -1113,8 +1086,8 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
 
                     if (pagina != null)
                     {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
                     }
 
                     query = $@"select cod_departamento,descripcion from AFDepartamentos where cod_institucion = '{Institucion}' 
@@ -1144,7 +1117,7 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
         public List<CatalogosLista> Catalogo_Obtener(int CodCliente, int tipo, int modulo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            List<CatalogosLista> lista = new List<CatalogosLista>();
+            List<CatalogosLista> lista;
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -1370,7 +1343,7 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
             }
             catch (Exception)
             {
-                response = null;
+                response = new List<TipoProductoSubGradaData>();
             }
             return response;
         }
@@ -1384,7 +1357,7 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
         public ErrorDto<TablasListaGenericaModel> Personas_Obtener(int CodEmpresa, string jfiltro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro);
+            FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro) ?? new FiltrosLazyLoadData();
 
             var response = new ErrorDto<TablasListaGenericaModel>
             {
@@ -1413,7 +1386,7 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
                         filtro.sortField = "cedula";
                     }
 
-                    if (filtro.pagina != null)
+                    if (filtro.pagina == 0)
                     {
                         query = $@"SELECT cedula,cedulaR,nombre From socios
                            {filtro.filtro} order by {filtro.sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}  
@@ -1428,76 +1401,12 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = null;
+                response.Result = new TablasListaGenericaModel();
             }
             return response;
         }
 
 
-        /// <summary>
-        /// Método para obtener los socios
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="jfiltro"></param>
-        /// <returns></returns>
-        public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string jfiltro)
-        {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro);
 
-            var response = new ErrorDto<TablasListaGenericaModel>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new TablasListaGenericaModel()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                {
-
-
-                   if (!string.IsNullOrEmpty(filtro.filtro))
-                    {
-                        filtro.filtro = $@"WHERE ( 
-                                                 S.cedula like '%{filtro.filtro}%' 
-                                              OR S.cedular like '%{filtro.filtro}%'
-                                              OR S.nombre like '%{filtro.filtro}%'
-                                              OR M.membresia like '%{filtro.filtro}%'
-                                          )";
-                    }
-
-                    if (filtro.sortField == "" || filtro.sortField == null)
-                    {
-                        filtro.sortField = "cedula";
-                    }
-
-
-                    //Busco Total
-                    var query = $"Select count(*) from SOCIOS S left join vAFI_Membresias M ON M.Cedula = S.CEDULA {filtro.filtro}";
-                    response.Result.total = connection.Query<int>(query).FirstOrDefault();
-
-                     if (filtro.pagina != null)
-                    {
-                        query = $@"Select S.cedula,S.cedular,S.nombre, M.Membresia from SOCIOS S
-                                      left join vAFI_Membresias M ON M.Cedula = S.CEDULA
-                           {filtro.filtro} order by {filtro.sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}  
-                                      OFFSET {filtro.pagina} ROWS
-                                      FETCH NEXT {filtro.paginacion} ROWS ONLY ";
-
-                        response.Result.lista = connection.Query<SociosData>(query).ToList();
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result.total = 0;
-                response.Result.lista = new List<SociosData>();
-            }
-            return response;
-        }
     }
 }

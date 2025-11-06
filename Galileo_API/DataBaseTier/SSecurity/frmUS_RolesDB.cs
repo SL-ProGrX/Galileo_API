@@ -5,11 +5,12 @@ using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_RolesDB
+    public class FrmUsRolesDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_RolesDB(IConfiguration config)
+        public FrmUsRolesDb(IConfiguration config)
         {
             _config = config;
         }
@@ -20,7 +21,7 @@ namespace PgxAPI.DataBaseTier
             string strSQL = "";
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     connection.Open();
 
@@ -47,15 +48,14 @@ namespace PgxAPI.DataBaseTier
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
-            //return resp;
         }
 
         public List<RolesObtenerDto> RolFiltroObtener(string filtro)
         {
-            List<RolesObtenerDto> resp = new List<RolesObtenerDto>();
+            List<RolesObtenerDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var strSQL = "SELECT R.cod_Rol, R.descripcion, R.activo, " +
                         "CONVERT(varchar(10), ISNULL(R.cod_Empresa, 0)) + '- ' + RTRIM(ISNULL(C.Nombre_Largo, 'General')) AS 'Cliente', " +
@@ -70,7 +70,7 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<RolesObtenerDto>();
             }
             return resp;
         }
@@ -81,10 +81,10 @@ namespace PgxAPI.DataBaseTier
             resp.Code = 0;
             try
             {
-                int activo = rol.Activo == true ? 1 : 0;
+                int activo = rol.Activo ? 1 : 0;
                 int cliente = Convert.ToInt16(rol.Cliente.Substring(0, 1));
 
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     connection.Open();
 
@@ -132,7 +132,7 @@ namespace PgxAPI.DataBaseTier
             resp.Code = 0;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var strSQL = "DELETE FROM US_Roles WHERE Cod_Rol = @CodRol";
                     connection.Execute(strSQL, new { CodRol });
@@ -150,10 +150,10 @@ namespace PgxAPI.DataBaseTier
 
         public List<RolesObtenerDto> RolesObtener()
         {
-            List<RolesObtenerDto> resp = new List<RolesObtenerDto>();
+            List<RolesObtenerDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var strSQL = "SELECT R.cod_Rol, R.descripcion, R.activo, " +
                         "CONVERT(varchar(10), ISNULL(R.cod_Empresa, 0)) + '- ' + RTRIM(ISNULL(C.Nombre_Largo, 'General')) AS 'Cliente', " +
@@ -167,22 +167,22 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<RolesObtenerDto>();
             }
             return resp;
         }
 
         public List<ClientesObtenerDto> ClientesObtener()
         {
-            List<ClientesObtenerDto> resp = new List<ClientesObtenerDto>();
+            List<ClientesObtenerDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var strSQL = "SELECT [COD_EMPRESA]"
                               + ",[NOMBRE_LARGO]"
                               + ",[NOMBRE_CORTO]"
-                          + "FROM[PGX_Portal].[dbo].[PGX_CLIENTES]";
+                          + " FROM[PGX_Portal].[dbo].[PGX_CLIENTES]";
 
                     resp = connection.Query<ClientesObtenerDto>(strSQL).ToList();
                 }
@@ -191,7 +191,7 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<ClientesObtenerDto>();
             }
             return resp;
         }

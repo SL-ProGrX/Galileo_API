@@ -6,11 +6,12 @@ using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_Roles_MembresiasDB
+    public class FrmUsRolesMembresiasDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_Roles_MembresiasDB(IConfiguration config)
+        public FrmUsRolesMembresiasDb(IConfiguration config)
         {
             _config = config;
         }
@@ -18,10 +19,10 @@ namespace PgxAPI.DataBaseTier
 
         public List<UsuariosConsultaDto> UsuariosConsultar(string? usuario, bool adminView, bool dirGlobal, int codEmpresa)
         {
-            List<UsuariosConsultaDto> resp = new List<UsuariosConsultaDto>();
+            List<UsuariosConsultaDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var strSQL = "select Usuario,Nombre,UserID"
@@ -43,17 +44,17 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<UsuariosConsultaDto>();
             }
             return resp;
         }
 
         public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar(string? usuario, bool contabiliza, bool adminView, int codEmpresa)
         {
-            List<UsuariosVinculadosConsultaDto> resp = new List<UsuariosVinculadosConsultaDto>();
+            List<UsuariosVinculadosConsultaDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var strSQL = "select U.Usuario,U.Nombre,U.UserID,A.registro_Fecha,A.Registro_Usuario"
@@ -71,7 +72,7 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<UsuariosVinculadosConsultaDto>();
             }
             return resp;
         }
@@ -82,7 +83,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var strSQL = @"SELECT ISNULL(Limita_Acceso_Estacion, 0) AS Estacion, 
                                   ISNULL(Limita_Acceso_Horario, 0) AS Horario
@@ -110,10 +111,10 @@ namespace PgxAPI.DataBaseTier
 
         public List<RolConsultaDto> RolesConsultar(string usuario, string? filtro, int codEmpresa)
         {
-            List<RolConsultaDto> resp = new List<RolConsultaDto>();
+            List<RolConsultaDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var strSQL = $@"SELECT R.COD_ROL, R.DESCRIPCION, 
                                    CASE WHEN ISNULL(M.REGISTRO_USUARIO, '') = '' THEN 0 ELSE 1 END AS Asignado,
@@ -149,17 +150,17 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<RolConsultaDto>();
             }
             return resp;
         }
 
         public List<HorarioConsultaDto> HorariosConsultar(string usuario, string? filtro, int codEmpresa)
         {
-            List<HorarioConsultaDto> resp = new List<HorarioConsultaDto>();
+            List<HorarioConsultaDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var strSQL = @"SELECT E.COD_HORARIO, E.DESCRIPCION, 
                                   CASE WHEN ISNULL(A.REGISTRO_USUARIO, '') = '' THEN 0 ELSE 1 END AS Asignado,
@@ -195,17 +196,17 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<HorarioConsultaDto>();
             }
             return resp;
         }
 
         public List<EstacionConsultaDto> EstacionesConsultar(string usuario, string? filtro, int codEmpresa)
         {
-            List<EstacionConsultaDto> resp = new List<EstacionConsultaDto>();
+            List<EstacionConsultaDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var strSQL = @"SELECT E.ESTACION, E.DESCRIPCION, 
                                   CASE WHEN ISNULL(A.REGISTRO_USUARIO, '') = '' THEN 0 ELSE 1 END AS Asignado,
@@ -241,7 +242,7 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception)
             {
-                resp = null;
+                resp = new List<EstacionConsultaDto>();
             }
             return resp;
         }
@@ -254,7 +255,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var values = new
                     {
@@ -282,7 +283,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     resp.Code = connection.QueryFirstOrDefault<int>("spPGX_Usuario_Rol_Asigna", req, commandType: CommandType.StoredProcedure);
                     resp.Description = "Ok";
@@ -301,7 +302,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     resp.Code = connection.Query<int>("spPGX_Usuario_Estacion_Asigna", req, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
@@ -320,7 +321,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     resp.Code = connection.Query<int>("spPGX_Usuario_Estacion_Limita", req, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
@@ -341,7 +342,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     resp.Code = connection.Query<int>("spPGX_Usuario_Horario_Asigna", req, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
@@ -360,7 +361,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     resp.Code = connection.Query<int>("spPGX_Usuario_Horario_Limita", req, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";

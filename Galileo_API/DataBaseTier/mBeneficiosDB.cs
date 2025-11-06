@@ -6,10 +6,17 @@ using PgxAPI.Models.ERROR;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mBeneficiosDB
+    public class MBeneficiosDB
     {
         private readonly IConfiguration _config;
-        public mBeneficiosDB(IConfiguration config)
+        private const string CodCategoriaPlaceholder = "@cod_categoria";
+        private const string CodBeneficioPlaceholder = "@cod_beneficio";
+        private const string CedulaPlaceholder = "@cedula";
+        private const string UsuarioPlaceholder = "@usuario";
+        private const string IdBeneficioPlaceholder = "@id_beneficio";
+        private const string MontoUsuarioPlaceholder = "@monto_usuario";
+        private const string SepelioIdentificacionPlaceholder = "@sepelio_identificacion";
+        public MBeneficiosDB(IConfiguration config)
         {
             _config = config;
         }
@@ -58,7 +65,7 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public string fxEstadoBeneficio(string estado)
+        public static string fxEstadoBeneficio(string estado)
         {
             string fxEstadoBeneficio = "";
             switch (estado.ToUpper())
@@ -104,14 +111,14 @@ namespace PgxAPI.DataBaseTier
         public string fxSIFParametros(int CodEmpresa, string cod_parametro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            string resp = "N";
+            string resp;
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
 
                     var query = $"Select valor from SIF_parametros where cod_parametro = '{cod_parametro}'";
-                    resp = connection.Query<string>(query).FirstOrDefault();
+                    resp = connection.Query<string>(query).FirstOrDefault() ?? string.Empty;
                 }
             }
             catch (Exception ex)
@@ -125,14 +132,14 @@ namespace PgxAPI.DataBaseTier
         public string fxFSL_Parametros(int CodEmpresa, string cod_parametro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            string resp = "N";
+            string resp;
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
 
                     var query = $"select valor from fsl_parametros where cod_parametro = '{cod_parametro}' ";
-                    resp = connection.Query<string>(query).FirstOrDefault();
+                    resp = connection.Query<string>(query).FirstOrDefault() ?? string.Empty;
                 }
             }
             catch (Exception ex)
@@ -158,14 +165,6 @@ namespace PgxAPI.DataBaseTier
 
                 using var connection = new SqlConnection(stringConn);
                 {
-                    //prueba de consecutivo
-                    //if(req.consec == 0)
-                    //{
-                    //    var consec = connection.Query<int>("select isnull(max(consec),0)+1 from AFI_BENE_REGISTRO_BITACORA where COD_BENEFICIO = @cod_beneficio", new { cod_beneficio = req.cod_beneficio });
-                    //    req.consec = consec.FirstOrDefault();
-                    //}
-
-
                     var strSQL = $@"INSERT INTO [dbo].[AFI_BENE_REGISTRO_BITACORA]
                                            ([COD_BENEFICIO]
                                            ,[CONSEC]
@@ -193,183 +192,6 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        /// <summary>
-        /// Valida si el socio cumple con los requisitos y validaciones para aplicar un beneficio
-        /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="beneficio"></param>
-        /// <returns></returns>
-        //public ErrorDto<BeneficioGeneralDatos> ValidaBeneficio(int CodCliente, BeneficioGeneralDatos beneficio)
-        //{
-        //    var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-        //    var response = new ErrorDto<BeneficioGeneralDatos>();
-
-        //    try
-        //    {
-        //        string estadoItem = "S";
-        //        if (beneficio.estado != null)
-        //        {
-        //            estadoItem = beneficio.estado.item;
-        //        }
-        //        string result = "";
-        //        using (var connection = new SqlConnection(clienteConnString))
-        //        {
-        //            var Query = $@"SELECT dbo.fxBeneficio_Persona_ValidaBeneIntegral('{beneficio.cedula}','{beneficio.cod_beneficio.item}',
-        //                           {beneficio.monto_aplicado}, '{beneficio.registra_user}', '{beneficio.id_beneficio}')";
-        //            result += connection.Query<string>(Query).FirstOrDefault();
-
-        //            //valida que la sepelio_identificacion sea unica para la cedula
-        //            if (beneficio.sepelio_identificacion != null)
-        //            {
-        //                Query = $@"SELECT COUNT(*) FROM AFI_BENE_OTORGA WHERE CEDULA = '{beneficio.cedula}'
-        //                              AND SEPELIO_IDENTIFICACION = '{beneficio.sepelio_identificacion}' ";
-        //                var sepeId = connection.Query<int>(Query).FirstOrDefault();
-
-        //                if (sepeId == 1)
-        //                {
-        //                    response.Code = -1;
-        //                    response.Description = " La identificación de sepelio ya fue registrada";
-        //                    return response;
-        //                }
-        //            }
-
-        //            var estado = $@"SELECT COD_ESTADO
-        //                              FROM [dbo].[AFI_BENE_ESTADOS]
-        //                              WHERE COD_ESTADO = '{estadoItem}' AND P_FINALIZA = 1 AND PROCESO = 'A'";
-        //            string finaliza = connection.Query<string>(estado).FirstOrDefault();
-
-        //            // Verifica si el estado finaliza el beneficio
-        //            if (finaliza == null)
-        //            {
-
-        //                estado = $@"SELECT COD_ESTADO
-        //                              FROM [dbo].[AFI_BENE_ESTADOS]
-        //                              WHERE COD_ESTADO = '{estadoItem}' AND P_INICIA = 1";
-        //                string inicia = connection.Query<string>(estado).FirstOrDefault();
-        //            }
-
-
-        //            // Verifica el resultado
-        //            if (result == "1")
-        //            {
-        //                return response;
-        //            }
-
-        //            if (result != "")
-        //            {
-        //                response.Code = -1;
-        //                response.Description = result;
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        response.Code = -1;
-        //        response.Description = "ValidaBeneficio - " + ex.Message;
-        //        response.Result = null;
-        //    }
-        //    return response;
-        //}
-
-
-        //public ErrorDto<BeneficioGeneralDatos> ValidaBeneficioActualizar(int CodCliente, BeneficioGeneralDatos beneficio)
-        //{
-        //    var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-        //    var response = new ErrorDto<BeneficioGeneralDatos>();
-
-        //    try
-        //    {
-        //        string estadoItem = "S";
-        //        if (beneficio.estado != null)
-        //        {
-        //            estadoItem = beneficio.estado.item;
-        //        }
-        //        string result = "";
-        //        using (var connection = new SqlConnection(clienteConnString))
-        //        {
-        //            var Query = $@"SELECT dbo.fxBeneficio_Persona_ValidaBeneIntegral('{beneficio.cedula}','{beneficio.cod_beneficio.item}',
-        //                           {beneficio.monto_aplicado}, '{beneficio.registra_user}')";
-        //            result += connection.Query<string>(Query).FirstOrDefault();
-
-        //            ////valida que la sepelio_identificacion sea unica para la cedula
-        //            //if (beneficio.sepelio_identificacion != null)
-        //            //{
-        //            //    var Query = $@"SELECT COUNT(*) FROM AFI_BENE_OTORGA WHERE CEDULA = '{beneficio.cedula}'
-        //            //                  AND SEPELIO_IDENTIFICACION = '{beneficio.sepelio_identificacion}' ";
-        //            //    var sepeId = connection.Query<int>(Query).FirstOrDefault();
-
-        //            //    if (sepeId == 1)
-        //            //    {
-        //            //        response.Code = -1;
-        //            //        response.Description = " La identificación de sepelio ya fue registrada";
-        //            //        return response;
-        //            //    }
-        //            //}
-
-        //            var estado = $@"SELECT COD_ESTADO
-        //                              FROM [dbo].[AFI_BENE_ESTADOS]
-        //                              WHERE COD_ESTADO = '{estadoItem}' AND P_FINALIZA = 1";
-        //            string finaliza = connection.Query<string>(estado).FirstOrDefault();
-
-        //            // Verifica si el estado finaliza el beneficio
-        //            if (finaliza == null)
-        //            {
-
-        //                estado = $@"SELECT COD_ESTADO
-        //                              FROM [dbo].[AFI_BENE_ESTADOS]
-        //                              WHERE COD_ESTADO = '{estadoItem}' AND P_INICIA = 1";
-        //                string inicia = connection.Query<string>(estado).FirstOrDefault();
-        //            }
-
-
-
-        //            if (finaliza != null)
-        //            {
-        //                //Valida requisitos para beneficio integral
-        //                var query = $@"SELECT 
-        //                                CASE 
-        //                                    WHEN COUNT(CASE WHEN R.REQUERIDO = 1 AND RR.COD_BENEFICIO IS NOT NULL THEN 1 END) = COUNT(CASE WHEN R.REQUERIDO = 1 THEN 1 END)
-        //                                    THEN 0
-        //                                    ELSE 1
-        //                                END AS CumplenRequisito
-        //                            FROM [AFI_BENE_GRUPO_REQUISITOS] GR
-        //                            LEFT JOIN AFI_BENE_REQUISITOS R ON R.COD_REQUISITO = GR.COD_REQUISITO
-        //                            LEFT JOIN AFI_BENE_REGISTRO_REQUISITOS RR ON RR.COD_REQUISITO = GR.COD_REQUISITO
-        //                                AND RR.COD_BENEFICIO = '{beneficio.cod_beneficio.item}' 
-        //                                AND RR.CONSEC = {beneficio.consec}
-        //                            WHERE GR.COD_GRUPO = 
-        //                                  (SELECT COD_GRUPO FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = '{beneficio.cod_beneficio.item}')";
-        //                var cumpleRequisito = connection.Query<int>(query).FirstOrDefault();
-        //                if (cumpleRequisito == 1)
-        //                {
-        //                    response.Code = 1;
-        //                    response.Description = "No cumple con los requisitos del beneficio";
-        //                    return response;
-        //                }
-        //            }
-
-
-        //            // Verifica el resultado
-        //            if (result == "1")
-        //            {
-        //                return response;
-        //            }
-
-        //            if (result != "")
-        //            {
-        //                response.Code = -1;
-        //                response.Description = result;
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        response.Code = -1;
-        //        response.Description = "ValidaBeneficio - " + ex.Message;
-        //        response.Result = null;
-        //    }
-        //    return response;
-        //}
 
         /// <summary>
         /// Busca el ultimo consecutivo de un beneficio
@@ -414,7 +236,7 @@ namespace PgxAPI.DataBaseTier
                 {
 
                     var query = $@"SELECT ESTADOACTUAL FROM SOCIOS WHERE CEDULA = '{cedula}'";
-                    string estado = connection.Query<string>(query).FirstOrDefault();
+                    string? estado = connection.Query<string>(query).FirstOrDefault();
 
                     if (estado != "S")
                     {
@@ -464,13 +286,13 @@ namespace PgxAPI.DataBaseTier
                     foreach (var validacion in validaciones)
                     {
                         query = validacion.query_val
-                            .Replace("@cedula", cedula)
-                          //  .Replace("@usuario", beneficio.registra_user)
-                          //  .Replace("@id_beneficio", beneficio.id_beneficio.ToString())
-                            .Replace("@cod_beneficio", cod_beneficio)
-                          //  .Replace("@cod_categoria", beneficio.cod_categoria)
+                            .Replace("CedulaPlaceholder", cedula)
+                          //  .Replace("UsuarioPlaceholder", beneficio.registra_user)
+                          //  .Replace("CodBeneficioPlaceholder", beneficio.id_beneficio.ToString())
+                            .Replace("CodBeneficioPlaceholder", cod_beneficio)
+                          //  .Replace("CodCategoriaPlaceholder", beneficio.cod_categoria)
                           //  .Replace("@monto_usuario", beneficio.monto_aplicado.ToString())
-                          //  .Replace("@sepelio_identificacion", beneficio.sepelio_identificacion)
+                          //  .Replace("SepelioIdentificacionPlaceholder", beneficio.sepelio_identificacion)
                             ;
                         var result = connection.Query<int>(query).FirstOrDefault();
 
@@ -491,40 +313,6 @@ namespace PgxAPI.DataBaseTier
 
             return info;
 
-            //var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            //ErrorDto info = new ErrorDto();
-            //info.Code = 0;
-            //info.Description = null;
-            //try
-            //{
-            //    using (var connection = new SqlConnection(clienteConnString))
-            //    {
-            //        connection.Open();
-
-            //        // Execute the SQL function and retrieve the result
-            //        var result = connection.ExecuteScalar<string>("SELECT dbo.fxBeneficio_Persona_Validacion(@Cedula)", new
-            //        {
-            //            Cedula = cedula
-            //        });
-
-            //        if (info.Code == -1)
-            //        {
-            //            return info;
-            //        }
-            //        else
-            //        {
-            //            info.Code = 0;
-            //            info.Description = result;
-            //        }
-            //    }
-            //}
-            //catch (Exception ex)
-            //{
-            //    info.Code = -1;
-            //    info.Description = $"Error al validar socio: {ex.Message}";
-            //}
-
-            //return info;
         }
 
         public ErrorDto ValidarPersonaPago(int CodCliente, string cedula, string? cod_beneficio)
@@ -558,13 +346,13 @@ namespace PgxAPI.DataBaseTier
                     foreach (var validacion in validaciones)
                     {
                         query = validacion.query_val
-                            .Replace("@cedula", cedula)
-                            //  .Replace("@usuario", beneficio.registra_user)
-                            //  .Replace("@id_beneficio", beneficio.id_beneficio.ToString())
-                            .Replace("@cod_beneficio", cod_beneficio)
-                            //  .Replace("@cod_categoria", beneficio.cod_categoria)
-                            //  .Replace("@monto_usuario", beneficio.monto_aplicado.ToString())
-                            //  .Replace("@sepelio_identificacion", beneficio.sepelio_identificacion)
+                            .Replace(CedulaPlaceholder, cedula)
+                            //  .Replace("UsuarioPlaceholder", beneficio.registra_user)
+                            //  .Replace("CodBeneficioPlaceholder", beneficio.id_beneficio.ToString())
+                            .Replace(CodBeneficioPlaceholder, cod_beneficio)
+                            //  .Replace("CodCategoriaPlaceholder", beneficio.cod_categoria)
+                            //  .Replace("MontoUsuarioPlaceholder", beneficio.monto_aplicado.ToString())
+                            //  .Replace("SepelioIdentificacionPlaceholder", beneficio.sepelio_identificacion)
                             ;
                         var result = connection.Query<int>(query).FirstOrDefault();
 
@@ -601,18 +389,7 @@ namespace PgxAPI.DataBaseTier
                     var dtEstado = $@"SELECT COD_ESTADO
                                       FROM [dbo].[AFI_BENE_ESTADOS]
                                       WHERE COD_ESTADO = '{estado}' AND P_FINALIZA = 1 AND PROCESO = 'A' ";
-                    string finaliza = connection.Query<string>(dtEstado).FirstOrDefault();
-
-                    // Verifica si el estado finaliza el beneficio
-                    if (finaliza == null)
-                    {
-
-                        estado = $@"SELECT COD_ESTADO
-                                      FROM [dbo].[AFI_BENE_ESTADOS]
-                                      WHERE COD_ESTADO = '{estado}' AND P_INICIA = 1 AND PROCESO = 'A' ";
-                        string inicia = connection.Query<string>(estado).FirstOrDefault();
-                    }
-
+                    string? finaliza = connection.Query<string>(dtEstado).FirstOrDefault();
 
 
                     if (finaliza != null)
@@ -677,14 +454,14 @@ namespace PgxAPI.DataBaseTier
 
                     if (fallecido.Count > 0)
                     {
-                        string otrosRegostros = "";
+                        var otrosRegostros = new System.Text.StringBuilder();
                         foreach (var item in fallecido)
                         {
-                            otrosRegostros += item + " - ";
+                            otrosRegostros.Append(item + " - ");
                         }
 
                         response.Code = -1;
-                        response.Description = "La cédula del fallecido se encuentra en los siguientes expedientes: " + otrosRegostros.Replace("DapperRow,  = ", "");
+                        response.Description = "La cédula del fallecido se encuentra en los siguientes expedientes: " + otrosRegostros.ToString().Replace("DapperRow,  = ", "");
                     }
                 }
             }
@@ -718,13 +495,13 @@ namespace PgxAPI.DataBaseTier
                     foreach (var validacion in validaciones)
                     {
                         query = validacion.query_val
-                            .Replace("@cedula", beneficio.cedula)
-                            .Replace("@usuario", beneficio.registra_user)
-                            .Replace("@id_beneficio", beneficio.id_beneficio.ToString())
-                            .Replace("@cod_beneficio", beneficio.cod_beneficio.item.ToString())
-                            .Replace("@cod_categoria", beneficio.cod_categoria)
-                            .Replace("@monto_usuario", beneficio.monto_aplicado.ToString())
-                            .Replace("@sepelio_identificacion", beneficio.sepelio_identificacion);
+                            .Replace(CedulaPlaceholder, beneficio.cedula)
+                            .Replace(UsuarioPlaceholder, beneficio.registra_user)
+                            .Replace(CodBeneficioPlaceholder, beneficio.id_beneficio.ToString())
+                            .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
+                            .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
+                            .Replace(MontoUsuarioPlaceholder, beneficio.monto_aplicado.ToString())
+                            .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
 
                         var result = connection.Query<int>(query).FirstOrDefault();
 
@@ -768,13 +545,13 @@ namespace PgxAPI.DataBaseTier
                     foreach (var validacion in validaciones)
                     {
                         query = validacion.query_val
-                            .Replace("@cedula", beneficio.cedula)
-                            .Replace("@usuario", beneficio.registra_user)
-                            .Replace("@id_beneficio", beneficio.id_beneficio.ToString())
-                            .Replace("@cod_beneficio", beneficio.cod_beneficio.item.ToString())
-                            .Replace("@cod_categoria", beneficio.cod_categoria)
-                            .Replace("@monto_usuario", beneficio.monto_aplicado.ToString())
-                            .Replace("@sepelio_identificacion", beneficio.sepelio_identificacion);
+                            .Replace(CedulaPlaceholder, beneficio.cedula)
+                            .Replace(UsuarioPlaceholder, beneficio.registra_user)
+                            .Replace(CodBeneficioPlaceholder, beneficio.id_beneficio.ToString())
+                            .Replace(CodBeneficioPlaceholder, beneficio.cod_beneficio.item.ToString())
+                            .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
+                            .Replace(MontoUsuarioPlaceholder, beneficio.monto_aplicado.ToString())
+                            .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
 
                         var result = connection.Query<int>(query).FirstOrDefault();
 
@@ -822,13 +599,13 @@ namespace PgxAPI.DataBaseTier
                     {
 
                         query = validacion.query_val
-                            .Replace("@cedula", beneficio.cedula)
-                            .Replace("@usuario", beneficio.registra_user)
-                            .Replace("@id_beneficio", beneficio.id_beneficio.ToString())
-                            .Replace("@cod_beneficio", beneficio.cod_beneficio.item.ToString())
-                            .Replace("@cod_categoria", beneficio.cod_categoria)
-                            .Replace("@monto_usuario", beneficio.monto_aplicado.ToString())
-                            .Replace("@sepelio_identificacion", beneficio.sepelio_identificacion);
+                            .Replace(CedulaPlaceholder, beneficio.cedula)
+                            .Replace(UsuarioPlaceholder, beneficio.registra_user)
+                            .Replace(CodBeneficioPlaceholder, beneficio.id_beneficio.ToString())
+                            .Replace(CodBeneficioPlaceholder, beneficio.cod_beneficio.item.ToString())
+                            .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
+                            .Replace(MontoUsuarioPlaceholder, beneficio.monto_aplicado.ToString())
+                            .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
 
                         var result = connection.Query<int>(query).FirstOrDefault();
 
@@ -854,7 +631,7 @@ namespace PgxAPI.DataBaseTier
                         info.Code = 0;
                     }
 
-                    if (obligatorias > 0 && info.Description.Length > 0)
+                    if (obligatorias > 0 && !string.IsNullOrEmpty(info.Description) && info.Description.Length > 0)
                     {
                         int activa = obligatorias - justificadas;
 
@@ -901,13 +678,13 @@ namespace PgxAPI.DataBaseTier
                     {
 
                         query = validacion.query_val
-                            .Replace("@cedula", beneficio.cedula)
-                            .Replace("@usuario", beneficio.registra_user)
-                            .Replace("@id_beneficio", beneficio.id_beneficio.ToString())
-                            .Replace("@cod_beneficio", beneficio.cod_beneficio.item.ToString())
-                            .Replace("@cod_categoria", beneficio.cod_categoria)
-                            .Replace("@monto_usuario", beneficio.monto_aplicado.ToString())
-                            .Replace("@sepelio_identificacion", beneficio.sepelio_identificacion);
+                            .Replace(CedulaPlaceholder, beneficio.cedula)
+                            .Replace(UsuarioPlaceholder, beneficio.registra_user)
+                            .Replace(IdBeneficioPlaceholder, beneficio.id_beneficio.ToString())
+                            .Replace(CodBeneficioPlaceholder, beneficio.cod_beneficio.item.ToString())
+                            .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
+                            .Replace(MontoUsuarioPlaceholder, beneficio.monto_aplicado.ToString())
+                            .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
 
                         var result = connection.Query<int>(query).FirstOrDefault();
 
@@ -933,7 +710,7 @@ namespace PgxAPI.DataBaseTier
                         info.Code = 0;
                     }
 
-                    if (obligatorias > 0 && info.Description.Length > 0)
+                    if (obligatorias > 0 && !string.IsNullOrEmpty(info.Description) && info.Description.Length > 0)
                     {
                         int activa = obligatorias - justificadas;
 
@@ -963,9 +740,6 @@ namespace PgxAPI.DataBaseTier
             try
             {
 
-                int justificadas = 0;
-                int obligatorias = 0;
-
                 using (var connection = new SqlConnection(clienteConnString))
                 {
                     var query = @$"select abv.*, c.pago_justifica FROM AFI_BENE_VALIDA_CATEGORIA c left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
@@ -980,13 +754,13 @@ namespace PgxAPI.DataBaseTier
                     {
 
                         query = validacion.query_val
-                            .Replace("@cedula", beneficio.cedula)
-                            .Replace("@usuario", beneficio.registra_user)
-                            .Replace("@id_beneficio", beneficio.id_beneficio.ToString())
-                            .Replace("@cod_beneficio", beneficio.cod_beneficio.item.ToString())
-                            .Replace("@cod_categoria", beneficio.cod_categoria)
-                            .Replace("@monto_usuario", beneficio.monto_aplicado.ToString())
-                            .Replace("@sepelio_identificacion", beneficio.sepelio_identificacion);
+                            .Replace(CedulaPlaceholder, beneficio.cedula)
+                            .Replace(UsuarioPlaceholder, beneficio.registra_user)
+                            .Replace(IdBeneficioPlaceholder, beneficio.id_beneficio.ToString())
+                            .Replace(CodBeneficioPlaceholder, beneficio.cod_beneficio.item.ToString())
+                            .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
+                            .Replace(MontoUsuarioPlaceholder, beneficio.monto_aplicado.ToString())
+                            .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
 
                         var result = connection.Query<int>(query).FirstOrDefault();
 
@@ -1006,28 +780,7 @@ namespace PgxAPI.DataBaseTier
                         }
                     }
 
-                    //if (justificadas > 0 && !justifica)
-                    //{
-                    //    info.Code = -1;
-                    //}
-                    //else if (justificadas > 0 && justifica)
-                    //{
-                    //    info.Code = 0;
-                    //}
-
-                    //if (obligatorias > 0 && info.Description.Length > 0)
-                    //{
-                    //    int activa = obligatorias - justificadas;
-
-                    //    if (activa > 0)
-                    //    {
-                    //        info.Code = -1;
-                    //    }
-                    //}
-
                 }
-
-
             }
             catch (Exception ex)
             {

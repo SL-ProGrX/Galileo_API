@@ -3,7 +3,6 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
-using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -11,15 +10,10 @@ namespace PgxAPI.DataBaseTier
     {
         private readonly IConfiguration _config;
         private readonly string dirRDLC;
-        private readonly MSecurityMainDb _Security_MainDB;
-        private readonly mProGrX_AuxiliarDB _mProGrX_AuxiliarDB;
-
         public MTesoreria(IConfiguration config)
         {
             _config = config;
             dirRDLC = _config.GetSection("AppSettings").GetSection("RutaRDLC").Value ?? string.Empty;
-            _Security_MainDB = new MSecurityMainDb(config);
-            _mProGrX_AuxiliarDB = new mProGrX_AuxiliarDB(config);
         }
 
         /// <summary>
@@ -863,8 +857,19 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto sbTESActualizaCC(int CodEmpresa, string Codigo, string Tipo, string Documento,
-             int Banco, object OP, string Modulo, string SubModulo, int Referencia)
+        public class ActualizaCCParams
+        {
+            public string? Codigo { get; set; }
+            public string? Tipo { get; set; }
+            public string? Documento { get; set; }
+            public int Banco { get; set; }
+            public object? OP { get; set; }
+            public string? Modulo { get; set; }
+            public string? SubModulo { get; set; }
+            public int Referencia { get; set; }
+        }
+
+        public ErrorDto sbTESActualizaCC(int CodEmpresa, ActualizaCCParams parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto
@@ -874,7 +879,7 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                if (Modulo?.Trim() != "CC" || SubModulo?.Trim() != "C")
+                if (parametros.Modulo?.Trim() != "CC" || parametros.SubModulo?.Trim() != "C")
                 {
                     resp.Code = -1;
                     resp.Description = "Módulo o Submódulo inválido";
@@ -884,7 +889,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     string? query;
-                    if (Referencia > 0)
+                    if (parametros.Referencia > 0)
                     {
                         // TIENE REFERENCIA
                         query = @"UPDATE DesemBolsos 
@@ -892,7 +897,7 @@ namespace PgxAPI.DataBaseTier
                                TDocumento = @strTipo,
                                NDocumento = @strDoc
                            WHERE ID_Desembolso = @strCodigo";
-                        connection.Execute(query, new { Banco, Tipo, Documento, Codigo });
+                        connection.Execute(query, new { Banco = parametros.Banco, Tipo = parametros.Tipo, Documento = parametros.Documento, Codigo = parametros.Codigo });
                     }
                     else
                     {
@@ -901,8 +906,8 @@ namespace PgxAPI.DataBaseTier
                            SET Cod_Banco = @lngBanco,
                                Documento_Referido = @documentoReferido
                            WHERE ID_Solicitud = @lngOP";
-                        string documentoReferido = $"{Tipo}-{Documento}";
-                        connection.Execute(query, new { Banco, documentoReferido, OP });
+                        string documentoReferido = $"{parametros.Tipo}-{parametros.Documento}";
+                        connection.Execute(query, new { Banco = parametros.Banco, documentoReferido, OP = parametros.OP });
                     }
                 }
             }
@@ -928,7 +933,7 @@ namespace PgxAPI.DataBaseTier
                     result = connection.QueryFirst<string>(query, new { codigo = xCodigo });
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 result = "";
             }
@@ -999,7 +1004,7 @@ namespace PgxAPI.DataBaseTier
 
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 result.Code = -1;
                 result.Result = false;
@@ -1044,7 +1049,7 @@ namespace PgxAPI.DataBaseTier
 
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 result.Code = -1;
                 result.Result = false;
@@ -1089,7 +1094,7 @@ namespace PgxAPI.DataBaseTier
 
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 result.Code = -1;
                 result.Result = false;
@@ -1134,7 +1139,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
 
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 result.Code = -1;
                 result.Result = false;
@@ -1142,32 +1147,33 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             return result;
         }
 
-        public string fxTESCifrado(string vClave)
+        public static string fxTESCifrado(string vClave)
         {
-            string strPass = "";
+            var strPass = new System.Text.StringBuilder();
 
             for (int i = 0; i < vClave.Length; i++)
             {
                 char c = vClave[i];
                 char cifrado = (char)(c + 7);
-                strPass += cifrado;
+                strPass.Append(cifrado);
             }
 
-            return strPass;
+            return strPass.ToString();
         }
 
-        public string fxStringCifrado(string pCadena)
+        public static string fxStringCifrado(string pCadena)
         {
-            string vRes = "";
+            var vResBuilder = new System.Text.StringBuilder();
 
             // Convertir cada carácter a ASCII y revertir la cadena
             for (int i = pCadena.Length - 1; i >= 0; i--)
             {
                 int xChar = (int)pCadena[i];
-                vRes += xChar.ToString();
+                vResBuilder.Append(xChar.ToString());
             }
+            string vRes = vResBuilder.ToString();
 
-            string vResX = "";
+            var vResXBuilder = new System.Text.StringBuilder();
             int vSec = 0;
 
             // Procesar bloques de tres caracteres
@@ -1188,52 +1194,49 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                 switch (vSec)
                 {
                     case 0:
-                        vResX += (num + 1).ToString();
+                        vResXBuilder.Append((num + 1).ToString());
                         vSec = 1;
                         break;
                     case 1:
-                        vResX += (num - 5).ToString();
+                        vResXBuilder.Append((num - 5).ToString());
                         vSec = 2;
                         break;
                     case 2:
-                        vResX += (num + 7).ToString();
+                        vResXBuilder.Append((num + 7).ToString());
                         vSec = 3;
                         break;
                     case 3:
-                        vResX += (num - 13).ToString();
+                        vResXBuilder.Append((num - 13).ToString());
                         vSec = 4;
                         break;
                     case 4:
-                        vResX += (num - 2).ToString();
+                        vResXBuilder.Append((num - 2).ToString());
                         vSec = 5;
                         break;
                     case 5:
-                        vResX += (num + 3).ToString();
+                        vResXBuilder.Append((num + 3).ToString());
                         vSec = 0;
                         break;
                 }
             }
 
-            return FxDepuraCadena(vResX);
+            return FxDepuraCadena(vResXBuilder.ToString());
         }
 
-        public string FxDepuraCadena(string xCadena)
+        public static string FxDepuraCadena(string xCadena)
         {
-            string vRes = "";
+            var vResBuilder = new System.Text.StringBuilder();
 
             for (int i = 0; i < xCadena.Length; i += 2)
             {
                 string chunk = xCadena.Substring(i, Math.Min(2, xCadena.Length - i));
-                if (int.TryParse(chunk, out int num))
+                if (int.TryParse(chunk, out int num) && num > 31 && num != 39 && num != 34)
                 {
-                    if (num > 31 && num != 39 && num != 34)
-                    {
-                        vRes = ((char)num).ToString() + vRes;
-                    }
+                    vResBuilder.Insert(0, (char)num);
                 }
             }
 
-            return vRes;
+            return vResBuilder.ToString();
         }
 
         /// <summary>
@@ -1333,17 +1336,21 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                             if (vAutoConsec)
                                 vConsecutivo = fxTesTipoDocConsec(CodEmpresa, data.id_banco, vTipo, "+").Result.ToString();
 
+                            string nDocumentoClause = "";
+                            if (vAutoConsec)
+                                nDocumentoClause = ", NDocumento = @documento";
+                            else if (!string.IsNullOrWhiteSpace(vDocumento))
+                                nDocumentoClause = ", NDocumento = @documento";
+
                             var updateSql = @"
                                 UPDATE Tes_Transacciones
                                 SET Estado = 'I',
                                     Fecha_Emision = @fecha,
                                     Ubicacion_Actual = 'T',
                                     Fecha_Traslado = @fecha,
-                                    User_Genera = @usuario" +
-                                                        (vAutoConsec
-                                                            ? ", NDocumento = @documento"
-                                                            : (!string.IsNullOrWhiteSpace(vDocumento) ? ", NDocumento = @documento" : "")) +
-                                                    " WHERE nsolicitud = @solicitud";
+                                    User_Genera = @usuario"
+                                    + nDocumentoClause +
+                                    " WHERE nsolicitud = @solicitud";
                             connection.Execute(updateSql, new
                             {
                                 fecha = fechaEmision.ToString("yyyy-MM-dd"),
@@ -1352,33 +1359,22 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                                 solicitud = vSolicitud
                             });
 
-                            sbTesBancosAfectacion(CodEmpresa, vSolicitud, "E");
-
-                            _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                            {
-                                EmpresaId = CodEmpresa,
-                                Usuario = vUsuario,
-                                DetalleMovimiento = $"Genero Solicitud {vSolicitud}",
-                                Movimiento = "Genera - WEB",
-                                Modulo = vModulo
-                            });
-
                             sbTESActualizaCC(
                                     CodEmpresa,
-                                    data.codigo,
-                                    vTipo,
-                                    vConsecutivo,
-                                    data.id_banco,
-                                    data.op != null ? (int)data.op : 0,
-                                    data.modulo,
-                                    data.subModulo,
-                                    data.referencia != null ? (int)data.referencia : 0
+                                    new ActualizaCCParams
+                                    {
+                                        Codigo = data.codigo,
+                                        Tipo = vTipo,
+                                        Documento = vConsecutivo,
+                                        Banco = data.id_banco,
+                                        OP = data.op != null ? (int)data.op : 0,
+                                        Modulo = data.modulo,
+                                        SubModulo = data.subModulo,
+                                        Referencia = data.referencia != null ? (int)data.referencia : 0
+                                    }
                                 );
-
                             //Envió a impresión
                             break;
-
-
                         case "04":
                             response.Code = -1;
                             response.Description = "Las Transferencias Electrónicas no se pueden procesar directamente...";
@@ -1411,7 +1407,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                     {
                         tipo = vTipo
                     });
-                    response = resp;
+                    response = resp ?? "";
                 }
             }
             catch (Exception)
@@ -1419,7 +1415,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                 response = "";
             }
 
-            return response;
+            return response ?? "";
         }
 
         public ErrorDto<bool> fxTesCuentaObligatoriaVerifica(int CodEmpresa, int vBanco)
@@ -1457,7 +1453,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
 
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 result.Code = -1;
                 result.Result = false;
@@ -1465,7 +1461,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             return result;
         }
 
-        public string fxTesMesDescripcion(int vMes)
+        public static string fxTesMesDescripcion(int vMes)
         {
             switch (vMes)
             {
@@ -1550,7 +1546,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                             strDivisa = rs.cod_divisa;
                         }
 
-                        string vMontoLetras = _mProGrX_AuxiliarDB.NumeroALetras(curMonto).Result + fxDescDivisa(CodEmpresa, strDivisa).Result;
+                        string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result + fxDescDivisa(CodEmpresa, strDivisa).Result;
 
                         resp.Result.registros = lngCasos;
                         resp.Result.montoLetras = vMontoLetras;
@@ -1567,6 +1563,16 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                 resp.Code = -1;
                 resp.Description = ex.Message;
                 resp.Result = new TesReporteTransferenciaDto();
+            }
+            // Ensure resp is never null before returning
+            if (resp == null)
+            {
+                resp = new ErrorDto<TesReporteTransferenciaDto>
+                {
+                    Code = -1,
+                    Description = "Unknown error",
+                    Result = new TesReporteTransferenciaDto()
+                };
             }
             return resp;
         }

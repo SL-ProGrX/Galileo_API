@@ -9,6 +9,7 @@ namespace PgxAPI.DataBaseTier
     public class MSecurityMainDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
         public MSecurityMainDb(IConfiguration config)
         {
@@ -20,7 +21,7 @@ namespace PgxAPI.DataBaseTier
             int resp = 0;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var procedure = "[spSEG_Access]";
@@ -51,7 +52,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
 
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     connection.Open();
 
@@ -77,7 +78,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "spSEG_Log";
 
@@ -109,7 +110,7 @@ namespace PgxAPI.DataBaseTier
             int resp = 0;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "spSEG_Access";
 
@@ -122,7 +123,7 @@ namespace PgxAPI.DataBaseTier
                         Opcion = req.Opcion
                     };
 
-                    resp = resp = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                     resp = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                 }
             }
             catch (Exception)

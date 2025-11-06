@@ -76,7 +76,6 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-
         public ErrorDto PerfilUsuario_Actualizar(PerfilUsuarioDto request)
         {
             ErrorDto resp = new ErrorDto();

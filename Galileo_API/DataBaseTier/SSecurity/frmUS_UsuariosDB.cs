@@ -1,18 +1,18 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_UsuariosDB
+    public class FrmUsUsuariosDb
     {
 
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_UsuariosDB(IConfiguration config)
+        public FrmUsUsuariosDb(IConfiguration config)
         {
             _config = config;
         }
@@ -25,7 +25,6 @@ namespace PgxAPI.DataBaseTier
         public int UsuarioExiste(string usuario)
         {
             int resp = 0;
-            // string stringConn = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
 
             string sql = "select count(*) as 'Existe' from US_USUARIOS where Usuario = @usuario";
             var values = new
@@ -35,7 +34,7 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     resp = connection.Query<int>(sql, values).FirstOrDefault();
                 }
@@ -60,7 +59,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
                     var procedure = "[spPGX_W_Usuario_Guardar_Actualizar]";
@@ -89,31 +88,24 @@ namespace PgxAPI.DataBaseTier
                     parameters.Add("@EsAdminPortal", dbType: DbType.Boolean, direction: ParameterDirection.Output);
 
 
-
-                    //resp.Code = connection.Query<int>(procedure, parameters, commandType: CommandType.StoredProcedure).FirstOrDefault();
-
-
-
                     // Execute the stored procedure
                     connection.Execute(procedure, parameters, commandType: CommandType.StoredProcedure);
 
                     // Retrieve the output values
                     var esAdminPortal = parameters.Get<bool>("@EsAdminPortal");
-                    var userIdOutput = parameters.Get<int?>("@UserId");
 
 
                     if (esAdminPortal && !usuarioDto.ModoEdicion && usuarioDto.EmpresaId > 0)
                     {
                         try
                         {
-                            int res = SincronizaUsuarioCore(usuarioDto.EmpresaId, usuarioDto.UserName, usuarioDto.Nombre, "A", usuarioDto.UsuarioRegistro);
+                            SincronizaUsuarioCore(usuarioDto.EmpresaId, usuarioDto.UserName, usuarioDto.Nombre, "A", usuarioDto.UsuarioRegistro);
                         }
                         catch (Exception)
                         {
-                            throw new Exception("Se presento un problema al sincronizar el usuario con el Core");
+                            throw new InvalidOperationException("Se presento un problema al sincronizar el usuario con el Core");
                         }
                     }
-
 
                     resp.Description = "Ok";
 
@@ -146,7 +138,7 @@ namespace PgxAPI.DataBaseTier
             UsuarioModel result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Usuario_Consultar]";
                     var values = new
@@ -189,7 +181,7 @@ namespace PgxAPI.DataBaseTier
             List<UsuarioModel> result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_Usuarios_Empresa_Obtener]";
                     var values = new
@@ -215,7 +207,7 @@ namespace PgxAPI.DataBaseTier
             List<UsuarioClienteDto> result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Usuario_Consultar_Clientes]";
                     var values = new
@@ -249,17 +241,12 @@ namespace PgxAPI.DataBaseTier
                     valNota = "Exclusión al Rol: ( " + usuarioClienteAsignaDto.CodigoEmpresa.ToString() + " ) " + usuarioClienteAsignaDto.NombreEmpresa;
                 }
 
-                using (SqlConnection connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (SqlConnection connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-                    //connection.Open();
-
-                    //using (SqlTransaction transaction = connection.BeginTransaction()) //Consultar si desean manejar la transaccionalidad?
-                    //{
                     try
                     {
                         int res;
 
-                        //sqlCommand = "exec spPGX_Usuario_Cliente_Asigna @Cliente, @Usuario, @UsuarioRegistra, @TipoMov, @Notas";
                         var procedure = "[spPGX_Usuario_Cliente_Asigna]";
                         var values = new
                         {
@@ -305,26 +292,21 @@ namespace PgxAPI.DataBaseTier
 
                         if (res > 0)
                         {
-                            //transaction.Commit();
                             resp.Code = 0;
                             resp.Description = string.Empty;
                         }
                         else
                         {
-                            //transaction.Rollback();
                             resp.Code = -1;
                         }
 
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        //Console.WriteLine($"Error: {ex.Message}");
-
-                        // Rollback de la transacción en caso de error.
-                        //transaction.Rollback();
-                        throw;
+                        resp.Code = -1;
+                        resp.Description = ex.Message;
                     }
-                    //}
+                    return resp;
                 }
             }
             catch (Exception ex)
@@ -340,13 +322,10 @@ namespace PgxAPI.DataBaseTier
             List<TipoTransaccionBitacora> resultado = new List<TipoTransaccionBitacora>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var query = $@"select cod_transac as 'Codigo' , rtrim(descripcion) as Descripcion from us_transacciones";
                     resultado = connection.Query<TipoTransaccionBitacora>(query).ToList();
-                    //var procedure = "[spPGX_Cuenta_Log_Transacciones_Obtener]";
-
-                    //resultado = connection.Query<TipoTransaccionBitacora>(procedure, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -361,7 +340,7 @@ namespace PgxAPI.DataBaseTier
             List<UsuarioCuentaBitacora> result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Usuario_Consultar_Bitacora]";
                     var values = new
@@ -387,7 +366,7 @@ namespace PgxAPI.DataBaseTier
             List<UsuarioClienteRolDto> result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Usuario_Consultar_Roles]";
                     var values = new
@@ -410,7 +389,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Usuario_Rol_Asigna]";
                     var values = new
@@ -436,29 +415,11 @@ namespace PgxAPI.DataBaseTier
 
         public int SincronizaUsuarioCore(int pCodEmpresa, string pUsuario, string pNombre, string pEstado, string pUsrLogon)
         {
-            Seguridad_PortalDB seguridadPortal = new Seguridad_PortalDB(_config);
             int res = -1;
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(pCodEmpresa);
             try
             {
-
-                //pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(pCodEmpresa);
-                //string nombreServidorCore = pgxClienteDto.PGX_CORE_SERVER;
-                //string nombreBDCore = pgxClienteDto.PGX_CORE_DB;
-                //string userId = pgxClienteDto.PGX_CORE_USER;
-                //string pass = pgxClienteDto.PGX_CORE_KEY;
-
-                //string connectionString = $"Data Source={nombreServidorCore};" +
-                //                      $"Initial Catalog={nombreBDCore};" +
-                //                      $"Integrated Security=False;User Id={userId};Password={pass};";
-
-                /*string connectionString = $"PROVIDER=MSDASQL;Driver={{SQL Server}};Server={server};" +
-                      $"Database=PGX_BASE;APP=PGX_Portal;tcp:{server};";
-
-                string connectionString = $"PROVIDER=MSDASQL;Driver={{SQL Server}};Server={nombreServidorCore};" +
-                                        $"Database={nombreBDCore};APP=PGX_Portal;tcp:{nombreServidorCore};";*/
-
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var procedure = "[spSEG_SincronizaUsuarios]";
@@ -473,13 +434,9 @@ namespace PgxAPI.DataBaseTier
                     res = connection.Execute(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                throw;
-            }
-            finally
-            {
-                seguridadPortal = null!;
+                throw new InvalidOperationException("Se presento un problema al sincronizar el usuario con el Core: " + ex.Message);
             }
             return res;
         }

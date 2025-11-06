@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.Security;
 using System.Data;
@@ -10,6 +9,7 @@ namespace PgxAPI.DataBaseTier
     public class AppHitsDB
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "BaseConnString";
 
         public AppHitsDB(IConfiguration config)
         {
@@ -18,12 +18,10 @@ namespace PgxAPI.DataBaseTier
 
         public List<AppHits> AppHits_ObtenerTodos()
         {
-
-
             List<AppHits> types = new List<AppHits>();
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 {
                     var procedure = "[spPGX_W_AppHits_Obtener]";
 
@@ -47,7 +45,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 {
                     var procedure = "[spPGX_W_AppHits_Insertar]";
                     var values = new
@@ -76,7 +74,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 {
                     var procedure = "[spPGX_W_AppHits_Eliminar]";
                     var values = new
@@ -101,7 +99,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 {
                     var procedure = "[spPGX_W_AppHits_Editar]";
                     var values = new

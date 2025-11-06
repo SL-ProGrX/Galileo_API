@@ -7,11 +7,12 @@ using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmGA_DocumentosDB
+    public class FrmGaDocumentosDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "GAConnString";
 
-        public frmGA_DocumentosDB(IConfiguration config)
+        public FrmGaDocumentosDb(IConfiguration config)
         {
             _config = config;
         }
@@ -28,7 +29,7 @@ namespace PgxAPI.DataBaseTier
             var resp = new ErrorDto<List<TiposDocumentosArchivosDto>>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spGA_Interface_Tipos_Documentos]";
                     var values = new
@@ -61,7 +62,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
 
-                using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     string queryExist = $@"SELECT COUNT(*) FROM GA_Files WHERE Llave_01 = '{data.llave_01}' AND Llave_02 = '{data.llave_02}' AND Llave_03 = '{data.llave_03}'";
                     int count = connection.QuerySingle<int>(queryExist);
@@ -93,10 +94,10 @@ namespace PgxAPI.DataBaseTier
                         command.Parameters.AddWithValue("@Llave_03", data.llave_03);
                         command.Parameters.AddWithValue("@FileType", data.filetype);
                         command.Parameters.AddWithValue("@FileName", data.filename);
-                        command.Parameters.AddWithValue("@FileContent", (object)data.filecontent ?? DBNull.Value); // Maneja datos binarios correctamente
-                        command.Parameters.AddWithValue("@Vencimiento", DateTime.Parse(data.vencimiento));
-                        command.Parameters.AddWithValue("@FechaEmision", DateTime.Parse(data.fechaemision));
-                        command.Parameters.AddWithValue("@RegistroFecha", DateTime.Parse(data.registrofecha));
+                        command.Parameters.AddWithValue("@FileContent", data.filecontent != null ? (object)data.filecontent : DBNull.Value); // Maneja datos binarios correctamente
+                        command.Parameters.AddWithValue("@Vencimiento", DateTime.Parse(data.vencimiento, System.Globalization.CultureInfo.InvariantCulture));
+                        command.Parameters.AddWithValue("@FechaEmision", DateTime.Parse(data.fechaemision, System.Globalization.CultureInfo.InvariantCulture));
+                        command.Parameters.AddWithValue("@RegistroFecha", DateTime.Parse(data.registrofecha, System.Globalization.CultureInfo.InvariantCulture));
                         command.Parameters.AddWithValue("@RegistroUsuario", data.registrousuario);
 
                         connection.Open();
@@ -129,7 +130,7 @@ namespace PgxAPI.DataBaseTier
 
                 List<DocumentosArchivoDto> respGen = null!;
 
-                using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     string where = " ";
                     if (filtros.llave2 != null)
@@ -178,7 +179,7 @@ namespace PgxAPI.DataBaseTier
                 parameters.Add("usuario", usuario, DbType.String);
 
 
-                using (var connection = new SqlConnection(_config.GetConnectionString("GAConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     resp.Code = connection.Query<int>(procedure, parameters, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";

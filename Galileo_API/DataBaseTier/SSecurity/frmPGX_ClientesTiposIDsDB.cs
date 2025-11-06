@@ -6,11 +6,12 @@ using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmPGX_ClientesTiposIDsDB
+    public class FrmPgxClientesTiposIDsDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmPGX_ClientesTiposIDsDB(IConfiguration config)
+        public FrmPgxClientesTiposIDsDb(IConfiguration config)
         {
             _config = config;
         }
@@ -20,7 +21,7 @@ namespace PgxAPI.DataBaseTier
             List<TipoId> types = new List<TipoId>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_TiposId_Obtener]";
 
@@ -42,7 +43,7 @@ namespace PgxAPI.DataBaseTier
             {
                 int activa = request.Activa == true ? 1 : 0;
 
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     //Pregunto si existe
                     var query = $"SELECT COUNT(*) FROM PGX_TIPOS_ID WHERE TIPO_ID = '{request.tipo}'";
@@ -84,7 +85,7 @@ namespace PgxAPI.DataBaseTier
             resp.Code = 0;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_TiposId_Eliminar]";
                     var values = new
@@ -112,7 +113,7 @@ namespace PgxAPI.DataBaseTier
             resp.Code = 0;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_W_TiposId_Editar]";
                     var values = new
@@ -137,7 +138,7 @@ namespace PgxAPI.DataBaseTier
 
         public ErrorDto TipoId_Guardar(TipoId request)
         {
-            ErrorDto resp = new ErrorDto();
+            ErrorDto resp;
             if (request.Tipo_Id == "0")
             {
                 resp = TipoId_Insertar(request);

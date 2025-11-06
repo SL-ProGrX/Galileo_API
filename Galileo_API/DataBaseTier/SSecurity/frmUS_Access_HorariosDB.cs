@@ -6,11 +6,11 @@ using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_Access_HorariosDB
+    public class FrmUsAccessHorariosDb
     {
         private readonly IConfiguration _config;
 
-        public frmUS_Access_HorariosDB(IConfiguration config)
+        public FrmUsAccessHorariosDb(IConfiguration config)
         {
             _config = config;
         }
@@ -31,7 +31,6 @@ namespace PgxAPI.DataBaseTier
 
                     foreach (HorarioDto dt in result)
                     {
-                        //dt.Estado = dt.Activo == 1 ? "ACTIVO" : "INACTIVO";
                         dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
                     }
                 }

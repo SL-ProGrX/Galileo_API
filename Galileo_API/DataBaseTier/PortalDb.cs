@@ -13,7 +13,7 @@ namespace PgxAPI.DataBaseTier
 
         public string ObtenerDbConnStringEmpresa(int CodEmpresa)
         {
-            Seguridad_PortalDB seguridadPortal = new Seguridad_PortalDB(_config);
+            SeguridadPortalDb seguridadPortal = new SeguridadPortalDb(_config);
             PgxClienteDto pgxClienteDto;
             string connectionString = string.Empty;
             try

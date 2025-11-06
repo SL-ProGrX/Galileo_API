@@ -6,11 +6,12 @@ using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_Access_EstacionesDB
+    public class FrmUsAccessEstacionesDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
-        public frmUS_Access_EstacionesDB(IConfiguration config)
+        public FrmUsAccessEstacionesDb(IConfiguration config)
         {
             _config = config;
         }
@@ -20,7 +21,7 @@ namespace PgxAPI.DataBaseTier
             List<EstacionDto> result = new List<EstacionDto>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Estaciones_Cliente_Consultar]";
                     var values = new
@@ -58,22 +59,16 @@ namespace PgxAPI.DataBaseTier
                         List<EstacionMacDto> macsList2 = connection.Query<EstacionMacDto>(procedureObtMACs2, valuesMACs2, commandType: CommandType.StoredProcedure)!.ToList();
 
                         // Filtrar y agregar a lstMAC1 aquellos elementos de macsList2 cuyo MAC_01 no se encuentre en lstMAC1
-                        foreach (var estacionDto in macsList2)
-                        {
-                            if (!dt.lstMAC1.Contains(estacionDto.MAC_01))
-                            {
-                                dt.lstMAC1.Add(estacionDto.MAC_01);
-                            }
-                        }
+                        macsList2
+                            .Where(estacionDto => !dt.lstMAC1.Contains(estacionDto.MAC_01))
+                            .ToList()
+                            .ForEach(estacionDto => dt.lstMAC1.Add(estacionDto.MAC_01));
 
                         // Filtrar y agregar a lstMAC2 aquellos elementos de macsList2 cuyo MAC_02 no se encuentre en lstMAC2
-                        foreach (var estacionDto in macsList2)
-                        {
-                            if (!dt.lstMAC2.Contains(estacionDto.MAC_02))
-                            {
-                                dt.lstMAC2.Add(estacionDto.MAC_02);
-                            }
-                        }
+                        macsList2
+                            .Where(estacionDto => !dt.lstMAC2.Contains(estacionDto.MAC_02))
+                            .ToList()
+                            .ForEach(estacionDto => dt.lstMAC2.Add(estacionDto.MAC_02));
                     }
                 }
             }
@@ -89,7 +84,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Estacion_Guardar]";
                     var values = new
@@ -124,7 +119,7 @@ namespace PgxAPI.DataBaseTier
             List<EstacionSinVincularDto> result = new List<EstacionSinVincularDto>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Estacion_Loggin]";
                     var values = new
@@ -150,7 +145,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Estacion_Vincula]";
                     var values = new
@@ -178,7 +173,7 @@ namespace PgxAPI.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spPGX_Estacion_Eliminar]";
                     var values = new

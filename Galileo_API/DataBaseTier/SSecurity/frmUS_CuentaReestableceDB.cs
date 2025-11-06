@@ -1,18 +1,17 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class frmUS_CuentaReestableceDB
+    public class FrmUsCuentaReestableceDb
     {
         private readonly IConfiguration _config;
-        MSecurityMainDb DBBitacora;
+        readonly MSecurityMainDb DBBitacora;
 
-        public frmUS_CuentaReestableceDB(IConfiguration config)
+        public FrmUsCuentaReestableceDb(IConfiguration config)
         {
             _config = config;
             DBBitacora = new MSecurityMainDb(_config);
@@ -22,7 +21,6 @@ namespace PgxAPI.DataBaseTier
         {
             return DBBitacora.Bitacora(data);
         }
-
 
         public ErrorDto UsuarioCuentaReestablecer(CuentaReestablecer datos)
         {
@@ -44,7 +42,6 @@ namespace PgxAPI.DataBaseTier
                         };
 
                         resultado.Code = connection.Execute("spPGX_W_Cuenta_Reestablecer", datosCtaReestablecer, commandType: CommandType.StoredProcedure);
-                        // resultado.Code = 0;
                         resultado.Description = "Ok";
                     }
                 }
@@ -53,8 +50,6 @@ namespace PgxAPI.DataBaseTier
                     resultado.Code = -1;
                     resultado.Description = "-La contraseña nueva ya ha sido utilizada con anterioridad, por favor ingrese una nueva";
                 }
-
-
             }
             catch (Exception ex)
             {
@@ -81,8 +76,6 @@ namespace PgxAPI.DataBaseTier
                 return result == 1;
             }
         }
-
-
 
     }
 }

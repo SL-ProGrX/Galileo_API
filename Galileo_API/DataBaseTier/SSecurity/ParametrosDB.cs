@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.Security;
 using System.Data;
@@ -23,10 +22,8 @@ namespace PgxAPI.DataBaseTier
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
                 {
-                    //var procedure = "[spPGX_TiposId_Obtener]";
-                    // types = connection.Query<TipoId>(procedure, commandType: CommandType.StoredProcedure).ToList();
                     var query = "SELECT * FROM US_PARAMETROS";
-                    param = connection.Query<ParametrosDto>(query).FirstOrDefault();
+                    param = connection.Query<ParametrosDto>(query).FirstOrDefault() ?? new ParametrosDto();
                 }
             }
             catch (Exception ex)

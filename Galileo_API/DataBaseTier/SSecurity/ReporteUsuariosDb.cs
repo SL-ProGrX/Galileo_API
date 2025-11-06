@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.Security;
 using System.Data;
 
@@ -9,6 +8,7 @@ namespace PgxAPI.DataBaseTier
     public class ReporteUsuariosDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
         public ReporteUsuariosDb(IConfiguration config)
         {
@@ -20,7 +20,7 @@ namespace PgxAPI.DataBaseTier
             List<ReporteUsuariosListaRespuestaDto> result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Informe_Usuarios_Lista]";
                     var values = new
@@ -46,7 +46,7 @@ namespace PgxAPI.DataBaseTier
             List<ReporteUsuariosRolesRespuestaDto> result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Informe_Usuarios_Roles]";
                     var values = new
@@ -70,7 +70,7 @@ namespace PgxAPI.DataBaseTier
             List<ReporteUsuariosPermisosRespuestaDto> result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Informe_Usuarios_Permisos]";
                     var values = new
@@ -94,7 +94,7 @@ namespace PgxAPI.DataBaseTier
             List<ReporteRolesPermisosRespuestaDto> result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     var procedure = "[spSEG_Informe_Roles_Permisos]";
                     var values = new
@@ -119,13 +119,12 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 result = connection.Query<ReporteUsuarioRolesDto>(sql).ToList();
-
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _ = ex.Message;
             }
             return result;
         }
@@ -142,12 +141,12 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 result = connection.Query<ReporteUsuarioVinculacionDto>(sql, values).ToList();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw;
+                _ = ex.Message;
             }
 
             return result;

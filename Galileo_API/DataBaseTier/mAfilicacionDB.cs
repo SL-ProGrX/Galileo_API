@@ -3,11 +3,11 @@ using Microsoft.Data.SqlClient;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mAfilicacionDB
+    public class MAfilicacionDB
     {
         private readonly IConfiguration _config;
 
-        public mAfilicacionDB(IConfiguration config)
+        public MAfilicacionDB(IConfiguration config)
         {
             _config = config;
         }

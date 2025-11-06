@@ -7,10 +7,10 @@ using PgxAPI.Models.ERROR;
 
 namespace PgxAPI.DataBaseTier
 {
-    public class mComprasDB
+    public class MComprasDB
     {
         private readonly IConfiguration _config;
-        public mComprasDB(IConfiguration config)
+        public MComprasDB(IConfiguration config)
         {
             _config = config;
         }
@@ -56,7 +56,7 @@ namespace PgxAPI.DataBaseTier
 
                     vNum = connection.ExecuteAsync(query, parameters).Result;
 
-                    _ = vNum == 1 ? vCambia = true : vCambia = false;
+                    vCambia = vNum == 1;
 
                 }
             }
@@ -81,9 +81,9 @@ namespace PgxAPI.DataBaseTier
                     var parameters = new DynamicParameters();
                     parameters.Add("cod_orden", vOrden, DbType.String);
 
-                    var dapperinfo = connection.Query(query, parameters).FirstOrDefault();
+                    var dapperinfo = connection.Query(query, parameters).FirstOrDefault() as dynamic;
 
-                    if (dapperinfo.Existe == 0)
+                    if ((dapperinfo?.Existe ?? 0) == 0)
                     {
                         query = "update cpr_ordenes set proceso = 'D' where cod_orden = cod_orden = @cod_orden";
                     }
@@ -130,7 +130,9 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<UnidadesDtoList> UnidadesObtener(int CodEmpresa, string? filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            MComprasFiltros vfiltro = JsonConvert.DeserializeObject<MComprasFiltros>(filtros);
+            MComprasFiltros vfiltro = filtros != null
+                ? JsonConvert.DeserializeObject<MComprasFiltros>(filtros) ?? new MComprasFiltros()
+                : new MComprasFiltros();
             var response = new ErrorDto<UnidadesDtoList>();
             response.Result = new UnidadesDtoList();
             response.Code = 0;
@@ -164,7 +166,7 @@ namespace PgxAPI.DataBaseTier
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result.Unidades = null;
+                response.Result.Unidades = new List<UnidadesDto>();
                 response.Result.Total = 0;
             }
             return response;
@@ -173,7 +175,9 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<CentroCostoDtoList> CentroCostosObtener(int CodEmpresa, string? filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            MComprasFiltros vfiltro = JsonConvert.DeserializeObject<MComprasFiltros>(filtros);
+            MComprasFiltros vfiltro = filtros != null
+                ? JsonConvert.DeserializeObject<MComprasFiltros>(filtros) ?? new MComprasFiltros()
+                : new MComprasFiltros();
             var response = new ErrorDto<CentroCostoDtoList>();
             response.Result = new CentroCostoDtoList();
             response.Code = 0;
@@ -207,7 +211,7 @@ namespace PgxAPI.DataBaseTier
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result.CentroCostos = null;
+                response.Result.CentroCostos = new List<CentroCostoDto>();
                 response.Result.Total = 0;
             }
             return response;
@@ -248,7 +252,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     //busco cedula juridica del proveedor
                     string qProv = $@"SELECT CEDJUR FROM CXP_PROVEEDORES WHERE COD_PROVEEDOR = '{cod_proveedor}' ";
-                    string cedJur = connection.Query<string>(qProv).FirstOrDefault();
+                    string cedJur = connection.Query<string>(qProv).FirstOrDefault() ?? string.Empty;
 
 
                     string query = $@"UPDATE CPR_FACTURAS_XML SET ESTADO = 'R' 
