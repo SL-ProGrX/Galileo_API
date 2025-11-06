@@ -1169,7 +1169,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             for (int i = pCadena.Length - 1; i >= 0; i--)
             {
                 int xChar = (int)pCadena[i];
-                vResBuilder.Append(xChar.ToString());
+                vResBuilder.Append(xChar);
             }
             string vRes = vResBuilder.ToString();
 
@@ -1180,41 +1180,34 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             for (int i = 0; i < vRes.Length; i += 3)
             {
                 string sub;
-                if (i == 0)
-                {
-                    sub = vRes.Substring(i, Math.Min(3, vRes.Length - i));
-                }
-                else
-                {
-                    sub = vRes.Substring(i, Math.Min(3, vRes.Length - i));
-                }
+                sub = vRes.Substring(i, Math.Min(3, vRes.Length - i));
 
                 int num = int.Parse(sub);
 
                 switch (vSec)
                 {
                     case 0:
-                        vResXBuilder.Append((num + 1).ToString());
+                        vResXBuilder.Append(num + 1);
                         vSec = 1;
                         break;
                     case 1:
-                        vResXBuilder.Append((num - 5).ToString());
+                        vResXBuilder.Append(num - 5);
                         vSec = 2;
                         break;
                     case 2:
-                        vResXBuilder.Append((num + 7).ToString());
+                        vResXBuilder.Append(num + 7);
                         vSec = 3;
                         break;
                     case 3:
-                        vResXBuilder.Append((num - 13).ToString());
+                        vResXBuilder.Append(num - 13);
                         vSec = 4;
                         break;
                     case 4:
-                        vResXBuilder.Append((num - 2).ToString());
+                        vResXBuilder.Append(num - 2);
                         vSec = 5;
                         break;
                     case 5:
-                        vResXBuilder.Append((num + 3).ToString());
+                        vResXBuilder.Append(num + 3);
                         vSec = 0;
                         break;
                 }
@@ -1391,7 +1384,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
         }
 
 
-        public string fxTesTiposDocAsiento(int CodEmpresa, string vTipo) 
+        public string fxTesTiposDocAsiento(int CodEmpresa, string vTipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = "";
@@ -1415,7 +1408,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                 response = "";
             }
 
-            return response ?? "";
+            return response;
         }
 
         public ErrorDto<bool> fxTesCuentaObligatoriaVerifica(int CodEmpresa, int vBanco)
@@ -1495,50 +1488,49 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             return "";
         }
 
-        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-")
+        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(
+        int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C",
+        string? vDocumento = "TE", string? vPlan = "-sp-")
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+
             var resp = new ErrorDto<TesReporteTransferenciaDto>()
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new TesReporteTransferenciaDto()
             };
+
             decimal curMonto = 0;
             long lngCasos = 0;
             string strDivisa = "", vLetra = "";
+
             try
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
                 {
-                    query = $@"select cta as item,descripcion from Tes_Bancos where id_banco = @vBanco";
+                    query = @"select cta as item, descripcion from Tes_Bancos where id_banco = @vBanco";
                     var banco = connection.QueryFirstOrDefault(query, new { vBanco });
 
                     if (banco != null)
                     {
-                        vLetra = "Sirva la Presente para saludarlo y a la vez solicitarle debitar de nuestra cuenta corriente" 
-                            + " # " + banco.item + " la suma de ¢ ";
+                        vLetra = "Sirva la Presente para saludarlo y a la vez solicitarle debitar de nuestra cuenta corriente"
+                               + " # " + banco.item + " la suma de ¢ ";
                     }
-
 
                     if (vTipo == "C")
                     {
-                        string strSQL = @"select sum(Monto) as Monto,Count(*) as Casos,cod_divisa from Tes_Transacciones 
-                            where tipo = @vDocumento and id_banco = @vBanco and documento_Base = @vTransac";
+                        string strSQL = @"select sum(Monto) as Monto, Count(*) as Casos, cod_divisa
+                                  from Tes_Transacciones
+                                  where tipo = @vDocumento and id_banco = @vBanco and documento_Base = @vTransac";
                         if (vPlan != "-sp-")
                         {
                             strSQL += " and Cod_Plan = @vPlan";
                         }
                         strSQL += " group by cod_divisa";
 
-                        var rs = connection.QueryFirstOrDefault(strSQL,
-                            new {
-                                vDocumento,
-                                vBanco,
-                                vTransac,
-                                vPlan
-                            });
+                        var rs = connection.QueryFirstOrDefault(strSQL, new { vDocumento, vBanco, vTransac, vPlan });
                         if (rs != null)
                         {
                             curMonto = rs.Monto;
@@ -1546,7 +1538,8 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                             strDivisa = rs.cod_divisa;
                         }
 
-                        string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result + fxDescDivisa(CodEmpresa, strDivisa).Result;
+                        string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result
+                                              + fxDescDivisa(CodEmpresa, strDivisa).Result;
 
                         resp.Result.registros = lngCasos;
                         resp.Result.montoLetras = vMontoLetras;
@@ -1564,18 +1557,10 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                 resp.Description = ex.Message;
                 resp.Result = new TesReporteTransferenciaDto();
             }
-            // Ensure resp is never null before returning
-            if (resp == null)
-            {
-                resp = new ErrorDto<TesReporteTransferenciaDto>
-                {
-                    Code = -1,
-                    Description = "Unknown error",
-                    Result = new TesReporteTransferenciaDto()
-                };
-            }
+
             return resp;
         }
+
 
         public ErrorDto<string> fxDescDivisa(int CodEmpresa, string vDivisa)
         {
@@ -1625,12 +1610,12 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                         }
 
                         resp.Result = string.IsNullOrEmpty(fxCodText) ? strDescripcion : fxCodText;
-                    } 
+                    }
                     else
                     {
                         resp.Result = " Colones";
                     }
-                    
+
                 }
             }
             catch (Exception ex)
@@ -1681,7 +1666,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
 
                     var insert = connection.Execute(procedure);
 
-                    if(insert != -1)
+                    if (insert != -1)
                     {
                         //busco el ultimo token generado
                         var query = $@"select top 1 ID_TOKEN from Tes_Tokens where REGISTRO_USUARIO = @usuario order by REGISTRO_FECHA desc";
@@ -1698,11 +1683,11 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
 
             return response;
         }
-   
+
         public void sbCrdOperacionTags(
-            int CodEmpresa, 
+            int CodEmpresa,
             long pOperacion,
-            string pLinea, 
+            string pLinea,
             string pTag,
             string pUsuario,
             string? pAsignado = "",
@@ -1732,7 +1717,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             }
             catch (Exception ex)
             {
-               _ = ex.Message;
+                _ = ex.Message;
             }
 
         }

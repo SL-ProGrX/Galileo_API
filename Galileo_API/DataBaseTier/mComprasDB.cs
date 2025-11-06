@@ -83,14 +83,10 @@ namespace PgxAPI.DataBaseTier
 
                     var dapperinfo = connection.Query(query, parameters).FirstOrDefault() as dynamic;
 
-                    if ((dapperinfo?.Existe ?? 0) == 0)
-                    {
-                        query = "update cpr_ordenes set proceso = 'D' where cod_orden = cod_orden = @cod_orden";
-                    }
-                    else
-                    {
-                        query = "update cpr_ordenes set proceso = 'D' where cod_orden = cod_orden = @cod_orden";
-                    }
+
+                    query = "update cpr_ordenes set proceso = 'D' where cod_orden = cod_orden = @cod_orden";
+
+
                     resp.Code = connection.ExecuteAsync(query, parameters).Result;
                     resp.Description = "Ok";
                 }
@@ -256,7 +252,7 @@ namespace PgxAPI.DataBaseTier
 
 
                     string query = $@"UPDATE CPR_FACTURAS_XML SET ESTADO = 'R' 
-                                        WHERE COD_DOCUMENTO = '{cod_factura}' AND CED_JUR_PROV = '{cedJur.Replace("-","").Replace(" ","")}'";
+                                        WHERE COD_DOCUMENTO = '{cod_factura}' AND CED_JUR_PROV = '{cedJur.Replace("-", "").Replace(" ", "")}'";
                     response.Code = connection.Execute(query);
 
                 }

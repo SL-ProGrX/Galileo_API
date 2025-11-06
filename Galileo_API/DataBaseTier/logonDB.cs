@@ -347,12 +347,9 @@ namespace PgxAPI.DataBaseTier
                 emailRequest.Body = body;
                 emailRequest.Attachments = Attachments;
 
-                if (eConfig != null)
-                {
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, response);
-                }
+                await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, response);
 
-            } 
+            }
         }
     }
 }

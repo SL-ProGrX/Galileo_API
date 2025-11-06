@@ -47,7 +47,7 @@ builder.Services.AddSwaggerGen(c =>
 
 // === JWT Auth (SIN clave en appsettings) ===
 var jwtSection = builder.Configuration.GetSection("Jwt");
-var keyString = builder.Configuration["Jwt:Secret"]; // viene de user-secrets (dev) o env var Jwt__Secret (prod)
+var keyString = builder.Configuration["Jwt:Secret"]; // user-secrets (dev) o env var Jwt__Secret (prod)
 if (string.IsNullOrWhiteSpace(keyString))
     throw new InvalidOperationException("Jwt:Secret no está configurada. Define la key con 'dotnet user-secrets set \"Jwt:Secret\" \"...\"' en dev, o como variable Jwt__Secret en prod.");
 
@@ -72,14 +72,13 @@ builder.Services
             ClockSkew = TimeSpan.FromMinutes(1)
         };
 
-        // No loguear contenido sensible
         options.Events = new JwtBearerEvents
         {
             OnAuthenticationFailed = context =>
-        {
-            Console.WriteLine("Token inválido: " + context.Exception.Message);
-            return Task.CompletedTask;
-        },
+            {
+                Console.WriteLine("Token inválido: " + context.Exception.Message);
+                return Task.CompletedTask;
+            },
             OnTokenValidated = context =>
             {
                 Console.WriteLine("Token válido: " + context.SecurityToken);
@@ -99,37 +98,22 @@ builder.Services
 
                 return context.Response.WriteAsync(result);
             }
-
         };
     });
 
 string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
+// 🔒 Orígenes estáticos, creados una sola vez (preferidos por el analizador)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins, policy =>
     {
-        var devOrigins = new[]
-        {
-            "http://localhost:4200",
-            "http://localhost:4201",
-            "http://localhost:4202",
-            "http://localhost:61968",
-            "http://localhost:61969"
-        };
-
-        var prodOrigins = new[]
-        {
-            "https://progrxpruebas.aseccss.com",
-            "https://progrxweb.com"
-        };
-
         policy.SetIsOriginAllowed(origin =>
         {
             if (builder.Environment.IsDevelopment())
-                return devOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
+                return CorsOrigins.Dev.Contains(origin);
 
-            return prodOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase);
+            return CorsOrigins.Prod.Contains(origin);
         })
         .AllowAnyMethod()
         .AllowAnyHeader()
@@ -138,13 +122,12 @@ builder.Services.AddCors(options =>
 });
 
 // Establecer la cultura global
-var cultureInfo = new CultureInfo("en-US"); // Cambia a "en-US" para MM/dd/yyyy
-cultureInfo.DateTimeFormat.ShortDatePattern = "MM/dd/yyyy"; // Configura el patr�n de fecha
-cultureInfo.DateTimeFormat.LongTimePattern = "HH:mm:ss"; // Configura el patr�n de hora
+var cultureInfo = new CultureInfo("en-US");
+cultureInfo.DateTimeFormat.ShortDatePattern = "MM/dd/yyyy";
+cultureInfo.DateTimeFormat.LongTimePattern = "HH:mm:ss";
 
 CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
 CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
-
 
 var app = builder.Build();
 
@@ -204,4 +187,24 @@ await app.RunAsync();
 namespace Galileo_API
 {
     public record LoginRequest(string Username, string Password);
+}
+
+// ======= Soporte CORS (estático) =======
+internal static class CorsOrigins
+{
+    // Usa HashSet para O(1) y comparación OrdinalIgnoreCase
+    public static readonly HashSet<string> Dev = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "http://localhost:4200",
+        "http://localhost:4201",
+        "http://localhost:4202",
+        "http://localhost:61968",
+        "http://localhost:61969"
+    };
+
+    public static readonly HashSet<string> Prod = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "https://progrxpruebas.aseccss.com",
+        "https://progrxweb.com"
+    };
 }

@@ -104,7 +104,7 @@ namespace PgxAPI.DataBaseTier
             {
                 _ = ex.Message;
             }
-            return resultado != null ? resultado : new List<UsuarioCuentaMovimientoResultDto>();
+            return resultado;
         }
 
         public List<LoginDbResult> ObtenerInformacionUsuario(string username, string userId)

@@ -88,7 +88,7 @@ namespace PgxAPI.DataBaseTier
             }
         }
 
-        private List<PrimeTreeDtoV2> CrearFavoritos(List<MenuDto> modulosFavoritos)
+        private static List<PrimeTreeDtoV2> CrearFavoritos(List<MenuDto> modulosFavoritos)
         {
             var favoritos = new List<PrimeTreeDtoV2>();
             foreach (MenuDto item in modulosFavoritos)
@@ -129,7 +129,7 @@ namespace PgxAPI.DataBaseTier
             return padres;
         }
 
-        private List<PrimeTreeDtoV2> MenuPrincipal()
+        private static List<PrimeTreeDtoV2> MenuPrincipal()
         {
             List<PrimeTreeDtoV2> menu = new List<PrimeTreeDtoV2> {
 
@@ -165,7 +165,7 @@ namespace PgxAPI.DataBaseTier
             return false;
         }
 
-        private List<PrimeTreeDtoV2> BuscaHijos(MenuDto nodoPadre, List<MenuDto> ModulosHijos)
+        private static List<PrimeTreeDtoV2> BuscaHijos(MenuDto nodoPadre, List<MenuDto> ModulosHijos)
         {
             try
             {
