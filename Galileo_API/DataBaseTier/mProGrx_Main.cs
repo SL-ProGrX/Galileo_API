@@ -522,11 +522,6 @@ namespace PgxAPI.DataBaseTier
             return glngFechaCR;
         }
 
-        // private static readonly Regex _patronPeligroso = new(
-        //      @"(?i)\b(SELECT|DELETE|UPDATE|INSERT|EXEC|DROP|CREATE|ALTER)\b|sp_|'",
-        //      RegexOptions.Compiled
-        //  );
-
         public static partial class SeguridadSqlHelper
         {
             [GeneratedRegex(@"(?i)\b(SELECT|DELETE|UPDATE|INSERT|EXEC|DROP|CREATE|ALTER)\b|sp_|'", RegexOptions.Compiled)]

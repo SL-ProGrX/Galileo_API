@@ -664,13 +664,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-
         public ErrorDto ValidarBeneficioPagoJustificaDato(int CodCliente, BeneficioGeneralDatos beneficio, bool justifica)
         {
-
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDto info = new ErrorDto();
-            info.Code = 0;
+            var info = new ErrorDto { Code = 0 };
 
             try
             {
@@ -679,60 +676,59 @@ namespace PgxAPI.DataBaseTier
 
                 using (var connection = new SqlConnection(clienteConnString))
                 {
-                    var query = @$"select abv.*, c.pago_justifica FROM AFI_BENE_VALIDA_CATEGORIA c left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
-                                WHERE COD_CATEGORIA = 
-                                    (
-	                                    SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab 
-                                        WHERE ab.COD_BENEFICIO = '{beneficio.cod_beneficio.item}'
-                                    ) AND c.ESTADO = 1 AND PAGO = 1 AND TIPO != 'G' order by abv.PRIORIDAD asc";
-                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
+                    const string queryValidaciones = @"
+                SELECT abv.*, c.pago_justifica
+                FROM AFI_BENE_VALIDA_CATEGORIA c
+                LEFT JOIN AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
+                WHERE c.COD_CATEGORIA = (
+                    SELECT ab.COD_CATEGORIA
+                    FROM AFI_BENEFICIOS ab
+                    WHERE ab.COD_BENEFICIO = @CodBeneficio
+                )
+                AND c.ESTADO = 1
+                AND c.PAGO = 1
+                AND c.TIPO <> 'G'
+                ORDER BY abv.PRIORIDAD ASC";
+
+                    var validaciones = connection
+                        .Query<AfiBeneCalidaciones>(queryValidaciones, new { CodBeneficio = beneficio.cod_beneficio.item })
+                        .ToList();
 
                     foreach (var validacion in validaciones)
                     {
-
-                        query = validacion.query_val
+                        // Construye el SQL específico de la validación
+                        var query = (validacion.query_val ?? string.Empty)
                             .Replace(CedulaPlaceholder, beneficio.cedula)
                             .Replace(UsuarioPlaceholder, beneficio.registra_user)
                             .Replace(IdBeneficioPlaceholder, beneficio.id_beneficio.ToString())
                             .Replace(CodBeneficioPlaceholder, beneficio.cod_beneficio.item.ToString())
                             .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
-                            .Replace(MontoUsuarioPlaceholder, beneficio.monto_aplicado.ToString())
+                            .Replace(MontoUsuarioPlaceholder, Convert.ToDecimal(beneficio.monto_aplicado).ToString(System.Globalization.CultureInfo.InvariantCulture))
                             .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
 
-                        var result = connection.Query<int>(query).FirstOrDefault();
+                        var result = connection.QueryFirstOrDefault<int>(query);
 
                         if (result == validacion.resultado_val)
                         {
                             obligatorias++;
                             if (validacion.pago_justifica)
-                            {
                                 justificadas++;
-                            }
 
                             info.Code = 0;
-                            info.Description += validacion.msj_val + "...\n";
+                            if (!string.IsNullOrEmpty(validacion.msj_val))
+                                info.Description += validacion.msj_val + "...\n";
                         }
                     }
 
-                    if (justificadas > 0 && !justifica)
-                    {
-                        info.Code = -1;
-                    }
-                    else if (justificadas > 0 && justifica)
-                    {
-                        info.Code = 0;
-                    }
+                    if (justificadas > 0)
+                        info.Code = justifica ? 0 : -1;
 
-                    if (obligatorias > 0 && !string.IsNullOrEmpty(info.Description) && info.Description.Length > 0)
+                    if (obligatorias > 0 && !string.IsNullOrEmpty(info.Description))
                     {
                         int activa = obligatorias - justificadas;
-
                         if (activa > 0)
-                        {
                             info.Code = -1;
-                        }
                     }
-
                 }
             }
             catch (Exception ex)
@@ -743,6 +739,8 @@ namespace PgxAPI.DataBaseTier
 
             return info;
         }
+
+
 
         public ErrorDto ValidaCargaPagos(int CodCliente, BeneficioGeneralDatos beneficio)
         {

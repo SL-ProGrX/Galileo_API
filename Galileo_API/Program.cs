@@ -190,10 +190,12 @@ namespace Galileo_API
 }
 
 // ======= Soporte CORS (estático) =======
-internal static class CorsOrigins
+namespace Galileo_API
 {
-    // Usa HashSet para O(1) y comparación OrdinalIgnoreCase
-    public static readonly HashSet<string> Dev = new(StringComparer.OrdinalIgnoreCase)
+    internal static class CorsOrigins
+    {
+        // Usa HashSet para O(1) y comparación OrdinalIgnoreCase
+        public static readonly HashSet<string> Dev = new(StringComparer.OrdinalIgnoreCase)
     {
         "http://localhost:4200",
         "http://localhost:4201",
@@ -202,9 +204,10 @@ internal static class CorsOrigins
         "http://localhost:61969"
     };
 
-    public static readonly HashSet<string> Prod = new(StringComparer.OrdinalIgnoreCase)
+        public static readonly HashSet<string> Prod = new(StringComparer.OrdinalIgnoreCase)
     {
         "https://progrxpruebas.aseccss.com",
         "https://progrxweb.com"
     };
+    }
 }

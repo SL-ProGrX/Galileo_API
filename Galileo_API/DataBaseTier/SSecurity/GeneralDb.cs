@@ -60,59 +60,53 @@ namespace PgxAPI.DataBaseTier
 
         public ErrorGeneralDto ValidaCuenta(ValidaCuentaRequestDto validaCuentaRequestDto)
         {
-
-            ErrorGeneralDto resp = new ErrorGeneralDto();
+            var resp = new ErrorGeneralDto();
             int res = -1;
-            PgxClienteDto pgxClienteDto;
-            SeguridadPortalDb seguridadPortal = new SeguridadPortalDb(_config);
 
-            pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(validaCuentaRequestDto.CodEmpresa);
-            string nombreServidorCore = pgxClienteDto.PGX_CORE_SERVER;
-            string nombreBDCore = pgxClienteDto.PGX_CORE_DB;
-            string userId = pgxClienteDto.PGX_CORE_USER;
-            string pass = pgxClienteDto.PGX_CORE_KEY;
+            var seguridadPortal = new SeguridadPortalDb(_config);
+            var pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(validaCuentaRequestDto.CodEmpresa);
 
-            string connectionString = $"Data Source={nombreServidorCore};" +
-                                  $"Initial Catalog={nombreBDCore};" +
-                                  $"Integrated Security=False;User Id={userId};Password={pass};";
+            var connectionString =
+                $"Data Source={pgxClienteDto.PGX_CORE_SERVER};Initial Catalog={pgxClienteDto.PGX_CORE_DB};" +
+                $"Integrated Security=False;User Id={pgxClienteDto.PGX_CORE_USER};Password={pgxClienteDto.PGX_CORE_KEY};";
+
             try
             {
+                using var connectionCore = new SqlConnection(connectionString);
 
+                const string query = @"
+            SELECT COUNT(*) 
+            FROM CntX_cuentas 
+            WHERE cod_cuenta = @CodCuenta 
+              AND acepta_movimientos = 1 
+              AND cod_contabilidad = @CodContabilidad;";
 
-                using (var connectionCore = new SqlConnection(connectionString))
+                var param = new
                 {
-                    var query = "select isnull(count(*),0) as Existe from CntX_cuentas where cod_cuenta = @CodCuenta and acepta_movimientos = 1 and cod_contabilidad = @CodContabilidad";
-                    var param = new
-                    {
-                        CodCuenta = validaCuentaRequestDto.Cuenta,
-                        CodContabilidad = 1
-                    };
+                    CodCuenta = validaCuentaRequestDto.Cuenta,
+                    CodContabilidad = 1
+                };
 
-                    int? resQuery1 = connectionCore.Query<int>(query, param).FirstOrDefault();
+                int count = connectionCore.QuerySingle<int>(query, param);
 
-                    if (resQuery1.HasValue && resQuery1.Value > 0)
-                    {
-                        var procedure = "[spSIFValidaCuentas]";
+                if (count > 0)
+                {
+                    const string procedure = "[spSIFValidaCuentas]";
+                    var parameters = new { Cuenta = validaCuentaRequestDto.Cuenta };
 
-                        var parameters = new
-                        {
-                            Cuenta = validaCuentaRequestDto.Cuenta
-                        };
-                        connectionCore.Execute(procedure, parameters, commandType: CommandType.StoredProcedure);
-                    }
-
-                    res = 1;
-
-                    resp.Code = res;
-                    resp.Description = string.Empty;
-
+                    connectionCore.Execute(procedure, parameters, commandType: CommandType.StoredProcedure);
                 }
+
+                res = 1;
+                resp.Code = res;
+                resp.Description = string.Empty;
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
 
