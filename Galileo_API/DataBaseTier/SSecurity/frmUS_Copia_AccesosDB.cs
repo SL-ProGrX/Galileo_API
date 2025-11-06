@@ -1,8 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using PgxAPI.Models.US;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -10,15 +9,15 @@ namespace PgxAPI.DataBaseTier
     public class frmUS_Copia_AccesosDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmUS_Copia_AccesosDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -112,7 +111,7 @@ namespace PgxAPI.DataBaseTier
 
                                     if (resultado.Code == 0)
                                     {
-                                        Bitacora(new BitacoraInsertarDTO
+                                        Bitacora(new BitacoraInsertarDto
                                         {
                                             EmpresaId = copiaPermisosUsuarioDto.Cliente,
                                             Usuario = copiaPermisosUsuarioDto.Usuario,

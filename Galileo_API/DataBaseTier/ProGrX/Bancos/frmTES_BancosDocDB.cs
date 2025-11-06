@@ -3,19 +3,20 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
     public class frmTES_BancosDocDB
     {
         private readonly IConfiguration? _config;
-        private readonly mSecurityMainDb BitacoraDb;
+        private readonly MSecurityMainDb BitacoraDb;
         private readonly int vModulo = 9;
 
         public frmTES_BancosDocDB(IConfiguration config)
         {
             _config = config;
-            BitacoraDb = new mSecurityMainDb(_config);
+            BitacoraDb = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -82,10 +83,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="id_banco"></param>
         /// <returns></returns>
-        public ErrorDto<List<tesBancosDocData>> Tes_BancoDocTipos_Obtener(int CodEmpresa, string id_banco)
+        public ErrorDto<List<TesBancosDocData>> Tes_BancoDocTipos_Obtener(int CodEmpresa, string id_banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<tesBancosDocData>>();
+            var response = new ErrorDto<List<TesBancosDocData>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -94,14 +95,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                         from tes_tipos_doc D left join tes_banco_docs A on D.tipo = A.tipo
                                         and A.id_banco = '{id_banco}' order by A.tipo desc ";
 
-                    response.Result = connection.Query<tesBancosDocData>(query).ToList();
+                    response.Result = connection.Query<TesBancosDocData>(query).ToList();
                 }
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = new List<tesBancosDocData>();
+                response.Result = new List<TesBancosDocData>();
             }
             return response;
         }
@@ -113,10 +114,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="id_banco"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDto<tesBancoDocDTO> Tes_BancoDoc_Obtener(int CodEmpresa,int id_banco, string tipo)
+        public ErrorDto<TesBancoDocDto> Tes_BancoDoc_Obtener(int CodEmpresa,int id_banco, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<tesBancoDocDTO>();
+            var response = new ErrorDto<TesBancoDocDto>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -124,14 +125,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     var query = $@"select * from tes_banco_docs where id_banco = @banco
                                       and tipo = @tipo ";
 
-                    response.Result = connection.QueryFirstOrDefault<tesBancoDocDTO>(query, new { banco = id_banco, tipo = tipo });
+                    response.Result = connection.QueryFirstOrDefault<TesBancoDocDto>(query, new { banco = id_banco, tipo = tipo });
                 }
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = new tesBancoDocDTO();
+                response.Result = new TesBancoDocDto();
             }
             return response;
         }
@@ -142,7 +143,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="bancoDoc"></param>
         /// <returns></returns>
-        public ErrorDto Tes_BancoDoc_Guardar(int CodEmpresa, tesBancoDocTipoData bancoDoc)
+        public ErrorDto Tes_BancoDoc_Guardar(int CodEmpresa, TesBancoDocTipoData bancoDoc)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto();
@@ -255,7 +256,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     connection.Execute(query, new { tipo = tipo, banco = id_banco });
 
                     //bitacora
-                    BitacoraDb.Bitacora(new Models.BitacoraInsertarDTO
+                    BitacoraDb.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario.ToUpper(),

@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -10,22 +11,22 @@ namespace PgxAPI.DataBaseTier
     public class frmCxPFacturasDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         public frmCxPFacturasDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
 
-        public ErrorDto<List<ParametrosIVA>> ParamIVA_Obtener(int CodEmpresa)
+        public ErrorDto<List<ParametrosIva>> ParamIVA_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<ParametrosIVA>>
+            var response = new ErrorDto<List<ParametrosIva>>
             {
                 Code = 0
             };
@@ -38,7 +39,7 @@ namespace PgxAPI.DataBaseTier
                                 LEFT JOIN CntX_Cuentas C ON C.cod_cuenta = P.VALOR AND C.cod_contabilidad = 1
                                 WHERE COD_PARAMETRO in('02','03','08')";
 
-                    response.Result = connection.Query<ParametrosIVA>(query).ToList();
+                    response.Result = connection.Query<ParametrosIva>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -131,11 +132,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<Centro_Costo>> CentrosCosto_Obtener(int CodEmpresa, string Cod_Unidad)
+        public ErrorDto<List<CentroCosto>> CentrosCosto_Obtener(int CodEmpresa, string Cod_Unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<Centro_Costo>>
+            var response = new ErrorDto<List<CentroCosto>>
             {
                 Code = 0
             };
@@ -151,7 +152,7 @@ namespace PgxAPI.DataBaseTier
                                     SELECT COD_CENTRO_COSTO FROM CNTX_UNIDADES_CC
                                     WHERE COD_CONTABILIDAD = 1 AND COD_UNIDAD = '{Cod_Unidad}')";
 
-                    response.Result = connection.Query<Centro_Costo>(query).ToList();
+                    response.Result = connection.Query<CentroCosto>(query).ToList();
 
                 }
             }
@@ -237,12 +238,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<FacturaDTO> FacturaDetalle_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
+        public ErrorDto<FacturaDto> FacturaDetalle_Obtener(int CodEmpresa, string Cod_Factura, int Cod_Proveedor)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<FacturaDTO>
+            var response = new ErrorDto<FacturaDto>
             {
                 Code = 0
             };
@@ -262,7 +263,7 @@ namespace PgxAPI.DataBaseTier
                         query += $" AND F.cod_proveedor = {Cod_Proveedor}";
                     }
 
-                    response.Result = connection.Query<FacturaDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<FacturaDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -340,7 +341,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (resp.Code == 0)
                     {
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = data.Usuario,
@@ -379,7 +380,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (resp.Code == 0)
                     {
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = data.Usuario,
@@ -510,7 +511,7 @@ namespace PgxAPI.DataBaseTier
 
                     //if (resp.Code == 0)
                     //{
-                    //    Bitacora(new BitacoraInsertarDTO
+                    //    Bitacora(new BitacoraInsertarDto
                     //    {
                     //        EmpresaId = CodEmpresa,
                     //        Usuario = data.Usuario,
@@ -823,7 +824,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Factura_Insertar(int CodEmpresa, FacturaDTO data)
+        public ErrorDto Factura_Insertar(int CodEmpresa, FacturaDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -847,7 +848,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (resp.Code == 0)
                     {
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = data.Creacion_User,

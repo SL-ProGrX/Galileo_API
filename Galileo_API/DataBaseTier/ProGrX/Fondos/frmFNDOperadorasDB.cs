@@ -10,13 +10,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 18; // Modulo de Fondo de Inversion
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly mFNDFuncionesDB _mFNDFunciones;
 
         public frmFNDOperadorasDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
             _mFNDFunciones = new mFNDFuncionesDB(_config);
         }
 
@@ -26,14 +26,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_operadora"></param>
         /// <returns></returns>
-        public ErrorDto<FndOperadoraDTO> AF_Operadora_Obtener(int CodEmpresa, int cod_operadora)
+        public ErrorDto<FndOperadoraDto> AF_Operadora_Obtener(int CodEmpresa, int cod_operadora)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<FndOperadoraDTO>
+            var response = new ErrorDto<FndOperadoraDto>
             {
                 Code = 0,
-                Result = new FndOperadoraDTO()
+                Result = new FndOperadoraDto()
             };
 
             try
@@ -45,7 +45,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         FROM vFnd_Operadoras
                         WHERE cod_Operadora = @CodOperadora";
 
-                response.Result = connection.QueryFirstOrDefault<FndOperadoraDTO>(sql, new { CodOperadora = cod_operadora });
+                response.Result = connection.QueryFirstOrDefault<FndOperadoraDto>(sql, new { CodOperadora = cod_operadora });
             }
             catch (Exception ex)
             {
@@ -97,7 +97,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto AF_Operadora_Guardar(int codEmpresa, FndOperadoraDTO request)
+        public ErrorDto AF_Operadora_Guardar(int codEmpresa, FndOperadoraDto request)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             var response = new ErrorDto { Code = 0, Description = "OK" };
@@ -160,13 +160,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_operadora"></param>
         /// <returns></returns>
-        public ErrorDto<List<OperadoraPlanDTO>> FND_OperadoraPlanes_Obtener(int CodEmpresa, int cod_operadora)
+        public ErrorDto<List<OperadoraPlanDto>> FND_OperadoraPlanes_Obtener(int CodEmpresa, int cod_operadora)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<OperadoraPlanDTO>>
+            var response = new ErrorDto<List<OperadoraPlanDto>>
             {
                 Code = 0,
-                Result = new List<OperadoraPlanDTO>()
+                Result = new List<OperadoraPlanDto>()
             };
 
             try
@@ -185,7 +185,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                     WHERE Cod_Operadora = @CodOperadora
                     ORDER BY Cod_Plan;";
 
-                response.Result = connection.Query<OperadoraPlanDTO>(sql, new { CodOperadora = cod_operadora }).ToList();
+                response.Result = connection.Query<OperadoraPlanDto>(sql, new { CodOperadora = cod_operadora }).ToList();
 
             }
             catch (Exception ex)
@@ -234,13 +234,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="operadora"></param>
         /// <param name="scrollCode"></param>
         /// <returns></returns>
-        public ErrorDto<FndOperadoraDTO> AF_Operadora_Scroll_Obtener(int CodEmpresa, int operadora, int scrollCode)
+        public ErrorDto<FndOperadoraDto> AF_Operadora_Scroll_Obtener(int CodEmpresa, int operadora, int scrollCode)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<FndOperadoraDTO>
+            var response = new ErrorDto<FndOperadoraDto>
             {
                 Code = 0,
-                Result = new FndOperadoraDTO()
+                Result = new FndOperadoraDto()
             };
             try
             {

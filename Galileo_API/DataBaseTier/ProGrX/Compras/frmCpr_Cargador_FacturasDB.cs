@@ -37,14 +37,14 @@ namespace PgxAPI.DataBaseTier
         /// <param name="proveedor"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<CprFacturasXMLLista> Cargador_Facturas_Obtener(int CodEmpresa, int proveedor, string filtros)
+        public ErrorDto<CprFacturasXmlLista> Cargador_Facturas_Obtener(int CodEmpresa, int proveedor, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            CprFacturasXMLFiltros filtro = JsonConvert.DeserializeObject<CprFacturasXMLFiltros>(filtros) ?? new CprFacturasXMLFiltros();
-            var response = new ErrorDto<CprFacturasXMLLista>
+            CprFacturasXmlFiltros filtro = JsonConvert.DeserializeObject<CprFacturasXmlFiltros>(filtros) ?? new CprFacturasXmlFiltros();
+            var response = new ErrorDto<CprFacturasXmlLista>
             {
                 Code = 0,
-                Result = new CprFacturasXMLLista
+                Result = new CprFacturasXmlLista
                 {
                     total = 0
                 }
@@ -98,7 +98,7 @@ namespace PgxAPI.DataBaseTier
                 response.Result.total = connection.Query<int>(countQuery).First();
 
                 string dataQuery = $"SELECT * FROM CPR_FACTURAS_XML {where} ORDER BY id DESC {paginaActual} {paginacionActual}";
-                response.Result.lista = connection.Query<CprFacturasXML_DTO>(dataQuery).ToList();
+                response.Result.lista = connection.Query<CprFacturasXmlDto>(dataQuery).ToList();
             }
             catch (Exception ex)
             {
@@ -118,10 +118,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa">C�digo de la empresa</param>
         /// <param name="id">ID de la factura</param>
         /// <returns>Factura encontrada o error</returns>
-        public ErrorDto<CprFacturasXML_DTO> Cargador_Factura_ObtenerPorId(int CodEmpresa, int id)
+        public ErrorDto<CprFacturasXmlDto> Cargador_Factura_ObtenerPorId(int CodEmpresa, int id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<CprFacturasXML_DTO>
+            var response = new ErrorDto<CprFacturasXmlDto>
             {
                 Code = 0
             };
@@ -130,7 +130,7 @@ namespace PgxAPI.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 string query = "SELECT * FROM CPR_FACTURAS_XML WHERE id = @id";
-                var factura = connection.QueryFirstOrDefault<CprFacturasXML_DTO>(query, new { id });
+                var factura = connection.QueryFirstOrDefault<CprFacturasXmlDto>(query, new { id });
 
                 if (factura == null)
                 {
@@ -185,7 +185,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Cargador_Facturas_Guardar(int CodEmpresa, CprFacturasXML_DTO request)
+        public ErrorDto Cargador_Facturas_Guardar(int CodEmpresa, CprFacturasXmlDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -321,7 +321,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Cargador_Facturas_Actualizar(int CodEmpresa, CprFacturasXML_DTO request)
+        public ErrorDto Cargador_Facturas_Actualizar(int CodEmpresa, CprFacturasXmlDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -359,10 +359,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="id"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprFacturasLineasXML_Data>> Cargador_FacturasDetalle_Obtener(int CodEmpresa, int id, string? cod_proveedor)
+        public ErrorDto<List<CprFacturasLineasXmlData>> Cargador_FacturasDetalle_Obtener(int CodEmpresa, int id, string? cod_proveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprFacturasLineasXML_Data>>
+            var response = new ErrorDto<List<CprFacturasLineasXmlData>>
             {
                 Code = 0
             };
@@ -376,7 +376,7 @@ namespace PgxAPI.DataBaseTier
                     "MONTO as montoTotal, SUB_TOTAL as subTotal, IMPUESTO, IMP_PORCENTAJE," +
                     " TOTAL_LINEA as montoTotalLinea, COD_DOCUMENTO " +
                     "FROM CPR_FACTURAS_XML_DETALLE WHERE FAC_ID = @id";
-                response.Result = connection.Query<CprFacturasLineasXML_Data>(query, new { id }).ToList();
+                response.Result = connection.Query<CprFacturasLineasXmlData>(query, new { id }).ToList();
 
                 //verifica si el proveedor es diferente de 0
                 query = $@"SELECT TOP 1 COD_PROVEEDOR  FROM CXP_PROVEEDORES cp 
@@ -419,14 +419,14 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<CprFacturasXMLLista> Cargador_FacturasActivas_Obtener(int CodEmpresa, int proveedor, string filtros)
+        public ErrorDto<CprFacturasXmlLista> Cargador_FacturasActivas_Obtener(int CodEmpresa, int proveedor, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            CprFacturasXMLFiltros filtro = JsonConvert.DeserializeObject<CprFacturasXMLFiltros>(filtros) ?? new CprFacturasXMLFiltros();
-            var response = new ErrorDto<CprFacturasXMLLista>
+            CprFacturasXmlFiltros filtro = JsonConvert.DeserializeObject<CprFacturasXmlFiltros>(filtros) ?? new CprFacturasXmlFiltros();
+            var response = new ErrorDto<CprFacturasXmlLista>
             {
                 Code = 0,
-                Result = new CprFacturasXMLLista
+                Result = new CprFacturasXmlLista
                 {
                     total = 0
                 }
@@ -480,7 +480,7 @@ namespace PgxAPI.DataBaseTier
                 response.Result.total = connection.Query<int>(countQuery).First();
 
                 string dataQuery = $"SELECT * FROM CPR_FACTURAS_XML {where} AND ESTADO IN ('P', 'A') ORDER BY id DESC {paginaActual} {paginacionActual}";
-                response.Result.lista = connection.Query<CprFacturasXML_DTO>(dataQuery).ToList();
+                response.Result.lista = connection.Query<CprFacturasXmlDto>(dataQuery).ToList();
             }
             catch (Exception ex)
             {
@@ -600,7 +600,7 @@ namespace PgxAPI.DataBaseTier
                         await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
                     }
 
-                    BitacoraEnvioCorreo(new BitacoraComprasInsertarDTO
+                    BitacoraEnvioCorreo(new BitacoraComprasInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         consec = 0,
@@ -623,7 +623,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDto BitacoraEnvioCorreo(BitacoraComprasInsertarDTO req)
+        public ErrorDto BitacoraEnvioCorreo(BitacoraComprasInsertarDto req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
             ErrorDto resp = new ErrorDto();

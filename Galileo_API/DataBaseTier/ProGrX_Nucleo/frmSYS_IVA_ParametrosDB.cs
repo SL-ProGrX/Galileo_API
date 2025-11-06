@@ -2,21 +2,22 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using static PgxAPI.Models.ProGrX_Nucleo.frmSYS_IvaParametrosModels;
+using PgxAPI.Models.Security;
 using System.Data;
+using static PgxAPI.Models.ProGrX_Nucleo.FrmSysIvaParametrosModels;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
     public class frmSYS_IVA_ParametrosDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _security_MainDB;
+        private readonly MSecurityMainDb _security_MainDB;
         private readonly int vModulo = 10;
 
         public frmSYS_IVA_ParametrosDB(IConfiguration config)
         {
             _config = config;
-            _security_MainDB = new mSecurityMainDb(_config);
+            _security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -271,10 +272,10 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="dto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<SysIvaParametrosUpdateResponse> Sys_Iva_Parametro_Actualizar(int CodEmpresa, string codParametro, SysIvaParametrosUpdateRequest dto, string usuario)
+        public ErrorDto<SysIvaParametrosData> Sys_Iva_Parametro_Actualizar(int CodEmpresa, string codParametro, SysIvaParametrosUpdateRequest dto, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SysIvaParametrosUpdateResponse> { Code = 0, Description = "Ok" };
+            var result = new ErrorDto<SysIvaParametrosData> { Code = 0, Description = "Ok" };
 
             try
             {
@@ -354,7 +355,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 connection.Execute(sqlUpd, new { usr = usuario, val = valor, cod = codParametro }, tx);
 
                 // Bitácora
-                _security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -406,7 +407,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 ) cta
                 WHERE p.cod_parametro=@cod;";
 
-                result.Result = connection.QueryFirstOrDefault<SysIvaParametrosUpdateResponse>(sqlRow, new { cod = codParametro }, tx);
+                result.Result = connection.QueryFirstOrDefault<SysIvaParametrosData>(sqlRow, new { cod = codParametro }, tx);
 
                 tx.Commit();
             }

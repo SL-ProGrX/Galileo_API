@@ -162,7 +162,7 @@ namespace PgxAPI.DataBaseTier
                     resp1 = connection.Query<long>(query).FirstOrDefault();
 
                     query = $@"select * from Tes_Transacciones where nsolicitud = {resp1} ";
-                    var resp2 = connection.Query<TES_TransaccionesDTO>(query).FirstOrDefault();
+                    var resp2 = connection.Query<TesTransaccionesDto>(query).FirstOrDefault();
 
                     if (resp2.CODIGO.Trim() == tesoreria.vCodigo.Trim())
                     {

@@ -60,10 +60,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDto<List<CargoDTO>> ObtenerCargos(int CodCliente)
+        public ErrorDto<List<CargoDto>> ObtenerCargos(int CodCliente)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<CargoDTO>>
+            var response = new ErrorDto<List<CargoDto>>
             {
                 Code = 0
             };
@@ -73,7 +73,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "select COD_CARGO, DESCRIPCION, 0 as MONTO from CXP_CARGOS where ACTIVO = 1";
-                    response.Result = connection.Query<CargoDTO>(query).ToList();
+                    response.Result = connection.Query<CargoDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -86,10 +86,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<AdelantoRegistradoDTO>> ObtenerAdelantosRegistrados(int CodCliente, int CodProveedor)
+        public ErrorDto<List<AdelantoRegistradoDto>> ObtenerAdelantosRegistrados(int CodCliente, int CodProveedor)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<AdelantoRegistradoDTO>>
+            var response = new ErrorDto<List<AdelantoRegistradoDto>>
             {
                 Code = 0
             };
@@ -107,7 +107,7 @@ namespace PgxAPI.DataBaseTier
                     {
                         CodProveedor = CodProveedor,
                     };
-                    response.Result = connection.Query<AdelantoRegistradoDTO>(query, values).ToList();
+                    response.Result = connection.Query<AdelantoRegistradoDto>(query, values).ToList();
                 }
             }
             catch (Exception ex)
@@ -120,10 +120,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<HistorialPagoDTO>> ObtenerHistorialDePagos(int CodCliente, int CodProveedor, string Anticipos)
+        public ErrorDto<List<HistorialPagoDto>> ObtenerHistorialDePagos(int CodCliente, int CodProveedor, string Anticipos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<HistorialPagoDTO>>
+            var response = new ErrorDto<List<HistorialPagoDto>>
             {
                 Code = 0
             };
@@ -138,7 +138,7 @@ namespace PgxAPI.DataBaseTier
                         CodProveedor = CodProveedor,
                         Anticipos = Anticipos,
                     };
-                    response.Result = connection.Query<HistorialPagoDTO>(query, values).ToList();
+                    response.Result = connection.Query<HistorialPagoDto>(query, values).ToList();
                 }
             }
             catch (Exception ex)

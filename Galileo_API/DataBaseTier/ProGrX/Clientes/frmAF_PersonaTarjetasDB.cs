@@ -3,23 +3,24 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
     public class frmAF_PersonaTarjetasDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _mSecurity;
+        private readonly MSecurityMainDb _mSecurity;
         private readonly mProGrx_Main _mMain;
 
         public frmAF_PersonaTarjetasDB(IConfiguration config)
         {
             _config = config;
-            _mSecurity = new mSecurityMainDb(_config);
+            _mSecurity = new MSecurityMainDb(_config);
             _mMain = new mProGrx_Main(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -30,16 +31,16 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<List<PersonaTarjetaDTO>> AF_PersonaTarjetas_Consulta(int CodEmpresa, string cedula)
+        public ErrorDto<List<PersonaTarjetaDto>> AF_PersonaTarjetas_Consulta(int CodEmpresa, string cedula)
         {
-            var response = new ErrorDto<List<PersonaTarjetaDTO>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<PersonaTarjetaDto>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
                 using var connection = new SqlConnection(conn);
 
                 string sql = "exec spAFI_PersonaTarjetas_Consulta @Empresa, @Cedula, ''";
-                response.Result = connection.Query<PersonaTarjetaDTO>(sql, new { Empresa = CodEmpresa, Cedula = cedula }).ToList();
+                response.Result = connection.Query<PersonaTarjetaDto>(sql, new { Empresa = CodEmpresa, Cedula = cedula }).ToList();
             }
             catch (Exception ex)
             {
@@ -56,7 +57,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="tarjeta"></param>
         /// <returns></returns>
-        public ErrorDto AF_PersonaTarjetas_Registro(int CodEmpresa, PersonaTarjetaRegistroDTO tarjeta)
+        public ErrorDto AF_PersonaTarjetas_Registro(int CodEmpresa, PersonaTarjetaRegistroDto tarjeta)
         {
             var response = new ErrorDto { Code = 0, Description = "Procesado correctamente" };
             try
@@ -94,7 +95,7 @@ namespace PgxAPI.DataBaseTier
                 });
 
                 
-                Bitacora(new BitacoraInsertarDTO
+                Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = tarjeta.Usuario.ToUpper(),

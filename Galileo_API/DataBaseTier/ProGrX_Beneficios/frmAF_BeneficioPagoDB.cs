@@ -50,10 +50,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_beneficio"></param>
         /// <returns></returns>
-        public ErrorDto<List<Afi_Beneficio_Pago>> AfiBeneficioPagosTabla_Obtener(int CodCliente, string cod_beneficio)
+        public ErrorDto<List<AfiBenePago>> AfiBeneficioPagosTabla_Obtener(int CodCliente, string cod_beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<Afi_Beneficio_Pago>>();
+            var response = new ErrorDto<List<AfiBenePago>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -65,7 +65,7 @@ namespace PgxAPI.DataBaseTier
                                             -- left join UPROGRAMATICA U on S.UP = U.CODIGO
                                              where B.cod_beneficio = '{cod_beneficio}' and B.ESTADO = 'S' 
                                             -- order by U.DESCRIPCION,B.CEDULA";
-                    response.Result = connection.Query<Afi_Beneficio_Pago>(query).ToList();
+                    response.Result = connection.Query<AfiBenePago>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -114,12 +114,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="tabla"></param>
         /// <returns></returns>
-        public ErrorDto AfiBeneficioPago_Generar(int CodCliente, string usuario, List<Afi_Beneficio_Pago> tabla)
+        public ErrorDto AfiBeneficioPago_Generar(int CodCliente, string usuario, List<AfiBenePago> tabla)
         {
             mTESFuncionesDB mTES = new mTESFuncionesDB(_config);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            List<Afi_Beneficio_Pago> afi_Beneficio_Pagos = tabla;
-            //afi_Beneficio_Pagos = JsonConvert.DeserializeObject<List<Afi_Beneficio_Pago>>(tabla);
+            List<AfiBenePago> afi_Beneficio_Pagos = tabla;
+            //afi_Beneficio_Pagos = JsonConvert.DeserializeObject<List<AfiBenePago>>(tabla);
 
             ErrorDto info = new ErrorDto();
             info.Code = 0;

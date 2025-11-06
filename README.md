@@ -48,6 +48,6 @@ Diseñada para entornos privados y uso interno, con prácticas seguras para mane
 2. **Configurar Secretos de Usuario**
   ```bash
   dotnet user-secrets init
-  dotnet user-secrets set "Jwt:Key" "tu_clave_larga_y_segura"
+  dotnet user-secrets set "Jwt:Secret" "tu_clave_larga_y_segura"
 
 

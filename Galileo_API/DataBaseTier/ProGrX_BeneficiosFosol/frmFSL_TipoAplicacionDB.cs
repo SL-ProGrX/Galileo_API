@@ -1,9 +1,9 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.FSL;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {

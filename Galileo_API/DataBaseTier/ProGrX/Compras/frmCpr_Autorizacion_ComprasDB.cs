@@ -18,13 +18,13 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<List<CprSolicitud_Autoriza>> SolicitudAutorizacion_Obtener(int CodCliente, string filtroString)
+        public ErrorDto<List<CprSolicitudAutoriza>> SolicitudAutorizacion_Obtener(int CodCliente, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            CprSolicitud_Filtros filtros = JsonConvert.DeserializeObject<CprSolicitud_Filtros>(filtroString);
+            CprSolicitudFiltros filtros = JsonConvert.DeserializeObject<CprSolicitudFiltros>(filtroString);
 
-            var response = new ErrorDto<List<CprSolicitud_Autoriza>>();
+            var response = new ErrorDto<List<CprSolicitudAutoriza>>();
             response.Code = 0;
 
             try
@@ -63,7 +63,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"SELECT CPR_ID, ESTADO, REGISTRO_FECHA, REGISTRO_USUARIO, MONTO, i_presupuestado,
                                     DETALLE, COD_UNIDAD  FROM CPR_SOLICITUD WHERE ESTADO IN ('P') {where} ";
 
-                    response.Result = connection.Query<CprSolicitud_Autoriza>(query).ToList();
+                    response.Result = connection.Query<CprSolicitudAutoriza>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -81,12 +81,12 @@ namespace PgxAPI.DataBaseTier
             {
                 Code = 0
             };
-            List<CprSolicitud_Autoriza> solicitudesData = new List<CprSolicitud_Autoriza>();
-            solicitudesData = JsonConvert.DeserializeObject<List<CprSolicitud_Autoriza>>(solicitudes);
+            List<CprSolicitudAutoriza> solicitudesData = new List<CprSolicitudAutoriza>();
+            solicitudesData = JsonConvert.DeserializeObject<List<CprSolicitudAutoriza>>(solicitudes);
 
             try
             {
-                foreach (CprSolicitud_Autoriza item in solicitudesData)
+                foreach (CprSolicitudAutoriza item in solicitudesData)
                 {
                     info = _DBSolicitud.AutorizaSolicitud(CodCliente, item.cpr_id, usuario);
                     if (info.Code == -1)
@@ -110,12 +110,12 @@ namespace PgxAPI.DataBaseTier
             {
                 Code = 0
             };
-            List<CprSolicitud_Autoriza> solicitudesData = new List<CprSolicitud_Autoriza>();
-            solicitudesData = JsonConvert.DeserializeObject<List<CprSolicitud_Autoriza>>(solicitudes);
+            List<CprSolicitudAutoriza> solicitudesData = new List<CprSolicitudAutoriza>();
+            solicitudesData = JsonConvert.DeserializeObject<List<CprSolicitudAutoriza>>(solicitudes);
 
             try
             {
-                foreach (CprSolicitud_Autoriza item in solicitudesData)
+                foreach (CprSolicitudAutoriza item in solicitudesData)
                 {
                     info = _DBSolicitud.DeniegaSolicitud(CodCliente, item.cpr_id, usuario, justificacion);
                     if (info.Code == -1)

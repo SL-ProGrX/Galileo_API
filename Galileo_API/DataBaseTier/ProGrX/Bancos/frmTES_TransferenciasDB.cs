@@ -10,16 +10,16 @@ namespace PgxAPI.DataBaseTier
     {
         private readonly IConfiguration? _config;
         private mProGrX_AuxiliarDB _utils;
-        private mTesoreria _mTesoreria;
+        private MTesoreria _mTesoreria;
         private int modulo = 9;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmTES_TransferenciasDB(IConfiguration config)
         {
             _config = config;
             _utils = new mProGrX_AuxiliarDB(config);
-            _mTesoreria = new mTesoreria(config);
-            _Security_MainDB = new mSecurityMainDb(config);
+            _mTesoreria = new MTesoreria(config);
+            _Security_MainDB = new MSecurityMainDb(config);
         }
 
         /// <summary>

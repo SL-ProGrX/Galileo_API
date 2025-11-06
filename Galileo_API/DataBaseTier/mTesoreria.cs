@@ -1310,7 +1310,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                            INNER JOIN tes_tipos_doc X ON T.tipo = X.tipo
                            WHERE C.nsolicitud = @solicitud";
 
-                    var data = connection.QueryFirstOrDefault<TesTransaccionDto>(query, new { solicitud = vSolicitud });
+                    var data = connection.QueryFirstOrDefault<MTesTransaccionDto>(query, new { solicitud = vSolicitud });
 
                     if (data == null)
                     {

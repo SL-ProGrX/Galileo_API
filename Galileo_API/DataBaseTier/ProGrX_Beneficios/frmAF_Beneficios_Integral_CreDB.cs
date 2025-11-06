@@ -26,10 +26,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consec"></param>
         /// <param name="cod_beneficio"></param>
         /// <returns></returns>
-        public ErrorDto<AfiBeneSocioCreceDTO> BeneSocioCrece_Obtener(int CodCliente, int consec, string cod_beneficio)
+        public ErrorDto<AfiBeneSocioCreceDto> BeneSocioCrece_Obtener(int CodCliente, int consec, string cod_beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<AfiBeneSocioCreceDTO>();
+            var response = new ErrorDto<AfiBeneSocioCreceDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -57,7 +57,7 @@ namespace PgxAPI.DataBaseTier
                                       ,[OBSERVACIONES_BENE], [fecha_cuota_inicial], [fecha_cuota_aplicar], [fecha_ahorro] FROM [dbo].[AFI_BENE_SOCIO_CRECE]
                                   Where CONSEC = {consec} AND COD_BENEFICIO = '{cod_beneficio}' ";
 
-                    response.Result = connection.Query<AfiBeneSocioCreceDTO>(Query).FirstOrDefault();
+                    response.Result = connection.Query<AfiBeneSocioCreceDto>(Query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -75,7 +75,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        public ErrorDto BeneSocioCrece_Guardar(int CodCliente, AfiBeneSocioCreceDTO beneficio)
+        public ErrorDto BeneSocioCrece_Guardar(int CodCliente, AfiBeneSocioCreceDto beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -105,7 +105,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        private ErrorDto BeneSocioCrece_Insertar(int CodCliente, AfiBeneSocioCreceDTO beneficio)
+        private ErrorDto BeneSocioCrece_Insertar(int CodCliente, AfiBeneSocioCreceDto beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -191,7 +191,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        private ErrorDto BeneSocioCrece_Actualizar(int CodCliente, AfiBeneSocioCreceDTO beneficio)
+        private ErrorDto BeneSocioCrece_Actualizar(int CodCliente, AfiBeneSocioCreceDto beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -315,7 +315,7 @@ namespace PgxAPI.DataBaseTier
                                         WHERE CONSEC = {beneficio.consec} AND [COD_BENEFICIO] = '{beneficio.cod_beneficio}' ";
                             connection.Execute(queryM);
 
-                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 cod_beneficio = beneficio.cod_beneficio,
@@ -358,10 +358,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consec"></param>
         /// <param name="cod_beneficio"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfiBeneSocioCreceSesionesDTO>> BeneSocioCreceSesiones_Obtener(int CodCliente, int consec, string cod_beneficio)
+        public ErrorDto<List<AfiBeneSocioCreceSesionesDto>> BeneSocioCreceSesiones_Obtener(int CodCliente, int consec, string cod_beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<AfiBeneSocioCreceSesionesDTO>>();
+            var response = new ErrorDto<List<AfiBeneSocioCreceSesionesDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -382,7 +382,7 @@ namespace PgxAPI.DataBaseTier
                                   FROM [dbo].[AFI_BENE_SOCIO_CRECE_SESIONES]
                                   Where CONSEC = {consec} AND COD_BENEFICIO = '{cod_beneficio}' ";
 
-                    response.Result = connection.Query<AfiBeneSocioCreceSesionesDTO>(query).ToList();
+                    response.Result = connection.Query<AfiBeneSocioCreceSesionesDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -400,7 +400,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        public ErrorDto BeneSocioCreceSesion_Guardar(int CodCliente, AfiBeneSocioCreceSesionesDTO beneficio)
+        public ErrorDto BeneSocioCreceSesion_Guardar(int CodCliente, AfiBeneSocioCreceSesionesDto beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -430,7 +430,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        private ErrorDto BeneSocioCreceSession_Insertar(int CodCliente, AfiBeneSocioCreceSesionesDTO beneficio)
+        private ErrorDto BeneSocioCreceSession_Insertar(int CodCliente, AfiBeneSocioCreceSesionesDto beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -485,7 +485,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        private ErrorDto BeneSocioCreceSession_Actualizar(int CodCliente, AfiBeneSocioCreceSesionesDTO beneficio)
+        private ErrorDto BeneSocioCreceSession_Actualizar(int CodCliente, AfiBeneSocioCreceSesionesDto beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();

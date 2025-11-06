@@ -4,6 +4,7 @@ using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Nucleo; 
 using System.Data;
 using Microsoft.Data.SqlClient;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
@@ -11,12 +12,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 10;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmSYS_RA_PersonasDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -126,7 +127,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 
                     if (datos.persona_id == 0)
                     {
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,
@@ -137,7 +138,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     }
                     else
                     {
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,

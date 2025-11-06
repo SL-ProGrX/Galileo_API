@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
@@ -10,15 +11,15 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
     {
         private readonly IConfiguration? _config;
         private readonly int module = 9;
-        private readonly mSecurityMainDb mSecurity;
-        private readonly mTesoreria mTesoreria;
+        private readonly MSecurityMainDb mSecurity;
+        private readonly MTesoreria MTesoreria;
 
 
         public frmTES_ReposicionDB(IConfiguration config)
         {
             _config = config;
-            mSecurity = new mSecurityMainDb(config);
-            mTesoreria = new mTesoreria(config);
+            mSecurity = new MSecurityMainDb(config);
+            MTesoreria = new MTesoreria(config);
         }
 
         /// <summary>
@@ -27,13 +28,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<tesReposicionData> TES_Reposicion_Obtenet(int CodEmpresa, int solicitud)
+        public ErrorDto<TesReposicionData> TES_Reposicion_Obtenet(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<tesReposicionData>
+            var response = new ErrorDto<TesReposicionData>
             {
                 Code = 0,
-                Result = new tesReposicionData()
+                Result = new TesReposicionData()
             };
             try
             {
@@ -52,7 +53,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                     inner join tes_banco_docs Y on C.id_banco = Y.id_Banco and C.tipo = Y.tipo
                                     where C.nsolicitud = @solicitud and C.estado in('T','E','I')";
 
-                    response.Result = connection.Query<tesReposicionData>(query,
+                    response.Result = connection.Query<TesReposicionData>(query,
                         new { solicitud = solicitud }).FirstOrDefault();
 
                     if(response.Result != null)
@@ -65,7 +66,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     {
                         response.Code = -1;
                         response.Description = "Este documento no es valido para reposición...";
-                        response.Result = new tesReposicionData();
+                        response.Result = new TesReposicionData();
                         response.Result.verificaTag = "N";
                         response.Result.verifica = "Este documento no es valido para reposición...";
                         return response;
@@ -100,7 +101,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto TES_Reposicion_Guardar(int CodEmpresa, tesReposicionData data)
+        public ErrorDto TES_Reposicion_Guardar(int CodEmpresa, TesReposicionData data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -133,9 +134,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     });
 
                     //bitácora
-                    mTesoreria.sbTesBitacoraEspecial(CodEmpresa, data.nSolicitud, "18", data.notas, data.usuario);
+                    MTesoreria.sbTesBitacoraEspecial(CodEmpresa, data.nSolicitud, "18", data.notas, data.usuario);
                     
-                    mSecurity.Bitacora(new BitacoraInsertarDTO
+                    mSecurity.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = data.usuario,

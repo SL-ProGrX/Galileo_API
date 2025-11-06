@@ -74,7 +74,7 @@ namespace PgxAPI.DataBaseTier
 
                         //busco tipo de solicitud y monto 
                         query = $"select * from CPR_SOLICITUD where CPR_ID = {cotizacion.cpr_id}";
-                        var solicitud = connection.QueryFirstOrDefault<CprSolicitudDTO>(query);
+                        var solicitud = connection.QueryFirstOrDefault<CprSolicitudDto>(query);
 
                         if (solicitud.tipo_orden == solicitudDB.CprSolicitud_TipoExcepcion(CodEmpresa).Description
                             || solicitud.tipo_orden == solicitudDB.CprSolicitud_TipoExcepcionGM(CodEmpresa).Description)

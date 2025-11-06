@@ -16,7 +16,7 @@ namespace PgxAPI.DataBaseTier
         public string fxgCntUnidad(int CodEmpresa, string pCodigo)
         {
             string result = "";
-            CntUnidadDTO info = new CntUnidadDTO();
+            CntUnidadDto info = new CntUnidadDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -25,7 +25,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select descripcion from CntX_Unidades where cod_unidad = {pCodigo} and cod_contabilidad = {CodEmpresa}";
 
-                    info = connection.Query<CntUnidadDTO>(query).FirstOrDefault();
+                    info = connection.Query<CntUnidadDto>(query).FirstOrDefault();
                     result = info.Descripcion;
 
                 }
@@ -42,7 +42,7 @@ namespace PgxAPI.DataBaseTier
         public string fxgCntCentroCostos(int CodEmpresa, string pCodigo)
         {
             string result = "";
-            CntCentroCostosDTO info = new CntCentroCostosDTO();
+            CntCentroCostosDto info = new CntCentroCostosDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -51,7 +51,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select descripcion from CntX_Centro_Costos where cod_centro_Costo = {pCodigo} and cod_contabilidad = {CodEmpresa}";
 
-                    info = connection.Query<CntCentroCostosDTO>(query).FirstOrDefault();
+                    info = connection.Query<CntCentroCostosDto>(query).FirstOrDefault();
                     result = info.Descripcion;
 
                 }
@@ -68,7 +68,7 @@ namespace PgxAPI.DataBaseTier
         public bool fxgCntPeriodoValida(int CodEmpresa, DateTime vFecha)
         {
             bool result = false;
-            List<CntPeriodosDTO> info = new List<CntPeriodosDTO>();
+            List<CntPeriodosDto> info = new List<CntPeriodosDto>();
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -78,7 +78,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select * from CntX_Periodos where anio = Year({vFecha}) and mes = Month({vFecha}) and estado = 'P' and cod_contabilidad = {CodEmpresa}";
 
-                    info = connection.Query<CntPeriodosDTO>(query).ToList();
+                    info = connection.Query<CntPeriodosDto>(query).ToList();
 
                     if (info.Count > 0)
                     {
@@ -102,7 +102,7 @@ namespace PgxAPI.DataBaseTier
         public string fxgCntCuentaDesc(int CodEmpresa, string pCuenta)
         {
             string result = "";
-            CntDescripCuentaDTO info = new CntDescripCuentaDTO();
+            CntDescripCuentaDto info = new CntDescripCuentaDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -111,7 +111,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select ltrim(rtrim(Descripcion)) as 'Descripcion' from CntX_Cuentas where cod_cuenta = {pCuenta} and cod_contabilidad = {CodEmpresa}";
 
-                    info = connection.Query<CntDescripCuentaDTO>(query).FirstOrDefault();
+                    info = connection.Query<CntDescripCuentaDto>(query).FirstOrDefault();
                     result = info.Descripcion;
 
                 }
@@ -128,8 +128,8 @@ namespace PgxAPI.DataBaseTier
         public bool fxgCntCuentaValida(int CodEmpresa, string vCuenta)
         {
             bool result = false;
-            CntValidaDTO info = new CntValidaDTO();
-            SifEmpresaDTO sif = new SifEmpresaDTO();
+            CntValidaDto info = new CntValidaDto();
+            SifEmpresaDto sif = new SifEmpresaDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -141,12 +141,12 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select * from sif_empresa";
-                    sif = connection.Query<SifEmpresaDTO>(query).FirstOrDefault();
+                    sif = connection.Query<SifEmpresaDto>(query).FirstOrDefault();
 
 
                     query = $@"select isnull(count(*),0) as Existe from CntX_cuentas where cod_cuenta = '{vCuenta}' and acepta_movimientos = 1 and cod_contabilidad = {sif.Cod_Empresa_Enlace}";
 
-                    info = connection.Query<CntValidaDTO>(query).FirstOrDefault();
+                    info = connection.Query<CntValidaDto>(query).FirstOrDefault();
 
                     if (info.Existe > 0)
                     {
@@ -170,7 +170,7 @@ namespace PgxAPI.DataBaseTier
         public string fxgCntTipoAsientoDesc(int CodEmpresa, string vTipo)
         {
             string result = "";
-            CntDescripTipoAsientoDTO info = new CntDescripTipoAsientoDTO();
+            CntDescripTipoAsientoDto info = new CntDescripTipoAsientoDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -179,7 +179,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select descripcion from CntX_tipos_asientos where tipo_asiento = {vTipo} and cod_contabilidad = {CodEmpresa}";
 
-                    info = connection.Query<CntDescripTipoAsientoDTO>(query).FirstOrDefault();
+                    info = connection.Query<CntDescripTipoAsientoDto>(query).FirstOrDefault();
                     result = info.Descripcion;
 
                 }
@@ -197,7 +197,7 @@ namespace PgxAPI.DataBaseTier
         {
             string result = "";
             int intCaracteres = 0;
-            CntContabilidadesDTO info = new CntContabilidadesDTO();
+            CntContabilidadesDto info = new CntContabilidadesDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -206,7 +206,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select * from CntX_Contabilidades where cod_contabilidad = {CodEmpresa}";
 
-                    info = connection.Query<CntContabilidadesDTO>(query).FirstOrDefault();
+                    info = connection.Query<CntContabilidadesDto>(query).FirstOrDefault();
                     intCaracteres = info.Nivel1;
                     intCaracteres = intCaracteres + info.Nivel2;
                     intCaracteres = intCaracteres + info.Nivel3;
@@ -241,8 +241,8 @@ namespace PgxAPI.DataBaseTier
             pCuenta = pCuenta.Trim();
 
             //DefMascarasDTO param = new DefMascarasDTO();
-            var param = new ErrorDto<DefMascarasDTO>();
-            CntContabilidadesDTO info = new CntContabilidadesDTO();
+            var param = new ErrorDto<DefMascarasDto>();
+            CntContabilidadesDto info = new CntContabilidadesDto();
 
             try
             {
@@ -299,15 +299,15 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDto<DefMascarasDTO> sbgCntParametros(int CodEmpresa)
+        public ErrorDto<DefMascarasDto> sbgCntParametros(int CodEmpresa)
         {
-            var info = new ErrorDto<DefMascarasDTO>
+            var info = new ErrorDto<DefMascarasDto>
             {
-                Result = new DefMascarasDTO() // Instantiate DefMascarasDTO to avoid null
+                Result = new DefMascarasDto() // Instantiate DefMascarasDTO to avoid null
             };
             //  DefMascarasDTO info = new DefMascarasDTO();
-            CntContabilidadesDTO conta = new CntContabilidadesDTO();
-            SifEmpresaDTO sif = new SifEmpresaDTO();
+            CntContabilidadesDto conta = new CntContabilidadesDto();
+            SifEmpresaDto sif = new SifEmpresaDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -315,11 +315,11 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select * from sif_empresa";
-                    sif = connection.Query<SifEmpresaDTO>(query).FirstOrDefault();
+                    sif = connection.Query<SifEmpresaDto>(query).FirstOrDefault();
 
                     query = $@"select * from CntX_Contabilidades where cod_contabilidad = {sif.Cod_Empresa_Enlace}";
 
-                    conta = connection.Query<CntContabilidadesDTO>(query).FirstOrDefault();
+                    conta = connection.Query<CntContabilidadesDto>(query).FirstOrDefault();
 
 
                     info.Result.gEnlace = sif.Cod_Empresa_Enlace;

@@ -4,7 +4,7 @@ using PgxAPI.Models;
 using Microsoft.Data.SqlClient;
 using Dapper;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-using PgxAPI.BusinessLogic;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
@@ -12,12 +12,12 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 9; // Modulo de Tesorería
-        private readonly mSecurityMainDb mProGrX_Security;
+        private readonly MSecurityMainDb mProGrX_Security;
 
         public frmTES_AutorizadoresDB(IConfiguration config)
         {
             _config = config;
-            mProGrX_Security = new mSecurityMainDb(_config);
+            mProGrX_Security = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -87,14 +87,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="nombre"></param>
         /// <param name="scroll"></param>
         /// <returns></returns>
-        public ErrorDto<TesAutorizadoresDTO> Tes_AutorizadoresUsuarioBuscar_scroll(int CodEmpresa, string nombre, int? scroll)
+        public ErrorDto<TesAutorizadoresDto> Tes_AutorizadoresUsuarioBuscar_scroll(int CodEmpresa, string nombre, int? scroll)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TesAutorizadoresDTO>
+            var response = new ErrorDto<TesAutorizadoresDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new TesAutorizadoresDTO()
+                Result = new TesAutorizadoresDto()
             };
             try
             {
@@ -120,7 +120,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                                 firmas_gen_inicio,
                                                 firmas_gen_corte
                                                  from tes_autorizaciones {where} ";
-                    response.Result = connection.QueryFirstOrDefault<TesAutorizadoresDTO>(query);
+                    response.Result = connection.QueryFirstOrDefault<TesAutorizadoresDto>(query);
                 }
             }
             catch (Exception ex)
@@ -138,14 +138,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="nombre"></param>
         /// <returns></returns>
-        public ErrorDto<TesAutorizadoresDTO> Tes_AutorizadoresUsuario_Obtener(int CodEmpresa, string nombre)
+        public ErrorDto<TesAutorizadoresDto> Tes_AutorizadoresUsuario_Obtener(int CodEmpresa, string nombre)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TesAutorizadoresDTO>
+            var response = new ErrorDto<TesAutorizadoresDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new TesAutorizadoresDTO()
+                Result = new TesAutorizadoresDto()
             };
             try
             {
@@ -160,7 +160,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                                 firmas_gen_inicio,
                                                 firmas_gen_corte
                                                  from tes_autorizaciones WHERE  nombre = @nombre ";
-                    response.Result = connection.QueryFirstOrDefault<TesAutorizadoresDTO>(query, new { nombre });
+                    response.Result = connection.QueryFirstOrDefault<TesAutorizadoresDto>(query, new { nombre });
                 }
             }
             catch (Exception ex)
@@ -179,7 +179,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="autorizador"></param>
         /// <returns></returns>
-        public ErrorDto Tes_Autorizadores_Guardar(int CodEmpresa,string usuario, TesAutorizadoresDTO autorizador)
+        public ErrorDto Tes_Autorizadores_Guardar(int CodEmpresa,string usuario, TesAutorizadoresDto autorizador)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -217,7 +217,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                    WHERE nombre = @nombre";
                         response.Code = connection.Execute(query, autorizador);
 
-                        mProGrX_Security.Bitacora(new BitacoraInsertarDTO
+                        mProGrX_Security.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,
@@ -233,7 +233,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                    VALUES (@nombre, @notas, @clave, @estado, @rango_gen_inicio, @rango_gen_corte, @firmas_gen_inicio, @firmas_gen_corte)";
                         response.Code = connection.Execute(query, autorizador);
                         mProGrX_Security.Bitacora
-                            (new BitacoraInsertarDTO
+                            (new BitacoraInsertarDto
                             {
                                 EmpresaId = CodEmpresa,
                                 Usuario = usuario,
@@ -257,7 +257,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// </summary>
         /// <param name="autorizador"></param>
         /// <returns></returns>
-        private ErrorDto fxValida(TesAutorizadoresDTO autorizador)
+        private ErrorDto fxValida(TesAutorizadoresDto autorizador)
         {
             var response = new ErrorDto
             {
@@ -327,7 +327,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     var query = $@"DELETE FROM tes_autorizaciones WHERE nombre = @nombre";
                     response.Code = connection.Execute(query, new { nombre = usuario });
 
-                    mProGrX_Security.Bitacora(new BitacoraInsertarDTO
+                    mProGrX_Security.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

@@ -67,9 +67,9 @@ namespace PgxAPI.DataBaseTier
             return Result;
         }
 
-        public UsAdminClientesDTO US_ADMIN_CLIENTES_Obtener(string Usuario, int EmpresaId)
+        public UsAdminClientesDto US_ADMIN_CLIENTES_Obtener(string Usuario, int EmpresaId)
         {
-            UsAdminClientesDTO Result = new UsAdminClientesDTO();
+            UsAdminClientesDto Result = new UsAdminClientesDto();
             string sql = "spSEG_Admin_Clients_Roles_Load";
             var values = new
             {
@@ -79,7 +79,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                Result = connection.Query<UsAdminClientesDTO>(sql, values).FirstOrDefault();
+                Result = connection.Query<UsAdminClientesDto>(sql, values).FirstOrDefault();
 
             }
             catch (Exception ex)
@@ -89,10 +89,10 @@ namespace PgxAPI.DataBaseTier
             return Result;
         }
 
-        public UsuarioBloqueoDTO UsuarioBloqueoObtener(string Usuario)
+        public UsuarioBloqueoDto UsuarioBloqueoObtener(string Usuario)
         {
 
-            UsuarioBloqueoDTO Result = new UsuarioBloqueoDTO();
+            UsuarioBloqueoDto Result = new UsuarioBloqueoDto();
             string sql = "spSEG_Bloqueo";
             var values = new
             {
@@ -101,7 +101,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                Result = connection.Query<UsuarioBloqueoDTO>(sql, values).FirstOrDefault();
+                Result = connection.Query<UsuarioBloqueoDto>(sql, values).FirstOrDefault();
                 Result.Usuario = Usuario;
 
             }
@@ -113,10 +113,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public UsuarioCondicionDTO UsuarioCondicionObtener(string Usuario)
+        public UsuarioCondicionDto UsuarioCondicionObtener(string Usuario)
         {
 
-            UsuarioCondicionDTO Result = new UsuarioCondicionDTO();
+            UsuarioCondicionDto Result = new UsuarioCondicionDto();
             string sql = "spSEG_USRCondicion";
             var values = new
             {
@@ -125,7 +125,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                Result = connection.Query<UsuarioCondicionDTO>(sql, values).FirstOrDefault();
+                Result = connection.Query<UsuarioCondicionDto>(sql, values).FirstOrDefault();
                 Result.Usuario = Usuario;
 
             }
@@ -137,10 +137,10 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public UsuarioVencimientoDTO UsuarioVencimientoObtener(string Usuario)
+        public UsuarioVencimientoDto UsuarioVencimientoObtener(string Usuario)
         {
 
-            UsuarioVencimientoDTO Result = new UsuarioVencimientoDTO();
+            UsuarioVencimientoDto Result = new UsuarioVencimientoDto();
             string sql = "spSEG_Vencimiento";
             var values = new
             {
@@ -149,7 +149,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                Result = connection.Query<UsuarioVencimientoDTO>(sql, values).FirstOrDefault();
+                Result = connection.Query<UsuarioVencimientoDto>(sql, values).FirstOrDefault();
                 Result.Usuario = Usuario;
 
             }
@@ -267,16 +267,16 @@ namespace PgxAPI.DataBaseTier
 
         //}
 
-        public PgxClienteDTO SeleccionarPgxClientePorCodEmpresa(int CodEmpresa)
+        public PgxClienteDto SeleccionarPgxClientePorCodEmpresa(int CodEmpresa)
         {
-            PgxClienteDTO Result = new PgxClienteDTO();
+            PgxClienteDto Result = new PgxClienteDto();
             string sql = "spPGX_W_Usuario_Access_tmp";
             var parameters = new { CodEmpresa = CodEmpresa };
 
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                Result = connection.Query<PgxClienteDTO>(sql, parameters, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                Result = connection.Query<PgxClienteDto>(sql, parameters, commandType: CommandType.StoredProcedure).FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -311,9 +311,9 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public UsMenuDTO ObtenerMenuPorNodoYUsuario(int pNodo, string Usuario)
+        public UsMenuDto ObtenerMenuPorNodoYUsuario(int pNodo, string Usuario)
         {
-            UsMenuDTO respuesta = new UsMenuDTO();
+            UsMenuDto respuesta = new UsMenuDto();
             string sql = "select *, dbo.fxSEG_MenuAccess(1, @Usuario, Modulo, Formulario, Tipo) as 'Acceso' " +
              "from us_menus where menu_nodo = @Nodo";
             var values = new
@@ -324,7 +324,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                respuesta = connection.Query<UsMenuDTO>(sql, values).FirstOrDefault();
+                respuesta = connection.Query<UsMenuDto>(sql, values).FirstOrDefault();
 
             }
             catch (Exception ex)

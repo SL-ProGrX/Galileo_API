@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
@@ -10,16 +11,16 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
     public class frmTES_ReclasificacionDB
     {
         private readonly IConfiguration? _config;
-        private readonly mTesoreria mTesoreria;
+        private readonly MTesoreria MTesoreria;
         private readonly int vModulo = 9;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly mProGrX_AuxiliarDB _AuxiliarDB;
 
         public frmTES_ReclasificacionDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(_config);
-            _Security_MainDB = new mSecurityMainDb(_config);
+            MTesoreria = new MTesoreria(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
             _AuxiliarDB = new mProGrX_AuxiliarDB(config);
         }
 
@@ -30,7 +31,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TES_ReclasificacionBancos_Obtener(int CodEmpresa,string usuario,string gestion)
         {
-            return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
+            return MTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
             //string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             //var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
             //resp.Code = 0;
@@ -78,10 +79,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<Tes_ReclasificacionDTO> TES_Reclasificacion_Obtener(int CodEmpresa, int solicitud)
+        public ErrorDto<TesReclasificacionDto> TES_Reclasificacion_Obtener(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<Tes_ReclasificacionDTO>
+            var response = new ErrorDto<TesReclasificacionDto>
             {
                 Code = 0
             };
@@ -94,7 +95,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                         inner join Tes_Bancos B on T.id_Banco = B.id_Banco
                                         inner join tes_tipos_doc Td on T.Tipo = Td.Tipo
                                         Where T.Nsolicitud= @solicitud ";
-                    response.Result = connection.Query<Tes_ReclasificacionDTO>(query,
+                    response.Result = connection.Query<TesReclasificacionDto>(query,
                         new
                         {
                             solicitud = solicitud
@@ -145,7 +146,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 
         public ErrorDto<List<DropDownListaGenericaModel>> tes_TiposDocsCargaCboAcceso_Obtener(int CodEmpresa, string usuario, int id_banco, string tipo)
         {
-            return mTesoreria.sbTesTiposDocsCargaCboAcceso(CodEmpresa, usuario, id_banco, tipo);
+            return MTesoreria.sbTesTiposDocsCargaCboAcceso(CodEmpresa, usuario, id_banco, tipo);
         }
 
         /// <summary>
@@ -154,7 +155,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto TES_Reclasificacion_CambiaBanco(int CodEmpresa, Tes_ReclasificaBancoModel data)
+        public ErrorDto TES_Reclasificacion_CambiaBanco(int CodEmpresa, TesReclasificaBancoModel data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -194,7 +195,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     response.Description = "Cambio de Banco Realizado Satisfactoriamente...";
 
                     _Security_MainDB.Bitacora
-                        (new BitacoraInsertarDTO
+                        (new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = data.usuario,
@@ -228,7 +229,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto TES_Reclasificacion_CambiaDocumento(int CodEmpresa, Tes_ReclasificaDocumentoModel data)
+        public ErrorDto TES_Reclasificacion_CambiaDocumento(int CodEmpresa, TesReclasificaDocumentoModel data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -290,10 +291,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         }).Result;
 
                     string bitacora = $"Cambio N.Documento de {ndocumentoAnterior} a {data.ndocumento}";
-                    mTesoreria.sbTesBitacoraEspecial(CodEmpresa, data.nsolicitud, "09", bitacora, data.usuario);
+                    MTesoreria.sbTesBitacoraEspecial(CodEmpresa, data.nsolicitud, "09", bitacora, data.usuario);
 
                     _Security_MainDB.Bitacora
-                        (new BitacoraInsertarDTO
+                        (new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = data.usuario,
@@ -327,7 +328,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, Tes_ReclasificaSolicitudModel data)
+        public ErrorDto TES_Reclasificacion_CambiaSolicitud(int CodEmpresa, TesReclasificaSolicitudModel data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -370,7 +371,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         }).Result;
 
                     _Security_MainDB.Bitacora
-                         (new BitacoraInsertarDTO
+                         (new BitacoraInsertarDto
                          {
                              EmpresaId = CodEmpresa,
                              Usuario = data.usuario,
@@ -444,7 +445,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                                 OFFSET {filtro.pagina} ROWS
                                                 FETCH NEXT {filtro.paginacion} ROWS ONLY ";
 
-                        response.Result.lista = connection.Query<Tes_SolicitudesData>(query).ToList();
+                        response.Result.lista = connection.Query<TesSolicitudesData>(query).ToList();
                     }
                 }
             }

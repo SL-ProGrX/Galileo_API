@@ -23,12 +23,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<BENE_ESTADODataLista> BeneficiosEstados_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<BeneEstadoDataLista> BeneficiosEstados_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<BENE_ESTADODataLista>();
-            response.Result = new BENE_ESTADODataLista();
+            var response = new ErrorDto<BeneEstadoDataLista>();
+            response.Result = new BeneEstadoDataLista();
             try
             {
                 var query = "";
@@ -57,7 +57,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginaActual}
                                         {paginacionActual} ";
 
-                    response.Result.Lista = connection.Query<BENE_ESTADO>(query).ToList();
+                    response.Result.Lista = connection.Query<BeneEstado>(query).ToList();
 
                 }
             }
@@ -77,7 +77,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto BeneficiosEstados_Actualizar(int CodEmpresa, BENE_ESTADO request)
+        public ErrorDto BeneficiosEstados_Actualizar(int CodEmpresa, BeneEstado request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -116,7 +116,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto BeneficiosEstados_Agregar(int CodEmpresa, BENE_ESTADO request)
+        public ErrorDto BeneficiosEstados_Agregar(int CodEmpresa, BeneEstado request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();

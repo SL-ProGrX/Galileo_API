@@ -3,8 +3,9 @@ using Dapper;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using Microsoft.Data.SqlClient;
-using static PgxAPI.Models.ProGrX_Nucleo.frmSYS_Origen_RecursosModels;
- 
+using static PgxAPI.Models.ProGrX_Nucleo.FrmSysOrigenRecursosModels;
+using PgxAPI.Models.Security;
+
 
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
@@ -12,12 +13,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 10; // Modulo de Tesorería
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmSYS_Origen_RecursosDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -25,17 +26,17 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param> 
         /// <returns></returns>
-        public ErrorDto<SysOrigen_RecursosLista> Sys_OrigenRecursosLista_Obtener(int CodEmpresa)
+        public ErrorDto<SysOrigenRecursosLista> Sys_OrigenRecursosLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SysOrigen_RecursosLista>()
+            var result = new ErrorDto<SysOrigenRecursosLista>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new SysOrigen_RecursosLista()
+                Result = new SysOrigenRecursosLista()
                 {
                     total = 0,
-                    lista = new List<SysOrigen_RecursosData>()
+                    lista = new List<SysOrigenRecursosData>()
                 }
             };
 
@@ -49,7 +50,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     query = $@"select COUNT(COD_ORIGEN_RECURSOS) from SIF_ORIGEN_RECURSOS";
                     result.Result.total = connection.Query<int>(query).FirstOrDefault();
                     query = $@"select COD_ORIGEN_RECURSOS, Descripcion, Activa, Registro_Fecha, Registro_Usuario from SIF_ORIGEN_RECURSOS ";
-                    result.Result.lista = connection.Query<SysOrigen_RecursosData>(query).ToList();
+                    result.Result.lista = connection.Query<SysOrigenRecursosData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -68,7 +69,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="OrigenRecursos"></param>
         /// <returns></returns>
-        public ErrorDto Sys_OrigenRecursos_Guardar(int CodEmpresa, SysOrigen_RecursosData OrigenRecursos)
+        public ErrorDto Sys_OrigenRecursos_Guardar(int CodEmpresa, SysOrigenRecursosData OrigenRecursos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -123,7 +124,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="OrigenRecursos"></param>
         /// <returns></returns>
-        private ErrorDto Sys_OrigenRecursos_Actualizar(int CodEmpresa, SysOrigen_RecursosData OrigenRecursos)
+        private ErrorDto Sys_OrigenRecursos_Actualizar(int CodEmpresa, SysOrigenRecursosData OrigenRecursos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -149,7 +150,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                         usuario= OrigenRecursos.actualiza_usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = OrigenRecursos.registro_usuario,
@@ -173,7 +174,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="OrigenRecursos"></param>
         /// <returns></returns>
-        private ErrorDto Sys_OrigenRecursos_Insertar(int CodEmpresa, SysOrigen_RecursosData OrigenRecursos)
+        private ErrorDto Sys_OrigenRecursos_Insertar(int CodEmpresa, SysOrigenRecursosData OrigenRecursos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -195,7 +196,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                         usuario = OrigenRecursos.registro_usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = OrigenRecursos.registro_usuario,
@@ -235,7 +236,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 {
                     var query = $@"delete SIF_ORIGEN_RECURSOS where COD_ORIGEN_RECURSOS = @OrigenRecursos";
                     connection.Execute(query, new { OrigenRecursos = OrigenRecursos.Trim().ToUpper() });
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

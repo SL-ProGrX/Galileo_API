@@ -11,13 +11,13 @@ namespace PgxAPI.DataBaseTier
     public class frmTES_Bancos_CargadoDB
     {
         private readonly IConfiguration? _config;
-        private mSecurityMainDb DBBitacora;
+        private MSecurityMainDb DBBitacora;
         private readonly mProGrX_AuxiliarDB _AuxiliarDB;
 
         public frmTES_Bancos_CargadoDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
             _AuxiliarDB = new mProGrX_AuxiliarDB(_config);
         }
 
@@ -160,17 +160,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<TesAuto_RegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TesAutoRegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<TesAuto_RegistroLista>()
+            var result = new ErrorDto<TesAutoRegistroLista>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new TesAuto_RegistroLista()
+                Result = new TesAutoRegistroLista()
                 {
                     total = 0,
-                    lista = new List<TesAuto_RegistroDTO>()
+                    lista = new List<TesAutoRegistroDto>()
                 }
             };
             try
@@ -202,7 +202,7 @@ namespace PgxAPI.DataBaseTier
                                        ORDER BY id_auto
                                         {paginaActual}
                                         {paginacionActual} ";
-                    result.Result.lista = connection.Query<TesAuto_RegistroDTO>(query).ToList();
+                    result.Result.lista = connection.Query<TesAutoRegistroDto>(query).ToList();
                 }
 
             }
@@ -225,7 +225,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="file"></param>
         /// <returns></returns>
-        public ErrorDto TES_BancosCargados_Aplicar(int CodEmpresa, string cod_banco, string usuario, List<TesCargadoExcelDTO> file)
+        public ErrorDto TES_BancosCargados_Aplicar(int CodEmpresa, string cod_banco, string usuario, List<TesCargadoExcelDto> file)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -276,15 +276,15 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<TES_listaRegistroBancosDTO>> TES_ListaRegistroBancos_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<List<TeslistaRegistroBancosDto>> TES_ListaRegistroBancos_Obtener(int CodEmpresa, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            TES_FiltrosRegistroBancoDTO filtro = JsonConvert.DeserializeObject<TES_FiltrosRegistroBancoDTO>(filtros) ?? new TES_FiltrosRegistroBancoDTO();
+            TesFiltrosRegistroBancoDto filtro = JsonConvert.DeserializeObject<TesFiltrosRegistroBancoDto>(filtros) ?? new TesFiltrosRegistroBancoDto();
 
-            var response = new ErrorDto<List<TES_listaRegistroBancosDTO>>
+            var response = new ErrorDto<List<TeslistaRegistroBancosDto>>
             {
                 Code = 0,
-                Result = new List<TES_listaRegistroBancosDTO>()
+                Result = new List<TeslistaRegistroBancosDto>()
             };
 
             try
@@ -308,7 +308,7 @@ namespace PgxAPI.DataBaseTier
                 };
 
                 response.Result = connection
-                    .Query<TES_listaRegistroBancosDTO>(query, parameters, commandType: CommandType.StoredProcedure)
+                    .Query<TeslistaRegistroBancosDto>(query, parameters, commandType: CommandType.StoredProcedure)
                     .ToList();
 
 
@@ -332,7 +332,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto TES_RegistrosBancosCargados_Aplicar(int CodEmpresa, string registroLista)
         {
-            List<RegistroBancoDTO> lista = JsonConvert.DeserializeObject<List<RegistroBancoDTO>>(registroLista) ?? new List<RegistroBancoDTO>();
+            List<RegistroBancoDto> lista = JsonConvert.DeserializeObject<List<RegistroBancoDto>>(registroLista) ?? new List<RegistroBancoDto>();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
             {

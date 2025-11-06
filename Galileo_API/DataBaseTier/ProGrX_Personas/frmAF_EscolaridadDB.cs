@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Personas;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Personas
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1; // Modulo de Tesorería
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_EscolaridadDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -56,8 +57,8 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 string sortOrder = filtros.sortOrder == 0 ? "DESC" : "ASC";
 
                 // Paginación
-                int pagina = filtros.pagina ?? 0;
-                int paginacion = filtros.paginacion ?? 10;
+                int pagina = (filtros.pagina != 0) ? filtros.pagina : 0;
+                int paginacion = (filtros.paginacion != 0) ? filtros.paginacion : 10;
 
                 var query = $@"select ESCOLARIDAD_TIPO, descripcion, ACTIVO, Registro_Fecha, Registro_Usuario
                                from AFI_ESCOLARIDAD_TIPOS
@@ -139,7 +140,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     Usuario = usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -181,7 +182,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     ACTIVO = escolaridadTipo.Activo
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -215,7 +216,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 var query = @"DELETE FROM AFI_ESCOLARIDAD_TIPOS WHERE ESCOLARIDAD_TIPO = @ESCOLARIDAD_TIPO";
                 connection.Execute(query, new { ESCOLARIDAD_TIPO = escolaridadTipo.ToUpper() });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,

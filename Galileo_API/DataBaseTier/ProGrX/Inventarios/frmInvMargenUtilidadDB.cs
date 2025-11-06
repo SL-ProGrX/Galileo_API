@@ -14,11 +14,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<List<LineaDTO>> Linea_Obtener(int CodEmpresa)
+        public ErrorDto<List<LineaDto>> Linea_Obtener(int CodEmpresa)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<LineaDTO>>();
+            var response = new ErrorDto<List<LineaDto>>();
 
             try
             {
@@ -26,8 +26,8 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = "select * From PV_PROD_CLASIFICA";
 
-                    response.Result = connection.Query<LineaDTO>(query).ToList();
-                    foreach (LineaDTO dt in response.Result)
+                    response.Result = connection.Query<LineaDto>(query).ToList();
+                    foreach (LineaDto dt in response.Result)
                     {
                         dt.Descripcion = dt.Descripcion;
 
@@ -46,11 +46,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<SubLineaDTO>> SubLinea_Obtener(int CodEmpresa)
+        public ErrorDto<List<SubLineaDto>> SubLinea_Obtener(int CodEmpresa)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<SubLineaDTO>>();
+            var response = new ErrorDto<List<SubLineaDto>>();
 
             try
             {
@@ -58,8 +58,8 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = "Select * From PV_PROD_CLASIFICA_SUB";
 
-                    response.Result = connection.Query<SubLineaDTO>(query).ToList();
-                    foreach (SubLineaDTO dt in response.Result)
+                    response.Result = connection.Query<SubLineaDto>(query).ToList();
+                    foreach (SubLineaDto dt in response.Result)
                     {
                         dt.Descripcion = dt.Descripcion;
 
@@ -78,11 +78,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<PrecioDTO>> ListadoPrecios_Obtener(int CodEmpresa)
+        public ErrorDto<List<PrecioDto>> ListadoPrecios_Obtener(int CodEmpresa)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PrecioDTO>>();
+            var response = new ErrorDto<List<PrecioDto>>();
 
             try
             {
@@ -90,7 +90,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = "select * From pv_tipos_precios";
 
-                    response.Result = connection.Query<PrecioDTO>(query).ToList();
+                    response.Result = connection.Query<PrecioDto>(query).ToList();
 
 
                 }

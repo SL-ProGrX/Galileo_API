@@ -1,10 +1,9 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
-using Sinpe_CCD;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
@@ -13,13 +12,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         private readonly IConfiguration? _config;
         private readonly mProGrX_AuxiliarDB _utils;
         private readonly int vModulo = 9;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmTES_DocumentosDB(IConfiguration? config)
         {
             _config = config;
             _utils = new mProGrX_AuxiliarDB(_config);
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -60,14 +59,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="tipo"></param>
         /// <param name="scroll"></param>
         /// <returns></returns>
-        public ErrorDto<TesTiposDocDTO> Tes_Documentos_Scroll(int CodEmpresa, string tipo, int? scroll)
+        public ErrorDto<TesTiposDocDto> Tes_Documentos_Scroll(int CodEmpresa, string tipo, int? scroll)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TesTiposDocDTO>
+            var response = new ErrorDto<TesTiposDocDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new TesTiposDocDTO()
+                Result = new TesTiposDocDto()
             };
 
             try
@@ -87,7 +86,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 
                     var query = $@"select t.*, c.DESCRIPCION as tipo_asiento_desc from tes_tipos_doc t
                                    left join CNTX_TIPOS_ASIENTOS c ON t.TIPO_ASIENTO = c.TIPO_ASIENTO {where} ";
-                    response.Result = connection.QueryFirstOrDefault<TesTiposDocDTO>(query);
+                    response.Result = connection.QueryFirstOrDefault<TesTiposDocDto>(query);
                 }
             }
             catch (Exception ex)
@@ -105,14 +104,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDto<TesTiposDocDTO> Tes_Documentos_Obtener(int CodEmpresa, string tipo)
+        public ErrorDto<TesTiposDocDto> Tes_Documentos_Obtener(int CodEmpresa, string tipo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TesTiposDocDTO>
+            var response = new ErrorDto<TesTiposDocDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new TesTiposDocDTO()
+                Result = new TesTiposDocDto()
             };
 
             try
@@ -121,7 +120,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                 {
                     var query = $@"select t.*, c.DESCRIPCION as tipo_asiento_desc from tes_tipos_doc t
                                    left join CNTX_TIPOS_ASIENTOS c ON t.TIPO_ASIENTO = c.TIPO_ASIENTO where tipo = @tipo";
-                    response.Result = connection.QueryFirstOrDefault<TesTiposDocDTO>(query, new { tipo });
+                    response.Result = connection.QueryFirstOrDefault<TesTiposDocDto>(query, new { tipo });
                 }
             }
             catch (Exception ex)
@@ -220,7 +219,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="documento"></param>
         /// <returns></returns>
-        public ErrorDto  TES_Documentos_Guardar(int CodEmpresa, string usuario, TesTiposDocDTO documento)
+        public ErrorDto  TES_Documentos_Guardar(int CodEmpresa, string usuario, TesTiposDocDto documento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -279,7 +278,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                     TipoIdentificacion = documento.int_reclasifica_id ? 1 : 0
                                 });
 
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,
@@ -315,7 +314,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                     TipoIdentificacion = documento.int_reclasifica_id ? 1 : 0
                                 });
 
-                                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                                 {
                                     EmpresaId = CodEmpresa,
                                     Usuario = usuario,
@@ -359,7 +358,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     var sql = @"DELETE FROM tes_tipos_doc WHERE tipo = @Tipo";
                     connection.Execute(sql, new { Tipo = tipo });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -438,7 +437,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 
                     if (resp.pass == 1)
                     {
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,
@@ -485,7 +484,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 
                     if (resp.pass == 1)
                     {
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,

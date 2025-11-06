@@ -20,7 +20,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="comunicado"></param>
         /// <returns></returns>
-        public ErrorDto Comunicados_Insertar(int CodCliente, SifComunicadoDTO comunicado)
+        public ErrorDto Comunicados_Insertar(int CodCliente, SifComunicadoDto comunicado)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -133,10 +133,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Cod_Comunicado"></param>
         /// <returns></returns>
-        public ErrorDto<SifComunicadoDTO> Comunicado_Obtener(int CodEmpresa, int Cod_Comunicado)
+        public ErrorDto<SifComunicadoDto> Comunicado_Obtener(int CodEmpresa, int Cod_Comunicado)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto<SifComunicadoDTO> response = new ErrorDto<SifComunicadoDTO>();
+            ErrorDto<SifComunicadoDto> response = new ErrorDto<SifComunicadoDto>();
             response.Code = 0;
 
             try
@@ -145,7 +145,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT * FROM sif_comunicados WHERE COD_COMUNICADO = {Cod_Comunicado}";
 
-                    response.Result = connection.Query<SifComunicadoDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<SifComunicadoDto>(query).FirstOrDefault();
                     if (response.Result == null)
                     {
                         response.Code = -2;
@@ -169,10 +169,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<SifComunicadoDTO>> ComunicadosLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<SifComunicadoDto>> ComunicadosLista_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto<List<SifComunicadoDTO>> response = new ErrorDto<List<SifComunicadoDTO>>();
+            ErrorDto<List<SifComunicadoDto>> response = new ErrorDto<List<SifComunicadoDto>>();
             response.Code = 0;
 
             try
@@ -181,7 +181,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT * FROM sif_comunicados";
 
-                    response.Result = connection.Query<SifComunicadoDTO>(query).ToList();
+                    response.Result = connection.Query<SifComunicadoDto>(query).ToList();
                     if (response.Result == null || !response.Result.Any())
                     {
                         response.Code = -2;
@@ -206,7 +206,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Comunicado_Actualizar(int CodEmpresa, SifComunicadoDTO request)
+        public ErrorDto Comunicado_Actualizar(int CodEmpresa, SifComunicadoDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto info = new ErrorDto();

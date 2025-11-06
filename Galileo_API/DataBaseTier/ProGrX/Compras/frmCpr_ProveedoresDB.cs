@@ -43,10 +43,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto<cprProveedoresDTO> CprProveedor_Scroll(int CodEmpresa, int scroll, string? codigo)
+        public ErrorDto<CprProveedoresDto> CprProveedor_Scroll(int CodEmpresa, int scroll, string? codigo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<cprProveedoresDTO>();
+            var response = new ErrorDto<CprProveedoresDto>();
             try
             {
                 string where = " ", orderBy = " ";
@@ -64,7 +64,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"select Top 1 * from CPR_PROVEEDORES_TEMPO {where} {orderBy}";
-                    response.Result = connection.Query<cprProveedoresDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<CprProveedoresDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -76,12 +76,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<cprProveedoresLista> CprProveedoresLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<CprProveedoresLista> CprProveedoresLista_Obtener(int CodEmpresa, string filtros)
         {
-            cprProveedoresFiltros filtro = JsonConvert.DeserializeObject<cprProveedoresFiltros>(filtros) ?? new cprProveedoresFiltros();
+            CprProveedoresFiltros filtro = JsonConvert.DeserializeObject<CprProveedoresFiltros>(filtros) ?? new CprProveedoresFiltros();
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<cprProveedoresLista>();
-            response.Result = new cprProveedoresLista();
+            var response = new ErrorDto<CprProveedoresLista>();
+            response.Result = new CprProveedoresLista();
             try
             {
                 var query = "";
@@ -111,7 +111,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginaActual}
                                         {paginacionActual} ";
 
-                    response.Result.proveedores = connection.Query<cprProveedoresDTO>(query).ToList();
+                    response.Result.proveedores = connection.Query<CprProveedoresDto>(query).ToList();
 
                 }
             }
@@ -124,17 +124,17 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<cprProveedoresDTO> CprProveedores_Obtener(int CodEmpresa, string codigo)
+        public ErrorDto<CprProveedoresDto> CprProveedores_Obtener(int CodEmpresa, string codigo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto<cprProveedoresDTO> info = new ErrorDto<cprProveedoresDTO>();
+            ErrorDto<CprProveedoresDto> info = new ErrorDto<CprProveedoresDto>();
             info.Code = 0;
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"select P.* from CPR_PROVEEDORES_TEMPO P where P.PROVEEDOR_CODIGO = '{codigo}' ";
-                    info.Result = connection.QueryFirstOrDefault<cprProveedoresDTO>(query);
+                    info.Result = connection.QueryFirstOrDefault<CprProveedoresDto>(query);
                 }
             }
             catch (Exception ex)
@@ -147,7 +147,7 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDto CprProveedores_Guardar(int CodEmpresa, bool vEdita, cprProveedoresDTO proveedor)
+        public ErrorDto CprProveedores_Guardar(int CodEmpresa, bool vEdita, CprProveedoresDto proveedor)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -204,7 +204,7 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        private ErrorDto CprProveedores_Insertar(int CodEmpresa, cprProveedoresDTO proveedor)
+        private ErrorDto CprProveedores_Insertar(int CodEmpresa, CprProveedoresDto proveedor)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -279,7 +279,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDto CprProveedores_Actualizar(int CodEmpresa, cprProveedoresDTO proveedor)
+        private ErrorDto CprProveedores_Actualizar(int CodEmpresa, CprProveedoresDto proveedor)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -353,12 +353,12 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto<List<cprProveedorBitacoraData>> CprProveedoreBitacoraPuntaje(int CodEmpresa, string codigo)
+        public ErrorDto<List<CprProveedorBitacoraData>> CprProveedoreBitacoraPuntaje(int CodEmpresa, string codigo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<cprProveedorBitacoraData>>();
+            var resp = new ErrorDto<List<CprProveedorBitacoraData>>();
             resp.Code = 0;
-            resp.Result = new List<cprProveedorBitacoraData>();
+            resp.Result = new List<CprProveedorBitacoraData>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -372,7 +372,7 @@ namespace PgxAPI.DataBaseTier
                                   CPR_PROVEEDORES_TEMPO P ON V.PROVEEDOR_CODIGO = P.COD_PROVEEDOR
                                   WHERE V.PROVEEDOR_CODIGO = '{codigo}'
                                   ORDER BY V.PROVEEDOR_CODIGO DESC ";
-                    resp.Result = connection.Query<cprProveedorBitacoraData>(query).ToList();
+                    resp.Result = connection.Query<CprProveedorBitacoraData>(query).ToList();
                 }
             }
             catch (Exception ex)

@@ -4,6 +4,7 @@ using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Credito;
 using PgxAPI.Models.ProGrX.Fondos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Fondos
 {
@@ -13,14 +14,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         private readonly int vModulo = 18; // Modulo de Fondos
         private readonly mAfilicacionDB mAfilicacion;
         private readonly mProGrX_AuxiliarDB mProGrX_Auxiliar;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmFNDConsultaContratosDB(IConfiguration? config)
         {
             _config = config;
             mAfilicacion = new mAfilicacionDB(_config);
             mProGrX_Auxiliar = new mProGrX_AuxiliarDB(_config);
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -349,7 +350,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                     connection.Execute(query, new { boleta = boleta, usuario = usuario });
 
                     //Bitacora
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

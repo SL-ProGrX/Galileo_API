@@ -49,7 +49,7 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"SELECT TOKEN, FECHA FROM AFI_BENE_INT_TOKEN WHERE INTERFACE = 'ZOHO' ";
-                    var lastToken = connection.QueryFirstOrDefault<tokenModel>(query);
+                    var lastToken = connection.QueryFirstOrDefault<TokenModel>(query);
 
                     //si la fecha es mayor a 1 hora, se debe renovar el token
                     if (lastToken.token != null)
@@ -335,7 +335,7 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
                     }
 
                     string result = await respList.Content.ReadAsStringAsync();
-                    var ticket = JsonConvert.DeserializeObject<dataModel>(result);
+                    var ticket = JsonConvert.DeserializeObject<DataModel>(result);
                     int totalPages = 0;
 
                     if (ticket != null)
@@ -376,7 +376,7 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
                                 if (responseTask.IsSuccessStatusCode)
                                 {
                                     string pageResult = await responseTask.Content.ReadAsStringAsync();
-                                    var ticketPage = JsonConvert.DeserializeObject<dataModel>(pageResult);
+                                    var ticketPage = JsonConvert.DeserializeObject<DataModel>(pageResult);
 
                                     foreach (var item in ticketPage.data)
                                     {
@@ -1849,7 +1849,7 @@ namespace PgxAPI_Externo.DataBaseTier.InterfaceZoho
                                     return response;
                                 }
 
-                                DocumentosArchivoDTO documento = new DocumentosArchivoDTO();
+                                DocumentosArchivoDto documento = new DocumentosArchivoDto();
                                 documento.fileid = null;
 
                                 documento.llave_01 = llave1;

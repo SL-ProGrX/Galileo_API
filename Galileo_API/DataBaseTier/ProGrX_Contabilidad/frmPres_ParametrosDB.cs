@@ -20,7 +20,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDto PresParametros_Guardar(int CodEmpresa, PresParametrosDTO parametros)
+        public ErrorDto PresParametros_Guardar(int CodEmpresa, PresParametrosDto parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -79,11 +79,11 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<PresParametrosDTO>> PresParametrosLista_Obtener(int CodEmpresa)
+        public ErrorDto<List<PresParametrosDto>> PresParametrosLista_Obtener(int CodEmpresa)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PresParametrosDTO>>
+            var response = new ErrorDto<List<PresParametrosDto>>
             {
                 Code = 0
             };
@@ -92,7 +92,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select * from Pres_Parametros";
-                    response.Result = connection.Query<PresParametrosDTO>(query).ToList();
+                    response.Result = connection.Query<PresParametrosDto>(query).ToList();
                 }
             }
             catch (Exception ex)

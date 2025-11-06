@@ -14,11 +14,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<fslTablaTipoLista> FslTablaTipos_Obtener(int CodCliente, string tipo, string? filtro, int? pagina, int? paginacion)
+        public ErrorDto<FslTablaTipoLista> FslTablaTipos_Obtener(int CodCliente, string tipo, string? filtro, int? pagina, int? paginacion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<fslTablaTipoLista>();
-            response.Result = new fslTablaTipoLista();
+            var response = new ErrorDto<FslTablaTipoLista>();
+            response.Result = new FslTablaTipoLista();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -61,7 +61,7 @@ namespace PgxAPI.DataBaseTier
                             break;
                     }
                     response.Result.Total = connection.Query<int>(total).FirstOrDefault();
-                    response.Result.Lista = connection.Query<fslTablaTipoData>(query).ToList();
+                    response.Result.Lista = connection.Query<FslTablaTipoData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -74,7 +74,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto FslTablaTipos_Actualizar(int CodCliente, string tipo, fslTablaTipoData tipoData)
+        public ErrorDto FslTablaTipos_Actualizar(int CodCliente, string tipo, FslTablaTipoData tipoData)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -112,7 +112,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto FslTablaTipo_Insertar(int CodCliente, string tipo, string usuario, fslTablaTipoData tipoData)
+        public ErrorDto FslTablaTipo_Insertar(int CodCliente, string tipo, string usuario, FslTablaTipoData tipoData)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();

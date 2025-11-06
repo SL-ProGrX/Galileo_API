@@ -7,6 +7,7 @@ using PgxAPI.Models;
 using PgxAPI.Models.AF;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 
 
 namespace PgxAPI.DataBaseTier
@@ -14,12 +15,12 @@ namespace PgxAPI.DataBaseTier
     public class frmAF_BeneficiosTrasladoDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         mBeneficiosDB mBeneficiosDB;
         mTESFuncionesDB mTESFuncionesDB;
         private readonly EnvioCorreoDB _envioCorreoDB;
         private mProGrX_AuxiliarDB mAuxiliarDB;
-        private readonly mTesoreria _mtes;
+        private readonly MTesoreria _mtes;
         public string sendEmail = "";
         public string TestMail = "";
         public string Notificaciones = "";
@@ -29,12 +30,12 @@ namespace PgxAPI.DataBaseTier
         public frmAF_BeneficiosTrasladoDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
             mBeneficiosDB = new mBeneficiosDB(_config);
             mTESFuncionesDB = new mTESFuncionesDB(_config);
             _envioCorreoDB = new EnvioCorreoDB(_config);
             mAuxiliarDB = new mProGrX_AuxiliarDB(_config);
-            _mtes = new mTesoreria(_config);
+            _mtes = new MTesoreria(_config);
             sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value.ToString();
             TestMail = _config.GetSection("AppSettings").GetSection("TestEmail").Value.ToString();
             Notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value.ToString();
@@ -42,20 +43,20 @@ namespace PgxAPI.DataBaseTier
             CtaComision = _config.GetSection("AFI_Beneficios").GetSection("CtaComisionBeneficios").Value.ToString();
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
 
         #region Remesas
 
-        public ErrorDto<AfiBeneficiosRemesasDTOLista> AfiRemesas_Obtener(int CodCliente, string filtros)
+        public ErrorDto<AfiBeneficiosRemesasDtoLista> AfiRemesas_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDto<AfiBeneficiosRemesasDTOLista>
+            var response = new ErrorDto<AfiBeneficiosRemesasDtoLista>
             {
-                Result = new AfiBeneficiosRemesasDTOLista(),
+                Result = new AfiBeneficiosRemesasDtoLista(),
                 Code = 0
             };
 
@@ -105,13 +106,13 @@ namespace PgxAPI.DataBaseTier
                             ORDER BY fecha DESC
                             {paginaActual} {paginacionActual}";
 
-                response.Result.Beneficios = connection.Query<AfiBeneficiosRemesasDTO>(dataSql, p).ToList();
+                response.Result.Beneficios = connection.Query<AfiBeneficiosRemesasDto>(dataSql, p).ToList();
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                if (response.Result == null) response.Result = new AfiBeneficiosRemesasDTOLista();
+                if (response.Result == null) response.Result = new AfiBeneficiosRemesasDtoLista();
                 response.Result.Total = 0;
                 response.Result.Beneficios = null;
             }
@@ -119,12 +120,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        // public ErrorDto<AfiBeneficiosRemesasDTOLista> AfiRemesas_Obtener(int CodCliente, string? filtro, int? pagina, int? paginacion)
+        // public ErrorDto<AfiBeneficiosRemesasDtoLista> AfiRemesas_Obtener(int CodCliente, string? filtro, int? pagina, int? paginacion)
         // {
         //     var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-        //     var response = new ErrorDto<AfiBeneficiosRemesasDTOLista>
+        //     var response = new ErrorDto<AfiBeneficiosRemesasDtoLista>
         //     {
-        //         Result = new AfiBeneficiosRemesasDTOLista()
+        //         Result = new AfiBeneficiosRemesasDtoLista()
         //     };
         //     string paginaActual = " ", paginacionActual = " ", vfiltro = " ";
         //     try
@@ -150,7 +151,7 @@ namespace PgxAPI.DataBaseTier
 
         //             query = $@"select * from AFI_BENEFICIOS_REMESAS {vfiltro} order by fecha desc {paginaActual} {paginacionActual}";
 
-        //             response.Result.Beneficios = connection.Query<AfiBeneficiosRemesasDTO>(query).ToList();
+        //             response.Result.Beneficios = connection.Query<AfiBeneficiosRemesasDto>(query).ToList();
 
         //         }
         //     }
@@ -169,10 +170,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_remesa"></param>
         /// <returns></returns>
-        public ErrorDto<AfiBeneficiosRemesasDTO> AfiRemesa_Obtener(int CodCliente, int cod_remesa)
+        public ErrorDto<AfiBeneficiosRemesasDto> AfiRemesa_Obtener(int CodCliente, int cod_remesa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<AfiBeneficiosRemesasDTO>();
+            var response = new ErrorDto<AfiBeneficiosRemesasDto>();
             try
             {
                 var query = "";
@@ -180,7 +181,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     query = $@"select * from AFI_BENEFICIOS_REMESAS where Cod_Remesa = {cod_remesa}";
 
-                    response.Result = connection.Query<AfiBeneficiosRemesasDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<AfiBeneficiosRemesasDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -197,7 +198,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDto AfiRemesa_Insertar(int CodCliente, AfiBeneficiosRemesasDTO remesa)
+        public ErrorDto AfiRemesa_Insertar(int CodCliente, AfiBeneficiosRemesasDto remesa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new()
@@ -223,7 +224,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (resp > 0)
                     {
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodCliente,
                             Usuario = remesa.usuario.ToUpper(),
@@ -254,7 +255,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDto AfiRemesa_Actualizar(int CodCliente, AfiBeneficiosRemesasDTO remesa)
+        public ErrorDto AfiRemesa_Actualizar(int CodCliente, AfiBeneficiosRemesasDto remesa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new()
@@ -280,7 +281,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (resp > 0)
                     {
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodCliente,
                             Usuario = remesa.usuario.ToUpper(),
@@ -551,7 +552,7 @@ namespace PgxAPI.DataBaseTier
                     {
                         query = $@"select TOP 1 fecha_inicio,fecha_corte from AFI_BENEFICIOS_REMESAS ORDER BY FECHA_INICIO DESC ";
                     }
-                    var fechas = connection.Query<AfiBeneficiosRemesasDTO>(query).FirstOrDefault();
+                    var fechas = connection.Query<AfiBeneficiosRemesasDto>(query).FirstOrDefault();
 
                     if (filtro.cod_banco != "" && filtro.extraFiltros == true)
                     {
@@ -811,7 +812,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (count == 0)
                     {
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodCliente,
                             Usuario = infoCarga.usuario.ToUpper(),
@@ -869,7 +870,7 @@ namespace PgxAPI.DataBaseTier
 
                     var resp = connection.Execute(query);
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodCliente,
                         Usuario = usuario.ToUpper(),
@@ -888,10 +889,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDto<List<AfiBeneficiosRemesasDTO>> AfiCargasRemesas_Obtener(int CodCliente)
+        public ErrorDto<List<AfiBeneficiosRemesasDto>> AfiCargasRemesas_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<AfiBeneficiosRemesasDTO>>();
+            var response = new ErrorDto<List<AfiBeneficiosRemesasDto>>();
             try
             {
                 var query = "";
@@ -900,7 +901,7 @@ namespace PgxAPI.DataBaseTier
                     query = $@"select *, CONCAT(COD_REMESA, USUARIO, FECHA, FECHA_INICIO, FECHA_CORTE) AS DESCRIPCION
                         from AFI_BENEFICIOS_REMESAS where estado = 'A' order by fecha desc";
 
-                    response.Result = connection.Query<AfiBeneficiosRemesasDTO>(query).ToList();
+                    response.Result = connection.Query<AfiBeneficiosRemesasDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -920,10 +921,10 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodCliente"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfiBeneficiosRemesasDTO>> AfiTraslados_Obtener(int CodCliente)
+        public ErrorDto<List<AfiBeneficiosRemesasDto>> AfiTraslados_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<AfiBeneficiosRemesasDTO>>();
+            var response = new ErrorDto<List<AfiBeneficiosRemesasDto>>();
             try
             {
                 var query = "";
@@ -932,7 +933,7 @@ namespace PgxAPI.DataBaseTier
                     query = $@"select *, CONCAT(COD_REMESA, USUARIO, FECHA, FECHA_INICIO, FECHA_CORTE) AS DESCRIPCION
                         from AFI_BENEFICIOS_REMESAS where estado = 'C' order by fecha desc";
 
-                    response.Result = connection.Query<AfiBeneficiosRemesasDTO>(query).ToList();
+                    response.Result = connection.Query<AfiBeneficiosRemesasDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -955,7 +956,7 @@ namespace PgxAPI.DataBaseTier
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var response = new ErrorDto<AfiBeneficiosCargasDataLista>();
             response.Result = new AfiBeneficiosCargasDataLista();
-            AfiBeneficiosTrasladoDTO filtro = JsonConvert.DeserializeObject<AfiBeneficiosTrasladoDTO>(filtros);
+            AfiBeneficiosTrasladoDto filtro = JsonConvert.DeserializeObject<AfiBeneficiosTrasladoDto>(filtros);
             string paginaActual = " ", paginacionActual = " ";
             try
             {
@@ -1184,7 +1185,7 @@ namespace PgxAPI.DataBaseTier
                             });
                         }
 
-                        mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                        mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                         {
                             EmpresaId = CodCliente,
                             cod_beneficio = item.cod_beneficio,
@@ -1251,13 +1252,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AfiBeneficiosRemesasDTOLista> AfiInformesTop_Obtener(int CodCliente, string filtros)
+        public ErrorDto<AfiBeneficiosRemesasDtoLista> AfiInformesTop_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var vfiltro = JsonConvert.DeserializeObject<AfiInformesTopFiltros>(filtros);
-            var response = new ErrorDto<AfiBeneficiosRemesasDTOLista>
+            var response = new ErrorDto<AfiBeneficiosRemesasDtoLista>
             {
-                Result = new AfiBeneficiosRemesasDTOLista(),
+                Result = new AfiBeneficiosRemesasDtoLista(),
                 Code = 0
             };
 
@@ -1301,13 +1302,13 @@ namespace PgxAPI.DataBaseTier
                                 ORDER BY fecha DESC
                                 {paginaActual} {paginacionActual}";
 
-                response.Result.Beneficios = connection.Query<AfiBeneficiosRemesasDTO>(dataSql, p).ToList();
+                response.Result.Beneficios = connection.Query<AfiBeneficiosRemesasDto>(dataSql, p).ToList();
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                if (response.Result == null) response.Result = new AfiBeneficiosRemesasDTOLista();
+                if (response.Result == null) response.Result = new AfiBeneficiosRemesasDtoLista();
                 response.Result.Total = 0;
                 response.Result.Beneficios = null;
             }
@@ -1315,13 +1316,13 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        // public ErrorDto<AfiBeneficiosRemesasDTOLista> AfiInformesTop_Obtener(int CodCliente, string? filtro, int? pagina, int? paginacion)
+        // public ErrorDto<AfiBeneficiosRemesasDtoLista> AfiInformesTop_Obtener(int CodCliente, string? filtro, int? pagina, int? paginacion)
         // {
         //     var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-        //     var response = new ErrorDto<AfiBeneficiosRemesasDTOLista>
+        //     var response = new ErrorDto<AfiBeneficiosRemesasDtoLista>
         //     {
-        //         Result = new AfiBeneficiosRemesasDTOLista()
+        //         Result = new AfiBeneficiosRemesasDtoLista()
         //     };
         //     string paginaActual = " ", paginacionActual = " ", where = " ";
         //     try
@@ -1346,7 +1347,7 @@ namespace PgxAPI.DataBaseTier
 
         //             query = $@"select * from AFI_BENEFICIOS_REMESAS {where} order by fecha desc {paginaActual} {paginacionActual}";
 
-        //             response.Result.Beneficios = connection.Query<AfiBeneficiosRemesasDTO>(query).ToList();
+        //             response.Result.Beneficios = connection.Query<AfiBeneficiosRemesasDto>(query).ToList();
         //         }
         //     }
         //     catch (Exception ex)

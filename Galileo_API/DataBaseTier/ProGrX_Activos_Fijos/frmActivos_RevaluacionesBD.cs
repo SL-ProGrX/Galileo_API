@@ -1,8 +1,8 @@
 ﻿using PgxAPI.Models.ERROR;
-using PgxAPI.Models;
 using Microsoft.Data.SqlClient;
 using Dapper;
 using PgxAPI.Models.ProGrX_Activos_Fijos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -10,12 +10,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly mActivosFijos _mActivos;
         public frmActivos_RevaluacionesBD(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
             _mActivos = new mActivosFijos(_config);
         }
 
@@ -53,7 +53,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 
                     result.Code = Linea;
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -137,7 +137,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     var query = $@"delete Activos_retiro_adicion where num_placa = @placa and Id_AddRet = @Id_AddRet";
                     connection.Execute(query, new { placa, Id_AddRet });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

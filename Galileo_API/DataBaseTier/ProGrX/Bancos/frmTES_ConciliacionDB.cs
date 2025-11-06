@@ -3,7 +3,6 @@ using PgxAPI.Models;
 using PgxAPI.Models.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
 using Dapper;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models.CxP;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -13,14 +12,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 9;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly mProGrX_AuxiliarDB _AuxiliarDB;
         private readonly mCntLinkDB mCntLinkDB;
 
         public frmTES_ConciliacionDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
             _AuxiliarDB = new mProGrX_AuxiliarDB(_config);
             mCntLinkDB = new mCntLinkDB(_config);
         }
@@ -296,7 +295,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="filtro"></param>
         /// <param name="file"></param>
         /// <returns></returns>
-        public ErrorDto TES_ConciliacionResumenArchivo_Cargar(int CodEmpresa, TesConciliaFiltros filtro, List<TesConciliacioExcelDTO> file)
+        public ErrorDto TES_ConciliacionResumenArchivo_Cargar(int CodEmpresa, TesConciliaFiltros filtro, List<TesConciliacioExcelDto> file)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto

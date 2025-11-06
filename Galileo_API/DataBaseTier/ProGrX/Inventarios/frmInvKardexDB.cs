@@ -16,11 +16,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<List<ConsultaMovimientoBodegaCDTO>> Obtener_Bodegas(int CodEmpresa)
+        public ErrorDto<List<ConsultaMovimientoBodegaCDdto>> Obtener_Bodegas(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<ConsultaMovimientoBodegaCDTO>>
+            var response = new ErrorDto<List<ConsultaMovimientoBodegaCDdto>>
             {
                 Code = 0
             };
@@ -32,7 +32,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "SELECT COD_BODEGA, DESCRIPCION FROM PV_BODEGAS";
 
-                    response.Result = connection.Query<ConsultaMovimientoBodegaCDTO>(query).ToList();
+                    response.Result = connection.Query<ConsultaMovimientoBodegaCDdto>(query).ToList();
 
                 }
             }
@@ -46,16 +46,16 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<MovimientosDTOList> consultarMovimientos_Obtener(int CodCliente, string filtroString)
+        public ErrorDto<MovimientosDtoList> consultarMovimientos_Obtener(int CodCliente, string filtroString)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            MovimientosInventarios_Filtros filtros = JsonConvert.DeserializeObject<MovimientosInventarios_Filtros>(filtroString) ?? new MovimientosInventarios_Filtros();
+            MovimientosInventariosFiltros filtros = JsonConvert.DeserializeObject<MovimientosInventariosFiltros>(filtroString) ?? new MovimientosInventariosFiltros();
 
-            var response = new ErrorDto<MovimientosDTOList>
+            var response = new ErrorDto<MovimientosDtoList>
             {
                 Code = 0,
-                Result = new MovimientosDTOList(),
+                Result = new MovimientosDtoList(),
             };
             response.Result.Total = 0;
 
@@ -142,7 +142,7 @@ namespace PgxAPI.DataBaseTier
                                     {where} ORDER BY M.Fecha desc
                                     {paginaActual} {paginacionActual}; ";
 
-                    response.Result.Movimientos = connection.Query<MovimientosDTO>(query).ToList();
+                    response.Result.Movimientos = connection.Query<MovimientosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -150,7 +150,7 @@ namespace PgxAPI.DataBaseTier
                 response.Code = -1;
                 response.Description = ex.Message;
                 response.Result.Total = 0;
-                response.Result.Movimientos = new List<MovimientosDTO>();
+                response.Result.Movimientos = new List<MovimientosDto>();
             }
 
             return response;

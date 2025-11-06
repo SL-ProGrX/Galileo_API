@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Personas;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Personas
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_CRGestionesDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -24,13 +25,13 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CRGestionesData>> AF_CRGestiones_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<AfCrGestionesData>> AF_CRGestiones_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<AF_CRGestionesData>>()
+            var result = new ErrorDto<List<AfCrGestionesData>>()
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<AF_CRGestionesData>()
+                Result = new List<AfCrGestionesData>()
             };
             try
             {
@@ -66,7 +67,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     ORDER BY {sortField} {sortOrder}
                     {paginacion}";
 
-                result.Result = connection.Query<AF_CRGestionesData>(query, param).ToList();
+                result.Result = connection.Query<AfCrGestionesData>(query, param).ToList();
             }
             catch (Exception ex)
             {
@@ -84,7 +85,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="gestion"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto AF_CRGestiones_Guardar(int CodEmpresa, AF_CRGestionesData gestion, string usuario)
+        public ErrorDto AF_CRGestiones_Guardar(int CodEmpresa, AfCrGestionesData gestion, string usuario)
         {
             var result = new ErrorDto()
             {
@@ -109,7 +110,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     });
                     result.Description = "Actualizado correctamente";
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -128,7 +129,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                     });
                     result.Description = "Insertado correctamente";
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -169,7 +170,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 if (rows > 0)
                 {
                     result.Description = "Eliminado correctamente";
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

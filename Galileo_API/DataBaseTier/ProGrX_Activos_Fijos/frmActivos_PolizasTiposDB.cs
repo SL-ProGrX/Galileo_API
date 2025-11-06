@@ -3,18 +3,19 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Activos_Fijos;
+using PgxAPI.Models.Security;
 namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 {
     public class frmActivos_PolizasTiposDB
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36; // Modulo de Activos Fijos
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmActivos_PolizasTiposDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -217,7 +218,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                         modifica_usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -264,7 +265,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                         registro_usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -303,7 +304,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     var query = $@"DELETE FROM activos_polizas_tipos WHERE tipo_poliza = @tipo_poliza";
                     connection.Execute(query, new { tipo_poliza = tipo_poliza.ToUpper() });
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

@@ -68,17 +68,17 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<cprPlanPeriodosDTO> CprPeriodosPlan_Obtener(int CodEmpresa, int id_periodo)
+        public ErrorDto<CprPlanPeriodosDto> CprPeriodosPlan_Obtener(int CodEmpresa, int id_periodo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<cprPlanPeriodosDTO>();
+            var response = new ErrorDto<CprPlanPeriodosDto>();
             response.Code = 0;
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"SELECT * FROM CPR_PLAN_PERIODOS WHERE ID_PERIODO = {id_periodo} ";
-                    response.Result = connection.QueryFirstOrDefault<cprPlanPeriodosDTO>(query);
+                    response.Result = connection.QueryFirstOrDefault<CprPlanPeriodosDto>(query);
                 }
 
             }
@@ -92,12 +92,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<cprPeriodosPlanLista> CprPeriodosPlanLista_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<CprPeriodosPlanLista> CprPeriodosPlanLista_Obtener(int CodEmpresa, string filtros)
         {
-            cprPeriodosPlanFiltros filtro = JsonConvert.DeserializeObject<cprPeriodosPlanFiltros>(filtros);
+            CprPeriodosPlanFiltros filtro = JsonConvert.DeserializeObject<CprPeriodosPlanFiltros>(filtros);
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<cprPeriodosPlanLista>();
-            response.Result = new cprPeriodosPlanLista();
+            var response = new ErrorDto<CprPeriodosPlanLista>();
+            response.Result = new CprPeriodosPlanLista();
             response.Code = 0;
             try
             {
@@ -130,7 +130,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    response.Result.lista = connection.Query<cprPlanPeriodosDTO>(query).ToList();
+                    response.Result.lista = connection.Query<CprPlanPeriodosDto>(query).ToList();
 
                 }
 
@@ -145,10 +145,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<cprPlanPeriodosDTO> CprPeriodoPlan_Scroll(int CodEmpresa, int scroll, int? id_periodo)
+        public ErrorDto<CprPlanPeriodosDto> CprPeriodoPlan_Scroll(int CodEmpresa, int scroll, int? id_periodo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<cprPlanPeriodosDTO>();
+            var response = new ErrorDto<CprPlanPeriodosDto>();
             try
             {
                 string where = " ", orderBy = " ";
@@ -166,7 +166,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"Select top 1 * from CPR_PLAN_PERIODOS {where} {orderBy}";
-                    response.Result = connection.QueryFirstOrDefault<cprPlanPeriodosDTO>(query);
+                    response.Result = connection.QueryFirstOrDefault<CprPlanPeriodosDto>(query);
                 }
             }
             catch (Exception ex)
@@ -179,7 +179,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto CprPeriodoPlan_Guardar(int CodEmpresa, cprPlanPeriodosDTO periodo)
+        public ErrorDto CprPeriodoPlan_Guardar(int CodEmpresa, CprPlanPeriodosDto periodo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()
@@ -216,7 +216,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDto CprPeriodoPlan_Insertar(int CodEmpresa, cprPlanPeriodosDTO periodo)
+        private ErrorDto CprPeriodoPlan_Insertar(int CodEmpresa, CprPlanPeriodosDto periodo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()
@@ -261,7 +261,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDto CprPeriodoPlan_Actualizar(int CodEmpresa, cprPlanPeriodosDTO periodo)
+        private ErrorDto CprPeriodoPlan_Actualizar(int CodEmpresa, CprPlanPeriodosDto periodo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()
@@ -349,13 +349,13 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto<cprModeloDateDatos> CprPeriodoPlanMeses_Obtener(string modelo)
+        public ErrorDto<CprModeloDateDatos> CprPeriodoPlanMeses_Obtener(string modelo)
         {
-            cprModeloFiltro cpr = JsonConvert.DeserializeObject<cprModeloFiltro>(modelo);
+            CprModeloFiltro cpr = JsonConvert.DeserializeObject<CprModeloFiltro>(modelo);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(cpr.codEmpresa);
-            var response = new ErrorDto<cprModeloDateDatos>();
-            response.Result = new cprModeloDateDatos();
-            cprModeloDatos datos = new cprModeloDatos();
+            var response = new ErrorDto<CprModeloDateDatos>();
+            response.Result = new CprModeloDateDatos();
+            CprModeloDatos datos = new CprModeloDatos();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -365,7 +365,7 @@ namespace PgxAPI.DataBaseTier
                                 inner join CNTX_CIERRES Cc on P.cod_Contabilidad = Cc.cod_Contabilidad and P.ID_CIERRE = Cc.ID_CIERRE 
                                 Where P.COD_CONTABILIDAD = '{cpr.cod_Contabilidad}' AND P.COD_MODELO = '{cpr.cod_modelo}'
                                 order by Cc.Inicio_Anio desc";
-                    datos = connection.QueryFirstOrDefault<cprModeloDatos>(query);
+                    datos = connection.QueryFirstOrDefault<CprModeloDatos>(query);
                     int annoActual = DateTime.Now.Year;
 
                     // Fecha de inicio: primer d�a del mes de inicio

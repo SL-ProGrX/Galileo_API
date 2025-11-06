@@ -21,7 +21,7 @@ namespace PgxAPI.DataBaseTier
 
         //public ErrorDto ValidaAccesoExpediente(string Cedula, string Usuario)
         //{
-        //    List<ConsultaStatusResultDTO> RA_Consulta = new List<ConsultaStatusResultDTO>();
+        //    List<ConsultaStatusResultDto> RA_Consulta = new List<ConsultaStatusResultDto>();
         //    ErrorDto resp = new ErrorDto();
         //    RA_Consulta = mProGrx_Main.DatosObtener(Cedula, Usuario);
         //    if (RA_Consulta[0].PERSONA_ID > 0 && RA_Consulta[0].AUTORIZACION_ID == 0)
@@ -38,16 +38,16 @@ namespace PgxAPI.DataBaseTier
         //    return resp;
         //}
 
-        public List<CC_PeriodoList> CC_Periodos_Obtener(int CodEmpresa)
+        public List<CCPeriodoList> CC_Periodos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CC_PeriodoList> resp = new List<CC_PeriodoList>();
+            List<CCPeriodoList> resp = new List<CCPeriodoList>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "select Idx, ItmX  From vExc_Periodos where ESTADO = 'C' order by IdX desc";
-                    resp = connection.Query<CC_PeriodoList>(query).ToList();
+                    resp = connection.Query<CCPeriodoList>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -57,16 +57,16 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public CC_Exc_PeriodoData CC_Exc_Periodos_Obtener(int CodEmpresa, int Id_Periodo)
+        public CCExcPeriodoData CC_Exc_Periodos_Obtener(int CodEmpresa, int Id_Periodo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            CC_Exc_PeriodoData resp = new CC_Exc_PeriodoData();
+            CCExcPeriodoData resp = new CCExcPeriodoData();
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select NC_MORA, NC_OPCF, NC_SALDOS from Exc_Periodos where id_periodo = {Id_Periodo}";
-                    resp = connection.Query<CC_Exc_PeriodoData>(query).FirstOrDefault();
+                    resp = connection.Query<CCExcPeriodoData>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -80,7 +80,7 @@ namespace PgxAPI.DataBaseTier
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
-            ConsultaStatusResultDTO ra_consulta = new ConsultaStatusResultDTO();
+            ConsultaStatusResultDto ra_consulta = new ConsultaStatusResultDto();
 
             try
             {
@@ -94,7 +94,7 @@ namespace PgxAPI.DataBaseTier
                         Usuario = Usuario
                     };
 
-                    ra_consulta = connection.Query<ConsultaStatusResultDTO>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    ra_consulta = connection.Query<ConsultaStatusResultDto>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
 
                     if (ra_consulta.PERSONA_ID > 0 && ra_consulta.AUTORIZACION_ID == 0)
                     {
@@ -126,10 +126,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public CC_ConsultaExcedenteData CC_ConsultaExcedente_Obtener(int CodEmpresa, int Id_Periodo, string Cedula)
+        public CCConsultaExcedenteData CC_ConsultaExcedente_Obtener(int CodEmpresa, int Id_Periodo, string Cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            CC_ConsultaExcedenteData resp = new CC_ConsultaExcedenteData();
+            CCConsultaExcedenteData resp = new CCConsultaExcedenteData();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -138,7 +138,7 @@ namespace PgxAPI.DataBaseTier
                         from exc_cierre E left join EXC_TIPOS_SALIDAS S on E.SALIDA_CODIGO = S.COD_SALIDA
                         where E.id_periodo = '{Id_Periodo}'
                         and E.cedula = '{Cedula}'";
-                    resp = connection.Query<CC_ConsultaExcedenteData>(query).FirstOrDefault();
+                    resp = connection.Query<CCConsultaExcedenteData>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -148,18 +148,18 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<vSIFAuxCreditosMovDetalle> CC_NotasMora_Obtener(int CodEmpresa, int NC_Mora, string Cedula)
+        public List<VSifAuxCreditosMovDetalle> CC_NotasMora_Obtener(int CodEmpresa, int NC_Mora, string Cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<vSIFAuxCreditosMovDetalle> resp = new List<vSIFAuxCreditosMovDetalle>();
+            List<VSifAuxCreditosMovDetalle> resp = new List<VSifAuxCreditosMovDetalle>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select M.* 
-                        from vSIFAuxCreditosMovDetalle M 
+                        from VSifAuxCreditosMovDetalle M 
                         where M.tcon in('7','NC') and M.ncon = '{NC_Mora}' and M.cedula = '{Cedula}'";
-                    resp = connection.Query<vSIFAuxCreditosMovDetalle>(query).ToList();
+                    resp = connection.Query<VSifAuxCreditosMovDetalle>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -169,18 +169,18 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<vSIFAuxCreditosMovDetalle> CC_NotasOPCF_Obtener(int CodEmpresa, int NC_OPCF, string Cedula)
+        public List<VSifAuxCreditosMovDetalle> CC_NotasOPCF_Obtener(int CodEmpresa, int NC_OPCF, string Cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<vSIFAuxCreditosMovDetalle> resp = new List<vSIFAuxCreditosMovDetalle>();
+            List<VSifAuxCreditosMovDetalle> resp = new List<VSifAuxCreditosMovDetalle>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = $@"select * from vSIFAuxCreditosMovDetalle where tcon in('7','NC')  and ncon = '{NC_OPCF}' 
+                    var query = $@"select * from VSifAuxCreditosMovDetalle where tcon in('7','NC')  and ncon = '{NC_OPCF}' 
                         and id_solicitud in((select id_solicitud from reg_creditos where referencia in(
                         select id_solicitud from reg_creditos where cedula = '{Cedula}' and garantia = 'F')))";
-                    resp = connection.Query<vSIFAuxCreditosMovDetalle>(query).ToList();
+                    resp = connection.Query<VSifAuxCreditosMovDetalle>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -190,18 +190,18 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<vSIFAuxCreditosMovDetalle> CC_NotasSaldos_Obtener(int CodEmpresa, int NC_Saldos, string Cedula)
+        public List<VSifAuxCreditosMovDetalle> CC_NotasSaldos_Obtener(int CodEmpresa, int NC_Saldos, string Cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<vSIFAuxCreditosMovDetalle> resp = new List<vSIFAuxCreditosMovDetalle>();
+            List<VSifAuxCreditosMovDetalle> resp = new List<VSifAuxCreditosMovDetalle>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select C.*
-                        from vSIFAuxCreditosMovDetalle C
+                        from VSifAuxCreditosMovDetalle C
                         where C.tcon in('7','NC')  and C.ncon = '{NC_Saldos}' and C.cedula = '{Cedula}'";
-                    resp = connection.Query<vSIFAuxCreditosMovDetalle>(query).ToList();
+                    resp = connection.Query<VSifAuxCreditosMovDetalle>(query).ToList();
                 }
             }
             catch (Exception ex)

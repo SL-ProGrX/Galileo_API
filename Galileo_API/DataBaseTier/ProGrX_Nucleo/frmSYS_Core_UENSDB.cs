@@ -20,12 +20,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<Core_UENs_DTOList> Core_UENS_Obtener(int CodCliente, string filtros)
+        public ErrorDto<CoreUeNsDtoList> Core_UENS_Obtener(int CodCliente, string filtros)
         {
-            var vfiltro = JsonConvert.DeserializeObject<Core_UENs_Filtros>(filtros);
+            var vfiltro = JsonConvert.DeserializeObject<CoreUeNsFiltros>(filtros);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<Core_UENs_DTOList>();
-            response.Result = new Core_UENs_DTOList();
+            var response = new ErrorDto<CoreUeNsDtoList>();
+            response.Result = new CoreUeNsDtoList();
             response.Code = 0;
             try
             {
@@ -51,7 +51,7 @@ namespace PgxAPI.DataBaseTier
 
                     query = @$"select COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn' 
                         from CORE_UENS {where} order by COD_UNIDAD desc {paginaActual} {paginacionActual}";
-                    response.Result.uens = connection.Query<Core_UENs_DTO>(query).ToList();
+                    response.Result.uens = connection.Query<CoreUeNsDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -71,7 +71,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Core_UENS_Upsert(int CodCliente, string usuario, Core_UENs_DTO request)
+        public ErrorDto Core_UENS_Upsert(int CodCliente, string usuario, CoreUeNsDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new()
@@ -128,7 +128,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="unidad_anterior"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Core_SubUnidad_Upsert(int CodCliente, string usuario, string? unidad_anterior, Core_UENs_DTO request)
+        public ErrorDto Core_SubUnidad_Upsert(int CodCliente, string usuario, string? unidad_anterior, CoreUeNsDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new()
@@ -146,7 +146,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     //Se obtiene información de la unidad principal
                     var query = @$"select * from CORE_UENS where COD_UNIDAD = '{request.unidad_principal}'";
-                    Core_UENs_DTO unidadPrincipal = connection.Query<Core_UENs_DTO>(query).First();
+                    CoreUeNsDto unidadPrincipal = connection.Query<CoreUeNsDto>(query).First();
 
                     query = @$"select isnull(count(*),0) as Existe from CORE_UENS 
                     where (COD_UNIDAD = '{request.unidad_principal}' OR UNIDAD_PRINCIPAL = '{request.unidad_principal}') AND CNTX_UNIDAD = '{request.cntx_unidad}'";
@@ -202,7 +202,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Core_SubCentroCosto_Upsert(int CodCliente, string usuario, Core_UENs_DTO request)
+        public ErrorDto Core_SubCentroCosto_Upsert(int CodCliente, string usuario, CoreUeNsDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new()
@@ -227,7 +227,7 @@ namespace PgxAPI.DataBaseTier
                         var query2 = @$"select * from CORE_UENS where 
                             (COD_UNIDAD = '{request.unidad_principal}' OR UNIDAD_PRINCIPAL = '{request.unidad_principal}') 
                             AND CNTX_UNIDAD = '{request.cntx_unidad}'";
-                        Core_UENs_DTO unidadPrincipal = connection.Query<Core_UENs_DTO>(query2).First();
+                        CoreUeNsDto unidadPrincipal = connection.Query<CoreUeNsDto>(query2).First();
 
                         if (unidadPrincipal.cntx_centro_costo == "")
                         {
@@ -388,7 +388,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $"select * from CORE_UENS where COD_UNIDAD = '{cod_unidad}'";
-                    Core_UENs_DTO unidadInfo = connection.Query<Core_UENs_DTO>(query).First();
+                    CoreUeNsDto unidadInfo = connection.Query<CoreUeNsDto>(query).First();
 
                     //Valida si es la unidad principal
                     if (unidadInfo.unidad_principal == "")
@@ -442,12 +442,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDto<Core_UENs_DTOList> Core_UENSPrincipales_Obtener(int CodCliente, string filtros)
+        public ErrorDto<CoreUeNsDtoList> Core_UENSPrincipales_Obtener(int CodCliente, string filtros)
         {
-            var vfiltro = JsonConvert.DeserializeObject<Core_UENs_Filtros>(filtros);
+            var vfiltro = JsonConvert.DeserializeObject<CoreUeNsFiltros>(filtros);
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<Core_UENs_DTOList>();
-            response.Result = new Core_UENs_DTOList();
+            var response = new ErrorDto<CoreUeNsDtoList>();
+            response.Result = new CoreUeNsDtoList();
             response.Code = 0;
             try
             {
@@ -471,7 +471,7 @@ namespace PgxAPI.DataBaseTier
 
                     query = @$"select COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn' 
                         from CORE_UENS WHERE UNIDAD_PRINCIPAL IS NULL {where} order by COD_UNIDAD desc {paginaActual} {paginacionActual}";
-                    response.Result.uens = connection.Query<Core_UENs_DTO>(query).ToList();
+                    response.Result.uens = connection.Query<CoreUeNsDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -490,11 +490,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDto<Core_UENs_DTOList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad)
+        public ErrorDto<CoreUeNsDtoList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<Core_UENs_DTOList>();
-            response.Result = new Core_UENs_DTOList();
+            var response = new ErrorDto<CoreUeNsDtoList>();
+            response.Result = new CoreUeNsDtoList();
             response.Code = 0;
             response.Result.Total = 0;
             try
@@ -507,7 +507,7 @@ namespace PgxAPI.DataBaseTier
                     from CORE_UENS C
                     WHERE C.UNIDAD_PRINCIPAL = '{cod_unidad}' OR C.COD_UNIDAD = '{cod_unidad}' 
                     order by C.CNTX_UNIDAD desc";
-                    response.Result.uens = connection.Query<Core_UENs_DTO>(query).ToList();
+                    response.Result.uens = connection.Query<CoreUeNsDto>(query).ToList();
                     if (response.Result.uens[0].cntx_unidad == null || response.Result.uens[0].cntx_unidad == "")
                     {
                         response.Result = null;
@@ -530,11 +530,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDto<Core_UENs_DTOList> Core_SubCentroCosto_Obtener(int CodCliente, string cod_unidad, string sub_unidad)
+        public ErrorDto<CoreUeNsDtoList> Core_SubCentroCosto_Obtener(int CodCliente, string cod_unidad, string sub_unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<Core_UENs_DTOList>();
-            response.Result = new Core_UENs_DTOList();
+            var response = new ErrorDto<CoreUeNsDtoList>();
+            response.Result = new CoreUeNsDtoList();
             response.Code = 0;
             response.Result.Total = 0;
             try
@@ -547,7 +547,7 @@ namespace PgxAPI.DataBaseTier
                     from CORE_UENS C
                     WHERE (C.UNIDAD_PRINCIPAL = '{cod_unidad}' OR C.COD_UNIDAD = '{cod_unidad}' ) AND C.CNTX_UNIDAD = '{sub_unidad}'
                     order by C.CNTX_CENTRO_COSTO desc";
-                    response.Result.uens = connection.Query<Core_UENs_DTO>(query).ToList();
+                    response.Result.uens = connection.Query<CoreUeNsDto>(query).ToList();
                     if (response.Result.uens[0].cntx_centro_costo == null || response.Result.uens[0].cntx_centro_costo == "")
                     {
                         response.Result = null;
@@ -571,17 +571,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_unidad"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<Core_Usuarios_DTO>> Core_Miembros_Obtener(int CodCliente, string cod_unidad, string? filtro)
+        public ErrorDto<List<CoreUsuariosDto>> Core_Miembros_Obtener(int CodCliente, string cod_unidad, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<Core_Usuarios_DTO>>();
+            var response = new ErrorDto<List<CoreUsuariosDto>>();
             response.Code = 0;
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = @$"exec spSys_UENS_Miembros_Consultas '{cod_unidad}', '{filtro}'";
-                    response.Result = connection.Query<Core_Usuarios_DTO>(query).ToList();
+                    response.Result = connection.Query<CoreUsuariosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -599,7 +599,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_unidad"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Core_Miembros_Registro(int CodCliente, string cod_unidad, Core_Usuarios_DTO request)
+        public ErrorDto Core_Miembros_Registro(int CodCliente, string cod_unidad, CoreUsuariosDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
@@ -634,17 +634,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_unidad"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<Core_Roles_DTO>> Core_Roles_Obtener(int CodCliente, string cod_unidad, string? filtro)
+        public ErrorDto<List<CoreRolesDto>> Core_Roles_Obtener(int CodCliente, string cod_unidad, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<Core_Roles_DTO>>();
+            var response = new ErrorDto<List<CoreRolesDto>>();
             response.Code = 0;
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = @$"exec spSys_UENS_Roles_Consultas '{cod_unidad}', '{filtro}'";
-                    response.Result = connection.Query<Core_Roles_DTO>(query).ToList();
+                    response.Result = connection.Query<CoreRolesDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -663,7 +663,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cod_unidad"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Core_Roles_Registro(int CodCliente, string cod_unidad, Core_Roles_DTO request)
+        public ErrorDto Core_Roles_Registro(int CodCliente, string cod_unidad, CoreRolesDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();

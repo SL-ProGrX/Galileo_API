@@ -15,10 +15,10 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<List<BodegaReporteInvMCDTO>> Obtener_Bodegas(int CodEmpresa)
+        public ErrorDto<List<BodegaReporteInvMCdto>> Obtener_Bodegas(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<BodegaReporteInvMCDTO>>();
+            var response = new ErrorDto<List<BodegaReporteInvMCdto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -26,7 +26,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "SELECT COD_BODEGA, DESCRIPCION FROM PV_BODEGAS";
 
-                    response.Result = connection.Query<BodegaReporteInvMCDTO>(query).ToList();
+                    response.Result = connection.Query<BodegaReporteInvMCdto>(query).ToList();
 
                 }
             }
@@ -41,11 +41,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<List<LineasInvMCDTO>> Obtener_Lineas(int CodEmpresa)
+        public ErrorDto<List<LineasInvMCdto>> Obtener_Lineas(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<LineasInvMCDTO>>();
+            var response = new ErrorDto<List<LineasInvMCdto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -53,7 +53,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "select COD_PRODCLAS,DESCRIPCION from PV_PROD_CLASIFICA";
 
-                    response.Result = connection.Query<LineasInvMCDTO>(query).ToList();
+                    response.Result = connection.Query<LineasInvMCdto>(query).ToList();
 
                 }
             }

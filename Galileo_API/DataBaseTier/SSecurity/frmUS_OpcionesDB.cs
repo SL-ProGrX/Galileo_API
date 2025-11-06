@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -15,16 +16,16 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<ModuloDTO> Modulo_ObtenerTodos()
+        public List<ModuloDto> Modulo_ObtenerTodos()
         {
-            List<ModuloDTO> data = new List<ModuloDTO>();
+            List<ModuloDto> data = new List<ModuloDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
                 {
                     var procedure = "[spPGX_W_Opciones_Modulos_Obtener]";
 
-                    data = connection.Query<ModuloDTO>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    data = connection.Query<ModuloDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
 
                 }
             }
@@ -35,9 +36,9 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        public List<FormularioDTO> Formulario_ObtenerTodos(int modulo)
+        public List<FormularioDto> Formulario_ObtenerTodos(int modulo)
         {
-            List<FormularioDTO> data = new List<FormularioDTO>();
+            List<FormularioDto> data = new List<FormularioDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -49,7 +50,7 @@ namespace PgxAPI.DataBaseTier
                         modulo = modulo,
                     };
 
-                    data = connection.Query<FormularioDTO>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    data = connection.Query<FormularioDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
 
                 }
             }
@@ -60,9 +61,9 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        public List<OpcionDTO> Opcion_ObtenerTodos(int modulo, string formulario)
+        public List<OpcionDto> Opcion_ObtenerTodos(int modulo, string formulario)
         {
-            List<OpcionDTO> data = new List<OpcionDTO>();
+            List<OpcionDto> data = new List<OpcionDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -75,7 +76,7 @@ namespace PgxAPI.DataBaseTier
                         formulario = formulario,
                     };
 
-                    data = connection.Query<OpcionDTO>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    data = connection.Query<OpcionDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -85,7 +86,7 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        private ErrorDto Opcion_Insertar(OpcionDTO request)
+        private ErrorDto Opcion_Insertar(OpcionDto request)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -145,7 +146,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDto Opcion_Actualizar(OpcionDTO request)
+        private ErrorDto Opcion_Actualizar(OpcionDto request)
         {
             ErrorDto resp = new ErrorDto();
             try
@@ -177,7 +178,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Opcion_Guardar(OpcionDTO request)
+        public ErrorDto Opcion_Guardar(OpcionDto request)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;

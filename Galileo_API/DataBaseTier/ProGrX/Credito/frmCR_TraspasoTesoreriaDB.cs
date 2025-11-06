@@ -1,11 +1,10 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using Org.BouncyCastle.Utilities;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
 using PgxAPI.Models.ProGrX.Credito;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Credito
 {
@@ -13,14 +12,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 3; // Modulo de Créditos
-        private readonly mTesoreria _mtes;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MTesoreria _mtes;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmCR_TraspasoTesoreriaDB(IConfiguration? config)
         {
             _config = config;
-            _mtes = new mTesoreria(_config);
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _mtes = new MTesoreria(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         #region remesas
@@ -178,7 +177,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
                             connection.Execute(query, new { Operacion = item.id_solicitud, Token = token, Remesa = cod_remesa, RemesaTipo = "CRD" });
 
                             //Bitacora
-                            _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                            _Security_MainDB.Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodEmpresa,
                                 Usuario = usuario,

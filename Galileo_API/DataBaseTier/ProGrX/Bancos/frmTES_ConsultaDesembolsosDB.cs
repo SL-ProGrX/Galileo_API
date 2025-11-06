@@ -4,7 +4,6 @@ using PgxAPI.Models.ERROR;
 using Microsoft.Data.SqlClient;
 using System.Text;
 using PgxAPI.Models;
-using Microsoft.ReportingServices.ReportProcessing.ReportObjectModel;
 
 namespace PgxAPI.DataBaseTier.TES
 {

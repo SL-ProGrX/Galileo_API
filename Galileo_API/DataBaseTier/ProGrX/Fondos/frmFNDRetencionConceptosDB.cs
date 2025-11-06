@@ -3,7 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Fondos;
-using PgxAPI.BusinessLogic;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Fondos
 {
@@ -11,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 18; 
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmFNDRetencionConceptosDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -26,14 +26,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="enlace"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<FNDRetencionConceptoData>> FND_RetencionConceptos_Obtener(int CodEmpresa, string enlace, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<FndRetencionConceptoData>> FND_RetencionConceptos_Obtener(int CodEmpresa, string enlace, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<FNDRetencionConceptoData>>()
+            var result = new ErrorDto<List<FndRetencionConceptoData>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<FNDRetencionConceptoData>()
+                Result = new List<FndRetencionConceptoData>()
             };
 
             try
@@ -61,7 +61,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                                 AND CntX.cod_contabilidad = @enlace
                             {where}
                             ORDER BY C.RETENCION_CODIGO";
-                    result.Result = connection.Query<FNDRetencionConceptoData>(query, new { enlace }).ToList();
+                    result.Result = connection.Query<FndRetencionConceptoData>(query, new { enlace }).ToList();
                 }
             }
             catch (Exception ex)
@@ -79,14 +79,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<FNDRetencionConceptoLista> FND_RetencionConceptosLista_Obtener(int CodEmpresa, string enlace, FiltrosLazyLoadData filtros)
+        public ErrorDto<FndRetencionConceptoLista> FND_RetencionConceptosLista_Obtener(int CodEmpresa, string enlace, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<FNDRetencionConceptoLista>
+            var result = new ErrorDto<FndRetencionConceptoLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new FNDRetencionConceptoLista()
+                Result = new FndRetencionConceptoLista()
             };
 
             try
@@ -121,7 +121,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                                 ORDER BY {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
                                 OFFSET {filtros.pagina} ROWS 
                                 FETCH NEXT {filtros.paginacion} ROWS ONLY";
-                    result.Result.Lista = connection.Query<FNDRetencionConceptoData>(query, new { enlace }).ToList();
+                    result.Result.Lista = connection.Query<FndRetencionConceptoData>(query, new { enlace }).ToList();
                 }
             }
             catch (Exception ex)
@@ -141,7 +141,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
-        public ErrorDto FND_RetencionConceptos_Guardar(int CodEmpresa, string usuario, FNDRetencionConceptoData concepto)
+        public ErrorDto FND_RetencionConceptos_Guardar(int CodEmpresa, string usuario, FndRetencionConceptoData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto
@@ -195,7 +195,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
-        private ErrorDto FND_RetencionConceptos_Insertar(int CodEmpresa, string usuario, FNDRetencionConceptoData concepto)
+        private ErrorDto FND_RetencionConceptos_Insertar(int CodEmpresa, string usuario, FndRetencionConceptoData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto
@@ -219,7 +219,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         CodCuenta = concepto.CodCuenta
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -244,7 +244,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// <returns></returns>
-        private ErrorDto FND_RetencionConceptos_Actualizar(int CodEmpresa, string usuario, FNDRetencionConceptoData concepto)
+        private ErrorDto FND_RetencionConceptos_Actualizar(int CodEmpresa, string usuario, FndRetencionConceptoData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto
@@ -269,7 +269,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         CodCuenta = concepto.CodCuenta
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -309,7 +309,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                     var query = @"DELETE FROM FND_RETENCION_CONCEPTOS WHERE RETENCION_CODIGO = @RetencionCodigo";
                     connection.Execute(query, new { RetencionCodigo = retencionCodigo.ToUpper() });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

@@ -93,9 +93,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codinstitucion"></param>
         /// <param name="fechaproceso"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_ArchivoResultadoDTO>> AF_Archivo_Obtener(int CodEmpresa, string codinstitucion, string fechaproceso)
+        public ErrorDto<List<AfArchivoResultadoDto>> AF_Archivo_Obtener(int CodEmpresa, string codinstitucion, string fechaproceso)
         {
-            var response = new ErrorDto<List<AF_ArchivoResultadoDTO>> { Code = 0, Result = new() };
+            var response = new ErrorDto<List<AfArchivoResultadoDto>> { Code = 0, Result = new() };
             try
             {
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -103,7 +103,7 @@ namespace PgxAPI.DataBaseTier
 
                 const string query = @"EXEC spPrm_Formato_PG_Soc @CodInstitucion, @FechaProceso";
 
-                response.Result = connection.Query<AF_ArchivoResultadoDTO>(
+                response.Result = connection.Query<AfArchivoResultadoDto>(
                     query,
                     new { codinstitucion, fechaproceso }
                 ).ToList();

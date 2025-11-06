@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -15,11 +16,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public List<UsDerechosNewDTO> ObtenerUsDerechosNewDTOs(string Rol, string Estado) //opciones
+        public List<UsDerechosNewDto> ObtenerUsDerechosNewDTOs(string Rol, string Estado) //opciones
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
-            List<UsDerechosNewDTO> Result = [];
+            List<UsDerechosNewDto> Result = [];
 
             //string sql = "SELECT DISTINCT O.*, ISNULL(P.ESTADO, 'Z') AS 'PermisoEstado' FROM US_opciones O INNER JOIN US_formularios F ON O.formulario = F.formulario LEFT JOIN US_ROL_Permisos P ON O.cod_Opcion = P.cod_Opcion ORDER BY O.Opcion_descripcion";
             string sql = "SELECT DISTINCT O.*, ISNULL(P.ESTADO, 'Z') AS 'PermisoEstado' " +
@@ -36,7 +37,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                Result = connection.Query<UsDerechosNewDTO>(sql, values).ToList();
+                Result = connection.Query<UsDerechosNewDto>(sql, values).ToList();
             }
             catch (Exception ex)
             {
@@ -46,11 +47,11 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerUSDerechosNewDTOs
 
-        public List<UsRolDTO> ObtenerUsRoles()
+        public List<UsRolDto> ObtenerUsRoles()
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
-            List<UsRolDTO> Result = [];
+            List<UsRolDto> Result = [];
             string sql = "SELECT * FROM US_ROLES";
             var values = new
             {
@@ -59,7 +60,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                Result = connection.Query<UsRolDTO>(sql, values).ToList();
+                Result = connection.Query<UsRolDto>(sql, values).ToList();
             }
             catch (Exception ex)
             {
@@ -69,7 +70,7 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerUsRoles
 
-        public int CrearUsDerechosNewDTO(Crear_UsDerechosNewDTO info)
+        public int CrearUsDerechosNewDTO(CrearUsDerechosNewDto info)
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
             int Result = 0;

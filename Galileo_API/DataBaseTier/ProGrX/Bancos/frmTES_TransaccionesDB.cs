@@ -4,29 +4,30 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 using PgxAPI.Models.TES;
-using Tes_SolicitudesData = PgxAPI.Models.TES.Tes_SolicitudesData;
+using Tes_SolicitudesData = PgxAPI.Models.TES.TesSolicitudesData;
 
 namespace PgxAPI.DataBaseTier
 {
     public class frmTES_TransaccionesDB
     {
         private readonly IConfiguration? _config;
-        private readonly mTesoreria mTesoreria;
+        private readonly MTesoreria MTesoreria;
         private readonly mProGrX_AuxiliarDB _AuxiliarDB;
         private readonly int vModulo = 9;
-        private readonly mServiciosWCFDB _srvWCF;
-        private readonly mSecurityMainDb _Security_MainDB;
+      //  private readonly mServiciosWCFDB _srvWCF;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly frmCntX_ConsultaCuentasDB _ConsultaCuentasDB;
 
 
         public frmTES_TransaccionesDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(config);
+            MTesoreria = new MTesoreria(config);
             _AuxiliarDB = new mProGrX_AuxiliarDB(config);
-            _srvWCF = new mServiciosWCFDB(config);
-            _Security_MainDB = new mSecurityMainDb(config);
+           // _srvWCF = new mServiciosWCFDB(config);
+            _Security_MainDB = new MSecurityMainDb(config);
             _ConsultaCuentasDB = new frmCntX_ConsultaCuentasDB(config);
         }
 
@@ -37,7 +38,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TES_TiposDocumentos_Obtener(int CodEmpresa, string Usuario, int id_banco, string? tipo = "S")
         {
-            return mTesoreria.sbTesTiposDocsCargaCboAcceso(CodEmpresa,Usuario, id_banco, tipo);
+            return MTesoreria.sbTesTiposDocsCargaCboAcceso(CodEmpresa,Usuario, id_banco, tipo);
         }
 
         /// <summary>
@@ -50,7 +51,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TES_Unidades_Obtener(int CodEmpresa, string usuario, int banco, int contabilidad)
         {
-            return mTesoreria.sbTesUnidadesCargaCbo(CodEmpresa, usuario, banco, contabilidad);
+            return MTesoreria.sbTesUnidadesCargaCbo(CodEmpresa, usuario, banco, contabilidad);
         }
 
         /// <summary>
@@ -72,12 +73,12 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TES_Conceptos_Obtener(int CodEmpresa, string usuario, int banco)
         {
-            return mTesoreria.sbTesConceptosCargaCbo(CodEmpresa, usuario, banco);
+            return MTesoreria.sbTesConceptosCargaCbo(CodEmpresa, usuario, banco);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> TES_BancosCarga_Obtener(int CodEmpresa, string usuario, string gestion)
         {
-            return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
+            return MTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
         }
 
         /// <summary>
@@ -86,10 +87,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="tesoreria"></param>
         /// <returns></returns>
-        public ErrorDto<List<Tes_AfectacionDTO>> TES_Afectaciones_Obtener(int CodEmpresa, int tesoreria)
+        public ErrorDto<List<TesAfectacionDto>> TES_Afectaciones_Obtener(int CodEmpresa, int tesoreria)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<Tes_AfectacionDTO>>
+            var response = new ErrorDto<List<TesAfectacionDto>>
             {
                 Code = 0
             };
@@ -98,7 +99,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spTes_Consulta_Afectacion_Modulos {tesoreria}";
-                    response.Result = connection.Query<Tes_AfectacionDTO>(query).ToList();
+                    response.Result = connection.Query<TesAfectacionDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -117,10 +118,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="tesoreria"></param>
         /// <returns></returns>
-        public ErrorDto<List<Tes_BitacoraDTO>> TES_Bitacora_Obtener(int CodEmpresa, int tesoreria)
+        public ErrorDto<List<TesBitacoraDto>> TES_Bitacora_Obtener(int CodEmpresa, int tesoreria)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<Tes_BitacoraDTO>>
+            var response = new ErrorDto<List<TesBitacoraDto>>
             {
                 Code = 0
             };
@@ -131,7 +132,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"select H.ID, H.FECHA, H.USUARIO,ISNULL(M.DESCRIPCION,'No identificado') AS MOVIMIENTO,H.DETALLE
                     from TES_HISTORIAL H left join TES_TIPOS_MOVIMIENTOS M on H.COD_MOVIMIENTO = M.COD_MOVIMIENTO
                     WHERE H.NSOLICITUD = {tesoreria}";
-                    response.Result = connection.Query<Tes_BitacoraDTO>(query).ToList();
+                    response.Result = connection.Query<TesBitacoraDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -216,10 +217,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="tesoreria"></param>
         /// <param name="contabilidad"></param>
         /// <returns></returns>
-        public ErrorDto<TES_TransaccionDTO> TES_Transaccion_Obtener(int CodEmpresa, int tesoreria, int contabilidad)
+        public ErrorDto<TesTransaccionDto> TES_Transaccion_Obtener(int CodEmpresa, int tesoreria, int contabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_TransaccionDTO>
+            var response = new ErrorDto<TesTransaccionDto>
             {
                 Code = 0
             };
@@ -228,7 +229,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spTes_Transaccion_Consulta {tesoreria}";
-                    response.Result = connection.Query<TES_TransaccionDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<TesTransaccionDto>(query).FirstOrDefault();
 
                     if(response.Result != null)
                     {
@@ -261,11 +262,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="solicitud"></param>
         /// <param name="contabilidad"></param>
         /// <returns></returns>
-        public ErrorDto<List<Tes_Trans_AsientoDTO>> TES_TransaccionAsiento_Obtener(
+        public ErrorDto<List<TesTransAsientoDto>> TES_TransaccionAsiento_Obtener(
             TesConsultaAsientos vSolicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(vSolicitud.CodEmpresa);
-            var response = new ErrorDto<List<Tes_Trans_AsientoDTO>>
+            var response = new ErrorDto<List<TesTransAsientoDto>>
             {
                 Code = 0
             };
@@ -287,7 +288,7 @@ namespace PgxAPI.DataBaseTier
                            where D.nsolicitud = @solicitud 
                            order by D.linea";
 
-                        response.Result = connection.Query<Tes_Trans_AsientoDTO>(query,
+                        response.Result = connection.Query<TesTransAsientoDto>(query,
                         new
                         {
                             contabilidad = vSolicitud.contabilidad,
@@ -304,7 +305,7 @@ namespace PgxAPI.DataBaseTier
                                             from CntX_Cuentas C inner join Tes_Bancos B on C.cod_Cuenta = B.CtaConta
                                             Where B.id_banco = @banco
                                             and C.cod_contabilidad = @contabilidad";
-                                    Tes_Trans_AsientoDTO linea = connection.QueryFirstOrDefault<Tes_Trans_AsientoDTO>(
+                                    TesTransAsientoDto linea = connection.QueryFirstOrDefault<TesTransAsientoDto>(
                                         query, new
                                         {
                                             banco = vSolicitud.id_banco,
@@ -340,7 +341,7 @@ namespace PgxAPI.DataBaseTier
                                                 and C.cod_contabilidad = @contabilidad ";
 
 
-                      response.Result = connection.Query<Tes_Trans_AsientoDTO>(query,
+                      response.Result = connection.Query<TesTransAsientoDto>(query,
                       new
                       {
                           contabilidad = vSolicitud.contabilidad,
@@ -357,7 +358,7 @@ namespace PgxAPI.DataBaseTier
                                             from CntX_Cuentas C inner join Tes_Bancos B on C.cod_Cuenta = B.CtaConta
                                             Where B.id_banco = @banco
                                             and C.cod_contabilidad = @contabilidad";
-                                    Tes_Trans_AsientoDTO linea = connection.QueryFirstOrDefault<Tes_Trans_AsientoDTO>(
+                                    TesTransAsientoDto linea = connection.QueryFirstOrDefault<TesTransAsientoDto>(
                                         query, new
                                         {
                                             banco = vSolicitud.id_banco,
@@ -389,7 +390,7 @@ namespace PgxAPI.DataBaseTier
 
                     }
 
-                    if (mTesoreria.fxTesTiposDocAsiento(vSolicitud.CodEmpresa, vSolicitud.tipo) == "A")
+                    if (MTesoreria.fxTesTiposDocAsiento(vSolicitud.CodEmpresa, vSolicitud.tipo) == "A")
                     {
                         response.Result[0].debehaber = "H";
                         if(response.Result.Count > 1)
@@ -436,10 +437,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<List<Tes_LocalizacionDTO>> TES_Localizacion_Obtener(int CodEmpresa, int solicitud)
+        public ErrorDto<List<TesLocalizacionDto>> TES_Localizacion_Obtener(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<Tes_LocalizacionDTO>>
+            var response = new ErrorDto<List<TesLocalizacionDto>>
             {
                 Code = 0
             };
@@ -452,7 +453,7 @@ namespace PgxAPI.DataBaseTier
                                     inner join tes_Ubicaciones U on R.cod_ubicacion_destino = U.cod_ubicacion
                                     Where D.nsolicitud = @solicitud And D.estado = 1
                                     Order by D.fecha_rec desc";
-                    response.Result = connection.Query<Tes_LocalizacionDTO>(query,
+                    response.Result = connection.Query<TesLocalizacionDto>(query,
                         new
                         {
                             solicitud = solicitud
@@ -475,10 +476,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<List<Tes_ReImpresionesDTO>> TES_ReImpresiones_Obtener(int CodEmpresa, int solicitud)
+        public ErrorDto<List<TesReimpresionesDto>> TES_ReImpresiones_Obtener(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<Tes_ReImpresionesDTO>>
+            var response = new ErrorDto<List<TesReimpresionesDto>>
             {
                 Code = 0
             };
@@ -488,7 +489,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select Fecha,Usuario,Autoriza,Notas from Tes_reImpresiones where nsolicitud = @solicitud
                                       order by fecha desc";
-                    response.Result = connection.Query<Tes_ReImpresionesDTO>(query,
+                    response.Result = connection.Query<TesReimpresionesDto>(query,
                         new
                         {
                             solicitud = solicitud
@@ -511,10 +512,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<List<Tes_CambioFechasDTO>> TES_CambioFechas_Obtener(int CodEmpresa, int solicitud)
+        public ErrorDto<List<TesCambioFechasDto>> TES_CambioFechas_Obtener(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<Tes_CambioFechasDTO>>
+            var response = new ErrorDto<List<TesCambioFechasDto>>
             {
                 Code = 0
             };
@@ -525,7 +526,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"select Id as Idx,Fecha,Usuario,Detalle from tes_historial where nsolicitud = @solicitud
                                     and cod_movimiento = '08' order by fecha desc ";
 
-                    response.Result = connection.Query<Tes_CambioFechasDTO>(query,
+                    response.Result = connection.Query<TesCambioFechasDto>(query,
                         new
                         {
                             solicitud = solicitud
@@ -599,7 +600,7 @@ namespace PgxAPI.DataBaseTier
                                       OFFSET {filtro.pagina} ROWS
                                       FETCH NEXT {filtro.paginacion} ROWS ONLY ";
 
-                        response.Result.lista = connection.Query<Tes_SolicitudesData>(query).ToList();
+                        response.Result.lista = connection.Query<Models.TES.TesSolicitudesData>(query).ToList();
                     }
                 }
             }
@@ -619,7 +620,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="scrollCode"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDto<int> TES_TransaccionDocumento_Scroll(int CodEmpresa ,int scrollCode, Tes_SolicitudDocParametro parametros)
+        public ErrorDto<int> TES_TransaccionDocumento_Scroll(int CodEmpresa ,int scrollCode, TesSolicitudDocParametro parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<int>
@@ -773,9 +774,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="transaccion"></param>
         /// <returns></returns>
-        public ErrorDto TES_Transaccion_Guardar(int CodEmpresa, string usuario, int contabilidad , TES_TransaccionDTO transaccion)
+        public ErrorDto TES_Transaccion_Guardar(int CodEmpresa, string usuario, int contabilidad , TesTransaccionDto transaccion)
         {
-           // TES_TransaccionDTO transacción = JsonConvert.DeserializeObject<TES_TransaccionDTO>(jTransaccion);
+           // TES_TransaccionDto transacción = JsonConvert.DeserializeObject<TES_TransaccionDto>(jTransaccion);
             var res = new ErrorDto();
             if (transaccion.user_solicita == null)
             {
@@ -826,7 +827,7 @@ namespace PgxAPI.DataBaseTier
             // Fix for CS0266: Explicitly cast 'int?' to 'int' to resolve the type mismatch.
             transaccion.tipo_ced_origen = idOrigen.HasValue ? idOrigen.Value : default;
 
-            var banco = mTesoreria.fxTesBancoDocsValor(CodEmpresa, transaccion.id_banco, transaccion.tipo, "REG_AUTORIZACION");
+            var banco = MTesoreria.fxTesBancoDocsValor(CodEmpresa, transaccion.id_banco, transaccion.tipo, "REG_AUTORIZACION");
             if (banco.Code != -1)
             {
                 transaccion.entregado = "N";
@@ -857,7 +858,7 @@ namespace PgxAPI.DataBaseTier
 
             if(res.Code == 1 || res.Code == 0)
             {
-                var emitir = mTesoreria.fxTesBancoDocsValor(CodEmpresa, transaccion.id_banco, transaccion.tipo, "REG_EMISION").Result;
+                var emitir = MTesoreria.fxTesBancoDocsValor(CodEmpresa, transaccion.id_banco, transaccion.tipo, "REG_EMISION").Result;
                 if (emitir == "0")
                 {
                     if(transaccion.nsolicitud == 0)
@@ -865,7 +866,7 @@ namespace PgxAPI.DataBaseTier
                         transaccion.nsolicitud = Convert.ToInt32(res.Description);
                     }
                     //Emite documento rdlc
-                   res = mTesoreria.sbTesEmitirDocumento(CodEmpresa, usuario, vModulo, transaccion.nsolicitud, transaccion.ndocumento = "", null);
+                   res = MTesoreria.sbTesEmitirDocumento(CodEmpresa, usuario, vModulo, transaccion.nsolicitud, transaccion.ndocumento = "", null);
                    
                     if(res.Code == -1)
                     {
@@ -878,7 +879,7 @@ namespace PgxAPI.DataBaseTier
                         res.Description = transaccion.nsolicitud.ToString();
                     }
 
-                    //if (!mTesoreria.fxTesTipoAccesoValida(CodEmpresa, transaccion.id_banco.ToString(), usuario, transaccion.tipo, "G").Result)
+                    //if (!MTesoreria.fxTesTipoAccesoValida(CodEmpresa, transaccion.id_banco.ToString(), usuario, transaccion.tipo, "G").Result)
                     //{
                     //    if (res.Code == 1 || res.Code == 0)
                     //    {
@@ -900,7 +901,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="transaccion"></param>
         /// <returns></returns>
-        private ErrorDto TES_Transaccion_Insertar(int CodEmpresa, string usuario, TES_TransaccionDTO transaccion)
+        private ErrorDto TES_Transaccion_Insertar(int CodEmpresa, string usuario, TesTransaccionDto transaccion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -1028,7 +1029,7 @@ namespace PgxAPI.DataBaseTier
                         response.Description = solicitud.ToString();
                         response.Code = 0;
 
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO {
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,
                             DetalleMovimiento = $"Solicitud : {solicitud.ToString()}",
@@ -1055,7 +1056,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="transaccion"></param>
         /// <returns></returns>
-        private ErrorDto TES_Transaccion_Actualizar(int CodEmpresa, string usuario, TES_TransaccionDTO transaccion)
+        private ErrorDto TES_Transaccion_Actualizar(int CodEmpresa, string usuario, TesTransaccionDto transaccion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -1134,7 +1135,7 @@ namespace PgxAPI.DataBaseTier
                     else
                     {
                         response.Description = transaccion.nsolicitud.ToString();
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,
@@ -1162,7 +1163,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="solicitud"></param>
         /// <param name="detalle"></param>
         /// <returns></returns>
-        public ErrorDto TES_TransaccionDetalleActualizar(int CodEmpresa, int solicitud, List<Tes_Trans_AsientoDTO> detalle)
+        public ErrorDto TES_TransaccionDetalleActualizar(int CodEmpresa, int solicitud, List<TesTransAsientoDto> detalle)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -1244,7 +1245,7 @@ namespace PgxAPI.DataBaseTier
             };
             try
             {
-                var banco = mTesoreria.fxTesBancoDocsValor(CodEmpresa, id_banco, tipo, "REG_EMISION");
+                var banco = MTesoreria.fxTesBancoDocsValor(CodEmpresa, id_banco, tipo, "REG_EMISION");
                 if(banco.Result == "0")
                 {
                     //LLamo despues a reporte
@@ -1288,7 +1289,7 @@ namespace PgxAPI.DataBaseTier
                         solicitud = solicitud
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -1587,17 +1588,17 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        /// <summary>
-        /// Método para validar una transferencia SINPE
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="solicitud"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto TES_TransferenciasSinpe_Valida(int CodEmpresa, int solicitud, string usuario)
-        {
-            return _srvWCF.fxValidacionSinpe(CodEmpresa, solicitud.ToString(), usuario);
-        }
+        // /// <summary>
+        // /// Método para validar una transferencia SINPE
+        // /// </summary>
+        // /// <param name="CodEmpresa"></param>
+        // /// <param name="solicitud"></param>
+        // /// <param name="usuario"></param>
+        // /// <returns></returns>
+        // public ErrorDto TES_TransferenciasSinpe_Valida(int CodEmpresa, int solicitud, string usuario)
+        // {
+        //     return _srvWCF.fxValidacionSinpe(CodEmpresa, solicitud.ToString(), usuario);
+        // }
 
         /// <summary>
         /// Método para obtener las unidades activas de una contabilidad específica
@@ -1751,7 +1752,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto<bool> TesEmpresaSinpe_Valida(int CodEmpresa)
         {
-            return mTesoreria.fxValidaEmpresaSinpe(CodEmpresa);
+            return MTesoreria.fxValidaEmpresaSinpe(CodEmpresa);
         }
 
         public ErrorDto<List<TesBitacoraTransaccion>> Tes_BitacoraTransaccion(int CodEmpresa,string solicitud)
@@ -1827,7 +1828,7 @@ namespace PgxAPI.DataBaseTier
             return _AuxiliarDB.NumeroALetras(numero);
         }
 
-        private ErrorDto<bool> fxValida(int CodEmpresa, string usuario, TES_TransaccionDTO transaccion)
+        private ErrorDto<bool> fxValida(int CodEmpresa, string usuario, TesTransaccionDto transaccion)
         {
             var result = new ErrorDto<bool>();
             string vMensaje = "";
@@ -1839,7 +1840,7 @@ namespace PgxAPI.DataBaseTier
             bool fxValida = true;
             try
             {
-                if(mTesoreria.fxTesParametro(CodEmpresa, "12") == "S")
+                if(MTesoreria.fxTesParametro(CodEmpresa, "12") == "S")
                 {
                     //reviso si el código de id es igual al código del usuario
                     using var conn = new SqlConnection(stringConn);
@@ -1864,30 +1865,30 @@ namespace PgxAPI.DataBaseTier
 
 
                 //Validar en los documento que se auto emiten que la fecha no corresponda a un periodo cerrado.
-                if (!mTesoreria.fxTesBancoValida(CodEmpresa, transaccion.id_banco, usuario).Result)
+                if (!MTesoreria.fxTesBancoValida(CodEmpresa, transaccion.id_banco, usuario).Result)
                 {
                     vMensaje += "- El Usuario Actual no esta Autorizado a utilizar este Banco...\n";
                 }
 
-                if (!mTesoreria.fxTesTipoAccesoValida(CodEmpresa, transaccion.id_banco.ToString(), usuario, transaccion.tipo, "S").Result)
+                if (!MTesoreria.fxTesTipoAccesoValida(CodEmpresa, transaccion.id_banco.ToString(), usuario, transaccion.tipo, "S").Result)
                 {
                     vMensaje += "- El Usuario Actual no esta Autorizado a utilizar este Tipo de Transacción...\n";
                 }
 
-                if (!mTesoreria.fxTesConceptoValida(CodEmpresa, transaccion.id_banco, usuario, transaccion.cod_concepto).Result)
+                if (!MTesoreria.fxTesConceptoValida(CodEmpresa, transaccion.id_banco, usuario, transaccion.cod_concepto).Result)
                 {
                     vMensaje += " - El Usuario Actual no esta Autorizado a utilizar este Concepto...\n";
                 }
 
-                if (!mTesoreria.fxTesUnidadValida(CodEmpresa, transaccion.id_banco, usuario, transaccion.cod_unidad).Result)
+                if (!MTesoreria.fxTesUnidadValida(CodEmpresa, transaccion.id_banco, usuario, transaccion.cod_unidad).Result)
                 {
                     vMensaje += "- El Usuario Actual no esta Autorizado a utilizar esta unidad...\n";
                 }
 
                 //Si el documento Se AutoEmite / Revisar si Tiene AutoConsecutivo / Si no es Asi validad el # de Documento
-                if (mTesoreria.fxTesBancoDocsValor(CodEmpresa, transaccion.id_banco, transaccion.tipo, "REG_EMISION").Result == "0")
+                if (MTesoreria.fxTesBancoDocsValor(CodEmpresa, transaccion.id_banco, transaccion.tipo, "REG_EMISION").Result == "0")
                 {
-                    if (mTesoreria.fxTesBancoDocsValor(CodEmpresa, transaccion.id_banco, transaccion.tipo, "DOC_AUTO").Result == "0")
+                    if (MTesoreria.fxTesBancoDocsValor(CodEmpresa, transaccion.id_banco, transaccion.tipo, "DOC_AUTO").Result == "0")
                     {
                         string vDocumento = (transaccion.ndocumento == null) ? "" : transaccion.ndocumento;
                         if (vDocumento.Length == 0)
@@ -1896,7 +1897,7 @@ namespace PgxAPI.DataBaseTier
                         }
                         else
                         {
-                            if (!mTesoreria.fxTesDocumentoVerifica(CodEmpresa, transaccion.id_banco, transaccion.tipo, transaccion.ndocumento).Result)
+                            if (!MTesoreria.fxTesDocumentoVerifica(CodEmpresa, transaccion.id_banco, transaccion.tipo, transaccion.ndocumento).Result)
                             {
                                 vMensaje += " - Esta Solicitud se AutoEmite / El #Documento para su Emisión ya se encuentra registrado...\n";
                             }
@@ -1919,7 +1920,7 @@ namespace PgxAPI.DataBaseTier
                     vMensaje += " - Tipo Beneficiario no es válido ...\n";
                 }
 
-                if (mTesoreria.fxTesCuentaObligatoriaVerifica(CodEmpresa, transaccion.id_banco).Result)
+                if (MTesoreria.fxTesCuentaObligatoriaVerifica(CodEmpresa, transaccion.id_banco).Result)
                 {
                     if(transaccion.cta_ahorros == null || transaccion.cta_ahorros.Trim() == "")
                     {

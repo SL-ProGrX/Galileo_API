@@ -59,7 +59,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual}; ";
 
 
-                    response.Result.Comites = connection.Query<FslComitesDTO>(query).ToList();
+                    response.Result.Comites = connection.Query<FslComitesDto>(query).ToList();
 
                 }
             }
@@ -99,7 +99,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto Comite_Guardar(int CodCliente, FslComitesDTO comite)
+        public ErrorDto Comite_Guardar(int CodCliente, FslComitesDto comite)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -125,7 +125,7 @@ namespace PgxAPI.DataBaseTier
             return info; ;
         }
 
-        public ErrorDto FslComites_Insertar(int CodCliente, FslComitesDTO comite)
+        public ErrorDto FslComites_Insertar(int CodCliente, FslComitesDto comite)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -178,7 +178,7 @@ namespace PgxAPI.DataBaseTier
             return existe;
         }
 
-        public ErrorDto FslComites_Actualizar(int CodCliente, FslComitesDTO comite)
+        public ErrorDto FslComites_Actualizar(int CodCliente, FslComitesDto comite)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -274,7 +274,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual}; ";
 
 
-                    response.Result.Miembros = connection.Query<FslMiembrosComitesDTO>(query).ToList();
+                    response.Result.Miembros = connection.Query<FslMiembrosComitesDto>(query).ToList();
 
                 }
             }
@@ -288,7 +288,7 @@ namespace PgxAPI.DataBaseTier
             return response;
 
         }
-        public ErrorDto ComiteMiembro_Guardar(int CodCliente, FslMiembrosComitesDTO miembro)
+        public ErrorDto ComiteMiembro_Guardar(int CodCliente, FslMiembrosComitesDto miembro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -316,7 +316,7 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDto FslMiembrosComite_Insertar(int CodCliente, FslMiembrosComitesDTO miembro)
+        public ErrorDto FslMiembrosComite_Insertar(int CodCliente, FslMiembrosComitesDto miembro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -350,7 +350,7 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDto FslMiembrosComite_Actualizar(int CodCliente, FslMiembrosComitesDTO miembro)
+        public ErrorDto FslMiembrosComite_Actualizar(int CodCliente, FslMiembrosComitesDto miembro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);

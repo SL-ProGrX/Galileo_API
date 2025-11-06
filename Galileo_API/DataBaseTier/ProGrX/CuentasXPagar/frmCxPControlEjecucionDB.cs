@@ -1,8 +1,8 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -10,15 +10,15 @@ namespace PgxAPI.DataBaseTier
     public class frmCxPControlEjecucionDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmCxPControlEjecucionDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -167,11 +167,11 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDto<List<FacturaPendiente_Pago>> FacturasPendientePago_Obtener(int CodEmpresa, FactPen_Req request)
+        public ErrorDto<List<FacturaPendientePago>> FacturasPendientePago_Obtener(int CodEmpresa, FactPenReq request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<FacturaPendiente_Pago>>
+            var response = new ErrorDto<List<FacturaPendientePago>>
             {
                 Code = 0
             };
@@ -191,7 +191,7 @@ namespace PgxAPI.DataBaseTier
 
                     };
 
-                    response.Result = connection.Query<FacturaPendiente_Pago>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    response.Result = connection.Query<FacturaPendientePago>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
 
                     foreach (var item in response.Result)
                     {
@@ -263,7 +263,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (resp.Code == 0)
                     {
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = User,
@@ -517,7 +517,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto Detalle_Insertar(int CodEmpresa, TesTransAsientoDTO data)
+        public ErrorDto Detalle_Insertar(int CodEmpresa, TesTransAsientoDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -571,7 +571,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto Tesoreria_Insertar(int CodEmpresa, Tes_TransaccionesDTO data)
+        public ErrorDto Tesoreria_Insertar(int CodEmpresa, TesTransaccionesDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -601,10 +601,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto<Tes_TransaccionesDTO> Tesoreria_Obtener(int CodEmpresa, int nSolicitud)
+        public ErrorDto<TesTransaccionesDto> Tesoreria_Obtener(int CodEmpresa, int nSolicitud)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<Tes_TransaccionesDTO>
+            var response = new ErrorDto<TesTransaccionesDto>
             {
                 Code = 0
             };
@@ -613,7 +613,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"SELECT * FROM Tes_Transacciones WHERE nsolicitud = {nSolicitud}";
-                    response.Result = connection.Query<Tes_TransaccionesDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<TesTransaccionesDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -625,7 +625,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto EjecucionPagosCargos_Registra(int CodEmpresa, FacturaPendiente_Pago data)
+        public ErrorDto EjecucionPagosCargos_Registra(int CodEmpresa, FacturaPendientePago data)
         {
             ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -665,7 +665,7 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDto EjecucionPagos_CargosFlotantes_Aplicar(int CodEmpresa, FacturaPendiente_Pago data)
+        public ErrorDto EjecucionPagos_CargosFlotantes_Aplicar(int CodEmpresa, FacturaPendientePago data)
         {
             ErrorDto resp = new ErrorDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);

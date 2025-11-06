@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Activos_Fijos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36; // Activos Fijos
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmActivos_SeccionesDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
         /// <summary>
         /// Lista paginada (lazy) de departamentos.
@@ -226,7 +227,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario ?? "",
@@ -276,7 +277,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario ?? "",
@@ -320,7 +321,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 if (rows == 0)
                     return new ErrorDto { Code = -2, Description = $"El departamento {cod_departamento.ToUpper()} no existe." };
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario ?? "",
@@ -597,7 +598,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario ?? "",
@@ -649,7 +650,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario ?? "",
@@ -695,7 +696,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 if (rows == 0)
                     return new ErrorDto { Code = -2, Description = $"La sección {cod_seccion.ToUpper()} no existe para el departamento {cod_departamento.ToUpper()}." };
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario ?? "",

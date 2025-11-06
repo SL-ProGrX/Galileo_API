@@ -9,14 +9,14 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly mActivosFijos _mActivos;
 
         public frmActivos_CierrePeriodoDB(IConfiguration? config)
         {
             _config = config;
             _mActivos = new mActivosFijos(_config);
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>

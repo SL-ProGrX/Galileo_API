@@ -34,7 +34,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = "select * from pres_tipos_ajustes order by cod_ajuste";
 
-                    response.Result.lista = connection.Query<PresAjustestTiposDTO>(query).ToList();
+                    response.Result.lista = connection.Query<PresAjustestTiposDto>(query).ToList();
 
                 }
             }
@@ -51,7 +51,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto PresAjustesTipo_Insertar(int CodEmpresa, PresAjustestTiposDTO request)
+        public ErrorDto PresAjustesTipo_Insertar(int CodEmpresa, PresAjustestTiposDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -107,7 +107,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto PresAjustesTipo_Actualizar(int CodEmpresa, PresAjustestTiposDTO request)
+        public ErrorDto PresAjustesTipo_Actualizar(int CodEmpresa, PresAjustestTiposDto request)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);

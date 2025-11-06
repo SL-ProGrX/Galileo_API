@@ -25,15 +25,15 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto<List<presAnaliticoDescData>> PresAnaliticoDesc_Obtener(int CodCliente, string datos)
+        public ErrorDto<List<PresAnaliticoDescData>> PresAnaliticoDesc_Obtener(int CodCliente, string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            presAnaliticoBuscar filtros = JsonConvert.DeserializeObject<presAnaliticoBuscar>(datos);
-            var info = new ErrorDto<List<presAnaliticoDescData>> 
+            PresAnaliticoBuscar filtros = JsonConvert.DeserializeObject<PresAnaliticoBuscar>(datos);
+            var info = new ErrorDto<List<PresAnaliticoDescData>> 
             { 
                 Code = 0,
                 Description = "OK",
-                Result = new List<presAnaliticoDescData>()
+                Result = new List<PresAnaliticoDescData>()
             };
             try
             {
@@ -49,14 +49,14 @@ namespace PgxAPI.DataBaseTier
                         CentroCosto = filtros.CentroCosto
                     };
 
-                    info.Result = connection.Query<presAnaliticoDescData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    info.Result = connection.Query<PresAnaliticoDescData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
             {
                 info.Code = -1;
                 info.Description = ex.Message;
-                info.Result = new List<presAnaliticoDescData>();
+                info.Result = new List<PresAnaliticoDescData>();
             }
             return info;
         }
@@ -67,15 +67,15 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto<List<presAnaliticoData>> PresAnalitico_Obtener(int CodCliente, string datos)
+        public ErrorDto<List<PresAnaliticoData>> PresAnalitico_Obtener(int CodCliente, string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            presAnaliticoBuscar filtros = JsonConvert.DeserializeObject<presAnaliticoBuscar>(datos);
-            var info = new ErrorDto<List<presAnaliticoData>>
+            PresAnaliticoBuscar filtros = JsonConvert.DeserializeObject<PresAnaliticoBuscar>(datos);
+            var info = new ErrorDto<List<PresAnaliticoData>>
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<presAnaliticoData>()
+                Result = new List<PresAnaliticoData>()
             };
             try
             {
@@ -94,14 +94,14 @@ namespace PgxAPI.DataBaseTier
                         CentroCosto = (filtros.CentroCosto == "")? null: filtros.CentroCosto
                     };
 
-                    info.Result = connection.Query<presAnaliticoData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    info.Result = connection.Query<PresAnaliticoData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
             {
                 info.Code = -1;
                 info.Description = ex.Message;
-                info.Result = new List<presAnaliticoData>();
+                info.Result = new List<PresAnaliticoData>();
             }
             return info;
         }

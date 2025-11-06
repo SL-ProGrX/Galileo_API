@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<List<PlantillaDTO>> Plantillas_Obtener(int CodEmpresa)
+        public ErrorDto<List<PlantillaDto>> Plantillas_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<PlantillaDTO>>
+            var response = new ErrorDto<List<PlantillaDto>>
             {
                 Code = 0
             };
@@ -30,7 +30,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT * FROM CxP_Plantillas";
 
-                    response.Result = connection.Query<PlantillaDTO>(query).ToList();
+                    response.Result = connection.Query<PlantillaDto>(query).ToList();
 
                 }
             }
@@ -70,11 +70,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<Centro_Costo>> CentrosCosto_Obtener(int CodEmpresa, string Cod_Unidad)
+        public ErrorDto<List<CentroCosto>> CentrosCosto_Obtener(int CodEmpresa, string Cod_Unidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<Centro_Costo>>
+            var response = new ErrorDto<List<CentroCosto>>
             {
                 Code = 0
             };
@@ -90,7 +90,7 @@ namespace PgxAPI.DataBaseTier
                                 AND A.cod_unidad = '{Cod_Unidad}'
                                 AND C.cod_contabilidad = 1";
 
-                    response.Result = connection.Query<Centro_Costo>(query).ToList();
+                    response.Result = connection.Query<CentroCosto>(query).ToList();
 
                 }
             }
@@ -104,12 +104,12 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<PlantillaDTO> PlantillaDetalle_Obtener(int CodEmpresa, string Cod_Plantilla)
+        public ErrorDto<PlantillaDto> PlantillaDetalle_Obtener(int CodEmpresa, string Cod_Plantilla)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<PlantillaDTO>
+            var response = new ErrorDto<PlantillaDto>
             {
                 Code = 0
             };
@@ -120,7 +120,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT * FROM CxP_Plantillas WHERE cod_plantilla = '{Cod_Plantilla}'";
 
-                    response.Result = connection.Query<PlantillaDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<PlantillaDto>(query).FirstOrDefault();
 
                 }
             }
@@ -133,12 +133,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<PlantillaDTO> PlantillaDetalle_Scroll(int CodEmpresa, int scroll, string Cod_Plantilla)
+        public ErrorDto<PlantillaDto> PlantillaDetalle_Scroll(int CodEmpresa, int scroll, string Cod_Plantilla)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<PlantillaDTO>
+            var response = new ErrorDto<PlantillaDto>
             {
                 Code = 0
             };
@@ -160,7 +160,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT top 1 * FROM CxP_Plantillas {where} {orderBy}";
 
-                    response.Result = connection.Query<PlantillaDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<PlantillaDto>(query).FirstOrDefault();
 
                 }
             }
@@ -173,12 +173,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<Plantilla_AsientoDTO>> PlantillaAsientos_Obtener(int CodEmpresa, string Cod_Plantilla)
+        public ErrorDto<List<PlantillaAsientoDto>> PlantillaAsientos_Obtener(int CodEmpresa, string Cod_Plantilla)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<Plantilla_AsientoDTO>>
+            var response = new ErrorDto<List<PlantillaAsientoDto>>
             {
                 Code = 0
             };
@@ -194,7 +194,7 @@ namespace PgxAPI.DataBaseTier
                                 AND A.cod_plantilla = '{Cod_Plantilla}'
                                 ORDER BY Linea";
 
-                    response.Result = connection.Query<Plantilla_AsientoDTO>(query).ToList();
+                    response.Result = connection.Query<PlantillaAsientoDto>(query).ToList();
 
                 }
             }
@@ -208,7 +208,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto Plantilla_Actualizar(int CodEmpresa, PlantillaDTO data)
+        public ErrorDto Plantilla_Actualizar(int CodEmpresa, PlantillaDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -249,7 +249,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Plantilla_Insertar(int CodEmpresa, PlantillaDTO data)
+        public ErrorDto Plantilla_Insertar(int CodEmpresa, PlantillaDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -324,7 +324,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto PlantillaAsiento_Insertar(int CodEmpresa, Plantilla_AsientoDTO data)
+        public ErrorDto PlantillaAsiento_Insertar(int CodEmpresa, PlantillaAsientoDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -354,7 +354,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto PlantillaAsiento_Actualizar(int CodEmpresa, Plantilla_AsientoDTO data)
+        public ErrorDto PlantillaAsiento_Actualizar(int CodEmpresa, PlantillaAsientoDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -388,7 +388,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto PlantillaAsiento_Borrar(int CodEmpresa, Plantilla_AsientoDTO data)
+        public ErrorDto PlantillaAsiento_Borrar(int CodEmpresa, PlantillaAsientoDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 

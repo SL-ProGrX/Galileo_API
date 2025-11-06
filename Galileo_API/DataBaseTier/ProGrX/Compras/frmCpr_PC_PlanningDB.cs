@@ -16,17 +16,17 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<List<cprPlanComprasDTO>> CprPlanCompras_Obtener(int CodEmpresa)
+        public ErrorDto<List<CprPlanComprasDto>> CprPlanCompras_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<cprPlanComprasDTO>>();
+            var response = new ErrorDto<List<CprPlanComprasDto>>();
             response.Code = 0;
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"SELECT * FROM CPR_PLAN_COMPRAS";
-                    response.Result = connection.Query<cprPlanComprasDTO>(query).ToList();
+                    response.Result = connection.Query<CprPlanComprasDto>(query).ToList();
                 }
 
             }
@@ -40,10 +40,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<cprPlanDTDTO> CprPlanDT_Obtener(int CodEmpresa, int PlanCompras, string CodProducto)
+        public ErrorDto<CprPlanDTDto> CprPlanDT_Obtener(int CodEmpresa, int PlanCompras, string CodProducto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<cprPlanDTDTO>();
+            var response = new ErrorDto<CprPlanDTDto>();
             response.Code = 0;
             try
             {
@@ -53,7 +53,7 @@ namespace PgxAPI.DataBaseTier
                     int existe = connection.Query<int>(query).FirstOrDefault();
                     if (existe > 0){
                         query = $@"SELECT * FROM CPR_PLAN_DT WHERE ID_PC = {PlanCompras} AND COD_PRODUCTO = '{CodProducto}'";
-                        response.Result = connection.Query<cprPlanDTDTO>(query).FirstOrDefault();
+                        response.Result = connection.Query<CprPlanDTDto>(query).FirstOrDefault();
 
                         //Busco la unidad correspondiente
                         query = $@"SELECT DISTINCT CASE 
@@ -95,7 +95,7 @@ namespace PgxAPI.DataBaseTier
                                     WHERE D.COD_PRODUCTO = '{CodProducto}' AND PC.ID_PC IN (
                                     SELECT ID_PC FROM CPR_PLAN_DT WHERE COD_PRODUCTO = '{CodProducto}'
                                     ))T WHERE T.UEN = '{UEN}' ";
-                        var totales = connection.Query<cprPlanDTTotalesData>(query).FirstOrDefault();
+                        var totales = connection.Query<CprPlanDTTotalesData>(query).FirstOrDefault();
 
                         if(totales != null)
                         {
@@ -130,10 +130,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<cprPlanDTCortesDTO>> CprPlanDTCortes_Obtener(int CodEmpresa, int PlanCompras, string CodProducto)
+        public ErrorDto<List<CprPlanDTCortesDto>> CprPlanDTCortes_Obtener(int CodEmpresa, int PlanCompras, string CodProducto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<cprPlanDTCortesDTO>>();
+            var response = new ErrorDto<List<CprPlanDTCortesDto>>();
             response.Code = 0;
             try
             {
@@ -188,7 +188,7 @@ namespace PgxAPI.DataBaseTier
                             ORDER BY 
                                 corte;";
                     }
-                    response.Result = connection.Query<cprPlanDTCortesDTO>(query).ToList();
+                    response.Result = connection.Query<CprPlanDTCortesDto>(query).ToList();
                 }
 
             }
@@ -202,7 +202,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto CprPlanCompras_Insert(int CodEmpresa, cprPlanComprasDTO request)
+        public ErrorDto CprPlanCompras_Insert(int CodEmpresa, CprPlanComprasDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()
@@ -229,7 +229,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto CprPlanCompras_Update(int CodEmpresa, cprPlanComprasDTO request)
+        public ErrorDto CprPlanCompras_Update(int CodEmpresa, CprPlanComprasDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()
@@ -259,10 +259,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto CprPlanDT_Upsert(int CodEmpresa, string parametros, List<cprPlanDTCortesDTO> cortes)
+        public ErrorDto CprPlanDT_Upsert(int CodEmpresa, string parametros, List<CprPlanDTCortesDto> cortes)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var plan = JsonConvert.DeserializeObject<cprPlanDTUpsert>(parametros);
+            var plan = JsonConvert.DeserializeObject<CprPlanDTUpsert>(parametros);
             ErrorDto resp = new()
             {
                 Code = 0
@@ -325,7 +325,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<CprResumenPlanLista> CprResumenPlan_Obtener(int CodEmpresa, string parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            cprPlanFiltros filtros = JsonConvert.DeserializeObject<cprPlanFiltros>(parametros) ?? new cprPlanFiltros();
+            CprPlanFiltros filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
             var response = new ErrorDto<CprResumenPlanLista>();
             response.Result = new CprResumenPlanLista();
             response.Code = 0;
@@ -361,7 +361,7 @@ namespace PgxAPI.DataBaseTier
                         INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
                         INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
                         {where} order by S.CORTE desc {paginaActual} {paginacionActual}";
-                    response.Result.Lineas = connection.Query<cprResumenPlanDTO>(query).ToList();
+                    response.Result.Lineas = connection.Query<CprResumenPlanDto>(query).ToList();
                 }
 
             }
@@ -376,12 +376,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<cprPlanContableLista> CprPlanContable_Obtener(int CodEmpresa, string parametros)
+        public ErrorDto<CprPlanContableLista> CprPlanContable_Obtener(int CodEmpresa, string parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var filtros = JsonConvert.DeserializeObject<cprPlanFiltros>(parametros);
-            var response = new ErrorDto<cprPlanContableLista>();
-            response.Result = new cprPlanContableLista();
+            var filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros);
+            var response = new ErrorDto<CprPlanContableLista>();
+            response.Result = new CprPlanContableLista();
             response.Code = 0;
             try
             {
@@ -423,7 +423,7 @@ namespace PgxAPI.DataBaseTier
                             INNER JOIN PV_PROD_CLASIFICA B ON P.COD_PRODCLAS = B.COD_PRODCLAS
                             INNER JOIN CNTX_CUENTAS Z ON B.COD_CUENTA = Z.COD_CUENTA
                         {where} order by S.CORTE desc {paginaActual} {paginacionActual}";
-                    response.Result.Lineas = connection.Query<cprPlanContableDTO>(query).ToList();
+                    response.Result.Lineas = connection.Query<CprPlanContableDto>(query).ToList();
                 }
 
             }
@@ -437,12 +437,12 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<cprBitacoraLista> CprBitacora_Obtener(int CodEmpresa, string parametros)
+        public ErrorDto<CprBitacoraLista> CprBitacora_Obtener(int CodEmpresa, string parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            cprPlanFiltros filtros = JsonConvert.DeserializeObject<cprPlanFiltros>(parametros) ?? new cprPlanFiltros();
-            var response = new ErrorDto<cprBitacoraLista>();
-            response.Result = new cprBitacoraLista();
+            CprPlanFiltros filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
+            var response = new ErrorDto<CprBitacoraLista>();
+            response.Result = new CprBitacoraLista();
             response.Code = 0;
             try
             {
@@ -465,7 +465,7 @@ namespace PgxAPI.DataBaseTier
                     response.Result.Total = connection.Query<int>(query).FirstOrDefault();
                     query = $@"SELECT ID_BITACORA, FECHAHORA, USUARIO, DETALLE FROM CPR_BITACORA_SOLICITUD 
                         {where} order by FECHAHORA desc {paginaActual} {paginacionActual}";
-                    response.Result.Lineas = connection.Query<cprBitacoraDTO>(query).ToList();
+                    response.Result.Lineas = connection.Query<CprBitacoraDto>(query).ToList();
                 }
 
             }
@@ -482,7 +482,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<CprResumenPlanLista> CprResumenPlan_ObtenerxCuenta(int CodEmpresa, string parametros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            cprPlanFiltros filtros = JsonConvert.DeserializeObject<cprPlanFiltros>(parametros) ?? new cprPlanFiltros();
+            CprPlanFiltros filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
             var response = new ErrorDto<CprResumenPlanLista>();
             response.Result = new CprResumenPlanLista();
             response.Code = 0;
@@ -518,7 +518,7 @@ namespace PgxAPI.DataBaseTier
                         INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
                         where P.COD_PRODCLAS = {prodclas} {where} 
                         order by S.CORTE desc {paginaActual} {paginacionActual}";
-                    response.Result.Lineas = connection.Query<cprResumenPlanDTO>(query).ToList();
+                    response.Result.Lineas = connection.Query<CprResumenPlanDto>(query).ToList();
                 }
             }
             catch (Exception ex)

@@ -3,17 +3,18 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Nucleo;
+using PgxAPI.Models.Security;
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
     public class frmSIF_ConceptosDB
     {
         private readonly IConfiguration _config;
         private readonly int vModulo = 10; //Módulo de tesoreria
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         public frmSIF_ConceptosDB(IConfiguration config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
         /// <summary>
         /// Lista los conceptos existentes con paginación y filtros.
@@ -154,7 +155,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     var query = @"DELETE FROM SIF_CONCEPTOS WHERE COD_CONCEPTO = @cod_concepto";
                     connection.Execute(query, new { cod_concepto = (cod_concepto ?? string.Empty).ToUpper() });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -277,7 +278,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                         registro_usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -327,7 +328,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                         registro_usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -451,7 +452,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 
                     connection.Execute(query, new { cod_concepto, tipo_documento, usuario });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -490,7 +491,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 
                     connection.Execute(query, new { cod_concepto, tipo_documento });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

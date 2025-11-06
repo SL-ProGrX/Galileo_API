@@ -1,6 +1,8 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -41,9 +43,9 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        public ErrorAplicacionDTO Aplicacion_Insertar(Aplicacion request)
+        public ErrorDto Aplicacion_Insertar(Aplicacion request)
         {
-            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -70,9 +72,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorAplicacionDTO Aplicacion_Eliminar(Aplicacion request)
+        public ErrorDto Aplicacion_Eliminar(Aplicacion request)
         {
-            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -95,9 +97,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorAplicacionDTO Aplicacion_Actualizar(Aplicacion request)
+        public ErrorDto Aplicacion_Actualizar(Aplicacion request)
         {
-            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -152,9 +154,9 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        public ErrorAplicacionDTO Bloqueo_Insertar(Bloqueo request)
+        public ErrorDto Bloqueo_Insertar(Bloqueo request)
         {
-            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -182,9 +184,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorAplicacionDTO Bloqueo_Eliminar(Bloqueo request)
+        public ErrorDto Bloqueo_Eliminar(Bloqueo request)
         {
-            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -271,9 +273,9 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        public ErrorAplicacionDTO Actualizacion_Insertar(Actualizacion request)
+        public ErrorDto Actualizacion_Insertar(Actualizacion request)
         {
-            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -301,9 +303,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorAplicacionDTO Actualizacion_Eliminar(Actualizacion request)
+        public ErrorDto Actualizacion_Eliminar(Actualizacion request)
         {
-            ErrorAplicacionDTO resp = new ErrorAplicacionDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

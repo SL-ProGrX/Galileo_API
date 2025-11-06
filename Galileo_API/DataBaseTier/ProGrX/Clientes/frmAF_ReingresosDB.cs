@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
-using PgxAPI.Models.ProGrX.Clientes.TuProyecto.Core.Models;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -57,7 +56,7 @@ namespace PgxAPI.DataBaseTier
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            AF_Prsona_ActivacionDTO req = JsonConvert.DeserializeObject<AF_Prsona_ActivacionDTO>(request) ?? new AF_Prsona_ActivacionDTO();
+            AfPersonaActivacionDto req = JsonConvert.DeserializeObject<AfPersonaActivacionDto>(request) ?? new AfPersonaActivacionDto();
 
             var response = new ErrorDto { Code = 0 };
 

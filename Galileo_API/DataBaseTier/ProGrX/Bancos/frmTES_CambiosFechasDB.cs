@@ -1,9 +1,9 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using Microsoft.Reporting.NETCore;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 {
@@ -11,16 +11,16 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
     {
         private readonly IConfiguration? _config;
         private readonly mProGrX_AuxiliarDB _AuxiliarDB;
-        private readonly mSecurityMainDb mSecurity;
-        private readonly mTesoreria mTesoreria;
+        private readonly MSecurityMainDb mSecurity;
+        private readonly MTesoreria MTesoreria;
         private readonly int vModulo = 9;
 
         public frmTES_CambiosFechasDB(IConfiguration config)
         {
             _config = config;
             _AuxiliarDB = new mProGrX_AuxiliarDB(config);
-            mSecurity = new mSecurityMainDb(config);
-            mTesoreria = new mTesoreria(config);
+            mSecurity = new MSecurityMainDb(config);
+            MTesoreria = new MTesoreria(config);
         }
 
         /// <summary>
@@ -30,10 +30,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="solicitud"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<TES_CambioFechasData> TES_CambioFechas_Obtener(int CodEmpresa, int solicitud)
+        public ErrorDto<TesCambioFechasData> TES_CambioFechas_Obtener(int CodEmpresa, int solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_CambioFechasData>
+            var response = new ErrorDto<TesCambioFechasData>
             {
                 Code = 0
             };
@@ -47,7 +47,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                     inner join  tes_tipos_doc T on C.tipo = T.tipo
                                     where C.nsolicitud = @solicitud ";
 
-                        response.Result = connection.Query<TES_CambioFechasData>(query,
+                        response.Result = connection.Query<TesCambioFechasData>(query,
                         new
                         {
                             solicitud = solicitud
@@ -56,7 +56,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     if (response.Result != null)
                     {
                         query = $@"select estado,fecha_emision,fecha_solicitud,fecha_anula from Tes_Transacciones where nsolicitud = @solicitud ";
-                        var fechas = connection.Query<TES_CambioFechasData>(query,
+                        var fechas = connection.Query<TesCambioFechasData>(query,
                             new
                             {
                                 solicitud = solicitud
@@ -71,7 +71,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         }
                         else
                         {
-                            response.Result = new TES_CambioFechasData();
+                            response.Result = new TesCambioFechasData();
                             response.Result.fecha_emision = null;
                             response.Result.fecha_solicitud = null;
                             response.Result.fecha_anula = null;
@@ -98,7 +98,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="fechas"></param>
         /// <returns></returns>
-        public ErrorDto TES_CambioFecha_Cambiar(int CodEmpresa, TES_CambioFechasModel fechas)
+        public ErrorDto TES_CambioFecha_Cambiar(int CodEmpresa, TesCambioFechasModel fechas)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -130,9 +130,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 
                             bitacoara = $@"Cambia Fecha Solicitud de {fechaActual} a {fechaNueva} /Nota: {fechas.detalle_Anulacion}";
 
-                            mTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacoara, fechas.usuario);
+                            MTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacoara, fechas.usuario);
                             //Insertar en la bitacora
-                            mSecurity.Bitacora(new BitacoraInsertarDTO
+                            mSecurity.Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodEmpresa,
                                 Usuario = fechas.usuario,
@@ -156,9 +156,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                             bitacoara = $@"Cambia Fecha Emisión de {fechaActual} a {fechaNueva} /Nota: {fechas.detalle_Anulacion}";
 
                             //Insertar en la bitacora
-                            mTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacoara, fechas.usuario);
+                            MTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacoara, fechas.usuario);
                             //Insertar en la bitacora
-                            mSecurity.Bitacora(new BitacoraInsertarDTO
+                            mSecurity.Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodEmpresa,
                                 Usuario = fechas.usuario,
@@ -183,9 +183,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
 
 
                             //Insertar en la bitacora
-                            mTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacoara, fechas.usuario);
+                            MTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacoara, fechas.usuario);
 
-                            mSecurity.Bitacora(new BitacoraInsertarDTO
+                            mSecurity.Bitacora(new BitacoraInsertarDto
                             {
                                 EmpresaId = CodEmpresa,
                                 Usuario = fechas.usuario,

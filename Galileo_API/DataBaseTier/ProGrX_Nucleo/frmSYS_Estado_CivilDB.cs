@@ -3,8 +3,9 @@ using Dapper;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using Microsoft.Data.SqlClient;
-using static PgxAPI.Models.ProGrX_Nucleo.frmSYS_Estado_CivilModels;
- 
+using static PgxAPI.Models.ProGrX_Nucleo.FrmSysEstadoCivilModels;
+using PgxAPI.Models.Security;
+
 
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
@@ -12,12 +13,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 10; // Modulo de Tesorería
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmSYS_Estado_CivilDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -26,17 +27,17 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<SysEstado_CivilLista> Sys_EstadoCivilLista_Obtener(int CodEmpresa)
+        public ErrorDto<SysEstadoCivilLista> Sys_EstadoCivilLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SysEstado_CivilLista>()
+            var result = new ErrorDto<SysEstadoCivilLista>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new SysEstado_CivilLista()
+                Result = new SysEstadoCivilLista()
                 {
                     total = 0,
-                    lista = new List<SysEstado_CivilData>()
+                    lista = new List<SysEstadoCivilData>()
                 }
             };
 
@@ -52,7 +53,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 
 
                     query = $@"select ESTADO_CIVIL as cod_estado_civil,descripcion,Registro_Fecha as registro_fecha,Registro_Usuario ,ACTIVO from SYS_ESTADO_CIVIL order by ESTADO_CIVIL";
-                    result.Result.lista = connection.Query<SysEstado_CivilData>(query).ToList();
+                    result.Result.lista = connection.Query<SysEstadoCivilData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -71,7 +72,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="estadoCivil"></param>
         /// <returns></returns>
-        public ErrorDto Sys_EstadoCivil_Guardar(int CodEmpresa, SysEstado_CivilData estadoCivil)
+        public ErrorDto Sys_EstadoCivil_Guardar(int CodEmpresa, SysEstadoCivilData estadoCivil)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -125,7 +126,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="estadoCivil"></param>
         /// <returns></returns>
-        private ErrorDto Sys_EstadoCivil_Actualizar(int CodEmpresa, SysEstado_CivilData estadoCivil)
+        private ErrorDto Sys_EstadoCivil_Actualizar(int CodEmpresa, SysEstadoCivilData estadoCivil)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -148,7 +149,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                         estado = estadoCivil.activo 
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = estadoCivil.registro_usuario,
@@ -172,7 +173,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="estadoCivil"></param>
         /// <returns></returns>
-        private ErrorDto Sys_EstadoCivil_Insertar(int CodEmpresa, SysEstado_CivilData estadoCivil)
+        private ErrorDto Sys_EstadoCivil_Insertar(int CodEmpresa, SysEstadoCivilData estadoCivil)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -194,7 +195,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                         usuario = estadoCivil.registro_usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = estadoCivil.registro_usuario,
@@ -234,7 +235,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 {
                     var query = $@"DELETE FROM SYS_ESTADO_CIVIL WHERE ESTADO_CIVIL = @estadoCivil";
                     connection.Execute(query, new { estadoCivil = estadoCivil.ToUpper() });
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

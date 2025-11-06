@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.AF;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 
 
 namespace PgxAPI.DataBaseTier
@@ -10,17 +11,17 @@ namespace PgxAPI.DataBaseTier
     public class frmAF_BeneficiosDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         private readonly mBeneficiosDB _mBeneficiosDB;
 
         public frmAF_BeneficiosDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
             _mBeneficiosDB = new mBeneficiosDB(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -59,16 +60,16 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDto<AfiBeneficiosDTO> AfiBeneficioDTO_Obtener(int CodCliente, string Cod_Beneficio)
+        public ErrorDto<AfiBeneficiosDto> AfiBeneficioDto_Obtener(int CodCliente, string Cod_Beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<AfiBeneficiosDTO>();
+            var response = new ErrorDto<AfiBeneficiosDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"select * from afi_beneficios where Cod_Beneficio = '{Cod_Beneficio}'";
-                    response.Result = connection.Query<AfiBeneficiosDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<AfiBeneficiosDto>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -168,7 +169,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto AfiBeneficios_Actualiza(int CodCliente, AfiBeneficiosDTO Beneficio)
+        public ErrorDto AfiBeneficios_Actualiza(int CodCliente, AfiBeneficiosDto Beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -260,7 +261,7 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDto AfiBeneficios_Insertar(int CodCliente, AfiBeneficiosDTO Beneficio)
+        public ErrorDto AfiBeneficios_Insertar(int CodCliente, AfiBeneficiosDto Beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -558,10 +559,10 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDto<List<BitacoraBeneficioDTO>> BitacoraBeneficio_Obtener(int CodEmpresa, string Cod_Beneficio, int Consec, string? cod_grupo, string? cod_categoria)
+        public ErrorDto<List<BitacoraBeneficioDto>> BitacoraBeneficio_Obtener(int CodEmpresa, string Cod_Beneficio, int Consec, string? cod_grupo, string? cod_categoria)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<BitacoraBeneficioDTO>>();
+            var response = new ErrorDto<List<BitacoraBeneficioDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -583,7 +584,7 @@ namespace PgxAPI.DataBaseTier
                                     ) T
                                     ORDER BY T.REGISTRO_FECHA DESC;";
 
-                    response.Result = connection.Query<BitacoraBeneficioDTO>(query).ToList();
+                    response.Result = connection.Query<BitacoraBeneficioDto>(query).ToList();
 
                 }
             }
@@ -695,7 +696,7 @@ namespace PgxAPI.DataBaseTier
 
         private void RegistrarBitacora(int CodCliente, string movimiento, string detalle, string codBeneficio, string registraUser)
         {
-            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+            _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
             {
                 EmpresaId = CodCliente,
                 cod_beneficio = codBeneficio,

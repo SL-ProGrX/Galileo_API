@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Nucleo;
+using PgxAPI.Models.Security;
 
 
 
@@ -12,12 +13,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 10; 
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmSYS_RA_TiposDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         
@@ -166,7 +167,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                         activo = tipo.activob ? 1 : 0
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -213,7 +214,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                         registro_usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -253,7 +254,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                 {
                     var query = $@"DELETE FROM SYS_EXP_TIPOS WHERE TIPO_ID = @tipo_id";
                     connection.Execute(query, new { tipo_id = codtipo.ToUpper() });
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

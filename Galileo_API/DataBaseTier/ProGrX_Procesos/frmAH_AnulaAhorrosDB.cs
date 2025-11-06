@@ -16,7 +16,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto Aplicar_Transacciones(int CodEmpresa, TransaccionSIFDTO transaccion)
+        public ErrorDto Aplicar_Transacciones(int CodEmpresa, TransaccionSifdto transaccion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto info = new ErrorDto();

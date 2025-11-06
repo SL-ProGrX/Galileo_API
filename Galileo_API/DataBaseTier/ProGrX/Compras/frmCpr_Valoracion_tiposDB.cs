@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<Cpr_Valora_EsquemaDTOList> EsquemaValoracion_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<CprValoraEsquemaDtoList> EsquemaValoracion_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<Cpr_Valora_EsquemaDTOList>();
-            response.Result = new Cpr_Valora_EsquemaDTOList();
+            var response = new ErrorDto<CprValoraEsquemaDtoList>();
+            response.Result = new CprValoraEsquemaDtoList();
             response.Code = 0;
             try
             {
@@ -42,7 +42,7 @@ namespace PgxAPI.DataBaseTier
                     response.Result.Total = connection.Query<int>(query).FirstOrDefault();
 
                     query = $"select VAL_ID, descripcion, Activo from CPR_VALORA_ESQUEMA {where} order by VAL_ID desc {paginaActual} {paginacionActual}";
-                    response.Result.esquemas = connection.Query<Cpr_Valora_EsquemaDTO>(query).ToList();
+                    response.Result.esquemas = connection.Query<CprValoraEsquemaDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -55,11 +55,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<Cpr_Valora_ItemsDTOList> ValoracionItems_Obtener(int CodEmpresa, string val_id, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<CprValoraItemsDtoList> ValoracionItems_Obtener(int CodEmpresa, string val_id, int? pagina, int? paginacion, string? filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<Cpr_Valora_ItemsDTOList>();
-            response.Result = new Cpr_Valora_ItemsDTOList();
+            var response = new ErrorDto<CprValoraItemsDtoList>();
+            response.Result = new CprValoraItemsDtoList();
             response.Code = 0;
             try
             {
@@ -83,7 +83,7 @@ namespace PgxAPI.DataBaseTier
 
                     query = @$"select VAL_ITEM, descripcion, Peso from CPR_VALORA_ITEMS Where VAL_ID = '{val_id}'
                         {and} order by VAL_ITEM {paginaActual} {paginacionActual}";
-                    response.Result.items = connection.Query<Cpr_Valora_ItemsDTO>(query).ToList();
+                    response.Result.items = connection.Query<CprValoraItemsDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -96,7 +96,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto EsquemaValoracion_Upsert(int CodEmpresa, string usuario, Cpr_Valora_EsquemaDTO request)
+        public ErrorDto EsquemaValoracion_Upsert(int CodEmpresa, string usuario, CprValoraEsquemaDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()
@@ -166,7 +166,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto ValoracionItems_Upsert(int CodEmpresa, string usuario, string val_id, Cpr_Valora_ItemsDTO request)
+        public ErrorDto ValoracionItems_Upsert(int CodEmpresa, string usuario, string val_id, CprValoraItemsDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new()

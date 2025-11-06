@@ -1,10 +1,10 @@
-using AutoMapper.Internal.Mappers;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -13,12 +13,12 @@ namespace PgxAPI.DataBaseTier
     {
         private readonly IConfiguration _config;
         private readonly int vModulo = 1;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_CongelarDB(IConfiguration config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         #region Consulta
@@ -63,7 +63,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<TablasListaGenericaModel> AF_BloqueosCongelamientos_Obtener(int CodEmpresa, string filtrosCongelar, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            AF_CongelarFiltros filtro = JsonConvert.DeserializeObject<AF_CongelarFiltros>(filtrosCongelar) ?? new AF_CongelarFiltros();
+            AFCongelarFiltros filtro = JsonConvert.DeserializeObject<AFCongelarFiltros>(filtrosCongelar) ?? new AFCongelarFiltros();
             var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
@@ -71,7 +71,7 @@ namespace PgxAPI.DataBaseTier
                 Result = new TablasListaGenericaModel
                 {
                     total = 0,
-                    lista = new List<AF_CongelarDTO>()
+                    lista = new List<AFCongelarDto>()
                 }
             };
             try
@@ -143,7 +143,7 @@ namespace PgxAPI.DataBaseTier
                                 FETCH NEXT {filtros.paginacion} ROWS ONLY";
                     }
 
-                    response.Result.lista = connection.Query<AF_CongelarDTO>(query, new
+                    response.Result.lista = connection.Query<AFCongelarDto>(query, new
                     {
                         cedula = $"%{filtro.cedula}%",
                         nombre = $"%{filtro.nombre}%",
@@ -170,15 +170,15 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtrosCongelar"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CongelarDTO>> AF_BloqueosCongelamientos_Exportar(int CodEmpresa, string filtrosCongelar)
+        public ErrorDto<List<AFCongelarDto>> AF_BloqueosCongelamientos_Exportar(int CodEmpresa, string filtrosCongelar)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            AF_CongelarFiltros filtro = JsonConvert.DeserializeObject<AF_CongelarFiltros>(filtrosCongelar) ?? new AF_CongelarFiltros();
-            var response = new ErrorDto<List<AF_CongelarDTO>>
+            AFCongelarFiltros filtro = JsonConvert.DeserializeObject<AFCongelarFiltros>(filtrosCongelar) ?? new AFCongelarFiltros();
+            var response = new ErrorDto<List<AFCongelarDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_CongelarDTO>()
+                Result = new List<AFCongelarDto>()
             };
             try
             {
@@ -202,7 +202,7 @@ namespace PgxAPI.DataBaseTier
 
                     query += $@") T ORDER BY cod_congelar DESC";
 
-                    response.Result = connection.Query<AF_CongelarDTO>(query, new
+                    response.Result = connection.Query<AFCongelarDto>(query, new
                     {
                         Cedula = $"%{filtro.cedula}%",
                         Nombre = $"%{filtro.nombre}%",
@@ -308,7 +308,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="congelar"></param>
         /// <returns></returns>
-        public ErrorDto AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AF_CongelarDTO congelar)
+        public ErrorDto AF_BloqueosCongelamientos_Guardar(int CodEmpresa, string usuario, AFCongelarDto congelar)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -472,20 +472,20 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CongelaCausaDTO>> AF_CongelarCausaMant_Obtener(int CodEmpresa)
+        public ErrorDto<List<AFCongelaCausaDto>> AF_CongelarCausaMant_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AF_CongelaCausaDTO>>
+            var response = new ErrorDto<List<AFCongelaCausaDto>>
             {
                 Code = 0,
-                Result = new List<AF_CongelaCausaDTO>()
+                Result = new List<AFCongelaCausaDto>()
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = @"select COD_CAUSA,descripcion,Activa,registro_fecha,registro_usuario from AFI_CONGELAR_CAUSAS  order by COD_CAUSA";
-                    response.Result = connection.Query<AF_CongelaCausaDTO>(query).ToList();
+                    response.Result = connection.Query<AFCongelaCausaDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -544,7 +544,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="causa"></param>
         /// <returns></returns>
-        public ErrorDto AF_CongelarCausaMant_Guardar(int CodEmpresa, string usuario ,AF_CongelaCausaDTO causa)
+        public ErrorDto AF_CongelarCausaMant_Guardar(int CodEmpresa, string usuario ,AFCongelaCausaDto causa)
         {
             var response = new ErrorDto
             {
@@ -579,7 +579,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="causa"></param>
         /// <returns></returns>
-        private ErrorDto AF_CongelarCausaMant_Insertar(int CodEmpresa, string usuario, AF_CongelaCausaDTO causa)
+        private ErrorDto AF_CongelarCausaMant_Insertar(int CodEmpresa, string usuario, AFCongelaCausaDto causa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -602,7 +602,7 @@ namespace PgxAPI.DataBaseTier
                         registro_usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -627,7 +627,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="causa"></param>
         /// <returns></returns>
-        private ErrorDto AF_CongelarCausaMant_Actualiza(int CodEmpresa, string usuario, AF_CongelaCausaDTO causa)
+        private ErrorDto AF_CongelarCausaMant_Actualiza(int CodEmpresa, string usuario, AFCongelaCausaDto causa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -649,7 +649,7 @@ namespace PgxAPI.DataBaseTier
                         activa = (causa.activa == true) ? 1 : 0
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

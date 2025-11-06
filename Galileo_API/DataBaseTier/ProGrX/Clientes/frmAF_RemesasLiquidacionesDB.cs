@@ -1,10 +1,10 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using PdfSharp.Pdf.Filters;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 using System.Text;
 using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 using static System.Runtime.InteropServices.JavaScript.JSType;
@@ -16,13 +16,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1;
         private readonly mProGrX_AuxiliarDB _AuxiliarDB;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_RemesasLiquidacionesDB(IConfiguration? config)
         {
             _config = config;
             _AuxiliarDB = new mProGrX_AuxiliarDB(_config);
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         #region Remesas
@@ -32,17 +32,17 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<Af_RemesasLiquidacionesLista> AF_RemesasLiquidaciones_Remesa_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
+        public ErrorDto<AfRemesasLiquidacionesLista> AF_RemesasLiquidaciones_Remesa_Obtener(int CodEmpresa, FiltrosLazyLoadData filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<Af_RemesasLiquidacionesLista>
+            var result = new ErrorDto<AfRemesasLiquidacionesLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new Af_RemesasLiquidacionesLista()
+                Result = new AfRemesasLiquidacionesLista()
                 {
                     total = 0,
-                    lista = new List<Af_RemesaLiquidacionDTO>()
+                    lista = new List<AfRemesaLiquidacionDto>()
                 }
             };
             try
@@ -78,7 +78,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                                          OFFSET {filtro.pagina} ROWS
                                          FETCH NEXT {filtro.paginacion} ROWS ONLY";
 
-                    result.Result.lista = connection.Query<Af_RemesaLiquidacionDTO>(query).ToList();
+                    result.Result.lista = connection.Query<AfRemesaLiquidacionDto>(query).ToList();
                 }
 
             }
@@ -97,14 +97,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDto<Af_RemesaLiquidacionDTO> AF_RemesasLiquidaciones_Remesa_Obtener(int CodEmpresa, int remesa)
+        public ErrorDto<AfRemesaLiquidacionDto> AF_RemesasLiquidaciones_Remesa_Obtener(int CodEmpresa, int remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<Af_RemesaLiquidacionDTO>
+            var result = new ErrorDto<AfRemesaLiquidacionDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new Af_RemesaLiquidacionDTO()
+                Result = new AfRemesaLiquidacionDto()
             };
             try
             {
@@ -112,7 +112,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = @$"select * from AFI_REMESAS_LIQ where Cod_Remesa = {remesa}";
-                    result.Result = connection.Query<Af_RemesaLiquidacionDTO>(query).FirstOrDefault();
+                    result.Result = connection.Query<AfRemesaLiquidacionDto>(query).FirstOrDefault();
                 }
 
             }
@@ -131,7 +131,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDto AF_RemesasLiquidaciones_Remesa_Guardar(int CodEmpresa, Af_RemesaLiquidacionDTO remesa)
+        public ErrorDto AF_RemesasLiquidaciones_Remesa_Guardar(int CodEmpresa, AfRemesaLiquidacionDto remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto
@@ -185,7 +185,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         };
                         connection.Execute(insertQry, values);
 
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = remesa.usuario.ToUpper(),
@@ -221,7 +221,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         };
                         connection.Execute(updateQry, values);
 
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = remesa.usuario,
@@ -284,7 +284,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         };
                         connection.Execute(deleteQry, values);
 
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,
@@ -313,21 +313,21 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDto<List<Af_RemesaLiquidacionDTO>> AF_RemesasLiquidaciones_Carga_Obtener(int CodEmpresa)
+        public ErrorDto<List<AfRemesaLiquidacionDto>> AF_RemesasLiquidaciones_Carga_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<Af_RemesaLiquidacionDTO>>
+            var result = new ErrorDto<List<AfRemesaLiquidacionDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<Af_RemesaLiquidacionDTO>()
+                Result = new List<AfRemesaLiquidacionDto>()
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = @$"select * from AFI_REMESAS_LIQ where estado = 'A' order by fecha desc";
-                    result.Result = connection.Query<Af_RemesaLiquidacionDTO>(query).ToList();
+                    result.Result = connection.Query<AfRemesaLiquidacionDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -345,14 +345,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="remesa"></param>
         /// <returns></returns>
-        public ErrorDto<Af_RemesasLiquiCargaDatos> AF_RemesasLiqui_CargaOficinas_Obtener(int CodEmpresa, int remesa)
+        public ErrorDto<AfRemesasLiquiCargaDatos> AF_RemesasLiqui_CargaOficinas_Obtener(int CodEmpresa, int remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<Af_RemesasLiquiCargaDatos>
+            var result = new ErrorDto<AfRemesasLiquiCargaDatos>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new Af_RemesasLiquiCargaDatos()
+                Result = new AfRemesasLiquiCargaDatos()
                 {
                     cboOficinas = new List<DropDownListaGenericaModel>()
                 }
@@ -362,7 +362,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = @$"select fecha_inicio,fecha_corte from AFI_REMESAS_LIQ where cod_remesa = @remesa";
-                    var remesaData = connection.QueryFirstOrDefault<Af_RemesasLiquiCargaDatos>(query, new { remesa = remesa });
+                    var remesaData = connection.QueryFirstOrDefault<AfRemesasLiquiCargaDatos>(query, new { remesa = remesa });
                     if (remesaData != null)
                     {
                         result.Result.fecha_inicio = remesaData.fecha_inicio;
@@ -406,21 +406,21 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="remesa"></param>
         /// <param name="oficina"></param>
         /// <returns></returns>
-        public ErrorDto<List<Af_RemesasLiquiCargaLista>> AF_RemesasLiqui_CargaLista_Obtener(int CodEmpresa, int remesa, string oficina)
+        public ErrorDto<List<AfRemesasLiquiCargaLista>> AF_RemesasLiqui_CargaLista_Obtener(int CodEmpresa, int remesa, string oficina)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<Af_RemesasLiquiCargaLista>>
+            var result = new ErrorDto<List<AfRemesasLiquiCargaLista>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<Af_RemesasLiquiCargaLista>()
+                Result = new List<AfRemesasLiquiCargaLista>()
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = @$"select fecha_inicio,fecha_corte from AFI_REMESAS_LIQ where cod_remesa = @remesa";
-                    var remesaData = connection.QueryFirstOrDefault<Af_RemesasLiquiCargaDatos>(query, new { remesa = remesa });
+                    var remesaData = connection.QueryFirstOrDefault<AfRemesasLiquiCargaDatos>(query, new { remesa = remesa });
                     
 
                     string where = "";
@@ -437,7 +437,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 		                        and '{remesaData.fecha_corte:yyyy-MM-dd} 23:59:00' and L.cod_remesa is null
 		                        and dbo.fxSIFTagCierre(l.CEDULA, L.CONSEC,'LIQ') = 1 {where}
                                  order by L.consec";
-                    result.Result = connection.Query<Af_RemesasLiquiCargaLista>(query).ToList();
+                    result.Result = connection.Query<AfRemesasLiquiCargaLista>(query).ToList();
 
                     //if(result.Result == null || result.Result.Count == 0)
                     //{
@@ -480,7 +480,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto AF_RemesasLiquidaciones_Carga_Cargar(int CodEmpresa, int remesa, string usuario, List<Af_RemesasLiquiCargaLista> datos)
+        public ErrorDto AF_RemesasLiquidaciones_Carga_Cargar(int CodEmpresa, int remesa, string usuario, List<AfRemesasLiquiCargaLista> datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto
@@ -509,7 +509,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         return result;
                     }
 
-                    foreach (Af_RemesasLiquiCargaLista item in datos)
+                    foreach (AfRemesasLiquiCargaLista item in datos)
                     {
                         //Actualizo la liquidacion con la remesa
                         query = $@"update Liquidacion set cod_remesa = @cod_remesa
@@ -523,7 +523,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         
                     }
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -589,7 +589,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     };
                     connection.Execute(query, filtros);
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -619,14 +619,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="top"></param>
         /// <returns></returns>
-        public ErrorDto<List<Af_RemesaLiquidacionDTO>> AF_RemesasLiquidaciones_Reporte_Obtener(int CodEmpresa, DateTime fechaInicio, DateTime fechaCorte, int top)
+        public ErrorDto<List<AfRemesaLiquidacionDto>> AF_RemesasLiquidaciones_Reporte_Obtener(int CodEmpresa, DateTime fechaInicio, DateTime fechaCorte, int top)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<Af_RemesaLiquidacionDTO>>
+            var result = new ErrorDto<List<AfRemesaLiquidacionDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<Af_RemesaLiquidacionDTO>()
+                Result = new List<AfRemesaLiquidacionDto>()
             };
             try
             {
@@ -636,7 +636,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     var query = @$"select TOP {top} * from AFI_REMESAS_LIQ 
                                     WHERE fecha between '{fechaInicio:yyyy-MM-dd} 00:00:00' and '{fechaCorte:yyyy-MM-dd} 23:59:00'
                                     order by fecha desc";
-                    result.Result = connection.Query<Af_RemesaLiquidacionDTO>(query).ToList();
+                    result.Result = connection.Query<AfRemesaLiquidacionDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -677,7 +677,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                 {
                     //Valido la remesa
                     var existeQry = $@"select * from AFI_REMESAS_LIQ where cod_remesa = @remesa";
-                    var remesaData = connection.QueryFirstOrDefault<Af_RemesaLiquidacionDTO>(existeQry, new { remesa = remesa });
+                    var remesaData = connection.QueryFirstOrDefault<AfRemesaLiquidacionDto>(existeQry, new { remesa = remesa });
                     if (remesaData == null)
                     {
                         result.Code = -1;
@@ -786,7 +786,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                 Description = "Ok",
                 Result = 0
             };
-            result.Result = _Security_MainDB.Derecho(new ParametrosAccesoDTO
+            result.Result = _Security_MainDB.Derecho(new ParametrosAccesoDto
             {
                 EmpresaId = CodEmpresa,
                 Usuario = usuario.ToUpper(),

@@ -1,8 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using PgxAPI.Models.US;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -56,7 +55,7 @@ namespace PgxAPI.DataBaseTier
                         dt.lstMAC2 = macsList1;
 
                         //Obtiene la direccion MAC 1 y 2 para cada estacion:
-                        List<EstacionMACDto> macsList2 = connection.Query<EstacionMACDto>(procedureObtMACs2, valuesMACs2, commandType: CommandType.StoredProcedure)!.ToList();
+                        List<EstacionMacDto> macsList2 = connection.Query<EstacionMacDto>(procedureObtMACs2, valuesMACs2, commandType: CommandType.StoredProcedure)!.ToList();
 
                         // Filtrar y agregar a lstMAC1 aquellos elementos de macsList2 cuyo MAC_01 no se encuentre en lstMAC1
                         foreach (var estacionDto in macsList2)

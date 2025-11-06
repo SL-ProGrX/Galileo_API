@@ -2,7 +2,7 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using static PgxAPI.Models.ProGrX_Nucleo.frmSYS_Correos_BandejaModels;
+using static PgxAPI.Models.ProGrX_Nucleo.FrmSysCorreosBandejaModels;
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
     public class frmSYS_Correos_BandejaDB

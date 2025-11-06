@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<SifDocumentosDTO> Documentos_Obtener(int CodEmpresa, string CodCaja)
+        public List<SifDocumentosDto> Documentos_Obtener(int CodEmpresa, string CodCaja)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<SifDocumentosDTO> info = new List<SifDocumentosDTO>();
+            List<SifDocumentosDto> info = new List<SifDocumentosDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -37,7 +37,7 @@ namespace PgxAPI.DataBaseTier
                             ORDER BY 
                                 C.tipo_documento;";
 
-                    info = connection.Query<SifDocumentosDTO>(query).ToList();
+                    info = connection.Query<SifDocumentosDto>(query).ToList();
 
                 }
             }
@@ -50,7 +50,7 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDto Aplicar_Transacciones(int CodEmpresa, TransaccionSIFDTO transaccion)
+        public ErrorDto Aplicar_Transacciones(int CodEmpresa, TransaccionSifdto transaccion)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto info = new ErrorDto();

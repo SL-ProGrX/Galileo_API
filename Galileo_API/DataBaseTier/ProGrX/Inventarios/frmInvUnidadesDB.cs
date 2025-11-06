@@ -64,7 +64,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    response.Result.Unidades = connection.Query<UnidadMedicionDTO>(query).ToList();
+                    response.Result.Unidades = connection.Query<UnidadMedicionDto>(query).ToList();
 
                 }
             }
@@ -84,11 +84,11 @@ namespace PgxAPI.DataBaseTier
         /// Obtiene la lista de unidades de medición con detalle (OLD version)
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<List<UnidadMedicionDTO>> UnidadMedicion_ObtenerTodosDetalle(int CodEmpresa)
+        public ErrorDto<List<UnidadMedicionDto>> UnidadMedicion_ObtenerTodosDetalle(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<UnidadMedicionDTO>>();
+            var response = new ErrorDto<List<UnidadMedicionDto>>();
 
             try
             {
@@ -96,8 +96,8 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = "SELECT cod_unidad,descripcion, ISNULL(Unidad_Hacienda_Id, 'Unid') as hacienda , activo  FROM pv_unidades order by cod_unidad";
 
-                    response.Result = connection.Query<UnidadMedicionDTO>(query).ToList();
-                    foreach (UnidadMedicionDTO dt in response.Result)
+                    response.Result = connection.Query<UnidadMedicionDto>(query).ToList();
+                    foreach (UnidadMedicionDto dt in response.Result)
                     {
                         dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
                     }
@@ -152,7 +152,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto UnidadMedicion_Actualizar(int CodEmpresa, UnidadMedicionDTO request)
+        public ErrorDto UnidadMedicion_Actualizar(int CodEmpresa, UnidadMedicionDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -189,7 +189,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto UnidadMedicion_Agregar(int CodEmpresa, UnidadMedicionDTO request)
+        public ErrorDto UnidadMedicion_Agregar(int CodEmpresa, UnidadMedicionDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();

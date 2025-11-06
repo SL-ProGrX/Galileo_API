@@ -23,12 +23,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="paginacion"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<BENE_MOTIVOSDataLista> BeneficiosMotivos_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<BeneMotivosDataLista> BeneficiosMotivos_Obtener(int CodEmpresa, int? pagina, int? paginacion, string? filtro)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<BENE_MOTIVOSDataLista>();
-            response.Result = new BENE_MOTIVOSDataLista();
+            var response = new ErrorDto<BeneMotivosDataLista>();
+            response.Result = new BeneMotivosDataLista();
             try
             {
                 var query = "";
@@ -57,7 +57,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginaActual}
                                         {paginacionActual} ";
 
-                    response.Result.Lista = connection.Query<BENE_MOTIVOS>(query).ToList();
+                    response.Result.Lista = connection.Query<BeneMotivos>(query).ToList();
 
                 }
             }
@@ -77,7 +77,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto BeneficiosMotivos_Actualizar(int CodEmpresa, BENE_MOTIVOS request)
+        public ErrorDto BeneficiosMotivos_Actualizar(int CodEmpresa, BeneMotivos request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -111,7 +111,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto BeneficiosMotivos_Agregar(int CodEmpresa, BENE_MOTIVOS request)
+        public ErrorDto BeneficiosMotivos_Agregar(int CodEmpresa, BeneMotivos request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();

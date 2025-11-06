@@ -17,10 +17,10 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<List<fslTipoApelacion>> FslTipoApelacion_Obtener(int CodCliente)
+        public ErrorDto<List<FslTipoApelacion>> FslTipoApelacion_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<fslTipoApelacion>>();
+            var response = new ErrorDto<List<FslTipoApelacion>>();
 
 
             try
@@ -29,7 +29,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select cod_apelacion as item, rtrim(cod_apelacion) + ' - ' + DESCRIPCION as descripcion from FSL_TIPOS_APELACIONES WHERE ACTIVA = 1";
 
-                    response.Result = connection.Query<fslTipoApelacion>(query).ToList();
+                    response.Result = connection.Query<FslTipoApelacion>(query).ToList();
 
                 }
             }
@@ -43,7 +43,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto FslApelacion_Aplicar(int CodCliente, fslApleacionAplicar expediente)
+        public ErrorDto FslApelacion_Aplicar(int CodCliente, FslApleacionAplicar expediente)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -98,7 +98,7 @@ namespace PgxAPI.DataBaseTier
 
         public ErrorDto FslResolucionApelacion_Aplicar(int CodCliente, string apelacion)
         {
-            fslResolucionApleacion expediente = JsonConvert.DeserializeObject<fslResolucionApleacion>(apelacion) ?? new fslResolucionApleacion();
+            FslResolucionApleacion expediente = JsonConvert.DeserializeObject<FslResolucionApleacion>(apelacion) ?? new FslResolucionApleacion();
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
             info.Code = 0;

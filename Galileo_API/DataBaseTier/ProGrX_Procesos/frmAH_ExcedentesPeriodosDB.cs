@@ -1,6 +1,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.AH;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -13,11 +14,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<ExcedentePeriodoDTO> Periodo_Obtener(int CodEmpresa)
+        public List<ExcedentePeriodoDto> Periodo_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<ExcedentePeriodoDTO> info = new List<ExcedentePeriodoDTO>();
+            List<ExcedentePeriodoDto> info = new List<ExcedentePeriodoDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -25,7 +26,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "select * from EXC_PERIODOS order by id_Periodo desc";
 
-                    info = connection.Query<ExcedentePeriodoDTO>(query).ToList();
+                    info = connection.Query<ExcedentePeriodoDto>(query).ToList();
 
 
                 }
@@ -87,12 +88,12 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ExcedentePeriodoDTO periodo_Obtenerselect(int CodEmpresa, int consecutivo)
+        public ExcedentePeriodoDto periodo_Obtenerselect(int CodEmpresa, int consecutivo)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            ExcedentePeriodoDTO info = new ExcedentePeriodoDTO();
+            ExcedentePeriodoDto info = new ExcedentePeriodoDto();
 
             try
             {
@@ -101,7 +102,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"SELECT * FROM EXC_PERIODOS
                                 WHERE ID_PERIODO = {consecutivo}";
 
-                    info = connection.Query<ExcedentePeriodoDTO>(query).FirstOrDefault();
+                    info = connection.Query<ExcedentePeriodoDto>(query).FirstOrDefault();
 
                 }
             }
@@ -114,11 +115,11 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public List<ExcedentePeriodoDTO> PeriodosExcedente_Obtener(int CodEmpresa, int consecutivo)
+        public List<ExcedentePeriodoDto> PeriodosExcedente_Obtener(int CodEmpresa, int consecutivo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<ExcedentePeriodoDTO> info = new List<ExcedentePeriodoDTO>();
+            List<ExcedentePeriodoDto> info = new List<ExcedentePeriodoDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -126,7 +127,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = $@"SELECT P.* FROM vExc_Periodos_Consulta P WHERE P.ID_PERIODO = {consecutivo}";
 
-                    info = connection.Query<ExcedentePeriodoDTO>(query).ToList();
+                    info = connection.Query<ExcedentePeriodoDto>(query).ToList();
 
 
                 }
@@ -140,11 +141,11 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public List<BitacoraExcedenteDTO> BitacoraExcedente_Obtener(int CodEmpresa, int consecutivo)
+        public List<BitacoraExcedenteDto> BitacoraExcedente_Obtener(int CodEmpresa, int consecutivo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<BitacoraExcedenteDTO> info = new List<BitacoraExcedenteDTO>();
+            List<BitacoraExcedenteDto> info = new List<BitacoraExcedenteDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -152,7 +153,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = $@"	SELECT * FROM vExc_Periodos_Bitacora WHERE id_periodo = {consecutivo} ORDER BY registro_fecha DESC";
 
-                    info = connection.Query<BitacoraExcedenteDTO>(query).ToList();
+                    info = connection.Query<BitacoraExcedenteDto>(query).ToList();
 
 
                 }
@@ -165,11 +166,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public List<ExcedentePeriodoDTO> Periodo_Insertar(int CodEmpresa, int consecutivo)
+        public List<ExcedentePeriodoDto> Periodo_Insertar(int CodEmpresa, int consecutivo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<ExcedentePeriodoDTO> info = new List<ExcedentePeriodoDTO>();
+            List<ExcedentePeriodoDto> info = new List<ExcedentePeriodoDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -177,7 +178,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = $@"	SELECT * FROM vExc_Periodos_Bitacora WHERE id_periodo = {consecutivo} ORDER BY registro_fecha DESC";
 
-                    info = connection.Query<ExcedentePeriodoDTO>(query).ToList();
+                    info = connection.Query<ExcedentePeriodoDto>(query).ToList();
 
 
                 }
@@ -190,11 +191,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public List<ExcedentePeriodoDTO> Periodo_Actualizar(int CodEmpresa, int consecutivo)
+        public List<ExcedentePeriodoDto> Periodo_Actualizar(int CodEmpresa, int consecutivo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<ExcedentePeriodoDTO> info = new List<ExcedentePeriodoDTO>();
+            List<ExcedentePeriodoDto> info = new List<ExcedentePeriodoDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -202,7 +203,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = $@"	SELECT * FROM vExc_Periodos_Bitacora WHERE id_periodo = {consecutivo} ORDER BY registro_fecha DESC";
 
-                    info = connection.Query<ExcedentePeriodoDTO>(query).ToList();
+                    info = connection.Query<ExcedentePeriodoDto>(query).ToList();
 
 
                 }

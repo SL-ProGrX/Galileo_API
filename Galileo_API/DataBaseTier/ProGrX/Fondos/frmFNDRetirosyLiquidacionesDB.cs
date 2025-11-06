@@ -22,7 +22,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
             productName = _config.GetSection("AppSettings").GetSection("ProductName").Value.ToString();
         }
 
-        public ErrorDto SbSIFRegistraTags(SIFRegistraTagsRequestDTO data)
+        public ErrorDto SbSIFRegistraTags(SifRegistraTagsRequestDto data)
         {
             return _mMain.SbSIFRegistraTags(data);
         }
@@ -35,14 +35,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="Plan"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDto<FND_SeguridadRango> FND_RetLiq_SeguridadRango_Obtener(int CodEmpresa, int Operadora, string Plan, string Usuario)
+        public ErrorDto<FndSeguridadRango> FND_RetLiq_SeguridadRango_Obtener(int CodEmpresa, int Operadora, string Plan, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<FND_SeguridadRango>
+            var response = new ErrorDto<FndSeguridadRango>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new FND_SeguridadRango()
+                Result = new FndSeguridadRango()
             };
             try
             {
@@ -54,7 +54,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         var query = @$"exec spFndSeguridadRango @Operadora, @Plan, @Usuario";
                         var result = connection.QueryFirstOrDefault(query, new { Operadora, Plan, Usuario });
 
-                        response.Result = new FND_SeguridadRango
+                        response.Result = new FndSeguridadRango
                         {
                             mAutoInicio = result?.Inicio ?? 0,
                             mAutoCorte = result?.Corte ?? 0,
@@ -64,7 +64,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                 } 
                 else
                 {
-                    response.Result = new FND_SeguridadRango
+                    response.Result = new FndSeguridadRango
                     {
                         mAutoInicio = 0,
                         mAutoCorte = 0,
@@ -220,14 +220,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<FND_RetLiq_RebajosData>> FND_RetLiq_Rebajos_Obtener(int CodEmpresa, string Usuario)
+        public ErrorDto<List<FndRetLiqRebajosData>> FND_RetLiq_Rebajos_Obtener(int CodEmpresa, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<FND_RetLiq_RebajosData>>
+            var response = new ErrorDto<List<FndRetLiqRebajosData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<FND_RetLiq_RebajosData>()
+                Result = new List<FndRetLiqRebajosData>()
             };
             try
             {
@@ -235,7 +235,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                 {
                     var query = @$"select CODIGO, DESCRIPCION, '' AS DOCUMENTO, '' AS DETALLE, 0 AS 'MONTO'
                         From vFnd_Rebajos_Aplicables_List Where dbo.fxFnd_Seguridad_Acceso_Concepto(@Usuario, CODIGO) = 1";
-                    response.Result = connection.Query<FND_RetLiq_RebajosData>(query, new { Usuario }).ToList();
+                    response.Result = connection.Query<FndRetLiqRebajosData>(query, new { Usuario }).ToList();
                 }
             }
             catch (Exception ex)
@@ -255,14 +255,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="Plan"></param>
         /// <param name="Contrato"></param>
         /// <returns></returns>
-        public ErrorDto<FND_RetLiq_ConsultaData> FND_RetLiq_Consulta_Obtener(int CodEmpresa, int Operadora, string Plan, int Contrato)
+        public ErrorDto<FndRetLiqConsultaData> FND_RetLiq_Consulta_Obtener(int CodEmpresa, int Operadora, string Plan, int Contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<FND_RetLiq_ConsultaData>
+            var response = new ErrorDto<FndRetLiqConsultaData>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new FND_RetLiq_ConsultaData()
+                Result = new FndRetLiqConsultaData()
             };
             try
             {
@@ -277,7 +277,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         response.Result.permiteLiquidar = true;
 
                         query = "exec spFndRetLiqConsulta @Operadora, @Plan, @Contrato";
-                        response.Result = connection.QueryFirstOrDefault<FND_RetLiq_ConsultaData>(query, new { Operadora, Plan, Contrato });
+                        response.Result = connection.QueryFirstOrDefault<FndRetLiqConsultaData>(query, new { Operadora, Plan, Contrato });
 
                         if (response.Result != null && response.Result.tipo_Pago != null) 
                         {
@@ -377,14 +377,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="RndRetiro"></param>
         /// <param name="Plan"></param>
         /// <returns></returns>
-        public ErrorDto<FND_RetLiq_RentaGlobalData> FND_RetLiq_RentaGlobal_Obtener(int CodEmpresa, string Cedula, decimal RndRetiro, string Plan)
+        public ErrorDto<FndRetLiqRentaGlobalData> FND_RetLiq_RentaGlobal_Obtener(int CodEmpresa, string Cedula, decimal RndRetiro, string Plan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<FND_RetLiq_RentaGlobalData>
+            var response = new ErrorDto<FndRetLiqRentaGlobalData>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new FND_RetLiq_RentaGlobalData()
+                Result = new FndRetLiqRentaGlobalData()
             };
             DateTime Fecha = DateTime.Now;
             try
@@ -392,7 +392,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "exec spFnd_Renta_Global @Cedula, @Fecha, @RndRetiro, @Plan";
-                    response.Result = connection.QueryFirstOrDefault<FND_RetLiq_RentaGlobalData>(query, new { Cedula, Fecha, RndRetiro, Plan });
+                    response.Result = connection.QueryFirstOrDefault<FndRetLiqRentaGlobalData>(query, new { Cedula, Fecha, RndRetiro, Plan });
                 }
             }
             catch (Exception ex)
@@ -410,16 +410,16 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="Filtro"></param>
         /// <returns></returns>
-        public ErrorDto<FND_RetLiq_ProcesoData> FND_RetLiq_Aplicar(int CodEmpresa, string Filtro)
+        public ErrorDto<FndRetLiqProcesoData> FND_RetLiq_Aplicar(int CodEmpresa, string Filtro)
         {
 
-            Filtros_RetLiq_Aplicar filtros = JsonConvert.DeserializeObject<Filtros_RetLiq_Aplicar>(Filtro) ?? new Filtros_RetLiq_Aplicar();
+            FiltrosRetLiqAplicar filtros = JsonConvert.DeserializeObject<FiltrosRetLiqAplicar>(Filtro) ?? new FiltrosRetLiqAplicar();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<FND_RetLiq_ProcesoData>
+            var response = new ErrorDto<FndRetLiqProcesoData>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new FND_RetLiq_ProcesoData()
+                Result = new FndRetLiqProcesoData()
             };
             try
             {
@@ -505,7 +505,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         strSQL += ",null,0,'N','','', @Rebajos)";
                     }
 
-                    response.Result = connection.QueryFirstOrDefault<FND_RetLiq_ProcesoData>(strSQL,
+                    response.Result = connection.QueryFirstOrDefault<FndRetLiqProcesoData>(strSQL,
                         new
                         {
                             filtros.Operadora,
@@ -532,7 +532,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
 
                     //sbTrazabilidad_Inserta de mProGrx_Main
 
-                    SbSIFRegistraTags(new SIFRegistraTagsRequestDTO
+                    SbSIFRegistraTags(new SifRegistraTagsRequestDto
                     {
                         Codigo = response.Result.liq_Num.ToString(),
                         Tag = "S10",

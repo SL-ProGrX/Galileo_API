@@ -336,17 +336,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="beneficio"></param>
         /// <returns></returns>
-        public ErrorDto<BeneficioDTO> BeneficioIntegral_Obtener(int CodCliente, long beneficio)
+        public ErrorDto<BeneficioDto> BeneficioIntegral_Obtener(int CodCliente, long beneficio)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<BeneficioDTO>();
+            var response = new ErrorDto<BeneficioDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"select * FROM vBeneficios_Integral 
 	                                 WHERE ID_BENEFICIO = {beneficio} ";
-                    response.Result = connection.Query<BeneficioDTO>(query).FirstOrDefault();
+                    response.Result = connection.Query<BeneficioDto>(query).FirstOrDefault();
 
                 }
             }

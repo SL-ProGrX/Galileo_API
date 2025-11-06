@@ -1,11 +1,8 @@
 ﻿using Dapper;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Data.SqlClient;
-using Microsoft.Reporting.Map.WebForms.BingMaps;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using PgxAPI.Models.ProGrX.Credito;
+using PgxAPI.Models.Security;
 using System.Data;
 using System.Text.RegularExpressions;
 
@@ -14,13 +11,13 @@ namespace PgxAPI.DataBaseTier
     public class mProGrx_Main
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private mProGrX_AuxiliarDB _AuxiliarDB;
 
         public mProGrx_Main(IConfiguration config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
             _AuxiliarDB = new mProGrX_AuxiliarDB(_config);
         }
 
@@ -146,9 +143,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="pCedula"></param>
         /// <param name="pUsuario"></param>
         /// <returns></returns>
-        public List<ConsultaStatusResultDTO> DatosObtener(string pCedula, string pUsuario)
+        public List<ConsultaStatusResultDto> DatosObtener(string pCedula, string pUsuario)
         {
-            List<ConsultaStatusResultDTO> resp = new List<ConsultaStatusResultDTO>();
+            List<ConsultaStatusResultDto> resp = new List<ConsultaStatusResultDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -161,7 +158,7 @@ namespace PgxAPI.DataBaseTier
                         Usuario = pUsuario
                     };
 
-                    resp = connection.Query<ConsultaStatusResultDTO>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    resp = connection.Query<ConsultaStatusResultDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -212,7 +209,7 @@ namespace PgxAPI.DataBaseTier
             return resultado ?? ""; // Si no se encuentra un valor, se retorna una cadena vacía
         }
 
-        public ErrorDto SbSIFRegistraTags(SIFRegistraTagsRequestDTO req)
+        public ErrorDto SbSIFRegistraTags(SifRegistraTagsRequestDto req)
         {
             ErrorDto result = new ErrorDto();
             try
@@ -246,15 +243,15 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public List<MenuUsoResultDTO> SbSIFRegistraTags(MenuUsoRequestDTO req)
+        public List<MenuUsoResultDto> SbSIFRegistraTags(MenuUsoRequestDto req)
         {
-            List<MenuUsoResultDTO> result = new List<MenuUsoResultDTO>();
+            List<MenuUsoResultDto> result = new List<MenuUsoResultDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
                 {
                     string query = "select *,dbo.fxSEG_MenuAccess(" + req.Empresa_Id + "," + req.Usuario + "," + req.Modulo + "," + req.Formulario + "," + req.Tipo + ") as Acceso FROM SIF_parametros WHERE cod_parametro = @Codigo";
-                    ParametroDTO resultado = connection.QueryFirstOrDefault<ParametroDTO>(query);
+                    ParametroDto resultado = connection.QueryFirstOrDefault<ParametroDto>(query);
 
                     if (resultado != null)
                     {
@@ -266,7 +263,7 @@ namespace PgxAPI.DataBaseTier
                             Usuario = req.Usuario
                         };
 
-                        result = connection.Query<MenuUsoResultDTO>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                        result = connection.Query<MenuUsoResultDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
                     }
                 }
             }
@@ -278,7 +275,7 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public List<MenuFavoritosResultDto> SbSIFRegistraTags(MenuFavoritosRequestDTO req)
+        public List<MenuFavoritosResultDto> SbSIFRegistraTags(MenuFavoritosRequestDto req)
         {
             List<MenuFavoritosResultDto> result = new List<MenuFavoritosResultDto>();
             try
@@ -424,9 +421,9 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public List<EmpresaEnlaceResultDTO> EmpresaEnlaceObtener()
+        public List<EmpresaEnlaceResultDto> EmpresaEnlaceObtener()
         {
-            List<EmpresaEnlaceResultDTO> result = new List<EmpresaEnlaceResultDTO>();
+            List<EmpresaEnlaceResultDto> result = new List<EmpresaEnlaceResultDto>();
 
             string strSQL = "";
             try
@@ -446,7 +443,7 @@ namespace PgxAPI.DataBaseTier
                                     ec_visible_fianzas,
                                     estadoCuenta
                               from dbo.sif_empresa";
-                    result = connection.Query<EmpresaEnlaceResultDTO>(strSQL).ToList();
+                    result = connection.Query<EmpresaEnlaceResultDto>(strSQL).ToList();
                 }
             }
             catch (Exception)
@@ -456,9 +453,9 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public List<SIFOficinasUsuarioResultDTO> CargaOficinas(string usuario, int codEmpresa)
+        public List<SifOficinasUsuarioResultDto> CargaOficinas(string usuario, int codEmpresa)
         {
-            List<SIFOficinasUsuarioResultDTO> result = new List<SIFOficinasUsuarioResultDTO>();
+            List<SifOficinasUsuarioResultDto> result = new List<SifOficinasUsuarioResultDto>();
             try
             {
                 string stringConn = _config.GetConnectionString("DefaultConnString");
@@ -473,7 +470,7 @@ namespace PgxAPI.DataBaseTier
                     {
                         Usuario = usuario
                     };
-                    result = connection.Query<SIFOficinasUsuarioResultDTO>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    result = connection.Query<SifOficinasUsuarioResultDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception)
@@ -486,7 +483,7 @@ namespace PgxAPI.DataBaseTier
         public decimal glngFechaCR(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            Par_Ahcr par_ahcr = new Par_Ahcr();
+            ParAhcr par_ahcr = new ParAhcr();
             decimal glngFechaCR = 0;
 
             try
@@ -494,7 +491,7 @@ namespace PgxAPI.DataBaseTier
                 using (var connection = new SqlConnection(stringConn))
                 {
                     var queryPar_Ahcr = "Select *,Getdate() as FechaAlterna from par_ahcr";
-                    par_ahcr = connection.Query<Par_Ahcr>(queryPar_Ahcr).FirstOrDefault();
+                    par_ahcr = connection.Query<ParAhcr>(queryPar_Ahcr).FirstOrDefault();
                     DateTime vFecha = par_ahcr.cr_fecha_calculo.GetValueOrDefault(par_ahcr.fechaalterna);
                     int year = vFecha.Year;
                     int month = vFecha.Month;
@@ -552,7 +549,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spSYS_RA_Consulta_Status @cedula , @usuario";
-                    var result = connection.Query<ConsultaStatusResultDTO>(query, new { cedula = pCedula, usuario = pUsuario }).FirstOrDefault();
+                    var result = connection.Query<ConsultaStatusResultDto>(query, new { cedula = pCedula, usuario = pUsuario }).FirstOrDefault();
 
                     if(result.PERSONA_ID > 0 && result.AUTORIZACION_ID == 0)
                     {
@@ -601,7 +598,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"exec spSys_Estado_Cuenta_Corte @cedula , @corte, @email,@usuario ";
                     var result = connection.Query(query, new { cedula = vCedula, corte = vFechaCorte, email = vEmail, usuario = pUsuario }).FirstOrDefault();
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = pUsuario,

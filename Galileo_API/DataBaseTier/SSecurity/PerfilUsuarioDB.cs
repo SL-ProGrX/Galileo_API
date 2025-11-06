@@ -1,12 +1,12 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -19,9 +19,9 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<PerfilUsuarioDTO> UsuarioPerfilConsultar(string usuario)
+        public ErrorDto<PerfilUsuarioDto> UsuarioPerfilConsultar(string usuario)
         {
-            var response = new ErrorDto<PerfilUsuarioDTO>();
+            var response = new ErrorDto<PerfilUsuarioDto>();
 
             try
             {
@@ -32,7 +32,7 @@ namespace PgxAPI.DataBaseTier
                         Usuario = usuario
                     };
 
-                    response.Result = connection.QueryFirstOrDefault<PerfilUsuarioDTO>("spSEG_W_Logon_Info", values, commandType: CommandType.StoredProcedure);
+                    response.Result = connection.QueryFirstOrDefault<PerfilUsuarioDto>("spSEG_W_Logon_Info", values, commandType: CommandType.StoredProcedure);
 
                     if (response.Result == null)
                     {
@@ -77,7 +77,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto PerfilUsuario_Actualizar(PerfilUsuarioDTO request)
+        public ErrorDto PerfilUsuario_Actualizar(PerfilUsuarioDto request)
         {
             ErrorDto resp = new ErrorDto();
             try

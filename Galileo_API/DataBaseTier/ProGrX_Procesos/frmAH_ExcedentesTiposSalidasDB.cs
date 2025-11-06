@@ -1,6 +1,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.AH;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -14,11 +15,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public List<TipoSalidaDTO> ExcedenteTipoSalida_Obtener(int CodCliente)
+        public List<TipoSalidaDto> ExcedenteTipoSalida_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            List<TipoSalidaDTO> info = new List<TipoSalidaDTO>();
+            List<TipoSalidaDto> info = new List<TipoSalidaDto>();
 
             try
             {
@@ -49,7 +50,7 @@ namespace PgxAPI.DataBaseTier
                                         Activa DESC,
                                         cod_salida; ";
 
-                    info = connection.Query<TipoSalidaDTO>(query).ToList();
+                    info = connection.Query<TipoSalidaDto>(query).ToList();
 
                 }
             }

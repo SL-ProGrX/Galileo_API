@@ -1,10 +1,10 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.CPR;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 using PgxAPI.Models.TES;
 using System.Reflection;
 
@@ -13,15 +13,15 @@ namespace PgxAPI.DataBaseTier
     public class frmTES_AnulacionDocDB
     {
         private readonly IConfiguration? _config;
-        private readonly mTesoreria mTesoreria;
-        private readonly mSecurityMainDb mSecurityMainDb;
+        private readonly MTesoreria MTesoreria;
+        private readonly MSecurityMainDb MSecurityMainDb;
         private readonly int vModulo = 9; // Módulo de Tesorería
 
         public frmTES_AnulacionDocDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(config);
-            mSecurityMainDb = new mSecurityMainDb(config);
+            MTesoreria = new MTesoreria(config);
+            MSecurityMainDb = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -30,10 +30,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<TES_AnulacionDocData> TES_Anulacion_Obtener(int CodEmpresa, int solicitud, string usuario)
+        public ErrorDto<TesAnulacionDocData> TES_Anulacion_Obtener(int CodEmpresa, int solicitud, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_AnulacionDocData>
+            var response = new ErrorDto<TesAnulacionDocData>
             {
                 Code = 0
             };
@@ -47,7 +47,7 @@ namespace PgxAPI.DataBaseTier
                                     inner join  tes_tipos_doc T on C.tipo = T.tipo
                                     where C.nsolicitud = @solicitud ";
 
-                    response.Result = connection.Query<TES_AnulacionDocData>(query,
+                    response.Result = connection.Query<TesAnulacionDocData>(query,
                         new
                         {
                             solicitud = solicitud
@@ -55,11 +55,11 @@ namespace PgxAPI.DataBaseTier
 
                     if (response.Result != null)
                     {
-                        response.Result.verifica = mTesoreria.fxTesTipoAccesoValida(CodEmpresa, response.Result.id_banco, usuario, response.Result.tipo , "N").Result;
+                        response.Result.verifica = MTesoreria.fxTesTipoAccesoValida(CodEmpresa, response.Result.id_banco, usuario, response.Result.tipo , "N").Result;
                     }
                     else
                     {
-                        response.Result = new TES_AnulacionDocData();
+                        response.Result = new TesAnulacionDocData();
                         response.Result.verifica = false;
                     }
                 }
@@ -79,7 +79,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="anula"></param>
         /// <returns></returns>
-        public ErrorDto TES_Anulacion_Anular(int CodEmpresa, string usuario ,TES_AnulacionAnulaModel anula)
+        public ErrorDto TES_Anulacion_Anular(int CodEmpresa, string usuario ,TesAnulacionAnulaModel anula)
         {
             /*
              *  ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -107,7 +107,7 @@ namespace PgxAPI.DataBaseTier
                     string detalleBitacora = $"Anula Solicitud : {anula.nsolicitud} - {anula.notas} - {anula.cod_concepto_anulacion}";
 
         
-                    mSecurityMainDb.Bitacora(new BitacoraInsertarDTO
+                    MSecurityMainDb.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -132,7 +132,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="anula"></param>
         /// <returns></returns>
-        public ErrorDto TES_AnulacionCopiaSolicitud(int CodEmpresa, string usuario, TES_AnulacionAnulaModel anula)
+        public ErrorDto TES_AnulacionCopiaSolicitud(int CodEmpresa, string usuario, TesAnulacionAnulaModel anula)
         {
             /*
                 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -158,7 +158,7 @@ namespace PgxAPI.DataBaseTier
                     connection.Execute(query);
 
                     //Bitácora
-                    mSecurityMainDb.Bitacora(new BitacoraInsertarDTO
+                    MSecurityMainDb.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

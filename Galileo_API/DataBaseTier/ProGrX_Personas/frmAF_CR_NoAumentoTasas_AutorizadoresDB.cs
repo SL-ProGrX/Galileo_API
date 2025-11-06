@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Personas;
+using PgxAPI.Models.Security;
 
 
 namespace PgxAPI.DataBaseTier.ProGrX_Personas
@@ -11,12 +12,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_CR_NoAumentoTasas_AutorizadoresDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -25,13 +26,13 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="EstadoAutorizado"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_NAT_Autorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa, int EstadoAutorizado)
+        public ErrorDto<List<AfNatAutorizadores>> AF_NAT_Autorizadores_Obtener(int CodEmpresa, int EstadoAutorizado)
         {
-            var result = new ErrorDto<List<AF_NAT_Autorizadores>>()
+            var result = new ErrorDto<List<AfNatAutorizadores>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_NAT_Autorizadores>()
+                Result = new List<AfNatAutorizadores>()
             };
 
             try
@@ -41,7 +42,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
 
                 var parameters = new { SoloAutorizados = EstadoAutorizado };
 
-                result.Result = connection.Query<AF_NAT_Autorizadores>(
+                result.Result = connection.Query<AfNatAutorizadores>(
                     "spAFI_Renuncia_NAT_Autorizadores_Obtener",
                     parameters,
                     commandType: System.Data.CommandType.StoredProcedure
@@ -88,7 +89,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 string movimiento = Mov == "A" ? "Registra - WEB" : "Elimina - WEB";
 
                 // Guarda en bitácora               
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = Usuario,

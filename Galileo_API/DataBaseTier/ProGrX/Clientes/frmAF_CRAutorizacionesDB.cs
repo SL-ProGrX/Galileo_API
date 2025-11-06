@@ -20,13 +20,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CRAutorizacion>> AF_CRAutorizaciones_Obtener(int CodEmpresa, AF_CRAutorizacionFiltros filtros)
+        public ErrorDto<List<AfCrAutorizacion>> AF_CRAutorizaciones_Obtener(int CodEmpresa, AfCrAutorizacionFiltros filtros)
         {
-            var result = new ErrorDto<List<AF_CRAutorizacion>>()
+            var result = new ErrorDto<List<AfCrAutorizacion>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_CRAutorizacion>()
+                Result = new List<AfCrAutorizacion>()
             };
 
             try
@@ -55,7 +55,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     Corte = filtros.Corte
                 };
 
-                result.Result = connection.Query<AF_CRAutorizacion>(query, parameters).ToList();
+                result.Result = connection.Query<AfCrAutorizacion>(query, parameters).ToList();
             }
             catch (Exception ex)
             {

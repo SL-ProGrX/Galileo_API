@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
+using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -38,9 +39,9 @@ namespace PgxAPI.DataBaseTier
             return servs;
         }
 
-        public ErrorVendedorDTO Vendedor_Insertar(Vendedor request)
+        public ErrorDto Vendedor_Insertar(Vendedor request)
         {
-            ErrorVendedorDTO resp = new ErrorVendedorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -71,9 +72,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorVendedorDTO Vendedor_Eliminar(Vendedor request)
+        public ErrorDto Vendedor_Eliminar(Vendedor request)
         {
-            ErrorVendedorDTO resp = new ErrorVendedorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -96,9 +97,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorVendedorDTO Vendedor_Actualizar(Vendedor request)
+        public ErrorDto Vendedor_Actualizar(Vendedor request)
         {
-            ErrorVendedorDTO resp = new ErrorVendedorDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

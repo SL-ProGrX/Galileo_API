@@ -24,14 +24,14 @@ namespace PgxAPI.DataBaseTier.ProGrX_Contabilidad
         /// <param name="CodContab"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<presModelisLista>> Pres_Modelos_Obtener(int CodEmpresa, int CodContab, string Usuario)
+        public ErrorDto<List<PresModelisLista>> Pres_Modelos_Obtener(int CodEmpresa, int CodContab, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<presModelisLista>>
+            var resp = new ErrorDto<List<PresModelisLista>>
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<presModelisLista>()
+                Result = new List<PresModelisLista>()
             };
             try
             {
@@ -44,7 +44,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Contabilidad
                     Where P.COD_CONTABILIDAD = @contabilidad
                     group by P.cod_Modelo, P.Descripcion,P.ESTADO ,Cc.Inicio_Anio 
                     order by Cc.INICIO_ANIO desc, P.Cod_Modelo";
-                    resp.Result = connection.Query<presModelisLista>(query,
+                    resp.Result = connection.Query<PresModelisLista>(query,
                         new
                         {
                             contabilidad = CodContab,
@@ -70,15 +70,15 @@ namespace PgxAPI.DataBaseTier.ProGrX_Contabilidad
         /// <param name="vTipo"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<PresFormulacionAutoDTO>> Pres_Formulacion_Automatica(
+        public ErrorDto<List<PresFormulacionAutoDto>> Pres_Formulacion_Automatica(
             int CodEmpresa, string CodModelo, string vTipo ,string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<PresFormulacionAutoDTO>>
+            var resp = new ErrorDto<List<PresFormulacionAutoDto>>
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<PresFormulacionAutoDTO>()
+                Result = new List<PresFormulacionAutoDto>()
             };
             try
             {
@@ -140,7 +140,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Contabilidad
                         Modelo = CodModelo,
                         Usuario = Usuario
                     };
-                    resp.Result = connection.Query<PresFormulacionAutoDTO>(procedure, values, commandType: System.Data.CommandType.StoredProcedure).ToList();
+                    resp.Result = connection.Query<PresFormulacionAutoDto>(procedure, values, commandType: System.Data.CommandType.StoredProcedure).ToList();
                     if (resp.Result == null)
                     {
                         resp.Code = -1;

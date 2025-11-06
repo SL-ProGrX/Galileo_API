@@ -1,10 +1,10 @@
 using PgxAPI.Models;
 using PgxAPI.Models.AF;
 using Microsoft.Data.SqlClient;
-using System.Data;
 using Dapper;
 using PgxAPI.Models.ERROR;
 using Newtonsoft.Json;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -13,7 +13,7 @@ namespace PgxAPI.DataBaseTier
         private readonly IConfiguration? _config;
         private readonly EnvioCorreoDB _envioCorreoDB;
         private mProGrX_AuxiliarDB mAuxiliarDB;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         mTESFuncionesDB mTESFuncionesDB;
         mBeneficiosDB mBeneficiosDB;
         public string sendEmail = "";
@@ -23,13 +23,13 @@ namespace PgxAPI.DataBaseTier
             _config = config;
             _envioCorreoDB = new EnvioCorreoDB(_config);
             mAuxiliarDB = new mProGrX_AuxiliarDB(_config);
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
             mTESFuncionesDB = new mTESFuncionesDB(_config);
             mBeneficiosDB = new mBeneficiosDB(_config);
             sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value.ToString();
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -123,7 +123,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (resp > 0)
                     {
-                        //Bitacora(new BitacoraInsertarDTO
+                        //Bitacora(new BitacoraInsertarDto
                         //{
                         //    EmpresaId = CodCliente,
                         //    Usuario = remesa.registro_usuario.ToUpper(),
@@ -173,7 +173,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (resp > 0)
                     {
-                        //Bitacora(new BitacoraInsertarDTO
+                        //Bitacora(new BitacoraInsertarDto
                         //{
                         //    EmpresaId = CodCliente,
                         //    Usuario = remesa.registro_usuario.ToUpper(),
@@ -545,7 +545,7 @@ namespace PgxAPI.DataBaseTier
 					                       and cod_beneficio = '{item.cod_beneficio}' and consec = '{item.consec}' and id_pago = {item.id_pago}";
                             connection.Execute(query);
 
-                            mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                            mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                             {
                                 EmpresaId = CodCliente,
                                 cod_beneficio = item.cod_beneficio,
@@ -658,14 +658,14 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public async Task<ErrorDto> AfiTarjetasRegaloRecargadas_Enviar(int CodCliente, DocArchivoBeneRecargaTarjetaDTO parametros)
+        public async Task<ErrorDto> AfiTarjetasRegaloRecargadas_Enviar(int CodCliente, DocArchivoBeneRecargaTarjetaDto parametros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
             info.Code = 0;
             EnvioCorreoModels eConfig = new();
             string proveedor = "";
-            List<FileTarjetasDTO> archivos = parametros.archivos;
+            List<FileTarjetasDto> archivos = parametros.archivos;
             try
             {
 

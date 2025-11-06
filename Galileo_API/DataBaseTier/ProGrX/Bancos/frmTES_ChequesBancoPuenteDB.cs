@@ -4,6 +4,7 @@ using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 using PgxAPI.Models.TES;
 using System.Reflection;
 
@@ -12,22 +13,22 @@ namespace PgxAPI.DataBaseTier
     public class frmTES_ChequesBancoPuenteDB
     {
         private readonly IConfiguration? _config;
-        private readonly mTesoreria mTesoreria;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MTesoreria MTesoreria;
+        private readonly MSecurityMainDb _Security_MainDB;
         private int vModulo = 9;
         private string AppVersion;
 
         public frmTES_ChequesBancoPuenteDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(config);
-            _Security_MainDB = new mSecurityMainDb(config);
+            MTesoreria = new MTesoreria(config);
+            _Security_MainDB = new MSecurityMainDb(config);
             AppVersion = _config.GetSection("AppSettings").GetSection("AppVersion").Value.ToString();
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> TES_BancosGestion_Obtener(int CodEmpresa, string usuario, string gestion)
         {
-            return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
+            return MTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> TES_Bancos_Obtener(int CodEmpresa)
@@ -120,7 +121,7 @@ namespace PgxAPI.DataBaseTier
 
                         //Bitácora
                         _Security_MainDB.Bitacora
-                            (new BitacoraInsertarDTO
+                            (new BitacoraInsertarDto
                             {
                                 EmpresaId = CodEmpresa,
                                 Usuario = usuario,

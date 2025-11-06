@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using PgxAPI.Models.TES;
 
 namespace PgxAPI.DataBaseTier
@@ -10,15 +11,15 @@ namespace PgxAPI.DataBaseTier
     public class frmTES_TE_PlanesDB
     {
         private readonly IConfiguration? _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public frmTES_TE_PlanesDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -31,10 +32,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codPlan"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-        public ErrorDto<TES_Banco_PlanesData> TES_Planes_Scroll(int CodEmpresa, int scrollCode, string codPlan, int banco)
+        public ErrorDto<TesBancoPlanesData> TES_Planes_Scroll(int CodEmpresa, int scrollCode, string codPlan, int banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_Banco_PlanesData>
+            var response = new ErrorDto<TesBancoPlanesData>
             {
                 Code = 0
             };
@@ -52,7 +53,7 @@ namespace PgxAPI.DataBaseTier
                         query += " WHERE id_banco = @banco AND cod_Plan < @codPlan ORDER BY cod_Plan DESC";
                     }
 
-                    response.Result = connection.Query<TES_Banco_PlanesData>(query,
+                    response.Result = connection.Query<TesBancoPlanesData>(query,
                         new { banco = banco, codPlan = codPlan }).FirstOrDefault();
                 }
             }
@@ -72,20 +73,20 @@ namespace PgxAPI.DataBaseTier
         /// <param name="banco"></param>
         /// <param name="codPlan"></param>
         /// <returns></returns>
-		public ErrorDto<TES_Banco_PlanesData> TES_PlanesConsulta_Obtener(int CodEmpresa, int banco, string codPlan)
+		public ErrorDto<TesBancoPlanesData> TES_PlanesConsulta_Obtener(int CodEmpresa, int banco, string codPlan)
 		{
 			string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-			var response = new ErrorDto<TES_Banco_PlanesData>
+			var response = new ErrorDto<TesBancoPlanesData>
 			{
 				Code = 0,
-				Result = new TES_Banco_PlanesData()
+				Result = new TesBancoPlanesData()
 			};
 			try
 			{
 				using var connection = new SqlConnection(stringConn);
 				{
 					var query = @"exec spTes_Planes_Consulta @banco, @codPlan";
-					response.Result = connection.QueryFirstOrDefault<TES_Banco_PlanesData>(query,
+					response.Result = connection.QueryFirstOrDefault<TesBancoPlanesData>(query,
 						new { banco = banco, codPlan = codPlan });
                 }
 			}
@@ -104,13 +105,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="banco"></param>
         /// <returns></returns>
-		public ErrorDto<TES_Bancos_GruposData> TES_Planes_BancosGrupos_Obtener(int CodEmpresa, int banco)
+		public ErrorDto<TesBancosGruposData> TES_Planes_BancosGrupos_Obtener(int CodEmpresa, int banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_Bancos_GruposData>
+            var response = new ErrorDto<TesBancosGruposData>
             {
                 Code = 0,
-                Result = new TES_Bancos_GruposData()
+                Result = new TesBancosGruposData()
             };
             try
             {
@@ -120,7 +121,7 @@ namespace PgxAPI.DataBaseTier
                         , Bg.DESCRIPCION as 'Banco_Desc', Bg.DESC_CORTA as 'Banco_Desc_Corta'
                         from TES_BANCOS B inner join TES_BANCOS_GRUPOS Bg on B.COD_GRUPO = Bg.COD_GRUPO 
                         Where B.ID_Banco = @banco";
-                    response.Result = connection.QueryFirstOrDefault<TES_Bancos_GruposData>(query,
+                    response.Result = connection.QueryFirstOrDefault<TesBancosGruposData>(query,
                         new { banco = banco });
                 }
             }
@@ -141,7 +142,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto TES_Planes_Guardar(int CodEmpresa, string infoPlan)
         {
-            TES_Banco_PlanesData request = JsonConvert.DeserializeObject<TES_Banco_PlanesData>(infoPlan) ?? new TES_Banco_PlanesData();
+            TesBancoPlanesData request = JsonConvert.DeserializeObject<TesBancoPlanesData>(infoPlan) ?? new TesBancoPlanesData();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
             {
@@ -162,7 +163,7 @@ namespace PgxAPI.DataBaseTier
                             usuario = request.registro_usuario.ToUpper()
                         });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = request.registro_usuario.ToUpper(),
@@ -192,7 +193,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto TES_Planes_Borrar(int CodEmpresa, string infoPlan)
         {
-            TES_Banco_PlanesData request = JsonConvert.DeserializeObject<TES_Banco_PlanesData>(infoPlan) ?? new TES_Banco_PlanesData();
+            TesBancoPlanesData request = JsonConvert.DeserializeObject<TesBancoPlanesData>(infoPlan) ?? new TesBancoPlanesData();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
             {
@@ -214,7 +215,7 @@ namespace PgxAPI.DataBaseTier
                             usuario = request.registro_usuario.ToUpper()
                         });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = request.registro_usuario.ToUpper(),

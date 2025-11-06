@@ -89,12 +89,12 @@ namespace PgxAPI.DataBaseTier
         /// Obtiene la lista de productos para seleccion
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<List<ProductoDTO>> Producto_ObtenerTodos(int CodEmpresa)
+        public ErrorDto<List<ProductoDto>> Producto_ObtenerTodos(int CodEmpresa)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<ProductoDTO>>();
+            var response = new ErrorDto<List<ProductoDto>>();
 
             try
             {
@@ -110,8 +110,8 @@ namespace PgxAPI.DataBaseTier
                          "INNER JOIN PV_PROD_CLASIFICA_SUB Cs ON P.cod_prodclas = Cs.cod_prodclas " +
                          "AND P.COD_LINEA_SUB = Cs.COD_LINEA_SUB";
 
-                    response.Result = connection.Query<ProductoDTO>(query).ToList();
-                    foreach (ProductoDTO dt in response.Result)
+                    response.Result = connection.Query<ProductoDto>(query).ToList();
+                    foreach (ProductoDto dt in response.Result)
                     {
                         //dt.Activo = dt.Estado == "A" ? true : false;
                         dt.Inventario_Calculabool = dt.Inventario_Calcula == "S" ? true : false;
@@ -124,7 +124,7 @@ namespace PgxAPI.DataBaseTier
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = new List<ProductoDTO>();
+                response.Result = new List<ProductoDto>();
             }
             return response;
         }
@@ -135,11 +135,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="Cod_Producto"></param>
         /// <returns></returns>
-        public ErrorDto<ProductoDTO> Producto_ObtenerDetalle(int CodEmpresa, string Cod_Producto)
+        public ErrorDto<ProductoDto> Producto_ObtenerDetalle(int CodEmpresa, string Cod_Producto)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<ProductoDTO>();
+            var response = new ErrorDto<ProductoDto>();
 
             try
             {
@@ -162,7 +162,7 @@ namespace PgxAPI.DataBaseTier
                     var parameters = new DynamicParameters();
                     parameters.Add("Cod_Producto", Cod_Producto, DbType.String);
 
-                    response.Result = connection.Query<ProductoDTO>(query, parameters).FirstOrDefault();
+                    response.Result = connection.Query<ProductoDto>(query, parameters).FirstOrDefault();
 
                     if (response.Result != null)
                     {
@@ -176,7 +176,7 @@ namespace PgxAPI.DataBaseTier
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = new ProductoDTO();
+                response.Result = new ProductoDto();
             }
             return response;
         }
@@ -223,7 +223,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Producto_Insertar(int CodEmpresa, ProductoDTO request)
+        public ErrorDto Producto_Insertar(int CodEmpresa, ProductoDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -283,7 +283,7 @@ namespace PgxAPI.DataBaseTier
                     resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     resp.Description = "Ok";
 
-                    mAuxiliarDB.BitacoraProducto(new BitacoraProductoInsertarDTO
+                    mAuxiliarDB.BitacoraProducto(new BitacoraProductoInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         cod_producto = request.Cod_Producto,
@@ -311,7 +311,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Producto_Actualizar(int CodEmpresa, ProductoDTO request)
+        public ErrorDto Producto_Actualizar(int CodEmpresa, ProductoDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -365,7 +365,7 @@ namespace PgxAPI.DataBaseTier
                     if (request.justificacion_estado != "")
                     {
 
-                        mAuxiliarDB.BitacoraProducto(new BitacoraProductoInsertarDTO
+                        mAuxiliarDB.BitacoraProducto(new BitacoraProductoInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             cod_producto = request.Cod_Producto,
@@ -376,7 +376,7 @@ namespace PgxAPI.DataBaseTier
                         });
                     }
 
-                    mAuxiliarDB.BitacoraProducto(new BitacoraProductoInsertarDTO
+                    mAuxiliarDB.BitacoraProducto(new BitacoraProductoInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         cod_producto = request.Cod_Producto,
@@ -1406,10 +1406,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_producto"></param>
         /// <returns></returns>
-        public ErrorDto<List<BitacoraProductosDTO>> BitacoraProducto_Obtener(int CodEmpresa, string cod_producto)
+        public ErrorDto<List<BitacoraProductosDto>> BitacoraProducto_Obtener(int CodEmpresa, string cod_producto)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<BitacoraProductosDTO>>();
+            var response = new ErrorDto<List<BitacoraProductosDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -1418,7 +1418,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"SELECT ID_BITACORA, CONSEC, REGISTRO_FECHA, COD_PRODUCTO,REGISTRO_USUARIO, DETALLE, MOVIMIENTO
                   FROM BITACORA_PRODUCTOS WHERE cod_producto = '{cod_producto}' ORDER BY 1 ASC";
 
-                    response.Result = connection.Query<BitacoraProductosDTO>(query).ToList();
+                    response.Result = connection.Query<BitacoraProductosDto>(query).ToList();
 
                 }
             }

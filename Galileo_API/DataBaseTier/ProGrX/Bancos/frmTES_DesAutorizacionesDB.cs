@@ -11,12 +11,12 @@ namespace PgxAPI.DataBaseTier
     public class frmTES_DesAutorizacionesDB
     {
         private readonly IConfiguration? _config;
-        private readonly mTesoreria mTesoreria;
+        private readonly MTesoreria MTesoreria;
 
         public frmTES_DesAutorizacionesDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(config);
+            MTesoreria = new MTesoreria(config);
         }
 
         /// <summary>
@@ -25,15 +25,15 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<TES_SolicitudesLista> TES_DesAutorizaciones_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<TesSolicitudesLista> TES_DesAutorizaciones_Obtener(int CodEmpresa, string filtros)
         {
-            TES_DesAutorizacionesFiltros filtro = JsonConvert.DeserializeObject<TES_DesAutorizacionesFiltros>(filtros) ?? new TES_DesAutorizacionesFiltros();
+            TesDesAutorizacionesFiltros filtro = JsonConvert.DeserializeObject<TesDesAutorizacionesFiltros>(filtros) ?? new TesDesAutorizacionesFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_SolicitudesLista>
+            var response = new ErrorDto<TesSolicitudesLista>
             {
                 Code = 0,
                 Description = "",
-                Result = new TES_SolicitudesLista(),
+                Result = new TesSolicitudesLista(),
             };
             var fechaInicio = filtro.fecha_inicio.Date;
             var fechaCorte = filtro.fecha_corte.Date.AddDays(1).AddTicks(-1);
@@ -43,7 +43,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var queryR = @"select rango_gen_Inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte 
                     from TES_AUTORIZACIONES where NOMBRE = @usuario";
-                    var Rangos = connection.Query<TES_AutorizacionData>(queryR,
+                    var Rangos = connection.Query<TesAutorizacionData>(queryR,
                         new { usuario = filtro.usuario }).FirstOrDefault();
 
                     if (Rangos != null)
@@ -92,7 +92,7 @@ namespace PgxAPI.DataBaseTier
                         query += " and isnull(T.COD_APP,'') like @CodigoApp ";
                     }
 
-                    response.Result.solicitudes = connection.Query<TES_SolicitudesData>(query,
+                    response.Result.solicitudes = connection.Query<TesSolicitudesData>(query,
                         new
                         {
                             Banco = filtro.id_banco,
@@ -142,7 +142,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     var queryAuth = @"Select * From Tes_Autorizaciones Where Clave = @clave and nombre = @usuario and estado = 'A'";
-                    var autorizacion = connection.QueryFirstOrDefault<TES_AutorizacionData>(queryAuth, new
+                    var autorizacion = connection.QueryFirstOrDefault<TesAutorizacionData>(queryAuth, new
                     {
                         clave = clave,
                         usuario = usuario

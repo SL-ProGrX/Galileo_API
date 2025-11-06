@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using PgxAPI.Models;
 using PgxAPI.Models.CPR;
 using PgxAPI.Models.ERROR;
 
@@ -52,7 +51,7 @@ namespace PgxAPI.DataBaseTier
                     query = $@"Select Tipo_Orden,descripcion, activo  
                                 from cpr_Tipo_Orden {vFiltro} order by Tipo_Orden 
                                 {paginaActual} {paginacionActual}";
-                    response.Result.lista = connection.Query<TiposOrdenDTO>(query).ToList();
+                    response.Result.lista = connection.Query<TiposOrdenDto>(query).ToList();
 
                 }
             }
@@ -65,7 +64,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto TipoOrden_Actualizar(int CodEmpresa, TiposOrdenDTO tiposOrden)
+        public ErrorDto TipoOrden_Actualizar(int CodEmpresa, TiposOrdenDto tiposOrden)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto result = new ErrorDto();
@@ -117,11 +116,11 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public ErrorDto TipoOrden_Insertar(int CodEmpresa, TiposOrdenDTO tiposOrden)
+        public ErrorDto TipoOrden_Insertar(int CodEmpresa, TiposOrdenDto tiposOrden)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto errorDTO = new ErrorDto();
-            errorDTO.Code = 0;
+            ErrorDto errorDto = new ErrorDto();
+            errorDto.Code = 0;
             int activo = 0;
             try
             {
@@ -138,10 +137,10 @@ namespace PgxAPI.DataBaseTier
             }
             catch (Exception ex)
             {
-                errorDTO.Code = -1;
-                errorDTO.Description = ex.Message;
+                errorDto.Code = -1;
+                errorDto.Description = ex.Message;
             }
-            return errorDTO;
+            return errorDto;
         }
 
         public string ObtenerSequencia(int CodEmpresa)

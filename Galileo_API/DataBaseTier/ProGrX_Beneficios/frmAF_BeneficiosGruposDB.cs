@@ -87,7 +87,7 @@ namespace PgxAPI.DataBaseTier
                                 VALUES ({consecutivo},'{grupo.descripcion}', '{grupo.cod_categoria}' ,{grupo.monto},{activo},getdate(),'{grupo.user_registra}')";
                     info.Code = connection.Execute(query);
 
-                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                    _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                     {
                         EmpresaId = CodCliente,
                         cod_beneficio = grupo.cod_grupo.ToString(),
@@ -133,7 +133,7 @@ namespace PgxAPI.DataBaseTier
                     if (grupo.monto != MONTO_ANTERIOR)
                     {
 
-                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDTO
+                        _mBeneficiosDB.BitacoraBeneficios(new BitacoraBeneInsertarDto
                         {
                             EmpresaId = CodCliente,
                             cod_beneficio = grupo.cod_grupo.ToString(),

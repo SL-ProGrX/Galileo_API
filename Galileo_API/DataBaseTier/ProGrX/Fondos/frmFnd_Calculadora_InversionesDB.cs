@@ -63,14 +63,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="CodPlan"></param>
         /// <returns></returns>
-        public ErrorDto<Fnd_Calculadora_Planes> Fnd_Calculadora_ConsultaPlan_Obtener(int CodEmpresa, string CodPlan)
+        public ErrorDto<FndCalculadoraPlanes> Fnd_Calculadora_ConsultaPlan_Obtener(int CodEmpresa, string CodPlan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<Fnd_Calculadora_Planes>
+            var response = new ErrorDto<FndCalculadoraPlanes>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new Fnd_Calculadora_Planes()
+                Result = new FndCalculadoraPlanes()
             };
             var query = "";
             try
@@ -81,7 +81,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         from fnd_Planes
                         where cod_operadora = 1 
                         and cod_plan = @CodPlan";
-                    response.Result = connection.QueryFirstOrDefault<Fnd_Calculadora_Planes>(query, new { CodPlan });
+                    response.Result = connection.QueryFirstOrDefault<FndCalculadoraPlanes>(query, new { CodPlan });
                 }
             }
             catch (Exception ex)
@@ -267,15 +267,15 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="FiltrosCalculadora"></param>
         /// <returns></returns>
-        public ErrorDto<List<Fnd_Calculadora_Inversiones_FlujoData>> Fnd_Calculadora_Inversiones_Calcular(int CodEmpresa, string FiltrosCalculadora)
+        public ErrorDto<List<FndCalculadoraInversionesFlujoData>> Fnd_Calculadora_Inversiones_Calcular(int CodEmpresa, string FiltrosCalculadora)
         {
-            var filtros = System.Text.Json.JsonSerializer.Deserialize<Filtros_Calculadora>(FiltrosCalculadora);
+            var filtros = System.Text.Json.JsonSerializer.Deserialize<FiltrosCalculadora>(FiltrosCalculadora);
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<Fnd_Calculadora_Inversiones_FlujoData>>
+            var response = new ErrorDto<List<FndCalculadoraInversionesFlujoData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<Fnd_Calculadora_Inversiones_FlujoData>()
+                Result = new List<FndCalculadoraInversionesFlujoData>()
             };
             var query = "";
             int pTP_Indica = 0;
@@ -313,7 +313,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Fondos
                         });
 
                     query = "exec spFnd_Calculadora_Inversiones_Flujo @pCalculoId";
-                    response.Result = connection.Query<Fnd_Calculadora_Inversiones_FlujoData>(query, new { pCalculoId }).ToList();
+                    response.Result = connection.Query<FndCalculadoraInversionesFlujoData>(query, new { pCalculoId }).ToList();
                     if (response.Result.Count > 0)
                     {
                         response.Code = pCalculoId;

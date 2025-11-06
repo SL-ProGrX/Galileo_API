@@ -3,8 +3,8 @@ using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.CPR;
-using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 
@@ -14,7 +14,7 @@ namespace PgxAPI.DataBaseTier
     {
         private readonly IConfiguration _config;
         private readonly mProGrX_AuxiliarDB _AuxiliarDB;
-        private readonly mSecurityMainDb DBBitacora;
+        private readonly MSecurityMainDb DBBitacora;
         private readonly EnvioCorreoDB _envioCorreoDB;
         public string sendEmail = "";
         public string TestMail = "";
@@ -25,7 +25,7 @@ namespace PgxAPI.DataBaseTier
         public frmCpr_SolicitudDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(config);
+            DBBitacora = new MSecurityMainDb(config);
             _AuxiliarDB = new mProGrX_AuxiliarDB(config);
             sendEmail = _config.GetSection("AppSettings").GetSection("EnviaEmail").Value.ToString();
             _envioCorreoDB = new EnvioCorreoDB(_config);
@@ -33,7 +33,7 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -46,7 +46,7 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto<CprSolicitudLista> CprSolicitudLista_Obtener(int CodEmpresa, string filtros)
         {
-            CprSolicitudFiltros filtro = JsonConvert.DeserializeObject<CprSolicitudFiltros>(filtros) ?? new CprSolicitudFiltros();
+            CprSolicitudFiltro filtro = JsonConvert.DeserializeObject<CprSolicitudFiltro>(filtros) ?? new CprSolicitudFiltro();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<CprSolicitudLista>();
             response.Result = new CprSolicitudLista
@@ -110,7 +110,7 @@ namespace PgxAPI.DataBaseTier
     from CPR_SOLICITUD S LEFT JOIN CPR_SOLICITUD_PROV P ON S.CPR_ID = P.CPR_ID
     AND P.ADJUDICA_ORDEN is not null {where}
             order by S.CPR_ID desc {paginaActual} {paginacionActual}";
-                    response.Result.solicitudes = connection.Query<CprSolicitudDTO>(query).ToList();
+                    response.Result.solicitudes = connection.Query<CprSolicitudDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -129,10 +129,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cpr_id"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<CprSolicitudDTO> CprSolicitud_Obtener(int CodEmpresa, int cpr_id, string usuario)
+        public ErrorDto<CprSolicitudDto> CprSolicitud_Obtener(int CodEmpresa, int cpr_id, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<CprSolicitudDTO>();
+            var response = new ErrorDto<CprSolicitudDto>();
 
             try
             {
@@ -154,7 +154,7 @@ namespace PgxAPI.DataBaseTier
                     }
 
                     query = $"select * from CPR_SOLICITUD where CPR_ID = {cpr_id}";
-                    response.Result = connection.QueryFirstOrDefault<CprSolicitudDTO>(query);
+                    response.Result = connection.QueryFirstOrDefault<CprSolicitudDto>(query);
 
                     if (response.Result.tipo_orden == CprSolicitud_TipoExcepcion(CodEmpresa).Description)
                     {
@@ -164,7 +164,7 @@ namespace PgxAPI.DataBaseTier
                                     FROM CPR_SOLICITUD_PROV P
                                     left join CXP_PROVEEDORES cp ON cp.COD_PROVEEDOR = P.PROVEEDOR_CODIGO
                                     WHERE CPR_ID = {cpr_id} ";
-                        var proveedor = connection.QueryFirstOrDefault<CprSolicitudDTO>(query);
+                        var proveedor = connection.QueryFirstOrDefault<CprSolicitudDto>(query);
                         if (proveedor != null)
                         {
                             response.Result.com_dir_cod_proveedor = proveedor.com_dir_cod_proveedor;
@@ -196,10 +196,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="codigo"></param>
         /// <returns></returns>
-        public ErrorDto<CprSolicitudDTO> CprSolicitud_Scroll(int CodEmpresa, int scroll, string usuario, string? codigo)
+        public ErrorDto<CprSolicitudDto> CprSolicitud_Scroll(int CodEmpresa, int scroll, string usuario, string? codigo)
         {
             var clientConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<CprSolicitudDTO>();
+            var response = new ErrorDto<CprSolicitudDto>();
             try
             {
                 string where = " ", orderBy = " ";
@@ -225,7 +225,7 @@ namespace PgxAPI.DataBaseTier
                 {
 
                     var query = $@"select Top 1 * from CPR_SOLICITUD {where} {orderBy}";
-                    response.Result = connection.QueryFirstOrDefault<CprSolicitudDTO>(query);
+                    response.Result = connection.QueryFirstOrDefault<CprSolicitudDto>(query);
                 }
 
 
@@ -240,7 +240,7 @@ namespace PgxAPI.DataBaseTier
                                     FROM CPR_SOLICITUD_PROV P
                                     left join CXP_PROVEEDORES cp ON cp.COD_PROVEEDOR = P.PROVEEDOR_CODIGO
                                     WHERE CPR_ID = {response.Result.cpr_id} ";
-                        var proveedor = connection.QueryFirstOrDefault<CprSolicitudDTO>(queryProv);
+                        var proveedor = connection.QueryFirstOrDefault<CprSolicitudDto>(queryProv);
                         if (proveedor != null)
                         {
                             response.Result.com_dir_cod_proveedor = proveedor.com_dir_cod_proveedor;
@@ -273,7 +273,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="Edita"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto CprSolicitud_Guardar(int CodEmpresa, bool Edita, CprSolicitudDTO solicitud)
+        public ErrorDto CprSolicitud_Guardar(int CodEmpresa, bool Edita, CprSolicitudDto solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto error = new()
@@ -310,7 +310,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        private ErrorDto CprSolicitud_Insertar(int CodEmpresa, CprSolicitudDTO solicitud)
+        private ErrorDto CprSolicitud_Insertar(int CodEmpresa, CprSolicitudDto solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto error = new()
@@ -346,7 +346,7 @@ namespace PgxAPI.DataBaseTier
                     var secuencia = connection.Query<int>(queryID).FirstOrDefault();
                     solicitud.cpr_id = secuencia;
 
-                    string xmlOutput = _AuxiliarDB.fxConvertModelToXml<CprSolicitudDTO>(solicitud);
+                    string xmlOutput = _AuxiliarDB.fxConvertModelToXml<CprSolicitudDto>(solicitud);
 
                     var insert = $@"exec spCPR_Solicitud_Insertar '{xmlOutput}'";
 
@@ -385,7 +385,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        private ErrorDto CprSolicitud_Actualizar(int CodEmpresa, CprSolicitudDTO solicitud)
+        private ErrorDto CprSolicitud_Actualizar(int CodEmpresa, CprSolicitudDto solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto error = new()
@@ -397,7 +397,7 @@ namespace PgxAPI.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    string xmlOutput = _AuxiliarDB.fxConvertModelToXml<CprSolicitudDTO>(solicitud);
+                    string xmlOutput = _AuxiliarDB.fxConvertModelToXml<CprSolicitudDto>(solicitud);
                     var query = $@"exec spCPR_Solicitud_Actualizar '{xmlOutput}'";
 
                     var respuesta = connection.Query(query);
@@ -453,19 +453,19 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cpr_id"></param>
         /// <param name="cod_unidad"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprSolicitudBsDTO>> CprSolicitudBs_Obtener(int CodEmpresa, int? cpr_id, string? cod_unidad)
+        public ErrorDto<List<CprSolicitudBsDto>> CprSolicitudBs_Obtener(int CodEmpresa, int? cpr_id, string? cod_unidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprSolicitudBsDTO>>();
+            var response = new ErrorDto<List<CprSolicitudBsDto>>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $"exec spCPR_SolicitudDetalle_Consultar {cpr_id}, '{cod_unidad}' ";
-                    response.Result = connection.Query<CprSolicitudBsDTO>(query).ToList();
+                    response.Result = connection.Query<CprSolicitudBsDto>(query).ToList();
 
-                    foreach (CprSolicitudBsDTO item in response.Result)
+                    foreach (CprSolicitudBsDto item in response.Result)
                     {
                         {
                             var queryUnidad = $@"SELECT COD_UNIDAD FROM PV_PRODUCTOS WHERE COD_PRODUCTO = '{item.cod_producto}'";
@@ -497,7 +497,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="editaBs"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto CprSolicitudBs_Guardar(int CodEmpresa, bool editaBs, CprSolicitudBsDTO solicitud)
+        public ErrorDto CprSolicitudBs_Guardar(int CodEmpresa, bool editaBs, CprSolicitudBsDto solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto response = new()
@@ -509,7 +509,7 @@ namespace PgxAPI.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    string xmlOutput = _AuxiliarDB.fxConvertModelToXml<CprSolicitudBsDTO>(solicitud);
+                    string xmlOutput = _AuxiliarDB.fxConvertModelToXml<CprSolicitudBsDto>(solicitud);
 
                     var insert = $@"exec spCPR_SolicitudDetalle_Guardar '{xmlOutput}'";
                     var result = connection.Execute(insert);
@@ -745,10 +745,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="cod_solicitud"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprSolicitudSeguimientoDTO>> Segumiento_Obtener(int CodCliente, int cod_solicitud)
+        public ErrorDto<List<CprSolicitudSeguimientoDto>> Segumiento_Obtener(int CodCliente, int cod_solicitud)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<CprSolicitudSeguimientoDTO>>();
+            var response = new ErrorDto<List<CprSolicitudSeguimientoDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -757,7 +757,7 @@ namespace PgxAPI.DataBaseTier
                                     SELECT REGISTRO_FECHA, REGISTRO_USUARIO, AUTORIZA_FECHA,AUTORIZA_USUARIO,MODIFICA_FECHA, MODIFICA_USUARIO, PRESUPUESTO_USUARIO, PRESUPUESTO_FECHA,
                             ADJUDICA_USUARIO, ADJUDICA_FECHA, DETALLE_SEGUIMIENTO FROM CPR_SOLICITUD WHERE CPR_ID = {cod_solicitud}";
 
-                    response.Result = connection.Query<CprSolicitudSeguimientoDTO>(query).ToList();
+                    response.Result = connection.Query<CprSolicitudSeguimientoDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -1061,7 +1061,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cpr_id"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        public ErrorDto CompraDirectaProv_Agregar(int CodEmpresa, int cpr_id, CprSolicitudDTO solicitud)
+        public ErrorDto CompraDirectaProv_Agregar(int CodEmpresa, int cpr_id, CprSolicitudDto solicitud)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -1097,7 +1097,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="solicitud"></param>
         /// <returns></returns>
-        private ErrorDto CompraDirectaProvBs_Guardar(int CodEmpresa, CprSolicitudBsDTO solicitud)
+        private ErrorDto CompraDirectaProvBs_Guardar(int CodEmpresa, CprSolicitudBsDto solicitud)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -1114,7 +1114,7 @@ namespace PgxAPI.DataBaseTier
 
                     if (existeProv == 0)
                     {
-                        CprSolicitudDTO solicitudEncabezado = new CprSolicitudDTO();
+                        CprSolicitudDto solicitudEncabezado = new CprSolicitudDto();
                         solicitudEncabezado.cpr_id = solicitud.cpr_id;
                         solicitudEncabezado.com_dir_cod_proveedor = solicitud.comp_dir_cod_proveedor;
                         solicitudEncabezado.registro_usuario = solicitud.registro_usuario;

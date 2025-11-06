@@ -2,18 +2,19 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using static PgxAPI.Models.ProGrX_Activos_Fijos.frmActivos_Localizaciones_ListModels;
+using PgxAPI.Models.Security;
+using static PgxAPI.Models.ProGrX_Activos_Fijos.FrmActivosLocalizacionesListModels;
 namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 {
     public class frmActivos_Localizaciones_ListDB
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36; // Modulo de Tesorería
-        private readonly mSecurityMainDb _Security_MainDB; 
+        private readonly MSecurityMainDb _Security_MainDB; 
        public frmActivos_Localizaciones_ListDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -244,7 +245,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                         modifica_usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -295,7 +296,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                         registro_usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -334,7 +335,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     var query = @"DELETE FROM dbo.ACTIVOS_LOCALIZACIONES WHERE COD_LOCALIZA = @cod_localiza";
                     connection.Execute(query, new { cod_localiza = cod_localiza.ToUpper() });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

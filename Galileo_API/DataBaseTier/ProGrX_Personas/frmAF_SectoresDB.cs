@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Personas;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Personas
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_SectoresDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -104,7 +105,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 var query = @"INSERT INTO afi_sectores (descripcion) VALUES (@descripcion)";
                 connection.Execute(query, new { descripcion = sector.Descripcion });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -138,7 +139,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 var query = @"UPDATE afi_sectores SET descripcion = @descripcion WHERE cod_sector = @cod_sector";
                 connection.Execute(query, new { cod_sector = sector.Cod_Sector, descripcion = sector.Descripcion });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -172,7 +173,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 var query = @"DELETE FROM afi_sectores WHERE cod_sector = @cod_sector";
                 connection.Execute(query, new { cod_sector });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,

@@ -21,17 +21,17 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AF_TiposActividadesEcoLista> AF_TiposActividadesEco_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<AfTiposActividadesEcoLista> AF_TiposActividadesEco_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_TiposActividadesEcoLista>
+            var response = new ErrorDto<AfTiposActividadesEcoLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new AF_TiposActividadesEcoLista()
+                Result = new AfTiposActividadesEcoLista()
                 {
                     total = 0,
-                    lista = new List<AF_TiposActividadesEcoDTO>()
+                    lista = new List<AfTiposActividadesEcoDto>()
                 }
             };
 
@@ -60,7 +60,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     {
                         query += $" OFFSET {filtros.pagina} ROWS FETCH NEXT {filtros.paginacion} ROWS ONLY ";
                     }
-                    response.Result.lista = connection.Query<AF_TiposActividadesEcoDTO>(query).ToList();
+                    response.Result.lista = connection.Query<AfTiposActividadesEcoDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -81,7 +81,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_TiposActividadesEco_Guardar(int CodEmpresa, string Usuario, AF_TiposActividadesEcoDTO Info)
+        public ErrorDto AF_TiposActividadesEco_Guardar(int CodEmpresa, string Usuario, AfTiposActividadesEcoDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -181,17 +181,17 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodActividad"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AF_TiposActividadesEcoLista> AF_TiposActividadesEco_SubActividad_Obtener(int CodEmpresa, string CodActividad, FiltrosLazyLoadData filtros)
+        public ErrorDto<AfTiposActividadesEcoLista> AF_TiposActividadesEco_SubActividad_Obtener(int CodEmpresa, string CodActividad, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_TiposActividadesEcoLista>
+            var response = new ErrorDto<AfTiposActividadesEcoLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new AF_TiposActividadesEcoLista()
+                Result = new AfTiposActividadesEcoLista()
                 {
                     total = 0,
-                    lista = new List<AF_TiposActividadesEcoDTO>()
+                    lista = new List<AfTiposActividadesEcoDto>()
                 }
             };
 
@@ -222,7 +222,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     {
                         query += $" OFFSET {filtros.pagina} ROWS FETCH NEXT {filtros.paginacion} ROWS ONLY ";
                     }
-                    response.Result.lista = connection.Query<AF_TiposActividadesEcoDTO>(query, new { CodActividad }).ToList();
+                    response.Result.lista = connection.Query<AfTiposActividadesEcoDto>(query, new { CodActividad }).ToList();
                 }
             }
             catch (Exception ex)
@@ -243,7 +243,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_TiposActividadesEco_SubActividad_Guardar(int CodEmpresa, string Usuario, AF_TiposActividadesEcoDTO Info)
+        public ErrorDto AF_TiposActividadesEco_SubActividad_Guardar(int CodEmpresa, string Usuario, AfTiposActividadesEcoDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto

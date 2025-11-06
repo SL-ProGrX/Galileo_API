@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.CPR;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -10,7 +11,7 @@ namespace PgxAPI.DataBaseTier
     {
         private readonly IConfiguration _config;
         mProGrX_AuxiliarDB mProGrxAuxiliar;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         mComprasDB mComprasDB;
         public string sendEmail = "";
         public string TestMail = "";
@@ -19,7 +20,7 @@ namespace PgxAPI.DataBaseTier
         public frmCprCompraDevDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(config);
+            DBBitacora = new MSecurityMainDb(config);
             _envioCorreoDB = new EnvioCorreoDB(_config);
             mProGrxAuxiliar = new mProGrX_AuxiliarDB(config);
             mComprasDB = new mComprasDB(config);
@@ -28,7 +29,7 @@ namespace PgxAPI.DataBaseTier
             Notificaciones = _config.GetSection("AppSettings").GetSection("Notificaciones").Value.ToString();
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -108,16 +109,16 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<BodegaDto>> ObtenerBodegas(int CodEmpresa)
+        public ErrorDto<List<Models.BodegaDto>> ObtenerBodegas(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<BodegaDto>>();
+            var response = new ErrorDto<List<Models.BodegaDto>>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select cod_bodega,descripcion from pv_bodegas where permite_salidas = 1";
-                    response.Result = connection.Query<BodegaDto>(query).ToList();
+                    response.Result = connection.Query<Models.BodegaDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -275,7 +276,7 @@ namespace PgxAPI.DataBaseTier
                     }
 
                     //Bitacora
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = orden.usuario,
@@ -316,7 +317,7 @@ namespace PgxAPI.DataBaseTier
                                         and cod_proveedor = {orden.cod_proveedor} ";
                         var update = connection.Execute(query);
 
-                        CompraInventarioDTO inventarioDTO = new CompraInventarioDTO
+                        CompraInventarioDto inventarioDto = new CompraInventarioDto
                         {
                             CodProducto = item.cod_producto,
                             Cantidad = item.cantidad,
@@ -332,7 +333,7 @@ namespace PgxAPI.DataBaseTier
                         };
                         ErrorDto inv = mProGrxAuxiliar.sbInvInventario(
                             CodEmpresa,
-                            inventarioDTO);
+                            inventarioDto);
                     }
 
                     //Crear Cargo Flotante por el Monto de la Devolucion
@@ -521,7 +522,7 @@ namespace PgxAPI.DataBaseTier
                         if (item.cod_bodega.Length > 0)
                         {
                             var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}'";
-                            List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                            List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
                             if (exist.Count == 0)
                             {
                                 return "La bodega " + item.cod_bodega + " - No existe";
@@ -558,7 +559,7 @@ namespace PgxAPI.DataBaseTier
                         if (item.cod_bodega.Length > 0)
                         {
                             var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}'";
-                            List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                            List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
                             if (exist.Count == 0)
                             {
                                 return "La bodega " + item.cod_bodega + " - No existe";

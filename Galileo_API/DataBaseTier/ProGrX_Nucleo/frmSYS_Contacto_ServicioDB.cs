@@ -1,20 +1,19 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using static PgxAPI.Models.ProGrX_Nucleo.frmSYS_Contacto_ServicioModels;
+using static PgxAPI.Models.ProGrX_Nucleo.FrmSysContactoServicioModels;
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
     public class frmSYS_Contacto_ServicioDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         private readonly int vModulo = 10;
         public frmSYS_Contacto_ServicioDB(IConfiguration config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>

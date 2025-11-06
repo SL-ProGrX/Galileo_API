@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json.Linq;
-using PdfSharp.Pdf.Filters;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
@@ -131,7 +130,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                 Description = "OK",
                 Result = new TablasListaGenericaModel()
                 {
-                    lista = new List<AfPadronEmpleadosDTO>(),
+                    lista = new List<AfPadronEmpleadosDto>(),
                     total = 0
                 }
             };
@@ -207,7 +206,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         query = $"{query} {where} ORDER BY {tblFiltros.sortField} {(tblFiltros.sortOrder == 1 ? "ASC" : "DESC")}";
                     }
 
-                        response.Result.lista = connection.Query<AfPadronEmpleadosDTO>(query).ToList();
+                        response.Result.lista = connection.Query<AfPadronEmpleadosDto>(query).ToList();
                 }
             }
             catch (Exception ex)

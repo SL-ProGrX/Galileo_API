@@ -16,12 +16,12 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public List<CargoPeriodicoDTO> sbCprCboCargosPer(int CodEmpresa)
+        public List<CargoPeriodicoDto> sbCprCboCargosPer(int CodEmpresa)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<CargoPeriodicoDTO> info = new List<CargoPeriodicoDTO>();
+            List<CargoPeriodicoDto> info = new List<CargoPeriodicoDto>();
 
             try
             {
@@ -29,7 +29,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = "SELECT cod_cargo,descripcion  FROM cxp_cargos order by cod_cargo";
 
-                    info = connection.Query<CargoPeriodicoDTO>(query).ToList();
+                    info = connection.Query<CargoPeriodicoDto>(query).ToList();
 
                 }
             }
@@ -103,12 +103,12 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<TipoOrdenDTO> sbCprCboTiposOrden(int CodEmpresa)
+        public List<TipoOrdenDto> sbCprCboTiposOrden(int CodEmpresa)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<TipoOrdenDTO> info = new List<TipoOrdenDTO>();
+            List<TipoOrdenDto> info = new List<TipoOrdenDto>();
 
             try
             {
@@ -116,7 +116,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = "SELECT tipo_orden,descripcion FROM cpr_tipo_orden";
 
-                    info = connection.Query<TipoOrdenDTO>(query).ToList();
+                    info = connection.Query<TipoOrdenDto>(query).ToList();
 
                 }
             }
@@ -127,12 +127,12 @@ namespace PgxAPI.DataBaseTier
             return info;
         }
 
-        public ErrorDto<UnidadesDTOList> UnidadesObtener(int CodEmpresa, string? filtros)
+        public ErrorDto<UnidadesDtoList> UnidadesObtener(int CodEmpresa, string? filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            mComprasFiltros vfiltro = JsonConvert.DeserializeObject<mComprasFiltros>(filtros);
-            var response = new ErrorDto<UnidadesDTOList>();
-            response.Result = new UnidadesDTOList();
+            MComprasFiltros vfiltro = JsonConvert.DeserializeObject<MComprasFiltros>(filtros);
+            var response = new ErrorDto<UnidadesDtoList>();
+            response.Result = new UnidadesDtoList();
             response.Code = 0;
             try
             {
@@ -157,25 +157,25 @@ namespace PgxAPI.DataBaseTier
 
                     query = @$"select cod_unidad as unidad, descripcion from CntX_Unidades 
                         {where} order by COD_UNIDAD desc {paginaActual} {paginacionActual}";
-                    response.Result.unidades = connection.Query<UnidadesDTO>(query).ToList();
+                    response.Result.Unidades = connection.Query<UnidadesDto>(query).ToList();
                 }
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result.unidades = null;
+                response.Result.Unidades = null;
                 response.Result.Total = 0;
             }
             return response;
         }
 
-        public ErrorDto<CentroCostoDTOList> CentroCostosObtener(int CodEmpresa, string? filtros)
+        public ErrorDto<CentroCostoDtoList> CentroCostosObtener(int CodEmpresa, string? filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            mComprasFiltros vfiltro = JsonConvert.DeserializeObject<mComprasFiltros>(filtros);
-            var response = new ErrorDto<CentroCostoDTOList>();
-            response.Result = new CentroCostoDTOList();
+            MComprasFiltros vfiltro = JsonConvert.DeserializeObject<MComprasFiltros>(filtros);
+            var response = new ErrorDto<CentroCostoDtoList>();
+            response.Result = new CentroCostoDtoList();
             response.Code = 0;
             try
             {
@@ -200,23 +200,23 @@ namespace PgxAPI.DataBaseTier
 
                     query = @$"select cod_centro_costo as centrocosto, descripcion from CNTX_CENTRO_COSTOS
                         {where} order by cod_centro_costo desc {paginaActual} {paginacionActual}";
-                    response.Result.centrocostos = connection.Query<CentroCostoDTO>(query).ToList();
+                    response.Result.CentroCostos = connection.Query<CentroCostoDto>(query).ToList();
                 }
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result.centrocostos = null;
+                response.Result.CentroCostos = null;
                 response.Result.Total = 0;
             }
             return response;
         }
 
-        public ErrorDto<List<CatalogoDTO>> CatalogoCompras_Obtener(int CodEmpresa, string tipo)
+        public ErrorDto<List<CatalogoDto>> CatalogoCompras_Obtener(int CodEmpresa, string tipo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CatalogoDTO>>();
+            var response = new ErrorDto<List<CatalogoDto>>();
             response.Code = 0;
             try
             {
@@ -224,14 +224,14 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"select CATALOGO_ID AS ITEM, DESCRIPCION from CPR_CATALOGOS 
                         where Tipo_Id = (select TIPO_ID from CPR_CATALOGOS_TIPOS where DESCRIPCION = '{tipo}') and Activo = 1";
-                    response.Result = connection.Query<CatalogoDTO>(query).ToList();
+                    response.Result = connection.Query<CatalogoDto>(query).ToList();
                 }
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = new List<CatalogoDTO>();
+                response.Result = new List<CatalogoDto>();
             }
 
             return response;

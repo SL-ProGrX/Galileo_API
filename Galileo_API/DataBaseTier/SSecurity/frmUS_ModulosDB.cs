@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -15,15 +16,15 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<ModuloDTO> Modulo_ObtenerTodos()
+        public List<ModuloDto> Modulo_ObtenerTodos()
         {
-            List<ModuloDTO> data = new List<ModuloDTO>();
+            List<ModuloDto> data = new List<ModuloDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
                 {
                     var procedure = "[spPGX_W_Opciones_Modulos_Obtener]";
-                    data = connection.Query<ModuloDTO>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    data = connection.Query<ModuloDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -33,7 +34,7 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        private ErrorDto Modulo_Insertar(ModuloDTO request)
+        private ErrorDto Modulo_Insertar(ModuloDto request)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;
@@ -89,7 +90,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDto Modulo_Actualizar(ModuloDTO request)
+        private ErrorDto Modulo_Actualizar(ModuloDto request)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;
@@ -119,7 +120,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Modulo_Guardar(ModuloDTO request)
+        public ErrorDto Modulo_Guardar(ModuloDto request)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;

@@ -22,7 +22,7 @@ namespace PgxAPI.Models.ProGrX.Cajas
         public string? divisa { get; set; }
     }
 
-    public class CajasDepositosCuentasCancariasDto
+    public class CajasDepositosCuentasBancariasDto
     {
         public string? idx { get; set; }
         public string? itmx { get; set; }

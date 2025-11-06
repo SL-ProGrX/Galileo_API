@@ -123,12 +123,12 @@ namespace PgxAPI.DataBaseTier
         /// <param name="cedula"></param>
         /// <param name="modulo"></param>
         /// <returns></returns>
-        public List<SYS_Cuentas_BancariasDTO> CuentasBancarias_Obtener(int CodEmpresa, string cedula, string? modulo)
+        public List<SysCuentasBancariasDto> CuentasBancarias_Obtener(int CodEmpresa, string cedula, string? modulo)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<SYS_Cuentas_BancariasDTO> info = new List<SYS_Cuentas_BancariasDTO>();
+            List<SysCuentasBancariasDto> info = new List<SysCuentasBancariasDto>();
             var query = "";
 
             try
@@ -155,7 +155,7 @@ namespace PgxAPI.DataBaseTier
                     }
 
 
-                    info = connection.Query<SYS_Cuentas_BancariasDTO>(query).ToList();
+                    info = connection.Query<SysCuentasBancariasDto>(query).ToList();
 
                 }
             }
@@ -173,7 +173,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto CuentaBancaria_Actualizar(int CodEmpresa, SYS_Cuentas_BancariasDTO data)
+        public ErrorDto CuentaBancaria_Actualizar(int CodEmpresa, SysCuentasBancariasDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -217,7 +217,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto CuentaBancaria_Insertar(int CodEmpresa, SYS_Cuentas_BancariasDTO data)
+        public ErrorDto CuentaBancaria_Insertar(int CodEmpresa, SysCuentasBancariasDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -254,7 +254,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto CuentaBancaria_Borrar(int CodEmpresa, SYS_Cuentas_BancariasDTO data)
+        public ErrorDto CuentaBancaria_Borrar(int CodEmpresa, SysCuentasBancariasDto data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 

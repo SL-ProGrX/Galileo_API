@@ -1,6 +1,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.AH;
 using PgxAPI.Models.ERROR;
 
 namespace PgxAPI.DataBaseTier
@@ -14,11 +15,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<AjusteExcedenteDTO> AjusteExcedente_Obtener(int CodEmpresa)
+        public List<AjusteExcedenteDto> AjusteExcedente_Obtener(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<AjusteExcedenteDTO> info = new List<AjusteExcedenteDTO>();
+            List<AjusteExcedenteDto> info = new List<AjusteExcedenteDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -26,7 +27,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "SELECT  Ajuste_ID, A.Cedula, S.Nombre, Ajuste, Detalle FROM Exc_Ajustes A INNER JOIN Socios S ON A.cedula = S.cedula";
 
-                    info = connection.Query<AjusteExcedenteDTO>(query).ToList();
+                    info = connection.Query<AjusteExcedenteDto>(query).ToList();
 
                 }
             }
@@ -39,7 +40,7 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDto AjusteExcedente_Insertar(int CodCliente, AjusteExcedenteDTO capIndv)
+        public ErrorDto AjusteExcedente_Insertar(int CodCliente, AjusteExcedenteDto capIndv)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -71,7 +72,7 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDto AjusteExcedente_Actualizar(int CodCliente, AjusteExcedenteDTO capIndv)
+        public ErrorDto AjusteExcedente_Actualizar(int CodCliente, AjusteExcedenteDto capIndv)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();

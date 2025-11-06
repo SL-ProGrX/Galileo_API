@@ -21,7 +21,7 @@ namespace PgxAPI.Models.PRES
         public bool acepta_movimientos { get; set; }
     }
 
-    public class PeriodoreVistaPresupuestoCuentaData
+    public class PreVistaPresupuestoCuentaData
     {
         public long cod_cuenta { get; set; }
         public string cod_unidad { get; set; } = string.Empty;

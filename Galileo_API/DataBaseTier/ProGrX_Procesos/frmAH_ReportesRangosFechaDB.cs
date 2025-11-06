@@ -13,11 +13,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<EstadosPersonaPatrimonioDTO> EstadosPersonaPatrimonio_Obtener(int CodCliente)
+        public List<EstadosPersonaPatrimonioDto> EstadosPersonaPatrimonio_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            List<EstadosPersonaPatrimonioDTO> info = new List<EstadosPersonaPatrimonioDTO>();
+            List<EstadosPersonaPatrimonioDto> info = new List<EstadosPersonaPatrimonioDto>();
 
             try
             {
@@ -28,7 +28,7 @@ namespace PgxAPI.DataBaseTier
                                         FROM AFI_ESTADOS_PERSONA
                                         WHERE Activo = 1;";
 
-                    info = connection.Query<EstadosPersonaPatrimonioDTO>(query).ToList();
+                    info = connection.Query<EstadosPersonaPatrimonioDto>(query).ToList();
 
                 }
             }
@@ -40,11 +40,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public List<InstitucionesPatrimonioDTO> InstitucionesPatriomonio_Obtener(int CodCliente)
+        public List<InstitucionesPatrimonioDto> InstitucionesPatriomonio_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            List<InstitucionesPatrimonioDTO> info = new List<InstitucionesPatrimonioDTO>();
+            List<InstitucionesPatrimonioDto> info = new List<InstitucionesPatrimonioDto>();
 
             try
             {
@@ -55,7 +55,7 @@ namespace PgxAPI.DataBaseTier
                                     FROM INSTITUCIONES
                                     WHERE Activa = 1;";
 
-                    info = connection.Query<InstitucionesPatrimonioDTO>(query).ToList();
+                    info = connection.Query<InstitucionesPatrimonioDto>(query).ToList();
 
                 }
             }

@@ -15,17 +15,17 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<List<fslGestionesListaDatos>> FslGestiones_Obtener(int CodCliente)
+        public ErrorDto<List<FslGestionesListaDatos>> FslGestiones_Obtener(int CodCliente)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var response = new ErrorDto<List<fslGestionesListaDatos>>();
+            var response = new ErrorDto<List<FslGestionesListaDatos>>();
 
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
                     var query = $@"select cod_gestion as item, rtrim(cod_gestion) + ' - ' + DESCRIPCION as descripcion from FSL_TIPOS_GESTIONES WHERE ACTIVA = 1";
-                    response.Result = connection.Query<fslGestionesListaDatos>(query).ToList();
+                    response.Result = connection.Query<FslGestionesListaDatos>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -37,7 +37,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto FslGestion_Agregar(int CodCliente, fslGestionAgregar gestion)
+        public ErrorDto FslGestion_Agregar(int CodCliente, FslGestionAgregar gestion)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);

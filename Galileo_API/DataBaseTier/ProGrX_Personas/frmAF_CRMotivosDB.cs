@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Personas;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Personas
 {
@@ -10,12 +11,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 1;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmAF_CRMotivosDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -24,13 +25,13 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CRMotivosData>> AF_CRMotivos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<AfCrMotivosData>> AF_CRMotivos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<AF_CRMotivosData>>()
+            var result = new ErrorDto<List<AfCrMotivosData>>()
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<AF_CRMotivosData>()
+                Result = new List<AfCrMotivosData>()
             };
             try
             {
@@ -58,7 +59,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 }
 
                 string query = $"SELECT COD_MOTIVO, descripcion, ACTIVO, registro_fecha, registro_usuario FROM dbo.AFI_CR_MOTIVOS_RENUNCIA{where}{orderBy}{paginacion}";
-                result.Result = connection.Query<AF_CRMotivosData>(query, param).ToList();
+                result.Result = connection.Query<AfCrMotivosData>(query, param).ToList();
             }
             catch (Exception ex)
             {
@@ -76,7 +77,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="motivo"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto AF_CRMotivos_Guardar(int CodEmpresa, AF_CRMotivosData motivo, string usuario)
+        public ErrorDto AF_CRMotivos_Guardar(int CodEmpresa, AfCrMotivosData motivo, string usuario)
         {
             var result = new ErrorDto()
             {
@@ -94,7 +95,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 {
                     ActualizarMotivo(connection, motivo);
                     result.Description = "Actualizado correctamente";
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -107,7 +108,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 {
                     InsertarMotivo(connection, motivo, usuario);
                     result.Description = "Insertado correctamente";
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -148,7 +149,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
                 if (rows > 0)
                 {
                     result.Description = "Eliminado correctamente";
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -179,7 +180,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
             return existe > 0;
         }
 
-        private void InsertarMotivo(SqlConnection connection, AF_CRMotivosData motivo, string usuario)
+        private void InsertarMotivo(SqlConnection connection, AfCrMotivosData motivo, string usuario)
         {
             var queryInsert = @"INSERT INTO dbo.AFI_CR_MOTIVOS_RENUNCIA
                                 (COD_MOTIVO, descripcion, ACTIVO, registro_fecha, registro_usuario)
@@ -193,7 +194,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
             });
         }
 
-        private void ActualizarMotivo(SqlConnection connection, AF_CRMotivosData motivo)
+        private void ActualizarMotivo(SqlConnection connection, AfCrMotivosData motivo)
         {
             var queryUpdate = @"UPDATE dbo.AFI_CR_MOTIVOS_RENUNCIA
                                 SET descripcion = @descripcion,

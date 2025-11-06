@@ -5,6 +5,7 @@ using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Nucleo;
 using System.Data;
 using Microsoft.Data.SqlClient;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
@@ -12,11 +13,11 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
     {
         private readonly IConfiguration _config;
         private readonly int vModulo = 10;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         public frmSIF_EntidadesCancelaDB(IConfiguration config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -25,17 +26,17 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<SIFEntidadesCancelaLista> SIF_EntidadesCancelaLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<SifEntidadesCancelaLista> SIF_EntidadesCancelaLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SIFEntidadesCancelaLista>()
+            var result = new ErrorDto<SifEntidadesCancelaLista>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new SIFEntidadesCancelaLista()
+                Result = new SifEntidadesCancelaLista()
                 {
                     total = 0,
-                    lista = new List<SIFEntidadesCancelaData>()
+                    lista = new List<SifEntidadesCancelaData>()
                 }
             };
             try
@@ -72,7 +73,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                                      order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
                                          OFFSET {filtros.pagina} ROWS 
                                          FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                    result.Result.lista = connection.Query<SIFEntidadesCancelaData>(query).ToList();
+                    result.Result.lista = connection.Query<SifEntidadesCancelaData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -91,14 +92,14 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<SIFEntidadesCancelaData>> SIF_EntidadesCancela_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SifEntidadesCancelaData>> SIF_EntidadesCancela_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SIFEntidadesCancelaData>>()
+            var result = new ErrorDto<List<SifEntidadesCancelaData>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<SIFEntidadesCancelaData>()
+                Result = new List<SifEntidadesCancelaData>()
             };
 
             try
@@ -120,7 +121,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                             from SIF_ENTIDADES_PAGO
                                         {filtros.filtro} 
                                      order by COD_ENTIDAD_PAGO";
-                    result.Result = connection.Query<SIFEntidadesCancelaData>(query).ToList();
+                    result.Result = connection.Query<SifEntidadesCancelaData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -155,7 +156,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                     var query = @"DELETE FROM SIF_ENTIDADES_PAGO WHERE COD_ENTIDAD_PAGO = @cod_entidad_pago";
                     connection.Execute(query, new { cod_entidad_pago = (cod_entidad_pago ?? string.Empty).ToUpper() });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -180,7 +181,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="entidad"></param>
         /// <returns></returns>
         /// 
-        public ErrorDto SIF_EntidadesCancela_Guardar(int CodEmpresa, string usuario, SIFEntidadesCancelaData entidad)
+        public ErrorDto SIF_EntidadesCancela_Guardar(int CodEmpresa, string usuario, SifEntidadesCancelaData entidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -246,7 +247,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="entidad"></param>
         /// <returns></returns>
-        private ErrorDto SIF_EntidadesCancela_Actualizar(int CodEmpresa, string usuario, SIFEntidadesCancelaData entidad)
+        private ErrorDto SIF_EntidadesCancela_Actualizar(int CodEmpresa, string usuario, SifEntidadesCancelaData entidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -272,7 +273,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                         registro_usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -296,7 +297,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
         /// <param name="usuario"></param>
         /// <param name="entidad"></param>
         /// <returns></returns>
-        private ErrorDto SIF_EntidadesCancela_Insertar(int CodEmpresa, string usuario, SIFEntidadesCancelaData entidad)
+        private ErrorDto SIF_EntidadesCancela_Insertar(int CodEmpresa, string usuario, SifEntidadesCancelaData entidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -320,7 +321,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
                         registro_usuario = usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

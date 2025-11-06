@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -14,7 +14,7 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public void RolesVincular(RolesVincularDTO req)
+        public void RolesVincular(RolesVincularDto req)
         {
             ErrorDto resp = new ErrorDto();
             string strSQL = "";
@@ -50,9 +50,9 @@ namespace PgxAPI.DataBaseTier
             //return resp;
         }
 
-        public List<RolesObtenerDTO> RolFiltroObtener(string filtro)
+        public List<RolesObtenerDto> RolFiltroObtener(string filtro)
         {
-            List<RolesObtenerDTO> resp = new List<RolesObtenerDTO>();
+            List<RolesObtenerDto> resp = new List<RolesObtenerDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -65,7 +65,7 @@ namespace PgxAPI.DataBaseTier
                         $"WHERE R.descripcion LIKE '%{filtro}%' " +
                         "ORDER BY R.descripcion";
 
-                    return connection.Query<RolesObtenerDTO>(strSQL).ToList();
+                    return connection.Query<RolesObtenerDto>(strSQL).ToList();
                 }
             }
             catch (Exception)
@@ -75,7 +75,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto RolGuardar(RolInsertarDTO rol)
+        public ErrorDto RolGuardar(RolInsertarDto rol)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;
@@ -110,7 +110,7 @@ namespace PgxAPI.DataBaseTier
                         resp.Description = "Actualizacion Exitosa!";
                     }
 
-                    RolesVincularDTO vinculo = new RolesVincularDTO();
+                    RolesVincularDto vinculo = new RolesVincularDto();
                     vinculo.CodEmpresa = cliente;
                     vinculo.CodRol = rol.Cod_Rol;
                     vinculo.Index = cliente == 0 ? 1 : 0;
@@ -148,9 +148,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<RolesObtenerDTO> RolesObtener()
+        public List<RolesObtenerDto> RolesObtener()
         {
-            List<RolesObtenerDTO> resp = new List<RolesObtenerDTO>();
+            List<RolesObtenerDto> resp = new List<RolesObtenerDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -162,7 +162,7 @@ namespace PgxAPI.DataBaseTier
                         "LEFT JOIN PGX_Clientes C ON R.cod_empresa = C.cod_Empresa " +
                         "ORDER BY R.descripcion";
 
-                    return connection.Query<RolesObtenerDTO>(strSQL).ToList();
+                    return connection.Query<RolesObtenerDto>(strSQL).ToList();
                 }
             }
             catch (Exception)
@@ -172,9 +172,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<ClientesObtenerDTO> ClientesObtener()
+        public List<ClientesObtenerDto> ClientesObtener()
         {
-            List<ClientesObtenerDTO> resp = new List<ClientesObtenerDTO>();
+            List<ClientesObtenerDto> resp = new List<ClientesObtenerDto>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -184,10 +184,10 @@ namespace PgxAPI.DataBaseTier
                               + ",[NOMBRE_CORTO]"
                           + "FROM[PGX_Portal].[dbo].[PGX_CLIENTES]";
 
-                    resp = connection.Query<ClientesObtenerDTO>(strSQL).ToList();
+                    resp = connection.Query<ClientesObtenerDto>(strSQL).ToList();
                 }
 
-                resp.Insert(0, new ClientesObtenerDTO { Cod_Empresa = "0", Nombre_Largo = "General", Nombre_Corto = "General" });
+                resp.Insert(0, new ClientesObtenerDto { Cod_Empresa = "0", Nombre_Largo = "General", Nombre_Corto = "General" });
             }
             catch (Exception)
             {

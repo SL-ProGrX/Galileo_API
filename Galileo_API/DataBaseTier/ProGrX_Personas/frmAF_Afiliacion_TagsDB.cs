@@ -26,22 +26,22 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="estado"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfiAfiliacionControlDTO>> AFI_Afiliaciones_Consulta_Recepcion(int CodEmpresa, string estado, string filtro)
+        public ErrorDto<List<AfiAfiliacionControlDto>> AFI_Afiliaciones_Consulta_Recepcion(int CodEmpresa, string estado, string filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<AfiAfiliacionControlDTO>>
+            var response = new ErrorDto<List<AfiAfiliacionControlDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AfiAfiliacionControlDTO>()
+                Result = new List<AfiAfiliacionControlDto>()
             };
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var result = connection.Query<AfiAfiliacionControlDTO>(
+                    var result = connection.Query<AfiAfiliacionControlDto>(
                         "spAFI_Afiliaciones_Control_Consulta",
                         new { Estado = estado, Filtro = filtro },
                         commandType: CommandType.StoredProcedure).ToList();
@@ -66,22 +66,22 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="estado"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfiAfiliacionControlDTO>> AFI_Afiliaciones_Consulta_Recibidas(int CodEmpresa, string estado, string filtro)
+        public ErrorDto<List<AfiAfiliacionControlDto>> AFI_Afiliaciones_Consulta_Recibidas(int CodEmpresa, string estado, string filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<AfiAfiliacionControlDTO>>
+            var response = new ErrorDto<List<AfiAfiliacionControlDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AfiAfiliacionControlDTO>()
+                Result = new List<AfiAfiliacionControlDto>()
             };
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var result = connection.Query<AfiAfiliacionControlDTO>(
+                    var result = connection.Query<AfiAfiliacionControlDto>(
                         "spAFI_Afiliaciones_Control_Consulta",
                         new { Estado = estado, Filtro = filtro },
                         commandType: CommandType.StoredProcedure).ToList();
@@ -106,22 +106,22 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="estado"></param>
         /// <param name="filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfiAfiliacionControlDTO>> AFI_Afiliaciones_Consulta_Pendientes(int CodEmpresa, string estado, string filtro)
+        public ErrorDto<List<AfiAfiliacionControlDto>> AFI_Afiliaciones_Consulta_Pendientes(int CodEmpresa, string estado, string filtro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<AfiAfiliacionControlDTO>>
+            var response = new ErrorDto<List<AfiAfiliacionControlDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AfiAfiliacionControlDTO>()
+                Result = new List<AfiAfiliacionControlDto>()
             };
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var result = connection.Query<AfiAfiliacionControlDTO>(
+                    var result = connection.Query<AfiAfiliacionControlDto>(
                         "spAFI_Afiliaciones_Control_Consulta",
                         new { Estado = estado, Filtro = filtro },
                         commandType: CommandType.StoredProcedure).ToList();
@@ -259,17 +259,17 @@ namespace PgxAPI.DataBaseTier.ProGrX_Personas
         /// <param name="CodEmpresa"></param>
         /// <param name="boleta"></param>
         /// <returns></returns>
-        public ErrorDto<List<AfiEtiquetaDTO>> AFI_Afiliaciones_Etiquetas_Consulta(int CodEmpresa, int boleta)
+        public ErrorDto<List<AfiEtiquetaDto>> AFI_Afiliaciones_Etiquetas_Consulta(int CodEmpresa, int boleta)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AfiEtiquetaDTO>> { Code = 0, Result = new List<AfiEtiquetaDTO>() };
+            var response = new ErrorDto<List<AfiEtiquetaDto>> { Code = 0, Result = new List<AfiEtiquetaDto>() };
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 var sql = "EXEC spAFI_Afiliaciones_Etiquetas_Consulta @BoletaId";
 
-                var result = connection.Query<AfiEtiquetaDTO>(sql, new { BoletaId = boleta }).ToList();
+                var result = connection.Query<AfiEtiquetaDto>(sql, new { BoletaId = boleta }).ToList();
                 response.Result = result;
             }
             catch (Exception ex)

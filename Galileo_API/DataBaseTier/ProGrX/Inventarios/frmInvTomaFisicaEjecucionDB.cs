@@ -15,11 +15,11 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto<List<EntradasTomaFisicaDTO>> Obtener_Entradas(int CodEmpresa)
+        public ErrorDto<List<EntradasTomaFisicaDto>> Obtener_Entradas(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<EntradasTomaFisicaDTO>>();
+            var response = new ErrorDto<List<EntradasTomaFisicaDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -27,7 +27,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "SELECT RTRIM(cod_entsal) AS Codigo, RTRIM(descripcion) AS Descripcion\r\nFROM pv_entrada_salida\r\nWHERE tipo = 'E'";
 
-                    response.Result = connection.Query<EntradasTomaFisicaDTO>(query).ToList();
+                    response.Result = connection.Query<EntradasTomaFisicaDto>(query).ToList();
 
                 }
             }
@@ -40,11 +40,11 @@ namespace PgxAPI.DataBaseTier
 
             return response;
         }
-        public ErrorDto<List<SalidasTomaFisicaDTO>> Obtener_Salidas(int CodEmpresa)
+        public ErrorDto<List<SalidasTomaFisicaDto>> Obtener_Salidas(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<SalidasTomaFisicaDTO>>();
+            var response = new ErrorDto<List<SalidasTomaFisicaDto>>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -52,7 +52,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "SELECT RTRIM(cod_entsal) AS Codigo, RTRIM(descripcion) AS Descripcion\r\nFROM pv_entrada_salida\r\nWHERE tipo = 'S';";
 
-                    response.Result = connection.Query<SalidasTomaFisicaDTO>(query).ToList();
+                    response.Result = connection.Query<SalidasTomaFisicaDto>(query).ToList();
 
                 }
             }

@@ -1,6 +1,7 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.AH;
 
 namespace PgxAPI.DataBaseTier
 {
@@ -13,11 +14,11 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<RentaExcedenteDTO> obtener_RentaExcedente(int CodEmpresa)
+        public List<RentaExcedenteDto> obtener_RentaExcedente(int CodEmpresa)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<RentaExcedenteDTO> info = new List<RentaExcedenteDTO>();
+            List<RentaExcedenteDto> info = new List<RentaExcedenteDto>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -25,7 +26,7 @@ namespace PgxAPI.DataBaseTier
 
                     var query = "select ID_RENTA,DESDE,HASTA,PORCENTAJE from EXC_RENTA_TABLA order by ID_RENTA";
 
-                    info = connection.Query<RentaExcedenteDTO>(query).ToList();
+                    info = connection.Query<RentaExcedenteDto>(query).ToList();
 
                 }
             }

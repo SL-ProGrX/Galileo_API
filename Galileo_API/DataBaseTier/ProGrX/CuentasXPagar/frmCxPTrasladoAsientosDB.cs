@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 
@@ -12,12 +13,12 @@ namespace PgxAPI.DataBaseTier
     {
         private readonly IConfiguration _config;
         mProGrX_AuxiliarDB DBAuxiliar;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         public frmCxPTrasladoAsientosDB(IConfiguration config)
         {
             _config = config;
             DBAuxiliar = new mProGrX_AuxiliarDB(_config);
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -570,7 +571,7 @@ namespace PgxAPI.DataBaseTier
 
                             if (resp.Code == 0)
                             {
-                                Bitacora(new BitacoraInsertarDTO
+                                Bitacora(new BitacoraInsertarDto
                                 {
                                     EmpresaId = CodEmpresa,
                                     Usuario = data.Usuario,
@@ -606,7 +607,7 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }

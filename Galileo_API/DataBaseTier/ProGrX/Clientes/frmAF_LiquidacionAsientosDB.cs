@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.FSL;
@@ -13,13 +12,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         private readonly IConfiguration _config;
         private int vModulo = 1; //Afiliación
         private readonly mProGrx_Main _main;
-        private readonly mTesoreria _mtes;
+        private readonly MTesoreria _mtes;
 
         public frmAF_LiquidacionAsientosDB(IConfiguration config)
         {
             _config = config;
             _main = new mProGrx_Main(_config);
-            _mtes = new mTesoreria(_config);
+            _mtes = new MTesoreria(_config);
         }
 
         /// <summary>

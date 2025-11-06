@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
+using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -38,9 +39,9 @@ namespace PgxAPI.DataBaseTier
             return servs;
         }
 
-        public ErrorServicioSuscripcionDTO Servicio_Insertar(ServicioSuscripcion request)
+        public ErrorDto Servicio_Insertar(ServicioSuscripcion request)
         {
-            ErrorServicioSuscripcionDTO resp = new ErrorServicioSuscripcionDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -69,9 +70,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorServicioSuscripcionDTO Servicio_Eliminar(ServicioSuscripcion request)
+        public ErrorDto Servicio_Eliminar(ServicioSuscripcion request)
         {
-            ErrorServicioSuscripcionDTO resp = new ErrorServicioSuscripcionDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -96,9 +97,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorServicioSuscripcionDTO Servicio_Actualizar(ServicioSuscripcion request)
+        public ErrorDto Servicio_Actualizar(ServicioSuscripcion request)
         {
-            ErrorServicioSuscripcionDTO resp = new ErrorServicioSuscripcionDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))

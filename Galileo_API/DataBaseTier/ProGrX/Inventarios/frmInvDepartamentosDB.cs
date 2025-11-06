@@ -67,7 +67,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    response.Result.Departamentos = connection.Query<DepartamentosDTO>(query).ToList();
+                    response.Result.Departamentos = connection.Query<DepartamentosDto>(query).ToList();
 
                 }
             }
@@ -86,7 +86,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Departamentos_Actualizar(int CodEmpresa, DepartamentosDTO request)
+        public ErrorDto Departamentos_Actualizar(int CodEmpresa, DepartamentosDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -121,7 +121,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Departamentos_Insertar(int CodEmpresa, DepartamentosDTO request)
+        public ErrorDto Departamentos_Insertar(int CodEmpresa, DepartamentosDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new();
@@ -187,12 +187,12 @@ namespace PgxAPI.DataBaseTier
 
         #region Asignaciones
 
-        public ErrorDto<List<AsignacionesDTO>> Asignaciones_ObtenerTodos(int CodEmpresa, string departamento)
+        public ErrorDto<List<AsignacionesDto>> Asignaciones_ObtenerTodos(int CodEmpresa, string departamento)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<AsignacionesDTO>>();
+            var response = new ErrorDto<List<AsignacionesDto>>();
 
             try
             {
@@ -208,7 +208,7 @@ namespace PgxAPI.DataBaseTier
                     var parameters = new DynamicParameters();
                     parameters.Add("cod_departamento", departamento, DbType.String);
 
-                    response.Result = connection.Query<AsignacionesDTO>(query, parameters).ToList();
+                    response.Result = connection.Query<AsignacionesDto>(query, parameters).ToList();
                 }
             }
             catch (Exception ex)
@@ -220,7 +220,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto Asignaciones_Insertar(int CodEmpresa, AsignacionesDTO request)
+        public ErrorDto Asignaciones_Insertar(int CodEmpresa, AsignacionesDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new();

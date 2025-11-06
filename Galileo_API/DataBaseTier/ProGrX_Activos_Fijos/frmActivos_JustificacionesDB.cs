@@ -3,7 +3,8 @@ using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
-using static PgxAPI.Models.ProGrX_Activos_Fijos.frmActivos_JustificacionesModels;
+using PgxAPI.Models.Security;
+using static PgxAPI.Models.ProGrX_Activos_Fijos.FrmActivosJustificacionesModels;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -11,12 +12,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmActivos_JustificacionesDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
 
@@ -367,7 +368,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     });
 
                     // Bitácora
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = string.IsNullOrWhiteSpace(data.registro_usuario) ? "" : data.registro_usuario,
@@ -429,7 +430,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     });
 
                     // Bitácora
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = string.IsNullOrWhiteSpace(data.modifica_usuario) ? "" : data.modifica_usuario,
@@ -483,7 +484,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     }
 
                     // Bitácora
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

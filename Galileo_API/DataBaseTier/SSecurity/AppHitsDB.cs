@@ -1,6 +1,8 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -39,10 +41,10 @@ namespace PgxAPI.DataBaseTier
             return types;
         }
 
-        public ErrorAppHitsDTO AppHits_Insertar(AppHits request)
+        public ErrorDto AppHits_Insertar(AppHits request)
         {
 
-            ErrorAppHitsDTO resp = new ErrorAppHitsDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
@@ -69,9 +71,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorAppHitsDTO AppHits_Eliminar(AppHits request)
+        public ErrorDto AppHits_Eliminar(AppHits request)
         {
-            ErrorAppHitsDTO resp = new ErrorAppHitsDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
@@ -94,9 +96,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorAppHitsDTO AppHits_Actualizar(AppHits request)
+        public ErrorDto AppHits_Actualizar(AppHits request)
         {
-            ErrorAppHitsDTO resp = new ErrorAppHitsDTO();
+            ErrorDto resp = new ErrorDto();
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));

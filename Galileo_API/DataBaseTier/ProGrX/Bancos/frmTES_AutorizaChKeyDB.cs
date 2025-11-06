@@ -9,12 +9,12 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
     {
         private readonly IConfiguration? _config;
         private readonly int vModulo = 9; // Modulo de Tesoreria
-        private readonly mTesoreria mTesoreria;
+        private readonly MTesoreria MTesoreria;
 
         public frmTES_AutorizaChKeyDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(config);
+            MTesoreria = new MTesoreria(config);
         }
 
         /// <summary>

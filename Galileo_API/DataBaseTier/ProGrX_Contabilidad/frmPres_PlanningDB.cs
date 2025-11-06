@@ -1,7 +1,6 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
@@ -30,15 +29,15 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto<List<presVistaPresupuestoData>> PresPlanning_Obtener(int CodCliente, string datos)
+        public ErrorDto<List<PresVistaPresupuestoData>> PresPlanning_Obtener(int CodCliente, string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            presVistaPresupuestoBuscar filtros = JsonConvert.DeserializeObject<presVistaPresupuestoBuscar>(datos);
-            var info = new ErrorDto<List<presVistaPresupuestoData>>
+            PresVistaPresupuestoBuscar filtros = JsonConvert.DeserializeObject<PresVistaPresupuestoBuscar>(datos);
+            var info = new ErrorDto<List<PresVistaPresupuestoData>>
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<presVistaPresupuestoData>()
+                Result = new List<PresVistaPresupuestoData>()
             };
             try
             {
@@ -62,14 +61,14 @@ namespace PgxAPI.DataBaseTier
                         CtaMov = filtros.ctaMov ? (bool?)true : null 
                     };
 
-                    info.Result = connection.Query<presVistaPresupuestoData>(procedure, values, commandType: CommandType.StoredProcedure, commandTimeout: 600).ToList();
+                    info.Result = connection.Query<PresVistaPresupuestoData>(procedure, values, commandType: CommandType.StoredProcedure, commandTimeout: 600).ToList();
                 }
             }
             catch (Exception ex)
             {
                 info.Code = -1;
                 info.Description = ex.Message;
-                info.Result = new List<presVistaPresupuestoData>();
+                info.Result = new List<PresVistaPresupuestoData>();
             }
 
             return info;
@@ -81,15 +80,15 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto<List<preVistaPresupuestoCuentaData>> PresPlanningCuenta_Obtener(int CodCliente, string datos)
+        public ErrorDto<List<PreVistaPresupuestoCuentaData>> PresPlanningCuenta_Obtener(int CodCliente, string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            presVistaPresupuestoCuentaBuscar filtros = JsonConvert.DeserializeObject<presVistaPresupuestoCuentaBuscar>(datos);
-            var info = new ErrorDto<List<preVistaPresupuestoCuentaData>>
-            { 
+            PresVistaPresupuestoCuentaBuscar filtros = JsonConvert.DeserializeObject<PresVistaPresupuestoCuentaBuscar>(datos);
+            var info = new ErrorDto<List<PreVistaPresupuestoCuentaData>>
+            {
                 Code = 0,
                 Description = "OK",
-                Result = new List<preVistaPresupuestoCuentaData>()
+                Result = new List<PreVistaPresupuestoCuentaData>()
             };
             try
             {
@@ -112,7 +111,7 @@ namespace PgxAPI.DataBaseTier
 
                     };
 
-                    info.Result = connection.Query<preVistaPresupuestoCuentaData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    info.Result = connection.Query<PreVistaPresupuestoCuentaData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
 
                 return info;
@@ -121,7 +120,7 @@ namespace PgxAPI.DataBaseTier
             {
                 info.Code = -1;
                 info.Description = ex.Message;
-                info.Result = new List<preVistaPresupuestoCuentaData>();
+                info.Result = new List<PreVistaPresupuestoCuentaData>();
             }
             return info;
         }
@@ -132,15 +131,15 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto<List<presVistaPresCuentaRealHistoricoData>> PresPlanningCuentaReal_Obtener(int CodCliente, string datos)
+        public ErrorDto<List<PresVistaPresCuentaRealHistoricoData>> PresPlanningCuentaReal_Obtener(int CodCliente, string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            presPresCuentaRealBuscar filtros = JsonConvert.DeserializeObject<presPresCuentaRealBuscar>(datos);
-            var info = new ErrorDto<List<presVistaPresCuentaRealHistoricoData>>
+            PresPresCuentaRealBuscar filtros = JsonConvert.DeserializeObject<PresPresCuentaRealBuscar>(datos);
+            var info = new ErrorDto<List<PresVistaPresCuentaRealHistoricoData>>
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<presVistaPresCuentaRealHistoricoData>()
+                Result = new List<PresVistaPresCuentaRealHistoricoData>()
             };
             try
             {
@@ -158,7 +157,7 @@ namespace PgxAPI.DataBaseTier
                         TIPO_VISTA = filtros.tipo_vista,
                     };
 
-                    info.Result = connection.Query<presVistaPresCuentaRealHistoricoData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    info.Result = connection.Query<PresVistaPresCuentaRealHistoricoData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                 }
 
                 return info;
@@ -167,7 +166,7 @@ namespace PgxAPI.DataBaseTier
             {
                 info.Code = -1;
                 info.Description = ex.Message;
-                info.Result = new List<presVistaPresCuentaRealHistoricoData>();
+                info.Result = new List<PresVistaPresCuentaRealHistoricoData>();
             }
             return info;
         }
@@ -178,11 +177,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodCliente"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto PresAjustes_Guardar(int CodCliente, presAjustesGuarda request)
+        public ErrorDto PresAjustes_Guardar(int CodCliente, PresAjustesGuarda request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto resp = new ErrorDto();
-            presTiposAjustes tipoAjuste = new presTiposAjustes();
+            PresTiposAjustes tipoAjuste = new PresTiposAjustes();
             resp.Code = 0;
             try
             {
@@ -221,7 +220,7 @@ namespace PgxAPI.DataBaseTier
 
                     //Validar el Tipo de Ajustes +/- y que la cuenta reciba movimientos
                     var validaTipoAjust = $@"SELECT * FROM pres_tipos_ajustes where cod_ajuste = '{request.ajuste_id}'";
-                    tipoAjuste = connection.Query<presTiposAjustes>(validaTipoAjust).FirstOrDefault();
+                    tipoAjuste = connection.Query<PresTiposAjustes>(validaTipoAjust).FirstOrDefault();
                     if (request.mnt_ajuste > 0 && tipoAjuste.ajuste_libre_positivo == 0)
                     {
                         resp.Description = "El tipo de Ajuste: " + tipoAjuste.descripcion + " ,no concuerda con el valor del cambio!";
@@ -306,15 +305,15 @@ namespace PgxAPI.DataBaseTier
         /// <param name="consulta"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto<List<preVistaPresupuestoCuentaData>> Pres_Ajustes_Obtener(int CodCliente, int consulta ,string datos)
+        public ErrorDto<List<PreVistaPresupuestoCuentaData>> Pres_Ajustes_Obtener(int CodCliente, int consulta ,string datos)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            presVistaPresupuestoBuscar filtros = JsonConvert.DeserializeObject<presVistaPresupuestoBuscar>(datos);
-            var info = new ErrorDto<List<preVistaPresupuestoCuentaData>>
+            PresVistaPresupuestoBuscar filtros = JsonConvert.DeserializeObject<PresVistaPresupuestoBuscar>(datos);
+            var info = new ErrorDto<List<PreVistaPresupuestoCuentaData>>
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<preVistaPresupuestoCuentaData>()
+                Result = new List<PreVistaPresupuestoCuentaData>()
             };
             try
             {
@@ -343,7 +342,7 @@ namespace PgxAPI.DataBaseTier
                                 Periodo = filtros.periodo
                             };
 
-                            info.Result = connection.Query<preVistaPresupuestoCuentaData>(procedure, values, commandType: CommandType.StoredProcedure, commandTimeout: 600).ToList();
+                            info.Result = connection.Query<PreVistaPresupuestoCuentaData>(procedure, values, commandType: CommandType.StoredProcedure, commandTimeout: 600).ToList();
                             break;
                         case 1://Ajustes
                         case 2:
@@ -376,7 +375,7 @@ namespace PgxAPI.DataBaseTier
                                     Cuenta = filtros.cuenta,
                                     Periodo = vStringFecha
                                 };
-                                info.Result = connection.Query<preVistaPresupuestoCuentaData>(procedure, valuesAjustes, commandType: CommandType.StoredProcedure, commandTimeout: 600).ToList();
+                                info.Result = connection.Query<PreVistaPresupuestoCuentaData>(procedure, valuesAjustes, commandType: CommandType.StoredProcedure, commandTimeout: 600).ToList();
                             }
                             else
                             {
@@ -392,7 +391,7 @@ namespace PgxAPI.DataBaseTier
                                     Cuenta = filtros.cuenta,
                                     Periodo = filtros.periodo
                                 };
-                                info.Result = connection.Query<preVistaPresupuestoCuentaData>(procedure, valuesAjuste, commandType: CommandType.StoredProcedure, commandTimeout: 600).ToList();
+                                info.Result = connection.Query<PreVistaPresupuestoCuentaData>(procedure, valuesAjuste, commandType: CommandType.StoredProcedure, commandTimeout: 600).ToList();
                             }
 
                                 
@@ -407,7 +406,7 @@ namespace PgxAPI.DataBaseTier
             {
                 info.Code = -1;
                 info.Description = ex.Message;
-                info.Result = new List<preVistaPresupuestoCuentaData>();
+                info.Result = new List<PreVistaPresupuestoCuentaData>();
             }
 
             return info;
@@ -420,14 +419,14 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodContab"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDto<List<presModelisLista>> Pres_Modelos_Obtener(int CodEmpresa, int CodContab, string Usuario)
+        public ErrorDto<List<PresModelisLista>> Pres_Modelos_Obtener(int CodEmpresa, int CodContab, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<presModelisLista>>
+            var resp = new ErrorDto<List<PresModelisLista>>
             {
                 Code = 0,
                 Description = "OK",
-                Result = new List<presModelisLista>()
+                Result = new List<PresModelisLista>()
             };
             try
             {
@@ -440,7 +439,7 @@ namespace PgxAPI.DataBaseTier
                     Where P.COD_CONTABILIDAD = @contabilidad
                     group by P.cod_Modelo, P.Descripcion,P.ESTADO ,Cc.Inicio_Anio 
                     order by Cc.INICIO_ANIO desc, P.Cod_Modelo";
-                    resp.Result = connection.Query<presModelisLista>(query, 
+                    resp.Result = connection.Query<PresModelisLista>(query, 
                         new {
                             contabilidad = CodContab,
                             usuario = Usuario
@@ -485,8 +484,8 @@ namespace PgxAPI.DataBaseTier
             }
             return resp;
         }
-    
-        public ErrorDto Pres_AjusteMasivo_Guardar(int CodEmpresa, int codContab, string codModelo, string usuario, DateTime periodo, List<presCargaMasivaModel> datos)
+
+        public ErrorDto Pres_AjusteMasivo_Guardar(int CodEmpresa, int codContab, string codModelo, string usuario, DateTime periodo, List<PresCargaMasivaModel> datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto();
@@ -596,14 +595,14 @@ namespace PgxAPI.DataBaseTier
 
                             };
 
-                            var lista = connection.Query<preVistaPresupuestoCuentaData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                            var lista = connection.Query<PreVistaPresupuestoCuentaData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
                             //busco el mes en la lista
                             if(lista.Count > 0)
                             {
                                 var rowData = lista.Find(x => x.mes == vMes).mensual;
 
 
-                                presAjustesGuarda guarda = new presAjustesGuarda();
+                                PresAjustesGuarda guarda = new PresAjustesGuarda();
                                 guarda.anio = vAnio;
                                 guarda.mes = vMes;
                                 guarda.cod_conta = codContab;

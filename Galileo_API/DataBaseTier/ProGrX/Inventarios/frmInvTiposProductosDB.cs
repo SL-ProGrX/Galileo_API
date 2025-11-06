@@ -1,7 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Microsoft.VisualBasic;
-using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.INV;
 using System.Data;
@@ -70,7 +69,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    info.Result.Lista = connection.Query<TipoProductoDTO>(query).ToList();
+                    info.Result.Lista = connection.Query<TipoProductoDto>(query).ToList();
 
                 }
             }
@@ -90,12 +89,12 @@ namespace PgxAPI.DataBaseTier
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public List<TipoProductoDTO> TipoProducto_ObtenerTodos(int CodEmpresa, int cod_contabilidad)
+        public List<TipoProductoDto> TipoProducto_ObtenerTodos(int CodEmpresa, int cod_contabilidad)
         {
 
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            List<TipoProductoDTO> info = new List<TipoProductoDTO>();
+            List<TipoProductoDto> info = new List<TipoProductoDto>();
 
             try
             {
@@ -105,7 +104,7 @@ namespace PgxAPI.DataBaseTier
                     (SELECT COUNT(Cod_Prodclas) FROM PV_PROD_CLASIFICA_SUB where COD_PRODCLAS=T.cod_prodclas) AS Cantidad_Sub 
                     FROM pv_prod_clasifica T LEFT JOIN CntX_cuentas C ON T.cod_cuenta = C.cod_cuenta and C.cod_contabilidad = {cod_contabilidad} ORDER BY T.cod_prodclas";
 
-                    info = connection.Query<TipoProductoDTO>(query).ToList();
+                    info = connection.Query<TipoProductoDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -122,7 +121,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto TipoProducto_Actualizar(int CodEmpresa, TipoProductoDTO request)
+        public ErrorDto TipoProducto_Actualizar(int CodEmpresa, TipoProductoDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -161,7 +160,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto TipoProducto_Insertar(int CodEmpresa, TipoProductoDTO request)
+        public ErrorDto TipoProducto_Insertar(int CodEmpresa, TipoProductoDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -327,7 +326,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual}";
 
 
-                    info.Result.Lista = connection.Query<TipoProductoSubDTO>(query).ToList();
+                    info.Result.Lista = connection.Query<TipoProductoSubDto>(query).ToList();
 
                 }
             }
@@ -362,8 +361,8 @@ namespace PgxAPI.DataBaseTier
                                                 FROM PV_PROD_CLASIFICA_SUB 
                                           WHERE Cod_Prodclas = '{Cod_Prodclas}'";
 
-                    var info = connection.Query<TipoProductoSubDTO>(query).ToList();
-                    foreach (TipoProductoSubDTO dt in info)
+                    var info = connection.Query<TipoProductoSubDto>(query).ToList();
+                    foreach (TipoProductoSubDto dt in info)
                     {
                         dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
 
@@ -391,7 +390,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public List<TipoProductoSubGradaData> TipoProductoSub_SeguienteNivel(int CodEmpresa, TipoProductoSubDTO padre)
+        public List<TipoProductoSubGradaData> TipoProductoSub_SeguienteNivel(int CodEmpresa, TipoProductoSubDto padre)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new List<TipoProductoSubGradaData>();
@@ -405,8 +404,8 @@ namespace PgxAPI.DataBaseTier
                                           WHERE Cod_Prodclas = '{padre.Cod_Prodclas}' 
                                           AND COD_LINEA_SUB_MADRE = '{padre.Cod_Linea_Sub}' ";
 
-                    var info = connection.Query<TipoProductoSubDTO>(query).ToList();
-                    foreach (TipoProductoSubDTO dt in info)
+                    var info = connection.Query<TipoProductoSubDto>(query).ToList();
+                    foreach (TipoProductoSubDto dt in info)
                     {
                         dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
 
@@ -429,7 +428,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto TipoProductoSub_Actualizar(int CodEmpresa, TipoProductoSubDTO request)
+        public ErrorDto TipoProductoSub_Actualizar(int CodEmpresa, TipoProductoSubDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -511,7 +510,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto TipoProductoSub_Insertar(int CodEmpresa, TipoProductoSubDTO request)
+        public ErrorDto TipoProductoSub_Insertar(int CodEmpresa, TipoProductoSubDto request)
 
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);

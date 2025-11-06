@@ -23,11 +23,12 @@
             public int total { get; set; }
             public List<SysIvaParametrosData>? lista { get; set; }
         }
-        
+
         public class SysIvaParametrosUpdateRequest
         {
             public string? valor { get; set; }
         }
+        
         
         public class SysIvaCuentasResumenData
         {

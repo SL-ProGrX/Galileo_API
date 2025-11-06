@@ -2,26 +2,27 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
     public class mColaboradorDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
 
         public mColaboradorDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
 
-        public ErrorDto spRH_Boleta_Pago_Email(int CodEmpresa, RH_BoletaDTO request, string usuario, int modulo)
+        public ErrorDto spRH_Boleta_Pago_Email(int CodEmpresa, RhBoletaDto request, string usuario, int modulo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -41,7 +42,7 @@ namespace PgxAPI.DataBaseTier
                     request.EmpleadoId = "TODOS";
                 }
 
-                Bitacora(new BitacoraInsertarDTO
+                Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario.ToUpper(),
@@ -58,7 +59,7 @@ namespace PgxAPI.DataBaseTier
             }
             return resp;
         }
-        public ErrorDto spRH_Boleta_Aguinaldo_Email(int CodEmpresa, RH_BoletaDTO request, string usuario, int modulo)
+        public ErrorDto spRH_Boleta_Aguinaldo_Email(int CodEmpresa, RhBoletaDto request, string usuario, int modulo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -78,7 +79,7 @@ namespace PgxAPI.DataBaseTier
                     request.EmpleadoId = "TODOS";
                 }
 
-                Bitacora(new BitacoraInsertarDTO
+                Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario.ToUpper(),

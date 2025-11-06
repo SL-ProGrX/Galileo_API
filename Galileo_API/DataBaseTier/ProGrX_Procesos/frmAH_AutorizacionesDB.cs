@@ -16,13 +16,13 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<Pat_GestionesPatrimonio> Obtener_Autorizaciones(int CodEmpresa, string filtros)
+        public List<PatGestionesPatrimonio> Obtener_Autorizaciones(int CodEmpresa, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            Filtros_Autorizaciones_PatrimonioDTO filtrosAutorizaciones = JsonConvert.DeserializeObject<Filtros_Autorizaciones_PatrimonioDTO>(filtros);
+            FiltrosAutorizacionesPatrimonioDto filtrosAutorizaciones = JsonConvert.DeserializeObject<FiltrosAutorizacionesPatrimonioDto>(filtros);
 
-            List<Pat_GestionesPatrimonio> info = new List<Pat_GestionesPatrimonio>();
+            List<PatGestionesPatrimonio> info = new List<PatGestionesPatrimonio>();
             try
             {
 
@@ -53,7 +53,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"SELECT * FROM vPAT_Gestiones_List 
                                     {where} ORDER BY registro_fecha; ";
 
-                    info = connection.Query<Pat_GestionesPatrimonio>(query).ToList();
+                    info = connection.Query<PatGestionesPatrimonio>(query).ToList();
                 }
             }
             catch (Exception ex)

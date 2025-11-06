@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Activos_Fijos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -11,12 +12,12 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
 
         private readonly IConfiguration? _config;
         private readonly int vModulo = 36;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmActivos_ObrasTiposDB(IConfiguration? config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
         /// <summary>
         /// Metodo para consultar la lista de tipos de obras en proceso
@@ -24,17 +25,17 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<Activos_ObrasTipoDataLista> Activos_ObrasTipos_Consultar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosObrasTipoDataLista> Activos_ObrasTipos_Consultar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<Activos_ObrasTipoDataLista>()
+            var result = new ErrorDto<ActivosObrasTipoDataLista>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new Activos_ObrasTipoDataLista()
+                Result = new ActivosObrasTipoDataLista()
                 {
                     total = 0,
-                    lista = new List<Activos_ObrasTipoData>()
+                    lista = new List<ActivosObrasTipoData>()
                 }
             };
 
@@ -64,7 +65,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                                      order by {filtros.sortField}   {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
                                          OFFSET {filtros.pagina} ROWS 
                                          FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                    result.Result.lista = connection.Query<Activos_ObrasTipoData>(query).ToList();
+                    result.Result.lista = connection.Query<ActivosObrasTipoData>(query).ToList();
 
                 }
             }
@@ -84,14 +85,14 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<Activos_ObrasTipoData>> Activos_ObrasTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ActivosObrasTipoData>> Activos_ObrasTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<Activos_ObrasTipoData>>()
+            var result = new ErrorDto<List<ActivosObrasTipoData>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<Activos_ObrasTipoData>()
+                Result = new List<ActivosObrasTipoData>()
             };
 
             try
@@ -108,7 +109,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                     query = $@"select * from Activos_obras_tipos 
                                         {filtros.filtro} 
                                      order by cod_tipo";
-                    result.Result = connection.Query<Activos_ObrasTipoData>(query).ToList();
+                    result.Result = connection.Query<ActivosObrasTipoData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -127,7 +128,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto Activos_ObrasTipos_Guardar(int CodEmpresa, string usuario, Activos_ObrasTipoData datos)
+        public ErrorDto Activos_ObrasTipos_Guardar(int CodEmpresa, string usuario, ActivosObrasTipoData datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -182,7 +183,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDto Activos_ObrasTipos_Actualizar(int CodEmpresa, string usuario, Activos_ObrasTipoData datos)
+        private ErrorDto Activos_ObrasTipos_Actualizar(int CodEmpresa, string usuario, ActivosObrasTipoData datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -208,7 +209,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                         usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -233,7 +234,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDto Activos_ObrasTipos_Insertar(int CodEmpresa, string usuario, Activos_ObrasTipoData datos)
+        private ErrorDto Activos_ObrasTipos_Insertar(int CodEmpresa, string usuario, ActivosObrasTipoData datos)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto()
@@ -255,7 +256,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                         usuario
                     });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,
@@ -295,7 +296,7 @@ namespace PgxAPI.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     var query = $@"DELETE FROM Activos_obras_tipos WHERE cod_tipo = @cod_tipo";
                     connection.Execute(query, new { cod_tipo });
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario,

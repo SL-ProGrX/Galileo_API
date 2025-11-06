@@ -1,6 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.CxP;
 using PgxAPI.Models.ERROR;
@@ -97,14 +96,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<tesAccesosUsuariosLista> Tes_AccesosUsuarioBuscar_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<TesAccesosUsuariosLista> Tes_AccesosUsuarioBuscar_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<tesAccesosUsuariosLista>()
+            var result = new ErrorDto<TesAccesosUsuariosLista>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new tesAccesosUsuariosLista()
+                Result = new TesAccesosUsuariosLista()
                 {
                     total = 0,
                     lista = new List<DropDownListaGenericaModel>()
@@ -212,14 +211,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_banco"></param>
         /// <returns></returns>
-        public ErrorDto<List<tesAccesosUsuariosData>> Tes_AccesosUsuarios_Obtener(int CodEmpresa, int cod_banco)
+        public ErrorDto<List<TesAccesosUsuariosData>> Tes_AccesosUsuarios_Obtener(int CodEmpresa, int cod_banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<tesAccesosUsuariosData>>
+            var response = new ErrorDto<List<TesAccesosUsuariosData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<tesAccesosUsuariosData>()
+                Result = new List<TesAccesosUsuariosData>()
             };
             try
             {
@@ -228,7 +227,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     var query = $@"select U.nombre,U.descripcion,U.estado,A.id_banco
                                     from Usuarios U left join tes_Banco_Asg A on U.nombre = A.nombre
                                     and A.id_banco = {cod_banco} where U.estado = 'A' order by A.id_banco desc ";
-                    response.Result = connection.Query<tesAccesosUsuariosData>(query).ToList();
+                    response.Result = connection.Query<TesAccesosUsuariosData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -358,14 +357,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="nombre"></param>
         /// <param name="cod_grupo"></param>
         /// <returns></returns>
-        public ErrorDto<List<tesAccesosBancosData>> Tes_AccesosUserBancos_Obtener(int CodEmpresa, string nombre, string cod_grupo)
+        public ErrorDto<List<TesAccesosBancosData>> Tes_AccesosUserBancos_Obtener(int CodEmpresa, string nombre, string cod_grupo)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<tesAccesosBancosData>>
+            var response = new ErrorDto<List<TesAccesosBancosData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<tesAccesosBancosData>()
+                Result = new List<TesAccesosBancosData>()
             };
             try
             {
@@ -384,7 +383,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                         var query = $@"select B.id_banco,B.descripcion,B.cta,A.nombre
                                     from Tes_Bancos B left join tes_Banco_Asg A on B.id_banco = A.id_banco
                                     and A.nombre = @nombre {where}  order by A.nombre desc";
-                    response.Result = connection.Query<tesAccesosBancosData>(query, new { nombre }).ToList();
+                    response.Result = connection.Query<TesAccesosBancosData>(query, new { nombre }).ToList();
                 }
             }
             catch (Exception ex)
@@ -477,14 +476,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="nombre"></param>
         /// <returns></returns>
-        public ErrorDto<List<tesAccesosBancosData>> Tes_AccesosBancoUser_Obtener(int CodEmpresa, string nombre)
+        public ErrorDto<List<TesAccesosBancosData>> Tes_AccesosBancoUser_Obtener(int CodEmpresa, string nombre)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<tesAccesosBancosData>>
+            var response = new ErrorDto<List<TesAccesosBancosData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<tesAccesosBancosData>()
+                Result = new List<TesAccesosBancosData>()
             };
             try
             {
@@ -493,7 +492,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                     var query = $@" select B.id_banco,B.descripcion,B.cta,A.nombre
                                         from Tes_Bancos B inner join tes_Banco_Asg A on B.id_banco = A.id_banco
                                         and A.nombre = @nombre WHERE B.estado = 'A' order by A.nombre asc";
-                    response.Result = connection.Query<tesAccesosBancosData>(query, new { nombre }).ToList();
+                    response.Result = connection.Query<TesAccesosBancosData>(query, new { nombre }).ToList();
                 }
             }
             catch (Exception ex)
@@ -505,14 +504,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        public ErrorDto<List<tesAccesosDocumentosData>> Tes_AccesosDocumentos_Obtener(int CodEmpresa, string usuario, int id_banco )
+        public ErrorDto<List<TesAccesosDocumentosData>> Tes_AccesosDocumentos_Obtener(int CodEmpresa, string usuario, int id_banco )
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<tesAccesosDocumentosData>>
+            var response = new ErrorDto<List<TesAccesosDocumentosData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<tesAccesosDocumentosData>()
+                Result = new List<TesAccesosDocumentosData>()
             };
             try
             {
@@ -523,7 +522,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                     from tes_tipos_doc T left join tes_documentos_asg A on T.tipo = A.tipo
                                     and A.id_banco = @banco and A.nombre = @usuario
                                     Where T.tipo in(select Tipo from tes_banco_docs where id_banco = @banco)";
-                    response.Result = connection.Query<tesAccesosDocumentosData>(query, new { banco = id_banco, usuario = usuario }).ToList();
+                    response.Result = connection.Query<TesAccesosDocumentosData>(query, new { banco = id_banco, usuario = usuario }).ToList();
                 }
             }
             catch (Exception ex)
@@ -535,14 +534,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        public ErrorDto<List<tesAccesosConceptosData>> Tes_AccesosConceptos_Obtener(int CodEmpresa, string usuario, int id_banco)
+        public ErrorDto<List<TesAccesosConceptosData>> Tes_AccesosConceptos_Obtener(int CodEmpresa, string usuario, int id_banco)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<tesAccesosConceptosData>>
+            var response = new ErrorDto<List<TesAccesosConceptosData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<tesAccesosConceptosData>()
+                Result = new List<TesAccesosConceptosData>()
             };
             try
             {
@@ -552,7 +551,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                                from tes_conceptos C left join tes_conceptos_asg A on C.cod_concepto = A.cod_concepto
                                                and A.id_banco = @banco and A.nombre = @usuario
                                                WHERE c.estado = 'A' Order by A.id_Banco desc";
-                    response.Result = connection.Query<tesAccesosConceptosData>(query, new { banco = id_banco, usuario = usuario }).ToList();
+                    response.Result = connection.Query<TesAccesosConceptosData>(query, new { banco = id_banco, usuario = usuario }).ToList();
                 }
             }
             catch (Exception ex)
@@ -564,14 +563,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        public ErrorDto<List<tesAccesosUnidadesData>> Tes_AccesosUnidades_Obtener(int CodEmpresa, string usuario, int id_banco, int contabilidad)
+        public ErrorDto<List<TesAccesosUnidadesData>> Tes_AccesosUnidades_Obtener(int CodEmpresa, string usuario, int id_banco, int contabilidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<tesAccesosUnidadesData>>
+            var response = new ErrorDto<List<TesAccesosUnidadesData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<tesAccesosUnidadesData>()
+                Result = new List<TesAccesosUnidadesData>()
             };
             try
             {
@@ -581,7 +580,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
                                        from CntX_Unidades U left join tes_unidad_asg A on U.cod_unidad = A.cod_unidad
                                        and A.id_banco = @banco and A.nombre = @usuario 
                                        where U.cod_Contabilidad = @contabilidad and u.activa = 1 Order by A.id_Banco desc";
-                    response.Result = connection.Query<tesAccesosUnidadesData>(query, new { 
+                    response.Result = connection.Query<TesAccesosUnidadesData>(query, new { 
                         banco = id_banco, 
                         usuario = usuario,
                         contabilidad = contabilidad }).ToList();
@@ -596,21 +595,21 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        public ErrorDto<tesAccesosFirmasData> Tes_AccesosFirmas_Obtener(int CodEmpresa, int id_banco, string usuario)
+        public ErrorDto<TesAccesosFirmasData> Tes_AccesosFirmas_Obtener(int CodEmpresa, int id_banco, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<tesAccesosFirmasData>
+            var response = new ErrorDto<TesAccesosFirmasData>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new tesAccesosFirmasData()
+                Result = new TesAccesosFirmasData()
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select * from TES_BANCO_FIRMASAUT where id_banco = @banco and usuario = @usuario";
-                    response.Result = connection.QueryFirstOrDefault<tesAccesosFirmasData>(query, new { banco = id_banco, usuario = usuario });
+                    response.Result = connection.QueryFirstOrDefault<TesAccesosFirmasData>(query, new { banco = id_banco, usuario = usuario });
                 }
             }
             catch (Exception ex)
@@ -622,7 +621,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        public ErrorDto Tes_AccesosDocumentos_Guardar(int CodEmpresa, string usuario, int id_banco, tesAccesosDocumentosData documento)
+        public ErrorDto Tes_AccesosDocumentos_Guardar(int CodEmpresa, string usuario, int id_banco, TesAccesosDocumentosData documento)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -685,7 +684,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        public ErrorDto Tes_AccesosConceptos_Guardar(int CodEmpresa, string usuario, int id_banco, bool itemChecked ,tesAccesosConceptosData concepto)
+        public ErrorDto Tes_AccesosConceptos_Guardar(int CodEmpresa, string usuario, int id_banco, bool itemChecked ,TesAccesosConceptosData concepto)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -732,7 +731,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        public ErrorDto Tes_AccesosUnidades_Guardar(int CodEmpresa, string usuario, int id_banco, bool itemChecked, tesAccesosUnidadesData unidad)
+        public ErrorDto Tes_AccesosUnidades_Guardar(int CodEmpresa, string usuario, int id_banco, bool itemChecked, TesAccesosUnidadesData unidad)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -779,7 +778,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
             return response;
         }
 
-        public ErrorDto Tes_AccesosFirmas_Guardar(int CodEmpresa, tesAccesosFirmasData firmas)
+        public ErrorDto Tes_AccesosFirmas_Guardar(int CodEmpresa, TesAccesosFirmasData firmas)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto

@@ -9,13 +9,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
     public class frmTES_ReportesAutorizacionesDB
     {
         private readonly IConfiguration? _config;
-        private readonly mTesoreria mTesoreria;
+        private readonly MTesoreria MTesoreria;
         private readonly mProGrX_AuxiliarDB mProGrX_Auxiliar;
 
         public frmTES_ReportesAutorizacionesDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(_config);
+            MTesoreria = new MTesoreria(_config);
             mProGrX_Auxiliar = new mProGrX_AuxiliarDB(_config);
         }
 
@@ -26,7 +26,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGeneral(int CodEmpresa)
         {
-            return mTesoreria.sbTesBancoCargaCboAccesoGeneral(CodEmpresa);
+            return MTesoreria.sbTesBancoCargaCboAccesoGeneral(CodEmpresa);
         }
 
         /// <summary>
@@ -37,7 +37,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>>  sbTesTiposDocsCargaCbo(int CodEmpresa, int id_banco)
         {
-            return mTesoreria.sbTesTiposDocsCargaCbo(CodEmpresa, id_banco);
+            return MTesoreria.sbTesTiposDocsCargaCbo(CodEmpresa, id_banco);
         }
 
         /// <summary>

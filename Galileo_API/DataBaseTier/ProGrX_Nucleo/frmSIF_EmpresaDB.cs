@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX_Nucleo;
+using PgxAPI.Models.Security;
 using System.Data;
 namespace PgxAPI.DataBaseTier
 {
@@ -10,11 +11,11 @@ namespace PgxAPI.DataBaseTier
     {
         private readonly IConfiguration _config;
         private readonly int vModulo = 10;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
         public frmSIF_EmpresaDB(IConfiguration config)
         {
             _config = config;
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
         /// <summary>
         /// Obtiene la configuraci�n de empresa desde SIF_EMPRESA.
@@ -22,9 +23,9 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="idEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<frmSIF_EmpresaModel> Sif_Empresa_Obtener(int CodEmpresa, int? idEmpresa = null)
+        public ErrorDto<FrmSifEmpresaModel> Sif_Empresa_Obtener(int CodEmpresa, int? idEmpresa = null)
         {
-            var r = new ErrorDto<frmSIF_EmpresaModel> { Code = 0 };
+            var r = new ErrorDto<FrmSifEmpresaModel> { Code = 0 };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -92,7 +93,7 @@ namespace PgxAPI.DataBaseTier
                 WHERE (@id IS NULL OR e.ID_EMPRESA = @id)
                 ORDER BY e.ID_EMPRESA;";
 
-                r.Result = cn.QueryFirstOrDefault<frmSIF_EmpresaModel>(sql, new { id = idEmpresa });
+                r.Result = cn.QueryFirstOrDefault<FrmSifEmpresaModel>(sql, new { id = idEmpresa });
                 r.Description = r.Result == null ? "No existe SIF_EMPRESA" : "OK";
                 r.Code = r.Result == null ? 1 : 0;
             }
@@ -111,7 +112,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="dto"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto Sif_Empresa_Guardar(int CodEmpresa, frmSIF_EmpresaModel dto, string usuario)
+        public ErrorDto Sif_Empresa_Guardar(int CodEmpresa, FrmSifEmpresaModel dto, string usuario)
         {
             var r = new ErrorDto { Code = 0, Description = "OK" };
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -261,7 +262,7 @@ namespace PgxAPI.DataBaseTier
                 }
 
                 tx.Commit();
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -317,7 +318,7 @@ namespace PgxAPI.DataBaseTier
                 using var cn = new SqlConnection(conn);
                 cn.Execute("UPDATE SIF_EMPRESA SET LOGO=@contenido WHERE ID_EMPRESA=@id",
                            new { id = idEmpresa, contenido });
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -370,7 +371,7 @@ namespace PgxAPI.DataBaseTier
                 using var cn = new SqlConnection(conn);
                 cn.Execute("UPDATE SIF_EMPRESA SET FONDO_PANTALLA=@contenido WHERE ID_EMPRESA=@id",
                            new { id = idEmpresa, contenido });
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
@@ -502,7 +503,7 @@ namespace PgxAPI.DataBaseTier
                     ? $"Bloquea Fecha Auxiliar: {fechaHora:yyyy/MM/dd}"
                     : "DES-Bloqueo Fecha Auxiliar";
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,

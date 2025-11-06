@@ -14,12 +14,12 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<List<repBodegaDTO>> Obtener_Bodegas(int CodEmpresa)
+        public ErrorDto<List<RepBodegaDto>> Obtener_Bodegas(int CodEmpresa)
         {
 
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<repBodegaDTO>>();
+            var response = new ErrorDto<List<RepBodegaDto>>();
 
             try
             {
@@ -27,8 +27,8 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = "SELECT * FROM pv_Bodegas";
 
-                    response.Result = connection.Query<repBodegaDTO>(query).ToList();
-                    foreach (repBodegaDTO dt in response.Result )
+                    response.Result = connection.Query<RepBodegaDto>(query).ToList();
+                    foreach (RepBodegaDto dt in response.Result )
                     {
                         dt.Descripcion = dt.Descripcion;
 

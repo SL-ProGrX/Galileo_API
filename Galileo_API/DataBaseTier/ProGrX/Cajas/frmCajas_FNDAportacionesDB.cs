@@ -10,7 +10,7 @@ namespace PgxAPI.DataBaseTier
     public class frmCajas_FNDAportacionesDB
     {
         private readonly IConfiguration _config;
-        private readonly mTesoreria _mtes;
+        private readonly MTesoreria _mtes;
 
         public frmCajas_FNDAportacionesDB(IConfiguration config)
         {
@@ -70,7 +70,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto Fondos_Aporte_Aplicar(int codEmpresa, FondosAporteAplicarDTO request)
+        public ErrorDto Fondos_Aporte_Aplicar(int codEmpresa, FondosAporteAplicarDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             var response = new ErrorDto
@@ -239,10 +239,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="usuario"></param>
         /// <param name="aporte"></param>
         /// <returns></returns>
-        public ErrorDto<fondosRequiereAutorizacionDTO> Fondos_Aporte_RequiereAutorizacion(int codempresa, string plan, string usuario, decimal aporte)
+        public ErrorDto<FondosRequiereAutorizacionDto> Fondos_Aporte_RequiereAutorizacion(int codempresa, string plan, string usuario, decimal aporte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codempresa);
-            var response = new ErrorDto<fondosRequiereAutorizacionDTO>
+            var response = new ErrorDto<FondosRequiereAutorizacionDto>
             {
                 Code = 0,
                 Description = "ok",
@@ -269,7 +269,7 @@ namespace PgxAPI.DataBaseTier
                 //    return response;
                 //}
 
-                response.Result = new fondosRequiereAutorizacionDTO
+                response.Result = new FondosRequiereAutorizacionDto
                 {
                     requiere = aporte > data.monto,
                     montomaximo = data.monto
@@ -294,10 +294,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="codEmpresa"></param>
         /// <param name="gestionId"></param>
         /// <returns></returns>
-        public ErrorDto<GestionEstadoDTO> Fondos_Gestion_Estado(int codEmpresa, int gestionId)
+        public ErrorDto<GestionEstadoDto> Fondos_Gestion_Estado(int codEmpresa, int gestionId)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto<GestionEstadoDTO>
+            var response = new ErrorDto<GestionEstadoDto>
             {
                 Code = 0,
                 Description = "Ok",
@@ -311,7 +311,7 @@ namespace PgxAPI.DataBaseTier
                 var parametros = new DynamicParameters();
                 parametros.Add("@GestionId", gestionId);
 
-                var result = connection.QueryFirstOrDefault<GestionEstadoDTO>(
+                var result = connection.QueryFirstOrDefault<GestionEstadoDto>(
                     "exec spFnd_Gestion_Estado @GestionId",
                     parametros,
                     commandType: CommandType.Text
@@ -335,10 +335,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<fondosGestionRegistroDTO> fondos_gestion_registro(int CodEmpresa, fondosGestionRegistroAddDTO request)
+        public ErrorDto<FondosGestionRegistroDto> fondos_gestion_registro(int CodEmpresa, FondosGestionRegistroAddDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<fondosGestionRegistroDTO>
+            var response = new ErrorDto<FondosGestionRegistroDto>
             {
                 Code = 0,
                 Description = "ok",
@@ -359,7 +359,7 @@ namespace PgxAPI.DataBaseTier
                 parametros.Add("@aporte", request.aporte);
                 parametros.Add("@usuario", request.usuario);
 
-                var result = connection.QueryFirstOrDefault<fondosGestionRegistroDTO>(
+                var result = connection.QueryFirstOrDefault<FondosGestionRegistroDto>(
                     "exec spFnd_Gestion_Registro @cedula, @tipo, @operadora, @plan, @contrato, @montoautorizado, @aporte, @usuario",
                     parametros,
                     commandType: CommandType.Text
@@ -393,10 +393,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="plan"></param>
         /// <param name="contrato"></param>
         /// <returns></returns>
-        public ErrorDto<List<FndSubCuentasDTO>> SubCuentas_Obtener(int CodEmpresa, string operadora, string plan, int contrato)
+        public ErrorDto<List<FndSubCuentasDto>> SubCuentas_Obtener(int CodEmpresa, string operadora, string plan, int contrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<FndSubCuentasDTO>>
+            var response = new ErrorDto<List<FndSubCuentasDto>>
             {
                 Code = 0,
                 Description = "ok",
@@ -412,7 +412,7 @@ namespace PgxAPI.DataBaseTier
                 parametros.Add("@Plan", plan);
                 parametros.Add("@Contrato", contrato);
 
-                response.Result = connection.Query<FndSubCuentasDTO>(
+                response.Result = connection.Query<FndSubCuentasDto>(
                     @"SELECT IDx,
                          Cedula,
                          Nombre,

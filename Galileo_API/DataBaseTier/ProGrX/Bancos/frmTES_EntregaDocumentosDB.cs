@@ -4,21 +4,22 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
     public class frmTES_EntregaDocumentosDB
     {
         private readonly IConfiguration? _config;
-        private mSecurityMainDb DBBitacora;
+        private MSecurityMainDb DBBitacora;
 
         public frmTES_EntregaDocumentosDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -104,15 +105,15 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<EntregaDocumentoPendientesDTO>> listaPendientes_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<List<EntregaDocumentoPendientesDto>> listaPendientes_Obtener(int CodEmpresa, string filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            TES_EntregaDocumentosFiltros filtro = JsonConvert.DeserializeObject<TES_EntregaDocumentosFiltros>(filtros) ?? new TES_EntregaDocumentosFiltros();
+            TesEntregaDocumentosFiltros filtro = JsonConvert.DeserializeObject<TesEntregaDocumentosFiltros>(filtros) ?? new TesEntregaDocumentosFiltros();
 
-            var response = new ErrorDto<List<EntregaDocumentoPendientesDTO>>
+            var response = new ErrorDto<List<EntregaDocumentoPendientesDto>>
             {
                 Code = 0,
-                Result = new List<EntregaDocumentoPendientesDTO>()
+                Result = new List<EntregaDocumentoPendientesDto>()
             };
 
             try
@@ -149,7 +150,7 @@ namespace PgxAPI.DataBaseTier
                     FechaFin = filtro.fecha_hasta
                 };
 
-                response.Result = connection.Query<EntregaDocumentoPendientesDTO>(query, parameters).ToList();
+                response.Result = connection.Query<EntregaDocumentoPendientesDto>(query, parameters).ToList();
 
             }
             catch (Exception ex)

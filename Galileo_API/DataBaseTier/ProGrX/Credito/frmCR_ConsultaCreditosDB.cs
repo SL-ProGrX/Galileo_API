@@ -1,14 +1,13 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using PgxAPI.BusinessLogic;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Cajas;
 using PgxAPI.Models.ProGrX.Clientes;
 using PgxAPI.Models.ProGrX.Credito;
+using PgxAPI.Models.Security;
 using System.Data;
-using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Credito
 {
@@ -19,7 +18,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         private mProGrx_Main _mProGrx_Main;
         private mCredito _mCredito;
         private mProGrX_AuxiliarDB _AuxiliarDB;
-        private readonly mSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public frmCR_ConsultaCreditosDB(IConfiguration? config)
         {
@@ -27,7 +26,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
             _mProGrx_Main = new mProGrx_Main(_config);
             _mCredito = new mCredito(_config);
             _AuxiliarDB = new mProGrX_AuxiliarDB(_config);
-            _Security_MainDB = new mSecurityMainDb(_config);
+            _Security_MainDB = new MSecurityMainDb(_config);
         }
 
         /// <summary>
@@ -303,7 +302,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
                     //'Actualiza el Detalle de Creditos
                     var listCredito = CR_ConsultaCrd_Creditos_Obtener(CodEmpresa, cedula, "C");
                     //reviso estatus
-                    foreach(CrConsultaCrd_CreditosData credito in listCredito.Result)
+                    foreach(CrConsultaCrdCreditosData credito in listCredito.Result)
                     {
                         switch (credito.procesoCod)
                         {
@@ -450,14 +449,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="cedula"></param>
         /// <param name="sheetName"></param>
         /// <returns></returns>
-        public ErrorDto<List<CrConsultaCrd_CreditosData>> CR_ConsultaCrd_Creditos_Obtener(int CodEmpresa, string cedula, string sheetName)
+        public ErrorDto<List<CrConsultaCrdCreditosData>> CR_ConsultaCrd_Creditos_Obtener(int CodEmpresa, string cedula, string sheetName)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CrConsultaCrd_CreditosData>>
+            var response = new ErrorDto<List<CrConsultaCrdCreditosData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<CrConsultaCrd_CreditosData>()
+                Result = new List<CrConsultaCrdCreditosData>()
             };
 
             try
@@ -465,7 +464,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spSys_Consulta_Integrada_Creditos @Cedula , @Estado ";
-                    response.Result = connection.Query<CrConsultaCrd_CreditosData>(query,
+                    response.Result = connection.Query<CrConsultaCrdCreditosData>(query,
                         new { Cedula = cedula, Estado = sheetName }).ToList();
                 }
             }
@@ -485,14 +484,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="cedula"></param>
         /// <param name="sheetName"></param>
         /// <returns></returns>
-        public ErrorDto<List<CrConsultaCrd_solicitudData>> CR_ConsultaCrd_Tramite_Obtener(int CodEmpresa, string cedula, string sheetName)
+        public ErrorDto<List<CrConsultaCrdSolicitudData>> CR_ConsultaCrd_Tramite_Obtener(int CodEmpresa, string cedula, string sheetName)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CrConsultaCrd_solicitudData>>
+            var response = new ErrorDto<List<CrConsultaCrdSolicitudData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<CrConsultaCrd_solicitudData>()
+                Result = new List<CrConsultaCrdSolicitudData>()
             };
 
             try
@@ -500,7 +499,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spSIFEstadoSolicitud @Cedula ";
-                    response.Result = connection.Query<CrConsultaCrd_solicitudData>(query,
+                    response.Result = connection.Query<CrConsultaCrdSolicitudData>(query,
                         new { Cedula = cedula }).ToList();
                 }
             }
@@ -553,14 +552,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<List<CrConsultaCrd_preanalisisData>> CR_ConsultaCrd_PreAnalisis_Obtener(int CodEmpresa, string cedula)
+        public ErrorDto<List<CrConsultaCrdPreanalisisData>> CR_ConsultaCrd_PreAnalisis_Obtener(int CodEmpresa, string cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CrConsultaCrd_preanalisisData>>
+            var response = new ErrorDto<List<CrConsultaCrdPreanalisisData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<CrConsultaCrd_preanalisisData>()
+                Result = new List<CrConsultaCrdPreanalisisData>()
             };
 
             try
@@ -568,7 +567,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spSIFEstadoPreAnalisis  @Cedula ";
-                    response.Result = connection.Query<CrConsultaCrd_preanalisisData>(query,
+                    response.Result = connection.Query<CrConsultaCrdPreanalisisData>(query,
                         new { Cedula = cedula }).ToList();
                 }
             }
@@ -587,14 +586,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<List<CrConsultaCrd_incobrableData>> CR_ConsultaCrd_Incobrable_Obtener(int CodEmpresa, string cedula)
+        public ErrorDto<List<CrConsultaCrdIncobrableData>> CR_ConsultaCrd_Incobrable_Obtener(int CodEmpresa, string cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CrConsultaCrd_incobrableData>>
+            var response = new ErrorDto<List<CrConsultaCrdIncobrableData>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<CrConsultaCrd_incobrableData>()
+                Result = new List<CrConsultaCrdIncobrableData>()
             };
 
             try
@@ -602,7 +601,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spSIFEstadoIncobrable  @Cedula ";
-                    response.Result = connection.Query<CrConsultaCrd_incobrableData>(query,
+                    response.Result = connection.Query<CrConsultaCrdIncobrableData>(query,
                         new { Cedula = cedula }).ToList();
                 }
             }
@@ -625,14 +624,14 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="codEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<List<CrConsultaCobroDTO>> CR_ConsultaCobros_Obtener(int codEmpresa, string cedula)
+        public ErrorDto<List<CrConsultaCobroDto>> CR_ConsultaCobros_Obtener(int codEmpresa, string cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto<List<CrConsultaCobroDTO>>
+            var response = new ErrorDto<List<CrConsultaCobroDto>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<CrConsultaCobroDTO>()
+                Result = new List<CrConsultaCobroDto>()
             };
 
             try
@@ -657,7 +656,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
             ";
 
                     response.Result = connection
-                        .Query<CrConsultaCobroDTO>(query, new { Cedula = cedula })
+                        .Query<CrConsultaCobroDto>(query, new { Cedula = cedula })
                         .ToList();
                 }
             }
@@ -1049,10 +1048,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="usuario"></param>
         /// <param name="identificacion"></param>
         /// <returns></returns>
-        public ErrorDto<CajasSesionDTO> Cajas_Sesion_ObtenerActiva(int codEmpresa, string usuario, string identificacion)
+        public ErrorDto<CajasSesionDto> Cajas_Sesion_ObtenerActiva(int codEmpresa, string usuario, string identificacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var response = new ErrorDto<CajasSesionDTO>
+            var response = new ErrorDto<CajasSesionDto>
             {
                 Code = 0,
                 Description = "Ok",
@@ -1069,7 +1068,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
                           AND estado = 1
                           AND identificacion = @Identificacion";
 
-                    var result = connection.QueryFirstOrDefault<CajasSesionDTO>(
+                    var result = connection.QueryFirstOrDefault<CajasSesionDto>(
                         sql,
                         new { Usuario = usuario, Identificacion = identificacion }
                     );
@@ -1604,15 +1603,15 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         /// <param name="cedula"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto<CR_ConsultasInfoDTO> AF_Persona_Consulta_Obtener(int CodEmpresa, string cedula, string usuario)
+        public ErrorDto<CRConsultaInfoDto> AF_Persona_Consulta_Obtener(int CodEmpresa, string cedula, string usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<CR_ConsultasInfoDTO>
+            var response = new ErrorDto<CRConsultaInfoDto>
             {
                 Code = 0,
                 Description = "Consulta realizada correctamente",
-                Result = new CR_ConsultasInfoDTO()
+                Result = new CRConsultaInfoDto()
             };
 
             try
@@ -1626,18 +1625,18 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
 
                 Dapper.DefaultTypeMap.MatchNamesWithUnderscores = true;
 
-                response.Result.Telefonos = multi.Read<AF_TelefonosDTO>().ToList();
-                response.Result.CuentasBancarias = multi.Read<AF_CuentaBancariaDTO>().ToList();
-                response.Result.Ingresos = multi.Read<AF_PersonaIngresoDTO>().ToList();
-                response.Result.Liquidaciones = multi.Read<CR_PersonaLiquidacionDTO>().ToList();
-                response.Result.Beneficiarios = multi.Read<AF_PersonaBeneficiarioDTO>().ToList();
-                response.Result.Canales = multi.Read<AF_CanalesDTO>().ToList();
-                response.Result.Bienes = multi.Read<AF_BienDTO>().ToList();
-                response.Result.Escolaridad = multi.Read<AF_EscolaridadDTO>().ToList();
-                response.Result.Contacto = multi.Read<AF_PersonaDetalleDto>().ToList();
-                response.Result.EstadoLaboral = multi.Read<AF_PersonaEstadoLaboralDto>().ToList();
-                response.Result.BenePolizas = multi.Read<AFPersonaBenePolizaDTO>().ToList();
-                response.Result.Preferencias = multi.Read<CrPreferenciaDTO>().ToList();
+                response.Result.Telefonos = multi.Read<AfTelefonoDto>().ToList();
+                response.Result.CuentasBancarias = multi.Read<AfCuentaBancariaDto>().ToList();
+                response.Result.Ingresos = multi.Read<AfPersonaIngresoDto>().ToList();
+                response.Result.Liquidaciones = multi.Read<CRPersonaLiquidacionDto>().ToList();
+                response.Result.Beneficiarios = multi.Read<AfPersonaBeneficiarioDto>().ToList();
+                response.Result.Canales = multi.Read<AfCanalesDto>().ToList();
+                response.Result.Bienes = multi.Read<AfBienDto>().ToList();
+                response.Result.Escolaridad = multi.Read<AfEscolaridadDto>().ToList();
+                response.Result.Contacto = multi.Read<AFPersonaDetalleDto>().ToList();
+                response.Result.EstadoLaboral = multi.Read<AFPersonaEstadoLaboralDto>().ToList();
+                response.Result.BenePolizas = multi.Read<AFPersonaBenePolizaDto>().ToList();
+                response.Result.Preferencias = multi.Read<CrPreferenciaDto>().ToList();
 
 
 
@@ -1654,7 +1653,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         public ErrorDto AF_Persona_Canales_Registra(int CodEmpresa, string req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            AF_CanalesDTO request = JsonConvert.DeserializeObject<AF_CanalesDTO>(req) ?? new AF_CanalesDTO();
+            AfCanalesDto request = JsonConvert.DeserializeObject<AfCanalesDto>(req) ?? new AfCanalesDto();
             var response = new ErrorDto
             {
                 Code = 0,
@@ -1692,7 +1691,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         public ErrorDto AF_Persona_Bienes_Registra(int CodEmpresa, string req)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            AF_PersonaBienesRegistraDTO request = JsonConvert.DeserializeObject<AF_PersonaBienesRegistraDTO>(req) ?? new AF_PersonaBienesRegistraDTO();
+            AfPersonaBienesRegistraDto request = JsonConvert.DeserializeObject<AfPersonaBienesRegistraDto>(req) ?? new AfPersonaBienesRegistraDto();
 
             var response = new ErrorDto
             {
@@ -1743,7 +1742,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         public ErrorDto AF_Persona_Escolaridad_Registra(int CodEmpresa, string request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            AF_PersonaEscolaridadRegistraDTO req = JsonConvert.DeserializeObject<AF_PersonaEscolaridadRegistraDTO>(request) ?? new AF_PersonaEscolaridadRegistraDTO();
+            AfPersonaEscolaridadRegistraDto req = JsonConvert.DeserializeObject<AfPersonaEscolaridadRegistraDto>(request) ?? new AfPersonaEscolaridadRegistraDto();
 
             var response = new ErrorDto
             {
@@ -1793,7 +1792,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
         public ErrorDto AF_Persona_Preferencia_Registra(int CodEmpresa, string request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            CR_PreferenciaDTO req = JsonConvert.DeserializeObject<CR_PreferenciaDTO>(request) ?? new CR_PreferenciaDTO();
+            CRPreferenciaDto req = JsonConvert.DeserializeObject<CRPreferenciaDto>(request) ?? new CRPreferenciaDto();
 
             var response = new ErrorDto
             {
@@ -1838,13 +1837,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
 
         #region Estado
 
-        public ErrorDto<EmpresaEnlaceResultDTO> ConsultaVersionEmpresa(int codEmpresa)
+        public ErrorDto<EmpresaEnlaceResultDto> ConsultaVersionEmpresa(int codEmpresa)
         {
-            var resp = new ErrorDto<EmpresaEnlaceResultDTO>
+            var resp = new ErrorDto<EmpresaEnlaceResultDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new EmpresaEnlaceResultDTO()
+                Result = new EmpresaEnlaceResultDto()
             };
 
             resp.Result = EmpresaEnlaceObtener(codEmpresa)[0];
@@ -1852,10 +1851,10 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
             return resp;
         }
 
-        public List<EmpresaEnlaceResultDTO> EmpresaEnlaceObtener(int CodEmpresa)
+        public List<EmpresaEnlaceResultDto> EmpresaEnlaceObtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<EmpresaEnlaceResultDTO> result = new List<EmpresaEnlaceResultDTO>();
+            List<EmpresaEnlaceResultDto> result = new List<EmpresaEnlaceResultDto>();
 
             string strSQL = "";
             try
@@ -1875,7 +1874,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
                                     ec_visible_fianzas,
                                     estadoCuenta
                               from dbo.sif_empresa";
-                    result = connection.Query<EmpresaEnlaceResultDTO>(strSQL).ToList();
+                    result = connection.Query<EmpresaEnlaceResultDto>(strSQL).ToList();
                 }
             }
             catch (Exception)
@@ -1951,7 +1950,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Credito
                         string query = @"exec spuProGrX_MOBILE_CUENTAS_ENVIAESTADO @cedula";
                         var resp = connection.Query(query, new { cedula = cedula });
 
-                        _Security_MainDB.Bitacora(new BitacoraInsertarDTO
+                        _Security_MainDB.Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = usuario,

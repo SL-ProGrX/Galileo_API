@@ -15,16 +15,16 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<CC_GenericList> CC_Cuentas_Obtener(int CodEmpresa)
+        public List<CCGenericList> CC_Cuentas_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CC_GenericList> resp = [];
+            List<CCGenericList> resp = [];
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select ID_BANCO as 'IdX' ,rtrim(DESCRIPCION) as 'itmx'from TES_BANCOS where ESTADO = 'A' and supervision = 1";
-                    resp = connection.Query<CC_GenericList>(query).ToList();
+                    resp = connection.Query<CCGenericList>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -34,10 +34,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<AutorizaSolicitudes_CreditoData> CC_ModuloCredito_Obtener(int CodEmpresa, int? CodBanco, string FechaInicio, string FechaCorte)
+        public List<AutorizaSolicitudesCreditoData> CC_ModuloCredito_Obtener(int CodEmpresa, int? CodBanco, string FechaInicio, string FechaCorte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<AutorizaSolicitudes_CreditoData> resp = [];
+            List<AutorizaSolicitudesCreditoData> resp = [];
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -54,7 +54,7 @@ namespace PgxAPI.DataBaseTier
                         query += $@" And R.cod_banco = {CodBanco}";
                     }
 
-                    resp = connection.Query<AutorizaSolicitudes_CreditoData>(query).ToList();
+                    resp = connection.Query<AutorizaSolicitudesCreditoData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -64,10 +64,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<AutorizaSolicitudes_FondosData> CC_ModuloFondos_Obtener(int CodEmpresa, int? CodBanco, string FechaInicio, string FechaCorte)
+        public List<AutorizaSolicitudesFondosData> CC_ModuloFondos_Obtener(int CodEmpresa, int? CodBanco, string FechaInicio, string FechaCorte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<AutorizaSolicitudes_FondosData> resp = new List<AutorizaSolicitudes_FondosData>();
+            List<AutorizaSolicitudesFondosData> resp = new List<AutorizaSolicitudesFondosData>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -86,7 +86,7 @@ namespace PgxAPI.DataBaseTier
                         query += $@" And L.cod_banco = {CodBanco}";
                     }
 
-                    resp = connection.Query<AutorizaSolicitudes_FondosData>(query).ToList();
+                    resp = connection.Query<AutorizaSolicitudesFondosData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -96,10 +96,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<AutorizaSolicitudes_LiquidacionData> CC_ModuloLiquidacion_Obtener(int CodEmpresa, int? CodBanco, string FechaInicio, string FechaCorte)
+        public List<AutorizaSolicitudesLiquidacionData> CC_ModuloLiquidacion_Obtener(int CodEmpresa, int? CodBanco, string FechaInicio, string FechaCorte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<AutorizaSolicitudes_LiquidacionData> resp = [];
+            List<AutorizaSolicitudesLiquidacionData> resp = [];
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -115,7 +115,7 @@ namespace PgxAPI.DataBaseTier
                         query += $@" And L.cod_banco = {CodBanco}";
                     }
 
-                    resp = connection.Query<AutorizaSolicitudes_LiquidacionData>(query).ToList();
+                    resp = connection.Query<AutorizaSolicitudesLiquidacionData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -125,10 +125,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<AutorizaSolicitudes_BeneficiosData> CC_ModuloBeneficios_Obtener(int CodEmpresa, int? CodBanco, string FechaInicio, string FechaCorte)
+        public List<AutorizaSolicitudesBeneficiosData> CC_ModuloBeneficios_Obtener(int CodEmpresa, int? CodBanco, string FechaInicio, string FechaCorte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<AutorizaSolicitudes_BeneficiosData> resp = new List<AutorizaSolicitudes_BeneficiosData>();
+            List<AutorizaSolicitudesBeneficiosData> resp = new List<AutorizaSolicitudesBeneficiosData>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -147,7 +147,7 @@ namespace PgxAPI.DataBaseTier
                         query += $@" And B.cod_banco = {CodBanco}";
                     }
 
-                    resp = connection.Query<AutorizaSolicitudes_BeneficiosData>(query).ToList();
+                    resp = connection.Query<AutorizaSolicitudesBeneficiosData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -157,10 +157,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<AutorizaSolicitudes_HipotecarioData> CC_ModuloHipotecario_Obtener(int CodEmpresa, int? CodBanco, string FechaInicio, string FechaCorte)
+        public List<AutorizaSolicitudesHipotecarioData> CC_ModuloHipotecario_Obtener(int CodEmpresa, int? CodBanco, string FechaInicio, string FechaCorte)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<AutorizaSolicitudes_HipotecarioData> resp = new List<AutorizaSolicitudes_HipotecarioData>();
+            List<AutorizaSolicitudesHipotecarioData> resp = new List<AutorizaSolicitudesHipotecarioData>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -178,7 +178,7 @@ namespace PgxAPI.DataBaseTier
                         query += $@" And B.cod_banco = {CodBanco}";
                     }
 
-                    resp = connection.Query<AutorizaSolicitudes_HipotecarioData>(query).ToList();
+                    resp = connection.Query<AutorizaSolicitudesHipotecarioData>(query).ToList();
                 }
             }
             catch (Exception ex)

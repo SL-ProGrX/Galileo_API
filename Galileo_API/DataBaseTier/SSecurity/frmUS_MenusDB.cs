@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
+using PgxAPI.Models.Security;
 using System.Data;
 
 
@@ -17,12 +18,12 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public List<UsMenuDTO> ObtenerUsMenusPorTipoYNodoPadreEsNull(string? Tipo)
+        public List<UsMenuDto> ObtenerUsMenusPorTipoYNodoPadreEsNull(string? Tipo)
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
             Tipo ??= "M";
-            List<UsMenuDTO> Result = [];
+            List<UsMenuDto> Result = [];
             //string sql = "  select * from US_Menus order by PRIORIDAD";
             string sql = "select * from US_Menus where tipo = @Tipo and nodo_padre is null order by prioridad";
             var values = new
@@ -32,7 +33,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                Result = connection.Query<UsMenuDTO>(sql, values).ToList();
+                Result = connection.Query<UsMenuDto>(sql, values).ToList();
             }
             catch (Exception ex)
             {
@@ -42,11 +43,11 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerMenus
 
-        public List<UsMenuDTO> ObtenerUsMenus()
+        public List<UsMenuDto> ObtenerUsMenus()
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
-            List<UsMenuDTO> Result = [];
+            List<UsMenuDto> Result = [];
             string sql = "select * from US_Menus order by MENU_NODO";
             var values = new
             {
@@ -55,7 +56,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                Result = connection.Query<UsMenuDTO>(sql, values).ToList();
+                Result = connection.Query<UsMenuDto>(sql, values).ToList();
             }
             catch (Exception ex)
             {
@@ -65,11 +66,11 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerUsMenus
 
-        public List<UsModuloDTO> ObtenerUsModulos()
+        public List<UsModuloDto> ObtenerUsModulos()
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
-            List<UsModuloDTO> Result = [];
+            List<UsModuloDto> Result = [];
             string sql = "select * from us_modulos order by modulo";
             var values = new
             {
@@ -78,7 +79,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                Result = connection.Query<UsModuloDTO>(sql, values).ToList();
+                Result = connection.Query<UsModuloDto>(sql, values).ToList();
             }
             catch (Exception ex)
             {
@@ -88,11 +89,11 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerModulos
 
-        public List<UsFormularioDTO> ObtenerUsFormularios()
+        public List<UsFormularioDto> ObtenerUsFormularios()
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
-            List<UsFormularioDTO> Result = [];
+            List<UsFormularioDto> Result = [];
             string sql = "select *,dbo.fxSEG_OpcionAsignada(Formulario,0) as 'Existe' from US_FORMULARIOS order by formulario";
             var values = new
             {
@@ -101,7 +102,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                Result = connection.Query<UsFormularioDTO>(sql, values).ToList();
+                Result = connection.Query<UsFormularioDto>(sql, values).ToList();
             }
             catch (Exception ex)
             {
@@ -138,11 +139,11 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerMenuNodoPorNodoPadreConPrioridad
 
-        public ResultadoCrearYEditar_UsMenuDTO? ActualizarUsMenu(UsMenuDTO info)
+        public ResultadoCrearYEditarUsMenuDto? ActualizarUsMenu(UsMenuDto info)
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
-            ResultadoCrearYEditar_UsMenuDTO? resultado = null;
+            ResultadoCrearYEditarUsMenuDto? resultado = null;
             try
             {
                 using (var connection = new SqlConnection(stringConn))
@@ -166,7 +167,7 @@ namespace PgxAPI.DataBaseTier
                         ICONO_WEB = info.ICONO_WEB
                     };
 
-                    resultado = connection.QueryFirst<ResultadoCrearYEditar_UsMenuDTO?>("spGa_Menu_Update", values, commandType: CommandType.StoredProcedure);
+                    resultado = connection.QueryFirst<ResultadoCrearYEditarUsMenuDto?>("spGa_Menu_Update", values, commandType: CommandType.StoredProcedure);
 
                 }
             }
@@ -236,13 +237,13 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerMenuNodoConIsNull
 
-        public UsModuloDTO ObtenerUsModulosOrdenadosPorTipo(string Tipo)
+        public UsModuloDto ObtenerUsModulosOrdenadosPorTipo(string Tipo)
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
             //Tipo ??= "M"; //si Tipo es null, asignar "M"
 
-            UsModuloDTO Result = new UsModuloDTO();
+            UsModuloDto Result = new UsModuloDto();
             string sql = "select * from US_modulos where modulo not in(select modulo from us_menus where tipo = @Tipo) order by modulo";
             var values = new
             {
@@ -251,7 +252,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                Result = connection.Query<UsModuloDTO>(sql, values).FirstOrDefault();
+                Result = connection.Query<UsModuloDto>(sql, values).FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -261,11 +262,11 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerModulosOrdenadosPorTipo
 
-        public ResultadoCrearYEditar_UsMenuDTO? CrearUsMenu(UsMenuDTO info)
+        public ResultadoCrearYEditarUsMenuDto? CrearUsMenu(UsMenuDto info)
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
-            ResultadoCrearYEditar_UsMenuDTO? resultado = null;
+            ResultadoCrearYEditarUsMenuDto? resultado = null;
             try
             {
                 using (var connection = new SqlConnection(stringConn))
@@ -290,7 +291,7 @@ namespace PgxAPI.DataBaseTier
                         ICONO_WEB = info.ICONO_WEB
                     };
 
-                    resultado = connection.QueryFirst<ResultadoCrearYEditar_UsMenuDTO?>("spGa_Menu_Crear", values, commandType: CommandType.StoredProcedure);
+                    resultado = connection.QueryFirst<ResultadoCrearYEditarUsMenuDto?>("spGa_Menu_Crear", values, commandType: CommandType.StoredProcedure);
                 }
             }
             catch (Exception ex)
@@ -403,11 +404,11 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerMenuNodoPorMenuFormulario
 
-        public UsFormularioDTO ObtenerUsFormularioPorFormulario(string Formulario)
+        public UsFormularioDto ObtenerUsFormularioPorFormulario(string Formulario)
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
-            UsFormularioDTO result = new UsFormularioDTO();
+            UsFormularioDto result = new UsFormularioDto();
             string sql = "select * from us_formularios where formulario = @Formulario";
             var values = new
             {
@@ -417,7 +418,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                result = connection.Query<UsFormularioDTO?>(sql, values).FirstOrDefault();
+                result = connection.Query<UsFormularioDto?>(sql, values).FirstOrDefault();
             }
 
             catch (Exception ex)
@@ -429,11 +430,11 @@ namespace PgxAPI.DataBaseTier
 
         }//end ObtenerUsFormularioPorFormulario
 
-        public UsMenuDTO ObtenerUsMenuPorMenuNodo(int MenuNodo)
+        public UsMenuDto ObtenerUsMenuPorMenuNodo(int MenuNodo)
         {
             string stringConn = _config.GetConnectionString("DefaultConnString");
 
-            UsMenuDTO result = new UsMenuDTO();
+            UsMenuDto result = new UsMenuDto();
             string sql = "Select * from US_Menus where Menu_Nodo = @MenuNodo";
             var values = new
             {
@@ -443,7 +444,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                result = connection.Query<UsMenuDTO?>(sql, values).FirstOrDefault();
+                result = connection.Query<UsMenuDto?>(sql, values).FirstOrDefault();
             }
 
             catch (Exception ex)

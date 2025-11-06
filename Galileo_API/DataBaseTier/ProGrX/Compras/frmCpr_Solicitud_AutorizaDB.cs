@@ -5,23 +5,24 @@ using Dapper;
 using Newtonsoft.Json;
 using PgxAPI.Models;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier
 {
     public class frmCpr_Solicitud_AutorizaDB
     {
         private readonly IConfiguration _config;
-        mSecurityMainDb DBBitacora;
+        MSecurityMainDb DBBitacora;
         private readonly frmCpr_SolicitudDB solicitudDB;
 
         public frmCpr_Solicitud_AutorizaDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(config);
+            DBBitacora = new MSecurityMainDb(config);
             solicitudDB = new frmCpr_SolicitudDB(config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -32,17 +33,17 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cpr_id"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprSolicitudAdjudica_Consulta>> CprSolicitudAdjudica_Consultar(int CodEmpresa, int cpr_id)
+        public ErrorDto<List<CprSolicitudAdjudicaConsulta>> CprSolicitudAdjudica_Consultar(int CodEmpresa, int cpr_id)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprSolicitudAdjudica_Consulta>>();
+            var response = new ErrorDto<List<CprSolicitudAdjudicaConsulta>>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spCprSolicitudProveedoresLista_Obtener {cpr_id}";
-                    response.Result = connection.Query<CprSolicitudAdjudica_Consulta>(query).ToList();
+                    response.Result = connection.Query<CprSolicitudAdjudicaConsulta>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -63,10 +64,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="proveedor"></param>
         /// <param name="cotizacion"></param>
         /// <returns></returns>
-        public ErrorDto<List<CprSolicitudAdjudicaProductos_DTO>> CprSolicitudAdjudicaProductos_Consultar(int CodEmpresa, int cpr_id, int proveedor, string? cotizacion)
+        public ErrorDto<List<CprSolicitudAdjudicaProductosDto>> CprSolicitudAdjudicaProductos_Consultar(int CodEmpresa, int cpr_id, int proveedor, string? cotizacion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CprSolicitudAdjudicaProductos_DTO>>();
+            var response = new ErrorDto<List<CprSolicitudAdjudicaProductosDto>>();
 
             try
             {
@@ -74,7 +75,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     //busco tipo de solicitud y monto 
                     var query = $"select * from CPR_SOLICITUD where CPR_ID = {cpr_id}";
-                    var solicitud = connection.QueryFirstOrDefault<CprSolicitudDTO>(query);
+                    var solicitud = connection.QueryFirstOrDefault<CprSolicitudDto>(query);
 
                     if(solicitud.tipo_orden == solicitudDB.CprSolicitud_TipoExcepcionGM(CodEmpresa).Description)
                     {
@@ -109,7 +110,7 @@ namespace PgxAPI.DataBaseTier
                                     WHERE  SP.PROVEEDOR_CODIGO = {proveedor} AND PP.CPR_ID = {cpr_id}
                                     AND spc.CPR_ID = SP.CPR_ID AND spc.PROVEEDOR_CODIGO = SP.PROVEEDOR_CODIGO
                                     AND SP.NO_COTIZACION = '{cotizacion}' ";
-                        response.Result = connection.Query<CprSolicitudAdjudicaProductos_DTO>(query).ToList();
+                        response.Result = connection.Query<CprSolicitudAdjudicaProductosDto>(query).ToList();
                     }
                     else if (solicitud.tipo_orden == solicitudDB.CprSolicitud_TipoExcepcion(CodEmpresa).Description)
                     {
@@ -136,7 +137,7 @@ namespace PgxAPI.DataBaseTier
                                     WHERE  SP.PROVEEDOR_CODIGO = {proveedor} AND PP.CPR_ID = {cpr_id}
                                     AND spc.CPR_ID = SP.CPR_ID AND spc.PROVEEDOR_CODIGO = SP.PROVEEDOR_CODIGO
                                     AND SP.NO_COTIZACION = '{cotizacion}' ";
-                        response.Result = connection.Query<CprSolicitudAdjudicaProductos_DTO>(query).ToList();
+                        response.Result = connection.Query<CprSolicitudAdjudicaProductosDto>(query).ToList();
                     }
                     else
                     {
@@ -148,7 +149,7 @@ namespace PgxAPI.DataBaseTier
                     THEN 1 ELSE 0 END ) AS OCUPADO
                     from CPR_SOLICITUD_PROV_BS C  left join PV_PRODUCTOS P ON C.COD_PRODUCTO = P.COD_PRODUCTO 
                     WHERE C.CPR_ID = {cpr_id} AND C.PROVEEDOR_CODIGO = '{proveedor}' AND C.NO_COTIZACION = '{cotizacion}'";
-                        response.Result = connection.Query<CprSolicitudAdjudicaProductos_DTO>(query).ToList();
+                        response.Result = connection.Query<CprSolicitudAdjudicaProductosDto>(query).ToList();
                     }
 
                         
@@ -168,7 +169,7 @@ namespace PgxAPI.DataBaseTier
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             CprSolicitudAdjudicaGuardar datos = JsonConvert.DeserializeObject<CprSolicitudAdjudicaGuardar>(adjudica);
-            CprSolicitudAdjudica_Consulta proveedor = datos.proveedor;
+            CprSolicitudAdjudicaConsulta proveedor = datos.proveedor;
             ErrorDto response = new()
             {
                 Code = 0,
@@ -183,10 +184,10 @@ namespace PgxAPI.DataBaseTier
                     //valido que tipo de solicitud 
                     //busco tipo de solicitud y monto 
                     query = $@"select * from CPR_SOLICITUD where CPR_ID = {datos.cpr_id}";
-                    var solicitud = connection.QueryFirstOrDefault<CprSolicitudDTO>(query);
+                    var solicitud = connection.QueryFirstOrDefault<CprSolicitudDto>(query);
 
 
-                    SolicitudMontosDTO montos = new SolicitudMontosDTO();
+                    SolicitudMontosDto montos = new SolicitudMontosDto();
 
                     if (solicitud.tipo_orden == solicitudDB.CprSolicitud_TipoExcepcionGM(CodEmpresa).Description)
                     {
@@ -207,7 +208,7 @@ namespace PgxAPI.DataBaseTier
                                         ) AS MontoOrden
                                     FROM CPR_SOLICITUD s
                                     WHERE s.CPR_ID = {datos.cpr_id} ";
-                        montos = connection.QueryFirstOrDefault<SolicitudMontosDTO>(query);
+                        montos = connection.QueryFirstOrDefault<SolicitudMontosDto>(query);
                     }
 
 
@@ -391,7 +392,7 @@ namespace PgxAPI.DataBaseTier
                     //valido que tipo de solicitud 
                     //busco tipo de solicitud y monto 
                     var query = $@"select * from CPR_SOLICITUD where CPR_ID = {cpr_id}";
-                    var solicitud = connection.QueryFirstOrDefault<CprSolicitudDTO>(query);
+                    var solicitud = connection.QueryFirstOrDefault<CprSolicitudDto>(query);
 
                     OrdenDatosAcciones ordenDatosAcciones = new OrdenDatosAcciones();
                     ordenDatosAcciones.usuario = usuario;
@@ -465,7 +466,7 @@ namespace PgxAPI.DataBaseTier
         {
             ErrorDto<string> mjs = new ErrorDto<string>();
             var lineas = new ErrorDto<List<OrdenLineas>>();
-            ErrorDto errorDTO = new()
+            ErrorDto errorDto = new()
             {
                 Code = 0
             };
@@ -474,8 +475,8 @@ namespace PgxAPI.DataBaseTier
 
             if (mjs.Code == -1)
             {
-                errorDTO.Code = -1;
-                errorDTO.Description = mjs.Description;
+                errorDto.Code = -1;
+                errorDto.Description = mjs.Description;
             }
             else
             {
@@ -498,9 +499,9 @@ namespace PgxAPI.DataBaseTier
 
                     if (lineas.Code == -1)
                     {
-                        errorDTO.Code = -1;
-                        errorDTO.Description = lineas.Description;
-                        return errorDTO;
+                        errorDto.Code = -1;
+                        errorDto.Description = lineas.Description;
+                        return errorDto;
                     }
                     else
                     {
@@ -538,11 +539,11 @@ namespace PgxAPI.DataBaseTier
                             CodProveedor = proveedor
                         };
 
-                        errorDTO.Code = connection.Execute(query, cabeceraParams);
+                        errorDto.Code = connection.Execute(query, cabeceraParams);
 
 
                         //Bitacora
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = ordenes.usuario,
@@ -552,7 +553,7 @@ namespace PgxAPI.DataBaseTier
                         });
 
                         ordenes.cod_orden = vConsecutivo;
-                        errorDTO.Description = vConsecutivo;
+                        errorDto.Description = vConsecutivo;
 
 
                         //Guarda Detalle
@@ -602,16 +603,16 @@ namespace PgxAPI.DataBaseTier
                         connection.Execute(query);
 
                         //regreso de la respuesta
-                        errorDTO.Description = "Proceso de adjudicación cerrado satisfactoriamente!";
+                        errorDto.Description = "Proceso de adjudicación cerrado satisfactoriamente!";
                     }
                 }
                 catch (Exception ex)
                 {
-                    errorDTO.Code = -1;
-                    errorDTO.Description = ex.Message;
+                    errorDto.Code = -1;
+                    errorDto.Description = ex.Message;
                 }
             }
-            return errorDTO;
+            return errorDto;
 
         }
 
@@ -656,7 +657,7 @@ namespace PgxAPI.DataBaseTier
                         if (ColBod1 > 0)
                         {
                             var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{ColBod1}'";
-                            List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                            List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
                             if (exist.Count == 0)
                             {
                                 response.Code = -1;
@@ -697,7 +698,7 @@ namespace PgxAPI.DataBaseTier
                         if (ColBod2 > 0)
                         {
                             var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{ColBod1}'";
-                            List<BodegaDTO> exist = connection.Query<BodegaDTO>(query).ToList();
+                            List<Models.BodegaDto> exist = connection.Query<Models.BodegaDto>(query).ToList();
                             if (exist.Count == 0)
                             {
                                 response.Code = -1;
@@ -803,7 +804,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     //busco datos de orden
                     var querySolicitud = $@"SELECT * FROM CPR_SOLICITUD WHERE CPR_ID = {CPR_ID}";
-                    var solicitud = connection.QueryFirstOrDefault<CprSolicitudDTO>(querySolicitud);
+                    var solicitud = connection.QueryFirstOrDefault<CprSolicitudDto>(querySolicitud);
 
                     //busco proveedor
                     var queryProv = $@"SELECT PROVEEDOR_CODIGO as com_dir_cod_proveedor,
@@ -811,7 +812,7 @@ namespace PgxAPI.DataBaseTier
                                     FROM CPR_SOLICITUD_PROV P
                                     left join CXP_PROVEEDORES cp ON cp.COD_PROVEEDOR = P.PROVEEDOR_CODIGO
                                     WHERE CPR_ID = {CPR_ID} ";
-                    var proveedor = connection.QueryFirstOrDefault<CprSolicitudDTO>(queryProv);
+                    var proveedor = connection.QueryFirstOrDefault<CprSolicitudDto>(queryProv);
                     if (proveedor != null)
                     {
                         solicitud.com_dir_cod_proveedor = proveedor.com_dir_cod_proveedor;
@@ -823,7 +824,7 @@ namespace PgxAPI.DataBaseTier
                                             BS.DESC_MONTO, BS.TOTAL FROM CPR_SOLICITUD_PROV_BS BS LEFT JOIN CPR_SOLICITUD_BS S 
                                             ON S.CPR_ID = BS.CPR_ID
                                             WHERE BS.CPR_ID = {CPR_ID} ";
-                    var detalle = connection.Query<CprSolicitudBsDTO>(queryDetalle).ToList();
+                    var detalle = connection.Query<CprSolicitudBsDto>(queryDetalle).ToList();
 
                     frmCprCompraDirectaDB compraDirectaDB = new frmCprCompraDirectaDB(_config);
                     CompraDirectaInsert directaInsert = new CompraDirectaInsert();
@@ -843,7 +844,7 @@ namespace PgxAPI.DataBaseTier
 
                     float imp_venta = 0;
                     float descuento = 0;
-                    foreach (CprSolicitudBsDTO item in detalle)
+                    foreach (CprSolicitudBsDto item in detalle)
                     {
                         CompraDirectaDetalle linea = new CompraDirectaDetalle();
                         linea.cod_producto = item.cod_producto;

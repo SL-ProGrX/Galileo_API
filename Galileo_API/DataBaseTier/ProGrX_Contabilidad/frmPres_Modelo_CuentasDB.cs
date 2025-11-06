@@ -162,7 +162,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa">Código de la empresa.</param>
         /// <param name="request">Lista de datos de cuentas del modelo a cargar.</param>    
         /// /// <returns>Un objeto ErrorDto que indica el resultado de la operación.</returns>
-        public ErrorDto spPres_Modelo_Cuentas_CargaDatos(int CodEmpresa, List<Pres_Modelo_Cuentas_ImportData> request)
+        public ErrorDto spPres_Modelo_Cuentas_CargaDatos(int CodEmpresa, List<PresModeloCuentasImportData> request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto
@@ -174,7 +174,7 @@ namespace PgxAPI.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 {
                     int Inicializa = 1;
-                    foreach (Pres_Modelo_Cuentas_ImportData row in request)
+                    foreach (PresModeloCuentasImportData row in request)
                     {
                         var fechaFormateada = row.Corte.Split(' ')[0] + " 23:59:59";
 
@@ -212,11 +212,11 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodContab">Código de la contabilidad.</param>
         /// <param name="CodModelo">Código del modelo a revisar.</param>
         /// <param name="Usuario">Nombre de usuario que realiza la revisión.</param>
-        /// <returns>Un objeto ErrorDto que contiene una lista de Pres_Modelo_Cuentas_ImportData. O mensaje de error</returns>
-        public ErrorDto<List<Pres_Modelo_Cuentas_ImportData>> spPres_Modelo_Cuentas_RevisaImport(int CodEmpresa, int CodContab, string CodModelo, string Usuario)
+        /// <returns>Un objeto ErrorDto que contiene una lista de PresModeloCuentasImportData. O mensaje de error</returns>
+        public ErrorDto<List<PresModeloCuentasImportData>> spPres_Modelo_Cuentas_RevisaImport(int CodEmpresa, int CodContab, string CodModelo, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<Pres_Modelo_Cuentas_ImportData>>
+            var resp = new ErrorDto<List<PresModeloCuentasImportData>>
             {
                 Code = 0,
                 Description = "Ok"
@@ -228,7 +228,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"exec spPres_Presupuesto_Import_Revisa '{CodModelo}', {CodContab}, '{Usuario}'";
 
-                    resp.Result = connection.Query<Pres_Modelo_Cuentas_ImportData>(query).ToList();
+                    resp.Result = connection.Query<PresModeloCuentasImportData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -326,23 +326,23 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodModelo">Código del modelo de cuentas.</param>
         /// <param name="Usuario">Nombre de usuario que realiza la consulta.</param>
         /// <param name="request">Lista de datos de cuentas del modelo a procesar.</param>
-        /// <returns>Un objeto ErrorDto que contiene una lista de Pres_Modelo_Cuentas_ImportData. O mensaje de error</returns>
-        public ErrorDto<List<Pres_Modelo_Cuentas_ImportData>> spCntX_Periodo_Fiscal_Meses(int CodEmpresa, int CodContab, string CodModelo, string Usuario, List<Pres_Modelo_Cuentas_Horizontal> request)
+        /// <returns>Un objeto ErrorDto que contiene una lista de PresModeloCuentasImportData. O mensaje de error</returns>
+        public ErrorDto<List<PresModeloCuentasImportData>> spCntXPeriodoFiscalMeses(int CodEmpresa, int CodContab, string CodModelo, string Usuario, List<PresModeloCuentasHorizontal> request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<Pres_Modelo_Cuentas_ImportData>>
+            var resp = new ErrorDto<List<PresModeloCuentasImportData>>
             {
                 Code = 0,
-                Result = new List<Pres_Modelo_Cuentas_ImportData>()
+                Result = new List<PresModeloCuentasImportData>()
             };
-            List<CntX_Periodo_Fiscal_Meses> periodos = new List<CntX_Periodo_Fiscal_Meses>();
+            List<CntXPeriodoFiscalMeses> periodos = new List<CntXPeriodoFiscalMeses>();
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = $@"exec spCntX_Periodo_Fiscal_Meses {CodContab}, 0, '{CodModelo}'";
+                    var query = $@"exec spCntXPeriodoFiscalMeses {CodContab}, 0, '{CodModelo}'";
 
-                    periodos = connection.Query<CntX_Periodo_Fiscal_Meses>(query).ToList();
+                    periodos = connection.Query<CntXPeriodoFiscalMeses>(query).ToList();
 
                     foreach (var item in request)
                     {
@@ -391,7 +391,7 @@ namespace PgxAPI.DataBaseTier
 
                             if (valor >= 0)
                             {
-                                resp.Result.Add(new Pres_Modelo_Cuentas_ImportData
+                                resp.Result.Add(new PresModeloCuentasImportData
                                 {
                                     Cod_Contabilidad = CodContab,
                                     Cod_Modelo = CodModelo,

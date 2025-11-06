@@ -21,13 +21,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Estado"></param>
         /// <param name="Filtro"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CR_Renuncias_TagsData>> AF_CR_Renuncias_Tags_Obtener(int CodEmpresa, string Estado, string Filtro)
+        public ErrorDto<List<AfCrRenunciasTagsData>> AF_CR_Renuncias_Tags_Obtener(int CodEmpresa, string Estado, string Filtro)
         {
-            var result = new ErrorDto<List<AF_CR_Renuncias_TagsData>>()
+            var result = new ErrorDto<List<AfCrRenunciasTagsData>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_CR_Renuncias_TagsData>()
+                Result = new List<AfCrRenunciasTagsData>()
             };
 
             try
@@ -41,7 +41,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     Filtro = Filtro ?? ""
                 };
 
-                result.Result = connection.Query<AF_CR_Renuncias_TagsData>(
+                result.Result = connection.Query<AfCrRenunciasTagsData>(
                     "spAFI_Renuncias_Control_Consulta",
                     parameters,
                     commandType: System.Data.CommandType.StoredProcedure
@@ -62,7 +62,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="recepcionDatos"></param>
         /// <returns></returns>
-        public ErrorDto AF_CR_Renuncia_Recepcion_Aplica(int CodEmpresa, AF_CR_RenunciaRecepcionAplica recepcionDatos)
+        public ErrorDto AF_CR_Renuncia_Recepcion_Aplica(int CodEmpresa, AfCrRenunciaRecepcionAplica recepcionDatos)
         {
             var result = new ErrorDto()
             {
@@ -104,7 +104,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="revisionDatos"></param>
         /// <returns></returns>
-        public ErrorDto AF_CR_Renuncia_Revision_Aplica(int CodEmpresa, AF_CR_RenunciaRevisionAplica revisionDatos)
+        public ErrorDto AF_CR_Renuncia_Revision_Aplica(int CodEmpresa, AfCrRenunciaRevisionAplica revisionDatos)
         {
             var result = new ErrorDto()
             {
@@ -147,13 +147,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="RenunciaId"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CR_RenunciaEtiquetas>> AF_CR_Renuncia_Etiquetas_Consulta(int CodEmpresa, int RenunciaId)
+        public ErrorDto<List<AfCrRenunciaEtiquetas>> AF_CR_Renuncia_Etiquetas_Consulta(int CodEmpresa, int RenunciaId)
         {
-            var result = new ErrorDto<List<AF_CR_RenunciaEtiquetas>>()
+            var result = new ErrorDto<List<AfCrRenunciaEtiquetas>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_CR_RenunciaEtiquetas>()
+                Result = new List<AfCrRenunciaEtiquetas>()
             };
 
             try
@@ -163,7 +163,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 
                 var parameters = new { RenunciaId };
 
-                result.Result = connection.Query<AF_CR_RenunciaEtiquetas>(
+                result.Result = connection.Query<AfCrRenunciaEtiquetas>(
                     "spAFI_Renuncia_Etiquetas_Consulta",
                     parameters,
                     commandType: System.Data.CommandType.StoredProcedure
@@ -216,7 +216,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
-        public ErrorDto AF_CR_Renuncia_Revision_Reversar(int CodEmpresa, AF_CR_RenunciaReversa dto)
+        public ErrorDto AF_CR_Renuncia_Revision_Reversar(int CodEmpresa, AfCrRenunciaReversa dto)
         {
             var result = new ErrorDto()
             {
@@ -257,13 +257,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CR_Renuncias_TagsData>> AF_CR_Renuncias_Pendientes_Obtener(int CodEmpresa)
+        public ErrorDto<List<AfCrRenunciasTagsData>> AF_CR_Renuncias_Pendientes_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<AF_CR_Renuncias_TagsData>>()
+            var result = new ErrorDto<List<AfCrRenunciasTagsData>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_CR_Renuncias_TagsData>()
+                Result = new List<AfCrRenunciasTagsData>()
             };
 
             try
@@ -274,7 +274,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                 string query = @"SELECT COD_RENUNCIA AS Cod_Renuncia, CEDULA, NOMBRE, Estado_Desc
                                  FROM vAFI_Renuncias_Pendientes_Recibir";
 
-                result.Result = connection.Query<AF_CR_Renuncias_TagsData>(query).ToList();
+                result.Result = connection.Query<AfCrRenunciasTagsData>(query).ToList();
             }
             catch (Exception ex)
             {
@@ -290,13 +290,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_CR_Renuncias_TagsData>> AF_CR_Renuncias_Obtener(int CodEmpresa)
+        public ErrorDto<List<AfCrRenunciasTagsData>> AF_CR_Renuncias_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<AF_CR_Renuncias_TagsData>>()
+            var result = new ErrorDto<List<AfCrRenunciasTagsData>>()
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<AF_CR_Renuncias_TagsData>()
+                Result = new List<AfCrRenunciasTagsData>()
             };
 
             try
@@ -307,7 +307,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                 string query = @"SELECT COD_RENUNCIA AS Cod_Renuncia, CEDULA, NOMBRE, Estado_Desc
                                  FROM vAFI_Renuncias";
 
-                result.Result = connection.Query<AF_CR_Renuncias_TagsData>(query).ToList();
+                result.Result = connection.Query<AfCrRenunciasTagsData>(query).ToList();
             }
             catch (Exception ex)
             {

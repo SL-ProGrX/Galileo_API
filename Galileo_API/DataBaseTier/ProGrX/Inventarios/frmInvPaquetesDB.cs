@@ -68,7 +68,7 @@ namespace PgxAPI.DataBaseTier
                                         {paginacionActual} ";
 
 
-                    response.Result.Lista = connection.Query<PaqueteDTO>(query).ToList();
+                    response.Result.Lista = connection.Query<PaqueteDto>(query).ToList();
 
                 }
             }
@@ -84,17 +84,17 @@ namespace PgxAPI.DataBaseTier
 
 
 
-        public ErrorDto<List<PaqueteDTO>> Paquetes_ObtenerTodos(int CodEmpresa)
+        public ErrorDto<List<PaqueteDto>> Paquetes_ObtenerTodos(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PaqueteDTO>>();
+            var response = new ErrorDto<List<PaqueteDto>>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = "SELECT * FROM pv_paquetes";
-                    response.Result = connection.Query<PaqueteDTO>(query).ToList();
+                    response.Result = connection.Query<PaqueteDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -107,11 +107,11 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<PaqueteDTO> Paquete_Obtener(int CodEmpresa, int Cod_Paquete)
+        public ErrorDto<PaqueteDto> Paquete_Obtener(int CodEmpresa, int Cod_Paquete)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<PaqueteDTO>();
-            response.Result = new PaqueteDTO();
+            var response = new ErrorDto<PaqueteDto>();
+            response.Result = new PaqueteDto();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -121,7 +121,7 @@ namespace PgxAPI.DataBaseTier
                     var parameters = new DynamicParameters();
                     parameters.Add("Cod_Paquete", Cod_Paquete, DbType.Int32);
 
-                    response.Result = connection.Query<PaqueteDTO>(query, parameters).FirstOrDefault();
+                    response.Result = connection.Query<PaqueteDto>(query, parameters).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -134,10 +134,10 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto<List<PaqueteDetalleDTO>> Paquete_ObtenerDetalles(int CodEmpresa, int Cod_Paquete)
+        public ErrorDto<List<PaqueteDetalleDto>> Paquete_ObtenerDetalles(int CodEmpresa, int Cod_Paquete)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PaqueteDetalleDTO>>();
+            var response = new ErrorDto<List<PaqueteDetalleDto>>();
 
             try
             {
@@ -150,9 +150,9 @@ namespace PgxAPI.DataBaseTier
                     var parameters = new DynamicParameters();
                     parameters.Add("Cod_Paquete", Cod_Paquete, DbType.Int32);
 
-                    response.Result = connection.Query<PaqueteDetalleDTO>(query, parameters).ToList();
+                    response.Result = connection.Query<PaqueteDetalleDto>(query, parameters).ToList();
 
-                    foreach(PaqueteDetalleDTO item in response.Result)
+                    foreach(PaqueteDetalleDto item in response.Result)
                     {
                         {
                             var queryUnidad = $@"SELECT COD_UNIDAD FROM PV_PRODUCTOS WHERE COD_PRODUCTO = '{item.Cod_Producto}'";
@@ -176,7 +176,7 @@ namespace PgxAPI.DataBaseTier
             return response;
         }
 
-        public ErrorDto Paquete_Actualizar(int CodEmpresa, PaqueteDTO request)
+        public ErrorDto Paquete_Actualizar(int CodEmpresa, PaqueteDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -226,7 +226,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Paquete_Insertar2(int CodEmpresa, PaqueteDTO request)
+        public ErrorDto Paquete_Insertar2(int CodEmpresa, PaqueteDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -274,7 +274,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Paquete_Insertar(int CodEmpresa, PaqueteDTO request)
+        public ErrorDto Paquete_Insertar(int CodEmpresa, PaqueteDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -330,7 +330,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto PaqueteDetalle_Insertar(int CodEmpresa, PaqueteDetalleDTO request)
+        public ErrorDto PaqueteDetalle_Insertar(int CodEmpresa, PaqueteDetalleDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -367,7 +367,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto PaqueteDetalle_Actualizar(int CodEmpresa, PaqueteDetalleDTO request)
+        public ErrorDto PaqueteDetalle_Actualizar(int CodEmpresa, PaqueteDetalleDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -404,7 +404,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto PaqueteDetalle_Eliminar(int CodEmpresa, PaqueteDetalleDTO request)
+        public ErrorDto PaqueteDetalle_Eliminar(int CodEmpresa, PaqueteDetalleDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -432,7 +432,7 @@ namespace PgxAPI.DataBaseTier
 
 
         /*Por si habilitan el borrado por ahora no aplica*/
-        public ErrorDto Paquete_Eliminar(int CodEmpresa, PaqueteDTO request)
+        public ErrorDto Paquete_Eliminar(int CodEmpresa, PaqueteDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
@@ -482,7 +482,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto Paquete_EliminarDetalles(int CodEmpresa, PaqueteDTO request)
+        public ErrorDto Paquete_EliminarDetalles(int CodEmpresa, PaqueteDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 

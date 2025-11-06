@@ -16,7 +16,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto Autorizador_Insertar(int CodCliente, AutorizadorePatrimonioDTO autorizador)
+        public ErrorDto Autorizador_Insertar(int CodCliente, AutorizadorePatrimonioDto autorizador)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
@@ -104,11 +104,11 @@ namespace PgxAPI.DataBaseTier
             return result;
         }
 
-        public AutorizadorePatrimonioDTO Autorizador_Obtener(int CodEmpresa, int Cod_Proveedor)
+        public AutorizadorePatrimonioDto Autorizador_Obtener(int CodEmpresa, int Cod_Proveedor)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            AutorizadorePatrimonioDTO info = new AutorizadorePatrimonioDTO();
+            AutorizadorePatrimonioDto info = new AutorizadorePatrimonioDto();
 
             try
             {
@@ -116,7 +116,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = $@"SELECT * FROM PAT_AUTORIZADORES WHERE ID_USUARIO = {Cod_Proveedor}";
 
-                    info = connection.Query<AutorizadorePatrimonioDTO>(query).FirstOrDefault();
+                    info = connection.Query<AutorizadorePatrimonioDto>(query).FirstOrDefault();
 
                 }
             }
@@ -128,7 +128,7 @@ namespace PgxAPI.DataBaseTier
         }
 
 
-        public ErrorDto Autorizador_Actualizar(int CodEmpresa, AutorizadorePatrimonioDTO request)
+        public ErrorDto Autorizador_Actualizar(int CodEmpresa, AutorizadorePatrimonioDto request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 

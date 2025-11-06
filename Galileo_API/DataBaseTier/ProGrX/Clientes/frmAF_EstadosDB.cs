@@ -3,21 +3,22 @@ using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX.Clientes
 {
     public class frmAF_EstadosDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _mSecurity;
+        private readonly MSecurityMainDb _mSecurity;
 
         public frmAF_EstadosDB(IConfiguration config)
         {
             _config = config;
-            _mSecurity = new mSecurityMainDb(_config);
+            _mSecurity = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -28,16 +29,16 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<AF_EstadosLista> AF_Estados_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<AfEstadosLista> AF_Estados_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_EstadosLista>
+            var response = new ErrorDto<AfEstadosLista>
             {
                 Code = 0,
-                Result = new AF_EstadosLista()
+                Result = new AfEstadosLista()
                 {
                     total = 0,
-                    lista = new List<AF_EstadosDTO>()
+                    lista = new List<AfEstadosDto>()
                 }
             };
             try
@@ -67,7 +68,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     {
                         query += $" OFFSET {filtros.pagina} ROWS FETCH NEXT {filtros.paginacion} ROWS ONLY ";
                     }
-                    response.Result.lista = connection.Query<AF_EstadosDTO>(query).ToList();
+                    response.Result.lista = connection.Query<AfEstadosDto>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -88,7 +89,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_Estados_Guardar(int CodEmpresa, string Usuario, AF_EstadosDTO Info)
+        public ErrorDto AF_Estados_Guardar(int CodEmpresa, string Usuario, AfEstadosDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -127,7 +128,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             }
                         );
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -156,7 +157,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             }
                         );
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = Usuario.ToUpper(),
@@ -199,7 +200,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     var query = "delete afi_estados_persona where cod_estado = @CodEstado";
                     connection.Execute(query, new { CodEstado });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Usuario.ToUpper(),
@@ -223,13 +224,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_Estados_MovimientosDTO>> AF_Estados_Movimientos_Obtener(int CodEmpresa)
+        public ErrorDto<List<AfEstadosMovimientosDto>> AF_Estados_Movimientos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AF_Estados_MovimientosDTO>>
+            var response = new ErrorDto<List<AfEstadosMovimientosDto>>
             {
                 Code = 0,
-                Result = new List<AF_Estados_MovimientosDTO>()
+                Result = new List<AfEstadosMovimientosDto>()
             };
             try
             {
@@ -239,7 +240,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     from afi_estados_cambio C inner join afi_estados_persona I on C.cod_estado = I.cod_estado 
                     inner join afi_estados_persona F on C.cod_estado_cambio = F.cod_estado";
 
-                    response.Result = connection.Query<AF_Estados_MovimientosDTO>(query).ToList();
+                    response.Result = connection.Query<AfEstadosMovimientosDto>(query).ToList();
 
                     if (response.Result != null)
                     {
@@ -284,7 +285,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_Estados_Movimientos_Registrar(int CodEmpresa, AF_Estados_MovimientosDTO Info)
+        public ErrorDto AF_Estados_Movimientos_Registrar(int CodEmpresa, AfEstadosMovimientosDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -327,7 +328,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                         }
                     );
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = Info.usuario.ToUpper(),
@@ -352,7 +353,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="Lista"></param>
         /// <returns></returns>
-        public ErrorDto AF_Estados_Movimientos_Eliminar(int CodEmpresa, List<AF_Estados_MovimientosDTO> Lista)
+        public ErrorDto AF_Estados_Movimientos_Eliminar(int CodEmpresa, List<AfEstadosMovimientosDto> Lista)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto
@@ -399,7 +400,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                             }
                         );
 
-                        Bitacora(new BitacoraInsertarDTO
+                        Bitacora(new BitacoraInsertarDto
                         {
                             EmpresaId = CodEmpresa,
                             Usuario = item.usuario.ToUpper(),
@@ -425,13 +426,13 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="CodEmpresa"></param>
         /// <param name="CodEstado"></param>
         /// <returns></returns>
-        public ErrorDto<List<AF_Estados_EntidadesDTO>> AF_Estados_Entidades_Obtener(int CodEmpresa, string CodEstado)
+        public ErrorDto<List<AfEstadosEntidadesDto>> AF_Estados_Entidades_Obtener(int CodEmpresa, string CodEstado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<AF_Estados_EntidadesDTO>>
+            var response = new ErrorDto<List<AfEstadosEntidadesDto>>
             {
                 Code = 0,
-                Result = new List<AF_Estados_EntidadesDTO>()
+                Result = new List<AfEstadosEntidadesDto>()
             };
             try
             {
@@ -442,7 +443,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
                     from INSTITUCIONES Inst left join AFI_ESTADOS_INSTITUCIONES Est on Inst.COD_INSTITUCION = Est.COD_INSTITUCION
                     and Est.COD_ESTADO = @CodEstado
                     Where Inst.ACTIVA = 1";
-                    response.Result = connection.Query<AF_Estados_EntidadesDTO>(query, new { CodEstado }).ToList();
+                    response.Result = connection.Query<AfEstadosEntidadesDto>(query, new { CodEstado }).ToList();
                 }
             }
             catch (Exception ex)
@@ -461,7 +462,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Clientes
         /// <param name="Usuario"></param>
         /// <param name="Info"></param>
         /// <returns></returns>
-        public ErrorDto AF_Estados_Entidad_Guardar(int CodEmpresa, string Usuario, AF_Estados_EntidadesDTO Info)
+        public ErrorDto AF_Estados_Entidad_Guardar(int CodEmpresa, string Usuario, AfEstadosEntidadesDto Info)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto

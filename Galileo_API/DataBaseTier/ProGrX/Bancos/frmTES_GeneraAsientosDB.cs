@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Bancos;
+using PgxAPI.Models.Security;
 
 
 namespace PgxAPI.DataBaseTier
@@ -11,15 +12,15 @@ namespace PgxAPI.DataBaseTier
     public class frmTES_GeneraAsientosDB
     {
         private readonly IConfiguration? _config;
-        private mSecurityMainDb DBBitacora;
+        private MSecurityMainDb DBBitacora;
 
         public frmTES_GeneraAsientosDB(IConfiguration config)
         {
             _config = config;
-            DBBitacora = new mSecurityMainDb(_config);
+            DBBitacora = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -113,7 +114,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<TablasListaGenericaModel> TES_transaccionesAsientos_Obtener(int CodEmpresa, string filtrosTransacciones, FiltrosLazyLoadData filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            TES_TransaccionesFiltros filtro = JsonConvert.DeserializeObject<TES_TransaccionesFiltros>(filtrosTransacciones) ?? new TES_TransaccionesFiltros();
+            TesTransaccionesFiltros filtro = JsonConvert.DeserializeObject<TesTransaccionesFiltros>(filtrosTransacciones) ?? new TesTransaccionesFiltros();
             var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
@@ -209,7 +210,7 @@ namespace PgxAPI.DataBaseTier
                                 FETCH NEXT {filtros.paginacion} ROWS ONLY";
                     }
 
-                    response.Result.lista = connection.Query<TES_TrasladoTransaccionDTO>(query, new
+                    response.Result.lista = connection.Query<TesTrasladoTransaccionDto>(query, new
                     {
                         fechainicio = filtro.fecha_desde.Date.ToString("yyyy-MM-dd"),
                         fechafin = filtro.fecha_hasta.Date.AddHours(23).AddMinutes(59).AddSeconds(59).ToString("yyyy-MM-dd HH:mm:ss"),

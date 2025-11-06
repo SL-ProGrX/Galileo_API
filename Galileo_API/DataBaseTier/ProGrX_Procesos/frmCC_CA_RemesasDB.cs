@@ -19,17 +19,17 @@ namespace PgxAPI.DataBaseTier
             mProGrx_Main = new mProGrx_Main(_config);
         }
 
-        public List<CC_CA_GenericData> CC_CA_LineasObtener(int CodEmpresa)
+        public List<CcCaGenericData> CC_CA_LineasObtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CC_CA_GenericData> resp = new List<CC_CA_GenericData>();
+            List<CcCaGenericData> resp = new List<CcCaGenericData>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select COD_LINEA as idx, rtrim(COD_LINEA) + ' - ' + descripcion as 'ItmX' from PRM_CA_LINEAS where activo = 1";
-                    resp = connection.Query<CC_CA_GenericData>(query).ToList();
+                    resp = connection.Query<CcCaGenericData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -39,17 +39,17 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<CC_CA_GenericData> CC_CA_EntidadesObtener(int CodEmpresa)
+        public List<CcCaGenericData> CC_CA_EntidadesObtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CC_CA_GenericData> resp = new List<CC_CA_GenericData>();
+            List<CcCaGenericData> resp = new List<CcCaGenericData>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select cod_Entidad as idx, rtrim(cod_Entidad) + ' - ' + descripcion as 'ItmX' from PRM_CA_ENTIDAD where activo = 1";
-                    resp = connection.Query<CC_CA_GenericData>(query).ToList();
+                    resp = connection.Query<CcCaGenericData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -59,10 +59,10 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<CC_CA_GenericData> CC_CA_ProcesosObtener(int CodEmpresa)
+        public List<CcCaGenericData> CC_CA_ProcesosObtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CC_CA_GenericData> resp = new List<CC_CA_GenericData>();
+            List<CcCaGenericData> resp = new List<CcCaGenericData>();
             decimal proceso = mProGrx_Main.glngFechaCR(CodEmpresa);
 
             try
@@ -71,7 +71,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     for (int i = 0; i < 7; i++)
                     {
-                        var data = new CC_CA_GenericData
+                        var data = new CcCaGenericData
                         {
                             itmx = proceso.ToString()
                         };
@@ -90,17 +90,17 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<PRM_CA_REMESA_DT> CC_CA_Remesa_DTObtener(int CodEmpresa, int Cod_Remesa)
+        public List<PrmCaRemesaDt> CC_CA_Remesa_DTObtener(int CodEmpresa, int Cod_Remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<PRM_CA_REMESA_DT> resp = new List<PRM_CA_REMESA_DT>();
+            List<PrmCaRemesaDt> resp = new List<PrmCaRemesaDt>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spPrm_CA_Remesa_Consulta {Cod_Remesa}";
-                    resp = connection.Query<PRM_CA_REMESA_DT>(query).ToList();
+                    resp = connection.Query<PrmCaRemesaDt>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -110,17 +110,17 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<PRM_CA_REMESA> CC_CA_Remesas_Lista(int CodEmpresa, string Estado)
+        public List<PrmCaRemesa> CC_CA_Remesas_Lista(int CodEmpresa, string Estado)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<PRM_CA_REMESA> resp = new List<PRM_CA_REMESA>();
+            List<PrmCaRemesa> resp = new List<PrmCaRemesa>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spPrm_CA_Remesa_Lista {Estado}";
-                    resp = connection.Query<PRM_CA_REMESA>(query).ToList();
+                    resp = connection.Query<PrmCaRemesa>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -130,11 +130,11 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<CC_CA_CasosData> CC_CA_BuscarCasos_SP(int CodEmpresa, string Filtros)
+        public List<CcCaCasosData> CC_CA_BuscarCasos_SP(int CodEmpresa, string Filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            Filtros_BuscarCasos request = JsonConvert.DeserializeObject<Filtros_BuscarCasos>(Filtros);
-            List<CC_CA_CasosData> resp = new List<CC_CA_CasosData>();
+            FiltrosBuscarCasos request = JsonConvert.DeserializeObject<FiltrosBuscarCasos>(Filtros);
+            List<CcCaCasosData> resp = new List<CcCaCasosData>();
             int tarjetas = 0;
             if (request.soloTarjetasValidas == true)
             {
@@ -153,7 +153,7 @@ namespace PgxAPI.DataBaseTier
                     parameters.Add("FechaCorte", request.fechaCorte, DbType.Date);
                     parameters.Add("NCuotas", request.nCuotas, DbType.Int32);
 
-                    resp = connection.Query<CC_CA_CasosData>(query, parameters).ToList();
+                    resp = connection.Query<CcCaCasosData>(query, parameters).ToList();
                 }
             }
             catch (Exception ex)
@@ -230,17 +230,17 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<Remesa_Archivo_Data> CC_CA_Remesa_Archivo_Envia(int CodEmpresa, int Cod_Remesa)
+        public List<RemesaArchivoData> CC_CA_Remesa_Archivo_Envia(int CodEmpresa, int Cod_Remesa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<Remesa_Archivo_Data> resp = new List<Remesa_Archivo_Data>();
+            List<RemesaArchivoData> resp = new List<RemesaArchivoData>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spPrm_CA_Remesa_Archivo_Envia {Cod_Remesa}";
-                    resp = connection.Query<Remesa_Archivo_Data>(query).ToList();
+                    resp = connection.Query<RemesaArchivoData>(query).ToList();
                 }
             }
             catch (Exception ex)
@@ -275,7 +275,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto CC_CA_Remesa_Autorizaciones_SP(int CodEmpresa, Remesa_Autorizacion request)
+        public ErrorDto CC_CA_Remesa_Autorizaciones_SP(int CodEmpresa, RemesaAutorizacion request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -306,17 +306,17 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public CA_Remesa_Aplica_Inicializa CC_CA_Remesa_Aplica_Inicializa(int CodEmpresa, int Cod_Remesa, string Usuario)
+        public CaRemesaAplicaInicializa CC_CA_Remesa_Aplica_Inicializa(int CodEmpresa, int Cod_Remesa, string Usuario)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            CA_Remesa_Aplica_Inicializa resp = new CA_Remesa_Aplica_Inicializa();
+            CaRemesaAplicaInicializa resp = new CaRemesaAplicaInicializa();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spPrm_CA_Remesa_Aplica_Inicializa {Cod_Remesa}, '{Usuario}'";
-                    resp = connection.Query<CA_Remesa_Aplica_Inicializa>(query).FirstOrDefault();
+                    resp = connection.Query<CaRemesaAplicaInicializa>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -326,17 +326,17 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public CA_Abonos_Detalla_Main CC_CA_Abonos_Detalla_Main(int CodEmpresa, int Cod_Remesa, int inicializa, CA_Remesa_Aplica_Inicializa request)
+        public CaAbonosDetallaMain CC_CA_Abonos_Detalla_Main(int CodEmpresa, int Cod_Remesa, int inicializa, CaRemesaAplicaInicializa request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            CA_Abonos_Detalla_Main resp = new CA_Abonos_Detalla_Main();
+            CaAbonosDetallaMain resp = new CaAbonosDetallaMain();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"exec spPrm_CA_Abonos_Detalla_Main {Cod_Remesa}, '{request.rlinea}', {request.proceso},{inicializa},50";
-                    resp = connection.Query<CA_Abonos_Detalla_Main>(query).FirstOrDefault();
+                    resp = connection.Query<CaAbonosDetallaMain>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -346,7 +346,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto CC_CA_Abonos_Aplica(int CodEmpresa, int Cod_Remesa, string Usuario, CA_Remesa_Aplica_Inicializa request)
+        public ErrorDto CC_CA_Abonos_Aplica(int CodEmpresa, int Cod_Remesa, string Usuario, CaRemesaAplicaInicializa request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
@@ -382,7 +382,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public ErrorDto CC_CA_Aplica_Asiento(int CodEmpresa, int Cod_Remesa, string Usuario, CA_Remesa_Aplica_Inicializa request)
+        public ErrorDto CC_CA_Aplica_Asiento(int CodEmpresa, int Cod_Remesa, string Usuario, CaRemesaAplicaInicializa request)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();

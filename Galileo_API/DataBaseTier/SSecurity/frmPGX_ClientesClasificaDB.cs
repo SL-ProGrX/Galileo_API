@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -15,16 +16,16 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public List<Cliente_Clasifica> Cliente_Clasifica_ObtenerTodos()
+        public List<ClienteClasifica> Cliente_Clasifica_ObtenerTodos()
         {
-            List<Cliente_Clasifica> data = new List<Cliente_Clasifica>();
+            List<ClienteClasifica> data = new List<ClienteClasifica>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
                 {
                     var procedure = "[spPGX_W_Clientes_Clasifica_Obtener]";
 
-                    data = connection.Query<Cliente_Clasifica>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                    data = connection.Query<ClienteClasifica>(procedure, commandType: CommandType.StoredProcedure).ToList();
                 }
             }
             catch (Exception ex)
@@ -34,7 +35,7 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        private ErrorDto Cliente_Clasifica_Insertar(Cliente_Clasifica request)
+        private ErrorDto Cliente_Clasifica_Insertar(ClienteClasifica request)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;
@@ -91,7 +92,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDto Cliente_Clasifica_Actualizar(Cliente_Clasifica request)
+        private ErrorDto Cliente_Clasifica_Actualizar(ClienteClasifica request)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;
@@ -121,9 +122,9 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        public List<Cliente_Selecciona> Cliente_Selecciona_ObtenerTodos(string usuario)
+        public List<ClienteSelecciona> Cliente_Selecciona_ObtenerTodos(string usuario)
         {
-            List<Cliente_Selecciona> data = new List<Cliente_Selecciona>();
+            List<ClienteSelecciona> data = new List<ClienteSelecciona>();
             try
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -136,7 +137,7 @@ namespace PgxAPI.DataBaseTier
                         Top = 30,
                     };
 
-                    data = connection.Query<Cliente_Selecciona>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                    data = connection.Query<ClienteSelecciona>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
 
                 }
             }
@@ -147,7 +148,7 @@ namespace PgxAPI.DataBaseTier
             return data;
         }
 
-        public ErrorDto Cliente_Clasifica_Guardar(Cliente_Clasifica request)
+        public ErrorDto Cliente_Clasifica_Guardar(ClienteClasifica request)
         {
             ErrorDto resp = new ErrorDto();
             resp.Code = 0;

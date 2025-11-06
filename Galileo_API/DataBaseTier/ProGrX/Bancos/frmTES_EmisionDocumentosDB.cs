@@ -4,18 +4,20 @@ using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
+using PgxAPI.Models.Security;
 using PgxAPI.Models.TES;
 using System.Text;
+using TesTransaccionDto = PgxAPI.Models.TES.TesTransaccionDto;
 
 namespace PgxAPI.DataBaseTier
 {
     public class frmTES_EmisionDocumentosDB
     {
         private readonly IConfiguration? _config;
-        private readonly mTesoreria mTesoreria;
-        private mSecurityMainDb DBBitacora;
-        private mReportingServicesDB mReporting;
-        private mServiciosWCFDB mServiciosWCF;
+        private readonly MTesoreria MTesoreria;
+        private MSecurityMainDb DBBitacora;
+        //private mReportingServicesDB mReporting;
+        //private mServiciosWCFDB mServiciosWCF;
         private mProGrX_AuxiliarDB mAuxiliar;
         private string NumNegocio = "";
         private string CedulaReg = "";
@@ -24,17 +26,17 @@ namespace PgxAPI.DataBaseTier
         public frmTES_EmisionDocumentosDB(IConfiguration config)
         {
             _config = config;
-            mTesoreria = new mTesoreria(config);
-            DBBitacora = new mSecurityMainDb(_config);
-            mReporting = new mReportingServicesDB(_config);
-            mServiciosWCF = new mServiciosWCFDB(_config);
+            MTesoreria = new MTesoreria(config);
+            DBBitacora = new MSecurityMainDb(_config);
+            //mReporting = new mReportingServicesDB(_config);
+            //mServiciosWCF = new mServiciosWCFDB(_config);
             mAuxiliar = new mProGrX_AuxiliarDB(_config);
             NumNegocio = _config.GetSection("BCRFormat").GetSection("NumNegocio").Value.ToString();
             CedulaReg = _config.GetSection("BCRFormat").GetSection("CedulaReg").Value.ToString();
             Razon = _config.GetSection("BCRFormat").GetSection("Razon").Value.ToString();
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return DBBitacora.Bitacora(data);
         }
@@ -117,13 +119,13 @@ namespace PgxAPI.DataBaseTier
         /// <param name="banco"></param>
         /// <param name="plan"></param>
         /// <returns></returns>
-        public ErrorDto<TES_TransaccionesData> TES_EmisionDocumento_Buscar(int CodEmpresa, string tipoDoc, int banco, string plan)
+        public ErrorDto<TesTransaccionesData> TES_EmisionDocumento_Buscar(int CodEmpresa, string tipoDoc, int banco, string plan)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TES_TransaccionesData>
+            var response = new ErrorDto<TesTransaccionesData>
             {
                 Code = 0,
-                Result = new TES_TransaccionesData()
+                Result = new TesTransaccionesData()
             };
             try
             {
@@ -132,10 +134,10 @@ namespace PgxAPI.DataBaseTier
                     var query = @"select isnull(count(*),0) as Total,isnull(Min(nsolicitud),0) as Minimo,
                         isnull(Max(nsolicitud),0) as Maximo from Tes_Transacciones
                         Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
-                    var result = connection.QueryFirstOrDefault<TES_TransaccionesData>(query,
+                    var result = connection.QueryFirstOrDefault<TesTransaccionesData>(query,
                         new { tipoDoc = tipoDoc, banco = banco });
 
-                    response.Result = result ?? new TES_TransaccionesData();
+                    response.Result = result ?? new TesTransaccionesData();
 
                     // Si no hay solicitudes
                     if (response.Result.total == 0)
@@ -145,10 +147,10 @@ namespace PgxAPI.DataBaseTier
                     }
 
                     // Obtener consecutivo inicial
-                    response.Result.docInicial = mTesoreria.fxTesTipoDocConsec(CodEmpresa, banco, tipoDoc, "/", plan).Result;
+                    response.Result.docInicial = MTesoreria.fxTesTipoDocConsec(CodEmpresa, banco, tipoDoc, "/", plan).Result;
 
                     // Verificar si se puede modificar
-                    string vDato = mTesoreria.fxTesTipoDocExtraeDato(CodEmpresa, banco, tipoDoc, "mod_consec").Result;
+                    string vDato = MTesoreria.fxTesTipoDocExtraeDato(CodEmpresa, banco, tipoDoc, "mod_consec").Result;
                     response.Result.docBloqueo = vDato != "1";
                 }
             }
@@ -168,21 +170,21 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<TES_SolicitudesGenData>> TES_EmisionDocumento_Solicitudes_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<List<TesSolicitudesGenData>> TES_EmisionDocumento_Solicitudes_Obtener(int CodEmpresa, string filtros)
         {
-            TES_EmisionDocFiltros filtro = JsonConvert.DeserializeObject<TES_EmisionDocFiltros>(filtros) ?? new TES_EmisionDocFiltros();
+            TesEmisionDocFiltros filtro = JsonConvert.DeserializeObject<TesEmisionDocFiltros>(filtros) ?? new TesEmisionDocFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<TES_SolicitudesGenData>>
+            var response = new ErrorDto<List<TesSolicitudesGenData>>
             {
                 Code = 0,
-                Result = new List<TES_SolicitudesGenData>()
+                Result = new List<TesSolicitudesGenData>()
             };
             long consecInt = 0;
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    consecInt = mTesoreria.fxTesTipoDocConsecInterno(CodEmpresa, filtro.banco, filtro.tipoDoc, "/", filtro.plan).Result;
+                    consecInt = MTesoreria.fxTesTipoDocConsecInterno(CodEmpresa, filtro.banco, filtro.tipoDoc, "/", filtro.plan).Result;
 
                     var query = @$"Select TOP {filtro.cantidad} *, dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as 'Pass'
                         From Tes_Transacciones Where Estado='P' And Tipo = @tipoDoc
@@ -201,7 +203,7 @@ namespace PgxAPI.DataBaseTier
                     var fechaInicio = filtro.fecha_inicio?.Date;
                     var fechaCorte = filtro.fecha_corte?.Date.AddDays(1).AddTicks(-1);
 
-                    var result = connection.Query<TES_SolicitudesGenData>(query,
+                    var result = connection.Query<TesSolicitudesGenData>(query,
                             new {
                                 tipoDoc = filtro.tipoDoc,
                                 banco = filtro.banco,
@@ -226,7 +228,7 @@ namespace PgxAPI.DataBaseTier
                         item.firmas = (item.firmas_autoriza_fecha == null) ? "No" : "Sí";
                     }
 
-                    response.Result = result ?? new List<TES_SolicitudesGenData>();
+                    response.Result = result ?? new List<TesSolicitudesGenData>();
                 }
             }
             catch (Exception ex)
@@ -332,10 +334,10 @@ namespace PgxAPI.DataBaseTier
         /// <param name="banco"></param>
         /// <param name="tipoDoc"></param>
         /// <returns></returns>
-        public ErrorDto<List<TES_TransaccionDTO>> TES_EmisionDocumento_SolicitudesCtaPuente_Obtener(int CodEmpresa, int banco, string tipoDoc)
+        public ErrorDto<List<TesTransaccionDto>> TES_EmisionDocumento_SolicitudesCtaPuente_Obtener(int CodEmpresa, int banco, string tipoDoc)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<TES_TransaccionDTO>>
+            var resp = new ErrorDto<List<TesTransaccionDto>>
             {
                 Code = 0,
                 Description = ""
@@ -347,7 +349,7 @@ namespace PgxAPI.DataBaseTier
                 {
                     var query = @"select nsolicitud,codigo,beneficiario,monto,tipo,cta_Ahorros
                         from Tes_Transacciones where id_banco = @banco and  ESTADO = 'P' and Tipo = @tipo";
-                    resp.Result = connection.Query<TES_TransaccionDTO>(query, new { banco = banco, tipo = tipoDoc }).ToList();
+                    resp.Result = connection.Query<TesTransaccionDto>(query, new { banco = banco, tipo = tipoDoc }).ToList();
                 }
             }
             catch (Exception ex)
@@ -443,13 +445,13 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto<object> TES_EmisionDocumento_Generar(int CodEmpresa, string filtros)
         {
 
-            TES_EmisionDocFiltros filtro = JsonConvert.DeserializeObject<TES_EmisionDocFiltros>(filtros) ?? new TES_EmisionDocFiltros();
+            TesEmisionDocFiltros filtro = JsonConvert.DeserializeObject<TesEmisionDocFiltros>(filtros) ?? new TesEmisionDocFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<object>
             {
                 Code = 0
             };
-            var chequesReport = new TES_ArchivosEspecialesData();
+            var chequesReport = new TesArchivosEspecialesData();
             var query = "";
 
             var fechaInicio = filtro.fecha_inicio?.Date;
@@ -465,12 +467,12 @@ namespace PgxAPI.DataBaseTier
             DateTime vFecha = DateTime.Now; //Devuelve la fecha del servidor
             try
             {
-                chequesReport = mTesoreria.sbCargaArchivosEspeciales(CodEmpresa, filtro.banco).Result;
+                chequesReport = MTesoreria.sbCargaArchivosEspeciales(CodEmpresa, filtro.banco).Result;
                 using var connection = new SqlConnection(stringConn);
                 {
                     var queryBDoc = @"select doc_auto,comprobante from tes_banco_docs 
                         where id_banco = @banco and tipo = @tipoDoc";
-                    var bancoDocs = connection.QueryFirstOrDefault<TES_BancoDocsData>(queryBDoc,
+                    var bancoDocs = connection.QueryFirstOrDefault<TesBancoDocsData>(queryBDoc,
                         new
                         {
                             banco = filtro.banco,
@@ -479,7 +481,7 @@ namespace PgxAPI.DataBaseTier
 
                     var queryB = @"select firmas_desde,firmas_hasta,formato_transferencia,Lugar_Emision
                         from Tes_Bancos where id_banco = @banco";
-                    var bancoData = connection.QueryFirstOrDefault<TES_BancoData>(queryB,
+                    var bancoData = connection.QueryFirstOrDefault<TesBancoData>(queryB,
                         new { banco = filtro.banco });
 
                     var queryBFAut = "select isnull(count(*),0) as Existe from TES_BANCO_FIRMASAUT where id_Banco = @banco and usuario = @usuario";
@@ -523,7 +525,7 @@ namespace PgxAPI.DataBaseTier
                         fechaCorte = fechaCorte
                     };
 
-                    var transaccionesList = new List<TES_TransaccionDTO>();
+                    var transaccionesList = new List<TesTransaccionDto>();
 
                     switch (bancoDocs.comprobante) {
                         case "01" or "02" or "03"://CK formula continua /CK Bloque / Registro Doc
@@ -532,7 +534,7 @@ namespace PgxAPI.DataBaseTier
                                 //Revisa que el Consecutivo, Sea Modificable o No, si lo es inicializar por el indicado por el usuario
                                 if (filtro.docBloqueo != null && filtro.docBloqueo == true)
                                 {
-                                    vConsecutivo = mTesoreria.fxTesTipoDocConsec(CodEmpresa, filtro.banco, filtro.tipoDoc, "/").Result;
+                                    vConsecutivo = MTesoreria.fxTesTipoDocConsec(CodEmpresa, filtro.banco, filtro.tipoDoc, "/").Result;
                                 }
                                 else
                                 {
@@ -544,27 +546,27 @@ namespace PgxAPI.DataBaseTier
                                     }
                                     else
                                     {
-                                        vConsecutivo = mTesoreria.fxTesTipoDocConsec(CodEmpresa, filtro.banco, filtro.tipoDoc, "+").Result;
+                                        vConsecutivo = MTesoreria.fxTesTipoDocConsec(CodEmpresa, filtro.banco, filtro.tipoDoc, "+").Result;
                                     }
                                 }
                             }
 
-                            transaccionesList = connection.Query<TES_TransaccionDTO>(queryTransac, parametros).ToList();
+                            transaccionesList = connection.Query<TesTransaccionDto>(queryTransac, parametros).ToList();
 
                             int contador = 0;
 
                             //Cheques Formula Continua
-                            var listaRecorridaConFirmas = new List<TES_TransaccionDTO>();
-                            var listaRecorridaSinFirmas = new List<TES_TransaccionDTO>();
+                            var listaRecorridaConFirmas = new List<TesTransaccionDto>();
+                            var listaRecorridaSinFirmas = new List<TesTransaccionDto>();
                             string reporteCkConFirmas = "", reporteCkSinFirmas = "";
 
                             //Boleta de Registro
-                            var listaRecorridaBoleta = new List<TES_TransaccionDTO>();
+                            var listaRecorridaBoleta = new List<TesTransaccionDto>();
                             var pdfsBoleta = new List<byte[]>();
                             FileContentResult fileResultBoleta = null;
 
                             //Imprime reporte
-                            frmReporteGlobal reporteData = new frmReporteGlobal();
+                            FrmReporteGlobal reporteData = new FrmReporteGlobal();
                             reporteData.codEmpresa = CodEmpresa;
                             reporteData.parametros = null;
                             reporteData.nombreReporte = "";
@@ -596,10 +598,10 @@ namespace PgxAPI.DataBaseTier
                                             nsolicitud = item.nsolicitud
                                         });
 
-                                    mTesoreria.sbTesBancosAfectacion(CodEmpresa, item.nsolicitud, "E");
-                                    mTesoreria.sbTesBitacoraEspecial(CodEmpresa, item.nsolicitud, "10", "", filtro.usuario.ToUpper());
+                                    MTesoreria.sbTesBancosAfectacion(CodEmpresa, item.nsolicitud, "E");
+                                    MTesoreria.sbTesBitacoraEspecial(CodEmpresa, item.nsolicitud, "10", "", filtro.usuario.ToUpper());
 
-                                    Bitacora(new BitacoraInsertarDTO
+                                    Bitacora(new BitacoraInsertarDto
                                     {
                                         EmpresaId = CodEmpresa,
                                         Usuario = filtro.usuario.ToUpper(),
@@ -609,7 +611,7 @@ namespace PgxAPI.DataBaseTier
                                     });
 
                                     //Actualiza Cuentas Corrientes
-                                    mTesoreria.sbTESActualizaCC(
+                                    MTesoreria.sbTESActualizaCC(
                                         CodEmpresa,
                                         item.codigo.Trim(),
                                         item.tipo,
@@ -623,7 +625,7 @@ namespace PgxAPI.DataBaseTier
 
                                     if (bancoDocs.doc_auto == 1)
                                     {
-                                        vConsecutivo = mTesoreria.fxTesTipoDocConsec(CodEmpresa, filtro.banco, filtro.tipoDoc, "+").Result;
+                                        vConsecutivo = MTesoreria.fxTesTipoDocConsec(CodEmpresa, filtro.banco, filtro.tipoDoc, "+").Result;
                                     }
 
                                     //Identifica tipo de reporte
@@ -664,38 +666,38 @@ namespace PgxAPI.DataBaseTier
                                             //Genera reporte de Boleta de Transaccion
                                             reporteData.nombreReporte = "Banking_BoletaRegistro";
                                             reporteData.parametros = JsonConvert.SerializeObject(new { nSolicitud = item.nsolicitud });
-                                            var actionBoleta = mReporting.ReporteRDLC_v2(reporteData);
+                                            //var actionBoleta = mReporting.ReporteRDLC_v2(reporteData);
 
                                             //Valida respuesta de ReporteRDLC_v2
-                                            var objectResult = actionBoleta as ObjectResult;
+                                            //var objectResult = actionBoleta as ObjectResult;
 
-                                            if (objectResult == null)
-                                            {
-                                                fileResultBoleta = actionBoleta as FileContentResult;
+                                            // if (objectResult == null)
+                                            // {
+                                            //     fileResultBoleta = actionBoleta as FileContentResult;
 
-                                                if (fileResultBoleta != null && fileResultBoleta.FileContents != null && fileResultBoleta.FileContents.Length > 0)
-                                                {
-                                                    pdfsBoleta.Add(fileResultBoleta.FileContents);
-                                                }
-                                                else
-                                                {
-                                                    response.Code = -1;
-                                                    response.Description = "Ocurrió un error al generar la boleta de la solicitud "+ item.nsolicitud +", contenido es nulo o vacío";
-                                                    return response;
-                                                }
-                                            }
-                                            else
-                                            {
-                                                var res = objectResult.Value;
-                                                //converte res a JSON
-                                                var Jres = System.Text.Json.JsonSerializer.Serialize(res);
-                                                // convierte JSON a ErrorDto
-                                                var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
+                                            //     if (fileResultBoleta != null && fileResultBoleta.FileContents != null && fileResultBoleta.FileContents.Length > 0)
+                                            //     {
+                                            //         pdfsBoleta.Add(fileResultBoleta.FileContents);
+                                            //     }
+                                            //     else
+                                            //     {
+                                            //         response.Code = -1;
+                                            //         response.Description = "Ocurrió un error al generar la boleta de la solicitud "+ item.nsolicitud +", contenido es nulo o vacío";
+                                            //         return response;
+                                            //     }
+                                            // }
+                                            // else
+                                            // {
+                                            //     var res = objectResult.Value;
+                                            //     //converte res a JSON
+                                            //     var Jres = System.Text.Json.JsonSerializer.Serialize(res);
+                                            //     // convierte JSON a ErrorDto
+                                            //     var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
 
-                                                response.Code = -1;
-                                                response.Description = err.Description ?? "Ocurrió un error al generar la boleta de la solicitud "+item.nsolicitud;
-                                                return response;
-                                            }
+                                            //     response.Code = -1;
+                                            //     response.Description = err.Description ?? "Ocurrió un error al generar la boleta de la solicitud "+item.nsolicitud;
+                                            //     return response;
+                                            // }
 
                                             break;
                                         default:
@@ -715,7 +717,7 @@ namespace PgxAPI.DataBaseTier
                             if (listaRecorridaConFirmas.Count > 0 || listaRecorridaSinFirmas.Count > 0)
                             {
 
-                                string vMesLetras = mTesoreria.fxTesMesDescripcion(DateTime.Now.Month);
+                                string vMesLetras = MTesoreria.fxTesMesDescripcion(DateTime.Now.Month);
 
                                 if (listaRecorridaConFirmas.Count > 0)
                                 {
@@ -737,26 +739,26 @@ namespace PgxAPI.DataBaseTier
                                     reporteData.parametros = System.Text.Json.JsonSerializer.Serialize(listaRecorridaConFirmas);
                                     reporteData.nombreReporte = reporteCkConFirmas;
 
-                                    var actionResult1 = mReporting.ReporteRDLC_v2(reporteData);
+                                    //var actionResult1 = mReporting.ReporteRDLC_v2(reporteData);
 
                                     //Valida respuesta de ReporteRDLC_v2
-                                    var objectResult = actionResult1 as ObjectResult;
+                                    // var objectResult = actionResult1 as ObjectResult;
 
-                                    if (objectResult == null)
-                                    {
-                                        ckConFirma = JsonConvert.SerializeObject(actionResult1, Formatting.Indented);
-                                    }
-                                    else
-                                    {
-                                        var res = objectResult.Value;
-                                        //converto res a JSON
-                                        var Jres = System.Text.Json.JsonSerializer.Serialize(res);
+                                    // if (objectResult == null)
+                                    // {
+                                    //     ckConFirma = JsonConvert.SerializeObject(actionResult1, Formatting.Indented);
+                                    // }
+                                    // else
+                                    // {
+                                    //     var res = objectResult.Value;
+                                    //     //converto res a JSON
+                                    //     var Jres = System.Text.Json.JsonSerializer.Serialize(res);
 
-                                        // convierto JSON a ErrorDto
-                                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
+                                    //     // convierto JSON a ErrorDto
+                                    //     var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
 
-                                        ckConFirma = JsonConvert.SerializeObject(err, Formatting.Indented);
-                                    }
+                                    //     ckConFirma = JsonConvert.SerializeObject(err, Formatting.Indented);
+                                    // }
                                 }
                                 else if (listaRecorridaSinFirmas.Count > 0)
                                 {
@@ -779,26 +781,26 @@ namespace PgxAPI.DataBaseTier
                                     reporteData.parametros = System.Text.Json.JsonSerializer.Serialize(parametrosJsonSinFirmas);
                                     reporteData.nombreReporte = reporteCkSinFirmas;
 
-                                    var actionResult2 = mReporting.ReporteRDLC_v2(reporteData);
+                                   // var actionResult2 = mReporting.ReporteRDLC_v2(reporteData);
 
                                     //Valida respuesta de ReporteRDLC_v2
-                                    var objectResult = actionResult2 as ObjectResult;
+                                    // var objectResult = actionResult2 as ObjectResult;
 
-                                    if (objectResult == null)
-                                    {
-                                        ckSinFirma = JsonConvert.SerializeObject(actionResult2, Formatting.Indented);
-                                    }
-                                    else
-                                    {
-                                        var res = objectResult.Value;
-                                        //converto res a JSON
-                                        var Jres = System.Text.Json.JsonSerializer.Serialize(res);
+                                    // if (objectResult == null)
+                                    // {
+                                    //     ckSinFirma = JsonConvert.SerializeObject(actionResult2, Formatting.Indented);
+                                    // }
+                                    // else
+                                    // {
+                                    //     var res = objectResult.Value;
+                                    //     //converto res a JSON
+                                    //     var Jres = System.Text.Json.JsonSerializer.Serialize(res);
 
-                                        // convierto JSON a ErrorDto
-                                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
+                                    //     // convierto JSON a ErrorDto
+                                    //     var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(Jres);
 
-                                        ckSinFirma = JsonConvert.SerializeObject(err, Formatting.Indented);
-                                    }
+                                    //     ckSinFirma = JsonConvert.SerializeObject(err, Formatting.Indented);
+                                    // }
                                 }
 
                             }
@@ -827,19 +829,19 @@ namespace PgxAPI.DataBaseTier
                                     var queryA = "select sum(monto) as PLx from Tes_Transacciones where nsolicitud in" + baseQuery;
                                     var montoPL = connection.QueryFirstOrDefault<int>(queryA, parametros);
 
-                                    transaccionesList = connection.Query<TES_TransaccionDTO>(queryTransac, parametros).ToList();
+                                    transaccionesList = connection.Query<TesTransaccionDto>(queryTransac, parametros).ToList();
                                     response = sbTeBancoNacional(CodEmpresa, filtro, transaccionesList, montoPL);
 
                                     break;
                                 case "B": //B - Banco Popular
 
-                                    transaccionesList = connection.Query<TES_TransaccionDTO>(queryTransac, parametros).ToList();
+                                    transaccionesList = connection.Query<TesTransaccionDto>(queryTransac, parametros).ToList();
                                     response = sbTeBancoPopular(CodEmpresa, filtro, transaccionesList);
 
                                     break;
                                 case "C": //C - BCR. Planilla Empresarial
 
-                                    transaccionesList = connection.Query<TES_TransaccionDTO>(queryTransac, parametros).ToList();
+                                    transaccionesList = connection.Query<TesTransaccionDto>(queryTransac, parametros).ToList();
 
                                     var queryC = @"select sum(dbo.fxTESBCRTestkey(cta_ahorros,monto)) as TestKeyX, 
                                         sum(Monto) as Monto from Tes_Transacciones where nsolicitud in" + baseQuery;
@@ -889,7 +891,7 @@ namespace PgxAPI.DataBaseTier
                                     response.Code = -1;
                                     response.Description = "No se pudo realizar la operación, debido a que la opción de SINPE se encuentra en espera";
                                     // Banco General SINPE
-                                    //transaccionesList = connection.Query<TES_TransaccionDTO>(queryTransac, parametros).ToList();
+                                    //transaccionesList = connection.Query<TES_TransaccionDto>(queryTransac, parametros).ToList();
                                     //    response = sbTeBancoSinpeGeneral(CodEmpresa, filtro, transaccionesList);
                                     break;
                                 default:
@@ -929,7 +931,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="transaccionesList"></param>
         /// <param name="curPlanilla"></param>
         /// <returns></returns>
-        private ErrorDto<object> sbTeBancoNacional(int CodEmpresa, TES_EmisionDocFiltros filtros, List<TES_TransaccionDTO> transaccionesList, int? curPlanilla)
+        private ErrorDto<object> sbTeBancoNacional(int CodEmpresa, TesEmisionDocFiltros filtros, List<TesTransaccionDto> transaccionesList, int? curPlanilla)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>
@@ -967,7 +969,7 @@ namespace PgxAPI.DataBaseTier
 
                     //Inicializa Variables de Bancos y Consecutivo
                     string BancoTDoc = filtros.tipoDoc;
-                    long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
+                    long BancoConsec = MTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
 
                     // En vez de guardar el archivo, lo devuelve como string
                     var sb = new StringBuilder();
@@ -1064,7 +1066,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="filtros"></param>
         /// <param name="transaccionesList"></param>
         /// <returns></returns>
-        private ErrorDto<object> sbTeBancoPopular(int CodEmpresa, TES_EmisionDocFiltros filtros, List<TES_TransaccionDTO> transaccionesList)
+        private ErrorDto<object> sbTeBancoPopular(int CodEmpresa, TesEmisionDocFiltros filtros, List<TesTransaccionDto> transaccionesList)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>
@@ -1081,7 +1083,7 @@ namespace PgxAPI.DataBaseTier
                     //Inicializa Variables de Bancos y Consecutivo
                     int BancoID = filtros.banco;
                     string BancoTDoc = filtros.tipoDoc;
-                    long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
+                    long BancoConsec = MTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
 
                     // En vez de guardar el archivo, lo devuelve como string
                     var sb = new StringBuilder();
@@ -1184,7 +1186,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        private ErrorDto<object> sbTeFormatoEstandar(int CodEmpresa, TES_EmisionDocFiltros filtros)
+        private ErrorDto<object> sbTeFormatoEstandar(int CodEmpresa, TesEmisionDocFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>
@@ -1227,7 +1229,7 @@ namespace PgxAPI.DataBaseTier
                     //Inicializa Variables de Bancos y Consecutivo
                     string BancoTDoc = filtros.tipoDoc;
                     string BancoPlan = filtros.plan;
-                    long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+", BancoPlan).Result;
+                    long BancoConsec = MTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+", BancoPlan).Result;
 
                     int i = 1;
                     query = @"SELECT COUNT(DISTINCT documento_base)
@@ -1319,7 +1321,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="vTestKey"></param>
         /// <param name="vMontoTotal"></param>
         /// <returns></returns>
-        private ErrorDto<object> sbTeBCR_Planilla(int CodEmpresa, TES_EmisionDocFiltros filtros, List<TES_TransaccionDTO> transaccionesList, long vTestKey, decimal vMontoTotal)
+        private ErrorDto<object> sbTeBCR_Planilla(int CodEmpresa, TesEmisionDocFiltros filtros, List<TesTransaccionDto> transaccionesList, long vTestKey, decimal vMontoTotal)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>
@@ -1375,7 +1377,7 @@ namespace PgxAPI.DataBaseTier
                     //Inicializa Variables de Bancos y Consecutivo
                     int BancoID = filtros.banco;
                     string BancoTDoc = filtros.tipoDoc;
-                    long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, " + ").Result;
+                    long BancoConsec = MTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, " + ").Result;
 
                     // En vez de guardar el archivo, lo devuelve como string
                     var sb = new StringBuilder();
@@ -1455,7 +1457,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        private ErrorDto<object> sbTeBCR_Empresarial(int CodEmpresa, TES_EmisionDocFiltros filtros)
+        private ErrorDto<object> sbTeBCR_Empresarial(int CodEmpresa, TesEmisionDocFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>
@@ -1491,7 +1493,7 @@ namespace PgxAPI.DataBaseTier
                     //Inicializa Variables de Bancos y Consecutivo
                     int BancoID = filtros.banco;
                     string BancoTDoc = filtros.tipoDoc;
-                    long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
+                    long BancoConsec = MTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
 
                     // En vez de guardar el archivo, lo devuelve como string
                     var sb = new StringBuilder();
@@ -1595,7 +1597,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        private ErrorDto<object> sbTeBCT_Enlace(int CodEmpresa, TES_EmisionDocFiltros filtros)
+        private ErrorDto<object> sbTeBCT_Enlace(int CodEmpresa, TesEmisionDocFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>
@@ -1622,7 +1624,7 @@ namespace PgxAPI.DataBaseTier
                     //Inicializa Variables de Bancos y Consecutivo
                     int BancoID = filtros.banco;
                     string BancoTDoc = filtros.tipoDoc;
-                    long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
+                    long BancoConsec = MTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
 
                     // En vez de guardar el archivo, lo devuelve como string
                     var sb = new StringBuilder();
@@ -1674,7 +1676,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        private ErrorDto<object> sbTeBCR_Comercial(int CodEmpresa, TES_EmisionDocFiltros filtros)
+        private ErrorDto<object> sbTeBCR_Comercial(int CodEmpresa, TesEmisionDocFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>
@@ -1710,7 +1712,7 @@ namespace PgxAPI.DataBaseTier
                     //Inicializa Variables de Bancos y Consecutivo
                     int BancoID = filtros.banco;
                     string BancoTDoc = filtros.tipoDoc;
-                    long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
+                    long BancoConsec = MTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
 
                     // En vez de guardar el archivo, lo devuelve como string
                     var sb = new StringBuilder();
@@ -1812,7 +1814,7 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        private ErrorDto<object> sbTeBNCR_Sinpe(int CodEmpresa, TES_EmisionDocFiltros filtros)
+        private ErrorDto<object> sbTeBNCR_Sinpe(int CodEmpresa, TesEmisionDocFiltros filtros)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<object>
@@ -1838,7 +1840,7 @@ namespace PgxAPI.DataBaseTier
                     //Inicializa Variables de Bancos y Consecutivo
                     int BancoID = filtros.banco;
                     string BancoTDoc = filtros.tipoDoc;
-                    long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
+                    long BancoConsec = MTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
 
                     // En vez de guardar el archivo, lo devuelve como string
                     var sb = new StringBuilder();
@@ -1919,66 +1921,66 @@ namespace PgxAPI.DataBaseTier
             return resp;
         }
 
-        private ErrorDto<object> sbTeBancoSinpeGeneral(int CodEmpresa, TES_EmisionDocFiltros filtro, List<TES_TransaccionDTO> transaccionesList)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<object>
-            {
-                Code = 0,
-                Description = ""
-            };
+        // private ErrorDto<object> sbTeBancoSinpeGeneral(int CodEmpresa, TesEmisionDocFiltros filtro, List<TesTransaccionDto> transaccionesList)
+        // {
+        //     string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+        //     var resp = new ErrorDto<object>
+        //     {
+        //         Code = 0,
+        //         Description = ""
+        //     };
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                {
-                    if (filtro.tipoDoc == "TS")
-                    {
-                        foreach (var sinpe in transaccionesList)
-                        {
-                            //Valida sinpe
-                            var validaSinpe = mServiciosWCF.fxValidacionSinpe(CodEmpresa, sinpe.nsolicitud.ToString(), filtro.usuario);
-                            if (validaSinpe != null)
-                            {
-                                resp.Code = validaSinpe.Code;
-                                resp.Description = validaSinpe.Description;
-                            }
+        //     try
+        //     {
+        //         using var connection = new SqlConnection(stringConn);
+        //         {
+        //             if (filtro.tipoDoc == "TS")
+        //             {
+        //                 foreach (var sinpe in transaccionesList)
+        //                 {
+        //                     //Valida sinpe
+        //                     var validaSinpe = mServiciosWCF.fxValidacionSinpe(CodEmpresa, sinpe.nsolicitud.ToString(), filtro.usuario);
+        //                     if (validaSinpe != null)
+        //                     {
+        //                         resp.Code = validaSinpe.Code;
+        //                         resp.Description = validaSinpe.Description;
+        //                     }
 
-                            switch (sinpe.tipo_girosinpe)
-                            {
-                                case "CD": //Credito Directo
-                                    mServiciosWCF.fxTesEmisionSinpeCreditoDirecto(
-                                        CodEmpresa,
-                                        sinpe.nsolicitud,
-                                        DateTime.Now, filtro.usuario,
-                                        0,
-                                        0);
-                                    break;
-                                case "TR": // Tiempo Real
-                                    mServiciosWCF.fxTesEmisionSinpeTiempoReal(
-                                        CodEmpresa,
-                                        sinpe.nsolicitud,
-                                        DateTime.Now, filtro.usuario,
-                                        0,
-                                        0);
-                                    break;
-                                default:
-                                    break;
-                            }
+        //                     switch (sinpe.tipo_girosinpe)
+        //                     {
+        //                         case "CD": //Credito Directo
+        //                             mServiciosWCF.fxTesEmisionSinpeCreditoDirecto(
+        //                                 CodEmpresa,
+        //                                 sinpe.nsolicitud,
+        //                                 DateTime.Now, filtro.usuario,
+        //                                 0,
+        //                                 0);
+        //                             break;
+        //                         case "TR": // Tiempo Real
+        //                             mServiciosWCF.fxTesEmisionSinpeTiempoReal(
+        //                                 CodEmpresa,
+        //                                 sinpe.nsolicitud,
+        //                                 DateTime.Now, filtro.usuario,
+        //                                 0,
+        //                                 0);
+        //                             break;
+        //                         default:
+        //                             break;
+        //                     }
 
 
-                        }
+        //                 }
 
-                    }
-                }
-            }
-            catch (Exception)
-            {
+        //             }
+        //         }
+        //     }
+        //     catch (Exception)
+        //     {
 
-                throw;
-            }
-            return resp;
-        }
+        //         throw;
+        //     }
+        //     return resp;
+        // }
 
 
     }

@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.ProGrX.Clientes;
+using PgxAPI.Models.Security;
 using System.Data;
 
 namespace PgxAPI.DataBaseTier
@@ -11,15 +12,15 @@ namespace PgxAPI.DataBaseTier
     public class frmAF_CambioCedulaDB
     {
         private readonly IConfiguration _config;
-        private readonly mSecurityMainDb _mSecurity;
+        private readonly MSecurityMainDb _mSecurity;
 
         public frmAF_CambioCedulaDB(IConfiguration config)
         {
             _config = config;
-            _mSecurity = new mSecurityMainDb(_config);
+            _mSecurity = new MSecurityMainDb(_config);
         }
 
-        public ErrorDto Bitacora(BitacoraInsertarDTO data)
+        public ErrorDto Bitacora(BitacoraInsertarDto data)
         {
             return _mSecurity.Bitacora(data);
         }
@@ -70,7 +71,7 @@ namespace PgxAPI.DataBaseTier
         public ErrorDto AF_CambioCedula_Aplicar(int CodEmpresa, string usuario, string cambioData)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            AF_CambioCedulaDTO cambioCedula = JsonConvert.DeserializeObject<AF_CambioCedulaDTO>(cambioData);
+            AFCambioCedulaDto cambioCedula = JsonConvert.DeserializeObject<AFCambioCedulaDto>(cambioData);
             var response = new ErrorDto
             {
                 Code = 0,
@@ -103,7 +104,7 @@ namespace PgxAPI.DataBaseTier
                         TipoId = cambioCedula.tipo
                     });
 
-                    Bitacora(new BitacoraInsertarDTO
+                    Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
                         Usuario = usuario.ToUpper(),
@@ -130,14 +131,14 @@ namespace PgxAPI.DataBaseTier
         /// <param name="CodEmpresa"></param>
         /// <param name="cedula"></param>
         /// <returns></returns>
-        public ErrorDto<AF_CedulaCambioDTO> AF_Cedula_Obtener(int CodEmpresa, string cedula)
+        public ErrorDto<AFCedulaCambioDto> AF_Cedula_Obtener(int CodEmpresa, string cedula)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<AF_CedulaCambioDTO>
+            var response = new ErrorDto<AFCedulaCambioDto>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new AF_CedulaCambioDTO()
+                Result = new AFCedulaCambioDto()
             };
 
             try
@@ -162,7 +163,7 @@ namespace PgxAPI.DataBaseTier
                                     AFI_ESTADOS_PERSONA Ep ON S.ESTADOACTUAL = Ep.COD_ESTADO
                                 WHERE 
                                     TRIM(S.cedula) = '{cedula.Trim()}'";
-                    response.Result = connection.QueryFirstOrDefault<AF_CedulaCambioDTO>(query);
+                    response.Result = connection.QueryFirstOrDefault<AFCedulaCambioDto>(query);
                 }
             }
             catch (Exception ex)
@@ -182,13 +183,13 @@ namespace PgxAPI.DataBaseTier
         /// <returns></returns>
         public ErrorDto AF_Usuario_Validar(int CodEmpresa, string parametros)
         {
-            AF_UsuarioLogonDTO param = JsonConvert.DeserializeObject<AF_UsuarioLogonDTO>(parametros);
+            AFUsuarioLogonDto param = JsonConvert.DeserializeObject<AFUsuarioLogonDto>(parametros);
             var response = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
-            var paramAccess = new ParametrosAccesoDTO();
+            var paramAccess = new ParametrosAccesoDto();
             paramAccess.EmpresaId = CodEmpresa;
             paramAccess.Usuario = param.usuario;
             paramAccess.Modulo = 1;

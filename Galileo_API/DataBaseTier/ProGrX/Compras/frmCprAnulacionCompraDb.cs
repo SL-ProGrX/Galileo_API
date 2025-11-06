@@ -201,7 +201,7 @@ namespace PgxAPI.DataBaseTier
 
                     foreach (var item in compDetalleList)
                     {
-                        var comp = new CompraInventarioDTO();
+                        var comp = new CompraInventarioDto();
                         comp.CodProducto = item.Cod_Producto;
                         comp.Cantidad = item.Cantidad;
                         comp.CodBodega = item.Cod_Bodega;
