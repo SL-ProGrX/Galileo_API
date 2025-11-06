@@ -18,7 +18,7 @@ namespace PgxAPI.DataBaseTier
 
 
             DateTime result = new DateTime();
-            CntDescripTipoAsientoDTO info = new CntDescripTipoAsientoDTO();
+            CntDescripTipoAsientoDto info = new CntDescripTipoAsientoDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
@@ -45,7 +45,7 @@ namespace PgxAPI.DataBaseTier
 
 
             DateTime result = new DateTime();
-            CntDescripTipoAsientoDTO info = new CntDescripTipoAsientoDTO();
+            CntDescripTipoAsientoDto info = new CntDescripTipoAsientoDto();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try

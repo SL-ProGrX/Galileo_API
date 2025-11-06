@@ -3,6 +3,7 @@ using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
 using PgxAPI.Models.SYS;
 using Microsoft.Data.SqlClient;
+using PgxAPI.Models.Security;
 
 namespace PgxAPI.DataBaseTier.ProGrX_Nucleo
 {
