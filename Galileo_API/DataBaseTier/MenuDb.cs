@@ -109,7 +109,7 @@ namespace PgxAPI.DataBaseTier
             return favoritos;
         }
 
-        private List<PrimeTreeDtoV2> CrearPadres(List<int> modules, List<MenuDto> modulosPadre, List<MenuDto> modulosHijos)
+        private static List<PrimeTreeDtoV2> CrearPadres(List<int> modules, List<MenuDto> modulosPadre, List<MenuDto> modulosHijos)
         {
             var padres = modulosPadre
                 .Where(padre => modules.Contains(padre.MODULO))

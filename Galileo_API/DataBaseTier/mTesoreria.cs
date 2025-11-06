@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using System.Text;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using PgxAPI.Models;
 using PgxAPI.Models.ERROR;
@@ -1163,54 +1164,38 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
 
         public static string fxStringCifrado(string pCadena)
         {
-            var vResBuilder = new System.Text.StringBuilder();
+            if (string.IsNullOrEmpty(pCadena))
+                return string.Empty;
 
-            // Convertir cada carácter a ASCII y revertir la cadena
+            // 1) Construye la cadena de códigos ASCII en orden inverso, con padding a 3 dígitos
+            var vResBuilder = new StringBuilder(pCadena.Length * 3);
             for (int i = pCadena.Length - 1; i >= 0; i--)
             {
                 int xChar = (int)pCadena[i];
-                vResBuilder.Append(xChar);
+                // 3 dígitos (e.g., 'A' -> "065"), así los bloques de 3 siempre son válidos
+                vResBuilder.Append(xChar.ToString("D3"));
             }
             string vRes = vResBuilder.ToString();
 
-            var vResXBuilder = new System.Text.StringBuilder();
+            // 2) Aplica transformaciones cíclicas evitando switch/condiciones constantes
+            var deltas = new int[] { +1, -5, +7, -13, -2, +3 }; // ciclo de 6 pasos
             int vSec = 0;
 
-            // Procesar bloques de tres caracteres
+            var vResXBuilder = new StringBuilder(vRes.Length + vRes.Length / 3);
+
             for (int i = 0; i < vRes.Length; i += 3)
             {
-                string sub;
-                sub = vRes.Substring(i, Math.Min(3, vRes.Length - i));
+                // Siempre habrá 3 dígitos por el padding; pero por seguridad:
+                int len = Math.Min(3, vRes.Length - i);
+                if (!int.TryParse(vRes.AsSpan(i, len), out int num))
+                    continue; // o lanza si prefieres: throw new FormatException(...);
 
-                int num = int.Parse(sub);
+                int transformed = num + deltas[vSec];
+                vResXBuilder.Append(transformed);
 
-                switch (vSec)
-                {
-                    case 0:
-                        vResXBuilder.Append(num + 1);
-                        vSec = 1;
-                        break;
-                    case 1:
-                        vResXBuilder.Append(num - 5);
-                        vSec = 2;
-                        break;
-                    case 2:
-                        vResXBuilder.Append(num + 7);
-                        vSec = 3;
-                        break;
-                    case 3:
-                        vResXBuilder.Append(num - 13);
-                        vSec = 4;
-                        break;
-                    case 4:
-                        vResXBuilder.Append(num - 2);
-                        vSec = 5;
-                        break;
-                    case 5:
-                        vResXBuilder.Append(num + 3);
-                        vSec = 0;
-                        break;
-                }
+                // avanza cíclicamente 0..5
+                vSec++;
+                if (vSec == deltas.Length) vSec = 0;
             }
 
             return FxDepuraCadena(vResXBuilder.ToString());
