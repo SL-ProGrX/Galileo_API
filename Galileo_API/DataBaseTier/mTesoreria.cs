@@ -1167,17 +1167,14 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             if (string.IsNullOrEmpty(pCadena))
                 return string.Empty;
 
-            // 1) Construye la cadena de códigos ASCII en orden inverso, con padding a 3 dígitos
             var vResBuilder = new StringBuilder(pCadena.Length * 3);
             for (int i = pCadena.Length - 1; i >= 0; i--)
             {
                 int xChar = (int)pCadena[i];
-                // 3 dígitos (e.g., 'A' -> "065"), así los bloques de 3 siempre son válidos
                 vResBuilder.Append(xChar.ToString("D3"));
             }
             string vRes = vResBuilder.ToString();
 
-            // 2) Aplica transformaciones cíclicas evitando switch/condiciones constantes
             var deltas = new int[] { +1, -5, +7, -13, -2, +3 }; // ciclo de 6 pasos
             int vSec = 0;
 
@@ -1185,15 +1182,13 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
 
             for (int i = 0; i < vRes.Length; i += 3)
             {
-                // Siempre habrá 3 dígitos por el padding; pero por seguridad:
                 int len = Math.Min(3, vRes.Length - i);
                 if (!int.TryParse(vRes.AsSpan(i, len), out int num))
-                    continue; // o lanza si prefieres: throw new FormatException(...);
+                    continue; 
 
                 int transformed = num + deltas[vSec];
                 vResXBuilder.Append(transformed);
 
-                // avanza cíclicamente 0..5
                 vSec++;
                 if (vSec == deltas.Length) vSec = 0;
             }
