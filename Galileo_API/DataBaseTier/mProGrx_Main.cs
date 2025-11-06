@@ -66,7 +66,6 @@ namespace PgxAPI.DataBaseTier
                     case "34":
                     case "37":
                         vResultado = "American Express";
-                        bDetected = true;
                         break;
                 }
             }
