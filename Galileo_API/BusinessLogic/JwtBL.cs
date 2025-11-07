@@ -21,10 +21,16 @@ namespace PgxAPI.BusinessLogic
             {
                 if (identity != null || identity.Claims.Count() > 0)
                 {
-                    var UserId = identity.Claims.FirstOrDefault(x => x.Type == "UserId").Value;
-                    var UserName = identity.Claims.FirstOrDefault(x => x.Type == "UserName").Value;
+                    var userIdClaim = identity.Claims.FirstOrDefault(x => x.Type == "UserId");
+                    var userNameClaim = identity.Claims.FirstOrDefault(x => x.Type == "UserName");
 
-                    resultado = ObtenerInformacionUsuario(UserName, UserId);
+                    if (userIdClaim != null && userNameClaim != null)
+                    {
+                        var UserId = userIdClaim.Value;
+                        var UserName = userNameClaim.Value;
+
+                        resultado = ObtenerInformacionUsuario(UserName, UserId);
+                    }
 
                 }
             }
