@@ -17,12 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0   # necesario para Sonar (SCM info)
 
       - name: Setup .NET 9 SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '9.0.x'
+          dotnet-version: '9.0.x'   # .slnx requiere .NET 9
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
@@ -31,27 +31,45 @@ jobs:
           java-version: '17'
 
       - name: Install SonarScanner for .NET
-        run: dotnet tool install --global dotnet-sonarscanner
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
+      # 🔹 Aquí indicamos directamente las rutas
       - name: Begin SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          dotnet-sonarscanner begin \
+          dotnet sonarscanner begin \
             /k:"SL-ProGrX_Galileo_API" \
             /o:"sl-progrx" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.token="${SONAR_TOKEN}" \
+            /d:sonar.projectBaseDir="Galileo_API" \
             /d:sonar.exclusions="**/bin/**,**/obj/**" \
-            /d:sonar.coverage.exclusions=**   # <<< ignora cobertura
+            /d:sonar.coverage.exclusions=**   # quítalo cuando agregues tests
+
+      - name: Restore
+        run: dotnet restore Galileo_API.slnx
 
       - name: Build
-        run: dotnet build --no-incremental -c Release
+        run: dotnet build Galileo_API.slnx --no-incremental -c Release --no-restore
 
-      # Si más adelante agregas tests, añade un paso dotnet test con cobertura
-      # y QUITA la línea sonar.coverage.exclusions=**
+      # 🔹 Cuando agregues tests:
+      # - Quita sonar.coverage.exclusions de arriba
+      # - Agrega esto:
+      # - name: Test con cobertura
+      #   run: |
+      #     dotnet test Galileo_API.slnx \
+      #       --configuration Release --no-build \
+      #       --logger "trx;LogFileName=test_results.trx" \
+      #       /p:CollectCoverage=true \
+      #       /p:CoverletOutput=TestResults/coverage \
+      #       /p:CoverletOutputFormat=\"opencover\"
 
       - name: End SonarCloud analysis
+        if: always()
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: dotnet-sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
+        run: |
+          dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
