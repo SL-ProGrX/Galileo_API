@@ -8,7 +8,7 @@ namespace PgxAPI.BusinessLogic
     public class DataBL
     {
         private readonly IConfiguration _config;
-        DataDB DbData;
+        readonly DataDB DbData;
 
         public DataBL(IConfiguration config)
         {
@@ -72,11 +72,6 @@ namespace PgxAPI.BusinessLogic
             return DbData.Beneficios_Obtener(CodCliente, pagina, paginacion, filtro);
         }
 
-        public ErrorDto<SociosDataLista> Socios_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
-        {
-            return DbData.Socios_Obtener(CodCliente, pagina, paginacion, filtro);
-        }
-
         public BeneficioProductoLista BeneficioProducto_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             return DbData.BeneficioProducto_Obtener(CodCliente, pagina, paginacion, filtro);
@@ -120,6 +115,11 @@ namespace PgxAPI.BusinessLogic
         public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string jfiltro)
         {
             return DbData.Socios_Obtener(CodEmpresa, jfiltro);
+        }
+
+        public ErrorDto<SociosDataLista> Socios_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
+        {
+            return DbData.Socios_Obtener(CodCliente, pagina, paginacion, filtro);
         }
     }
 }
