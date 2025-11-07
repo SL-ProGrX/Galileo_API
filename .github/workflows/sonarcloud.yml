@@ -14,17 +14,19 @@ permissions:
 jobs:
   build-and-analyze:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # necesario para Sonar (SCM info)
+          fetch-depth: 0  # necesario para Sonar (SCM info)
 
       - name: Setup .NET 9 SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '9.0.x'   # .slnx requiere .NET 9
 
-      - name: Setup JDK 17
+      - name: Setup JDK 17 (requerido por Sonar)
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
@@ -35,7 +37,7 @@ jobs:
           dotnet tool install --global dotnet-sonarscanner
           echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
-      # 🔹 Aquí indicamos directamente las rutas
+      # 🔹 Inicio del análisis SonarCloud
       - name: Begin SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -45,31 +47,24 @@ jobs:
             /o:"sl-progrx" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.token="${SONAR_TOKEN}" \
-            /d:sonar.projectBaseDir="Galileo_API" \
+            /d:sonar.projectBaseDir="${GITHUB_WORKSPACE}/Galileo_API" \
             /d:sonar.exclusions="**/bin/**,**/obj/**" \
             /d:sonar.coverage.exclusions=**   # quítalo cuando agregues tests
 
+      # 🔹 Restaurar dependencias
       - name: Restore
-        run: dotnet restore Galileo_API.slnx
+        run: dotnet restore "${GITHUB_WORKSPACE}/Galileo_API.slnx"
 
+      # 🔹 Compilar la solución
       - name: Build
-        run: dotnet build Galileo_API.slnx --no-incremental -c Release --no-restore
+        run: dotnet build "${GITHUB_WORKSPACE}/Galileo_API.slnx" --no-incremental -c Release --no-restore
 
-      # 🔹 Cuando agregues tests:
-      # - Quita sonar.coverage.exclusions de arriba
-      # - Agrega esto:
-      # - name: Test con cobertura
+      # 🔹 (Opcional) Ejecutar pruebas con cobertura
+      # - name: Test with coverage
       #   run: |
-      #     dotnet test Galileo_API.slnx \
+      #     dotnet test "${GITHUB_WORKSPACE}/Galileo_API.slnx" \
       #       --configuration Release --no-build \
       #       --logger "trx;LogFileName=test_results.trx" \
       #       /p:CollectCoverage=true \
       #       /p:CoverletOutput=TestResults/coverage \
-      #       /p:CoverletOutputFormat=\"opencover\"
-
-      - name: End SonarCloud analysis
-        if: always()
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"
+      #       /p:CoverletOutputFormat=\"
