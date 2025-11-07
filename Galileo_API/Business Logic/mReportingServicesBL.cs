@@ -1,0 +1,34 @@
+﻿// using Microsoft.AspNetCore.Mvc;
+// using PgxAPI.DataBaseTier;
+// using PgxAPI.Models;
+// using PgxAPI.Models.ERROR;
+
+// namespace PgxAPI.BusinessLogic
+// {
+//     public class mReportingServicesBL
+//     {
+//         private readonly IConfiguration _config;
+//         private readonly mReportingServicesDB _reportingServicesDB;
+
+//         public mReportingServicesBL(IConfiguration config)
+//         {
+//             _config = config;
+//             _reportingServicesDB = new mReportingServicesDB(_config);
+//         }
+
+//         public IActionResult ReporteRDLC_v2(frmReporteGlobal data)
+//         {
+//             return _reportingServicesDB.ReporteRDLC_v2(data);
+//         }
+
+//         public ErrorDto<object> ReporteRDLC(frmReporteGlobal data)
+//         {
+//             return _reportingServicesDB.ReporteRDLC(data);
+//         }
+//         public ErrorDto<object> ReportesInfo(int CodEmpresa)
+//         {
+//             return _reportingServicesDB.ReportesInfo(CodEmpresa);
+//         }
+
+//     }
+// }
