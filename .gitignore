@@ -56,6 +56,7 @@ nunit-*.xml
 # Rider / VS Code / Visual Studio
 .idea/
 .vscode/
+/.vs
 *.suo
 *.user
 *.userosscache
