@@ -1,18 +1,15 @@
 ﻿using Galileo.DataBaseTier;
-using Galileo.Models;
 using Galileo.Models.ERROR;
 
 namespace Galileo.BusinessLogic
 {
-    public class mBeneficiosBL
+    public class MBeneficiosBl
     {
-        private readonly IConfiguration _config;
-        MBeneficiosDB mBeneficioDB;
+        readonly MBeneficiosDB mBeneficioDB;
 
-        public mBeneficiosBL(IConfiguration config)
+        public MBeneficiosBl(IConfiguration config)
         {
-            _config = config;
-            mBeneficioDB = new MBeneficiosDB(_config);
+            mBeneficioDB = new MBeneficiosDB(config);
         }
 
         public ErrorDto fxNombre(int CodEmpresa, string cedula)

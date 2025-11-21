@@ -3,15 +3,13 @@ using Galileo.Models;
 
 namespace Galileo.BusinessLogic
 {
-    public class frmCntX_ConsultaCuentasBL
+    public class FrmCntXConsultaCuentasBl
     {
-        private readonly IConfiguration _config;
-        FrmCntXConsultaCuentasDb DbProveedores;
+        readonly FrmCntXConsultaCuentasDb DbProveedores;
 
-        public frmCntX_ConsultaCuentasBL(IConfiguration config)
+        public FrmCntXConsultaCuentasBl(IConfiguration config)
         {
-            _config = config;
-            DbProveedores = new FrmCntXConsultaCuentasDb(_config);
+            DbProveedores = new FrmCntXConsultaCuentasDb(config);
         }
 
         public List<CtnxCuentasDto> ObtenerCuentas(int CodEmpresa, CuentaVarModel cuenta)
@@ -23,7 +21,6 @@ namespace Galileo.BusinessLogic
             return DbProveedores.ObtenerCuentasArbol(CodEmpresa, cuenta);
         }
 
-
         public List<DropDownListaGenericaModel> ObtenerDivisas(int CodEmpresa, int Contavilidad)
         {
             return DbProveedores.ObtenerDivisas(CodEmpresa, Contavilidad);
@@ -32,7 +29,5 @@ namespace Galileo.BusinessLogic
         {
             return DbProveedores.ObtenerTiposCuentas(CodEmpresa, Contavilidad);
         }
-
-
     }
 }

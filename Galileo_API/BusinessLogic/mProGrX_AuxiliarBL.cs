@@ -6,11 +6,11 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.BusinessLogic
 {
-    public class mProGrX_AuxiliarBL
+    public class MProGrXAuxiliarBl
     {
         private readonly IConfiguration _config;
 
-        public mProGrX_AuxiliarBL(IConfiguration config)
+        public MProGrXAuxiliarBl(IConfiguration config)
         {
             _config = config;
         }

@@ -7,39 +7,35 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class mCntLinkController : Controller
+    public class MCntLinkController : ControllerBase
     {
         private readonly IConfiguration _config;
 
-        public mCntLinkController(IConfiguration config)
+        public MCntLinkController(IConfiguration config)
         {
             _config = config;
         }
-
-
 
         [HttpGet("sbgCntParametros")]
         // [Authorize]
         public ErrorDto<DefMascarasDto> sbgCntParametros(int CodEmpresa)
         {
-            return new mCntLinkBL(_config).sbgCntParametros(CodEmpresa);
+            return new MCntLinkBl(_config).sbgCntParametros(CodEmpresa);
         }
 
         [HttpGet("fxgCntCuentaFormato")]
         // [Authorize]
         public string fxgCntCuentaFormato(int CodEmpresa, bool blnMascara, string pCuenta, int optMensaje = 1)
         {
-            return new mCntLinkBL(_config).fxgCntCuentaFormato(CodEmpresa, blnMascara, pCuenta, optMensaje);
+            return new MCntLinkBl(_config).fxgCntCuentaFormato(CodEmpresa, blnMascara, pCuenta, optMensaje);
         }
 
         [HttpGet("fxgCntCuentaValida")]
         // [Authorize]
         public bool fxgCntCuentaValida(int CodEmpresa, string vCuenta)
         {
-            return new mCntLinkBL(_config).fxgCntCuentaValida(CodEmpresa, vCuenta);
+            return new MCntLinkBl(_config).fxgCntCuentaValida(CodEmpresa, vCuenta);
         }
-
-
 
     }
 }

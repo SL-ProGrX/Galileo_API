@@ -2,17 +2,15 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.TES;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Galileo.BusinessLogic
 {
-    public class frmCC_Cuentas_BancariasBL
+    public class FrmCcCuentasBancariasBl
     {
         private readonly IConfiguration _config;
         FrmCcCuentasBancariasDb DB_Cuentas;
 
-        public frmCC_Cuentas_BancariasBL(IConfiguration config)
+        public FrmCcCuentasBancariasBl(IConfiguration config)
         {
             _config = config;
             DB_Cuentas = new FrmCcCuentasBancariasDb(_config);

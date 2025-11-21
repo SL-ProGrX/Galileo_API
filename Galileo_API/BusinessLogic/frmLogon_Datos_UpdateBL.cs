@@ -4,18 +4,14 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.BusinessLogic
 {
-    public class frmLogon_Datos_UpdateBL
+    public class FrmLogonDatosUpdateBl
     {
+        readonly FrmLogonDatosUpdateDb Datos_UpdateDB;
 
-        private readonly IConfiguration _config;
-        FrmLogonDatosUpdateDb Datos_UpdateDB;
-
-        public frmLogon_Datos_UpdateBL(IConfiguration config)
+        public FrmLogonDatosUpdateBl(IConfiguration config)
         {
-            _config = config;
-            Datos_UpdateDB = new FrmLogonDatosUpdateDb(_config);
+            Datos_UpdateDB = new FrmLogonDatosUpdateDb(config);
         }
-
 
         public LogonUpdateData LogonObtenerDatosUsuario(string usuario)
         {
@@ -27,5 +23,5 @@ namespace Galileo.BusinessLogic
             return Datos_UpdateDB.LogonUpdateDatosUsuario(info);
         }
 
-    }//end class
-}//end namespace
+    }
+}

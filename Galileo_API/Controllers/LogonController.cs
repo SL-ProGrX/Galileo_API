@@ -9,13 +9,11 @@ namespace Galileo.Controllers
     [ApiController]
     public class LogonController : ControllerBase
     {
-        private readonly IConfiguration _config;
-        LogonBL logonBL;
+        readonly LogonBL logonBL;
 
         public LogonController(IConfiguration config)
         {
-            _config = config;
-            logonBL = new LogonBL(_config);
+            logonBL = new LogonBL(config);
         }
 
         [HttpGet("IntentosObtener")]

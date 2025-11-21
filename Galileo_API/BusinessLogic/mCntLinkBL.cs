@@ -2,14 +2,13 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 
-
 namespace Galileo.BusinessLogic
 {
-    public class mCntLinkBL
+    public class MCntLinkBl
     {
         private readonly IConfiguration _config;
 
-        public mCntLinkBL(IConfiguration config)
+        public MCntLinkBl(IConfiguration config)
         {
             _config = config;
         }
@@ -28,8 +27,5 @@ namespace Galileo.BusinessLogic
         {
             return new MCntLinkDB(_config).fxgCntCuentaValida(CodEmpresa, vCuenta);
         }
-
-
-
     }
 }

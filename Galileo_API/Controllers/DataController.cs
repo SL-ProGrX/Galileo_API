@@ -10,50 +10,54 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class DataController : Controller
+    public class DataController : ControllerBase
     {
-        private readonly IConfiguration _config;
-        DataBL Databl;
+        readonly DataBL Databl;
 
         public DataController(IConfiguration config)
         {
-            _config = config;
-            Databl = new DataBL(_config);
+            Databl = new DataBL(config);
         }
 
         [HttpGet("Proveedores_Obtener")]
         public ErrorDto<ProveedoresDataLista> Proveedores_Obtener(int CodCliente, string filtro)
         {
-            var jFiltro = JsonConvert.DeserializeObject<ProveedorDataFiltros>(filtro);
+            var jFiltro = JsonConvert.DeserializeObject<ProveedorDataFiltros>(filtro) ?? new ProveedorDataFiltros();
             return Databl.Proveedores_Obtener(CodCliente, jFiltro);
         }
+
         [HttpGet("Cargos_Obtener")]
         public CargoDataLista Cargos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             return Databl.Cargos_Obtener(CodCliente, pagina, paginacion, filtro);
         }
+
         [HttpGet("Bodegas_Obtener")]
         public BodegaDataLista Bodegas_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             return Databl.Bodegas_Obtener(CodCliente, pagina, paginacion, filtro);
         }
+
         [HttpGet("Articulos_Obtener")]
         public ErrorDto<ArticuloDataLista> Articulos_Obtener(int CodCliente, string filtro)
         {
-            var jFiltro = JsonConvert.DeserializeObject<ArticuloDataFiltros>(filtro);
+            var jFiltro = JsonConvert.DeserializeObject<ArticuloDataFiltros>(filtro) ?? new ArticuloDataFiltros();
             return Databl.Articulos_Obtener(CodCliente, jFiltro);
         }
+
         [HttpGet("Ordenes_Obtener")]
         public OrdenesDataLista Ordenes_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string? proveedor, string? familia)
         {
             return Databl.Ordenes_Obtener(CodCliente, pagina, paginacion, filtro, proveedor, familia);
         }
+
         [HttpGet("OrdenesFiltro_Obtener")]
         public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, int? pagina, int? paginacion,
             string? filtro, string? proveedor, string? familia, string? subfamilia)
         {
             return Databl.OrdenesFiltro_Obtener(CodCliente, pagina, paginacion, filtro, proveedor, familia, subfamilia);
         }
+
         [HttpGet("Facturas_Obtener")]
         public FacturasDataLista Facturas_Obtener(int CodCliente, int CodProveedor, int? pagina, int? paginacion, string? filtro)
         {
@@ -88,6 +92,13 @@ namespace Galileo.Controllers
         public ErrorDto<SociosDataLista> Socios_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             return Databl.Socios_Obtener(CodCliente, pagina, paginacion, filtro);
+        }
+
+        [Authorize]
+        [HttpGet("Socios_Obtenerv2")]
+        public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string filtro)
+        {
+            return Databl.Socios_Obtener(CodEmpresa, filtro);
         }
 
         [HttpGet("BeneficioProducto_Obtener")]
@@ -127,7 +138,6 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("TipoProductoSub_ObtenerTodos")]
-
         public ErrorDto<List<TipoProductoSubGradaData>> TipoProductoSub_ObtenerTodos(int CodEmpresa, string Cod_Prodclas)
         {
             return Databl.TipoProductoSub_ObtenerTodos(CodEmpresa, Cod_Prodclas);
@@ -141,12 +151,7 @@ namespace Galileo.Controllers
             return Databl.Personas_Obtener(CodEmpresa, filtro);
         }
 
-        [Authorize]
-        [HttpGet("Socios_Obtenerv2")]
-        public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string filtro)
-        {
-            return Databl.Socios_Obtener(CodEmpresa, filtro);
-        }
+
     }
 
 }
