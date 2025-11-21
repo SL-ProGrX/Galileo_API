@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using PgxAPI.BusinessLogic;
-using PgxAPI.DataBaseTier;
-using PgxAPI.Models;
-using PgxAPI.Models.CPR;
-using PgxAPI.Models.ERROR;
+using Galileo.BusinessLogic;
+using Galileo.DataBaseTier;
+using Galileo.Models;
+using Galileo.Models.CPR;
+using Galileo.Models.ERROR;
 
-namespace PgxAPI.Controllers
+namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -26,7 +26,7 @@ namespace PgxAPI.Controllers
 
 
         [HttpPost("fxInvVerificaLineaDetalle")]
-        public ErrorDTO fxInvVerificaLineaDetalle(int CodEmpresa, int ColCantidad, string vMov, int ColProd, int ColBod1, int ColBod2, List<FacturaDetalleDto> vGrid)
+        public ErrorDto fxInvVerificaLineaDetalle(int CodEmpresa, int ColCantidad, string vMov, int ColProd, int ColBod1, int ColBod2, List<FacturaDetalleDto> vGrid)
         {
             return new mProGrX_AuxiliarBL(_config).fxInvVerificaLineaDetalle(CodEmpresa
                               , ColCantidad, vMov, ColProd, ColBod1, ColBod2, vGrid);
@@ -41,21 +41,21 @@ namespace PgxAPI.Controllers
 
 
         [HttpPost("sbInvInventario")]
-        public ErrorDTO sbInvInventario(int CodEmpresa, CompraInventarioDTO inventario)
+        public ErrorDto sbInvInventario(int CodEmpresa, CompraInventarioDto inventario)
         {
             return new mProGrX_AuxiliarBL(_config).sbInvInventario(CodEmpresa, inventario);
         }
 
 
         [HttpGet("fxCxPParametro")]
-        public ErrorDTO<ParametroValor> fxCxPParametro(int CodEmpresa, string Cod_Parametro)
+        public ErrorDto<ParametroValor> fxCxPParametro(int CodEmpresa, string Cod_Parametro)
         {
             return new mProGrX_AuxiliarBL(_config).fxCxPParametro(CodEmpresa, Cod_Parametro);
         }
 
 
         [HttpGet("fxInvTransaccionesAutoriza")]
-        public ErrorDTO fxInvTransaccionesAutoriza(int CodEmpresa, string Boleta, string TipoTran, string AutorizaUser)
+        public ErrorDto fxInvTransaccionesAutoriza(int CodEmpresa, string Boleta, string TipoTran, string AutorizaUser)
         {
             return new mProGrX_AuxiliarBL(_config).fxInvTransaccionesAutoriza(CodEmpresa, Boleta, TipoTran, AutorizaUser);
         }
@@ -67,7 +67,7 @@ namespace PgxAPI.Controllers
         }
 
         [HttpGet("ActivosSinAsignar_Obtener")]
-        public ErrorDTO<int> ActivosSinAsignar_Obtener(int CodEmpresa, string usuario)
+        public ErrorDto<int> ActivosSinAsignar_Obtener(int CodEmpresa, string usuario)
         {
             return new mProGrX_AuxiliarBL(_config).ActivosSinAsignar_Obtener(CodEmpresa, usuario);
         }
@@ -81,13 +81,13 @@ namespace PgxAPI.Controllers
         [HttpDelete("FndControlAutoriza_Eliminar")]
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)
         {
-            return new mProGrX_AuxiliarDB(_config).FndControlAutoriza_Eliminar(request);
+            return new MProGrXAuxiliarDB(_config).FndControlAutoriza_Eliminar(request);
         }
 
         [HttpPost("FndControlAutoriza_Insertar")]
         public int FndControlAutoriza_Insertar(FndControlAutorizaData request)
         {
-            return new mProGrX_AuxiliarDB(_config).FndControlAutoriza_Insertar(request);
+            return new MProGrXAuxiliarDB(_config).FndControlAutoriza_Insertar(request);
         }
 
         [HttpPut("FndControlCambios_Autoriza")]
