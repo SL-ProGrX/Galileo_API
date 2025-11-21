@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models
+﻿namespace Galileo.Models
 {
     public class TesoreriaMaestroModel
     {

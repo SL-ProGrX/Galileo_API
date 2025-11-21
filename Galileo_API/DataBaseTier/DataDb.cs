@@ -1,13 +1,13 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using PgxAPI.Models;
-using PgxAPI.Models.AF;
-using PgxAPI.Models.CxP;
-using PgxAPI.Models.ERROR;
-using PgxAPI.Models.INV;
+using Galileo.Models;
+using Galileo.Models.AF;
+using Galileo.Models.CxP;
+using Galileo.Models.ERROR;
+using Galileo.Models.INV;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class DataDB
     {

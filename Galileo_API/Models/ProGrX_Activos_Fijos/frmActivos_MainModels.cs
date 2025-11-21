@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.ProGrX_Activos_Fijos
+﻿namespace Galileo.Models.ProGrX_Activos_Fijos
 {
     public class MainGeneralData
     {

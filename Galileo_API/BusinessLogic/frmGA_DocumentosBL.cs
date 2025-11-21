@@ -1,9 +1,9 @@
-using PgxAPI.DataBaseTier;
-using PgxAPI.Models;
-using PgxAPI.Models.ERROR;
-using PgxAPI.Models.GA;
+using Galileo.DataBaseTier;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.GA;
 
-namespace PgxAPI.BusinessLogic
+namespace Galileo.BusinessLogic
 {
     public class frmGA_DocumentosBL
     {

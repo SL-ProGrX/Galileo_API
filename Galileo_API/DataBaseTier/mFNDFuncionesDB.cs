@@ -1,11 +1,11 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
-using PgxAPI.Models.ERROR;
-using PgxAPI.Models.FSL;
-using PgxAPI.Models.ProGrX.Fondos;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.FSL;
+using Galileo.Models.ProGrX.Fondos;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class MFndFuncionesDb
     {

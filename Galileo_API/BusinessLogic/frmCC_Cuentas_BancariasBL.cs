@@ -1,11 +1,11 @@
 ﻿using Newtonsoft.Json;
-using PgxAPI.DataBaseTier;
-using PgxAPI.Models;
-using PgxAPI.Models.ERROR;
-using PgxAPI.Models.TES;
+using Galileo.DataBaseTier;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.TES;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace PgxAPI.BusinessLogic
+namespace Galileo.BusinessLogic
 {
     public class frmCC_Cuentas_BancariasBL
     {

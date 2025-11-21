@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PgxAPI.Models.ProGrX_Nucleo
+namespace Galileo.Models.ProGrX_Nucleo
 {
     public class PgxMigracionData
     {

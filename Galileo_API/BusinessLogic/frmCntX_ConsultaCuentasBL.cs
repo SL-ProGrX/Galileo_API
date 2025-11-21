@@ -1,7 +1,7 @@
-﻿using PgxAPI.DataBaseTier;
-using PgxAPI.Models;
+﻿using Galileo.DataBaseTier;
+using Galileo.Models;
 
-namespace PgxAPI.BusinessLogic
+namespace Galileo.BusinessLogic
 {
     public class frmCntX_ConsultaCuentasBL
     {

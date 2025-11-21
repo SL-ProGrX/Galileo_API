@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.ProGrX_Personas
+﻿namespace Galileo.Models.ProGrX_Personas
 {
     public class AfiAfiliacionControlDto
     {

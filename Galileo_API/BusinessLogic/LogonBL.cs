@@ -1,9 +1,9 @@
-﻿using PgxAPI.DataBaseTier;
-using PgxAPI.Models;
-using PgxAPI.Models.ERROR;
+﻿using Galileo.DataBaseTier;
+using Galileo.Models;
+using Galileo.Models.ERROR;
 using System.Text;
 
-namespace PgxAPI.BusinessLogic
+namespace Galileo.BusinessLogic
 {
     public class LogonBL
     {

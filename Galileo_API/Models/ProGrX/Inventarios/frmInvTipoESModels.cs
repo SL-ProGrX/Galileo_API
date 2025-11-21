@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.INV
+namespace Galileo.Models.INV
 {
     public class TipoEsDto
     {

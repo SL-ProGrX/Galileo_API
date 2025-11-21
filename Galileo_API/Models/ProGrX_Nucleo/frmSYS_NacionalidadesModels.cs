@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.SYS
+namespace Galileo.Models.SYS
 {
     public class SysNacionalidadesLista
     {

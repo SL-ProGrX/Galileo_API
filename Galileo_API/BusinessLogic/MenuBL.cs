@@ -1,9 +1,9 @@
-﻿using PgxAPI.DataBaseTier;
-using PgxAPI.Models;
-using PgxAPI.Models.ERROR;
-using PgxAPI.Models.Security;
+﻿using Galileo.DataBaseTier;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 
-namespace PgxAPI.BusinessLogic
+namespace Galileo.BusinessLogic
 {
     public class MenuBL
     {

@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.ProGrX_Contabilidad
+﻿namespace Galileo.Models.ProGrX_Contabilidad
 {
     public class PresFormulacionAutoDto
     {

@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.Security
+﻿namespace Galileo.Models.Security
 {
     public class BitacoraRequestDto
     {

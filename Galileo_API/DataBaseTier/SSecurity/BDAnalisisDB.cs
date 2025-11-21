@@ -1,8 +1,8 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models.Security;
+using Galileo.Models.Security;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class BDAnalisisDB
     {

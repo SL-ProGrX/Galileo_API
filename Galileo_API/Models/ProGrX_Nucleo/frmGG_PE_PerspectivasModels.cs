@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.GG_PE
+namespace Galileo.Models.GG_PE
 {
     public class PePerspectivasFiltros
     {

@@ -1,5 +1,5 @@
 ﻿
-namespace PgxAPI.Models.ProGrX_Nucleo
+namespace Galileo.Models.ProGrX_Nucleo
 {
     public class FrmSifDocsTrasladoModels
     {

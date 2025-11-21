@@ -1,11 +1,11 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using PgxAPI.Models;
+using Galileo.Models;
 using System.Data;
-using PgxAPI.Models.ERROR;
+using Galileo.Models.ERROR;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class MComprasDB
     {

@@ -1,7 +1,7 @@
 ﻿
-using PgxAPI.Models;
+using Galileo.Models;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class PortalDB
     {

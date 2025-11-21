@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.ProGrX.Clientes
+﻿namespace Galileo.Models.ProGrX.Clientes
 {
     public class AfParametrosDto
     {

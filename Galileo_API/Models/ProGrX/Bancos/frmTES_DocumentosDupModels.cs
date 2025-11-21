@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.ProGrX.Bancos
+﻿namespace Galileo.Models.ProGrX.Bancos
 {
     public class DropDownListaBancos
     {

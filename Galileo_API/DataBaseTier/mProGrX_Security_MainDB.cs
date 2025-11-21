@@ -1,9 +1,9 @@
 ﻿using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
-using PgxAPI.Models.ERROR;
+using Galileo.Models;
+using Galileo.Models.ERROR;
 using System.Net.NetworkInformation;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class MProGrXSecurityMainDb
     {

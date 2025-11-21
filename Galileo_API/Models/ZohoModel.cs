@@ -1,4 +1,4 @@
-﻿namespace PgxAPI_Externo.Models.NewFolder
+﻿namespace Galileo_Externo.Models.NewFolder
 {
     public class Source
     {

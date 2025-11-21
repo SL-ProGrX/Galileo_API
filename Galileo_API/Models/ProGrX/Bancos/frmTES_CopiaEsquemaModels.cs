@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace PgxAPI.Models.ProGrX.Bancos
+namespace Galileo.Models.ProGrX.Bancos
 {
     public class TesCopiaEsquemaLista
     {

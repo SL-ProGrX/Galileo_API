@@ -2,11 +2,11 @@
 using System.Text;
 using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
-using PgxAPI.Models.AF;
-using PgxAPI.Models.ERROR;
+using Galileo.Models;
+using Galileo.Models.AF;
+using Galileo.Models.ERROR;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class MBeneficiosDB
     {

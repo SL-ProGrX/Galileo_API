@@ -1,19 +1,17 @@
-﻿using PgxAPI.DataBaseTier;
-using PgxAPI.Models;
-using PgxAPI.Models.ERROR;
-using PgxAPI.Models.INV;
+﻿using Galileo.DataBaseTier;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.INV;
 
-namespace PgxAPI.BusinessLogic
+namespace Galileo.BusinessLogic
 {
     public class DataBL
     {
-        private readonly IConfiguration _config;
         readonly DataDB DbData;
 
         public DataBL(IConfiguration config)
         {
-            _config = config;
-            DbData = new DataDB(_config);
+            DbData = new DataDB(config);
         }
 
         public ErrorDto<ProveedoresDataLista> Proveedores_Obtener(int CodCliente, ProveedorDataFiltros filtro)

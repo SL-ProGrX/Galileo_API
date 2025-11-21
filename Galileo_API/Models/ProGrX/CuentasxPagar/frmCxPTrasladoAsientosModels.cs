@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.CxP
+namespace Galileo.Models.CxP
 {
     public class DocsPendientesTraslado
     {

@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.DataBaseTier
+﻿namespace Galileo.DataBaseTier
 {
     public static class MCredito
     {

@@ -1,14 +1,14 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models.ERROR;
+using Galileo.Models.ERROR;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using PgxAPI.Models.Security;
+using Galileo.Models.Security;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class PerfilUsuarioDB
     {
@@ -42,7 +42,8 @@ namespace PgxAPI.DataBaseTier
                 var jwt = _config.GetSection("Jwt");
                 var issuer   = jwt["Issuer"];
                 var audience = jwt["Audience"];
-                var secret   = jwt["Secret"];
+                // Retrieve the secret from an environment variable for better security
+                var secret   = Environment.GetEnvironmentVariable("JWT_SECRET");
                 var minutes  = int.TryParse(jwt["AccessTokenMinutes"], out var m) ? m : 60;
 
                 if (string.IsNullOrWhiteSpace(issuer) ||

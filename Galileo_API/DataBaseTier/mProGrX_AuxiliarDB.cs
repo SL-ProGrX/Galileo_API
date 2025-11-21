@@ -3,10 +3,10 @@ using Humanizer;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using PgxAPI.Models;
-using PgxAPI.Models.CPR;
-using PgxAPI.Models.ERROR;
-using PgxAPI.Models.INV;
+using Galileo.Models;
+using Galileo.Models.CPR;
+using Galileo.Models.ERROR;
+using Galileo.Models.INV;
 using System.Data;
 using System.Globalization;
 using System.Text.RegularExpressions;
@@ -14,7 +14,7 @@ using System.Xml.Serialization;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class MProGrXAuxiliarDB
     {

@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.PRES
+﻿namespace Galileo.Models.PRES
 {
     public class PresAjustestTiposDto
     {

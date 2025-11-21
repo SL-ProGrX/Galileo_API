@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.SIF
+namespace Galileo.Models.SIF
 {
     public class SifParametrosDto
     {

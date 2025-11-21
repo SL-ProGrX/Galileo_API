@@ -4,8 +4,8 @@
 // using Microsoft.Reporting.NETCore;
 // using Newtonsoft.Json;
 // using Newtonsoft.Json.Linq;
-// using PgxAPI.Models;
-// using PgxAPI.Models.ERROR;
+// using Galileo.Models;
+// using Galileo.Models.ERROR;
 // using System.Data;
 // using System.Dynamic;
 // using System.Globalization;
@@ -13,7 +13,7 @@
 // using System.Xml.Linq;
 // using static System.Runtime.InteropServices.JavaScript.JSType;
 
-// namespace PgxAPI.DataBaseTier
+// namespace Galileo.DataBaseTier
 // {
 //     /// <summary>
 //     /// Servicio que renderiza RDLC (principal + subreportes) dinámicamente.

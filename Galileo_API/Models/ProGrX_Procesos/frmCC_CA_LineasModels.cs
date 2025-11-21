@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.GEN
+namespace Galileo.Models.GEN
 {
     public class CcCaLineasActivasData
     {

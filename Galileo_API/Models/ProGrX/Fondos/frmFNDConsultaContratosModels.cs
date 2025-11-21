@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace PgxAPI.Models.ProGrX.Fondos
+namespace Galileo.Models.ProGrX.Fondos
 {
     public class FndConsultaContratosData
     {

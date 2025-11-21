@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.ERROR
+﻿namespace Galileo.Models.ERROR
 {
     public class ErrorDto<T>
     {
