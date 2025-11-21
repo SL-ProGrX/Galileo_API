@@ -1,5 +1,4 @@
 ﻿using Galileo.DataBaseTier;
-using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 
@@ -7,12 +6,10 @@ namespace Galileo.BusinessLogic
 {
     public class MenuBL
     {
-        private readonly IConfiguration _config;
         private readonly MenuDB _db;
         public MenuBL(IConfiguration config)
         {
-            _config = config;
-            _db = new MenuDB(_config);
+            _db = new MenuDB(config);
         }
 
         public List<PrimeTreeDtoV2> GenerarMenuV2(string usuario, int cliente)

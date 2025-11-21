@@ -7,17 +7,14 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class frmLogon_Datos_UpdateController : ControllerBase
+    public class FrmLogonDatosUpdateController : ControllerBase
     {
-        private readonly IConfiguration _config;
-        frmLogon_Datos_UpdateBL Datos_UpdateBL;
+        readonly FrmLogonDatosUpdateBl Datos_UpdateBL;
 
-        public frmLogon_Datos_UpdateController(IConfiguration config)
+        public FrmLogonDatosUpdateController(IConfiguration config)
         {
-            _config = config;
-            Datos_UpdateBL = new frmLogon_Datos_UpdateBL(_config);
+            Datos_UpdateBL = new FrmLogonDatosUpdateBl(config);
         }
-
 
         [HttpGet("LogonObtenerDatosUsuario")]
         public LogonUpdateData LogonObtenerDatosUsuario(string usuario)
@@ -30,7 +27,5 @@ namespace Galileo.Controllers
         {
             return Datos_UpdateBL.LogonUpdateDatosUsuario(info);
         }
-
-
-    }//end class
-}//end namespace
+    }
+}

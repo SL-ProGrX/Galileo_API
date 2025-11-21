@@ -4,11 +4,11 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.BusinessLogic
 {
-    public class mComprasBL
+    public class MComprasBl
     {
         private readonly IConfiguration _config;
 
-        public mComprasBL(IConfiguration config)
+        public MComprasBl(IConfiguration config)
         {
             _config = config;
         }

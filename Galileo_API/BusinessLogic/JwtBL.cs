@@ -1,5 +1,4 @@
 ﻿using Galileo.DataBaseTier;
-using Galileo.Models;
 using Galileo.Models.Security;
 using System.Security.Claims;
 
@@ -19,7 +18,7 @@ namespace Galileo.BusinessLogic
             LoginResult resultado = new LoginResult();
             try
             {
-                if (identity != null || identity.Claims.Count() > 0)
+                if (identity != null && identity.Claims != null && identity.Claims.Any())
                 {
                     var userIdClaim = identity.Claims.FirstOrDefault(x => x.Type == "UserId");
                     var userNameClaim = identity.Claims.FirstOrDefault(x => x.Type == "UserName");
@@ -73,15 +72,13 @@ namespace Galileo.BusinessLogic
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                //todo: error handling
+                _ = ex.Message;
             }
 
             return resultado;
 
-        }//fin login
-
-
-    }//fin class
-}//fin namespace
+        }
+    }
+}

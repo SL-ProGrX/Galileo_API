@@ -1,19 +1,16 @@
 using Galileo.DataBaseTier;
-using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.GA;
 
 namespace Galileo.BusinessLogic
 {
-    public class frmGA_DocumentosBL
+    public class FrmGaDocumentosBl
     {
-        private readonly IConfiguration _config;
-        FrmGaDocumentosDb DbfrmGA_Documentos;
+        readonly FrmGaDocumentosDb DbfrmGA_Documentos;
 
-        public frmGA_DocumentosBL(IConfiguration config)
+        public FrmGaDocumentosBl(IConfiguration config)
         {
-            _config = config;
-            DbfrmGA_Documentos = new FrmGaDocumentosDb(_config);
+            DbfrmGA_Documentos = new FrmGaDocumentosDb(config);
         }
 
         public ErrorDto<List<TiposDocumentosArchivosDto>> TiposDocumentos_Obtener(int CodEmpresa, string Usuario, string Modulo)
@@ -26,7 +23,6 @@ namespace Galileo.BusinessLogic
         {
             return DbfrmGA_Documentos.Documentos_Insertar(CodEmpresa, documentInfo);
         }
-
 
         public List<DocumentosArchivoDto> Documentos_Obtener(GaDocumento filtros)
         {

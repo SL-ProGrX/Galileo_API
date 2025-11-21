@@ -7,17 +7,21 @@ namespace Galileo.BusinessLogic
 {
     public class LogonBL
     {
-        private readonly IConfiguration _config;
-        LogonDB logonDB;
+        readonly LogonDB logonDB;
         public LogonBL(IConfiguration config)
         {
-            _config = config;
-            logonDB = new LogonDB(_config);
+            logonDB = new LogonDB(config);
         }
 
         public IntentosObtenerDto IntentosObtener()
         {
-            return logonDB.IntentosObtener();
+            var result = logonDB.IntentosObtener();
+            if (result == null)
+            {
+                // Return a default instance or handle as needed
+                return new IntentosObtenerDto();
+            }
+            return result;
         }
 
         public ErrorDto LoginObtener(LoginObtenerDto req)
@@ -44,7 +48,6 @@ namespace Galileo.BusinessLogic
         {
             return logonDB.TFA_Codigo_Validar(Usuario, codigo);
         }
-
 
         static string GenerarToken(int longitud)
         {
@@ -76,8 +79,6 @@ namespace Galileo.BusinessLogic
             string token = GenerarToken(10);
             return logonDB.EnviarToken(usuario, token, token);
         }
-
-
 
     }
 }

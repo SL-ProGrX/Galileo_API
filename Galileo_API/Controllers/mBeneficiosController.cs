@@ -1,21 +1,18 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
-using Galileo.Models;
 using Galileo.Models.ERROR;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class mBeneficiosController : Controller
+    public class MBeneficiosController : ControllerBase
     {
-        private readonly IConfiguration _config;
-        mBeneficiosBL mBeneficioBL;
+        readonly MBeneficiosBl mBeneficioBL;
 
-        public mBeneficiosController(IConfiguration config)
+        public MBeneficiosController(IConfiguration config)
         {
-            _config = config;
-            mBeneficioBL = new mBeneficiosBL(_config);
+            mBeneficioBL = new MBeneficiosBl(config);
         }
 
         [HttpGet("fxNombre")]

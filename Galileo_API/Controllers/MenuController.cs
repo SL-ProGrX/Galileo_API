@@ -9,13 +9,11 @@ namespace Galileo.Controllers
     [ApiController]
     public class MenuController : ControllerBase
     {
-        private readonly IConfiguration _config;
-        MenuBL MenuBL;
+        readonly MenuBL MenuBL;
 
         public MenuController(IConfiguration config)
         {
-            _config = config;
-            MenuBL = new MenuBL(_config);
+            MenuBL = new MenuBL(config);
         }
 
 
