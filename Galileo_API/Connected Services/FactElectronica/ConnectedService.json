@@ -1,0 +1,67 @@
+{
+  "ExtendedData": {
+    "inputs": [
+      "http://172.16.70.87/Servicio.svc"
+    ],
+    "collectionTypes": [
+      "System.Array",
+      "System.Collections.Generic.Dictionary`2"
+    ],
+    "namespaceMappings": [
+      "*, FactElectronica"
+    ],
+    "references": [
+      "Azure.Core, {Azure.Core, 1.47.1}",
+      "Azure.Identity, {Azure.Identity, 1.14.2}",
+      "BouncyCastle.Cryptography, {BouncyCastle.Cryptography, 2.6.1}",
+      "Dapper, {Dapper, 2.1.66}",
+      "Humanizer, {Humanizer.Core, 2.14.1}",
+      "MailKit, {MailKit, 4.14.1}",
+      "Microsoft.AspNetCore.Authentication.JwtBearer, {Microsoft.AspNetCore.Authentication.JwtBearer, 9.0.10}",
+      "Microsoft.Bcl.AsyncInterfaces, {Microsoft.Bcl.AsyncInterfaces, 8.0.0}",
+      "Microsoft.Bcl.Cryptography, {Microsoft.Bcl.Cryptography, 9.0.4}",
+      "Microsoft.Data.SqlClient, {Microsoft.Data.SqlClient, 6.1.2}",
+      "Microsoft.Extensions.DependencyInjection, {Microsoft.Extensions.DependencyInjection, 8.0.1}",
+      "Microsoft.Extensions.DependencyInjection.Abstractions, {Microsoft.Extensions.DependencyInjection.Abstractions, 9.0.4}",
+      "Microsoft.Extensions.Logging, {Microsoft.Extensions.Logging, 8.0.1}",
+      "Microsoft.Extensions.Logging.Abstractions, {Microsoft.Extensions.Logging.Abstractions, 9.0.4}",
+      "Microsoft.Extensions.Options, {Microsoft.Extensions.Options, 9.0.4}",
+      "Microsoft.Extensions.Primitives, {Microsoft.Extensions.Primitives, 9.0.4}",
+      "Microsoft.Identity.Client, {Microsoft.Identity.Client, 4.73.1}",
+      "Microsoft.Identity.Client.Extensions.Msal, {Microsoft.Identity.Client.Extensions.Msal, 4.73.1}",
+      "Microsoft.IdentityModel.Abstractions, {Microsoft.IdentityModel.Abstractions, 8.14.0}",
+      "Microsoft.IdentityModel.JsonWebTokens, {Microsoft.IdentityModel.JsonWebTokens, 8.14.0}",
+      "Microsoft.IdentityModel.Logging, {Microsoft.IdentityModel.Logging, 8.14.0}",
+      "Microsoft.IdentityModel.Protocols, {Microsoft.IdentityModel.Protocols, 8.0.1}",
+      "Microsoft.IdentityModel.Protocols.OpenIdConnect, {Microsoft.IdentityModel.Protocols.OpenIdConnect, 8.0.1}",
+      "Microsoft.IdentityModel.Tokens, {Microsoft.IdentityModel.Tokens, 8.14.0}",
+      "Microsoft.OpenApi, {Microsoft.OpenApi, 1.6.25}",
+      "Microsoft.SqlServer.Server, {Microsoft.SqlServer.Server, 1.0.0}",
+      "MimeKit, {MimeKit, 4.14.0}",
+      "Newtonsoft.Json, {Newtonsoft.Json, 13.0.4}",
+      "PdfSharp, {PDFsharp, 6.2.2}",
+      "PdfSharp.BarCodes, {PDFsharp, 6.2.2}",
+      "PdfSharp.Charting, {PDFsharp, 6.2.2}",
+      "PdfSharp.Cryptography, {PDFsharp, 6.2.2}",
+      "PdfSharp.Quality, {PDFsharp, 6.2.2}",
+      "PdfSharp.Shared, {PDFsharp, 6.2.2}",
+      "PdfSharp.Snippets, {PDFsharp, 6.2.2}",
+      "PdfSharp.System, {PDFsharp, 6.2.2}",
+      "PdfSharp.WPFonts, {PDFsharp, 6.2.2}",
+      "Swashbuckle.AspNetCore.Swagger, {Swashbuckle.AspNetCore.Swagger, 9.0.6}",
+      "Swashbuckle.AspNetCore.SwaggerGen, {Swashbuckle.AspNetCore.SwaggerGen, 9.0.6}",
+      "Swashbuckle.AspNetCore.SwaggerUI, {Swashbuckle.AspNetCore.SwaggerUI, 9.0.6}",
+      "System.ClientModel, {System.ClientModel, 1.5.1}",
+      "System.Diagnostics.DiagnosticSource, {System.Diagnostics.DiagnosticSource, 6.0.1}",
+      "System.Formats.Asn1, {System.Formats.Asn1, 8.0.1}",
+      "System.IdentityModel.Tokens.Jwt, {System.IdentityModel.Tokens.Jwt, 8.14.0}",
+      "System.Memory.Data, {System.Memory.Data, 8.0.1}",
+      "System.Runtime.CompilerServices.Unsafe, {System.Runtime.CompilerServices.Unsafe, 6.0.0}",
+      "System.Security.Cryptography.Pkcs, {System.Security.Cryptography.Pkcs, 9.0.4}",
+      "System.Security.Cryptography.ProtectedData, {System.Security.Cryptography.ProtectedData, 9.0.4}",
+      "System.Text.Json, {System.Text.Json, 9.0.5}"
+    ],
+    "targetFramework": "net9.0",
+    "typeReuseMode": "All"
+  }
+}

@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.GA
+namespace Galileo.Models.GA
 {
     public class DocumentosArchivoDto
     {

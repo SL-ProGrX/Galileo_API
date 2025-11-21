@@ -1,9 +1,9 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models.ERROR;
-using PgxAPI.Models.Security;
+using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class FrmUsDerechoXOpcionDb
     {

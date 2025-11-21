@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.FSL
+namespace Galileo.Models.FSL
 {
     public class FslTablaTipoLista
     {

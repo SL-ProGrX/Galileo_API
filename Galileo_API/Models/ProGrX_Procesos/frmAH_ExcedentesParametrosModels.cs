@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.AH
+namespace Galileo.Models.AH
 {
     public class ParametroExcedenteDto
     {

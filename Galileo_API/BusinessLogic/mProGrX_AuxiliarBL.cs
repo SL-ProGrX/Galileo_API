@@ -1,10 +1,10 @@
-﻿using PgxAPI.DataBaseTier;
-using PgxAPI.Models;
-using PgxAPI.Models.CPR;
-using PgxAPI.Models.ERROR;
+﻿using Galileo.DataBaseTier;
+using Galileo.Models;
+using Galileo.Models.CPR;
+using Galileo.Models.ERROR;
 
 
-namespace PgxAPI.BusinessLogic
+namespace Galileo.BusinessLogic
 {
     public class mProGrX_AuxiliarBL
     {

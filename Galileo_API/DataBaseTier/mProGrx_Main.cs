@@ -1,12 +1,12 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
-using PgxAPI.Models.ERROR;
-using PgxAPI.Models.Security;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using System.Data;
 using System.Text.RegularExpressions;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public partial class MProGrxMain
     {

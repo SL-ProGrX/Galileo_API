@@ -1,11 +1,11 @@
 ﻿using System.Text;
 using Dapper;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models;
-using PgxAPI.Models.ERROR;
-using PgxAPI.Models.ProGrX.Clientes;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.ProGrX.Clientes;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class MTesoreria
     {

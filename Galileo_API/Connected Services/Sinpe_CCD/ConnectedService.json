@@ -1,0 +1,16 @@
+{
+  "ExtendedData": {
+    "inputs": [
+      "http://172.16.70.55/Servicios/SINPE_CCD.svc"
+    ],
+    "collectionTypes": [
+      "System.Array",
+      "System.Collections.Generic.Dictionary`2"
+    ],
+    "namespaceMappings": [
+      "*, Sinpe_CCD"
+    ],
+    "targetFramework": "net9.0",
+    "typeReuseMode": "All"
+  }
+}

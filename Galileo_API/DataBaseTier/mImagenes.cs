@@ -2,7 +2,7 @@
 using Microsoft.Data.SqlClient;
 using System.Data;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class MImagenes
     {

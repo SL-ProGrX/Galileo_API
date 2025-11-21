@@ -1,7 +1,7 @@
-﻿using PgxAPI.Models.ProGrX.Clientes;
+﻿using Galileo.Models.ProGrX.Clientes;
 using System.Text.Json.Serialization;
 
-namespace PgxAPI.Models.ProGrX.Credito
+namespace Galileo.Models.ProGrX.Credito
 {
     public class CrConsultaCrdSociosData
     {

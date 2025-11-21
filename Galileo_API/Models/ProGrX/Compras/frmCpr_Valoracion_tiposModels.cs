@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.CPR
+namespace Galileo.Models.CPR
 {
     public class CprValoraEsquemaDtoList
     {

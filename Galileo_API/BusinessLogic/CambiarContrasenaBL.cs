@@ -1,8 +1,8 @@
-﻿using PgxAPI.DataBaseTier;
-using PgxAPI.Models;
-using PgxAPI.Models.ERROR;
+﻿using Galileo.DataBaseTier;
+using Galileo.Models;
+using Galileo.Models.ERROR;
 
-namespace PgxAPI.BusinessLogic
+namespace Galileo.BusinessLogic
 {
     public class CambiarContrasenaBL
     {
@@ -15,7 +15,8 @@ namespace PgxAPI.BusinessLogic
 
         public ParametrosObtenerDto ParametrosObtener()
         {
-            return new CambiarContrasenaDB(_config).ParametrosObtener();
+            var result = new CambiarContrasenaDB(_config).ParametrosObtener();
+            return result ?? new ParametrosObtenerDto();
         }
 
         public List<string> KeyHistoryObtener(string Usuario, int topQuantity)

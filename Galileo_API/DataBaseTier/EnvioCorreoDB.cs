@@ -3,11 +3,11 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using Microsoft.Data.SqlClient;
 using MimeKit;
-using PgxAPI.Models;
-using PgxAPI.Models.AF;
-using PgxAPI.Models.ERROR;
+using Galileo.Models;
+using Galileo.Models.AF;
+using Galileo.Models.ERROR;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
     public class EnvioCorreoDB
     {

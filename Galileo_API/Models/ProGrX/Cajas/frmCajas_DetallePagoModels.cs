@@ -1,6 +1,6 @@
-﻿using static PgxAPI.Models.ProGrX.Cajas.CajasDesglocePagoRequest;
+﻿using static Galileo.Models.ProGrX.Cajas.CajasDesglocePagoRequest;
 
-namespace PgxAPI.Models.ProGrX.Cajas
+namespace Galileo.Models.ProGrX.Cajas
 {
     public class CajasDisponibleFondosDto
     {

@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.ProGrX.Bancos.Autorizadores
+﻿namespace Galileo.Models.ProGrX.Bancos.Autorizadores
 {
     public class TesAutorizadoresLista 
     {

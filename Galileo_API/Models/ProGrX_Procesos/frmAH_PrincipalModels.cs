@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.ProGrX_Procesos
+namespace Galileo.Models.ProGrX_Procesos
 {
     public class PatrimonioPrincipalDto
     {

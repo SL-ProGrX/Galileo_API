@@ -1,9 +1,9 @@
 ﻿// using Microsoft.AspNetCore.Mvc;
-// using PgxAPI.DataBaseTier;
-// using PgxAPI.Models;
-// using PgxAPI.Models.ERROR;
+// using Galileo.DataBaseTier;
+// using Galileo.Models;
+// using Galileo.Models.ERROR;
 
-// namespace PgxAPI.BusinessLogic
+// namespace Galileo.BusinessLogic
 // {
 //     public class mReportingServicesBL
 //     {

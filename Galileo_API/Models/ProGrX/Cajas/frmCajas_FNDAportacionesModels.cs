@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.ProGrX.Cajas
+﻿namespace Galileo.Models.ProGrX.Cajas
 {
     public class GestionEstadoDto
     {

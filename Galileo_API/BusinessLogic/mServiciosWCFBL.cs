@@ -1,7 +1,7 @@
-﻿// using PgxAPI.DataBaseTier;
-// using PgxAPI.Models.ERROR;
+﻿// using Galileo.DataBaseTier;
+// using Galileo.Models.ERROR;
 
-// namespace PgxAPI.BusinessLogic
+// namespace Galileo.BusinessLogic
 // {
 //     public class mServiciosWCFBL
 //     {

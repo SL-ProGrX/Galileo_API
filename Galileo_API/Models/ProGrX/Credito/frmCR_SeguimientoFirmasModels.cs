@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.ProGrX.Credito
+﻿namespace Galileo.Models.ProGrX.Credito
 {
     public class CRSeguimientoFirmasData
     {

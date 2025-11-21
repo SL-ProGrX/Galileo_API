@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.TES
+namespace Galileo.Models.TES
 {
     public class TesTokenDto
     {

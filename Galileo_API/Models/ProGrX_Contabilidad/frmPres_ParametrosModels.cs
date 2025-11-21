@@ -1,4 +1,4 @@
-namespace PgxAPI.Models.PRE
+namespace Galileo.Models.PRE
 {
     public class PresParametrosDto
     {

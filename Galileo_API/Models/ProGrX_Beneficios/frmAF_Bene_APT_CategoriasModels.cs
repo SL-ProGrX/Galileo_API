@@ -1,5 +1,5 @@
 
-namespace PgxAPI.Models.AF
+namespace Galileo.Models.AF
 {
     public class AptCategorias
     {

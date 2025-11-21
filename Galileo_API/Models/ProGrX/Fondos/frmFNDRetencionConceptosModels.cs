@@ -1,4 +1,4 @@
-﻿namespace PgxAPI.Models.ProGrX.Fondos
+﻿namespace Galileo.Models.ProGrX.Fondos
 {
     public class FndRetencionConceptoData
     {

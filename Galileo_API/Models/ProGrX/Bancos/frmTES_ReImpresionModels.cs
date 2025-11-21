@@ -1,5 +1,5 @@
-﻿using PgxAPI.Models.ERROR;
-namespace PgxAPI.Models.ProGrX.Bancos
+﻿using Galileo.Models.ERROR;
+namespace Galileo.Models.ProGrX.Bancos
 {
     public class TesReImpresionModels
     {
