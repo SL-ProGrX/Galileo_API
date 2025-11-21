@@ -39,11 +39,11 @@
     {
         public string cod_producto { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public int cantidad { get; set; }
+        public int? cantidad { get; set; }
         public string cod_bodega { get; set; } = string.Empty;
-        public float precio { get; set; }
-        public float imp_ventas { get; set; }
-        public float Total { get; set; }
+        public float? precio { get; set; }
+        public float? imp_ventas { get; set; }
+        public float? Total { get; set; }
     }
 
     public class BodegaDto

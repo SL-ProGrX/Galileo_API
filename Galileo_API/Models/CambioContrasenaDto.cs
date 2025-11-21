@@ -19,11 +19,11 @@
 
     public class ClaveCambiarDto
     {
-        public long Cliente { get; set; }
+        public long? Cliente { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string PassViejo { get; set; } = string.Empty;
         public string PassNuevo { get; set; } = string.Empty;
-        public int Renueva { get; set; }
+        public int? Renueva { get; set; }
     }
 
 }

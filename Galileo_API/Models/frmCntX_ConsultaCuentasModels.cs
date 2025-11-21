@@ -28,11 +28,11 @@
 
     public class CuentaVarModel
     {
-        public int Contabilidad { get; set; }
+        public int? Contabilidad { get; set; }
         public string Cuenta { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string Divisa { get; set; } = string.Empty;
-        public short Nivel { get; set; }
+        public short? Nivel { get; set; }
         public string cuentaMadre { get; set; } = string.Empty;
     }
 }
