@@ -7,13 +7,11 @@ namespace Galileo.BusinessLogic
 {
     public class FrmCcCuentasBancariasBl
     {
-        private readonly IConfiguration _config;
-        FrmCcCuentasBancariasDb DB_Cuentas;
+        readonly FrmCcCuentasBancariasDb DB_Cuentas;
 
         public FrmCcCuentasBancariasBl(IConfiguration config)
         {
-            _config = config;
-            DB_Cuentas = new FrmCcCuentasBancariasDb(_config);
+            DB_Cuentas = new FrmCcCuentasBancariasDb(config);
         }
 
         public List<BancosCC> BancosCC_Obtener(int CodEmpresa)
@@ -43,7 +41,15 @@ namespace Galileo.BusinessLogic
 
         public ErrorDto CuentaBancaria_Borrar(int CodEmpresa, string jData)
         {
-            SysCuentasBancariasDto data = JsonConvert.DeserializeObject<SysCuentasBancariasDto>(jData);
+            SysCuentasBancariasDto? data = JsonConvert.DeserializeObject<SysCuentasBancariasDto>(jData);
+            if (data == null)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "Invalid or empty data provided for deletion."
+                };
+            }
             return DB_Cuentas.CuentaBancaria_Borrar(CodEmpresa, data);
         }
 
