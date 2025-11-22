@@ -148,7 +148,7 @@ app.MapGet("/secure-ping", () => Results.Ok("Pong seguro ✅"))
    .RequireAuthorization();
 
 // ===== Endpoint de login (DEMO) que emite un JWT =====
-app.MapPost("/login", (LoginRequest req, IConfiguration cfg) =>
+app.MapPost("/login", (LoginRequestTest req, IConfiguration cfg) =>
 {
     if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password))
         return Results.BadRequest("Usuario/Password requeridos");
@@ -203,7 +203,7 @@ await app.RunAsync();
 
 namespace Galileo_API
 {
-    public record LoginRequest(string Username, string Password);
+    public record LoginRequestTest(string Username, string Password);
 }
 
 // ======= Soporte CORS (estático) =======
