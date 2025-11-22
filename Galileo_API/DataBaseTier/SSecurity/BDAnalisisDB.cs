@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.Security;
+using System.Text.RegularExpressions;
 
 namespace Galileo.DataBaseTier
 {
@@ -13,12 +14,12 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public static List<string> TablasCargar(string Connectionstring)
+        public static List<string> TablasCargar()
         {
             List<string> resp;
             try
             {
-                using (var connection = new SqlConnection(Connectionstring))
+                using (var connection = new SqlConnection("DefaultConnString"))
                 {
 
                     var strSQL = "select name  from sys.objects "

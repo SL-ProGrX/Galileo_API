@@ -9,9 +9,9 @@ namespace Galileo.BusinessLogic
         {
         }
 
-        public static List<string> TablasCargar(string name)
+        public static List<string> TablasCargar()
         {
-            return BDAnalisisDB.TablasCargar(name);
+            return BDAnalisisDB.TablasCargar();
         }
     }
 }

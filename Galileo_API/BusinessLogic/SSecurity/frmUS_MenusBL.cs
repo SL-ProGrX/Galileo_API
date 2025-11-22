@@ -175,9 +175,9 @@ namespace Galileo.BusinessLogic
 
         }
 
-        public UsModuloDto ObtenerUsModulosOrdenadosPorTipo(string Tipo)
+        public UsModuloDto? ObtenerUsModulosOrdenadosPorTipo(string Tipo)
         {
-            UsModuloDto resultado = new UsModuloDto();
+            UsModuloDto? resultado = null;
             try
             {
                 resultado = SecurityUsDB.ObtenerUsModulosOrdenadosPorTipo(Tipo);

@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using System.Data;
+using System.Text.RegularExpressions;
 
 namespace Galileo.DataBaseTier
 {
@@ -804,42 +805,76 @@ namespace Galileo.DataBaseTier
 
         #region TEST Y SINC
 
+
         public static ErrorDto TestConnection(string connectionName, ConnectionModel connection)
         {
             var error = new ErrorDto();
 
-            if (connection == null || string.IsNullOrEmpty(connection.Server) || string.IsNullOrEmpty(connection.Database))
+            // Validaciones básicas
+            if (connection == null)
             {
                 error.Code = -1;
-                error.Description = "Invalid connection details.";
+                error.Description = "Connection data is required.";
                 return error;
             }
 
-            string connectionMessage = $"Connection to {connectionName}";
-            string connectionString = $"Server={connection.Server};Database={connection.Database};User Id={connection.User};Password={connection.Password};";
-
-            using (SqlConnection db = new SqlConnection(connectionString))
+            if (string.IsNullOrWhiteSpace(connection.Server) ||
+                string.IsNullOrWhiteSpace(connection.Database))
             {
-                try
+                error.Code = -1;
+                error.Description = "Server and Database are required.";
+                return error;
+            }
+
+            // Opcional: limitar formato de Server / Database para mayor seguridad
+            // (ajusta el regex a tu realidad)
+            if (!Regex.IsMatch(connection.Server, @"^[a-zA-Z0-9\.\-_\\]+$"))
+            {
+                error.Code = -1;
+                error.Description = "Server contains invalid characters.";
+                return error;
+            }
+
+            if (!Regex.IsMatch(connection.Database, @"^[a-zA-Z0-9_\-]+$"))
+            {
+                error.Code = -1;
+                error.Description = "Database contains invalid characters.";
+                return error;
+            }
+
+            try
+            {
+                // ✅ Usar SqlConnectionStringBuilder evita connection string injection
+                var builder = new SqlConnectionStringBuilder
+                {
+                    DataSource = connection.Server,      // equivale a "Server="
+                    InitialCatalog = connection.Database, // "Database="
+                    UserID = connection.User,
+                    Password = connection.Password,
+                    IntegratedSecurity = false,          // estás usando SQL Auth
+                    Encrypt = true,                      // opcional, recomendado
+                    TrustServerCertificate = false       // opcional, según tu entorno
+                };
+
+                string connectionMessage = $"Connection to {connectionName}";
+
+                using (var db = new SqlConnection(builder.ConnectionString))
                 {
                     db.Open();
                     error.Code = 0;
                     error.Description = $"{connectionMessage} --> Successful!";
                 }
-                catch (SqlException ex)
-                {
-                    error.Code = -1;
-                    error.Description = ex.Message;
-                }
-                catch (Exception ex)
-                {
-                    error.Code = -1;
-                    error.Description = ex.Message;
-                }
-                finally
-                {
-                    db.Close();
-                }
+            }
+            catch (SqlException ex)
+            {
+                error.Code = -1;
+                // En producción quizá quieras loguear ex.Message y devolver algo genérico
+                error.Description = ex.Message;
+            }
+            catch (Exception ex)
+            {
+                error.Code = -1;
+                error.Description = ex.Message;
             }
 
             return error;
