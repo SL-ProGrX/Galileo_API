@@ -11,7 +11,6 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
 
-
         public FrmUsFormulariosDb(IConfiguration config)
         {
             _config = config;

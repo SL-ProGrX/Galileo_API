@@ -1,22 +1,18 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using Galileo.Models;
 using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier
 {
     public class FrmUsDerechosDb
     {
-
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
-
 
         public FrmUsDerechosDb(IConfiguration config)
         {
             _config = config;
         }
-
 
         public List<UsDerechosNewDto> ObtenerUsDerechosNewDTOs(string Rol, string Estado) //opciones
         {
@@ -84,8 +80,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    //Valido si existe el registro
+                { 
                     string sqlValidar = $@"SELECT ESTADO FROM US_ROL_PERMISOS WHERE COD_OPCION = '{info.COD_OPCION}' AND COD_ROL = '{info.COD_ROL}'";
                     var existe = connection.Query<string>(sqlValidar).FirstOrDefault();
 
@@ -173,5 +168,5 @@ namespace Galileo.DataBaseTier
 
         }//end EditarUsDerechosNew
 
-    }//end class
-}//end namespace
+    }
+}

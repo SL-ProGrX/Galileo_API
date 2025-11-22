@@ -9,7 +9,6 @@ namespace Galileo.DataBaseTier
 {
     public class FrmUsMenusDb
     {
-
         private readonly IConfiguration _config;
         private const string connectionStringName = "DefaultConnString";
 
@@ -17,7 +16,6 @@ namespace Galileo.DataBaseTier
         {
             _config = config;
         }
-
 
         public List<UsMenuDto> ObtenerUsMenusPorTipoYNodoPadreEsNull(string? Tipo)
         {
@@ -518,6 +516,5 @@ namespace Galileo.DataBaseTier
 
         }//end ObtenerIconosWeb
 
-
-    }//end class
-}//end namespace
+    }
+}

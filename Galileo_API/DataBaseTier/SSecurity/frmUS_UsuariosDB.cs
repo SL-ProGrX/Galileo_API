@@ -171,11 +171,6 @@ namespace Galileo.DataBaseTier
         }
 
 
-
-
-
-
-
         public List<UsuarioModel> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
         {
             List<UsuarioModel> result = null!;
@@ -199,8 +194,6 @@ namespace Galileo.DataBaseTier
             }
             return result!;
         }
-
-
 
         public List<UsuarioClienteDto> UsuarioClientesConsultar(string nombreUsuario)
         {
@@ -442,6 +435,4 @@ namespace Galileo.DataBaseTier
         }
 
     }
-
-
-}//end namespace
+}
