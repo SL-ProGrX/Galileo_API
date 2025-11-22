@@ -42,8 +42,7 @@ namespace Galileo.DataBaseTier
                 var jwt = _config.GetSection("Jwt");
                 var issuer   = jwt["Issuer"];
                 var audience = jwt["Audience"];
-                // Retrieve the secret from an environment variable for better security
-                var secret   = Environment.GetEnvironmentVariable("JWT_SECRET");
+                var secret   = jwt["Secret"];
                 var minutes  = int.TryParse(jwt["AccessTokenMinutes"], out var m) ? m : 60;
 
                 if (string.IsNullOrWhiteSpace(issuer) ||
