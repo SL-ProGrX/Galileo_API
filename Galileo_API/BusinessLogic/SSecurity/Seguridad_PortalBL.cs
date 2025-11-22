@@ -92,7 +92,7 @@ namespace Galileo.BusinessLogic
                 }
                 else
                 {
-                    numDias = UsuarioVencimiento.Dias.ToString() + " dias(s)";
+                    numDias = UsuarioVencimiento.Dias + " dias(s)";
                 }
 
                 Result.Vencimiento_RenovacionMsg = "Su contrase�a se encuentra pr�xima a vencer, por favor realizar el cambio de clave, antes de que caduque y su login se bloquee. Tiene " + numDias + " de tiempo para realizar el cambio";
