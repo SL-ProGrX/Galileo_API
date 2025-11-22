@@ -58,9 +58,24 @@ namespace Galileo.DataBaseTier
                 }
                 else if (paso == 2)
                 {
+                    // Validación del parámetro
+                    if (string.IsNullOrWhiteSpace(server))
+                    {
+                        resp.Code = 0;
+                        resp.Description = "Servidor no especificado.";
+                        return resp;
+                    }
 
-                    string connectionString = $"PROVIDER=MSDASQL;Driver={{SQL Server}};Server={server};" +
-                       $"Database=PGX_BASE;APP=PGX_Portal;tcp:{server};";
+                    // Solo alias permitidos, nada de nombres reales de host
+                    if (!ServidoresPermitidos.TryGetValue(server, out var connKey))
+                    {
+                        resp.Code = 0;
+                        resp.Description = "Servidor no permitido.";
+                        return resp;
+                    }
+
+                    // Obtener la connection string desde configuración
+                    var connectionString = _config.GetConnectionString(connKey);
 
                     using (var connection = new SqlConnection(connectionString))
                     {
@@ -71,19 +86,25 @@ namespace Galileo.DataBaseTier
                         {
                             string cedula = item.Cedula.ToString();
                             int codEmpresa = Convert.ToInt32(item.cod_Empresa);
+
                             var values = new
                             {
                                 Paso = 2,
                                 Empresa = codEmpresa,
                                 Cedula = cedula
                             };
-                            // Realizar la lógica de ;sincronización con los datos obtenidos
-                            connection.Execute("spPortal_Sincroniza_WebApps", values, commandType: CommandType.StoredProcedure);
+
+                            connection.Execute("spPortal_Sincroniza_WebApps",
+                                               values,
+                                               commandType: CommandType.StoredProcedure);
                         }
+
                         resp.Code = 1;
                         resp.Description = "Paso 2 ok";
                     }
                 }
+
+
                 else if (paso == 3)
                 {
                     using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
@@ -116,5 +137,16 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+        private static readonly Dictionary<string, string> ServidoresPermitidos =
+            new(StringComparer.OrdinalIgnoreCase)
+        {
+            { "default", "DefaultConnString" },
+            { "base", "BaseConnString" },
+            { "ga", "GAConnString" }
+        };
+
+
     }
+
+
 }

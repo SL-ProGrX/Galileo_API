@@ -13,9 +13,9 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("PaisObtener")]
-        public List<string> TablasCargar(string name)
+        public List<string> TablasCargar()
         {
-            return BDAnalisisBL.TablasCargar(name);
+            return BDAnalisisBL.TablasCargar();
         }
 
     }
