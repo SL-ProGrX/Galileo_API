@@ -6,11 +6,11 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmCntXConsultaCuentasController : ControllerBase
+    public class FrmCntX_ConsultaCuentasController : ControllerBase
     {
         private readonly IConfiguration _config;
 
-        public FrmCntXConsultaCuentasController(IConfiguration config)
+        public FrmCntX_ConsultaCuentasController(IConfiguration config)
         {
             _config = config;
         }

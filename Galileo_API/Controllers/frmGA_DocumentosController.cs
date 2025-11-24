@@ -8,13 +8,13 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmGaDocumentosController : ControllerBase
+    public class FrmGa_DocumentosController : ControllerBase
     {
         private readonly IConfiguration _config;
         readonly FrmGaDocumentosBl BL_GA_Documentos;
 
 
-        public FrmGaDocumentosController(IConfiguration config)
+        public FrmGa_DocumentosController(IConfiguration config)
         {
             _config = config;
             BL_GA_Documentos = new FrmGaDocumentosBl(_config);

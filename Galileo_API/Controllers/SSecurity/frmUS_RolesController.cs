@@ -7,11 +7,11 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmUsRolesController : ControllerBase
+    public class FrmUs_RolesController : ControllerBase
     {
         readonly FrmUsRolesBl RolesBL;
 
-        public FrmUsRolesController(IConfiguration config)
+        public FrmUs_RolesController(IConfiguration config)
         {
             RolesBL = new FrmUsRolesBl(config);
         }

@@ -7,11 +7,11 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmUsBeTiposMovController : ControllerBase
+    public class FrmUs_Be_TiposMovController : ControllerBase
     {
         readonly FrmUsBeTiposMovBl MovimientoBEBL;
 
-        public FrmUsBeTiposMovController(IConfiguration config)
+        public FrmUs_Be_TiposMovController(IConfiguration config)
         {
             MovimientoBEBL = new FrmUsBeTiposMovBl(config);
         }

@@ -7,12 +7,12 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmCcCuentasBancariasController : ControllerBase
+    public class FrmCc_Cuentas_BancariasController : ControllerBase
     {
 
         private readonly IConfiguration _config;
 
-        public FrmCcCuentasBancariasController(IConfiguration config)
+        public FrmCc_Cuentas_BancariasController(IConfiguration config)
         {
             _config = config;
         }

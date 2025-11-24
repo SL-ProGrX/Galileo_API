@@ -8,12 +8,12 @@ namespace Galileo.Controllers
     [Route("api/[controller]")]
     [ApiController]
 
-    public class SeguridadPortalController : ControllerBase
+    public class Seguridad_PortalController : ControllerBase
     {
 
         private readonly IConfiguration _config;
 
-        public SeguridadPortalController(IConfiguration config)
+        public Seguridad_PortalController(IConfiguration config)
         {
             _config = config;
         }

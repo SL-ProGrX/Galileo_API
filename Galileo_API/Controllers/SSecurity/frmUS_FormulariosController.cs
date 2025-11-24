@@ -8,11 +8,11 @@ namespace Galileo.Controllers
     [Route("api/[controller]")]
     [ApiController]
     //[Authorize]
-    public class FrmUsFormulariosController : ControllerBase
+    public class FrmUs_FormulariosController : ControllerBase
     {
         readonly FrmUsFormulariosBl FormulariosBL;
 
-        public FrmUsFormulariosController(IConfiguration config)
+        public FrmUs_FormulariosController(IConfiguration config)
         {
             FormulariosBL = new FrmUsFormulariosBl(config);
         }

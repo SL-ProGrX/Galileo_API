@@ -7,11 +7,11 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmUsCuentaReestableceController : ControllerBase
+    public class FrmUs_CuentaReestableceController : ControllerBase
     {
         readonly FrmUsCuentaReestableceBl CuentaReestableceBL;
 
-        public FrmUsCuentaReestableceController(IConfiguration config)
+        public FrmUs_CuentaReestableceController(IConfiguration config)
         {
             CuentaReestableceBL = new FrmUsCuentaReestableceBl(config);
         }
