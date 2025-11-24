@@ -7,12 +7,12 @@ using System.Data;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmLogonDatosUpdateDb
+    public class FrmLogon_DatosUpdateDb
     {
 
         private readonly IConfiguration _config;
 
-        public FrmLogonDatosUpdateDb(IConfiguration config)
+        public FrmLogon_DatosUpdateDb(IConfiguration config)
         {
             _config = config;
         }
