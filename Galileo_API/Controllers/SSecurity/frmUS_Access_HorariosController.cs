@@ -7,11 +7,11 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmUsAccessHorariosController : ControllerBase
+    public class FrmUs_Access_HorariosController : ControllerBase
     {
         private readonly IConfiguration _config;
 
-        public FrmUsAccessHorariosController(IConfiguration config)
+        public FrmUs_Access_HorariosController(IConfiguration config)
         {
             _config = config;
         }

@@ -7,10 +7,10 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmUsMenusController : ControllerBase
+    public class FrmUs_MenusController : ControllerBase
     {
         readonly FrmUsMenusBl SecurityUsBL;
-        public FrmUsMenusController(IConfiguration config)
+        public FrmUs_MenusController(IConfiguration config)
         {
             SecurityUsBL = new FrmUsMenusBl(config);
         }
@@ -54,7 +54,8 @@ namespace Galileo.Controllers
         [HttpGet("ObtenerUsModulosOrdenadosPorTipo")]
         public UsModuloDto ObtenerUsModulosOrdenadosPorTipo(string Tipo)
         {
-            return SecurityUsBL.ObtenerUsModulosOrdenadosPorTipo(Tipo);
+            var result = SecurityUsBL.ObtenerUsModulosOrdenadosPorTipo(Tipo);
+            return result ?? new UsModuloDto();
         }
 
         [HttpGet("ObtenerMenuNodoPorNodoPadreYPrioridad")]

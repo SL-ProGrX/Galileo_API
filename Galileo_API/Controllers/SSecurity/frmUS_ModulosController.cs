@@ -7,11 +7,11 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmUsModulosController : ControllerBase
+    public class FrmUs_ModulosController : ControllerBase
     {
         readonly FrmUsModulosBl ModulosBL;
 
-        public FrmUsModulosController(IConfiguration config)
+        public FrmUs_ModulosController(IConfiguration config)
         {
             ModulosBL = new FrmUsModulosBl(config);
         }

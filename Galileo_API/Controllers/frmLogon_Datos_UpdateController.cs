@@ -7,13 +7,13 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmLogonDatosUpdateController : ControllerBase
+    public class FrmLogon_Datos_UpdateController : ControllerBase
     {
-        readonly FrmLogonDatosUpdateBl Datos_UpdateBL;
+        readonly FrmLogon_DatosUpdateBl Datos_UpdateBL;
 
-        public FrmLogonDatosUpdateController(IConfiguration config)
+        public FrmLogon_Datos_UpdateController(IConfiguration config)
         {
-            Datos_UpdateBL = new FrmLogonDatosUpdateBl(config);
+            Datos_UpdateBL = new FrmLogon_DatosUpdateBl(config);
         }
 
         [HttpGet("LogonObtenerDatosUsuario")]

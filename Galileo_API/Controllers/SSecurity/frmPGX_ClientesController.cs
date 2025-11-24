@@ -8,11 +8,11 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmPgxClientesController : ControllerBase
+    public class FrmPgx_ClientesController : ControllerBase
     {
         readonly FrmPgxClientesBl ClientesBL;
 
-        public FrmPgxClientesController(IConfiguration config)
+        public FrmPgx_ClientesController(IConfiguration config)
         {
             ClientesBL = new FrmPgxClientesBl(config);
         }
