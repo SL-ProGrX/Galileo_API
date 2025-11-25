@@ -121,46 +121,60 @@ namespace Galileo.DataBaseTier
         private int CopiarRolesCore(UsuarioPermisosCopiar dto, out string errorMsg)
         {
             errorMsg = string.Empty;
+
+            // Validación temprana: sin try/catch ni else
+            if (!dto.Cliente.HasValue)
+            {
+                errorMsg = "El valor de Cliente no puede ser nulo.";
+                return -1;
+            }
+
             try
             {
-                if (!dto.Cliente.HasValue)
-                {
-                    errorMsg = "El valor de Cliente no puede ser nulo.";
-                    return -1;
-                }
-                else
-                {
-                    string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(dto.Cliente.Value);
-                    using var connectionCliente = new SqlConnection(stringConn);
+                string stringConn = new PortalDB(_config)
+                    .ObtenerDbConnStringEmpresa(dto.Cliente.Value);
 
-                    var copiaAccesosCore = new
-                    {
-                        Us_Destino = dto.UsDestino,
-                        Us_Origen = dto.UsBase,
-                        Usuairo = dto.Usuario.ToUpper(),
-                        R_Oficina = 1,
-                        R_Deducciones = (dto.RO_Deducciones ?? false) ? 1 : 0,
-                        R_Contabilidad = (dto.RO_Contabilidad ?? false) ? 1 : 0,
-                        R_Gestion_Crd = (dto.RO_Creditos ?? false) ? 1 : 0,
-                        R_Resolucion_Crd = (dto.RO_Resolucion_Crd ?? false) ? 1 : 0,
-                        R_Cobros = (dto.RO_Cobros ?? false) ? 1 : 0,
-                        R_Cajas = (dto.RO_Cajas ?? false) ? 1 : 0,
-                        R_Bancos = (dto.RO_Bancos ?? false) ? 1 : 0,
-                        R_Presupuesto = (dto.RO_Presupuesto ?? false) ? 1 : 0,
-                        R_Inventario = (dto.RO_Inventarios ?? false) ? 1 : 0,
-                        R_Compras = (dto.RO_Compras ?? false) ? 1 : 0,
-                        R_Inicializa = (dto.RO_Inicializa ?? false) ? 1 : 0
-                    };
+                using var connectionCliente = new SqlConnection(stringConn);
 
-                    return connectionCliente.Query<int>("spSys_Users_Copy_Roles", copiaAccesosCore, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                }
+                var copiaAccesosCore = CrearCopiaAccesosCore(dto);
+
+                return connectionCliente.Query<int>(
+                        "spSys_Users_Copy_Roles",
+                        copiaAccesosCore,
+                        commandType: CommandType.StoredProcedure)
+                    .FirstOrDefault();
             }
             catch (Exception exCore)
             {
-                errorMsg = "Hubo un problema al sincronizar accesos de usuario en el Core: " + exCore.Message;
+                errorMsg = "Hubo un problema al sincronizar accesos de usuario en el Core: "
+                           + exCore.Message;
                 return -1;
             }
         }
+
+        private static object CrearCopiaAccesosCore(UsuarioPermisosCopiar dto)
+        {
+            return new
+            {
+                Us_Destino = dto.UsDestino,
+                Us_Origen = dto.UsBase,
+                Usuairo = dto.Usuario.ToUpper(),   // deja el nombre tal cual si el SP lo espera así
+                R_Oficina = 1,
+                R_Deducciones = BoolToInt(dto.RO_Deducciones),
+                R_Contabilidad = BoolToInt(dto.RO_Contabilidad),
+                R_Gestion_Crd = BoolToInt(dto.RO_Creditos),
+                R_Resolucion_Crd = BoolToInt(dto.RO_Resolucion_Crd),
+                R_Cobros = BoolToInt(dto.RO_Cobros),
+                R_Cajas = BoolToInt(dto.RO_Cajas),
+                R_Bancos = BoolToInt(dto.RO_Bancos),
+                R_Presupuesto = BoolToInt(dto.RO_Presupuesto),
+                R_Inventario = BoolToInt(dto.RO_Inventarios),
+                R_Compras = BoolToInt(dto.RO_Compras),
+                R_Inicializa = BoolToInt(dto.RO_Inicializa)
+            };
+        }
+
+        private static int BoolToInt(bool? value) => value == true ? 1 : 0;
 
         private void RegistrarBitacoraCopia(UsuarioPermisosCopiar dto)
         {
