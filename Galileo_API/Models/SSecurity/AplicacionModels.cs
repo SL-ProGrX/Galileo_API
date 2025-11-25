@@ -4,19 +4,19 @@
     {
         public string Cod_App { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public bool Activa { get; set; }
+        public bool? Activa { get; set; }
         public string Estado { get; set; } = string.Empty;
-        public DateTime Registro_Fecha { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
     }
 
     public class Bloqueo
     {
-        public int Cod_Linea { get; set; }
+        public int? Cod_Linea { get; set; }
         public string Cod_App { get; set; } = string.Empty;
-        public DateTime Fecha_Bloqueo { get; set; }
+        public DateTime? Fecha_Bloqueo { get; set; }
         public string Version_Bloqueada { get; set; } = string.Empty;
-        public DateTime Registro_Fecha { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
     }
 
@@ -24,9 +24,9 @@
     {
         public string Cod_App { get; set; } = string.Empty;
         public string Version { get; set; } = string.Empty;
-        public DateTime Fecha_Libera { get; set; }
+        public DateTime? Fecha_Libera { get; set; }
         public string Notas_Descarga { get; set; } = string.Empty;
-        public DateTime Registro_Fecha { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
     }
 }

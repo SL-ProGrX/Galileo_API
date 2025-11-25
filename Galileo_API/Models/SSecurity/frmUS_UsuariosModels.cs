@@ -5,7 +5,7 @@
         public string UserName { get; set; } = string.Empty;
         public int UserId { get; set; } = 0;
         public string Identificacion { get; set; } = string.Empty;
-        public bool ContabilizaCobranza { get; set; }
+        public bool? ContabilizaCobranza { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public DateTime? FechaIngreso { get; set; }
         public DateTime? FechaUltimo { get; set; }
@@ -15,10 +15,10 @@
         public string Email { get; set; } = string.Empty;
         public string Notas { get; set; } = string.Empty;
         public string UsuarioRegistro { get; set; } = string.Empty;
-        public bool ModoEdicion { get; set; }
+        public bool? ModoEdicion { get; set; }
         public int EmpresaId { get; set; } = 0;
         public string NombreEmpresa { get; set; } = string.Empty;
-        public bool tfa_ind { get; set; }
+        public bool? tfa_ind { get; set; }
         public string tfa_metodo { get; set; } = string.Empty;
         public DateTime? tfa_vence { get; set; }
         public string tfa_activo { get; set; } = string.Empty;
@@ -26,7 +26,7 @@
 
     public class UsuarioClienteAsignaDto
     {
-        public int CodigoEmpresa { get; set; }
+        public int? CodigoEmpresa { get; set; }
         public string NombreEmpresa { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
         public string UsuarioRegistra { get; set; } = string.Empty;
@@ -70,8 +70,8 @@
     {
         public string Usuario { get; set; } = string.Empty;
         public int Lineas { get; set; } = 0;
-        public DateTime FechaInicio { get; set; }
-        public DateTime FechaCorte { get; set; }
+        public DateTime? FechaInicio { get; set; }
+        public DateTime? FechaCorte { get; set; }
         public string CodTransac { get; set; } = string.Empty;
     }
 
@@ -87,7 +87,7 @@
     public class UsuarioClienteRolAsignaDto
     {
         public string CodigoRol { get; set; } = string.Empty;
-        public int CodigoEmpresa { get; set; }
+        public int? CodigoEmpresa { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string UsuarioRegistra { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;

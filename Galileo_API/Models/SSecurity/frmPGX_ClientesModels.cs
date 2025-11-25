@@ -8,7 +8,7 @@
 
     public class ClienteDto
     {
-        public int cod_empresa { get; set; }
+        public int? cod_empresa { get; set; }
         public string cod_vendedor { get; set; } = string.Empty;
         public string? nombre_largo { get; set; }
         public string? nombre_corto { get; set; }
@@ -57,13 +57,13 @@
         public string? cod_pais_n3 { get; set; }
         public string? cod_clasificacion { get; set; }
         public string? tipo_id { get; set; }
-        public bool pgx_pruebas_activo { get; set; }
+        public bool? pgx_pruebas_activo { get; set; }
         public string? url_app { get; set; }
         public string? url_web { get; set; }
         public string? url_logo { get; set; }
-        public bool url_app_activo { get; set; }
-        public bool url_web_activo { get; set; }
-        public bool url_logo_activo { get; set; }
+        public bool? url_app_activo { get; set; }
+        public bool? url_web_activo { get; set; }
+        public bool? url_logo_activo { get; set; }
     }
 
     public class ServicioDto
@@ -79,25 +79,25 @@
 
     public class ContactoDto
     {
-        public int cod_empresa { get; set; }
-        public int cod_contacto { get; set; }
+        public int? cod_empresa { get; set; }
+        public int? cod_contacto { get; set; }
         public string identificacion { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string tel_cell { get; set; } = string.Empty;
         public string tel_trabajo { get; set; } = string.Empty;
         public string email_01 { get; set; } = string.Empty;
         public string email_02 { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public bool? activo { get; set; }
 
         public string? registro_usuario { get; set; }
     }
 
     public class SmtpDto
     {
-        public int cod_empresa { get; set; }
+        public int? cod_empresa { get; set; }
         public string smtp_id { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
-        public bool asignado { get; set; }  // This will map to whether the checkbox is checked
+        public bool? asignado { get; set; }  // This will map to whether the checkbox is checked
         public string cod_smtp { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
     }

@@ -2,11 +2,11 @@
 {
     public class BitacoraRequestDto
     {
-        public int Cliente { get; set; }
-        public DateTime FechaInicio { get; set; }
-        public DateTime FechaCorte { get; set; }
-        public DateTime HoraInicio { get; set; }
-        public DateTime HoraCorte { get; set; }
+        public int? Cliente { get; set; }
+        public DateTime? FechaInicio { get; set; }
+        public DateTime? FechaCorte { get; set; }
+        public DateTime? HoraInicio { get; set; }
+        public DateTime? HoraCorte { get; set; }
         public string? Usuario { get; set; }
         public int? Modulo { get; set; }
         public string? Movimiento { get; set; }
@@ -16,8 +16,8 @@
         public string? LogEquipo { get; set; }
         public string? LogIP { get; set; }
         public string? EquipoMAC { get; set; }
-        public bool todas { get; set; }
-        public bool todos { get; set; }
+        public bool? todas { get; set; }
+        public bool? todos { get; set; }
     }
 
     public class BitacoraResultDto

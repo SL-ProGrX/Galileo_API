@@ -2,7 +2,7 @@
 {
     public class PerfilUsuarioDto
     {
-        public int UserId { get; set; }
+        public int? UserId { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
         public string Tel_Cell { get; set; } = string.Empty;
