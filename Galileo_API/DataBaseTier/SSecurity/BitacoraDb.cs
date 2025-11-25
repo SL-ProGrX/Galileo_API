@@ -57,47 +57,54 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        private static (DateTime ini, DateTime fin) GetDateRange(BitacoraRequestDto bitacoraRequestDto)
+        private static (DateTime ini, DateTime fin) GetDateRange(BitacoraRequestDto dto)
         {
             DateTime ini = DateTime.MinValue;
             DateTime fin = DateTime.MaxValue;
 
-            DateTime horaInicioUtc = bitacoraRequestDto.HoraInicio.HasValue ? bitacoraRequestDto.HoraInicio.Value.ToUniversalTime() : DateTime.MinValue;
-            DateTime horaInicioLocal = TimeZoneInfo.ConvertTimeFromUtc(horaInicioUtc, TimeZoneInfo.Local);
+            // Normalizamos horas usando ?? en lugar de operador ternario
+            var horaInicio = dto.HoraInicio ?? DateTime.MinValue;
+            var horaInicioLocal = TimeZoneInfo.ConvertTimeFromUtc(horaInicio.ToUniversalTime(), TimeZoneInfo.Local);
 
-            DateTime horaCorteUtc = bitacoraRequestDto.HoraCorte.HasValue ? bitacoraRequestDto.HoraCorte.Value.ToUniversalTime() : DateTime.MinValue;
-            DateTime horaCorteLocal = TimeZoneInfo.ConvertTimeFromUtc(horaCorteUtc, TimeZoneInfo.Local);
+            var horaCorte = dto.HoraCorte ?? DateTime.MinValue;
+            var horaCorteLocal = TimeZoneInfo.ConvertTimeFromUtc(horaCorte.ToUniversalTime(), TimeZoneInfo.Local);
 
-            if ((bitacoraRequestDto.todas != true) && (bitacoraRequestDto.todos != true))
-            {
-                ini = new DateTime(
-                    bitacoraRequestDto.FechaInicio.HasValue ? bitacoraRequestDto.FechaInicio.Value.Year : 1900,
-                    bitacoraRequestDto.FechaInicio.HasValue ? bitacoraRequestDto.FechaInicio.Value.Month : 1,
-                    bitacoraRequestDto.FechaInicio.HasValue ? bitacoraRequestDto.FechaInicio.Value.Day : 1,
-                    horaInicioLocal.Hour,
-                    horaInicioLocal.Minute,
-                    horaInicioLocal.Second,
-                    DateTimeKind.Local
-                );
-
-                fin = new DateTime(
-                    bitacoraRequestDto.FechaCorte.HasValue ? bitacoraRequestDto.FechaCorte.Value.Year : 2100,
-                    bitacoraRequestDto.FechaCorte.HasValue ? bitacoraRequestDto.FechaCorte.Value.Month : 12,
-                    bitacoraRequestDto.FechaCorte.HasValue ? bitacoraRequestDto.FechaCorte.Value.Day : 30,
-                    horaCorteLocal.Hour,
-                    horaCorteLocal.Minute,
-                    horaCorteLocal.Second,
-                    DateTimeKind.Local
-                );
-            }
-
-            if (bitacoraRequestDto.todas == true)
+            // Caso: todas las fechas -> salimos temprano
+            if (dto.todas == true)
             {
                 ini = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Local);
                 fin = new DateTime(2100, 12, 30, 23, 59, 59, DateTimeKind.Local);
+                return (ini, fin);
+            }
+
+            // Caso: rango específico (si no es todas ni todos)
+            if (dto.todas != true && dto.todos != true)
+            {
+                var fechaInicio = dto.FechaInicio ?? new DateTime(1900, 1, 1);
+                var fechaCorte = dto.FechaCorte ?? new DateTime(2100, 12, 30);
+
+                ini = new DateTime(
+                    fechaInicio.Year,
+                    fechaInicio.Month,
+                    fechaInicio.Day,
+                    horaInicioLocal.Hour,
+                    horaInicioLocal.Minute,
+                    horaInicioLocal.Second,
+                    DateTimeKind.Local);
+
+                fin = new DateTime(
+                    fechaCorte.Year,
+                    fechaCorte.Month,
+                    fechaCorte.Day,
+                    horaCorteLocal.Hour,
+                    horaCorteLocal.Minute,
+                    horaCorteLocal.Second,
+                    DateTimeKind.Local);
             }
 
             return (ini, fin);
         }
+
+
     }
 }
