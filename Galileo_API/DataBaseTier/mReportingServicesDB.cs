@@ -59,10 +59,10 @@ namespace Galileo.DataBaseTier
                         ? Path.Combine(dirRDLC, data.codEmpresa.ToString(), data.folder.ToString())
                         : Path.Combine(dirRDLC, data.codEmpresa.ToString());
 
-                    string mainPath = ResolveReportPath(basePath, data.nombreReporte);
-                     if (mainPath == null)
+                    string? mainPath = ResolveReportPath(basePath, data.nombreReporte ?? string.Empty);
+                    if (mainPath == null)
                     {
-                        return new ObjectResult(new { Code = -1, Description = $"No se encontró el reporte principal (.rdlc|.rdl): {Path.Combine(basePath, data.nombreReporte)}" }) { StatusCode = 500 };
+                        return new ObjectResult(new { Code = -1, Description = $"No se encontró el reporte principal (.rdlc|.rdl): {Path.Combine(basePath, data.nombreReporte ?? string.Empty)}" }) { StatusCode = 500 };
                     }
 
                     // Solo informativo: funciones existentes en el RDLC (antes del parche)
@@ -74,14 +74,12 @@ namespace Galileo.DataBaseTier
 
                     // Para gateo de subreportes: intenta obtener constantes de retorno para fxImprimeDetalle/Ref
                     int? fxDetConst = null, fxRefConst = null;
-                    bool isJsonCodeSection = false;
                     if (!string.IsNullOrWhiteSpace(data.codeSection))
                     {
                         // ¿JSON?
                         try
                         {
                             var jo = JObject.Parse(data.codeSection);
-                            isJsonCodeSection = true;
                             fxDetConst = TryParseFlag(jo, "fxImprimeDetalle");
                             fxRefConst = TryParseFlag(jo, "fxImprimeRef");
                         }
@@ -119,7 +117,7 @@ namespace Galileo.DataBaseTier
 
                     // ==== 3) Parámetros del reporte ====
                     var reporteParametros = new List<ReportParameter>();
-                    JObject jObject = null;
+                    JObject? jObject = null;
                     var paramDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
                     if (!string.IsNullOrWhiteSpace(data.parametros))
@@ -175,7 +173,7 @@ namespace Galileo.DataBaseTier
                                     connection,
                                     ds,
                                     ctx: paramDict,
-                                    jsonParams: jObject,
+                                    jsonParams: jObject ?? [],
                                     allowFiltrosReplacement: true,
                                     out rows,
                                     out var err,
@@ -197,7 +195,8 @@ namespace Galileo.DataBaseTier
                         else
                         {
                             // para JSON: devolvemos por dataset
-                            jsonDataSets[ds.DataSetName] = rows;
+                            if (!string.IsNullOrEmpty(ds.DataSetName))
+                                jsonDataSets[ds.DataSetName] = rows;
                         }
                     }
 
@@ -260,10 +259,16 @@ namespace Galileo.DataBaseTier
                                 .ToList();
 
                             // Fallback: si el subreporte espera 1 parámetro y el padre pasó 1 con nombre raro
-                            if (expected.Count == 1 && receivedFromParent.Count == 1 && !merged.ContainsKey(expected[0]))
-                                merged[expected[0]] = receivedFromParent.Values.FirstOrDefault() ?? "";
+                            if (expected.Count == 1 && receivedFromParent.Count == 1 && expected[0] != null)
+                            {
+                                var key = expected[0];
+                                if (key != null && !merged.ContainsKey(key))
+                                    merged[key] = receivedFromParent.Values.FirstOrDefault() ?? "";
+                            }
 
-                            var missing = expected.Where(n => !merged.ContainsKey(n)).ToList();
+                            var missing = expected
+                                .Where(n => n != null && !merged.ContainsKey(n))
+                                .ToList();
                             if (missing.Count > 0)
                                 throw new InvalidOperationException(
                                     $"El subreporte '{subName}' requiere parámetro(s) {string.Join(", ", missing)}. " +
@@ -359,9 +364,9 @@ namespace Galileo.DataBaseTier
 
         private sealed class RdlcDataSetMeta
         {
-            public string DataSetName { get; set; }
-            public string CommandText { get; set; }                // nombre SP o SQL
-            public string CommandType { get; set; }                // "StoredProcedure" | "Text" | null
+            public string? DataSetName { get; set; }
+            public string? CommandText { get; set; }                // nombre SP o SQL
+            public string? CommandType { get; set; }                // "StoredProcedure" | "Text" | null
             public List<(string Name, string ValueExpr)> QueryParams { get; } = new();
         }
 
@@ -371,12 +376,16 @@ namespace Galileo.DataBaseTier
         private static (List<RdlcDataSetMeta> dataSets, List<string> subreportNames) ReadRdlcMeta(string rdlcPath)
         {
             var xdoc = XDocument.Load(rdlcPath);
+            if (xdoc.Root == null)
+                throw new InvalidOperationException("The RDLC file does not have a root element.");
+            if (xdoc.Root == null)
+                throw new InvalidOperationException("The RDLC file does not have a root element.");
             XNamespace ns = xdoc.Root.GetDefaultNamespace();
 
             var dataSets = xdoc.Descendants(ns + "DataSet")
                 .Select(ds => new RdlcDataSetMeta
                 {
-                    DataSetName = (string)ds.Attribute("Name"),
+                    DataSetName = (string?)ds.Attribute("Name") ?? string.Empty,
                     CommandText = ds.Descendants(ns + "CommandText").FirstOrDefault()?.Value,
                     CommandType = ds.Descendants(ns + "CommandType").FirstOrDefault()?.Value
                 })
@@ -384,7 +393,7 @@ namespace Galileo.DataBaseTier
 
             foreach (var ds in xdoc.Descendants(ns + "DataSet"))
             {
-                var name = (string)ds.Attribute("Name");
+                var name = (string?)ds.Attribute("Name") ?? string.Empty;
                 var meta = dataSets.FirstOrDefault(m => m.DataSetName == name);
                 var qps = ds.Descendants(ns + "QueryParameters").FirstOrDefault();
                 if (qps != null && meta != null)
@@ -392,8 +401,8 @@ namespace Galileo.DataBaseTier
                     foreach (var qp in qps.Elements(ns + "QueryParameter"))
                     {
                         meta.QueryParams.Add((
-                            (string)qp.Attribute("Name"),
-                            qp.Element(ns + "Value")?.Value // p.ej. "=Parameters!Id.Value"
+                            qp.Attribute("Name")?.Value ?? string.Empty,
+                            qp.Element(ns + "Value")?.Value ?? string.Empty // p.ej. "=Parameters!Id.Value"
                         ));
                     }
                 }
@@ -403,6 +412,7 @@ namespace Galileo.DataBaseTier
                 .Select(s => s.Element(ns + "ReportName")?.Value)
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Cast<string>() // Ensures all are non-null
                 .ToList();
 
             return (dataSets, subreports);
@@ -479,7 +489,7 @@ ORDER BY p.parameter_id;
         )
         {
             rows = Enumerable.Empty<object>();
-            error = null;
+            error = string.Empty;
 
             try
             {
@@ -512,7 +522,7 @@ ORDER BY p.parameter_id;
 
                 bool isStoredProc =
                       string.Equals(ds.CommandType, "StoredProcedure", StringComparison.OrdinalIgnoreCase)
-                   || (string.IsNullOrWhiteSpace(ds.CommandType) && LooksLikeSpName(ds.CommandText));
+                   || (string.IsNullOrWhiteSpace(ds.CommandType) && !string.IsNullOrWhiteSpace(ds.CommandText) && LooksLikeSpName(ds.CommandText));
 
                 string sqlText = ds.CommandText?.Trim() ?? "";
                 bool isExecBatch = sqlText.StartsWith("exec ", StringComparison.OrdinalIgnoreCase);
@@ -578,7 +588,7 @@ ORDER BY p.parameter_id;
                         {
                             var colName = col["ColumnName"]?.ToString();
                             if (!string.IsNullOrEmpty(colName) && !empty.ContainsKey(colName))
-                                empty[colName] = null;
+                                empty[colName] = (object)null!;
                         }
 
                         rows = new List<object> { (object)empty };
@@ -631,9 +641,9 @@ ORDER BY p.parameter_id;
             {
                 case bool b: return b ? "1" : "0";
                 case byte or sbyte or short or ushort or int or uint or long or ulong:
-                    return Convert.ToString(value, CultureInfo.InvariantCulture);
+                    return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
                 case float or double or decimal:
-                    return Convert.ToString(value, CultureInfo.InvariantCulture);
+                    return Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty;
                 case DateTime dt:
                     return $"'{dt:yyyy-MM-dd HH:mm:ss.fff}'";
                 case DateTimeOffset dto:
@@ -735,6 +745,8 @@ ORDER BY p.parameter_id;
         private static Dictionary<string, List<string>> ReadParentSubreportParamNames(string parentRdlcPath)
         {
             var x = XDocument.Load(parentRdlcPath);
+            if (x.Root == null)
+                throw new InvalidOperationException("The RDLC file does not have a root element.");
             XNamespace ns = x.Root.GetDefaultNamespace();
 
             var map = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
@@ -762,6 +774,8 @@ ORDER BY p.parameter_id;
 
         private static HashSet<string> ReadExpectedChildParams(XDocument childDoc)
         {
+            if (childDoc.Root == null)
+                throw new InvalidOperationException("The RDLC file does not have a root element.");
             XNamespace ns = childDoc.Root.GetDefaultNamespace();
             var expected = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -831,6 +845,8 @@ End Function
         private static MemoryStream PatchReportCode(string rdlcPath, string? codeSection)
         {
             var xdoc = XDocument.Load(rdlcPath);
+            if (xdoc.Root == null)
+                throw new InvalidOperationException("The RDLC file does not have a root element.");
             XNamespace ns = xdoc.Root.GetDefaultNamespace();
 
             var codeNode = xdoc.Descendants(ns + "Code").FirstOrDefault();
@@ -843,7 +859,7 @@ End Function
             }
 
             // ¿JSON con claves=>constantes?
-            Dictionary<string, int> constFuncs = null;
+            Dictionary<string, int>? constFuncs = null;
             bool isJson = false;
             try
             {
@@ -873,8 +889,11 @@ End Function
                 // JSON: upsert de funciones con retorno constante para cada key booleana/numérica
                 var codeText = codeNode?.Value ?? string.Empty;
 
-                foreach (var kv in constFuncs)
-                    codeText = UpsertFunctionReturn(codeText, kv.Key, kv.Value);
+                if (constFuncs != null)
+                {
+                    foreach (var kv in constFuncs)
+                        codeText = UpsertFunctionReturn(codeText, kv.Key, kv.Value);
+                }
 
                 if (codeNode == null)
                 {
@@ -950,6 +969,8 @@ End Function
         private static List<VbFunctionSig> GetFunctionsFromReportFile(string rdlcPath)
         {
             var xdoc = XDocument.Load(rdlcPath);
+            if (xdoc.Root == null)
+                throw new InvalidOperationException("The RDLC file does not have a root element.");
             XNamespace ns = xdoc.Root.GetDefaultNamespace();
             var code = xdoc.Descendants(ns + "Code").FirstOrDefault()?.Value ?? "";
             return ParseVbFunctions(code);
@@ -1048,11 +1069,12 @@ End Function
                 var t = prop.Value?.Type ?? JTokenType.Null;
                 if (t == JTokenType.Boolean)
                 {
-                    dict[prop.Name] = ((bool)prop.Value) ? 1 : 0;
+                    dict[prop.Name] = (prop.Value != null && (bool)prop.Value) ? 1 : 0;
                 }
                 else if (t == JTokenType.Integer || t == JTokenType.Float)
                 {
-                    dict[prop.Name] = Convert.ToInt32(prop.Value.ToString(), CultureInfo.InvariantCulture);
+                    if (prop.Value != null)
+                        dict[prop.Name] = Convert.ToInt32(prop.Value.ToString(), CultureInfo.InvariantCulture);
                 }
                 // Strings u otros tipos se ignoran para no romper firmas (puedes extender aquí si lo necesitas)
             }
@@ -1126,9 +1148,9 @@ End Function
                     var mainDatasets = doc.Descendants()
                         .Where(x => x.Name.LocalName == "DataSet")
                         .Select(ds => (
-                            ReportName: data.nombreReporte,
-                            DataSetName: ds.Attribute("Name")?.Value,
-                            Query: ds.Descendants().FirstOrDefault(q => q.Name.LocalName == "CommandText")?.Value
+                            ReportName: data.nombreReporte ?? string.Empty,
+                            DataSetName: ds.Attribute("Name")?.Value ?? string.Empty,
+                            Query: ds.Descendants().FirstOrDefault(q => q.Name.LocalName == "CommandText")?.Value ?? string.Empty
                         ))
                         .ToList();
 
@@ -1153,9 +1175,9 @@ End Function
                             var subDatasets = subDoc.Descendants()
                                 .Where(x => x.Name.LocalName == "DataSet")
                                 .Select(ds => (
-                                    ReportName: subreportName,
-                                    DataSetName: ds.Attribute("Name")?.Value,
-                                    Query: ds.Descendants().FirstOrDefault(q => q.Name.LocalName == "CommandText")?.Value
+                                    ReportName: subreportName ?? string.Empty,
+                                    DataSetName: ds.Attribute("Name")?.Value ?? string.Empty,
+                                    Query: ds.Descendants().FirstOrDefault(q => q.Name.LocalName == "CommandText")?.Value ?? string.Empty
                                 ))
                                 .ToList();
 
@@ -1165,7 +1187,7 @@ End Function
 
                     // 3. Preparar parámetros
                     var reporteParametros = new List<ReportParameter>();
-                    JObject jObject = null;
+                    JObject? jObject = null;
 
                     if (data.parametros != null)
                     {
