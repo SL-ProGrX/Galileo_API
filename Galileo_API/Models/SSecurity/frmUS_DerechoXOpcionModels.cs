@@ -38,10 +38,10 @@
 
     public class OpcionRolRequestDto
     {
-        public int opcion { get; set; }
+        public int? opcion { get; set; }
         public string rol { get; set; } = string.Empty;
-        public char tipo { get; set; }
+        public char? tipo { get; set; }
         public string usuario { get; set; } = string.Empty;
-        public bool check { get; set; }
+        public bool? check { get; set; }
     }
 }

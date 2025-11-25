@@ -76,14 +76,14 @@ namespace Galileo.DataBaseTier
                     parameters.Add("@ContabilizaCobranza", usuarioDto.ContabilizaCobranza);
                     parameters.Add("@UsuarioRegistro", usuarioDto.UsuarioRegistro);
                     parameters.Add("@UserId", usuarioDto.UserId, DbType.Int32, ParameterDirection.InputOutput);
-                    parameters.Add("@ModoEdicion", usuarioDto.ModoEdicion ? 1 : 0);
+                    parameters.Add("@ModoEdicion", (usuarioDto.ModoEdicion ?? false) ? 1 : 0);
                     parameters.Add("@EmpresaId", usuarioDto.EmpresaId);
                     parameters.Add("@NombreEmpresa", usuarioDto.NombreEmpresa);
                     parameters.Add("@AppVersion", string.Empty);
                     parameters.Add("@AppName", "SSECURITY- WEB");
                     parameters.Add("@Maquina", string.Empty);
                     parameters.Add("@MACAdress", string.Empty);
-                    parameters.Add("@Tfa_ind", usuarioDto.tfa_ind ? 1 : 0);
+                    parameters.Add("@Tfa_ind", (usuarioDto.tfa_ind ?? false) ? 1 : 0);
                     parameters.Add("@Tfa_metodo", usuarioDto.tfa_metodo);
                     parameters.Add("@EsAdminPortal", dbType: DbType.Boolean, direction: ParameterDirection.Output);
 
@@ -95,7 +95,7 @@ namespace Galileo.DataBaseTier
                     var esAdminPortal = parameters.Get<bool>("@EsAdminPortal");
 
 
-                    if (esAdminPortal && !usuarioDto.ModoEdicion && usuarioDto.EmpresaId > 0)
+                    if (esAdminPortal && !(usuarioDto.ModoEdicion ?? false) && usuarioDto.EmpresaId > 0)
                     {
                         try
                         {
@@ -275,11 +275,11 @@ namespace Galileo.DataBaseTier
                         {
                             if (usuarioClienteAsignaDto.Estado == "I")
                             {
-                                res = SincronizaUsuarioCore(usuarioClienteAsignaDto.CodigoEmpresa, usuarioClienteAsignaDto.Usuario, "", "A", usuarioClienteAsignaDto.UsuarioRegistra);
+                                res = SincronizaUsuarioCore(usuarioClienteAsignaDto.CodigoEmpresa ?? 0, usuarioClienteAsignaDto.Usuario, "", "A", usuarioClienteAsignaDto.UsuarioRegistra);
                             }
                             else
                             {
-                                res = SincronizaUsuarioCore(usuarioClienteAsignaDto.CodigoEmpresa, usuarioClienteAsignaDto.Usuario, "", "I", usuarioClienteAsignaDto.UsuarioRegistra);
+                                res = SincronizaUsuarioCore(usuarioClienteAsignaDto.CodigoEmpresa ?? 0, usuarioClienteAsignaDto.Usuario, "", "I", usuarioClienteAsignaDto.UsuarioRegistra);
                             }
                         }
 

@@ -4,9 +4,9 @@
     {
         public string Cod_Clasificacion { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public bool Activa { get; set; }
+        public bool? Activa { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
-        public DateTime Registro_Fecha { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
     }
 
     public class ClienteSelecciona

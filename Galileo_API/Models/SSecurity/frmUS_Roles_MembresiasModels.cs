@@ -52,36 +52,36 @@
 
     public class UsuarioRolAsignaDto
     {
-        public int Cliente { get; set; }
+        public int? Cliente { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string Rol { get; set; } = string.Empty;
         public string UsuarioRegistra { get; set; } = string.Empty;
-        public char TipoMov { get; set; }
+        public char? TipoMov { get; set; }
     }
 
     public class UsuarioClienteAsigna
     {
-        public int Cliente { get; set; }
+        public int? Cliente { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string UsuarioRegistra { get; set; } = string.Empty;
-        public char TipoMov { get; set; }
+        public char? TipoMov { get; set; }
     }
 
     public class EstacionAsignaDto
     {
-        public int Cliente { get; set; }
+        public int? Cliente { get; set; }
         public string UsuarioLimita { get; set; } = string.Empty;
         public string Estacion { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
-        public int Acceso { get; set; }
+        public int? Acceso { get; set; }
     }
 
     public class LimitaAcceso
     {
-        public int Cliente { get; set; }
+        public int? Cliente { get; set; }
         public string UsuarioLimita { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
-        public int Limita { get; set; }
+        public int? Limita { get; set; }
     }
 
     public class Limites
@@ -92,11 +92,11 @@
 
     public class HorarioAsignaDto
     {
-        public int Cliente { get; set; }
+        public int? Cliente { get; set; }
         public string UsuarioLimita { get; set; } = string.Empty;
         public string Horario { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
-        public int Acceso { get; set; }
+        public int? Acceso { get; set; }
     }
 
 }

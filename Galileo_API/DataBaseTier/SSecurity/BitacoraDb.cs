@@ -62,18 +62,18 @@ namespace Galileo.DataBaseTier
             DateTime ini = DateTime.MinValue;
             DateTime fin = DateTime.MaxValue;
 
-            DateTime horaInicioUtc = bitacoraRequestDto.HoraInicio.ToUniversalTime();
+            DateTime horaInicioUtc = bitacoraRequestDto.HoraInicio.HasValue ? bitacoraRequestDto.HoraInicio.Value.ToUniversalTime() : DateTime.MinValue;
             DateTime horaInicioLocal = TimeZoneInfo.ConvertTimeFromUtc(horaInicioUtc, TimeZoneInfo.Local);
 
-            DateTime horaCorteUtc = bitacoraRequestDto.HoraCorte.ToUniversalTime();
+            DateTime horaCorteUtc = bitacoraRequestDto.HoraCorte.HasValue ? bitacoraRequestDto.HoraCorte.Value.ToUniversalTime() : DateTime.MinValue;
             DateTime horaCorteLocal = TimeZoneInfo.ConvertTimeFromUtc(horaCorteUtc, TimeZoneInfo.Local);
 
-            if (!bitacoraRequestDto.todas && !bitacoraRequestDto.todos)
+            if ((bitacoraRequestDto.todas != true) && (bitacoraRequestDto.todos != true))
             {
                 ini = new DateTime(
-                    bitacoraRequestDto.FechaInicio.Year,
-                    bitacoraRequestDto.FechaInicio.Month,
-                    bitacoraRequestDto.FechaInicio.Day,
+                    bitacoraRequestDto.FechaInicio.HasValue ? bitacoraRequestDto.FechaInicio.Value.Year : 1900,
+                    bitacoraRequestDto.FechaInicio.HasValue ? bitacoraRequestDto.FechaInicio.Value.Month : 1,
+                    bitacoraRequestDto.FechaInicio.HasValue ? bitacoraRequestDto.FechaInicio.Value.Day : 1,
                     horaInicioLocal.Hour,
                     horaInicioLocal.Minute,
                     horaInicioLocal.Second,
@@ -81,9 +81,9 @@ namespace Galileo.DataBaseTier
                 );
 
                 fin = new DateTime(
-                    bitacoraRequestDto.FechaCorte.Year,
-                    bitacoraRequestDto.FechaCorte.Month,
-                    bitacoraRequestDto.FechaCorte.Day,
+                    bitacoraRequestDto.FechaCorte.HasValue ? bitacoraRequestDto.FechaCorte.Value.Year : 2100,
+                    bitacoraRequestDto.FechaCorte.HasValue ? bitacoraRequestDto.FechaCorte.Value.Month : 12,
+                    bitacoraRequestDto.FechaCorte.HasValue ? bitacoraRequestDto.FechaCorte.Value.Day : 30,
                     horaCorteLocal.Hour,
                     horaCorteLocal.Minute,
                     horaCorteLocal.Second,
@@ -91,7 +91,7 @@ namespace Galileo.DataBaseTier
                 );
             }
 
-            if (bitacoraRequestDto.todas)
+            if (bitacoraRequestDto.todas == true)
             {
                 ini = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Local);
                 fin = new DateTime(2100, 12, 30, 23, 59, 59, DateTimeKind.Local);

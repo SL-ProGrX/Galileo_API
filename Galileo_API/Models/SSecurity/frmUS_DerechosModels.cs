@@ -14,7 +14,7 @@
 
     public class CrearUsDerechosNewDto
     {
-        public int COD_OPCION { get; set; }
+        public int? COD_OPCION { get; set; }
         public string COD_ROL { get; set; } = string.Empty;
         public string ESTADO { get; set; } = string.Empty;
         public DateTime? REGISTRO_FECHA { get; set; }

@@ -30,7 +30,7 @@ namespace Galileo.DataBaseTier
                     data = connection.Query<Aplicacion>(procedure, commandType: CommandType.StoredProcedure).ToList();
                     foreach (Aplicacion dt in data)
                     {
-                        dt.Estado = dt.Activa ? "ACTIVO" : "INACTIVO";
+                        dt.Estado = (dt.Activa ?? false) ? "ACTIVO" : "INACTIVO";
 
                     }
                 }

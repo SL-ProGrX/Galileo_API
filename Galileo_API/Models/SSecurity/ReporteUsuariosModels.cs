@@ -2,23 +2,23 @@
 {
     public class ReporteUsuariosListaSolicitudDto
     {
-        public int EmpresaId { get; set; }
+        public int? EmpresaId { get; set; }
         public string Usuario { get; set; } = string.Empty;
-        public char Estado { get; set; }
+        public char? Estado { get; set; }
         public string Vinculado { get; set; } = string.Empty;
         public int Contabiliza { get; set; } = 0;
     }
 
     public class ReporteUsuariosRolesSolicitudDto
     {
-        public int EmpresaId { get; set; }
+        public int? EmpresaId { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public int Contabiliza { get; set; } = 0;
     }
 
     public class ReporteUsuariosPermisosSolicitudDto
     {
-        public int EmpresaId { get; set; }
+        public int? EmpresaId { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public int Contabiliza { get; set; } = 0;
     }

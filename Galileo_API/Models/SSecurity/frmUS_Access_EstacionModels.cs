@@ -14,10 +14,10 @@
 
     public class EstacionGuardarDto
     {
-        public int CodEmpresa { get; set; }
+        public int? CodEmpresa { get; set; }
         public string Estacion { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public bool Activa { get; set; }
+        public bool? Activa { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public int Modulo { get; set; } = 0;
         public string MAC1 { get; set; } = string.Empty;
@@ -29,7 +29,7 @@
 
     public class EstacionEliminarDto
     {
-        public int CodEmpresa { get; set; }
+        public int? CodEmpresa { get; set; }
         public string Estacion { get; set; } = string.Empty;
     }
 
@@ -47,9 +47,9 @@
 
     public class EstacionVinculaDto
     {
-        public int Cliente { get; set; }
+        public int? Cliente { get; set; }
         public string Estacion { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
-        public int Vincula { get; set; }
+        public int? Vincula { get; set; }
     }
 }

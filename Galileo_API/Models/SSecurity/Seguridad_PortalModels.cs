@@ -124,20 +124,20 @@
 
     public class UsMenuDto
     {
-        public int MENU_NODO { get; set; } // PK, not null
-        public int NODO_PADRE { get; set; } // FK, null
+        public int? MENU_NODO { get; set; } // PK, not null
+        public int? NODO_PADRE { get; set; } // FK, null
         public string NODO_DESCRIPCION { get; set; } = string.Empty; // null
         public string TIPO { get; set; } = string.Empty; // null
         public string ICONO { get; set; } = string.Empty; // null
         public string MODO { get; set; } = string.Empty; // null
-        public int MODAL { get; set; } // null
-        public int ACCESOS_DLL_ID { get; set; } // null
+        public int? MODAL { get; set; } // null
+        public int? ACCESOS_DLL_ID { get; set; } // null
         public string ACCESOS_DLL_CLS { get; set; } = string.Empty; // null
-        public int PRIORIDAD { get; set; } // null
+        public int? PRIORIDAD { get; set; } // null
         public string FORMULARIO { get; set; } = string.Empty; // null
-        public int MODULO { get; set; } // null
-        public int Acceso { get; set; } // null
-        public int MIGRADO_WEB { get; set; }
+        public int? MODULO { get; set; } // null
+        public int? Acceso { get; set; } // null
+        public int? MIGRADO_WEB { get; set; }
         public string ICONO_WEB { get; set; } = string.Empty;
     }
 

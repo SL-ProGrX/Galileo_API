@@ -82,7 +82,7 @@
     public class ValidaCuentaRequestDto
     {
         public string Cuenta { get; set; } = string.Empty;
-        public int CodEmpresa { get; set; }
+        public int? CodEmpresa { get; set; }
     }
 
     public class ErrorGeneralDto
