@@ -81,7 +81,7 @@ namespace Galileo.DataBaseTier
             resp.Code = 0;
             try
             {
-                int activo = rol.Activo ? 1 : 0;
+                int activo = (rol.Activo ?? false) ? 1 : 0;
                 int cliente = Convert.ToInt16(rol.Cliente.Substring(0, 1));
 
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))

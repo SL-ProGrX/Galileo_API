@@ -31,7 +31,7 @@ namespace Galileo.DataBaseTier
 
                     foreach (HorarioDto dt in result)
                     {
-                        dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
+                        dt.Estado = (dt.Activo ?? false) ? "ACTIVO" : "INACTIVO";
                     }
                 }
             }

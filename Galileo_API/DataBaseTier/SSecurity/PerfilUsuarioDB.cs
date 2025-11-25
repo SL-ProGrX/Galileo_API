@@ -61,8 +61,8 @@ namespace Galileo.DataBaseTier
                 var claims = new List<Claim>
                 {
                     // Identidad principal
-                    new Claim(JwtRegisteredClaimNames.Sub, response.Result.UserId.ToString()),
-                    new Claim(ClaimTypes.NameIdentifier, response.Result.UserId.ToString()),
+                    new Claim(JwtRegisteredClaimNames.Sub, response.Result.UserId?.ToString() ?? string.Empty),
+                    new Claim(ClaimTypes.NameIdentifier, response.Result.UserId?.ToString() ?? string.Empty),
                     new Claim(ClaimTypes.Name, response.Result.Usuario ?? usuario),
 
                     // Metadatos estándar

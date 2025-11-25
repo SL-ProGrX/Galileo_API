@@ -91,7 +91,7 @@ namespace Galileo.DataBaseTier
                             return 2;
                         }
 
-                        EliminarUsDerechosNewDTO(info.COD_OPCION, info.ESTADO, info.COD_ROL);
+                        EliminarUsDerechosNewDTO(info.COD_OPCION ?? 0, info.ESTADO, info.COD_ROL);
                     }
                     else
                     {

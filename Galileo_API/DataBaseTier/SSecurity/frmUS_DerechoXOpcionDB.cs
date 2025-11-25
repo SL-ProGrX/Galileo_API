@@ -111,7 +111,7 @@ namespace Galileo.DataBaseTier
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-                    if (req.check)
+                    if (req.check == true)
                     {
                         var strSQL = "INSERT INTO [dbo].[US_ROL_PERMISOS]([COD_OPCION],[COD_ROL],[ESTADO],[REGISTRO_FECHA],[REGISTRO_USUARIO]) VALUES(@COD_OPCION,@COD_ROL,@ESTADO,@REGISTRO_FECHA,@REGISTRO_USUARIO)";
 

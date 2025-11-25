@@ -64,7 +64,8 @@ namespace Galileo.DataBaseTier
             int res = -1;
 
             var seguridadPortal = new SeguridadPortalDb(_config);
-            var pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(validaCuentaRequestDto.CodEmpresa);
+            var codEmpresa = validaCuentaRequestDto.CodEmpresa ?? 0; // or handle null appropriately
+            var pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(codEmpresa);
 
             var connectionString =
                 $"Data Source={pgxClienteDto.PGX_CORE_SERVER};Initial Catalog={pgxClienteDto.PGX_CORE_DB};" +

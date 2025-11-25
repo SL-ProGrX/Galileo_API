@@ -99,14 +99,14 @@ namespace Galileo.DataBaseTier
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
                 var copiaAccesos = new
                 {
-                    EmpresaId = dto.Cliente,
+                    EmpresaId = (long)(dto.Cliente ?? 0),
                     Us_Origen = dto.UsBase,
                     Us_Destino = dto.UsDestino,
                     Usuario = dto.Usuario,
-                    Copy_Rol = dto.RS_Roles ? 1 : 0,
-                    Copy_Estacion = dto.RS_Estaciones ? 1 : 0,
-                    Copy_Horario = dto.RS_Horarios ? 1 : 0,
-                    Inicializa = dto.RS_Inicializa ? 1 : 0
+                    Copy_Rol = (dto.RS_Roles ?? false) ? 1 : 0,
+                    Copy_Estacion = (dto.RS_Estaciones ?? false) ? 1 : 0,
+                    Copy_Horario = (dto.RS_Horarios ?? false) ? 1 : 0,
+                    Inicializa = (dto.RS_Inicializa ?? false) ? 1 : 0
                 };
 
                 return connection.Query<int>("spSEG_Copia_Permisos", copiaAccesos, commandType: CommandType.StoredProcedure).FirstOrDefault();
@@ -123,7 +123,9 @@ namespace Galileo.DataBaseTier
             errorMsg = string.Empty;
             try
             {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(dto.Cliente);
+                if (!dto.Cliente.HasValue)
+                    throw new ArgumentNullException(nameof(dto.Cliente), "El valor de Cliente no puede ser nulo.");
+                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(dto.Cliente.Value);
                 using var connectionCliente = new SqlConnection(stringConn);
 
                 var copiaAccesosCore = new
@@ -132,17 +134,17 @@ namespace Galileo.DataBaseTier
                     Us_Origen = dto.UsBase,
                     Usuairo = dto.Usuario.ToUpper(),
                     R_Oficina = 1,
-                    R_Deducciones = dto.RO_Deducciones ? 1 : 0,
-                    R_Contabilidad = dto.RO_Contabilidad ? 1 : 0,
-                    R_Gestion_Crd = dto.RO_Creditos ? 1 : 0,
-                    R_Resolucion_Crd = dto.RO_Resolucion_Crd ? 1 : 0,
-                    R_Cobros = dto.RO_Cobros ? 1 : 0,
-                    R_Cajas = dto.RO_Cajas ? 1 : 0,
-                    R_Bancos = dto.RO_Bancos ? 1 : 0,
-                    R_Presupuesto = dto.RO_Presupuesto ? 1 : 0,
-                    R_Inventario = dto.RO_Inventarios ? 1 : 0,
-                    R_Compras = dto.RO_Compras ? 1 : 0,
-                    R_Inicializa = dto.RO_Inicializa ? 1 : 0
+                    R_Deducciones = (dto.RO_Deducciones ?? false) ? 1 : 0,
+                    R_Contabilidad = (dto.RO_Contabilidad ?? false) ? 1 : 0,
+                    R_Gestion_Crd = (dto.RO_Creditos ?? false) ? 1 : 0,
+                    R_Resolucion_Crd = (dto.RO_Resolucion_Crd ?? false) ? 1 : 0,
+                    R_Cobros = (dto.RO_Cobros ?? false) ? 1 : 0,
+                    R_Cajas = (dto.RO_Cajas ?? false) ? 1 : 0,
+                    R_Bancos = (dto.RO_Bancos ?? false) ? 1 : 0,
+                    R_Presupuesto = (dto.RO_Presupuesto ?? false) ? 1 : 0,
+                    R_Inventario = (dto.RO_Inventarios ?? false) ? 1 : 0,
+                    R_Compras = (dto.RO_Compras ?? false) ? 1 : 0,
+                    R_Inicializa = (dto.RO_Inicializa ?? false) ? 1 : 0
                 };
 
                 return connectionCliente.Query<int>("spSys_Users_Copy_Roles", copiaAccesosCore, commandType: CommandType.StoredProcedure).FirstOrDefault();
@@ -158,7 +160,7 @@ namespace Galileo.DataBaseTier
         {
             Bitacora(new BitacoraInsertarDto
             {
-                EmpresaId = dto.Cliente,
+                EmpresaId = (long)(dto.Cliente ?? 0),
                 Usuario = dto.Usuario,
                 DetalleMovimiento = $"Copia de Permisos Empresa [{dto.Cliente}] del Usuario {dto.UsBase} -> {dto.UsDestino}",
                 Movimiento = "APLICA - WEB",

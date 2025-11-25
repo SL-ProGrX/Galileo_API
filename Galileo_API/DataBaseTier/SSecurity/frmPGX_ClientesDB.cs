@@ -279,7 +279,7 @@ namespace Galileo.DataBaseTier
 
                         Bitacora(new BitacoraInsertarDto
                         {
-                            EmpresaId = info.cod_empresa,
+                            EmpresaId = (long)(info.cod_empresa ?? 0),
                             Usuario = info.modifica_usuario ?? string.Empty,
                             DetalleMovimiento = "Cliente Id: " + info.cod_empresa,
                             Movimiento = "MODIFICA - WEB",
@@ -406,7 +406,7 @@ namespace Galileo.DataBaseTier
 
                     Bitacora(new BitacoraInsertarDto
                     {
-                        EmpresaId = info.cod_empresa,
+                        EmpresaId = (long)(info.cod_empresa ?? 0),
                         Usuario = info.registro_usuario ?? string.Empty,
                         DetalleMovimiento = "Cliente Id: " + info.cod_empresa,
                         Movimiento = "REGISTRA - WEB",
@@ -610,7 +610,7 @@ namespace Galileo.DataBaseTier
 
                     Bitacora(new BitacoraInsertarDto
                     {
-                        EmpresaId = contacto.cod_empresa,
+                        EmpresaId = (long)(contacto.cod_empresa ?? 0),
                         Usuario = contacto.registro_usuario ?? string.Empty,
                         DetalleMovimiento = "Cliente Contacto: " + contacto.cod_empresa + "-->" + contacto.cod_contacto,
                         Movimiento = "MODIFICA - WEB",
@@ -663,7 +663,7 @@ namespace Galileo.DataBaseTier
 
                     Bitacora(new BitacoraInsertarDto
                     {
-                        EmpresaId = contacto.cod_empresa,
+                        EmpresaId = (long)(contacto.cod_empresa ?? 0),
                         Usuario = contacto.registro_usuario ?? string.Empty,
                         DetalleMovimiento = "Cliente Contacto: " + contacto.cod_empresa + "-->" + contacto.cod_contacto,
                         Movimiento = "REGISTRA - WEB",
@@ -776,7 +776,7 @@ namespace Galileo.DataBaseTier
                     parameters.Add("@Cliente", smtpAuth.cod_empresa);
                     parameters.Add("@SMTP", smtpAuth.smtp_id);
                     parameters.Add("@Usuario", smtpAuth.usuario);
-                    parameters.Add("@Mov", smtpAuth.asignado ? "A" : "B");  // A for checked, B for not
+                    parameters.Add("@Mov", (smtpAuth.asignado ?? false) ? "A" : "B");  // A for checked, B for not
 
                     // Execute the stored procedure
                     connection.Execute(sql, parameters);
@@ -927,7 +927,7 @@ namespace Galileo.DataBaseTier
                             // Update statement
                             string updateSql = $"UPDATE SIF_EMPRESA SET PORTAL_ID =" + cliente.cod_empresa;
 
-                            if (logos && cliente.url_logo_activo)
+                            if (logos && cliente.url_logo_activo == true)
                             {
                                 updateSql += $", LOGO_WEB_SITE = " + cliente.url_logo;
                             }
