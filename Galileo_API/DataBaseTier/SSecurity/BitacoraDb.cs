@@ -72,8 +72,9 @@ namespace Galileo.DataBaseTier
             // Caso: todas las fechas -> salimos temprano
             if (dto.todas == true)
             {
-                ini = new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Local);
-                fin = new DateTime(2100, 12, 30, 23, 59, 59, DateTimeKind.Local);
+                var fechaInicio = dto.FechaInicio ?? new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Local);
+                var fechaCorte = dto.FechaCorte ?? new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Local);
+
                 return (ini, fin);
             }
 
