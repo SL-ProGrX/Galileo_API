@@ -10,11 +10,11 @@ namespace Galileo.Controllers
     [Route("api/mProGrX_Auxiliar")]
     [Route("api/mProGrXAuxiliar")]
     [ApiController]
-    public class MProGrX_AuxiliarController : ControllerBase
+    public class MProGrXAuxiliarController : ControllerBase
     {
         private readonly IConfiguration _config;
 
-        public MProGrX_AuxiliarController(IConfiguration config)
+        public MProGrXAuxiliarController(IConfiguration config)
         {
             _config = config;
         }
