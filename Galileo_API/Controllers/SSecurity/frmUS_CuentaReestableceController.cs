@@ -5,13 +5,14 @@ using Galileo.Models.Security;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/FrmUsCuentaReestablece")]
+    [Route("api/frmUS_CuentaReestablece")]
     [ApiController]
-    public class FrmUs_CuentaReestableceController : ControllerBase
+    public class FrmUsCuentaReestableceController : ControllerBase
     {
         readonly FrmUsCuentaReestableceBl CuentaReestableceBL;
 
-        public FrmUs_CuentaReestableceController(IConfiguration config)
+        public FrmUsCuentaReestableceController(IConfiguration config)
         {
             CuentaReestableceBL = new FrmUsCuentaReestableceBl(config);
         }

@@ -5,14 +5,15 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/FrmCcCuentasBancarias")]
+    [Route("api/frmCC_Cuentas_Bancarias")]
     [ApiController]
-    public class FrmCc_Cuentas_BancariasController : ControllerBase
+    public class FrmCcCuentasBancariasController : ControllerBase
     {
 
         private readonly IConfiguration _config;
 
-        public FrmCc_Cuentas_BancariasController(IConfiguration config)
+        public FrmCcCuentasBancariasController(IConfiguration config)
         {
             _config = config;
         }

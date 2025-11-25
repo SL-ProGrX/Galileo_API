@@ -6,15 +6,16 @@ using Galileo.Models.GA;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/FrmGaDocumentos")]
+    [Route("api/frmGA_Documentos")]
     [ApiController]
-    public class FrmGa_DocumentosController : ControllerBase
+    public class FrmGaDocumentosController : ControllerBase
     {
         private readonly IConfiguration _config;
         readonly FrmGaDocumentosBl BL_GA_Documentos;
 
 
-        public FrmGa_DocumentosController(IConfiguration config)
+        public FrmGaDocumentosController(IConfiguration config)
         {
             _config = config;
             BL_GA_Documentos = new FrmGaDocumentosBl(_config);

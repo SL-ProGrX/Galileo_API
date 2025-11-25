@@ -5,15 +5,16 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/frmLogon_Datos_Update")]
+    [Route("api/FrmLogonDatosUpdate")]
     [ApiController]
-    public class FrmLogon_Datos_UpdateController : ControllerBase
+    public class FrmLogonDatosUpdateController : ControllerBase
     {
-        readonly FrmLogon_DatosUpdateBl Datos_UpdateBL;
+        readonly FrmLogonDatosUpdateBl Datos_UpdateBL;
 
-        public FrmLogon_Datos_UpdateController(IConfiguration config)
+        public FrmLogonDatosUpdateController(IConfiguration config)
         {
-            Datos_UpdateBL = new FrmLogon_DatosUpdateBl(config);
+            Datos_UpdateBL = new FrmLogonDatosUpdateBl(config);
         }
 
         [HttpGet("LogonObtenerDatosUsuario")]
