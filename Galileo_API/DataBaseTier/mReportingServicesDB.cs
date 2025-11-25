@@ -11,6 +11,7 @@ using System.Dynamic;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using System.Xml.Linq;
+using System.Security;
 
 namespace Galileo.DataBaseTier
 {
@@ -1003,7 +1004,19 @@ End Function
             // Búsqueda tolerante a mayúsculas/minúsculas y extensión
             if (Directory.Exists(dir))
             {
-                var match = Directory.EnumerateFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
+                string allowedRoot = Path.GetFullPath(basePath);
+
+                // Normaliza la ruta que viene del usuario
+                string normalizedDir = Path.GetFullPath(dir);
+
+                // Verifica que no salga del root permitido
+                if (!normalizedDir.StartsWith(allowedRoot, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new SecurityException("Invalid directory path (path traversal).");
+                }
+
+                // Ahora sí es seguro enumerar archivos
+                var match = Directory.EnumerateFiles(normalizedDir, "*.*", SearchOption.TopDirectoryOnly)
                     .FirstOrDefault(f =>
                         string.Equals(Path.GetFileNameWithoutExtension(f), bare, StringComparison.OrdinalIgnoreCase) &&
                         (string.Equals(Path.GetExtension(f), ".rdlc", StringComparison.OrdinalIgnoreCase) ||
