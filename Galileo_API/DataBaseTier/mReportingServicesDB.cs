@@ -40,7 +40,7 @@ namespace Galileo.DataBaseTier
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(data.codEmpresa);
-            
+
             try
             {
                 using (var connection = new SqlConnection(stringConn))
@@ -251,7 +251,12 @@ namespace Galileo.DataBaseTier
                                 .SelectMany(ds => ds.QueryParams)
                                 .Select(qp =>
                                 {
-                                    var m = Regex.Match(qp.ValueExpr ?? "", @"^=Parameters!(?<p>\w+)\.Value$", RegexOptions.IgnoreCase);
+                                    var m = Regex.Match(
+                                                qp.ValueExpr ?? "",
+                                                @"^=Parameters!(?<p>\w+)\.Value$",
+                                                RegexOptions.IgnoreCase,
+                                                TimeSpan.FromSeconds(1) // timeout
+                                            );
                                     return m.Success ? m.Groups["p"].Value : null;
                                 })
                                 .Where(n => !string.IsNullOrWhiteSpace(n))
@@ -428,7 +433,13 @@ namespace Galileo.DataBaseTier
 
             var e = expr.Trim();
 
-            var m = Regex.Match(e, @"^=Parameters!(?<p>\w+)\.Value$", RegexOptions.IgnoreCase);
+            var m = Regex.Match(
+                    e,
+                    @"^=Parameters!(?<p>\w+)\.Value$",
+                    RegexOptions.IgnoreCase,
+                    TimeSpan.FromSeconds(1)  // timeout recomendado
+                );
+
             if (m.Success)
             {
                 var pname = m.Groups["p"].Value;
@@ -790,8 +801,13 @@ ORDER BY p.parameter_id;
                 var valExpr = qp.Element(ns + "Value")?.Value;
                 if (string.IsNullOrWhiteSpace(valExpr)) continue;
 
-                var m = Regex.Match(valExpr.Trim(),
-                    @"^=Parameters!(?<p>\w+)\.Value$", RegexOptions.IgnoreCase);
+               var m = Regex.Match(
+                            valExpr.Trim(),
+                            @"^=Parameters!(?<p>\w+)\.Value$",
+                            RegexOptions.IgnoreCase,
+                            TimeSpan.FromSeconds(1) // timeout recomendado
+                        );
+
                 if (m.Success) expected.Add(m.Groups["p"].Value);
             }
 
@@ -811,19 +827,48 @@ ORDER BY p.parameter_id;
         // Inserta o reemplaza la función con un Return constante dentro del texto VB del <Code>.
         private static string UpsertFunctionReturn(string codeText, string funcName, int ret)
         {
-            var funcBlock = new Regex(
-                $@"(?is)Public\s+Function\s+{Regex.Escape(funcName)}\s*\(\s*\)\s+As\s+\w+.*?End\s+Function");
+          var funcBlock = new Regex(
+                                $@"(?is)Public\s+Function\s+{Regex.Escape(funcName)}\s*\(\s*\)\s+As\s+\w+.*?End\s+Function",
+                                RegexOptions.None,
+                                TimeSpan.FromSeconds(1)
+                            );
 
             if (funcBlock.IsMatch(codeText))
             {
                 codeText = funcBlock.Replace(codeText, m =>
-                {
-                    var body = m.Value;
-                    var withReturn = Regex.Replace(body, @"(?im)^\s*Return\s+.*$", $"    Return {ret}");
-                    if (!Regex.IsMatch(withReturn, @"(?im)^\s*Return\s+", RegexOptions.Multiline))
-                        withReturn = Regex.Replace(withReturn, @"(?i)End\s+Function", $"    Return {ret}\nEnd Function");
-                    return withReturn;
-                }, 1);
+                            {
+                                var body = m.Value;
+
+                                // Replace con timeout
+                                var withReturn = Regex.Replace(
+                                    body,
+                                    @"(?im)^\s*Return\s+.*$",
+                                    $"    Return {ret}",
+                                    RegexOptions.Multiline | RegexOptions.IgnoreCase,
+                                    TimeSpan.FromSeconds(1)
+                                );
+
+                                // IsMatch con timeout
+                                if (!Regex.IsMatch(
+                                    withReturn,
+                                    @"(?im)^\s*Return\s+",
+                                    RegexOptions.Multiline | RegexOptions.IgnoreCase,
+                                    TimeSpan.FromSeconds(1)
+                                ))
+                                {
+                                    // Segundo Replace con timeout
+                                    withReturn = Regex.Replace(
+                                        withReturn,
+                                        @"(?i)End\s+Function",
+                                        $"    Return {ret}\nEnd Function",
+                                        RegexOptions.IgnoreCase,
+                                        TimeSpan.FromSeconds(1)
+                                    );
+                                }
+
+                                return withReturn;
+                            }, 1);
+
             }
             else
             {
@@ -915,12 +960,24 @@ End Function
         // Si recibiste VB crudo, intenta leer "Return N" constante de la función.
         private static int? GetCodeFunctionConstantReturnFromText(string codeText, string funcName)
         {
-            var pattern = $@"Public\s+Function\s+{Regex.Escape(funcName)}\s*\(\s*\)\s+As\s+\w+.*?Return\s+(?<ret>-?\d+)\s*[\r\n]+End\s+Function";
-            var m = Regex.Match(codeText ?? "", pattern, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            var pattern =
+                $@"Public\s+Function\s+{Regex.Escape(funcName)}\s*\(\s*\)\s+As\s+\w+.*?Return\s+(?<ret>-?\d+)\s*[\r\n]+End\s+Function";
+
+            var m = Regex.Match(
+                codeText ?? "",
+                pattern,
+                RegexOptions.Singleline | RegexOptions.IgnoreCase,
+                TimeSpan.FromSeconds(1)
+            );
+
             if (!m.Success) return null;
-            if (int.TryParse(m.Groups["ret"].Value, out var val)) return val;
+
+            if (int.TryParse(m.Groups["ret"].Value, out var val))
+                return val;
+
             return null;
         }
+
 
         private static string? ResolveReportPath(string basePath, string reportNameOrRelative)
         {
@@ -1022,9 +1079,12 @@ End Function
 
             // Firma típica:
             // [Public|Private] [Shared] Function Nombre(param1 As T, param2 As T) As Tipo
-            var rx = new Regex(
-                @"(?im)^\s*(Public|Private)?\s*(Shared\s+)?Function\s+(?<name>[A-Za-z_]\w*)\s*\((?<args>[^)]*)\)\s+As\s+(?<ret>\w+)",
-                RegexOptions.Multiline | RegexOptions.Singleline);
+         var rx = new Regex(
+                    @"(?im)^\s*(Public|Private)?\s*(Shared\s+)?Function\s+(?<name>[A-Za-z_]\w*)\s*\((?<args>[^)]*)\)\s+As\s+(?<ret>\w+)",
+                    RegexOptions.Multiline | RegexOptions.Singleline,
+                    TimeSpan.FromSeconds(1)  // timeout recomendado
+                );
+
 
             foreach (Match m in rx.Matches(vbCode))
             {
@@ -1100,16 +1160,17 @@ End Function
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             // objeto con string logo y nombre empresa
-            var resp = new ErrorDto<object> { 
+            var resp = new ErrorDto<object>
+            {
                 Code = 0,
-                Description = "OK" ,
+                Description = "OK",
                 Result = new { LOGO_WEB_SITE = "", Nombre = "" }
             };
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                   resp.Result = connection.Query<object>("SELECT LOGO_WEB_SITE, Nombre FROM SIF_EMPRESA").FirstOrDefault();
+                    resp.Result = connection.Query<object>("SELECT LOGO_WEB_SITE, Nombre FROM SIF_EMPRESA").FirstOrDefault();
                 }
             }
             catch (Exception ex)
