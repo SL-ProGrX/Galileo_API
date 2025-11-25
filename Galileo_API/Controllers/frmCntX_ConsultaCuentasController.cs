@@ -4,13 +4,14 @@ using Galileo.Models;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/FrmCntXConsultaCuentas")]
+    [Route("api/frmCntX_ConsultaCuentas")]
     [ApiController]
-    public class FrmCntX_ConsultaCuentasController : ControllerBase
+    public class FrmCntXConsultaCuentasController : ControllerBase
     {
         private readonly IConfiguration _config;
 
-        public FrmCntX_ConsultaCuentasController(IConfiguration config)
+        public FrmCntXConsultaCuentasController(IConfiguration config)
         {
             _config = config;
         }

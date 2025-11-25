@@ -5,13 +5,14 @@ using Galileo.Models.Security;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/FrmPgxClientesTiposIDs")]
+    [Route("api/frmPGX_ClientesTiposIDs")]
     [ApiController]
-    public class FrmPgx_ClientesTiposIDsController : ControllerBase
+    public class FrmPgxClientesTiposIDsController : ControllerBase
     {
         readonly FrmPgxClientesTiposIDsBl ClientesTiposIDsBL;
 
-        public FrmPgx_ClientesTiposIDsController(IConfiguration config)
+        public FrmPgxClientesTiposIDsController(IConfiguration config)
         {
             ClientesTiposIDsBL = new FrmPgxClientesTiposIDsBl(config);
         }

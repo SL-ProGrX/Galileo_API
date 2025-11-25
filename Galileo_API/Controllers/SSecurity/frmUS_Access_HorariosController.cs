@@ -5,13 +5,14 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/FrmUsAccessHorarios")]
+    [Route("api/frmUS_Access_Horarios")]
     [ApiController]
-    public class FrmUs_Access_HorariosController : ControllerBase
+    public class FrmUsAccessHorariosController : ControllerBase
     {
         private readonly IConfiguration _config;
 
-        public FrmUs_Access_HorariosController(IConfiguration config)
+        public FrmUsAccessHorariosController(IConfiguration config)
         {
             _config = config;
         }

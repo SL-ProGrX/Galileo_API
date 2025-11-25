@@ -7,7 +7,8 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/mProGrX_Auxiliar")]
+    [Route("api/mProGrXAuxiliar")]
     [ApiController]
     public class MProGrX_AuxiliarController : ControllerBase
     {

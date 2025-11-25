@@ -5,13 +5,14 @@ using Galileo.Models.Security;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/FrmUsModulos")]
+    [Route("api/frmUS_Modulos")]
     [ApiController]
-    public class FrmUs_ModulosController : ControllerBase
+    public class FrmUsModulosController : ControllerBase
     {
         readonly FrmUsModulosBl ModulosBL;
 
-        public FrmUs_ModulosController(IConfiguration config)
+        public FrmUsModulosController(IConfiguration config)
         {
             ModulosBL = new FrmUsModulosBl(config);
         }

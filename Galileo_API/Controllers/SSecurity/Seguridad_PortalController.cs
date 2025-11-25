@@ -5,15 +5,16 @@ using Galileo.Models;
 namespace Galileo.Controllers
 {
 
-    [Route("api/[controller]")]
+    [Route("api/SeguridadPortal")]
+    [Route("api/seguridad_portal")]
     [ApiController]
 
-    public class Seguridad_PortalController : ControllerBase
+    public class SeguridadPortalController : ControllerBase
     {
 
         private readonly IConfiguration _config;
 
-        public Seguridad_PortalController(IConfiguration config)
+        public SeguridadPortalController(IConfiguration config)
         {
             _config = config;
         }

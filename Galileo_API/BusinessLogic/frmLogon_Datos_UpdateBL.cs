@@ -4,11 +4,11 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.BusinessLogic
 {
-    public class FrmLogon_DatosUpdateBl
+    public class FrmLogonDatosUpdateBl
     {
         readonly FrmLogon_DatosUpdateDb Datos_UpdateDB;
 
-        public FrmLogon_DatosUpdateBl(IConfiguration config)
+        public FrmLogonDatosUpdateBl(IConfiguration config)
         {
             Datos_UpdateDB = new FrmLogon_DatosUpdateDb(config);
         }
