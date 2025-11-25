@@ -124,30 +124,36 @@ namespace Galileo.DataBaseTier
             try
             {
                 if (!dto.Cliente.HasValue)
-                    throw new ArgumentNullException(nameof(dto.Cliente), "El valor de Cliente no puede ser nulo.");
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(dto.Cliente.Value);
-                using var connectionCliente = new SqlConnection(stringConn);
-
-                var copiaAccesosCore = new
                 {
-                    Us_Destino = dto.UsDestino,
-                    Us_Origen = dto.UsBase,
-                    Usuairo = dto.Usuario.ToUpper(),
-                    R_Oficina = 1,
-                    R_Deducciones = (dto.RO_Deducciones ?? false) ? 1 : 0,
-                    R_Contabilidad = (dto.RO_Contabilidad ?? false) ? 1 : 0,
-                    R_Gestion_Crd = (dto.RO_Creditos ?? false) ? 1 : 0,
-                    R_Resolucion_Crd = (dto.RO_Resolucion_Crd ?? false) ? 1 : 0,
-                    R_Cobros = (dto.RO_Cobros ?? false) ? 1 : 0,
-                    R_Cajas = (dto.RO_Cajas ?? false) ? 1 : 0,
-                    R_Bancos = (dto.RO_Bancos ?? false) ? 1 : 0,
-                    R_Presupuesto = (dto.RO_Presupuesto ?? false) ? 1 : 0,
-                    R_Inventario = (dto.RO_Inventarios ?? false) ? 1 : 0,
-                    R_Compras = (dto.RO_Compras ?? false) ? 1 : 0,
-                    R_Inicializa = (dto.RO_Inicializa ?? false) ? 1 : 0
-                };
+                    errorMsg = "El valor de Cliente no puede ser nulo.";
+                    return -1;
+                }
+                else
+                {
+                    string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(dto.Cliente.Value);
+                    using var connectionCliente = new SqlConnection(stringConn);
 
-                return connectionCliente.Query<int>("spSys_Users_Copy_Roles", copiaAccesosCore, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    var copiaAccesosCore = new
+                    {
+                        Us_Destino = dto.UsDestino,
+                        Us_Origen = dto.UsBase,
+                        Usuairo = dto.Usuario.ToUpper(),
+                        R_Oficina = 1,
+                        R_Deducciones = (dto.RO_Deducciones ?? false) ? 1 : 0,
+                        R_Contabilidad = (dto.RO_Contabilidad ?? false) ? 1 : 0,
+                        R_Gestion_Crd = (dto.RO_Creditos ?? false) ? 1 : 0,
+                        R_Resolucion_Crd = (dto.RO_Resolucion_Crd ?? false) ? 1 : 0,
+                        R_Cobros = (dto.RO_Cobros ?? false) ? 1 : 0,
+                        R_Cajas = (dto.RO_Cajas ?? false) ? 1 : 0,
+                        R_Bancos = (dto.RO_Bancos ?? false) ? 1 : 0,
+                        R_Presupuesto = (dto.RO_Presupuesto ?? false) ? 1 : 0,
+                        R_Inventario = (dto.RO_Inventarios ?? false) ? 1 : 0,
+                        R_Compras = (dto.RO_Compras ?? false) ? 1 : 0,
+                        R_Inicializa = (dto.RO_Inicializa ?? false) ? 1 : 0
+                    };
+
+                    return connectionCliente.Query<int>("spSys_Users_Copy_Roles", copiaAccesosCore, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                }
             }
             catch (Exception exCore)
             {
