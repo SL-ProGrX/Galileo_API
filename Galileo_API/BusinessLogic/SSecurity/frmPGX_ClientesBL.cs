@@ -93,11 +93,6 @@ namespace Galileo.BusinessLogic
             return _clientesDB.SMTP_Autorizar(info);
         }
 
-        public static ErrorDto TestConnection(string connectionName, ConnectionModel connection)
-        {
-            return FrmPgxClientesDb.TestConnection(connectionName, connection);
-        }
-
         public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos)
         {
             return _clientesDB.Clientes_Sincronizar(CodEmpresa, logos);

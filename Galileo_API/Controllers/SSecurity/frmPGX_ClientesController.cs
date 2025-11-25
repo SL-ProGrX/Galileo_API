@@ -118,12 +118,6 @@ namespace Galileo.Controllers
         }
 
 
-        [HttpPost("TestConnection")]
-        public ErrorDto TestConnection(string connectionName, ConnectionModel connection)
-        {
-            return FrmPgxClientesBl.TestConnection(connectionName, connection);
-        }
-
         [HttpPost("Clientes_Sincronizar")]
         public ErrorDto Clientes_Sincronizar(int CodEmpresa, bool logos)
         {
