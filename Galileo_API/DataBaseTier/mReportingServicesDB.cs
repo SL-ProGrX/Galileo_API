@@ -41,328 +41,315 @@ namespace Galileo.DataBaseTier
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(data.codEmpresa);
-
             try
             {
                 using (var connection = new SqlConnection(stringConn))
                 {
                     connection.Open();
-
-                    var report = new LocalReport
-                    {
-                        EnableExternalImages = true
-                    };
-
+                    var report = new LocalReport { EnableExternalImages = true };
                     var subErrors = new List<string>();
-                    var jsonDataSets = new Dictionary<string, object>(); // <== te faltaba declararlo aquí
-
+                    var jsonDataSets = new Dictionary<string, object>();
                     string basePath = (data.folder != null)
                         ? Path.Combine(dirRDLC, data.codEmpresa.ToString(), data.folder.ToString())
                         : Path.Combine(dirRDLC, data.codEmpresa.ToString());
-
                     string? mainPath = ResolveReportPath(basePath, data.nombreReporte ?? string.Empty);
                     if (mainPath == null)
-                    {
                         return new ObjectResult(new { Code = -1, Description = $"No se encontró el reporte principal (.rdlc|.rdl): {Path.Combine(basePath, data.nombreReporte ?? string.Empty)}" }) { StatusCode = 500 };
-                    }
 
-                    // Solo informativo: funciones existentes en el RDLC (antes del parche)
                     var funcsInReport = GetFunctionsFromReportFile(mainPath);
-
-                    // ---------- NUEVO: parchear <Code> en memoria según data.codeSection ----------
                     using (var patched = PatchReportCode(mainPath, data.codeSection))
                         report.LoadReportDefinition(patched);
 
-                    // Para gateo de subreportes: intenta obtener constantes de retorno para fxImprimeDetalle/Ref
-                    int? fxDetConst = null, fxRefConst = null;
-                    if (!string.IsNullOrWhiteSpace(data.codeSection))
-                    {
-                        // ¿JSON?
-                        try
-                        {
-                            var jo = JObject.Parse(data.codeSection);
-                            fxDetConst = TryParseFlag(jo, "fxImprimeDetalle");
-                            fxRefConst = TryParseFlag(jo, "fxImprimeRef");
-                        }
-                        catch
-                        {
-                            // VB crudo
-                            fxDetConst = GetCodeFunctionConstantReturnFromText(data.codeSection, "fxImprimeDetalle");
-                            fxRefConst = GetCodeFunctionConstantReturnFromText(data.codeSection, "fxImprimeRef");
-                        }
-                    }
-
-                    // También obtenemos lista de funciones declaradas en codeSection (JSON o VB crudo) - opcional/informativo
+                    // Extracted: Get codeSection constants
+                    var (fxDetConst, fxRefConst) = GetFxConstants(data.codeSection);
                     var (funcsFromCodeSection, _) = GetFunctionsFromCodeSection(data.codeSection);
 
-                    // ==== 1) Leer meta del principal (datasets y subreportes) ====
+                    // Extracted: Load subreport meta
                     var (mainDataSets, subreportNames) = ReadRdlcMeta(mainPath);
-
-                    // ==== 2) Cargar definiciones y meta de subreportes ====
-                    var subMeta = new Dictionary<string, List<RdlcDataSetMeta>>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var subName in subreportNames)
-                    {
-                        // Soporte para rutas con carpetas en ReportName (ej: "Carpeta/Sub")
-                        var subPath = ResolveReportPath(basePath, subName);
-                        if (subPath == null) { /* opcional: log/skip */ continue; }
-
-                        using (var fs = File.OpenRead(subPath))
-                            report.LoadSubreportDefinition(subName, fs);
-
-                        var (subDs, _) = ReadRdlcMeta(subPath);
-                        subMeta[subName] = subDs;
-                    }
-
-                    // ==== 2.1) Construir alias automáticos Padre->Hijo por subreporte ====
+                    var subMeta = LoadSubreportMeta(subreportNames, basePath, report);
                     var autoAliases = BuildAutoAliasMap(mainPath, basePath);
 
-                    // ==== 3) Parámetros del reporte ====
-                    var reporteParametros = new List<ReportParameter>();
-                    JObject? jObject = null;
-                    var paramDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-                    if (!string.IsNullOrWhiteSpace(data.parametros))
-                    {
-                        jObject = JObject.Parse(data.parametros);
-
-                        foreach (var prop in jObject.Properties())
-                        {
-                            if (prop.Name.Equals("urlLogo", StringComparison.OrdinalIgnoreCase))
-                                continue;
-
-                            if (prop.Name.Equals("Empresa", StringComparison.OrdinalIgnoreCase))
-                                continue;
-
-                            var val = prop.Value?.ToString() ?? "";
-                            reporteParametros.Add(new ReportParameter(prop.Name, val));
-                            paramDict[prop.Name] = val;
-                        }
-
-                        if (data.parametros.Contains("conString", StringComparison.OrdinalIgnoreCase))
-                        {
-                            reporteParametros.Add(new ReportParameter("conString", stringConn));
-                            paramDict["conString"] = stringConn;
-                        }
-
-                        if (data.parametros.Contains("urlLogo", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var logo = connection.Query<string>("SELECT LOGO_WEB_SITE FROM SIF_EMPRESA").FirstOrDefault();
-                            reporteParametros.Add(new ReportParameter("urlLogo", logo ?? ""));
-                            paramDict["urlLogo"] = logo ?? "";
-                        }
-
-                        if (data.parametros.Contains("Empresa", StringComparison.OrdinalIgnoreCase))
-                        {
-                            var nombreEmpresa = connection.Query<string>("SELECT Nombre FROM SIF_EMPRESA").FirstOrDefault();
-                            reporteParametros.Add(new ReportParameter("Empresa", nombreEmpresa ?? ""));
-                            paramDict["Empresa"] = nombreEmpresa ?? "";
-                        }
-
+                    // Extracted: Handle parameters
+                    var (reporteParametros, jObject, paramDict) = BuildReportParameters(data, stringConn, connection);
+                    if (reporteParametros.Count > 0)
                         report.SetParameters(reporteParametros);
-                    }
 
-                    // Para colectar errores de subreportes sin romper el render
+                    // Extracted: Load main datasets
+                    LoadMainDatasets(mainDataSets, connection, paramDict, jObject, data, report, jsonDataSets, subErrors);
 
-                    // ==== 4) Datasets del principal ====
-                    foreach (var ds in mainDataSets)
-                    {
-                        IEnumerable<object> rows;
-
-                        if (!string.IsNullOrWhiteSpace(ds.CommandText))
-                        {
-                            if (!TryExecDataSet(
-                                    connection,
-                                    ds,
-                                    ctx: paramDict,
-                                    jsonParams: jObject ?? [],
-                                    allowFiltrosReplacement: true,
-                                    out rows,
-                                    out var err,
-                                    emitExecAsTextForSp: false
-                                ))
-                            {
-                                rows = Enumerable.Empty<object>();
-                                if (!string.IsNullOrWhiteSpace(err))
-                                    subErrors.Add($"[MAIN DS '{ds.DataSetName}'] {err}");
-                            }
-                        }
-                        else
-                        {
-                            rows = Enumerable.Empty<object>();
-                        }
-
-                        if (data.cod_reporte == "P")
-                            report.DataSources.Add(new ReportDataSource(ds.DataSetName, rows));
-                        else
-                        {
-                            // para JSON: devolvemos por dataset
-                            if (!string.IsNullOrEmpty(ds.DataSetName))
-                                jsonDataSets[ds.DataSetName] = rows;
-                        }
-                    }
-
-                    // ==== 5) SubreportProcessing: alimentar cada subreporte ====
+                    // Extracted: Subreport processing handler
                     report.SubreportProcessing += (sender, e) =>
-                    {
-                        try
-                        {
-                            var subName = e.ReportPath; // Debe coincidir con el ReportName del control subreporte
-                            if (!subMeta.TryGetValue(subName, out var datasets) || datasets == null)
-                                return;
+                        HandleSubreportProcessing(e, subMeta, paramDict, autoAliases, fxDetConst, fxRefConst, connection, subErrors);
 
-                            // GATE opcional por codeSection: si fxImprimeRef/Detalle = 0, NO ejecutamos el subreporte.
-                            // Heurística por nombre: "Ref" -> fxImprimeRef, "Det/Detalle" -> fxImprimeDetalle.
-                            bool skip = false;
-                            if (fxRefConst.HasValue && subName.IndexOf("ref", StringComparison.OrdinalIgnoreCase) >= 0)
-                                skip |= (fxRefConst.Value == 0);
-                            if (fxDetConst.HasValue &&
-                                (subName.IndexOf("det", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                 subName.IndexOf("detalle", StringComparison.OrdinalIgnoreCase) >= 0))
-                                skip |= (fxDetConst.Value == 0);
-
-                            if (skip)
-                            {
-                                foreach (var dsd in datasets)
-                                    e.DataSources.Add(new ReportDataSource(dsd.DataSetName, Enumerable.Empty<object>()));
-                                return;
-                            }
-
-                            // 1) Mezcla parámetros globales + los que el padre pasa al subreporte (POR FILA)
-                            var merged = new Dictionary<string, string>(paramDict, StringComparer.OrdinalIgnoreCase);
-                            var receivedFromParent = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                            foreach (ReportParameterInfo p in e.Parameters)
-                            {
-                                var val = p.Values?.FirstOrDefault() ?? "";
-                                merged[p.Name] = val;
-                                receivedFromParent[p.Name] = val;
-                            }
-
-                            // 2) Aplica alias auto-leídos: (paramDelPadre -> paramEsperadoHijo)
-                            if (autoAliases.TryGetValue(subName, out var aliasMap))
-                            {
-                                foreach (var kv in aliasMap)
-                                {
-                                    if (!merged.ContainsKey(kv.Value) && receivedFromParent.TryGetValue(kv.Key, out var v))
-                                        merged[kv.Value] = v;
-                                }
-                            }
-
-                            // 3) Validar que el hijo realmente tenga sus parámetros cubiertos
-                            var expected = datasets
-                                .SelectMany(ds => ds.QueryParams)
-                                .Select(qp =>
-                                {
-                                    var m = Regex.Match(
-                                                qp.ValueExpr ?? "",
-                                                @"^=Parameters!(?<p>\w+)\.Value$",
-                                                RegexOptions.IgnoreCase,
-                                                TimeSpan.FromSeconds(1) // timeout
-                                            );
-                                    return m.Success ? m.Groups["p"].Value : null;
-                                })
-                                .Where(n => !string.IsNullOrWhiteSpace(n))
-                                .Distinct(StringComparer.OrdinalIgnoreCase)
-                                .ToList();
-
-                            // Fallback: si el subreporte espera 1 parámetro y el padre pasó 1 con nombre raro
-                            if (expected.Count == 1 && receivedFromParent.Count == 1 && expected[0] != null)
-                            {
-                                var key = expected[0];
-                                if (key != null && !merged.ContainsKey(key))
-                                    merged[key] = receivedFromParent.Values.FirstOrDefault() ?? "";
-                            }
-
-                            var missing = expected
-                                .Where(n => n != null && !merged.ContainsKey(n))
-                                .ToList();
-                            if (missing.Count > 0)
-                                throw new InvalidOperationException(
-                                    $"El subreporte '{subName}' requiere parámetro(s) {string.Join(", ", missing)}. " +
-                                    $"Mapéalos desde el padre (Name='{missing[0]}' Value =Fields!X.Value).");
-
-                            // 4) Ejecuta datasets del subreporte con los parámetros POR FILA ya mapeados
-                            foreach (var ds in datasets)
-                            {
-                                if (string.IsNullOrWhiteSpace(ds.DataSetName))
-                                    continue;
-
-                                if (!string.IsNullOrWhiteSpace(ds.CommandText))
-                                {
-                                    if (!TryExecDataSet(
-                                            connection,
-                                            ds,
-                                            ctx: merged,
-                                            jsonParams: JObject.FromObject(merged),
-                                            allowFiltrosReplacement: false,
-                                            out var rows,
-                                            out var err,
-                                            emitExecAsTextForSp: false
-                                        ))
-                                    {
-                                        if (!string.IsNullOrWhiteSpace(err))
-                                            subErrors.Add($"[SUB '{subName}' DS '{ds.DataSetName}'] {err}");
-                                        e.DataSources.Add(new ReportDataSource(ds.DataSetName, Enumerable.Empty<object>()));
-                                    }
-                                    else
-                                    {
-                                        e.DataSources.Add(new ReportDataSource(ds.DataSetName, rows));
-
-                                    }
-                                }
-                                else
-                                {
-                                    e.DataSources.Add(new ReportDataSource(ds.DataSetName, Enumerable.Empty<object>()));
-                                }
-                            }
-                        }
-                        catch (Exception exSub)
-                        {
-                            subErrors.Add($"[SUB '{e.ReportPath}'] {exSub.GetType().Name}: {exSub.Message}");
-                            //return new ObjectResult(new { Code = -1, Description = exSub.Message }) { StatusCode = 500 };
-                        }
-                    };
-
-                    // ==== 6) Render ====
-                    if (data.cod_reporte == "P")
-                    {
-                        Warning[] warnings;
-                        string mimeType, encoding, extension;
-                        string[] streamIds;
-
-                        var bytes = report.Render(
-                            "PDF",
-                            null,
-                            out mimeType, out encoding, out extension,
-                            out streamIds, out warnings
-                        );
-
-                        // Devuelve PDF sin usar Response ni helpers
-                        var fileResult = new FileContentResult(bytes, "application/pdf")
-                        {
-                            FileDownloadName = (data.nombreReporte ?? "reporte") + ".pdf" // esto sugiere "attachment"
-                        };
-
-                        return fileResult;
-                    }
-                    else
-                    {
-                        // Devuelve JSON con datasets + advertencias
-                        var payload = new
-                        {
-                            Code = 0,
-                            DataSets = jsonDataSets,
-                            Warnings = subErrors
-                        };
-                        return new OkObjectResult(payload);
-                    }
-
+                    // Render
+                    return RenderReport(data, report, jsonDataSets, subErrors);
                 }
             }
             catch (Exception ex)
             {
                 return new ObjectResult(new { Code = -1, Description = ex.Message }) { StatusCode = 500 };
             }
+        }
 
+        // --- Extracted helpers for complexity reduction ---
+        private (int? fxDetConst, int? fxRefConst) GetFxConstants(string? codeSection)
+        {
+            int? fxDetConst = null, fxRefConst = null;
+            if (!string.IsNullOrWhiteSpace(codeSection))
+            {
+                try
+                {
+                    var jo = JObject.Parse(codeSection);
+                    fxDetConst = TryParseFlag(jo, "fxImprimeDetalle");
+                    fxRefConst = TryParseFlag(jo, "fxImprimeRef");
+                }
+                catch
+                {
+                    fxDetConst = GetCodeFunctionConstantReturnFromText(codeSection, "fxImprimeDetalle");
+                    fxRefConst = GetCodeFunctionConstantReturnFromText(codeSection, "fxImprimeRef");
+                }
+            }
+            return (fxDetConst, fxRefConst);
+        }
+
+        private Dictionary<string, List<RdlcDataSetMeta>> LoadSubreportMeta(List<string> subreportNames, string basePath, LocalReport report)
+        {
+            var subMeta = new Dictionary<string, List<RdlcDataSetMeta>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var subName in subreportNames)
+            {
+                var subPath = ResolveReportPath(basePath, subName);
+                if (subPath == null) continue;
+                using (var fs = File.OpenRead(subPath))
+                    report.LoadSubreportDefinition(subName, fs);
+                var (subDs, _) = ReadRdlcMeta(subPath);
+                subMeta[subName] = subDs;
+            }
+            return subMeta;
+        }
+
+        private (List<ReportParameter> reporteParametros, JObject? jObject, Dictionary<string, string> paramDict) BuildReportParameters(
+            FrmReporteGlobal data, string stringConn, SqlConnection connection)
+        {
+            var reporteParametros = new List<ReportParameter>();
+            JObject? jObject = null;
+            var paramDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(data.parametros))
+            {
+                jObject = JObject.Parse(data.parametros);
+                foreach (var prop in jObject.Properties())
+                {
+                    if (prop.Name.Equals("urlLogo", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (prop.Name.Equals("Empresa", StringComparison.OrdinalIgnoreCase)) continue;
+                    var val = prop.Value?.ToString() ?? "";
+                    reporteParametros.Add(new ReportParameter(prop.Name, val));
+                    paramDict[prop.Name] = val;
+                }
+                if (data.parametros.Contains("conString", StringComparison.OrdinalIgnoreCase))
+                {
+                    reporteParametros.Add(new ReportParameter("conString", stringConn));
+                    paramDict["conString"] = stringConn;
+                }
+                if (data.parametros.Contains("urlLogo", StringComparison.OrdinalIgnoreCase))
+                {
+                    var logo = connection.Query<string>("SELECT LOGO_WEB_SITE FROM SIF_EMPRESA").FirstOrDefault();
+                    reporteParametros.Add(new ReportParameter("urlLogo", logo ?? ""));
+                    paramDict["urlLogo"] = logo ?? "";
+                }
+                if (data.parametros.Contains("Empresa", StringComparison.OrdinalIgnoreCase))
+                {
+                    var nombreEmpresa = connection.Query<string>("SELECT Nombre FROM SIF_EMPRESA").FirstOrDefault();
+                    reporteParametros.Add(new ReportParameter("Empresa", nombreEmpresa ?? ""));
+                    paramDict["Empresa"] = nombreEmpresa ?? "";
+                }
+            }
+            return (reporteParametros, jObject, paramDict);
+        }
+
+        private void LoadMainDatasets(
+            List<RdlcDataSetMeta> mainDataSets,
+            SqlConnection connection,
+            Dictionary<string, string> paramDict,
+            JObject? jObject,
+            FrmReporteGlobal data,
+            LocalReport report,
+            Dictionary<string, object> jsonDataSets,
+            List<string> subErrors)
+        {
+            foreach (var ds in mainDataSets)
+            {
+                IEnumerable<object> rows;
+                if (!string.IsNullOrWhiteSpace(ds.CommandText))
+                {
+                    if (!TryExecDataSet(
+                            connection,
+                            ds,
+                            ctx: paramDict,
+                            jsonParams: jObject ?? [],
+                            allowFiltrosReplacement: true,
+                            out rows,
+                            out var err,
+                            emitExecAsTextForSp: false
+                        ))
+                    {
+                        rows = Enumerable.Empty<object>();
+                        if (!string.IsNullOrWhiteSpace(err))
+                            subErrors.Add($"[MAIN DS '{ds.DataSetName}'] {err}");
+                    }
+                }
+                else
+                {
+                    rows = Enumerable.Empty<object>();
+                }
+                if (data.cod_reporte == "P")
+                    report.DataSources.Add(new ReportDataSource(ds.DataSetName, rows));
+                else if (!string.IsNullOrEmpty(ds.DataSetName))
+                    jsonDataSets[ds.DataSetName] = rows;
+            }
+        }
+
+        private void HandleSubreportProcessing(
+            SubreportProcessingEventArgs e,
+            Dictionary<string, List<RdlcDataSetMeta>> subMeta,
+            Dictionary<string, string> paramDict,
+            Dictionary<string, Dictionary<string, string>> autoAliases,
+            int? fxDetConst,
+            int? fxRefConst,
+            SqlConnection connection,
+            List<string> subErrors)
+        {
+            try
+            {
+                var subName = e.ReportPath;
+                if (!subMeta.TryGetValue(subName, out var datasets) || datasets == null)
+                    return;
+                bool skip = false;
+                if (fxRefConst.HasValue && subName.IndexOf("ref", StringComparison.OrdinalIgnoreCase) >= 0)
+                    skip |= (fxRefConst.Value == 0);
+                if (fxDetConst.HasValue &&
+                    (subName.IndexOf("det", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     subName.IndexOf("detalle", StringComparison.OrdinalIgnoreCase) >= 0))
+                    skip |= (fxDetConst.Value == 0);
+                if (skip)
+                {
+                    foreach (var dsd in datasets)
+                        e.DataSources.Add(new ReportDataSource(dsd.DataSetName, Enumerable.Empty<object>()));
+                    return;
+                }
+                var merged = new Dictionary<string, string>(paramDict, StringComparer.OrdinalIgnoreCase);
+                var receivedFromParent = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                foreach (ReportParameterInfo p in e.Parameters)
+                {
+                    var val = p.Values?.FirstOrDefault() ?? "";
+                    merged[p.Name] = val;
+                    receivedFromParent[p.Name] = val;
+                }
+                if (autoAliases.TryGetValue(subName, out var aliasMap))
+                {
+                    foreach (var kv in aliasMap)
+                    {
+                        if (!merged.ContainsKey(kv.Value) && receivedFromParent.TryGetValue(kv.Key, out var v))
+                            merged[kv.Value] = v;
+                    }
+                }
+                var expected = datasets
+                    .SelectMany(ds => ds.QueryParams)
+                    .Select(qp =>
+                    {
+                        var m = Regex.Match(
+                                    qp.ValueExpr ?? "",
+                                    @"^=Parameters!(?<p>\w+)\.Value$",
+                                    RegexOptions.IgnoreCase,
+                                    TimeSpan.FromSeconds(1)
+                                );
+                        return m.Success ? m.Groups["p"].Value : null;
+                    })
+                    .Where(n => !string.IsNullOrWhiteSpace(n))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                if (expected.Count == 1 && receivedFromParent.Count == 1 && expected[0] != null)
+                {
+                    var key = expected[0];
+                    if (key != null && !merged.ContainsKey(key))
+                        merged[key] = receivedFromParent.Values.FirstOrDefault() ?? "";
+                }
+                var missing = expected
+                    .Where(n => n != null && !merged.ContainsKey(n))
+                    .ToList();
+                if (missing.Count > 0)
+                    throw new InvalidOperationException(
+                        $"El subreporte '{subName}' requiere parámetro(s) {string.Join(", ", missing)}. " +
+                        $"Mapéalos desde el padre (Name='{missing[0]}' Value =Fields!X.Value).");
+                foreach (var ds in datasets)
+                {
+                    if (string.IsNullOrWhiteSpace(ds.DataSetName))
+                        continue;
+                    if (!string.IsNullOrWhiteSpace(ds.CommandText))
+                    {
+                        if (!TryExecDataSet(
+                                connection,
+                                ds,
+                                ctx: merged,
+                                jsonParams: JObject.FromObject(merged),
+                                allowFiltrosReplacement: false,
+                                out var rows,
+                                out var err,
+                                emitExecAsTextForSp: false
+                            ))
+                        {
+                            if (!string.IsNullOrWhiteSpace(err))
+                                subErrors.Add($"[SUB '{subName}' DS '{ds.DataSetName}'] {err}");
+                            e.DataSources.Add(new ReportDataSource(ds.DataSetName, Enumerable.Empty<object>()));
+                        }
+                        else
+                        {
+                            e.DataSources.Add(new ReportDataSource(ds.DataSetName, rows));
+                        }
+                    }
+                    else
+                    {
+                        e.DataSources.Add(new ReportDataSource(ds.DataSetName, Enumerable.Empty<object>()));
+                    }
+                }
+            }
+            catch (Exception exSub)
+            {
+                subErrors.Add($"[SUB '{e.ReportPath}'] {exSub.GetType().Name}: {exSub.Message}");
+            }
+        }
+
+        private IActionResult RenderReport(
+            FrmReporteGlobal data,
+            LocalReport report,
+            Dictionary<string, object> jsonDataSets,
+            List<string> subErrors)
+        {
+            if (data.cod_reporte == "P")
+            {
+                Warning[] warnings;
+                string mimeType, encoding, extension;
+                string[] streamIds;
+                var bytes = report.Render(
+                    "PDF",
+                    null,
+                    out mimeType, out encoding, out extension,
+                    out streamIds, out warnings
+                );
+                var fileResult = new FileContentResult(bytes, "application/pdf")
+                {
+                    FileDownloadName = (data.nombreReporte ?? "reporte") + ".pdf"
+                };
+                return fileResult;
+            }
+            else
+            {
+                var payload = new
+                {
+                    Code = 0,
+                    DataSets = jsonDataSets,
+                    Warnings = subErrors
+                };
+                return new OkObjectResult(payload);
+            }
         }
 
         #region VERSION 2 HELPERS

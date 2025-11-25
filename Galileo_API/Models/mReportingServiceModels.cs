@@ -2,7 +2,7 @@
 {
     public class FrmReporteGlobal
     {
-        public int codEmpresa { get; set; }
+        public required int codEmpresa { get; set; }
         public string? parametros { get; set; }
         public string? nombreReporte { get; set; }
         public string? usuario { get; set; }
