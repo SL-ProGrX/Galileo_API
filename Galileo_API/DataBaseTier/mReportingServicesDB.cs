@@ -1001,28 +1001,32 @@ End Function
             foreach (var c in candidates)
                 if (File.Exists(c)) return c;
 
-            // Búsqueda tolerante a mayúsculas/minúsculas y extensión
-            if (Directory.Exists(dir))
+            // Normalizar la ruta
+            string normalizedDir = Path.GetFullPath(dir);
+
+            // Determinar root permitido
+            string allowedRoot = Path.GetFullPath(basePath);
+
+            // Validar traversal ANTES de Directory.Exists
+            if (!normalizedDir.StartsWith(allowedRoot, StringComparison.OrdinalIgnoreCase))
             {
-                string allowedRoot = Path.GetFullPath(basePath);
+                throw new SecurityException("Invalid directory path (path traversal).");
+            }
 
-                // Normaliza la ruta que viene del usuario
-                string normalizedDir = Path.GetFullPath(dir);
-
-                // Verifica que no salga del root permitido
-                if (!normalizedDir.StartsWith(allowedRoot, StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new SecurityException("Invalid directory path (path traversal).");
-                }
-
-                // Ahora sí es seguro enumerar archivos
+            // Ahora ya es seguro usar Directory.Exists
+            if (Directory.Exists(normalizedDir))
+            {
+                // Buscar archivos seguros
                 var match = Directory.EnumerateFiles(normalizedDir, "*.*", SearchOption.TopDirectoryOnly)
                     .FirstOrDefault(f =>
                         string.Equals(Path.GetFileNameWithoutExtension(f), bare, StringComparison.OrdinalIgnoreCase) &&
                         (string.Equals(Path.GetExtension(f), ".rdlc", StringComparison.OrdinalIgnoreCase) ||
-                         string.Equals(Path.GetExtension(f), ".rdl", StringComparison.OrdinalIgnoreCase)));
-                if (match != null) return match;
+                        string.Equals(Path.GetExtension(f), ".rdl", StringComparison.OrdinalIgnoreCase)));
+
+                if (match != null) 
+                    return match;
             }
+
 
             return null; // no encontrado
         }
