@@ -72,8 +72,8 @@ namespace Galileo.DataBaseTier
             // Caso: todas las fechas -> salimos temprano
             if (dto.todas == true)
             {
-                var fechaInicio = dto.FechaInicio ?? new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Local);
-                var fechaCorte = dto.FechaCorte ?? new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Local);
+                ini = dto.FechaInicio ?? new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Local);
+                fin  = dto.FechaCorte  ?? new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Local);
 
                 return (ini, fin);
             }
@@ -81,8 +81,8 @@ namespace Galileo.DataBaseTier
             // Caso: rango específico (si no es todas ni todos)
             if (dto.todas != true && dto.todos != true)
             {
-                var fechaInicio = dto.FechaInicio ?? new DateTime(1900, 1, 1);
-                var fechaCorte = dto.FechaCorte ?? new DateTime(2100, 12, 30);
+                var fechaInicio = dto.FechaInicio ?? new DateTime(1900, 1, 1, 0, 0, 0, DateTimeKind.Local);
+                var fechaCorte = dto.FechaCorte  ?? new DateTime(2100, 12, 30, 0, 0, 0, DateTimeKind.Local);
 
                 ini = new DateTime(
                     fechaInicio.Year,
