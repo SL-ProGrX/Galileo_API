@@ -14,10 +14,37 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
+        #region Helpers reutilizables
+
+        private static List<CCGenericList> EjecutarListaGenerica(
+            string connectionString,
+            string query,
+            object? parameters = null)
+        {
+            using var connection = new SqlConnection(connectionString);
+            return connection.Query<CCGenericList>(query, parameters).ToList();
+        }
+
+        private static List<CCGenericList> EjecutarListaGenericaConFiltro(
+            string connectionString,
+            bool tieneFiltro,
+            string queryFiltrado,
+            string queryTodos,
+            object? parametersFiltrado = null)
+        {
+            using var connection = new SqlConnection(connectionString);
+            return tieneFiltro
+                ? connection.Query<CCGenericList>(queryFiltrado, parametersFiltrado).ToList()
+                : connection.Query<CCGenericList>(queryTodos).ToList();
+        }
+
+        #endregion
+
         public List<CCGenericList> CC_Periodos_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new List<CCGenericList>();
+            var resp = new List<CCGenericList>();
+
             try
             {
                 const string query = @"SELECT id_per_historico, Mes, Anio 
@@ -47,451 +74,233 @@ namespace Galileo.DataBaseTier
             {
                 _ = ex.Message;
             }
+
             return resp;
         }
 
         public List<CCGenericList> CC_Instituciones_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select COD_INSTITUCION as Idx, descripcion as ItmX from INSTITUCIONES";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select COD_INSTITUCION as Idx, descripcion as ItmX from INSTITUCIONES";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Profesiones_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select COD_PROFESION as Idx, descripcion as ItmX from AFI_PROFESIONES";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select COD_PROFESION as Idx, descripcion as ItmX from AFI_PROFESIONES";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Sectores_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select COD_SECTOR as Idx, descripcion as ItmX from AFI_SECTORES";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select COD_SECTOR as Idx, descripcion as ItmX from AFI_SECTORES";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Zonas_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select COD_ZONA as IdX, rtrim(descripcion) as ItmX from AFI_ZONAS";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select COD_ZONA as IdX, rtrim(descripcion) as ItmX from AFI_ZONAS";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Estados_Persona_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select rtrim(cod_estado) as IdX, rtrim(descripcion) as ItmX from afi_Estados_Persona";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select rtrim(cod_estado) as IdX, rtrim(descripcion) as ItmX from afi_Estados_Persona";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Garantias_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select rtrim(GARANTIA) as IdX, rtrim(descripcion) as Itmx 
-                                       from CRD_GARANTIA_TIPOS 
-                                       order by GARANTIA";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select rtrim(GARANTIA) as IdX, rtrim(descripcion) as Itmx 
+                                   from CRD_GARANTIA_TIPOS 
+                                   order by GARANTIA";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Carteras_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select rtrim(cod_clasificacion) as IdX, rtrim(descripcion) as ItmX 
-                                       from CBR_CLASIFICACION_CARTERA 
-                                       order by cod_clasificacion";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select rtrim(cod_clasificacion) as IdX, rtrim(descripcion) as ItmX 
+                                   from CBR_CLASIFICACION_CARTERA 
+                                   order by cod_clasificacion";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Oficinas_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select rtrim(cod_oficina) as IdX, rtrim(descripcion) as Itmx 
-                                       from SIF_Oficinas 
-                                       order by cod_oficina";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select rtrim(cod_oficina) as IdX, rtrim(descripcion) as Itmx 
+                                   from SIF_Oficinas 
+                                   order by cod_oficina";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Estados_Civiles_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select Estado_Civil as IdX, Descripcion as ItmX 
-                                       from SYS_ESTADO_CIVIL 
-                                       where Activo = 1 
-                                       order by Descripcion asc";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select Estado_Civil as IdX, Descripcion as ItmX 
+                                   from SYS_ESTADO_CIVIL 
+                                   where Activo = 1 
+                                   order by Descripcion asc";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Estados_Laborales_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select ESTADO_LABORAL as IdX, Descripcion as ItmX 
-                                       from AFI_ESTADO_LABORAL 
-                                       where Activo = 1 
-                                       order by Descripcion asc";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select ESTADO_LABORAL as IdX, Descripcion as ItmX 
+                                   from AFI_ESTADO_LABORAL 
+                                   where Activo = 1 
+                                   order by Descripcion asc";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Provincias_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"select Provincia as Idx, rtrim(Descripcion) as ItmX from Provincias";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"select Provincia as Idx, rtrim(Descripcion) as ItmX from Provincias";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Cantones_Obtener(int CodEmpresa, int Provincia)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"
-                    select Canton as Idx, rtrim(Descripcion) as ItmX 
-                    from Cantones
-                    where provincia = @Provincia 
-                    order by descripcion";
-
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query, new { Provincia }).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"
+                select Canton as Idx, rtrim(Descripcion) as ItmX 
+                from Cantones
+                where provincia = @Provincia 
+                order by descripcion";
+            return EjecutarListaGenerica(conn, query, new { Provincia });
         }
 
         public List<CCGenericList> CC_Distritos_Obtener(int CodEmpresa, int Provincia, int Canton)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"
-                    select Distrito as Idx, rtrim(Descripcion) as ItmX 
-                    from Distritos
-                    where provincia = @Provincia 
-                      and canton = @Canton 
-                    order by descripcion";
-
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query, new { Provincia, Canton }).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"
+                select Distrito as Idx, rtrim(Descripcion) as ItmX 
+                from Distritos
+                where provincia = @Provincia 
+                  and canton = @Canton 
+                order by descripcion";
+            return EjecutarListaGenerica(conn, query, new { Provincia, Canton });
         }
 
         public List<CCGenericList> CC_Catalogo_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                const string query = @"SELECT CODIGO as Idx, DESCRIPCION as ItmX FROM CATALOGO";
-                using var connection = new SqlConnection(stringConn);
-                resp = connection.Query<CCGenericList>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            const string query = @"SELECT CODIGO as Idx, DESCRIPCION as ItmX FROM CATALOGO";
+            return EjecutarListaGenerica(conn, query);
         }
 
         public List<CCGenericList> CC_Catalogo_Destinos_Obtener(int CodEmpresa, string? CodCatalgo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-                if (!string.IsNullOrEmpty(CodCatalgo))
-                {
-                    const string queryFiltrado = @"
-                        select R.cod_destino as IdX, rtrim(R.descripcion) as ItmX 
-                        from catalogo_destinos R 
-                        inner join catalogo_destinosAsg A on R.cod_destino = A.cod_destino 
-                        where A.codigo = @CodCatalgo";
+            const string queryFiltrado = @"
+                select R.cod_destino as IdX, rtrim(R.descripcion) as ItmX 
+                from catalogo_destinos R 
+                inner join catalogo_destinosAsg A on R.cod_destino = A.cod_destino 
+                where A.codigo = @CodCatalgo";
 
-                    resp = connection.Query<CCGenericList>(queryFiltrado, new { CodCatalgo }).ToList();
-                }
-                else
-                {
-                    const string queryTodos = @"
-                        select cod_destino as IdX, rtrim(descripcion) as ItmX 
-                        from catalogo_destinos";
+            const string queryTodos = @"
+                select cod_destino as IdX, rtrim(descripcion) as ItmX 
+                from catalogo_destinos";
 
-                    resp = connection.Query<CCGenericList>(queryTodos).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            bool tieneFiltro = !string.IsNullOrEmpty(CodCatalgo);
+            return EjecutarListaGenericaConFiltro(conn, tieneFiltro, queryFiltrado, queryTodos, new { CodCatalgo });
         }
 
         public List<CCGenericList> CC_Catalogo_Grupos_Obtener(int CodEmpresa, string? CodCatalgo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-                if (!string.IsNullOrEmpty(CodCatalgo))
-                {
-                    const string queryFiltrado = @"
-                        select R.cod_grupo as IdX, rtrim(R.descripcion) as ItmX 
-                        from catalogo_grupos R 
-                        inner join catalogo_AsignaGrp A on R.cod_grupo = A.cod_grupo 
-                        where A.codigo = @CodCatalgo";
+            const string queryFiltrado = @"
+                select R.cod_grupo as IdX, rtrim(R.descripcion) as ItmX 
+                from catalogo_grupos R 
+                inner join catalogo_AsignaGrp A on R.cod_grupo = A.cod_grupo 
+                where A.codigo = @CodCatalgo";
 
-                    resp = connection.Query<CCGenericList>(queryFiltrado, new { CodCatalgo }).ToList();
-                }
-                else
-                {
-                    const string queryTodos = @"
-                        select cod_grupo as IdX, rtrim(descripcion) as ItmX 
-                        from catalogo_grupos";
+            const string queryTodos = @"
+                select cod_grupo as IdX, rtrim(descripcion) as ItmX 
+                from catalogo_grupos";
 
-                    resp = connection.Query<CCGenericList>(queryTodos).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            bool tieneFiltro = !string.IsNullOrEmpty(CodCatalgo);
+            return EjecutarListaGenericaConFiltro(conn, tieneFiltro, queryFiltrado, queryTodos, new { CodCatalgo });
         }
 
         public List<CCGenericList> CC_Departamentos_Obtener(int CodEmpresa, string? CodInstitucion)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-                if (!string.IsNullOrEmpty(CodInstitucion))
-                {
-                    const string queryFiltrado = @"
-                        select cod_departamento as idx, descripcion as itmx 
-                        from afDepartamentos 
-                        where cod_institucion = @CodInstitucion";
+            const string queryFiltrado = @"
+                select cod_departamento as idx, descripcion as itmx 
+                from afDepartamentos 
+                where cod_institucion = @CodInstitucion";
 
-                    resp = connection.Query<CCGenericList>(queryFiltrado, new { CodInstitucion }).ToList();
-                }
-                else
-                {
-                    const string queryTodos = @"
-                        select cod_departamento as idx, descripcion as itmx 
-                        from afDepartamentos";
+            const string queryTodos = @"
+                select cod_departamento as idx, descripcion as itmx 
+                from afDepartamentos";
 
-                    resp = connection.Query<CCGenericList>(queryTodos).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            bool tieneFiltro = !string.IsNullOrEmpty(CodInstitucion);
+            return EjecutarListaGenericaConFiltro(conn, tieneFiltro, queryFiltrado, queryTodos, new { CodInstitucion });
         }
 
         public List<CCGenericList> CC_Secciones_Obtener(int CodEmpresa, string? CodInstitucion, string? CodDepartamento)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CCGenericList> resp = new();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-                if (!string.IsNullOrEmpty(CodInstitucion) && !string.IsNullOrEmpty(CodDepartamento))
-                {
-                    const string queryFiltrado = @"
-                        select cod_seccion as IdX, descripcion as ItmX 
-                        from afSecciones
-                        where cod_institucion = @CodInstitucion 
-                          and cod_departamento = @CodDepartamento";
+            const string queryFiltrado = @"
+                select cod_seccion as IdX, descripcion as ItmX 
+                from afSecciones
+                where cod_institucion = @CodInstitucion 
+                  and cod_departamento = @CodDepartamento";
 
-                    resp = connection.Query<CCGenericList>(queryFiltrado, new { CodInstitucion, CodDepartamento }).ToList();
-                }
-                else
-                {
-                    const string queryTodos = @"
-                        select cod_departamento as idx, descripcion as itmx 
-                        from afSecciones";
+            const string queryTodos = @"
+                select cod_departamento as idx, descripcion as itmx 
+                from afSecciones";
 
-                    resp = connection.Query<CCGenericList>(queryTodos).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return resp;
+            bool tieneFiltro = !string.IsNullOrEmpty(CodInstitucion) && !string.IsNullOrEmpty(CodDepartamento);
+            return EjecutarListaGenericaConFiltro(conn, tieneFiltro, queryFiltrado, queryTodos, new { CodInstitucion, CodDepartamento });
         }
 
         // ========================
-        //  Lista blanca de SP
+        //   Stored Procedures
         // ========================
 
-        private static readonly HashSet<string> AllowedAnalisisProcedures = new()
-        {
-            // Reemplaza estos nombres por los SP reales que quieras permitir
-            "spCbrAnalisisCubo1",
-            "spCbrAnalisisCubo2"
-        };
-
-        private static readonly HashSet<string> AllowedEstimacionProcedures = new()
-        {
-            // Reemplaza estos nombres por los SP reales que quieras permitir
-            "spCbrEstimacion1",
-            "spCbrEstimacion2"
-        };
-
-        private static string GetAnalisisProcedureName(string nombreSP)
-        {
-            if (!AllowedAnalisisProcedures.Contains(nombreSP))
+        // Mapear explícitamente nombres de SP => elimina SQL “built from user-controlled sources”
+        private static string GetAnalisisProcedureName(string nombreSP) =>
+            nombreSP switch
             {
-                throw new ArgumentException("Nombre de procedimiento de análisis no permitido.", nameof(nombreSP));
-            }
-            return nombreSP;
-        }
+                // reemplaza por tus SP reales
+                "spCbrAnalisisCubo1" => "spCbrAnalisisCubo1",
+                "spCbrAnalisisCubo2" => "spCbrAnalisisCubo2",
+                _ => throw new ArgumentException("Nombre de procedimiento de análisis no permitido.", nameof(nombreSP))
+            };
 
-        private static string GetEstimacionProcedureName(string nombreSP)
-        {
-            if (!AllowedEstimacionProcedures.Contains(nombreSP))
+        private static string GetEstimacionProcedureName(string nombreSP) =>
+            nombreSP switch
             {
-                throw new ArgumentException("Nombre de procedimiento de estimación no permitido.", nameof(nombreSP));
-            }
-            return nombreSP;
-        }
+                // reemplaza por tus SP reales
+                "spCbrEstimacion1" => "spCbrEstimacion1",
+                "spCbrEstimacion2" => "spCbrEstimacion2",
+                _ => throw new ArgumentException("Nombre de procedimiento de estimación no permitido.", nameof(nombreSP))
+            };
 
         public List<CbrAnalisisCubosData> CbrAnalisis_Cubos_SP(int CodEmpresa, string nombreSP, int Anio, int Mes)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CbrAnalisisCubosData> resp = new();
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var resp = new List<CbrAnalisisCubosData>();
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                string procName = GetAnalisisProcedureName(nombreSP);
 
-                var procName = GetAnalisisProcedureName(nombreSP);
-
+                using var connection = new SqlConnection(conn);
                 resp = connection.Query<CbrAnalisisCubosData>(
                     procName,
                     new { Anio, Mes },
@@ -502,19 +311,20 @@ namespace Galileo.DataBaseTier
             {
                 _ = ex.Message;
             }
+
             return resp;
         }
 
         public List<CbrEstimacionData> CbrEstimacion_SP(int CodEmpresa, string nombreSP, int Anio, int Mes)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CbrEstimacionData> resp = new();
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var resp = new List<CbrEstimacionData>();
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                string procName = GetEstimacionProcedureName(nombreSP);
 
-                var procName = GetEstimacionProcedureName(nombreSP);
-
+                using var connection = new SqlConnection(conn);
                 resp = connection.Query<CbrEstimacionData>(
                     procName,
                     new { Anio, Mes },
@@ -525,6 +335,7 @@ namespace Galileo.DataBaseTier
             {
                 _ = ex.Message;
             }
+
             return resp;
         }
     }
