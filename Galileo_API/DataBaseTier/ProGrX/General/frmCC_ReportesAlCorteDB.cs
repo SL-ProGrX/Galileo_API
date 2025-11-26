@@ -1,19 +1,15 @@
 using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models.GEN;
 using Microsoft.Data.SqlClient;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
-    public class frmCC_ReportesAlCorteDB
+    public class FrmCcReportesAlCorteDb
     {
         private readonly IConfiguration _config;
-        MColaboradorDB DbColaboradorDB;
-
-        public frmCC_ReportesAlCorteDB(IConfiguration config)
+        public FrmCcReportesAlCorteDb(IConfiguration config)
         {
             _config = config;
-            DbColaboradorDB = new MColaboradorDB(_config);
         }
 
         public List<CCGenericList> CC_Periodos_Obtener(int CodEmpresa)

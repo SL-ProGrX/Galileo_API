@@ -1,20 +1,21 @@
 ﻿using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.GEN;
 using Microsoft.Data.SqlClient;
 
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
-    public class frmGenParametrosProDB
+    public class FrmGenParametrosProDb
     {
         private readonly IConfiguration _config;
 
-        public frmGenParametrosProDB(IConfiguration config)
+        public FrmGenParametrosProDb(IConfiguration config)
         {
             _config = config;
         }
+
+
         /// <summary>
         /// Obtiene los parametros generales
         /// </summary>
@@ -42,14 +43,8 @@ namespace PgxAPI.DataBaseTier
             }
 
             return resp;
-
-            //if (resp == null)
-            //{
-            //    resp.Result = ParametrosGen_Insertar(CodEmpresa);
-            //}
-
-            //return resp;
         }
+
 
         /// <summary>
         /// Actualiza los parametros generales
@@ -85,6 +80,7 @@ namespace PgxAPI.DataBaseTier
 
         }
 
+
         /// <summary>
         /// Actualiza los parametros de CxP
         /// </summary>
@@ -115,6 +111,7 @@ namespace PgxAPI.DataBaseTier
             return resp;
 
         }
+
 
         /// <summary>
         /// Actualiza los parametros de Inventario
@@ -148,6 +145,7 @@ namespace PgxAPI.DataBaseTier
 
         }
 
+
         /// <summary>
         /// Actualiza los parametros de POS
         /// </summary>
@@ -179,31 +177,12 @@ namespace PgxAPI.DataBaseTier
 
         }
 
-        public ErrorDto CambiaParTc(int CodEmpresa, PvParametrosModDto pvParametrosMod)
-        {
-            ErrorDto resp = new ErrorDto();
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"update pv_parametros_mod set
-                                    pos_tc_factura = '{pvParametrosMod.POS_TC_FACTURA}' 
-                                    ,pos_tc_recibo = '{pvParametrosMod.POS_TC_RECIBO}' 
-                                    ";
-                    resp.Code = connection.Query<int>(query).FirstOrDefault();
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
-
-        }
-
+        /// <summary>
+        /// Inserta los parametros generales
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto ParametrosGen_Insertar(int CodEmpresa)
         {
             ErrorDto resp = new ErrorDto();
@@ -227,25 +206,7 @@ namespace PgxAPI.DataBaseTier
                 resp.Description = ex.Message;
             }
             return resp;
-
-            //if (resp.Code != -1)
-            //{
-            //    try
-            //    {
-            //        using var connection = new SqlConnection(stringConn);
-            //        {
-            //            var query = "select * from pv_parametros_mod";
-            //            return connection.Query<PvParametrosModDto>(query).FirstOrDefault();
-            //        }
-            //    }
-            //    catch (Exception ex)
-            //    {
-            //        resp.Code = -1;
-            //        resp.Description = ex.Message;
-            //    }
-            //    return resp;
-            //}
-            //return null;
         }
+   
     }
 }

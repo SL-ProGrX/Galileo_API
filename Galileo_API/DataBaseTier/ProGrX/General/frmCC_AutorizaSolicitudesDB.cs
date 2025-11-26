@@ -1,17 +1,16 @@
 using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.GEN;
 using Microsoft.Data.SqlClient;
 
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
-    public class frmCC_AutorizaSolicitudesDB
+    public class FrmCcAutorizaSolicitudesDb
     {
         private readonly IConfiguration _config;
 
-        public frmCC_AutorizaSolicitudesDB(IConfiguration config)
+        public FrmCcAutorizaSolicitudesDb(IConfiguration config)
         {
             _config = config;
         }
@@ -201,7 +200,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update REG_CREDITOS SET TES_SUPERVISION_USUARIO = '{Usuario}', TES_SUPERVISION_FECHA  = Getdate()
                         where id_solicitud = {Id_Solicitud}";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorizaci�n de operaci�n " + Id_Solicitud + " procesada exitosamente";
+                    resp.Description = "Autorización de operación: " + Id_Solicitud + " fue procesada exitosamente";
                 }
             }
             catch (Exception ex)
@@ -224,7 +223,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update Fnd_Liquidacion SET TES_SUPERVISION_USUARIO = '{Usuario}' , TES_SUPERVISION_FECHA  = Getdate()
                         where consec = {Consec}";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorizaci�n de Id " + Consec + " procesada exitosamente";
+                    resp.Description = "Autorización de Id: " + Consec + " fue procesada exitosamente";
                 }
             }
             catch (Exception ex)
@@ -247,7 +246,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update Liquidacion SET TES_SUPERVISION_USUARIO = '{Usuario}' , TES_SUPERVISION_FECHA  = Getdate()
                         where consec = {Consec}";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorizaci�n de Id " + Consec + " procesada exitosamente";
+                    resp.Description = "Autorización de Id " + Consec + " procesada exitosamente";
                 }
             }
             catch (Exception ex)
@@ -270,7 +269,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update afi_bene_pago SET TES_SUPERVISION_USUARIO = '{Usuario}' , TES_SUPERVISION_FECHA  = Getdate()
                         where consec = {Consec} and cod_beneficio = '{Cod_Beneficio}'";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorizaci�n de Id " + Consec + " procesada exitosamente";
+                    resp.Description = "Autorización de Id " + Consec + " procesada exitosamente";
                 }
             }
             catch (Exception ex)
@@ -293,7 +292,7 @@ namespace PgxAPI.DataBaseTier
                     var query = $@"update ViviendaDesembolsos SET TES_SUPERVISION_USUARIO = '{Usuario}' , TES_SUPERVISION_FECHA  = Getdate()
                         where CodigoDesembolso = '{CodigoDesembolso}";
                     resp.Code = connection.Execute(query);
-                    resp.Description = "Autorizaci�n de Id " + CodigoDesembolso + " procesada exitosamente";
+                    resp.Description = "Autorización de Id " + CodigoDesembolso + " procesada exitosamente";
                 }
             }
             catch (Exception ex)
