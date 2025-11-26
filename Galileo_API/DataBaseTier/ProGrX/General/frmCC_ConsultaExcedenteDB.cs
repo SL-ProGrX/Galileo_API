@@ -1,42 +1,19 @@
 using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.GEN;
 using Microsoft.Data.SqlClient;
 using System.Data;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
-    public class frmCC_ConsultaExcedenteDB
+    public class FrmCcConsultaExcedenteDb
     {
         private readonly IConfiguration _config;
-        MProGrxMain mProGrx_Main;
-
-        public frmCC_ConsultaExcedenteDB(IConfiguration config)
+        public FrmCcConsultaExcedenteDb(IConfiguration config)
         {
             _config = config;
-            mProGrx_Main = new MProGrxMain(_config);
         }
-
-        //public ErrorDto ValidaAccesoExpediente(string Cedula, string Usuario)
-        //{
-        //    List<ConsultaStatusResultDTO> RA_Consulta = new List<ConsultaStatusResultDTO>();
-        //    ErrorDto resp = new ErrorDto();
-        //    RA_Consulta = mProGrx_Main.DatosObtener(Cedula, Usuario);
-        //    if (RA_Consulta[0].PERSONA_ID > 0 && RA_Consulta[0].AUTORIZACION_ID == 0)
-        //    {
-        //        resp.Code = 0;
-        //        resp.Description = "Esta persona se encuentra con -> Expediente Restringido <- Requiere de Autorizaci�n para Consultar!";
-        //    }
-        //    else
-        //    {
-        //        resp.Code = 1;
-        //        resp.Description = "Acceso permitido!";
-        //    }
-
-        //    return resp;
-        //}
 
         public List<CCPeriodoList> CC_Periodos_Obtener(int CodEmpresa)
         {
@@ -80,7 +57,6 @@ namespace PgxAPI.DataBaseTier
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto resp = new ErrorDto();
-            ConsultaStatusResultDto ra_consulta = new ConsultaStatusResultDto();
 
             try
             {
@@ -97,7 +73,7 @@ namespace PgxAPI.DataBaseTier
                     var consultaResult = connection.Query<ConsultaStatusResultDto>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
                     if (consultaResult != null)
                     {
-                        ra_consulta = consultaResult;
+                        var ra_consulta = consultaResult;
                         if (ra_consulta.PERSONA_ID > 0 && ra_consulta.AUTORIZACION_ID == 0)
                         {
                             resp.Code = 0;

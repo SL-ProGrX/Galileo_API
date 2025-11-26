@@ -1,19 +1,17 @@
 ﻿using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.GEN;
 using Microsoft.Data.SqlClient;
 using System.Data;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo.DataBaseTier
 {
-    public class frmGenEnlacesCreditoDB
+    public class FrmGenEnlacesCreditoDb
     {
         private readonly IConfiguration _config;
 
-        public frmGenEnlacesCreditoDB(IConfiguration config)
+        public FrmGenEnlacesCreditoDb(IConfiguration config)
         {
             _config = config;
         }
@@ -28,51 +26,68 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 var query = "";
-                string paginaActual = " ", paginacionActual = " ";
-                using var connection = new SqlConnection(clienteConnString);
+                var queryParams = new EnlacesCreditoQueryParams
                 {
-                    //Busco Total
-                    query = $@"SELECT count(I.cod_institucion) FROM instituciones I 
-                                 INNER JOIN PV_PARINSTITUCIONES P ON I.cod_institucion = P.cod_institucion";
-                    datos.Result.total = connection.Query<int>(query).FirstOrDefault();
-
-                    if (filtro != null)
-                    {
-                        filtro = " WHERE I.descripcion LIKE '%" + filtro + "%' " +
-                                    "OR I.cod_institucion LIKE '%" + filtro + "%' " +
-                                    "OR P.cod_credito LIKE '%" + filtro + "%'";
-                    }
-
-                    if (pagina != null)
-                    {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
-                    }
-
-                    query = $@"SELECT I.cod_institucion as codInstitucion,I.descripcion,P.cod_credito as codCredito 
-                                    FROM instituciones I INNER JOIN PV_PARINSTITUCIONES P ON I.cod_institucion = P.cod_institucion
-                                        {filtro}
-                                    ORDER BY I.cod_institucion
-                                        {paginaActual}
-                                        {paginacionActual} ";
-
-
-                    datos.Result.lista = connection.Query<EnlaceCreditoDto>(query).ToList();
-
-                }
+                    Filtro = filtro,
+                    Pagina = pagina,
+                    Paginacion = paginacion
+                };
+                using var connection = new SqlConnection(clienteConnString);
+                ConsultarEnlacesCredito(connection, ref datos, ref query, ref queryParams);
             }
             catch (Exception ex)
             {
                 datos.Code = -1;
                 datos.Description = ex.Message;
-                datos.Result = null;
             }
-
             return datos;
-
-
         }
 
+        private sealed class EnlacesCreditoQueryParams
+        {
+            public string? Filtro { get; set; }
+            public int? Pagina { get; set; }
+            public int? Paginacion { get; set; }
+            public string PaginaActual { get; set; } = string.Empty;
+            public string PaginacionActual { get; set; } = string.Empty;
+        }
+
+        private static void ConsultarEnlacesCredito(SqlConnection connection, ref ErrorDto<EnlaceCreditoLista> datos, ref string query, ref EnlacesCreditoQueryParams queryParams)
+        {
+            //Busco Total
+            query = $@"SELECT count(I.cod_institucion) FROM instituciones I 
+                         INNER JOIN PV_PARINSTITUCIONES P ON I.cod_institucion = P.cod_institucion";
+            var totalResult = connection.Query<int>(query);
+            if (datos.Result != null)
+            {
+                datos.Result.total = totalResult?.FirstOrDefault() ?? 0;
+            }
+
+            if (queryParams.Filtro != null)
+            {
+                queryParams.Filtro = " WHERE I.descripcion LIKE '%" + queryParams.Filtro + "%' " +
+                            "OR I.cod_institucion LIKE '%" + queryParams.Filtro + "%' " +
+                            "OR P.cod_credito LIKE '%" + queryParams.Filtro + "%'";
+            }
+
+            if (queryParams.Pagina != null)
+            {
+                queryParams.PaginaActual = " OFFSET " + queryParams.Pagina + " ROWS ";
+                queryParams.PaginacionActual = " FETCH NEXT " + queryParams.Paginacion + " ROWS ONLY ";
+            }
+
+            query = $@"SELECT I.cod_institucion as codInstitucion,I.descripcion,P.cod_credito as codCredito 
+                            FROM instituciones I INNER JOIN PV_PARINSTITUCIONES P ON I.cod_institucion = P.cod_institucion
+                                {queryParams.Filtro}
+                            ORDER BY I.cod_institucion
+                                {queryParams.PaginaActual}
+                                {queryParams.PaginacionActual} ";
+
+            if (datos.Result != null)
+            {
+                datos.Result.lista = connection.Query<EnlaceCreditoDto>(query).ToList();
+            }
+        }
 
         public ErrorDto<List<CodigoCreditoDto>> CodigoCredito_ObtenerTodos(int codEmpresa, string cod_institucion)
         {
@@ -94,17 +109,14 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connectionCore = new SqlConnection(connectionString))
-                {
+                using var connectionCore = new SqlConnection(connectionString);
 
-                    var query = "SELECT CODIGO,DESCRIPCION FROM CATALOGO WHERE COD_INSTITUCION = @cod_institucion";
+                var query = "SELECT CODIGO,DESCRIPCION FROM CATALOGO WHERE COD_INSTITUCION = @cod_institucion";
 
-                    var parameters = new DynamicParameters();
-                    parameters.Add("cod_institucion", cod_institucion, DbType.String);
+                var parameters = new DynamicParameters();
+                parameters.Add("cod_institucion", cod_institucion, DbType.String);
 
-                    resp.Result = connectionCore.Query<CodigoCreditoDto>(query, parameters).ToList();
-
-                }
+                resp.Result = connectionCore.Query<CodigoCreditoDto>(query, parameters).ToList();
             }
             catch (Exception ex)
             {
@@ -115,7 +127,6 @@ namespace PgxAPI.DataBaseTier
 
             return resp;
         }
-
 
         public ErrorDto EnlaceCredito_Actualizar(EnlaceCreditoDto request)
         {
@@ -137,17 +148,15 @@ namespace PgxAPI.DataBaseTier
 
             try
             {
-                using (var connectionCore = new SqlConnection(connectionString))
-                {
-                    var query = "Update PV_PARINSTITUCIONES set cod_credito = @cod_credito where cod_institucion = @cod_institucion";
+                using var connectionCore = new SqlConnection(connectionString);
+                var query = "Update PV_PARINSTITUCIONES set cod_credito = @cod_credito where cod_institucion = @cod_institucion";
 
-                    var parameters = new DynamicParameters();
-                    parameters.Add("cod_credito", request.CodCredito, DbType.String);
-                    parameters.Add("cod_institucion", request.CodInstitucion, DbType.Int32);
+                var parameters = new DynamicParameters();
+                parameters.Add("cod_credito", request.CodCredito, DbType.String);
+                parameters.Add("cod_institucion", request.CodInstitucion, DbType.Int32);
 
-                    resp.Code = connectionCore.ExecuteAsync(query, parameters).Result;
-                    resp.Description = "Ok";
-                }
+                resp.Code = connectionCore.ExecuteAsync(query, parameters).Result;
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
@@ -158,3 +167,5 @@ namespace PgxAPI.DataBaseTier
         }
     }
 }
+
+

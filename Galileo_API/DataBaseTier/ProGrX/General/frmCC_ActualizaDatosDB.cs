@@ -1,14 +1,14 @@
 using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
-namespace PgxAPI.DataBaseTier
+
+namespace Galileo.DataBaseTier
 {
-    public class frmCC_ActualizaDatosDB
+    public class FrmCcActualizaDatosDb
     {
         private readonly IConfiguration _config;
 
-        public frmCC_ActualizaDatosDB(IConfiguration config)
+        public FrmCcActualizaDatosDb(IConfiguration config)
         {
             _config = config;
         }
@@ -20,11 +20,7 @@ namespace PgxAPI.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "exec spCRDActualizaDatos";
-                    resp.Code = connection.Execute(query);
-                    resp.Description = "Proceso Terminado Satisfactoriamente...";
-                }
+                EjecutarActualizaDatos(connection, resp);
             }
             catch (Exception ex)
             {
@@ -32,6 +28,13 @@ namespace PgxAPI.DataBaseTier
                 resp.Description = ex.Message;
             }
             return resp;
+        }
+
+        private static void EjecutarActualizaDatos(SqlConnection connection, ErrorDto resp)
+        {
+            var query = "exec spCRDActualizaDatos";
+            resp.Code = connection.Execute(query);
+            resp.Description = "Proceso Terminado Satisfactoriamente...";
         }
     }
 }
