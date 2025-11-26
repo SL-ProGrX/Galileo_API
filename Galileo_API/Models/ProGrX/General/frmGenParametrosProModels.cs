@@ -2,12 +2,12 @@
 {
     public class PvParametrosModDto
     {
-        public int COD_PAR { get; set; }
-        public int CHK_FACTURA_MIN { get; set; }
-        public int CHK_DESCUENTO_BIFIV { get; set; }
-        public int CHK_COSTO_ULTCOMP { get; set; }
-        public int CHK_COSTO_CERO { get; set; }
-        public int CHK_MODO_ASIENTO { get; set; }
+        public required int COD_PAR { get; set; }
+        public required int CHK_FACTURA_MIN { get; set; }
+        public required int CHK_DESCUENTO_BIFIV { get; set; }
+        public required int CHK_COSTO_ULTCOMP { get; set; }
+        public required int CHK_COSTO_CERO { get; set; }
+        public required int CHK_MODO_ASIENTO { get; set; }
         public string APLICA_IV_SOBRE { get; set; } = string.Empty;
         public string CXP_TC_NC { get; set; } = string.Empty;
         public string CXP_TC_ND { get; set; } = string.Empty;
