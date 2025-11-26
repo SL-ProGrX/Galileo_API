@@ -44,68 +44,90 @@ namespace Galileo.DataBaseTier
             int? paginacion,
             string? filtro)
         {
-            // Base de los queries
-            const string baseFrom = @"
-                FROM instituciones I 
-                INNER JOIN PV_PARINSTITUCIONES P 
-                    ON I.cod_institucion = P.cod_institucion";
+            // Normalizamos el filtro a NULL o "%valor%"
+            string? filtroParam = string.IsNullOrWhiteSpace(filtro)
+                ? null
+                : $"%{filtro}%";
 
-            string whereClause = string.Empty;
+            // 1) Total de registros (query fija, sin SQL dinámico)
+            const string countQuery = @"
+                SELECT COUNT(I.cod_institucion)
+                FROM instituciones I
+                INNER JOIN PV_PARINSTITUCIONES P
+                    ON I.cod_institucion = P.cod_institucion
+                WHERE (@Filtro IS NULL
+                    OR I.descripcion     LIKE @Filtro
+                    OR I.cod_institucion LIKE @Filtro
+                    OR P.cod_credito     LIKE @Filtro);";
 
-            // Parámetros para COUNT
-            var countParams = new DynamicParameters();
-
-            if (!string.IsNullOrWhiteSpace(filtro))
-            {
-                whereClause = @"
-                    WHERE 
-                        I.descripcion     LIKE @Filtro OR 
-                        I.cod_institucion LIKE @Filtro OR 
-                        P.cod_credito     LIKE @Filtro";
-
-                countParams.Add("Filtro", $"%{filtro}%", DbType.String);
-            }
-
-            // 1) Total de registros (con filtro si aplica)
-            string countQuery = $"SELECT COUNT(I.cod_institucion) {baseFrom} {whereClause}";
-            var totalResult = connection.ExecuteScalar<int>(countQuery, countParams);
+            var totalResult = connection.ExecuteScalar<int>(
+                countQuery,
+                new { Filtro = filtroParam });
 
             if (datos.Result != null)
             {
                 datos.Result.total = totalResult;
             }
 
-            // 2) Lista paginada
-            var selectParams = new DynamicParameters();
-            if (!string.IsNullOrWhiteSpace(filtro))
-            {
-                selectParams.Add("Filtro", $"%{filtro}%", DbType.String);
-            }
-
-            string orderAndPaging = " ORDER BY I.cod_institucion";
-
+            // 2) Lista (con o sin paginación) — queries fijas
             if (pagina.HasValue && paginacion.HasValue)
             {
-                // Aquí conservamos la semántica original: Pagina ya viene como OFFSET.
-                orderAndPaging += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-                selectParams.Add("Offset", pagina.Value, DbType.Int32);
-                selectParams.Add("PageSize", paginacion.Value, DbType.Int32);
+                const string selectPagedQuery = @"
+                    SELECT 
+                        I.cod_institucion as codInstitucion,
+                        I.descripcion,
+                        P.cod_credito     as codCredito
+                    FROM instituciones I
+                    INNER JOIN PV_PARINSTITUCIONES P
+                        ON I.cod_institucion = P.cod_institucion
+                    WHERE (@Filtro IS NULL
+                        OR I.descripcion     LIKE @Filtro
+                        OR I.cod_institucion LIKE @Filtro
+                        OR P.cod_credito     LIKE @Filtro)
+                    ORDER BY I.cod_institucion
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
+
+                var selectParams = new
+                {
+                    Filtro = filtroParam,
+                    Offset = pagina.Value,
+                    PageSize = paginacion.Value
+                };
+
+                if (datos.Result != null)
+                {
+                    datos.Result.lista = connection
+                        .Query<EnlaceCreditoDto>(selectPagedQuery, selectParams)
+                        .ToList();
+                }
             }
-
-            string selectQuery = $@"
-                SELECT 
-                    I.cod_institucion as codInstitucion,
-                    I.descripcion,
-                    P.cod_credito     as codCredito
-                {baseFrom}
-                {whereClause}
-                {orderAndPaging}";
-
-            if (datos.Result != null)
+            else
             {
-                datos.Result.lista = connection
-                    .Query<EnlaceCreditoDto>(selectQuery, selectParams)
-                    .ToList();
+                const string selectAllQuery = @"
+                    SELECT 
+                        I.cod_institucion as codInstitucion,
+                        I.descripcion,
+                        P.cod_credito     as codCredito
+                    FROM instituciones I
+                    INNER JOIN PV_PARINSTITUCIONES P
+                        ON I.cod_institucion = P.cod_institucion
+                    WHERE (@Filtro IS NULL
+                        OR I.descripcion     LIKE @Filtro
+                        OR I.cod_institucion LIKE @Filtro
+                        OR P.cod_credito     LIKE @Filtro)
+                    ORDER BY I.cod_institucion;";
+
+                var selectParams = new
+                {
+                    Filtro = filtroParam
+                };
+
+                if (datos.Result != null)
+                {
+                    datos.Result.lista = connection
+                        .Query<EnlaceCreditoDto>(selectAllQuery, selectParams)
+                        .ToList();
+                }
             }
         }
 
@@ -130,7 +152,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connectionCore = new SqlConnection(connectionString);
 
-                var query = "SELECT CODIGO, DESCRIPCION FROM CATALOGO WHERE COD_INSTITUCION = @cod_institucion";
+                const string query = "SELECT CODIGO, DESCRIPCION FROM CATALOGO WHERE COD_INSTITUCION = @cod_institucion";
 
                 var parameters = new DynamicParameters();
                 parameters.Add("cod_institucion", cod_institucion, DbType.String);
@@ -167,15 +189,17 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connectionCore = new SqlConnection(connectionString);
-                var query = @"UPDATE PV_PARINSTITUCIONES 
-                              SET cod_credito = @cod_credito 
-                              WHERE cod_institucion = @cod_institucion";
+                const string query = @"
+                    UPDATE PV_PARINSTITUCIONES 
+                    SET cod_credito = @cod_credito 
+                    WHERE cod_institucion = @cod_institucion";
 
                 var parameters = new DynamicParameters();
-                parameters.Add("cod_credito",    request.CodCredito,    DbType.String);
+                parameters.Add("cod_credito",     request.CodCredito,    DbType.String);
                 parameters.Add("cod_institucion", request.CodInstitucion, DbType.Int32);
 
-                resp.Code = connectionCore.ExecuteAsync(query, parameters).Result;
+                // Puedes usar Execute en lugar de ExecuteAsync().Result para evitar bloqueo
+                resp.Code = connectionCore.Execute(query, parameters);
                 resp.Description = "Ok";
             }
             catch (Exception ex)
