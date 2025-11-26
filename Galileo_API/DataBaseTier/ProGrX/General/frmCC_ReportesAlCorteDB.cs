@@ -446,6 +446,42 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
+        // ========================
+        //  Lista blanca de SP
+        // ========================
+
+        private static readonly HashSet<string> AllowedAnalisisProcedures = new()
+        {
+            // Reemplaza estos nombres por los SP reales que quieras permitir
+            "spCbrAnalisisCubo1",
+            "spCbrAnalisisCubo2"
+        };
+
+        private static readonly HashSet<string> AllowedEstimacionProcedures = new()
+        {
+            // Reemplaza estos nombres por los SP reales que quieras permitir
+            "spCbrEstimacion1",
+            "spCbrEstimacion2"
+        };
+
+        private static string GetAnalisisProcedureName(string nombreSP)
+        {
+            if (!AllowedAnalisisProcedures.Contains(nombreSP))
+            {
+                throw new ArgumentException("Nombre de procedimiento de análisis no permitido.", nameof(nombreSP));
+            }
+            return nombreSP;
+        }
+
+        private static string GetEstimacionProcedureName(string nombreSP)
+        {
+            if (!AllowedEstimacionProcedures.Contains(nombreSP))
+            {
+                throw new ArgumentException("Nombre de procedimiento de estimación no permitido.", nameof(nombreSP));
+            }
+            return nombreSP;
+        }
+
         public List<CbrAnalisisCubosData> CbrAnalisis_Cubos_SP(int CodEmpresa, string nombreSP, int Anio, int Mes)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -453,8 +489,11 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+
+                var procName = GetAnalisisProcedureName(nombreSP);
+
                 resp = connection.Query<CbrAnalisisCubosData>(
-                    nombreSP,
+                    procName,
                     new { Anio, Mes },
                     commandType: CommandType.StoredProcedure
                 ).ToList();
@@ -473,8 +512,11 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+
+                var procName = GetEstimacionProcedureName(nombreSP);
+
                 resp = connection.Query<CbrEstimacionData>(
-                    nombreSP,
+                    procName,
                     new { Anio, Mes },
                     commandType: CommandType.StoredProcedure
                 ).ToList();
@@ -485,6 +527,5 @@ namespace Galileo.DataBaseTier
             }
             return resp;
         }
-
     }
 }
