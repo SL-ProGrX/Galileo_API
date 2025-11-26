@@ -103,7 +103,7 @@ namespace Galileo.DataBaseTier
                 }
 
                 int lngAnioX, iMesX;
-                ObtenerPeriodoAnterior(periodoDto.Anio, periodoDto.Mes, out lngAnioX, out iMesX);
+                ObtenerPeriodoAnterior(periodoDto.Anio ?? 0, periodoDto.Mes ?? 0, out lngAnioX, out iMesX);
 
                 var procedure = "[spINVCierrePeriodo]";
                 var values = new
@@ -155,7 +155,7 @@ namespace Galileo.DataBaseTier
         {
             mensaje = string.Empty;
             int lngAnioX, iMesX;
-            ObtenerPeriodoAnterior(periodoDto.Anio, periodoDto.Mes, out lngAnioX, out iMesX);
+            ObtenerPeriodoAnterior(periodoDto.Anio ?? 0, periodoDto.Mes ?? 0, out lngAnioX, out iMesX);
 
             var parameters2 = new DynamicParameters();
             parameters2.Add("Anio", lngAnioX, DbType.Int32);

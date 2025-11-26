@@ -25,7 +25,15 @@ namespace Galileo.DataBaseTier
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<PvParametrosModDto>();
-            resp.Result = new PvParametrosModDto();
+            resp.Result = new PvParametrosModDto
+            {
+                COD_PAR = 0,
+                CHK_FACTURA_MIN = 0,
+                CHK_DESCUENTO_BIFIV = 0,
+                CHK_COSTO_ULTCOMP = 0,
+                CHK_COSTO_CERO = 0,
+                CHK_MODO_ASIENTO = 0
+            };
 
             try
             {

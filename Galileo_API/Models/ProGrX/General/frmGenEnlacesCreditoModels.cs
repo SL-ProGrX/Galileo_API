@@ -2,8 +2,8 @@
 {
     public class EnlaceCreditoDto
     {
-        public int CodEmpresa { get; set; }
-        public int CodInstitucion { get; set; }
+        public required int CodEmpresa { get; set; }
+        public required int CodInstitucion { get; set; }
         public string Descripcion { get; set; } = string.Empty;
         public string CodCredito { get; set; } = string.Empty;
     }
