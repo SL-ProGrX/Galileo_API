@@ -1,6 +1,7 @@
 using Dapper;
 using Galileo.Models.GEN;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
@@ -15,55 +16,82 @@ namespace Galileo.DataBaseTier
 
         public List<EstadisticaData> CC_Estadistica_SP(int CodEmpresa, string FechaInicio, string FechaCorte)
         {
-
-            List<EstadisticaData> resp = new List<EstadisticaData>();
+            List<EstadisticaData> resp = new();
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
-                resp = ExecuteEstadisticaQuery(connection, CodEmpresa, FechaInicio, FechaCorte);
+
+                var fechaInicioDt = DateTime.Parse(FechaInicio, System.Globalization.CultureInfo.InvariantCulture).Date;
+                var fechaCorteDt = DateTime.Parse(FechaCorte, System.Globalization.CultureInfo.InvariantCulture).Date.AddDays(1).AddTicks(-1);
+
+                resp = connection.Query<EstadisticaData>(
+                    "spAPP_Estadistica",
+                    new
+                    {
+                        CodEmpresa,
+                        FechaInicio = fechaInicioDt,
+                        FechaCorte = fechaCorteDt
+                    },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
             }
             return resp;
-        }
-
-        private static List<EstadisticaData> ExecuteEstadisticaQuery(SqlConnection connection, int CodEmpresa, string FechaInicio, string FechaCorte)
-        {
-            var query = $@"exec spAPP_Estadistica {CodEmpresa}, '{FechaInicio} 00:00:00','{FechaCorte} 23:59:59'";
-            return connection.Query<EstadisticaData>(query).ToList();
         }
 
         public List<EstadisticaDetalleData> CC_Estadistica_Detalle_SP(int CodEmpresa, string Codigo, string FechaInicio, string FechaCorte)
         {
-
-            List<EstadisticaDetalleData> resp = new List<EstadisticaDetalleData>();
+            List<EstadisticaDetalleData> resp = new();
             try
             {
-                 using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
-                resp = ExecuteEstadisticaDetalleQuery(connection, CodEmpresa, Codigo, FechaInicio, FechaCorte);
+                using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
+
+                var fechaInicioDt = DateTime.Parse(FechaInicio, System.Globalization.CultureInfo.InvariantCulture).Date;
+                var fechaCorteDt = DateTime.Parse(FechaCorte, System.Globalization.CultureInfo.InvariantCulture).Date.AddDays(1).AddTicks(-1);
+
+                resp = connection.Query<EstadisticaDetalleData>(
+                    "spAPP_Estadistica_Detalle",
+                    new
+                    {
+                        CodEmpresa,
+                        Codigo,
+                        FechaInicio = fechaInicioDt,
+                        FechaCorte = fechaCorteDt
+                    },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
             }
             return resp;
-        }
-
-        private static List<EstadisticaDetalleData> ExecuteEstadisticaDetalleQuery(SqlConnection connection, int CodEmpresa, string Codigo, string FechaInicio, string FechaCorte)
-        {
-            var query = $@"exec spAPP_Estadistica_Detalle {CodEmpresa}, {Codigo}, '{FechaInicio} 00:00:00','{FechaCorte} 23:59:59'";
-            return connection.Query<EstadisticaDetalleData>(query).ToList();
         }
 
         public List<EstadisticaAnalisisData> CC_Estadistica_Analisis_SP(int CodEmpresa, string FechaInicio, string FechaCorte, int Ingreso)
         {
-            List<EstadisticaAnalisisData> resp = new List<EstadisticaAnalisisData>();
+            List<EstadisticaAnalisisData> resp = new();
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
-                resp = ExecuteEstadisticaAnalisisQuery(connection, CodEmpresa, FechaInicio, FechaCorte, Ingreso);
+
+                var fechaInicioDt = DateTime.Parse(FechaInicio, System.Globalization.CultureInfo.InvariantCulture).Date;
+                var fechaCorteDt = DateTime.Parse(FechaCorte, System.Globalization.CultureInfo.InvariantCulture).Date.AddDays(1).AddTicks(-1);
+
+                resp = connection.Query<EstadisticaAnalisisData>(
+                    "spAPP_Estadistica_Analisis",
+                    new
+                    {
+                        CodEmpresa,
+                        FechaInicio = fechaInicioDt,
+                        FechaCorte = fechaCorteDt,
+                        Ingreso
+                    },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
             }
             catch (Exception ex)
             {
@@ -71,12 +99,5 @@ namespace Galileo.DataBaseTier
             }
             return resp;
         }
-
-        private static List<EstadisticaAnalisisData> ExecuteEstadisticaAnalisisQuery(SqlConnection connection, int CodEmpresa, string FechaInicio, string FechaCorte, int Ingreso)
-        {
-            var query = $@"exec spAPP_Estadistica_Analisis {CodEmpresa}, '{FechaInicio} 00:00:00','{FechaCorte} 23:59:59', {Ingreso}";
-            return connection.Query<EstadisticaAnalisisData>(query).ToList();
-        }
-
     }
 }
