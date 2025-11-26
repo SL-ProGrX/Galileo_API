@@ -10,6 +10,7 @@ namespace Galileo.DataBaseTier
     public class FrmCcConsultaExcedenteDb
     {
         private readonly IConfiguration _config;
+
         public FrmCcConsultaExcedenteDb(IConfiguration config)
         {
             _config = config;
@@ -23,7 +24,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = "select Idx, ItmX  From vExc_Periodos where ESTADO = 'C' order by IdX desc";
+                    var query = "select Idx, ItmX From vExc_Periodos where ESTADO = 'C' order by IdX desc";
                     resp = connection.Query<CCPeriodoList>(query).ToList();
                 }
             }
@@ -42,8 +43,13 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = $@"select NC_MORA, NC_OPCF, NC_SALDOS from Exc_Periodos where id_periodo = {Id_Periodo}";
-                    resp = connection.Query<CCExcPeriodoData>(query).FirstOrDefault() ?? new CCExcPeriodoData();
+                    var query = @"select NC_MORA, NC_OPCF, NC_SALDOS 
+                                  from Exc_Periodos 
+                                  where id_periodo = @Id_Periodo";
+
+                    resp = connection
+                        .Query<CCExcPeriodoData>(query, new { Id_Periodo })
+                        .FirstOrDefault() ?? new CCExcPeriodoData();
                 }
             }
             catch (Exception ex)
@@ -62,22 +68,25 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    //Valida Acceso a Expediente
+                    // Valida Acceso a Expediente
                     var procedure = "[spSYS_RA_Consulta_Status]";
                     var values = new
                     {
-                        Cedula = Cedula,
-                        Usuario = Usuario
+                        Cedula,
+                        Usuario
                     };
 
-                    var consultaResult = connection.Query<ConsultaStatusResultDto>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                    var consultaResult = connection
+                        .Query<ConsultaStatusResultDto>(procedure, values, commandType: CommandType.StoredProcedure)
+                        .FirstOrDefault();
+
                     if (consultaResult != null)
                     {
                         var ra_consulta = consultaResult;
                         if (ra_consulta.PERSONA_ID > 0 && ra_consulta.AUTORIZACION_ID == 0)
                         {
                             resp.Code = 0;
-                            resp.Description = "Esta persona se encuentra con -> Expediente Restringido <- Requiere de Autorizaci�n para Consultar!";
+                            resp.Description = "Esta persona se encuentra con -> Expediente Restringido <- Requiere de Autorización para Consultar!";
                             return resp;
                         }
                     }
@@ -88,14 +97,17 @@ namespace Galileo.DataBaseTier
                         return resp;
                     }
 
-                    //Valida que exista la cedula dentro de la tabla socios
-                    var query = $@"select nombre from socios where cedula = '{Cedula}'";
+                    // Valida que exista la cédula dentro de la tabla socios
+                    var query = @"select nombre 
+                                  from socios 
+                                  where cedula = @Cedula";
+
                     resp.Description = connection.QuerySingleOrDefault<string>(query, new { Cedula });
 
                     if (string.IsNullOrEmpty(resp.Description))
                     {
                         resp.Code = 0;
-                        resp.Description = "No se encontr� registro de la persona...";
+                        resp.Description = "No se encontró registro de la persona...";
                     }
                     else
                     {
@@ -119,11 +131,18 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = $@"select E.*,isnull(S.DESCRIPCION,'No Identificada') as 'SalidaDesc'
-                        from exc_cierre E left join EXC_TIPOS_SALIDAS S on E.SALIDA_CODIGO = S.COD_SALIDA
-                        where E.id_periodo = '{Id_Periodo}'
-                        and E.cedula = '{Cedula}'";
-                    resp = connection.Query<CCConsultaExcedenteData>(query).FirstOrDefault() ?? new CCConsultaExcedenteData();
+                    var query = @"
+                        select  E.*,
+                                isnull(S.DESCRIPCION, 'No Identificada') as SalidaDesc
+                        from    exc_cierre E
+                        left join EXC_TIPOS_SALIDAS S 
+                               on E.SALIDA_CODIGO = S.COD_SALIDA
+                        where   E.id_periodo = @Id_Periodo
+                        and     E.cedula = @Cedula";
+
+                    resp = connection
+                        .Query<CCConsultaExcedenteData>(query, new { Id_Periodo, Cedula })
+                        .FirstOrDefault() ?? new CCConsultaExcedenteData();
                 }
             }
             catch (Exception ex)
@@ -141,10 +160,16 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = $@"select M.* 
+                    var query = @"
+                        select M.* 
                         from vSIFAuxCreditosMovDetalle M 
-                        where M.tcon in('7','NC') and M.ncon = '{NC_Mora}' and M.cedula = '{Cedula}'";
-                    resp = connection.Query<VSifAuxCreditosMovDetalle>(query).ToList();
+                        where M.tcon in ('7','NC') 
+                          and M.ncon = @NC_Mora 
+                          and M.cedula = @Cedula";
+
+                    resp = connection
+                        .Query<VSifAuxCreditosMovDetalle>(query, new { NC_Mora, Cedula })
+                        .ToList();
                 }
             }
             catch (Exception ex)
@@ -162,10 +187,25 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = $@"select * from vSIFAuxCreditosMovDetalle where tcon in('7','NC')  and ncon = '{NC_OPCF}' 
-                        and id_solicitud in((select id_solicitud from reg_creditos where referencia in(
-                        select id_solicitud from reg_creditos where cedula = '{Cedula}' and garantia = 'F')))";
-                    resp = connection.Query<VSifAuxCreditosMovDetalle>(query).ToList();
+                    var query = @"
+                        select * 
+                        from vSIFAuxCreditosMovDetalle 
+                        where tcon in ('7','NC')  
+                          and ncon = @NC_OPCF 
+                          and id_solicitud in (
+                                select id_solicitud 
+                                from reg_creditos 
+                                where referencia in (
+                                    select id_solicitud 
+                                    from reg_creditos 
+                                    where cedula = @Cedula 
+                                      and garantia = 'F'
+                                )
+                          )";
+
+                    resp = connection
+                        .Query<VSifAuxCreditosMovDetalle>(query, new { NC_OPCF, Cedula })
+                        .ToList();
                 }
             }
             catch (Exception ex)
@@ -183,10 +223,16 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = $@"select C.*
+                    var query = @"
+                        select C.*
                         from vSIFAuxCreditosMovDetalle C
-                        where C.tcon in('7','NC')  and C.ncon = '{NC_Saldos}' and C.cedula = '{Cedula}'";
-                    resp = connection.Query<VSifAuxCreditosMovDetalle>(query).ToList();
+                        where C.tcon in ('7','NC')  
+                          and C.ncon   = @NC_Saldos 
+                          and C.cedula = @Cedula";
+
+                    resp = connection
+                        .Query<VSifAuxCreditosMovDetalle>(query, new { NC_Saldos, Cedula })
+                        .ToList();
                 }
             }
             catch (Exception ex)

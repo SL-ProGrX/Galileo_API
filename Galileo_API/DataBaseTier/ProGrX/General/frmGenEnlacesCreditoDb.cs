@@ -19,21 +19,15 @@ namespace Galileo.DataBaseTier
         public ErrorDto<EnlaceCreditoLista> EnlacesCreditoConsultar(int codEmpresa, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var datos = new ErrorDto<EnlaceCreditoLista>();
-            datos.Result = new EnlaceCreditoLista();
-            datos.Result.total = 0;
+            var datos = new ErrorDto<EnlaceCreditoLista>
+            {
+                Result = new EnlaceCreditoLista { total = 0 }
+            };
 
             try
             {
-                var query = "";
-                var queryParams = new EnlacesCreditoQueryParams
-                {
-                    Filtro = filtro,
-                    Pagina = pagina,
-                    Paginacion = paginacion
-                };
                 using var connection = new SqlConnection(clienteConnString);
-                ConsultarEnlacesCredito(connection, ref datos, ref query, ref queryParams);
+                ConsultarEnlacesCredito(connection, ref datos, pagina, paginacion, filtro);
             }
             catch (Exception ex)
             {
@@ -43,67 +37,92 @@ namespace Galileo.DataBaseTier
             return datos;
         }
 
-        private sealed class EnlacesCreditoQueryParams
+        private static void ConsultarEnlacesCredito(
+            SqlConnection connection,
+            ref ErrorDto<EnlaceCreditoLista> datos,
+            int? pagina,
+            int? paginacion,
+            string? filtro)
         {
-            public string? Filtro { get; set; }
-            public int? Pagina { get; set; }
-            public int? Paginacion { get; set; }
-            public string PaginaActual { get; set; } = string.Empty;
-            public string PaginacionActual { get; set; } = string.Empty;
-        }
+            // Base de los queries
+            const string baseFrom = @"
+                FROM instituciones I 
+                INNER JOIN PV_PARINSTITUCIONES P 
+                    ON I.cod_institucion = P.cod_institucion";
 
-        private static void ConsultarEnlacesCredito(SqlConnection connection, ref ErrorDto<EnlaceCreditoLista> datos, ref string query, ref EnlacesCreditoQueryParams queryParams)
-        {
-            //Busco Total
-            query = $@"SELECT count(I.cod_institucion) FROM instituciones I 
-                         INNER JOIN PV_PARINSTITUCIONES P ON I.cod_institucion = P.cod_institucion";
-            var totalResult = connection.Query<int>(query);
-            if (datos.Result != null)
+            string whereClause = string.Empty;
+
+            // Parámetros para COUNT
+            var countParams = new DynamicParameters();
+
+            if (!string.IsNullOrWhiteSpace(filtro))
             {
-                datos.Result.total = totalResult?.FirstOrDefault() ?? 0;
+                whereClause = @"
+                    WHERE 
+                        I.descripcion     LIKE @Filtro OR 
+                        I.cod_institucion LIKE @Filtro OR 
+                        P.cod_credito     LIKE @Filtro";
+
+                countParams.Add("Filtro", $"%{filtro}%", DbType.String);
             }
 
-            if (queryParams.Filtro != null)
-            {
-                queryParams.Filtro = " WHERE I.descripcion LIKE '%" + queryParams.Filtro + "%' " +
-                            "OR I.cod_institucion LIKE '%" + queryParams.Filtro + "%' " +
-                            "OR P.cod_credito LIKE '%" + queryParams.Filtro + "%'";
-            }
-
-            if (queryParams.Pagina != null)
-            {
-                queryParams.PaginaActual = " OFFSET " + queryParams.Pagina + " ROWS ";
-                queryParams.PaginacionActual = " FETCH NEXT " + queryParams.Paginacion + " ROWS ONLY ";
-            }
-
-            query = $@"SELECT I.cod_institucion as codInstitucion,I.descripcion,P.cod_credito as codCredito 
-                            FROM instituciones I INNER JOIN PV_PARINSTITUCIONES P ON I.cod_institucion = P.cod_institucion
-                                {queryParams.Filtro}
-                            ORDER BY I.cod_institucion
-                                {queryParams.PaginaActual}
-                                {queryParams.PaginacionActual} ";
+            // 1) Total de registros (con filtro si aplica)
+            string countQuery = $"SELECT COUNT(I.cod_institucion) {baseFrom} {whereClause}";
+            var totalResult = connection.ExecuteScalar<int>(countQuery, countParams);
 
             if (datos.Result != null)
             {
-                datos.Result.lista = connection.Query<EnlaceCreditoDto>(query).ToList();
+                datos.Result.total = totalResult;
+            }
+
+            // 2) Lista paginada
+            var selectParams = new DynamicParameters();
+            if (!string.IsNullOrWhiteSpace(filtro))
+            {
+                selectParams.Add("Filtro", $"%{filtro}%", DbType.String);
+            }
+
+            string orderAndPaging = " ORDER BY I.cod_institucion";
+
+            if (pagina.HasValue && paginacion.HasValue)
+            {
+                // Aquí conservamos la semántica original: Pagina ya viene como OFFSET.
+                orderAndPaging += " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+                selectParams.Add("Offset", pagina.Value, DbType.Int32);
+                selectParams.Add("PageSize", paginacion.Value, DbType.Int32);
+            }
+
+            string selectQuery = $@"
+                SELECT 
+                    I.cod_institucion as codInstitucion,
+                    I.descripcion,
+                    P.cod_credito     as codCredito
+                {baseFrom}
+                {whereClause}
+                {orderAndPaging}";
+
+            if (datos.Result != null)
+            {
+                datos.Result.lista = connection
+                    .Query<EnlaceCreditoDto>(selectQuery, selectParams)
+                    .ToList();
             }
         }
 
         public ErrorDto<List<CodigoCreditoDto>> CodigoCredito_ObtenerTodos(int codEmpresa, string cod_institucion)
         {
-
             PgxClienteDto pgxClienteDto;
             SeguridadPortalDb seguridadPortal = new SeguridadPortalDb(_config);
 
             pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(codEmpresa);
             string nombreServidorCore = pgxClienteDto.PGX_CORE_SERVER;
-            string nombreBDCore = pgxClienteDto.PGX_CORE_DB;
-            string userId = pgxClienteDto.PGX_CORE_USER;
-            string pass = pgxClienteDto.PGX_CORE_KEY;
+            string nombreBDCore       = pgxClienteDto.PGX_CORE_DB;
+            string userId             = pgxClienteDto.PGX_CORE_USER;
+            string pass               = pgxClienteDto.PGX_CORE_KEY;
 
             string connectionString = $"Data Source={nombreServidorCore};" +
-                                  $"Initial Catalog={nombreBDCore};" +
-                                  $"Integrated Security=False;User Id={userId};Password={pass};";
+                                      $"Initial Catalog={nombreBDCore};" +
+                                      $"Integrated Security=False;User Id={userId};Password={pass};";
 
             var resp = new ErrorDto<List<CodigoCreditoDto>>();
 
@@ -111,7 +130,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connectionCore = new SqlConnection(connectionString);
 
-                var query = "SELECT CODIGO,DESCRIPCION FROM CATALOGO WHERE COD_INSTITUCION = @cod_institucion";
+                var query = "SELECT CODIGO, DESCRIPCION FROM CATALOGO WHERE COD_INSTITUCION = @cod_institucion";
 
                 var parameters = new DynamicParameters();
                 parameters.Add("cod_institucion", cod_institucion, DbType.String);
@@ -135,24 +154,25 @@ namespace Galileo.DataBaseTier
 
             pgxClienteDto = seguridadPortal.SeleccionarPgxClientePorCodEmpresa(request.CodEmpresa);
             string nombreServidorCore = pgxClienteDto.PGX_CORE_SERVER;
-            string nombreBDCore = pgxClienteDto.PGX_CORE_DB;
-            string userId = pgxClienteDto.PGX_CORE_USER;
-            string pass = pgxClienteDto.PGX_CORE_KEY;
+            string nombreBDCore       = pgxClienteDto.PGX_CORE_DB;
+            string userId             = pgxClienteDto.PGX_CORE_USER;
+            string pass               = pgxClienteDto.PGX_CORE_KEY;
 
             string connectionString = $"Data Source={nombreServidorCore};" +
-                                  $"Initial Catalog={nombreBDCore};" +
-                                  $"Integrated Security=False;User Id={userId};Password={pass};";
+                                      $"Initial Catalog={nombreBDCore};" +
+                                      $"Integrated Security=False;User Id={userId};Password={pass};";
 
             ErrorDto resp = new ErrorDto();
-
 
             try
             {
                 using var connectionCore = new SqlConnection(connectionString);
-                var query = "Update PV_PARINSTITUCIONES set cod_credito = @cod_credito where cod_institucion = @cod_institucion";
+                var query = @"UPDATE PV_PARINSTITUCIONES 
+                              SET cod_credito = @cod_credito 
+                              WHERE cod_institucion = @cod_institucion";
 
                 var parameters = new DynamicParameters();
-                parameters.Add("cod_credito", request.CodCredito, DbType.String);
+                parameters.Add("cod_credito",    request.CodCredito,    DbType.String);
                 parameters.Add("cod_institucion", request.CodInstitucion, DbType.Int32);
 
                 resp.Code = connectionCore.ExecuteAsync(query, parameters).Result;
@@ -167,5 +187,3 @@ namespace Galileo.DataBaseTier
         }
     }
 }
-
-
