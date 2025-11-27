@@ -192,7 +192,7 @@ namespace Galileo.DataBaseTier
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var resp = new ErrorDto { Code = 0 };
 
-            var mov = request.asignado ? "A" : "E";
+            var mov = (request.asignado ?? false) ? "A" : "E";
 
             try
             {

@@ -457,7 +457,7 @@ namespace Galileo.DataBaseTier
                 CodAjuste = request.Cod_Ajuste,
                 Usuario = request.Usuario,
                 UsuarioReg = request.UsuarioReg,
-                Activo = ToBit(request.Activo)
+                Activo = ToBit(request.Activo ?? false)
             };
 
             return ExecuteStoredProcNonQuery(
@@ -476,7 +476,7 @@ namespace Galileo.DataBaseTier
                 CodModelo = request.CodModelo,
                 CodAjuste = request.Cod_Ajuste,
                 UsuarioReg = request.UsuarioReg,
-                Activo = ToBit(request.Activo)
+                Activo = ToBit(request.Activo ?? false)
             };
 
             return ExecuteStoredProcNonQuery(
@@ -495,7 +495,7 @@ namespace Galileo.DataBaseTier
                 CodModelo = request.CodModelo,
                 Usuario = request.Usuario,
                 UsuarioReg = request.UsuarioReg,
-                Activo = ToBit(request.Activo)
+                Activo = ToBit(request.Activo ?? false)
             };
 
             return ExecuteStoredProcNonQuery(

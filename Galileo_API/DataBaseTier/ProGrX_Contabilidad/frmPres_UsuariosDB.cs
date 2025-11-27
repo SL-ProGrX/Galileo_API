@@ -125,7 +125,7 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
 
-                int activoValue = request.Activo ? 1 : 0;
+                int activoValue = (request.Activo ?? false) ? 1 : 0;
 
                 const string query = "exec spPres_Usuarios_Modulo_Registro @Usuario, @UserReg, @Activo";
 

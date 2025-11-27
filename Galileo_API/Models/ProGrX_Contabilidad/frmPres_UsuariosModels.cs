@@ -28,13 +28,13 @@ namespace Galileo.Models.PRES
     {
         public string Usuario { get; set; } = string.Empty;
         public string UserReg { get; set; } = string.Empty;
-        public bool Activo { get; set; }
+        public bool? Activo { get; set; }
     }
 
     public class PresUnidadesInsert
     {
         public string Usuario { get; set; } = string.Empty;
-        public int Cod_Contabilidad { get; set; }
+        public int? Cod_Contabilidad { get; set; }
         public string Cod_Unidad { get; set; } = string.Empty;
         public string UserReg { get; set; } = string.Empty;
         public bool Activo { get; set; }
