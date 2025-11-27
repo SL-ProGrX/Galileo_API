@@ -47,7 +47,7 @@ namespace Galileo.Models.PRES
         public int? cod_contabilidad { get; set; }
         public string cod_unidad { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public bool asignado { get; set; }
+        public bool? asignado { get; set; }
         public string user_registra { get; set; } = string.Empty;
     }
 
