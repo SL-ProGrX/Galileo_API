@@ -419,18 +419,18 @@ namespace Galileo.DataBaseTier
                     {
                         float valor = periodo.Mes switch
                         {
-                            1 => item.Enero,
-                            2 => item.Febrero,
-                            3 => item.Marzo,
-                            4 => item.Abril,
-                            5 => item.Mayo,
-                            6 => item.Junio,
-                            7 => item.Julio,
-                            8 => item.Agosto,
-                            9 => item.Septiembre,
-                            10 => item.Octubre,
-                            11 => item.Noviembre,
-                            12 => item.Diciembre,
+                            1 => item.Enero ?? 0,
+                            2 => item.Febrero ?? 0,
+                            3 => item.Marzo ?? 0,
+                            4 => item.Abril ?? 0,
+                            5 => item.Mayo ?? 0,
+                            6 => item.Junio ?? 0,
+                            7 => item.Julio ?? 0,
+                            8 => item.Agosto ?? 0,
+                            9 => item.Septiembre ?? 0,
+                            10 => item.Octubre ?? 0,
+                            11 => item.Noviembre ?? 0,
+                            12 => item.Diciembre ?? 0,
                             _ => 0
                         };
 

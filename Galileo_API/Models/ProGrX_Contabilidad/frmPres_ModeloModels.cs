@@ -27,8 +27,8 @@ namespace Galileo.Models.PRES
     public class PresModeloInsert
     {
         public string Cod_Modelo { get; set; } = string.Empty;
-        public int Cod_Contabilidad { get; set; }
-        public int ID_Cierre { get; set; }
+        public int? Cod_Contabilidad { get; set; }
+        public int? ID_Cierre { get; set; }
         public string Descripcion { get; set; } = string.Empty;
         public string Notas { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
@@ -56,10 +56,10 @@ namespace Galileo.Models.PRES
     public class PressModeloAjUsRegistro
     {
         public string CodModelo { get; set; } = string.Empty;
-        public int CodContab { get; set; }
+        public int? CodContab { get; set; }
         public string Cod_Ajuste { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
         public string UsuarioReg { get; set; } = string.Empty;
-        public bool Activo { get; set; }
+        public bool? Activo { get; set; }
     }
 }

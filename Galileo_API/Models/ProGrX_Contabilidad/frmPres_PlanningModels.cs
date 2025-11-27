@@ -114,13 +114,13 @@ namespace Galileo.Models.PRES
 
     public class PresAjustesGuarda
     {
-        public long cod_conta { get; set; }
+        public long? cod_conta { get; set; }
         public string cod_modelo { get; set; } = string.Empty;
-        public int anio { get; set; }
-        public int mes { get; set; }
+        public int? anio { get; set; }
+        public int? mes { get; set; }
         public string cuenta { get; set; } = string.Empty;
-        public decimal mensual_nuevo { get; set; }
-        public decimal mnt_ajuste { get; set; }
+        public decimal? mensual_nuevo { get; set; }
+        public decimal? mnt_ajuste { get; set; }
         public string cod_unidad { get; set; } = string.Empty;
         public string centro_costo { get; set; } = string.Empty;
         public string notas { get; set; } = string.Empty;
