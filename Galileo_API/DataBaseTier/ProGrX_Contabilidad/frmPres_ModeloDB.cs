@@ -3,6 +3,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.VisualBasic;
 using Galileo.Models.ERROR;
 using Galileo.Models.PRES;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
@@ -15,655 +16,671 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
+        #region Helpers
+
+        private SqlConnection CreateConnection(int codEmpresa)
+        {
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+            return new SqlConnection(stringConn);
+        }
+
+        #endregion
 
         /// <summary>
         /// Obtener las contabilidades por empresa
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CntxCData>> CntxContabilidades_Obtener(int CodEmpresa)
+        public ErrorDto<List<CntxCData>> CntxContabilidades_Obtener(int codEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<CntxCData>>
             {
                 Code = 0,
                 Result = new List<CntxCData>()
             };
+
+            const string sql = @"
+                SELECT cod_contabilidad AS IdX,
+                       Nombre          AS ItmX
+                FROM CNTX_Contabilidades
+                ORDER BY cod_Contabilidad;";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select cod_contabilidad as 'IdX', Nombre as 'ItmX' from CNTX_Contabilidades order by cod_Contabilidad";
-                    resp.Result = connection.Query<CntxCData>(query).ToList();
-                }
+                using var connection = CreateConnection(codEmpresa);
+                resp.Result = connection.Query<CntxCData>(sql).ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "CntxContabilidades_Obtener: " + ex.Message;
                 resp.Result = null;
             }
             return resp;
         }
-
 
         /// <summary>
         /// Obtiene cierres
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodContab"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CntxCData>> CntxCierres_Obtener(int CodEmpresa, int CodContab)
+        public ErrorDto<List<CntxCData>> CntxCierres_Obtener(int codEmpresa, int codContab)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<CntxCData>>
             {
                 Code = 0,
                 Result = new List<CntxCData>()
             };
+
+            const string sql = @"
+                SELECT ID_CIERRE AS IdX,
+                       DESCRIPCION AS ItmX
+                FROM CNTX_CIERRES
+                WHERE COD_CONTABILIDAD = @CodContab
+                ORDER BY INICIO_ANIO DESC;";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select ID_CIERRE as 'IdX',DESCRIPCION as 'ItmX' From CNTX_CIERRES Where COD_CONTABILIDAD = '{CodContab}' order by INICIO_ANIO desc";
-                    resp.Result = connection.Query<CntxCData>(query).ToList();
-                }
+                using var connection = CreateConnection(codEmpresa);
+                resp.Result = connection.Query<CntxCData>(sql, new { CodContab = codContab }).ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "CntxCierres_Obtener: " + ex.Message;
                 resp.Result = null;
             }
             return resp;
         }
-
 
         /// <summary>
         /// Obtener Modelo
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodModelo"></param>
-        /// <param name="CodContab"></param>
-        /// <returns></returns>
-        public ErrorDto<PresModeloData> Pres_Modelo_Obtener(int CodEmpresa, string CodModelo, int CodContab)
+        public ErrorDto<PresModeloData> Pres_Modelo_Obtener(int codEmpresa, string codModelo, int codContab)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<PresModeloData>
             {
                 Code = 0,
                 Result = new PresModeloData()
             };
+
+            const string proc = "[spPres_ModelosConsulta]";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var parameters = new
                 {
-                    var query = $@"exec spPres_ModelosConsulta '{CodModelo}', '{CodContab}'";
-                    resp.Result = connection.Query<PresModeloData>(query).FirstOrDefault();
-                }
+                    CodModelo = codModelo,
+                    CodContab = codContab
+                };
+
+                resp.Result = connection.QueryFirstOrDefault<PresModeloData>(
+                    proc,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_Obtener: " + ex.Message;
                 resp.Result = null;
             }
 
             return resp;
         }
-
 
         /// <summary>
         /// Hacer scroll en los modelos
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="scrollValue"></param>
-        /// <param name="CodModelo"></param>
-        /// <param name="CodContab"></param>
-        /// <returns></returns>
-        public ErrorDto<PresModeloData> Pres_Modelo_scroll(int CodEmpresa, int scrollValue, string? CodModelo, int CodContab)
+        public ErrorDto<PresModeloData> Pres_Modelo_scroll(int codEmpresa, int scrollValue, string? codModelo, int codContab)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<PresModeloData>
             {
                 Code = 0,
                 Result = new PresModeloData()
             };
+
+            const string sqlNext = @"
+                SELECT TOP 1 COD_MODELO
+                FROM PRES_MODELOS
+                WHERE cod_contabilidad = @CodContab
+                  AND COD_MODELO > @CodModelo
+                ORDER BY COD_MODELO ASC;";
+
+            const string sqlPrev = @"
+                SELECT TOP 1 COD_MODELO
+                FROM PRES_MODELOS
+                WHERE cod_contabilidad = @CodContab
+                  AND COD_MODELO < @CodModelo
+                ORDER BY COD_MODELO DESC;";
+
             try
             {
-                string filtro = $"where cod_contabilidad = '{CodContab}' ";
+                using var connection = CreateConnection(codEmpresa);
 
-                if (scrollValue == 1)
+                var parameters = new
                 {
-                    filtro += $"and COD_MODELO > '{CodModelo}' order by COD_MODELO asc";
-                }
-                else
-                {
-                    filtro += $"and COD_MODELO < '{CodModelo}' order by COD_MODELO desc";
-                }
+                    CodContab = codContab,
+                    CodModelo = codModelo
+                };
 
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select Top 1 COD_MODELO from PRES_MODELOS {filtro}";
-                    resp.Result = connection.Query<PresModeloData>(query).FirstOrDefault();
-                }
+                var sql = scrollValue == 1 ? sqlNext : sqlPrev;
+
+                resp.Result = connection.QueryFirstOrDefault<PresModeloData>(sql, parameters);
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_scroll: " + ex.Message;
                 resp.Result = null;
             }
             return resp;
         }
 
-
-        /// <summary>   
-        /// Lista de Modelos    
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodContab"></param>
-        /// <returns></returns>
-        public ErrorDto<List<PresModeloData>> Pres_Modelos_Lista(int CodEmpresa, int CodContab)
+        /// <summary>Lista de Modelos</summary>
+        public ErrorDto<List<PresModeloData>> Pres_Modelos_Lista(int codEmpresa, int codContab)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<PresModeloData>>
             {
                 Code = 0,
                 Result = new List<PresModeloData>()
             };
+
+            const string sql = @"
+                SELECT COD_MODELO,
+                       Descripcion 
+                FROM PRES_MODELOS 
+                WHERE COD_CONTABILIDAD = @CodContab 
+                ORDER BY COD_MODELO;";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"
-                            SELECT COD_MODELO, Descripcion 
-                            FROM PRES_MODELOS 
-                            WHERE COD_CONTABILIDAD = @CodContab 
-                            ORDER BY COD_MODELO";
-
-                var parametros = new { CodContab };
-                var result = connection.Query<PresModeloData>(query, parametros);
-
-                resp.Result = result.ToList();
+                using var connection = CreateConnection(codEmpresa);
+                resp.Result = connection.Query<PresModeloData>(sql, new { CodContab = codContab }).ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelos_Lista: " + ex.Message;
                 resp.Result = null;
             }
 
             return resp;
         }
 
-
-        /// <summary>
-        /// Insertar Modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto Pres_Modelo_Insertar(int CodEmpresa, PresModeloInsert request)
+        /// <summary>Insertar Modelo</summary>
+        public ErrorDto Pres_Modelo_Insertar(int codEmpresa, PresModeloInsert request)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
+            const string proc = "[spPres_ModelosRegistra]";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"exec spPres_ModelosRegistra '{request.Cod_Modelo}', {request.Cod_Contabilidad}, 
-                        {request.ID_Cierre}, '{request.Descripcion}', '{request.Notas}', '{Strings.Mid(request.Estado, 1, 1)}', '{request.Usuario}'";
+                using var connection = CreateConnection(codEmpresa);
 
-                    connection.Execute(query);
-                    resp.Description = "Información guardada satisfactoriamente...";
-                }
+                var estado = Strings.Mid(request.Estado, 1, 1); // Mantengo tu lógica VB
+
+                var parameters = new
+                {
+                    CodModelo = request.Cod_Modelo,
+                    CodContab = request.Cod_Contabilidad,
+                    IdCierre = request.ID_Cierre,
+                    Descripcion = request.Descripcion,
+                    Notas = request.Notas,
+                    Estado = estado,
+                    Usuario = request.Usuario
+                };
+
+                connection.Execute(
+                    proc,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+
+                resp.Description = "Información guardada satisfactoriamente...";
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_Insertar: " + ex.Message;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Mapea Cuentas sin Centro Costo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodModelo"></param>
-        /// <param name="CodContab"></param>
-        /// <param name="Usuario"></param>
-        /// <returns></returns>
-        public ErrorDto Pres_MapeaCuentasSinCentroCosto_SP(int CodEmpresa, string CodModelo, int CodContab, string Usuario)
+        /// <summary>Mapea Cuentas sin Centro Costo</summary>
+        public ErrorDto Pres_MapeaCuentasSinCentroCosto_SP(int codEmpresa, string codModelo, int codContab, string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
             var resp = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
+            const string proc = "[spPres_MapeaCuentasSinCentroCosto]";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"exec spPres_MapeaCuentasSinCentroCosto '{CodModelo}',{CodContab},'{Usuario}'";
+                using var connection = CreateConnection(codEmpresa);
 
-                    connection.Execute(query);
-                    resp.Description = "Revisión de Mapeo de Cuentas sin Centro de Costo, realizado satisfactoriamente!";
-                }
+                var parameters = new
+                {
+                    CodModelo = codModelo,
+                    CodContab = codContab,
+                    Usuario = usuario
+                };
+
+                connection.Execute(
+                    proc,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+
+                resp.Description = "Revisión de Mapeo de Cuentas sin Centro de Costo, realizado satisfactoriamente!";
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_MapeaCuentasSinCentroCosto_SP: " + ex.Message;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Reiniciar Modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodModelo"></param>
-        /// <returns></returns>
-        public ErrorDto Pres_Model_Reiniciar(int CodEmpresa, string CodModelo)
+        /// <summary>Reiniciar Modelo</summary>
+        public ErrorDto Pres_Model_Reiniciar(int codEmpresa, string codModelo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            ErrorDto resp = new ErrorDto
+            var resp = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
+            const string sqlDeletePresupuesto = @"
+                DELETE FROM PRES_PRESUPUESTO
+                WHERE COD_MODELO = @CodModelo;";
+
+            const string sqlDeleteAjustes = @"
+                DELETE FROM PRES_PRESUPUESTO_AJUSTES
+                WHERE COD_MODELO = @CodModelo;";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"Delete PRES_PRESUPUESTO where COD_MODELO = '{CodModelo}'";
+                using var connection = CreateConnection(codEmpresa);
 
-                    var query2 = $@"Delete PRES_PRESUPUESTO_AJUSTES where COD_MODELO = '{CodModelo}'";
+                var parameters = new { CodModelo = codModelo };
 
-                    connection.Execute(query);
-                    connection.Execute(query2);
-                    resp.Description = "Modelo de Presupuesto inicializado, vuelva a cargar las cuentas!";
-                }
+                connection.Execute(sqlDeletePresupuesto, parameters);
+                connection.Execute(sqlDeleteAjustes, parameters);
+
+                resp.Description = "Modelo de Presupuesto inicializado, vuelva a cargar las cuentas!";
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Model_Reiniciar: " + ex.Message;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Obtiene los usuarios y ajustes de un modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodModelo"></param>
-        /// <param name="CodContab"></param>
-        /// <returns></returns>
-        public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_Usuarios_SP(int CodEmpresa, string CodModelo, int CodContab)
+        /// <summary>Obtiene los usuarios y ajustes de un modelo</summary>
+        public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_Usuarios_SP(int codEmpresa, string codModelo, int codContab)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<PressModeloUsuarios>>
             {
                 Code = 0,
                 Result = new List<PressModeloUsuarios>()
             };
+
+            const string proc = "[spPres_Modelo_Usuarios]";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var parameters = new
                 {
-                    var query = $@"exec spPres_Modelo_Usuarios {CodContab},'{CodModelo}'";
-                    resp.Result = connection.Query<PressModeloUsuarios>(query).ToList();
-                }
+                    CodContab = codContab,
+                    CodModelo = codModelo
+                };
+
+                resp.Result = connection
+                    .Query<PressModeloUsuarios>(
+                        proc,
+                        parameters,
+                        commandType: CommandType.StoredProcedure)
+                    .ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_Usuarios_SP: " + ex.Message;
                 resp.Result = null;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Obtiene los ajustes de un modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodModelo"></param>
-        /// <param name="CodContab"></param>
-        /// <returns></returns>
-        public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_Ajustes_SP(int CodEmpresa, string CodModelo, int CodContab)
+        /// <summary>Obtiene los ajustes de un modelo</summary>
+        public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_Ajustes_SP(int codEmpresa, string codModelo, int codContab)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<PressModeloAjustes>>
             {
                 Code = 0,
                 Result = new List<PressModeloAjustes>()
             };
+
+            const string proc = "[spPres_Modelo_Ajustes]";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var parameters = new
                 {
-                    var query = $@"exec spPres_Modelo_Ajustes {CodContab},'{CodModelo}'";
-                    resp.Result = connection.Query<PressModeloAjustes>(query).ToList();
-                }
+                    CodContab = codContab,
+                    CodModelo = codModelo
+                };
+
+                resp.Result = connection
+                    .Query<PressModeloAjustes>(
+                        proc,
+                        parameters,
+                        commandType: CommandType.StoredProcedure)
+                    .ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_Ajustes_SP: " + ex.Message;
                 resp.Result = null;
             }
             return resp;
         }
 
-
-        /// <summary>       
-        /// Obtiene los ajustes y usuarios autorizados de un modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodModelo"></param>
-        /// <param name="CodContab"></param>
-        /// <returns></returns>
-        public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_Ajustes_Autorizados_SP(int CodEmpresa, string CodModelo, int CodContab)
+        /// <summary>Obtiene los ajustes y usuarios autorizados de un modelo</summary>
+        public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_Ajustes_Autorizados_SP(int codEmpresa, string codModelo, int codContab)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<PressModeloAjustes>>
             {
                 Code = 0,
                 Result = new List<PressModeloAjustes>()
             };
+
+            const string proc = "[spPres_Modelo_Ajustes_Autorizados]";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var parameters = new
                 {
-                    var query = $@"exec spPres_Modelo_Ajustes_Autorizados {CodContab},'{CodModelo}'";
-                    resp.Result = connection.Query<PressModeloAjustes>(query).ToList();
-                }
+                    CodContab = codContab,
+                    CodModelo = codModelo
+                };
+
+                resp.Result = connection
+                    .Query<PressModeloAjustes>(
+                        proc,
+                        parameters,
+                        commandType: CommandType.StoredProcedure)
+                    .ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_Ajustes_Autorizados_SP: " + ex.Message;
                 resp.Result = null;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Obtiene los usuarios autorizados de un modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodModelo"></param>    
-        public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_Usuarios_Autorizados_SP(int CodEmpresa, string CodModelo, int CodContab)
+        /// <summary>Obtiene los usuarios autorizados de un modelo</summary>
+        public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_Usuarios_Autorizados_SP(int codEmpresa, string codModelo, int codContab)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<PressModeloUsuarios>>
             {
                 Code = 0,
                 Result = new List<PressModeloUsuarios>()
             };
+
+            const string proc = "[spPres_Modelo_Usuarios_Autorizados]";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var parameters = new
                 {
-                    var query = $@"exec spPres_Modelo_Usuarios_Autorizados {CodContab},'{CodModelo}'";
-                    resp.Result = connection.Query<PressModeloUsuarios>(query).ToList();
-                }
+                    CodContab = codContab,
+                    CodModelo = codModelo
+                };
+
+                resp.Result = connection
+                    .Query<PressModeloUsuarios>(
+                        proc,
+                        parameters,
+                        commandType: CommandType.StoredProcedure)
+                    .ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_Usuarios_Autorizados_SP: " + ex.Message;
                 resp.Result = null;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Obtiene los ajustes y usuarios de un modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>   
-        /// <param name="CodModelo"></param>
-        /// <param name="CodContab"></param>
-        /// <param name="Usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_AjUs_Ajustes_SP(int CodEmpresa, string CodModelo, int CodContab, string Usuario)
+        /// <summary>Obtiene los ajustes y usuarios de un modelo</summary>
+        public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_AjUs_Ajustes_SP(int codEmpresa, string codModelo, int codContab, string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<PressModeloAjustes>>
             {
                 Code = 0,
                 Result = new List<PressModeloAjustes>()
             };
+
+            const string proc = "[spPres_Modelo_AjUs_Ajustes]";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var parameters = new
                 {
-                    var query = $@"exec spPres_Modelo_AjUs_Ajustes {CodContab},'{CodModelo}','{Usuario}'";
-                    resp.Result = connection.Query<PressModeloAjustes>(query).ToList();
-                }
+                    CodContab = codContab,
+                    CodModelo = codModelo,
+                    Usuario = usuario
+                };
+
+                resp.Result = connection
+                    .Query<PressModeloAjustes>(
+                        proc,
+                        parameters,
+                        commandType: CommandType.StoredProcedure)
+                    .ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_AjUs_Ajustes_SP: " + ex.Message;
                 resp.Result = null;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Obtiene los usuarios y ajustes de un modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodModelo"></param>
-        /// <param name="CodContab"></param>
-        /// <param name="CodAjuste"></param>
-        /// <returns></returns>
-        public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_AjUs_Usuarios_SP(int CodEmpresa, string CodModelo, int CodContab, string CodAjuste)
+        /// <summary>Obtiene los usuarios y ajustes de un modelo</summary>
+        public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_AjUs_Usuarios_SP(int codEmpresa, string codModelo, int codContab, string codAjuste)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<PressModeloUsuarios>>
             {
                 Code = 0,
                 Result = new List<PressModeloUsuarios>()
             };
+
+            const string proc = "[spPres_Modelo_AjUs_Usuarios]";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var parameters = new
                 {
-                    var query = $@"exec spPres_Modelo_AjUs_Usuarios {CodContab},'{CodModelo}','{CodAjuste}'";
-                    resp.Result = connection.Query<PressModeloUsuarios>(query).ToList();
-                }
+                    CodContab = codContab,
+                    CodModelo = codModelo,
+                    CodAjuste = codAjuste
+                };
+
+                resp.Result = connection
+                    .Query<PressModeloUsuarios>(
+                        proc,
+                        parameters,
+                        commandType: CommandType.StoredProcedure)
+                    .ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_AjUs_Usuarios_SP: " + ex.Message;
                 resp.Result = null;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Ajuste Modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto Pres_Modelo_AjUs_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
+        /// <summary>Ajuste Modelo (usuario-ajuste)</summary>
+        public ErrorDto Pres_Modelo_AjUs_Registro_SP(int codEmpresa, PressModeloAjUsRegistro request)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto
-            {
-                Code = 0
-            };
-            int activoValue;
+            var resp = new ErrorDto { Code = 0 };
+
+            const string proc = "[spPres_Modelo_AjUs_Registro]";
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                int activoValue = request.Activo ? 1 : 0;
+
+                var parameters = new
                 {
-                    if (!request.Activo)
-                    {
-                        activoValue = 0;
-                    }
-                    else
-                    {
-                        activoValue = 1;
-                    }
+                    CodContab = request.CodContab,
+                    CodModelo = request.CodModelo,
+                    CodAjuste = request.Cod_Ajuste,
+                    Usuario = request.Usuario,
+                    UsuarioReg = request.UsuarioReg,
+                    Activo = activoValue
+                };
 
-                    var query = $@"exec spPres_Modelo_AjUs_Registro {request.CodContab},'{request.CodModelo}','{request.Cod_Ajuste}'
-                        ,'{request.Usuario}','{request.UsuarioReg}','{activoValue}'";
+                connection.Execute(
+                    proc,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
 
-                    connection.Execute(query);
-                    resp.Description = "Ok";
-                }
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_AjUs_Registro_SP: " + ex.Message;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Ajuste Modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto Pres_Modelo_Ajustes_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
+        /// <summary>Ajuste Modelo (ajustes)</summary>
+        public ErrorDto Pres_Modelo_Ajustes_Registro_SP(int codEmpresa, PressModeloAjUsRegistro request)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto
-            {
-                Code = 0
-            };
-            int activoValue;
+            var resp = new ErrorDto { Code = 0 };
+
+            const string proc = "[spPres_Modelo_Ajustes_Registro]";
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                int activoValue = request.Activo ? 1 : 0;
+
+                var parameters = new
                 {
-                    if (!request.Activo)
-                    {
-                        activoValue = 0;
-                    }
-                    else
-                    {
-                        activoValue = 1;
-                    }
+                    CodContab = request.CodContab,
+                    CodModelo = request.CodModelo,
+                    CodAjuste = request.Cod_Ajuste,
+                    UsuarioReg = request.UsuarioReg,
+                    Activo = activoValue
+                };
 
-                    var query = $@"exec spPres_Modelo_Ajustes_Registro {request.CodContab},'{request.CodModelo}'
-                        ,'{request.Cod_Ajuste}','{request.UsuarioReg}','{activoValue}'";
+                connection.Execute(
+                    proc,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
 
-                    connection.Execute(query);
-                    resp.Description = "Ok";
-                }
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_Ajustes_Registro_SP: " + ex.Message;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Usuario Modelo Registro
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto Pres_Modelo_Usuarios_Registro_SP(int CodEmpresa, PressModeloAjUsRegistro request)
+        /// <summary>Usuario Modelo Registro</summary>
+        public ErrorDto Pres_Modelo_Usuarios_Registro_SP(int codEmpresa, PressModeloAjUsRegistro request)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto
-            {
-                Code = 0
-            };
-            int activoValue;
+            var resp = new ErrorDto { Code = 0 };
+
+            const string proc = "[spPres_Modelo_Usuarios_Registro]";
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                int activoValue = request.Activo ? 1 : 0;
+
+                var parameters = new
                 {
-                    if (!request.Activo)
-                    {
-                        activoValue = 0;
-                    }
-                    else
-                    {
-                        activoValue = 1;
-                    }
+                    CodContab = request.CodContab,
+                    CodModelo = request.CodModelo,
+                    Usuario = request.Usuario,
+                    UsuarioReg = request.UsuarioReg,
+                    Activo = activoValue
+                };
 
-                    var query = $@"exec spPres_Modelo_Usuarios_Registro {request.CodContab},'{request.CodModelo}'
-                        ,'{request.Usuario}','{request.UsuarioReg}','{activoValue}'";
+                connection.Execute(
+                    proc,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
 
-                    connection.Execute(query);
-                    resp.Description = "Ok";
-                }
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_Usuarios_Registro_SP: " + ex.Message;
             }
             return resp;
         }
 
-
-        /// <summary>
-        /// Eliminar Modelo
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="CodModelo"></param>
-        /// <returns></returns>
-        public ErrorDto Pres_Model_Eliminar(int CodEmpresa, string CodModelo)
+        /// <summary>Eliminar Modelo</summary>
+        public ErrorDto Pres_Model_Eliminar(int codEmpresa, string codModelo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto
-            {
-                Code = 0
-            };
+            var resp = new ErrorDto { Code = 0 };
+
+            const string sql = @"
+                DELETE FROM PRES_MODELOS
+                WHERE COD_MODELO = @CodModelo;";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"Delete PRES_MODELOS where COD_MODELO = '{CodModelo}'";
+                using var connection = CreateConnection(codEmpresa);
 
-                    connection.Execute(query);
-                    resp.Description = "Modelo eliminado satisfactoriamente.";
-                }
+                connection.Execute(sql, new { CodModelo = codModelo });
+
+                resp.Description = "Modelo eliminado satisfactoriamente.";
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Model_Eliminar: " + ex.Message;
             }
             return resp;
         }
-
     }
 }

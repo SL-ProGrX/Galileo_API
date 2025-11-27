@@ -2,229 +2,332 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.PRES;
+using System.Data;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
     public class FrmPresDefinicionDb
     {
         private readonly IConfiguration _config;
-        const string _consolidado = "CONSOLIDADO";
+        private const string Consolidado = "CONSOLIDADO";
 
         public FrmPresDefinicionDb(IConfiguration config)
         {
             _config = config;
         }
 
-        public ErrorDto<List<ModeloGenericList>> Pres_Modelos_Obtener(int CodEmpresa, string usuario, int codContab)
+        #region Helpers
+
+        private SqlConnection CreateConnection(int codEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+            return new SqlConnection(connString);
+        }
+
+        #endregion
+
+        public ErrorDto<List<ModeloGenericList>> Pres_Modelos_Obtener(int codEmpresa, string usuario, int codContab)
+        {
             var resp = new ErrorDto<List<ModeloGenericList>>
             {
                 Code = 0,
                 Result = new List<ModeloGenericList>()
             };
+
+            const string sql = @"
+                SELECT 
+                    P.cod_modelo AS IdX, 
+                    P.DESCRIPCION AS ItmX, 
+                    Cc.Inicio_Anio
+                FROM PRES_MODELOS P 
+                INNER JOIN PRES_MODELOS_USUARIOS Pmu 
+                    ON P.cod_Contabilidad = Pmu.cod_contabilidad 
+                    AND P.cod_Modelo = Pmu.cod_Modelo 
+                    AND Pmu.Usuario = @Usuario
+                INNER JOIN CNTX_CIERRES Cc 
+                    ON P.cod_Contabilidad = Cc.cod_Contabilidad 
+                    AND P.ID_CIERRE = Cc.ID_CIERRE 
+                WHERE P.COD_CONTABILIDAD = @CodContab
+                GROUP BY P.cod_Modelo, P.Descripcion, Cc.Inicio_Anio 
+                ORDER BY Cc.INICIO_ANIO DESC, P.Cod_Modelo;";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"
-                                SELECT P.cod_modelo AS IdX, P.DESCRIPCION AS ItmX, Cc.Inicio_Anio
-                                FROM PRES_MODELOS P 
-                                INNER JOIN PRES_MODELOS_USUARIOS Pmu 
-                                    ON P.cod_Contabilidad = Pmu.cod_contabilidad 
-                                    AND P.cod_Modelo = Pmu.cod_Modelo 
-                                    AND Pmu.Usuario = '{usuario}' 
-                                INNER JOIN CNTX_CIERRES Cc 
-                                    ON P.cod_Contabilidad = Cc.cod_Contabilidad 
-                                    AND P.ID_CIERRE = Cc.ID_CIERRE 
-                                WHERE P.COD_CONTABILIDAD = {codContab} 
-                                GROUP BY P.cod_Modelo, P.Descripcion, Cc.Inicio_Anio 
-                                ORDER BY Cc.INICIO_ANIO DESC, P.Cod_Modelo";
-                    resp.Result = connection.Query<ModeloGenericList>(query).ToList();
-                }
+                using var connection = CreateConnection(codEmpresa);
+
+                resp.Result = connection
+                    .Query<ModeloGenericList>(sql, new { Usuario = usuario, CodContab = codContab })
+                    .ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelos_Obtener: " + ex.Message;
                 resp.Result = null;
             }
+
             return resp;
         }
 
-        public ErrorDto<List<ModeloGenericList>> Pres_Modelo_Unidades_Obtener(int CodEmpresa, string codModelo, int codContab, string usuario)
+        public ErrorDto<List<ModeloGenericList>> Pres_Modelo_Unidades_Obtener(
+            int codEmpresa,
+            string codModelo,
+            int codContab,
+            string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<ModeloGenericList>>
             {
                 Code = 0,
                 Result = new List<ModeloGenericList>()
             };
+
+            const string sql = @"
+                EXEC spPres_Modelo_Unidades 
+                    @CodContab,
+                    @CodModelo,
+                    @Usuario;";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var parameters = new
                 {
+                    CodContab = codContab,
+                    CodModelo = codModelo,
+                    Usuario = usuario
+                };
 
-                    var query = $@"exec spPres_Modelo_Unidades {codContab},'{codModelo}','{usuario}'";
-                    resp.Result = connection.Query<ModeloGenericList>(query).ToList();
+                resp.Result = connection.Query<ModeloGenericList>(sql, parameters).ToList();
 
-                    resp.Result.RemoveAll(X => string.IsNullOrWhiteSpace(X.IdX));
-                    resp.Result.Add(new ModeloGenericList { IdX = _consolidado, ItmX = _consolidado });
-                }
+                resp.Result.RemoveAll(x => string.IsNullOrWhiteSpace(x.IdX));
+                resp.Result.Add(new ModeloGenericList { IdX = Consolidado, ItmX = Consolidado });
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_Unidades_Obtener: " + ex.Message;
                 resp.Result = null;
             }
+
             return resp;
         }
 
-        public ErrorDto<List<ModeloGenericList>> Pres_Modelo_Unidades_CC_Obtener(int CodEmpresa, string codModelo, int codContab, string codUnidad)
+        public ErrorDto<List<ModeloGenericList>> Pres_Modelo_Unidades_CC_Obtener(
+            int codEmpresa,
+            string codModelo,
+            int codContab,
+            string codUnidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<ModeloGenericList>>
             {
                 Code = 0,
                 Result = new List<ModeloGenericList>()
             };
+
+            const string sql = @"
+                EXEC spPres_Modelo_Unidades_CC 
+                    @CodContab,
+                    @CodModelo,
+                    @CodUnidad;";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var unidadParametro = codUnidad == Consolidado ? "CONS" : codUnidad;
+
+                var parameters = new
                 {
-                    if(codUnidad == _consolidado)
-                    {
-                        codUnidad = "CONS";
-                    }
+                    CodContab = codContab,
+                    CodModelo = codModelo,
+                    CodUnidad = unidadParametro
+                };
 
-                    var query = $@"exec spPres_Modelo_Unidades_CC {codContab},'{codModelo}','{codUnidad}'";
-                    resp.Result = connection.Query<ModeloGenericList>(query).ToList();
+                resp.Result = connection.Query<ModeloGenericList>(sql, parameters).ToList();
 
-                    resp.Result.RemoveAll(X => string.IsNullOrWhiteSpace(X.IdX));
-                    resp.Result.Add(new ModeloGenericList { IdX = "TODOS", ItmX = "TODOS" });
-                    resp.Result.Add(new ModeloGenericList { IdX = _consolidado, ItmX = _consolidado });
-                }
+                resp.Result.RemoveAll(x => string.IsNullOrWhiteSpace(x.IdX));
+                resp.Result.Add(new ModeloGenericList { IdX = "TODOS", ItmX = "TODOS" });
+                resp.Result.Add(new ModeloGenericList { IdX = Consolidado, ItmX = Consolidado });
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Modelo_Unidades_CC_Obtener: " + ex.Message;
                 resp.Result = null;
             }
+
             return resp;
         }
 
-        public ErrorDto<CntxCuentasData> Pres_Definicion_scroll(int CodEmpresa, int scrollValue, string? CodCtaMask, int CodContab)
+        public ErrorDto<CntxCuentasData> Pres_Definicion_scroll(
+            int codEmpresa,
+            int scrollValue,
+            string? codCtaMask,
+            int codContab)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<CntxCuentasData>
             {
                 Code = 0,
                 Result = new CntxCuentasData()
             };
+
+            const string sqlNext = @"
+                SELECT TOP 1 Cod_Cuenta_Mask, Descripcion
+                FROM CntX_cuentas
+                WHERE COD_CONTABILIDAD = @CodContab
+                  AND Acepta_Movimientos = 1
+                  AND Cod_Cuenta_Mask > @CodCtaMask
+                ORDER BY Cod_Cuenta_Mask ASC;";
+
+            const string sqlPrevious = @"
+                SELECT TOP 1 Cod_Cuenta_Mask, Descripcion
+                FROM CntX_cuentas
+                WHERE COD_CONTABILIDAD = @CodContab
+                  AND Acepta_Movimientos = 1
+                  AND Cod_Cuenta_Mask < @CodCtaMask
+                ORDER BY Cod_Cuenta_Mask DESC;";
+
             try
             {
-                string filtro = $"where COD_CONTABILIDAD = '{CodContab}' and Acepta_Movimientos = 1 ";
+                using var connection = CreateConnection(codEmpresa);
 
-                if (scrollValue == 1)
+                var parameters = new
                 {
-                    filtro += $"and Cod_Cuenta_Mask > '{CodCtaMask}' order by Cod_Cuenta_Mask asc";
-                }
-                else
-                {
-                    filtro += $"and Cod_Cuenta_Mask < '{CodCtaMask}' order by Cod_Cuenta_Mask desc";
-                }
+                    CodContab = codContab,
+                    CodCtaMask = codCtaMask
+                };
 
-                using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select Top 1 Cod_Cuenta_Mask,Descripcion from CntX_cuentas {filtro}";
-                    resp.Result = connection.Query<CntxCuentasData>(query).FirstOrDefault();
-                }
+                var sql = scrollValue == 1 ? sqlNext : sqlPrevious;
+
+                resp.Result = connection.QueryFirstOrDefault<CntxCuentasData>(sql, parameters);
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Definicion_scroll: " + ex.Message;
                 resp.Result = null;
             }
+
             return resp;
         }
 
-        public ErrorDto<List<VistaPresCuentaData>> Pres_VistaPresupuesto_Cuenta_SP(int CodEmpresa, PresCuenta request)
+        public ErrorDto<List<VistaPresCuentaData>> Pres_VistaPresupuesto_Cuenta_SP(
+            int codEmpresa,
+            PresCuenta request)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<VistaPresCuentaData>>
             {
                 Code = 0,
                 Result = new List<VistaPresCuentaData>()
             };
+
+            const string sql = @"
+                EXEC spPres_VistaPresupuesto_Cuenta 
+                    @CodContabilidad,
+                    @CodModelo,
+                    @CodUnidad,
+                    @CodCentroCosto,
+                    @CodCuenta,
+                    @Vista;";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var parameters = new
                 {
-                    var query = $@"exec spPres_VistaPresupuesto_Cuenta {request.Cod_Contabilidad},'{request.Cod_Modelo}',
-                        '{request.Cod_Unidad}','{request.Cod_Centro_Costo}','{request.Cod_Cuenta}','{request.Vista}'";
-                    resp.Result = connection.Query<VistaPresCuentaData>(query).ToList();
-                }
+                    CodContabilidad = request.Cod_Contabilidad,
+                    CodModelo = request.Cod_Modelo,
+                    CodUnidad = request.Cod_Unidad,
+                    CodCentroCosto = request.Cod_Centro_Costo,
+                    CodCuenta = request.Cod_Cuenta,
+                    Vista = request.Vista
+                };
+
+                resp.Result = connection.Query<VistaPresCuentaData>(sql, parameters).ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_VistaPresupuesto_Cuenta_SP: " + ex.Message;
                 resp.Result = null;
             }
+
             return resp;
         }
 
-        public ErrorDto<CuentasLista> Pres_Cuentas_Obtener(int CodEmpresa, string cod_contabilidad, int? pagina, int? paginacion, string? filtro)
+        public ErrorDto<CuentasLista> Pres_Cuentas_Obtener(
+            int codEmpresa,
+            string cod_contabilidad,
+            int? pagina,
+            int? paginacion,
+            string? filtro)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<CuentasLista>
             {
                 Code = 0,
                 Result = new CuentasLista()
             };
             resp.Result.total = 0;
+
+            const string countSql = @"
+                SELECT COUNT(cod_cuenta) 
+                FROM CntX_cuentas 
+                WHERE cod_contabilidad = @CodContabilidad 
+                  AND acepta_movimientos = 1;";
+
             try
             {
-                var query = "";
-                string paginaActual = " ", paginacionActual = " ";
+                using var connection = CreateConnection(codEmpresa);
 
-                using var connection = new SqlConnection(clienteConnString);
+                var parameters = new DynamicParameters();
+                parameters.Add("CodContabilidad", cod_contabilidad);
+
+                // Total (mantengo el comportamiento original: sin filtro)
+                resp.Result.total = connection.ExecuteScalar<int>(countSql, parameters);
+
+                // Query de datos con filtro y paginación
+                var sb = new StringBuilder();
+                sb.Append(@"
+                    SELECT Cod_Cuenta_Mask, descripcion
+                    FROM CntX_cuentas
+                    WHERE cod_contabilidad = @CodContabilidad
+                      AND acepta_movimientos = 1");
+
+                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    //Busco Total
-                    query = $@"Select COUNT(cod_cuenta) from CntX_cuentas where cod_contabilidad = '{cod_contabilidad}' and acepta_movimientos = 1 ";
-                    resp.Result.total = connection.Query<int>(query).FirstOrDefault();
-
-                    if (filtro != null)
-                    {
-                        filtro = " AND Cod_Cuenta_Mask LIKE '%" + filtro + "%' OR descripcion LIKE '%" + filtro + "%' ";
-                    }
-
-                    if (pagina != null)
-                    {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
-                    }
-
-                    query = $@"Select Cod_Cuenta_Mask,descripcion
-                                from CntX_cuentas where cod_contabilidad = '{cod_contabilidad}' and acepta_movimientos = 1 {filtro}  
-                                ORDER BY Cod_Cuenta_Mask
-                                {paginaActual} {paginacionActual}";
-                    resp.Result.lista = connection.Query<CntxCuentasData>(query).ToList();
-
+                    sb.Append(" AND (Cod_Cuenta_Mask LIKE @Filtro OR descripcion LIKE @Filtro)");
+                    parameters.Add("Filtro", "%" + filtro + "%");
                 }
+
+                sb.Append(" ORDER BY Cod_Cuenta_Mask");
+
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    var offset = (pagina.Value) * paginacion.Value;
+                    var pageSize = paginacion.Value;
+
+                    sb.Append(" OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY");
+                    parameters.Add("Offset", offset, DbType.Int32);
+                    parameters.Add("PageSize", pageSize, DbType.Int32);
+                }
+
+                var finalSql = sb.ToString();
+
+                resp.Result.lista = connection
+                    .Query<CntxCuentasData>(finalSql, parameters)
+                    .ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Pres_Cuentas_Obtener: " + ex.Message;
                 resp.Result = null;
             }
 
             return resp;
         }
-
     }
 }

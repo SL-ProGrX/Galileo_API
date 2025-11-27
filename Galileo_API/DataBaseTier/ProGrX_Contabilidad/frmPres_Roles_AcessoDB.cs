@@ -2,6 +2,7 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.PRES;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
@@ -18,27 +19,31 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Método para obtener los roles
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="contabilidad"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto<RolesLista> ObtenerRoles(int CodEmpresa, int contabilidad, string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<RolesLista>();
-            resp.Result = new RolesLista();
-            resp.Result.total = 0;
+
+            var resp = new ErrorDto<RolesLista>
+            {
+                Result = new RolesLista { total = 0 }
+            };
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    query = "exec spPres_AC_Rol_List @contabilidad, @usuario";
-                    resp.Result.lista = connection.Query<RolesDto>(query, new { contabilidad = contabilidad, usuario = usuario }).ToList();
 
-                    resp.Result.total = resp.Result.lista.Count;
-                }
+                const string proc = "spPres_AC_Rol_List";
+
+                var lista = connection.Query<RolesDto>(
+                    proc,
+                    new { contabilidad, usuario },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                resp.Result.lista = lista;
+                resp.Result.total = lista.Count;
+                resp.Code = 0;
+                resp.Description = "OK";
             }
             catch (Exception ex)
             {
@@ -49,91 +54,120 @@ namespace Galileo.DataBaseTier
 
             return resp;
         }
-
 
         /// <summary>
         /// Método para insertar o actualizar un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="usuario"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public ErrorDto Roles_Upsert(int CodCliente, string usuario, RolesDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
-            var activo = 0;
-            var control = 0;
+            var resp = new ErrorDto { Code = 0 };
 
             try
             {
-                if (request.activo)
-                {
-                    activo = 1;
-                }
-
-                if (request.control)
-                {
-                    control = 1;
-                }
+                int activo = request.activo ? 1 : 0;
+                int control = request.control ? 1 : 0;
 
                 using var connection = new SqlConnection(clienteConnString);
+
+                const string sqlExiste = @"
+                    SELECT ISNULL(COUNT(*), 0) AS Existe 
+                    FROM PRES_AC_ROLES 
+                    WHERE COD_ROL = @CodRol";
+
+                int existe = connection.Query<int>(
+                    sqlExiste,
+                    new { CodRol = request.cod_rol }
+                ).FirstOrDefault();
+
+                if (existe == 0)
                 {
-                    var query = $"select isnull(count(*),0) as Existe from PRES_AC_ROLES where COD_ROL = '{request.cod_rol}'";
-                    int Existe = connection.Query<int>(query).FirstOrDefault();
+                    const string sqlInsert = @"
+                        INSERT INTO PRES_AC_ROLES
+                            (COD_ROL, COD_CONTABILIDAD, DESCRIPCION, CONTROL, ACTIVO, Registro_Fecha, Registro_Usuario) 
+                        VALUES
+                            (@CodRol, @CodContabilidad, @Descripcion, @Control, @Activo, GETDATE(), @Usuario)";
 
-                    if (Existe == 0)
+                    var parametrosInsert = new
                     {
+                        CodRol = request.cod_rol,
+                        CodContabilidad = request.cod_contabilidad,
+                        Descripcion = request.descripcion,
+                        Control = control,
+                        Activo = activo,
+                        Usuario = usuario
+                    };
 
-                        query = @$"insert 
-                            into PRES_AC_ROLES(COD_ROL, COD_CONTABILIDAD, DESCRIPCION, CONTROL, ACTIVO, Registro_Fecha, Registro_Usuario) 
-                            values('{request.cod_rol}','{request.cod_contabilidad}','{request.descripcion}', '{control}',
-                               {activo}, Getdate(), '{usuario}' )";
-                        resp.Description = "Registro agregado satisfactoriamente";
-                    }
-                    else
-                    {
-                        query = @$"update PRES_AC_ROLES set descripcion = '{request.descripcion}',
-                            control = '{control}', activo = '{activo}'
-                            where cod_contabilidad = '{request.cod_contabilidad}' and cod_rol = '{request.cod_rol}' ";
-                        resp.Description = _registroActualizado;
-                    }
-                    resp.Code = connection.ExecuteAsync(query).Result;
-                    resp.Code = 0;
-
+                    connection.Execute(sqlInsert, parametrosInsert);
+                    resp.Description = "Registro agregado satisfactoriamente";
                 }
+                else
+                {
+                    const string sqlUpdate = @"
+                        UPDATE PRES_AC_ROLES 
+                        SET DESCRIPCION = @Descripcion,
+                            CONTROL      = @Control,
+                            ACTIVO       = @Activo
+                        WHERE COD_CONTABILIDAD = @CodContabilidad 
+                          AND COD_ROL         = @CodRol";
+
+                    var parametrosUpdate = new
+                    {
+                        CodRol = request.cod_rol,
+                        CodContabilidad = request.cod_contabilidad,
+                        Descripcion = request.descripcion,
+                        Control = control,
+                        Activo = activo
+                    };
+
+                    connection.Execute(sqlUpdate, parametrosUpdate);
+                    resp.Description = _registroActualizado;
+                }
+
+                resp.Code = 0;
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
-
 
         /// <summary>
         /// Método para obtener los miembros de un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="rol"></param>
-        /// <param name="filtro"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<List<MiembrosRolDto>> Rol_Miembros_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<MiembrosRolDto>> Rol_Miembros_Obtener(
+            int CodCliente,
+            string cod_contabilidad,
+            string rol,
+            string? filtro,
+            string usuario)
         {
-
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var resp = new ErrorDto<List<MiembrosRolDto>>();
+
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = @$"exec [spPres_AC_Miembros_Consulta] '{cod_contabilidad}','{rol}','{filtro}', '{usuario}'";
-                    resp.Result = connection.Query<MiembrosRolDto>(query).ToList();
-                }
+
+                const string proc = "spPres_AC_Miembros_Consulta";
+
+                resp.Result = connection.Query<MiembrosRolDto>(
+                    proc,
+                    new
+                    {
+                        cod_contabilidad,
+                        rol,
+                        filtro,
+                        usuario
+                    },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                resp.Code = 0;
+                resp.Description = "OK";
             }
             catch (Exception ex)
             {
@@ -144,67 +178,87 @@ namespace Galileo.DataBaseTier
 
             return resp;
         }
-
 
         /// <summary>
         /// Método para asignar o eliminar un miembro de un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="rol"></param>
-        /// <param name="usuario"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto Core_Miembros_Registro(int CodCliente, string cod_contabilidad, string rol, string usuario, MiembrosRolDto request)
+        public ErrorDto Core_Miembros_Registro(
+            int CodCliente,
+            string cod_contabilidad,
+            string rol,
+            string usuario,
+            MiembrosRolDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
-            var mov = 'E';
+            var resp = new ErrorDto { Code = 0 };
+
+            var mov = request.asignado ? "A" : "E";
+
             try
             {
-                if (request.asignado)
-                {
-                    mov = 'A';
-                }
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = @$"exec [spPres_AC_Miembros_Asigna] '{cod_contabilidad}', '{rol}', '{request.usuario}', '{usuario}', '{mov}'";
-                    resp.Description = _registroActualizado;
 
-                    resp.Code = connection.ExecuteAsync(query).Result;
-                    resp.Code = 0;
-                }
+                const string proc = "spPres_AC_Miembros_Asigna";
+
+                connection.Execute(
+                    proc,
+                    new
+                    {
+                        cod_contabilidad,
+                        rol,
+                        UsuarioMiembro = request.usuario,
+                        UsuarioRegistra = usuario,
+                        Movimiento = mov
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                resp.Description = _registroActualizado;
             }
             catch (Exception ex)
             {
-                resp.Code = 0;
+                resp.Code = 0; // tu código original ponía 0 incluso en error
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
-
 
         /// <summary>
         /// Método para obtener las cuentas de un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="rol"></param>
-        /// <param name="filtro"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CuentaRolDto>> Rol_Cuentas_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<CuentaRolDto>> Rol_Cuentas_Obtener(
+            int CodCliente,
+            string cod_contabilidad,
+            string rol,
+            string? filtro,
+            string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var resp = new ErrorDto<List<CuentaRolDto>>();
+
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = @$"exec [spPres_AC_Cuentas_Consulta] '{cod_contabilidad}','{rol}' ,'','','', '{usuario}'";
-                    resp.Result = connection.Query<CuentaRolDto>(query).ToList();
-                }
+
+                const string proc = "spPres_AC_Cuentas_Consulta";
+
+                resp.Result = connection.Query<CuentaRolDto>(
+                    proc,
+                    new
+                    {
+                        cod_contabilidad,
+                        rol,
+                        filtro1 = string.Empty,
+                        filtro2 = string.Empty,
+                        filtro3 = string.Empty,
+                        usuario
+                    },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                resp.Code = 0;
+                resp.Description = "OK";
             }
             catch (Exception ex)
             {
@@ -215,29 +269,40 @@ namespace Galileo.DataBaseTier
 
             return resp;
         }
-
 
         /// <summary>
         /// Método para obtener las cuentas ya asignadas a un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="rol"></param>
-        /// <param name="filtro"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CuentaRolDto>> Rol_CuentasRegistrada_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<CuentaRolDto>> Rol_CuentasRegistrada_Obtener(
+            int CodCliente,
+            string cod_contabilidad,
+            string rol,
+            string? filtro,
+            string usuario)
         {
-
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var resp = new ErrorDto<List<CuentaRolDto>>();
+
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = @$"exec [spPres_AC_Cuentas_Consulta_Asignadas] '{cod_contabilidad}','{rol}','', '{usuario}'";
-                    resp.Result = connection.Query<CuentaRolDto>(query).ToList();
-                }
+
+                const string proc = "spPres_AC_Cuentas_Consulta_Asignadas";
+
+                resp.Result = connection.Query<CuentaRolDto>(
+                    proc,
+                    new
+                    {
+                        cod_contabilidad,
+                        rol,
+                        filtro,
+                        usuario
+                    },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                resp.Code = 0;
+                resp.Description = "OK";
             }
             catch (Exception ex)
             {
@@ -249,112 +314,128 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-
         /// <summary>
         /// Método para asignar una cuenta a un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="rol"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto Rol_Cuenta_Registra(int CodCliente, string cod_contabilidad, string rol, CuentaRolDto request)
+        public ErrorDto Rol_Cuenta_Registra(
+            int CodCliente,
+            string cod_contabilidad,
+            string rol,
+            CuentaRolDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
-            var mov = 'A';
+            var resp = new ErrorDto { Code = 0 };
+
+            const string mov = "A";
+
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = @$"exec [spPres_AC_Cuentas_Asigna] '{cod_contabilidad}', '{rol}', '{request.cod_cuenta_mask}', '{request.user_registra}', '{mov}'";
-                    resp.Description = _registroActualizado;
 
-                    resp.Code = connection.ExecuteAsync(query).Result;
-                    resp.Code = 0;
-                }
+                const string proc = "spPres_AC_Cuentas_Asigna";
+
+                connection.Execute(
+                    proc,
+                    new
+                    {
+                        cod_contabilidad,
+                        rol,
+                        CodCuentaMask = request.cod_cuenta_mask,
+                        UsuarioRegistra = request.user_registra,
+                        Movimiento = mov
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                resp.Description = _registroActualizado;
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
-
 
         /// <summary>
         /// Método para eliminar una cuenta de un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="rol"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto Rol_Cuenta_Elimina(int CodCliente, string cod_contabilidad, string rol, CuentaRolDto request)
+        public ErrorDto Rol_Cuenta_Elimina(
+            int CodCliente,
+            string cod_contabilidad,
+            string rol,
+            CuentaRolDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
+            var resp = new ErrorDto { Code = 0 };
+
+            const string sql = @"
+                DELETE FROM PRES_AC_CUENTAS 
+                WHERE COD_CONTABILIDAD = @CodContabilidad 
+                  AND COD_CUENTA       = @CodCuenta";
+
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = $"delete from PRES_AC_CUENTAS where COD_CONTABILIDAD = '{cod_contabilidad}' AND COD_CUENTA = '{request.cod_cuenta}'";
-                    resp.Code = connection.ExecuteAsync(query).Result;
-                    resp.Code = 0;
-                }
 
+                connection.Execute(
+                    sql,
+                    new
+                    {
+                        CodContabilidad = cod_contabilidad,
+                        CodCuenta = request.cod_cuenta
+                    });
+
+                resp.Description = _registroActualizado;
             }
             catch (Exception ex)
             {
-                resp.Code = 0;
+                resp.Code = 0; // igual que tu código original
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
-
 
         /// <summary>
         /// Método para eliminar un rol
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="codRol"></param>
-        /// <returns></returns>
         public ErrorDto Rol_Eliminar(int CodEmpresa, string codRol)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
+            var resp = new ErrorDto { Code = 0 };
+
+            const string sql = @"
+                DELETE FROM PRES_AC_ROLES 
+                WHERE COD_ROL = @CodRol";
+
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"delete PRES_AC_ROLES where COD_ROL = '{codRol}' ";
-                    resp.Code = connection.ExecuteAsync(query).Result;
-                    resp.Code = 0;
-                }
+
+                connection.Execute(sql, new { CodRol = codRol });
+
+                resp.Description = "Rol eliminado satisfactoriamente.";
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
-
 
         /// <summary>
         /// Método para obtener las unidades de un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="rol"></param>
-        /// <param name="filtro"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<List<UnidadesRolDto>> Rol_Unidades_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<UnidadesRolDto>> Rol_Unidades_Obtener(
+            int CodCliente,
+            string cod_contabilidad,
+            string rol,
+            string? filtro,
+            string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var resp = new ErrorDto<List<UnidadesRolDto>>();
@@ -362,10 +443,23 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = @$"exec [spPres_AC_Unidades_Consulta] '{cod_contabilidad}','{rol}' ,'', '{usuario}'";
-                    resp.Result = connection.Query<UnidadesRolDto>(query).ToList();
-                }
+
+                const string proc = "spPres_AC_Unidades_Consulta";
+
+                resp.Result = connection.Query<UnidadesRolDto>(
+                    proc,
+                    new
+                    {
+                        cod_contabilidad,
+                        rol,
+                        filtro,
+                        usuario
+                    },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                resp.Code = 0;
+                resp.Description = "OK";
             }
             catch (Exception ex)
             {
@@ -377,55 +471,61 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-
         /// <summary>
         /// Método para asignar o eliminar una unidad a un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="rol"></param>
-        /// <param name="boolasingado"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        public ErrorDto Rol_Unidad_Registro(int CodCliente, string cod_contabilidad, string rol, int boolasingado, UnidadesRolDto request)
+        public ErrorDto Rol_Unidad_Registro(
+            int CodCliente,
+            string cod_contabilidad,
+            string rol,
+            int boolasingado,
+            UnidadesRolDto request)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
+            var resp = new ErrorDto { Code = 0 };
 
             var movimiento = boolasingado == 1 ? "A" : "E";
 
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = @$"exec [spPres_AC_Unidades_Asigna] '{cod_contabilidad}', '{rol}', '{request.cod_unidad}', '{request.user_registra}', '{movimiento}'";
-                    resp.Description = _registroActualizado;
 
-                    resp.Code = connection.ExecuteAsync(query).Result;
-                    resp.Code = 0;
-                }
+                const string proc = "spPres_AC_Unidades_Asigna";
+
+                connection.Execute(
+                    proc,
+                    new
+                    {
+                        cod_contabilidad,
+                        rol,
+                        CodUnidad = request.cod_unidad,
+                        UsuarioRegistra = request.user_registra,
+                        Movimiento = movimiento
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                resp.Description = _registroActualizado;
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
-
 
         /// <summary>
         /// Método para obtener los centros de costo de un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="rol"></param>
-        /// <param name="unidad"></param>
-        /// <param name="filtro"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CentroCosto>> Rol_Unidad_CC_Obtener(int CodCliente, string cod_contabilidad, string rol, string unidad, string? filtro, string usuario)
+        public ErrorDto<List<CentroCosto>> Rol_Unidad_CC_Obtener(
+            int CodCliente,
+            string cod_contabilidad,
+            string rol,
+            string unidad,
+            string? filtro,
+            string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var resp = new ErrorDto<List<CentroCosto>>();
@@ -433,10 +533,24 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = @$"exec [spPres_AC_Centro_Costo_Consulta] '{cod_contabilidad}','{rol}' ,'{unidad}','', '{usuario}'";
-                    resp.Result = connection.Query<CentroCosto>(query).ToList();
-                }
+
+                const string proc = "spPres_AC_Centro_Costo_Consulta";
+
+                resp.Result = connection.Query<CentroCosto>(
+                    proc,
+                    new
+                    {
+                        cod_contabilidad,
+                        rol,
+                        unidad,
+                        filtro,
+                        usuario
+                    },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                resp.Code = 0;
+                resp.Description = "OK";
             }
             catch (Exception ex)
             {
@@ -448,44 +562,51 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-
         /// <summary>
         /// Método para asignar o eliminar un centro de costo a una unidad de un rol
         /// </summary>
-        /// <param name="CodCliente"></param>
-        /// <param name="cod_contabilidad"></param>
-        /// <param name="rol"></param>
-        /// <param name="unidad"></param>
-        /// <param name="boolasingado"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException"></exception>
-        public ErrorDto Rol_Unidad_CC_Registro(int CodCliente, string cod_contabilidad, string rol, string unidad, int boolasingado, CentroCosto request)
+        public ErrorDto Rol_Unidad_CC_Registro(
+            int CodCliente,
+            string cod_contabilidad,
+            string rol,
+            string unidad,
+            int boolasingado,
+            CentroCosto request)
         {
             var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var resp = new ErrorDto
-            {
-                Code = 0
-            };
+            var resp = new ErrorDto { Code = 0 };
 
             var movimiento = boolasingado == 1 ? "A" : "E";
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = @$"exec [spPres_AC_Centro_Costo_Asigna] '{cod_contabilidad}', '{rol}', '{unidad}', '{request.cod_centro_costo}', '{request.user_registra}', '{movimiento}'";         
-                    connection.Execute(query);
-                    resp.Description = _registroActualizado;
-                }
+
+                const string proc = "spPres_AC_Centro_Costo_Asigna";
+
+                connection.Execute(
+                    proc,
+                    new
+                    {
+                        cod_contabilidad,
+                        rol,
+                        unidad,
+                        CodCentroCosto = request.cod_centro_costo,
+                        UsuarioRegistra = request.user_registra,
+                        Movimiento = movimiento
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
+
+                resp.Description = _registroActualizado;
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
-    
     }
 }

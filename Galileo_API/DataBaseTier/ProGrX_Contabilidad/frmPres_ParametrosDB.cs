@@ -14,98 +14,143 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        /// <summary>
-        /// Método para insertar o actualizar parametros
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="parametros"></param>
-        /// <returns></returns>
-        public ErrorDto PresParametros_Guardar(int CodEmpresa, PresParametrosDto parametros)
+        #region Helpers
+
+        private SqlConnection CreateConnection(int codEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+            return new SqlConnection(stringConn);
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Método para insertar o actualizar parámetros
+        /// </summary>
+        public ErrorDto PresParametros_Guardar(int codEmpresa, PresParametrosDto parametros)
+        {
             var response = new ErrorDto
             {
                 Code = 0
             };
+
+            const string selectSql = @"
+                SELECT 1
+                FROM PRES_PARAMETROS
+                WHERE COD_PARAMETRO = @CodParametro;";
+
+            const string insertSql = @"
+                INSERT INTO [dbo].[PRES_PARAMETROS]
+                (
+                    [COD_PARAMETRO],
+                    [DESCRIPCION],
+                    [NOTAS],
+                    [VALOR],
+                    [REGISTRO_USUARIO],
+                    [REGISTRO_FECHA]
+                )
+                VALUES
+                (
+                    @CodParametro,
+                    @Descripcion,
+                    @Notas,
+                    @Valor,
+                    @RegistroUsuario,
+                    GETDATE()
+                );";
+
+            const string updateSql = @"
+                UPDATE [dbo].[PRES_PARAMETROS]
+                SET 
+                    [DESCRIPCION]      = @Descripcion,
+                    [NOTAS]            = @Notas,
+                    [VALOR]            = @Valor,
+                    [MODIFICA_USUARIO] = @ModificaUsuario,
+                    [MODIFICA_FECHA]   = GETDATE()
+                WHERE COD_PARAMETRO   = @CodParametro;";
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = CreateConnection(codEmpresa);
+
+                var keyParams = new { CodParametro = parametros.cod_parametro };
+
+                // Valido si existe el parámetro
+                var existe = connection.ExecuteScalar<int?>(selectSql, keyParams);
+
+                if (existe == null)
                 {
-                   //valido si existe un parametro
-                   var query = $@"select * from Pres_Parametros where COD_PARAMETRO = '{parametros.cod_parametro}'";
-                    var existe = connection.Query(query).FirstOrDefault();
-
-                    if (existe == null)
+                    // INSERT
+                    var insertParams = new
                     {
-                        query = $@"INSERT INTO [dbo].[PRES_PARAMETROS]
-                                           ([COD_PARAMETRO]
-                                           ,[DESCRIPCION]
-                                           ,[NOTAS]
-                                           ,[VALOR]
-                                           ,[REGISTRO_USUARIO]
-                                           ,[REGISTRO_FECHA])
-                                     VALUES
-                                           ('{parametros.cod_parametro}'
-                                           ,'{parametros.descripcion}'
-                                           ,'{parametros.notas}'
-                                           ,'{parametros.valor}'
-                                           ,'{parametros.registro_usuario}'
-                                           ,GetDate() )";
-                        
-                    }
-                    else
-                    {
-                        query = $@"UPDATE [dbo].[PRES_PARAMETROS]
-                                       SET [DESCRIPCION] = '{parametros.descripcion}'
-                                          ,[NOTAS] = '{parametros.notas}'
-                                          ,[VALOR] = '{parametros.valor}'
-                                          ,[MODIFICA_USUARIO] = '{parametros.modifica_usuario}'
-                                          ,[MODIFICA_FECHA] = GetDate()
-                                     WHERE COD_PARAMETRO = '{parametros.cod_parametro}'";
-                    }
+                        CodParametro = parametros.cod_parametro,
+                        Descripcion = parametros.descripcion,
+                        Notas = parametros.notas,
+                        Valor = parametros.valor,
+                        RegistroUsuario = parametros.registro_usuario
+                    };
 
-                    response.Code = connection.Execute(query);
+                    response.Code = connection.Execute(insertSql, insertParams);
                 }
-            }catch(Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-            return response;
-        }
-
-        /// <summary>
-        /// Método para obtener la lista de parametros
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<PresParametrosDto>> PresParametrosLista_Obtener(int CodEmpresa)
-        {
-
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PresParametrosDto>>
-            {
-                Code = 0
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+                else
                 {
-                    var query = $@"select * from Pres_Parametros";
-                    response.Result = connection.Query<PresParametrosDto>(query).ToList();
+                    // UPDATE
+                    var updateParams = new
+                    {
+                        CodParametro = parametros.cod_parametro,
+                        Descripcion = parametros.descripcion,
+                        Notas = parametros.notas,
+                        Valor = parametros.valor,
+                        ModificaUsuario = parametros.modifica_usuario
+                    };
+
+                    response.Code = connection.Execute(updateSql, updateParams);
                 }
             }
             catch (Exception ex)
             {
                 response.Code = -1;
-                response.Description = ex.Message;
+                response.Description = "PresParametros_Guardar: " + ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Método para obtener la lista de parámetros
+        /// </summary>
+        public ErrorDto<List<PresParametrosDto>> PresParametrosLista_Obtener(int codEmpresa)
+        {
+            var response = new ErrorDto<List<PresParametrosDto>>
+            {
+                Code = 0
+            };
+
+            const string sql = @"
+                SELECT 
+                    COD_PARAMETRO      AS cod_parametro,
+                    DESCRIPCION        AS descripcion,
+                    NOTAS              AS notas,
+                    VALOR              AS valor,
+                    REGISTRO_USUARIO   AS registro_usuario,
+                    REGISTRO_FECHA     AS registro_fecha,
+                    MODIFICA_USUARIO   AS modifica_usuario,
+                    MODIFICA_FECHA     AS modifica_fecha
+                FROM PRES_PARAMETROS;";
+
+            try
+            {
+                using var connection = CreateConnection(codEmpresa);
+                response.Result = connection.Query<PresParametrosDto>(sql).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = "PresParametrosLista_Obtener: " + ex.Message;
                 response.Result = null;
             }
 
             return response;
-
         }
-
-         
     }
 }
