@@ -2,6 +2,7 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.PRES;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
@@ -22,6 +23,66 @@ namespace Galileo.DataBaseTier
             return new SqlConnection(stringConn);
         }
 
+        private ErrorDto<List<T>> ExecuteStoredProcList<T>(
+            int codEmpresa,
+            string procedureName,
+            object? parameters,
+            string metodoContexto)
+        {
+            var resp = new ErrorDto<List<T>>
+            {
+                Code = 0,
+                Result = new List<T>()
+            };
+
+            try
+            {
+                using var connection = CreateConnection(codEmpresa);
+
+                resp.Result = connection.Query<T>(
+                        procedureName,
+                        parameters,
+                        commandType: CommandType.StoredProcedure)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = $"{metodoContexto}: {ex.Message}";
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+
+        private ErrorDto<List<T>> ExecuteSqlList<T>(
+            int codEmpresa,
+            string sql,
+            object? parameters,
+            string metodoContexto)
+        {
+            var resp = new ErrorDto<List<T>>
+            {
+                Code = 0,
+                Result = new List<T>()
+            };
+
+            try
+            {
+                using var connection = CreateConnection(codEmpresa);
+
+                resp.Result = connection.Query<T>(sql, parameters).ToList();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = $"{metodoContexto}: {ex.Message}";
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+
         #endregion
 
         /// <summary>
@@ -34,37 +95,21 @@ namespace Galileo.DataBaseTier
             string codUnidad,
             string codCentroCosto)
         {
-            var resp = new ErrorDto<List<CuentasCatalogoData>> { Code = 0 };
-
             const string proc = "[spPres_CuentasCatalogo]";
 
-            try
+            var parameters = new
             {
-                using var connection = CreateConnection(codEmpresa);
+                CodContab = codContab,
+                CodModelo = codModelo,
+                CodUnidad = codUnidad,
+                CodCentroCosto = codCentroCosto
+            };
 
-                var parameters = new
-                {
-                    CodContab = codContab,
-                    CodModelo = codModelo,
-                    CodUnidad = codUnidad,
-                    CodCentroCosto = codCentroCosto
-                };
-
-                resp.Result = connection
-                    .Query<CuentasCatalogoData>(
-                        proc,
-                        parameters,
-                        commandType: System.Data.CommandType.StoredProcedure)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "spPres_CuentasCatalogo_Obtener: " + ex.Message;
-                resp.Result = null;
-            }
-
-            return resp;
+            return ExecuteStoredProcList<CuentasCatalogoData>(
+                codEmpresa,
+                proc,
+                parameters,
+                "spPres_CuentasCatalogo_Obtener");
         }
 
         /// <summary>
@@ -75,8 +120,6 @@ namespace Galileo.DataBaseTier
             int codContab,
             string usuario)
         {
-            var resp = new ErrorDto<List<ModeloGenericList>> { Code = 0 };
-
             const string sql = @"
                 SELECT 
                     P.cod_modelo AS IdX,
@@ -92,24 +135,17 @@ namespace Galileo.DataBaseTier
                 WHERE P.COD_CONTABILIDAD = @CodContab
                 ORDER BY Cc.Inicio_Anio DESC;";
 
-            try
+            var parameters = new
             {
-                using var connection = CreateConnection(codEmpresa);
+                CodContab = codContab,
+                Usuario = usuario
+            };
 
-                resp.Result = connection
-                    .Query<ModeloGenericList>(
-                        sql,
-                        new { CodContab = codContab, Usuario = usuario })
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelos_Obtener: " + ex.Message;
-                resp.Result = null;
-            }
-
-            return resp;
+            return ExecuteSqlList<ModeloGenericList>(
+                codEmpresa,
+                sql,
+                parameters,
+                "Pres_Modelos_Obtener");
         }
 
         /// <summary>
@@ -120,8 +156,6 @@ namespace Galileo.DataBaseTier
             int codContab,
             string usuario)
         {
-            var resp = new ErrorDto<List<ModeloGenericList>> { Code = 0 };
-
             const string sql = @"
                 SELECT 
                     Cu.Cod_Unidad AS IdX,
@@ -133,24 +167,17 @@ namespace Galileo.DataBaseTier
                     AND Pun.Usuario        = @Usuario
                 WHERE Cu.COD_CONTABILIDAD = @CodContab;";
 
-            try
+            var parameters = new
             {
-                using var connection = CreateConnection(codEmpresa);
+                CodContab = codContab,
+                Usuario = usuario
+            };
 
-                resp.Result = connection
-                    .Query<ModeloGenericList>(
-                        sql,
-                        new { CodContab = codContab, Usuario = usuario })
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Unidades_Obtener: " + ex.Message;
-                resp.Result = null;
-            }
-
-            return resp;
+            return ExecuteSqlList<ModeloGenericList>(
+                codEmpresa,
+                sql,
+                parameters,
+                "Pres_Unidades_Obtener");
         }
 
         /// <summary>
@@ -161,8 +188,6 @@ namespace Galileo.DataBaseTier
             int codContab,
             string codUnidad)
         {
-            var resp = new ErrorDto<List<ModeloGenericList>> { Code = 0 };
-
             const string sql = @"
                 SELECT 
                     Cc.COD_CENTRO_COSTO AS IdX,
@@ -173,24 +198,17 @@ namespace Galileo.DataBaseTier
                     AND Uc.COD_UNIDAD      = @CodUnidad
                 WHERE Cc.COD_CONTABILIDAD = @CodContab;";
 
-            try
+            var parameters = new
             {
-                using var connection = CreateConnection(codEmpresa);
+                CodContab = codContab,
+                CodUnidad = codUnidad
+            };
 
-                resp.Result = connection
-                    .Query<ModeloGenericList>(
-                        sql,
-                        new { CodContab = codContab, CodUnidad = codUnidad })
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_CentroCosto_Obtener: " + ex.Message;
-                resp.Result = null;
-            }
-
-            return resp;
+            return ExecuteSqlList<ModeloGenericList>(
+                codEmpresa,
+                sql,
+                parameters,
+                "Pres_CentroCosto_Obtener");
         }
 
         /// <summary>
@@ -212,7 +230,6 @@ namespace Galileo.DataBaseTier
 
                 foreach (PresModeloCuentasImportData row in request)
                 {
-                    // Si quieres, podrías convertir Corte a DateTime en lugar de string
                     var fechaFormateada = row.Corte.Split(' ')[0] + " 23:59:59";
 
                     var values = new
@@ -231,7 +248,7 @@ namespace Galileo.DataBaseTier
                     connection.Execute(
                         proc,
                         values,
-                        commandType: System.Data.CommandType.StoredProcedure,
+                        commandType: CommandType.StoredProcedure,
                         commandTimeout: 150);
                 }
             }
@@ -253,40 +270,20 @@ namespace Galileo.DataBaseTier
             string codModelo,
             string usuario)
         {
-            var resp = new ErrorDto<List<PresModeloCuentasImportData>>
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
             const string proc = "[spPres_Presupuesto_Import_Revisa]";
 
-            try
+            var parameters = new
             {
-                using var connection = CreateConnection(codEmpresa);
+                Modelo = codModelo,
+                Contabilidad = codContab,
+                Usuario = usuario
+            };
 
-                var parameters = new
-                {
-                    Modelo = codModelo,
-                    Contabilidad = codContab,
-                    Usuario = usuario
-                };
-
-                resp.Result = connection
-                    .Query<PresModeloCuentasImportData>(
-                        proc,
-                        parameters,
-                        commandType: System.Data.CommandType.StoredProcedure)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "spPres_Modelo_Cuentas_RevisaImport: " + ex.Message;
-                resp.Result = null;
-            }
-
-            return resp;
+            return ExecuteStoredProcList<PresModeloCuentasImportData>(
+                codEmpresa,
+                proc,
+                parameters,
+                "spPres_Modelo_Cuentas_RevisaImport");
         }
 
         /// <summary>
@@ -322,14 +319,14 @@ namespace Galileo.DataBaseTier
                 connection.Execute(
                     procMapeo,
                     parameters,
-                    commandType: System.Data.CommandType.StoredProcedure,
+                    commandType: CommandType.StoredProcedure,
                     commandTimeout: 150);
 
                 // 2) Primer proceso
                 var result = connection.QueryFirstOrDefault(
                     procProcesa,
                     parameters,
-                    commandType: System.Data.CommandType.StoredProcedure,
+                    commandType: CommandType.StoredProcedure,
                     commandTimeout: 150);
 
                 if (result != null)
@@ -354,7 +351,7 @@ namespace Galileo.DataBaseTier
                     var result2 = connection.QueryFirstOrDefault(
                         procProcesa,
                         parameters,
-                        commandType: System.Data.CommandType.StoredProcedure,
+                        commandType: CommandType.StoredProcedure,
                         commandTimeout: 150);
 
                     if (result2 != null)
@@ -404,7 +401,6 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = CreateConnection(codEmpresa);
 
-
                 var periodos = connection
                     .Query<CntXPeriodoFiscalMeses>(
                         proc,
@@ -414,29 +410,29 @@ namespace Galileo.DataBaseTier
                             Tipo = 0,
                             Modelo = codModelo
                         },
-                        commandType: System.Data.CommandType.StoredProcedure)
+                        commandType: CommandType.StoredProcedure)
                     .ToList();
 
                 foreach (var item in request)
                 {
                     foreach (var periodo in periodos)
                     {
-                        float valor = 0;
-                        switch (periodo.Mes)
+                        float valor = periodo.Mes switch
                         {
-                            case 1:  valor = item.Enero; break;
-                            case 2:  valor = item.Febrero; break;
-                            case 3:  valor = item.Marzo; break;
-                            case 4:  valor = item.Abril; break;
-                            case 5:  valor = item.Mayo; break;
-                            case 6:  valor = item.Junio; break;
-                            case 7:  valor = item.Julio; break;
-                            case 8:  valor = item.Agosto; break;
-                            case 9:  valor = item.Septiembre; break;
-                            case 10: valor = item.Octubre; break;
-                            case 11: valor = item.Noviembre; break;
-                            case 12: valor = item.Diciembre; break;
-                        }
+                            1 => item.Enero,
+                            2 => item.Febrero,
+                            3 => item.Marzo,
+                            4 => item.Abril,
+                            5 => item.Mayo,
+                            6 => item.Junio,
+                            7 => item.Julio,
+                            8 => item.Agosto,
+                            9 => item.Septiembre,
+                            10 => item.Octubre,
+                            11 => item.Noviembre,
+                            12 => item.Diciembre,
+                            _ => 0
+                        };
 
                         if (valor >= 0)
                         {

@@ -404,7 +404,7 @@ namespace Galileo.DataBaseTier
             if (!string.IsNullOrEmpty(filtros.centro_costo) &&
                 filtros.centro_costo == "TODOS")
             {
-                filtros.centro_costo = null;
+                filtros.centro_costo = "";
             }
         }
 

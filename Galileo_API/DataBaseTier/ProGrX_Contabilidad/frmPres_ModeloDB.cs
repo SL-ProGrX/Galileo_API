@@ -24,6 +24,67 @@ namespace Galileo.DataBaseTier
             return new SqlConnection(stringConn);
         }
 
+        private static int ToBit(bool value) => value ? 1 : 0;
+
+        private ErrorDto<List<T>> ExecuteStoredProcList<T>(
+            int codEmpresa,
+            string procedureName,
+            object? parameters,
+            string metodoContexto)
+        {
+            var resp = new ErrorDto<List<T>>
+            {
+                Code = 0,
+                Result = new List<T>()
+            };
+
+            try
+            {
+                using var connection = CreateConnection(codEmpresa);
+
+                resp.Result = connection.Query<T>(
+                    procedureName,
+                    parameters,
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = $"{metodoContexto}: {ex.Message}";
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+
+        private ErrorDto ExecuteStoredProcNonQuery(
+            int codEmpresa,
+            string procedureName,
+            object? parameters,
+            string metodoContexto,
+            string successMessage = "Ok")
+        {
+            var resp = new ErrorDto { Code = 0, Description = successMessage };
+
+            try
+            {
+                using var connection = CreateConnection(codEmpresa);
+
+                connection.Execute(
+                    procedureName,
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = $"{metodoContexto}: {ex.Message}";
+            }
+
+            return resp;
+        }
+
         #endregion
 
         /// <summary>
@@ -209,81 +270,47 @@ namespace Galileo.DataBaseTier
         /// <summary>Insertar Modelo</summary>
         public ErrorDto Pres_Modelo_Insertar(int codEmpresa, PresModeloInsert request)
         {
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
             const string proc = "[spPres_ModelosRegistra]";
 
-            try
+            var estado = Strings.Mid(request.Estado, 1, 1); // Mantengo tu lógica VB
+
+            var parameters = new
             {
-                using var connection = CreateConnection(codEmpresa);
+                CodModelo = request.Cod_Modelo,
+                CodContab = request.Cod_Contabilidad,
+                IdCierre = request.ID_Cierre,
+                Descripcion = request.Descripcion,
+                Notas = request.Notas,
+                Estado = estado,
+                Usuario = request.Usuario
+            };
 
-                var estado = Strings.Mid(request.Estado, 1, 1); // Mantengo tu lógica VB
-
-                var parameters = new
-                {
-                    CodModelo = request.Cod_Modelo,
-                    CodContab = request.Cod_Contabilidad,
-                    IdCierre = request.ID_Cierre,
-                    Descripcion = request.Descripcion,
-                    Notas = request.Notas,
-                    Estado = estado,
-                    Usuario = request.Usuario
-                };
-
-                connection.Execute(
-                    proc,
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                resp.Description = "Información guardada satisfactoriamente...";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelo_Insertar: " + ex.Message;
-            }
-            return resp;
+            return ExecuteStoredProcNonQuery(
+                codEmpresa,
+                proc,
+                parameters,
+                "Pres_Modelo_Insertar",
+                "Información guardada satisfactoriamente...");
         }
 
         /// <summary>Mapea Cuentas sin Centro Costo</summary>
         public ErrorDto Pres_MapeaCuentasSinCentroCosto_SP(int codEmpresa, string codModelo, int codContab, string usuario)
         {
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
             const string proc = "[spPres_MapeaCuentasSinCentroCosto]";
 
-            try
+            var parameters = new
             {
-                using var connection = CreateConnection(codEmpresa);
+                CodModelo = codModelo,
+                CodContab = codContab,
+                Usuario = usuario
+            };
 
-                var parameters = new
-                {
-                    CodModelo = codModelo,
-                    CodContab = codContab,
-                    Usuario = usuario
-                };
-
-                connection.Execute(
-                    proc,
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                resp.Description = "Revisión de Mapeo de Cuentas sin Centro de Costo, realizado satisfactoriamente!";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_MapeaCuentasSinCentroCosto_SP: " + ex.Message;
-            }
-            return resp;
+            return ExecuteStoredProcNonQuery(
+                codEmpresa,
+                proc,
+                parameters,
+                "Pres_MapeaCuentasSinCentroCosto_SP",
+                "Revisión de Mapeo de Cuentas sin Centro de Costo, realizado satisfactoriamente!");
         }
 
         /// <summary>Reiniciar Modelo</summary>
@@ -325,337 +352,157 @@ namespace Galileo.DataBaseTier
         /// <summary>Obtiene los usuarios y ajustes de un modelo</summary>
         public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_Usuarios_SP(int codEmpresa, string codModelo, int codContab)
         {
-            var resp = new ErrorDto<List<PressModeloUsuarios>>
+            var parameters = new
             {
-                Code = 0,
-                Result = new List<PressModeloUsuarios>()
+                CodContab = codContab,
+                CodModelo = codModelo
             };
 
-            const string proc = "[spPres_Modelo_Usuarios]";
-
-            try
-            {
-                using var connection = CreateConnection(codEmpresa);
-
-                var parameters = new
-                {
-                    CodContab = codContab,
-                    CodModelo = codModelo
-                };
-
-                resp.Result = connection
-                    .Query<PressModeloUsuarios>(
-                        proc,
-                        parameters,
-                        commandType: CommandType.StoredProcedure)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelo_Usuarios_SP: " + ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return ExecuteStoredProcList<PressModeloUsuarios>(
+                codEmpresa,
+                "[spPres_Modelo_Usuarios]",
+                parameters,
+                "Pres_Modelo_Usuarios_SP");
         }
 
         /// <summary>Obtiene los ajustes de un modelo</summary>
         public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_Ajustes_SP(int codEmpresa, string codModelo, int codContab)
         {
-            var resp = new ErrorDto<List<PressModeloAjustes>>
+            var parameters = new
             {
-                Code = 0,
-                Result = new List<PressModeloAjustes>()
+                CodContab = codContab,
+                CodModelo = codModelo
             };
 
-            const string proc = "[spPres_Modelo_Ajustes]";
-
-            try
-            {
-                using var connection = CreateConnection(codEmpresa);
-
-                var parameters = new
-                {
-                    CodContab = codContab,
-                    CodModelo = codModelo
-                };
-
-                resp.Result = connection
-                    .Query<PressModeloAjustes>(
-                        proc,
-                        parameters,
-                        commandType: CommandType.StoredProcedure)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelo_Ajustes_SP: " + ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return ExecuteStoredProcList<PressModeloAjustes>(
+                codEmpresa,
+                "[spPres_Modelo_Ajustes]",
+                parameters,
+                "Pres_Modelo_Ajustes_SP");
         }
 
         /// <summary>Obtiene los ajustes y usuarios autorizados de un modelo</summary>
         public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_Ajustes_Autorizados_SP(int codEmpresa, string codModelo, int codContab)
         {
-            var resp = new ErrorDto<List<PressModeloAjustes>>
+            var parameters = new
             {
-                Code = 0,
-                Result = new List<PressModeloAjustes>()
+                CodContab = codContab,
+                CodModelo = codModelo
             };
 
-            const string proc = "[spPres_Modelo_Ajustes_Autorizados]";
-
-            try
-            {
-                using var connection = CreateConnection(codEmpresa);
-
-                var parameters = new
-                {
-                    CodContab = codContab,
-                    CodModelo = codModelo
-                };
-
-                resp.Result = connection
-                    .Query<PressModeloAjustes>(
-                        proc,
-                        parameters,
-                        commandType: CommandType.StoredProcedure)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelo_Ajustes_Autorizados_SP: " + ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return ExecuteStoredProcList<PressModeloAjustes>(
+                codEmpresa,
+                "[spPres_Modelo_Ajustes_Autorizados]",
+                parameters,
+                "Pres_Modelo_Ajustes_Autorizados_SP");
         }
 
         /// <summary>Obtiene los usuarios autorizados de un modelo</summary>
         public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_Usuarios_Autorizados_SP(int codEmpresa, string codModelo, int codContab)
         {
-            var resp = new ErrorDto<List<PressModeloUsuarios>>
+            var parameters = new
             {
-                Code = 0,
-                Result = new List<PressModeloUsuarios>()
+                CodContab = codContab,
+                CodModelo = codModelo
             };
 
-            const string proc = "[spPres_Modelo_Usuarios_Autorizados]";
-
-            try
-            {
-                using var connection = CreateConnection(codEmpresa);
-
-                var parameters = new
-                {
-                    CodContab = codContab,
-                    CodModelo = codModelo
-                };
-
-                resp.Result = connection
-                    .Query<PressModeloUsuarios>(
-                        proc,
-                        parameters,
-                        commandType: CommandType.StoredProcedure)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelo_Usuarios_Autorizados_SP: " + ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return ExecuteStoredProcList<PressModeloUsuarios>(
+                codEmpresa,
+                "[spPres_Modelo_Usuarios_Autorizados]",
+                parameters,
+                "Pres_Modelo_Usuarios_Autorizados_SP");
         }
 
         /// <summary>Obtiene los ajustes y usuarios de un modelo</summary>
         public ErrorDto<List<PressModeloAjustes>> Pres_Modelo_AjUs_Ajustes_SP(int codEmpresa, string codModelo, int codContab, string usuario)
         {
-            var resp = new ErrorDto<List<PressModeloAjustes>>
+            var parameters = new
             {
-                Code = 0,
-                Result = new List<PressModeloAjustes>()
+                CodContab = codContab,
+                CodModelo = codModelo,
+                Usuario = usuario
             };
 
-            const string proc = "[spPres_Modelo_AjUs_Ajustes]";
-
-            try
-            {
-                using var connection = CreateConnection(codEmpresa);
-
-                var parameters = new
-                {
-                    CodContab = codContab,
-                    CodModelo = codModelo,
-                    Usuario = usuario
-                };
-
-                resp.Result = connection
-                    .Query<PressModeloAjustes>(
-                        proc,
-                        parameters,
-                        commandType: CommandType.StoredProcedure)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelo_AjUs_Ajustes_SP: " + ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return ExecuteStoredProcList<PressModeloAjustes>(
+                codEmpresa,
+                "[spPres_Modelo_AjUs_Ajustes]",
+                parameters,
+                "Pres_Modelo_AjUs_Ajustes_SP");
         }
 
         /// <summary>Obtiene los usuarios y ajustes de un modelo</summary>
         public ErrorDto<List<PressModeloUsuarios>> Pres_Modelo_AjUs_Usuarios_SP(int codEmpresa, string codModelo, int codContab, string codAjuste)
         {
-            var resp = new ErrorDto<List<PressModeloUsuarios>>
+            var parameters = new
             {
-                Code = 0,
-                Result = new List<PressModeloUsuarios>()
+                CodContab = codContab,
+                CodModelo = codModelo,
+                CodAjuste = codAjuste
             };
 
-            const string proc = "[spPres_Modelo_AjUs_Usuarios]";
-
-            try
-            {
-                using var connection = CreateConnection(codEmpresa);
-
-                var parameters = new
-                {
-                    CodContab = codContab,
-                    CodModelo = codModelo,
-                    CodAjuste = codAjuste
-                };
-
-                resp.Result = connection
-                    .Query<PressModeloUsuarios>(
-                        proc,
-                        parameters,
-                        commandType: CommandType.StoredProcedure)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelo_AjUs_Usuarios_SP: " + ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return ExecuteStoredProcList<PressModeloUsuarios>(
+                codEmpresa,
+                "[spPres_Modelo_AjUs_Usuarios]",
+                parameters,
+                "Pres_Modelo_AjUs_Usuarios_SP");
         }
 
         /// <summary>Ajuste Modelo (usuario-ajuste)</summary>
         public ErrorDto Pres_Modelo_AjUs_Registro_SP(int codEmpresa, PressModeloAjUsRegistro request)
         {
-            var resp = new ErrorDto { Code = 0 };
-
-            const string proc = "[spPres_Modelo_AjUs_Registro]";
-
-            try
+            var parameters = new
             {
-                using var connection = CreateConnection(codEmpresa);
+                CodContab = request.CodContab,
+                CodModelo = request.CodModelo,
+                CodAjuste = request.Cod_Ajuste,
+                Usuario = request.Usuario,
+                UsuarioReg = request.UsuarioReg,
+                Activo = ToBit(request.Activo)
+            };
 
-                int activoValue = request.Activo ? 1 : 0;
-
-                var parameters = new
-                {
-                    CodContab = request.CodContab,
-                    CodModelo = request.CodModelo,
-                    CodAjuste = request.Cod_Ajuste,
-                    Usuario = request.Usuario,
-                    UsuarioReg = request.UsuarioReg,
-                    Activo = activoValue
-                };
-
-                connection.Execute(
-                    proc,
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                resp.Description = "Ok";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelo_AjUs_Registro_SP: " + ex.Message;
-            }
-            return resp;
+            return ExecuteStoredProcNonQuery(
+                codEmpresa,
+                "[spPres_Modelo_AjUs_Registro]",
+                parameters,
+                "Pres_Modelo_AjUs_Registro_SP");
         }
 
         /// <summary>Ajuste Modelo (ajustes)</summary>
         public ErrorDto Pres_Modelo_Ajustes_Registro_SP(int codEmpresa, PressModeloAjUsRegistro request)
         {
-            var resp = new ErrorDto { Code = 0 };
-
-            const string proc = "[spPres_Modelo_Ajustes_Registro]";
-
-            try
+            var parameters = new
             {
-                using var connection = CreateConnection(codEmpresa);
+                CodContab = request.CodContab,
+                CodModelo = request.CodModelo,
+                CodAjuste = request.Cod_Ajuste,
+                UsuarioReg = request.UsuarioReg,
+                Activo = ToBit(request.Activo)
+            };
 
-                int activoValue = request.Activo ? 1 : 0;
-
-                var parameters = new
-                {
-                    CodContab = request.CodContab,
-                    CodModelo = request.CodModelo,
-                    CodAjuste = request.Cod_Ajuste,
-                    UsuarioReg = request.UsuarioReg,
-                    Activo = activoValue
-                };
-
-                connection.Execute(
-                    proc,
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                resp.Description = "Ok";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelo_Ajustes_Registro_SP: " + ex.Message;
-            }
-            return resp;
+            return ExecuteStoredProcNonQuery(
+                codEmpresa,
+                "[spPres_Modelo_Ajustes_Registro]",
+                parameters,
+                "Pres_Modelo_Ajustes_Registro_SP");
         }
 
         /// <summary>Usuario Modelo Registro</summary>
         public ErrorDto Pres_Modelo_Usuarios_Registro_SP(int codEmpresa, PressModeloAjUsRegistro request)
         {
-            var resp = new ErrorDto { Code = 0 };
-
-            const string proc = "[spPres_Modelo_Usuarios_Registro]";
-
-            try
+            var parameters = new
             {
-                using var connection = CreateConnection(codEmpresa);
+                CodContab = request.CodContab,
+                CodModelo = request.CodModelo,
+                Usuario = request.Usuario,
+                UsuarioReg = request.UsuarioReg,
+                Activo = ToBit(request.Activo)
+            };
 
-                int activoValue = request.Activo ? 1 : 0;
-
-                var parameters = new
-                {
-                    CodContab = request.CodContab,
-                    CodModelo = request.CodModelo,
-                    Usuario = request.Usuario,
-                    UsuarioReg = request.UsuarioReg,
-                    Activo = activoValue
-                };
-
-                connection.Execute(
-                    proc,
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-
-                resp.Description = "Ok";
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = "Pres_Modelo_Usuarios_Registro_SP: " + ex.Message;
-            }
-            return resp;
+            return ExecuteStoredProcNonQuery(
+                codEmpresa,
+                "[spPres_Modelo_Usuarios_Registro]",
+                parameters,
+                "Pres_Modelo_Usuarios_Registro_SP");
         }
 
         /// <summary>Eliminar Modelo</summary>
