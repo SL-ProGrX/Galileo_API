@@ -7,12 +7,13 @@ using Galileo.Models.ProGrX_Contabilidad;
 
 namespace Galileo.Controllers.ProGrX_Contabilidad
 {
-    [Route("api/[controller]")]
+    [Route("api/frmPres_Formulacion_Automatica")]
+    [Route("api/FrmPresFormulacionAutomatica")]
     [ApiController]
-    public class frmPres_Formulacion_AutomaticaController : ControllerBase
+    public class FrmPresFormulacionAutomaticaController : ControllerBase
     {
         readonly FrmPresFormulacionAutomaticaBl _bl;
-        public frmPres_Formulacion_AutomaticaController(IConfiguration config)
+        public FrmPresFormulacionAutomaticaController(IConfiguration config)
         {
             _bl = new FrmPresFormulacionAutomaticaBl(config);
         }
