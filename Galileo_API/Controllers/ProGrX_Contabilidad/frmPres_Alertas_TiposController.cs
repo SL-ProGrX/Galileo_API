@@ -6,13 +6,14 @@ using Galileo.Models.PRES;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/frmPres_Alertas_Tipos")]
+    [Route("api/FrmPresAlertasTipos")]
     [ApiController]
-    public class frmPres_Alertas_TiposController : ControllerBase
+    public class FrmPresAlertasTiposController : ControllerBase
     {
         readonly FrmPresAlertasTiposBl _bl;
 
-        public frmPres_Alertas_TiposController(IConfiguration config)
+        public FrmPresAlertasTiposController(IConfiguration config)
         {
             _bl = new FrmPresAlertasTiposBl(config);
         }

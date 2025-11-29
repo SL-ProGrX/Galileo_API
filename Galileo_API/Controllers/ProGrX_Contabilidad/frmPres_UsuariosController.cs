@@ -6,12 +6,13 @@ using Galileo.Models.PRES;
 
 namespace Galileo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/frmPres_Usuarios")]
+    [Route("api/FrmPresUsuarios")]
     [ApiController]
-    public class frmPres_UsuariosController : ControllerBase
+    public class FrmPresUsuariosController : ControllerBase
     {
         readonly FrmPresUsuariosBl _bl;
-        public frmPres_UsuariosController(IConfiguration config)
+        public FrmPresUsuariosController(IConfiguration config)
         {
             _bl = new FrmPresUsuariosBl(config);
         }
