@@ -162,56 +162,45 @@ namespace Galileo.DataBaseTier
         }
 
         public ErrorDto<CntxCuentasData> Pres_Definicion_scroll(
-            int codEmpresa,
-            int scrollValue,
-            string? codCtaMask,
-            int codContab)
+            int codEmpresa, int scrollValue, string? codCtaMask, int codContab)
         {
-            var resp = new ErrorDto<CntxCuentasData>
-            {
-                Code = 0,
-                Result = new CntxCuentasData()
-            };
+            var resp = new ErrorDto<CntxCuentasData> { Code = 0 };
 
             const string sqlNext = @"
-                SELECT TOP 1 Cod_Cuenta_Mask, Descripcion
-                FROM CntX_cuentas
-                WHERE COD_CONTABILIDAD = @CodContab
-                  AND Acepta_Movimientos = 1
-                  AND Cod_Cuenta_Mask > @CodCtaMask
-                ORDER BY Cod_Cuenta_Mask ASC;";
+            SELECT TOP 1 Cod_Cuenta_Mask, Descripcion
+            FROM CntX_cuentas
+            WHERE COD_CONTABILIDAD = @CodContab
+            AND Acepta_Movimientos = 1
+            AND Cod_Cuenta_Mask > @CodCtaMask
+            ORDER BY Cod_Cuenta_Mask ASC;";
 
-            const string sqlPrevious = @"
-                SELECT TOP 1 Cod_Cuenta_Mask, Descripcion
-                FROM CntX_cuentas
-                WHERE COD_CONTABILIDAD = @CodContab
-                  AND Acepta_Movimientos = 1
-                  AND Cod_Cuenta_Mask < @CodCtaMask
-                ORDER BY Cod_Cuenta_Mask DESC;";
+            const string sqlPrev = @"
+            SELECT TOP 1 Cod_Cuenta_Mask, Descripcion
+            FROM CntX_cuentas
+            WHERE COD_CONTABILIDAD = @CodContab
+            AND Acepta_Movimientos = 1
+            AND Cod_Cuenta_Mask < @CodCtaMask
+            ORDER BY Cod_Cuenta_Mask DESC;";
 
             try
             {
                 using var connection = CreateConnection(codEmpresa);
 
-                var parameters = new
-                {
-                    CodContab = codContab,
-                    CodCtaMask = codCtaMask
-                };
-
-                var sql = scrollValue == 1 ? sqlNext : sqlPrevious;
-
-                resp.Result = connection.QueryFirstOrDefault<CntxCuentasData>(sql, parameters);
+                resp.Result = connection.QueryFirstOrDefault<CntxCuentasData>(
+                    scrollValue == 1 ? sqlNext : sqlPrev,
+                    new { CodContab = codContab, CodCtaMask = codCtaMask ?? string.Empty }
+                );
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = "Pres_Definicion_scroll: " + ex.Message;
-                resp.Result = null;
             }
 
             return resp;
         }
+
+
 
         public ErrorDto<List<VistaPresCuentaData>> Pres_VistaPresupuesto_Cuenta_SP(
             int codEmpresa,

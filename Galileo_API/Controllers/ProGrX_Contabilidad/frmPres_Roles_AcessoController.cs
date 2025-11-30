@@ -84,7 +84,7 @@ namespace Galileo.Controllers
         [HttpGet("Rol_Unidades_Obtener")]
         public ErrorDto<List<UnidadesRolDto>> Rol_Unidades_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
         {
-            return _bl.Rol_Unidades_Obtener(CodCliente, cod_contabilidad, rol, filtro, usuario);
+            return _bl.Rol_Unidades_Obtener(CodCliente, cod_contabilidad, rol, usuario);
         }
 
         [Authorize]
