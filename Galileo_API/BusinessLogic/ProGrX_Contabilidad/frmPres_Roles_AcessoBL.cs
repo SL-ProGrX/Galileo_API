@@ -57,9 +57,9 @@ namespace Galileo.BusinessLogic
             return _db.Rol_Eliminar(CodEmpresa, codRol);
         }
 
-        public ErrorDto<List<UnidadesRolDto>> Rol_Unidades_Obtener(int CodCliente, string cod_contabilidad, string rol, string? filtro, string usuario)
+        public ErrorDto<List<UnidadesRolDto>> Rol_Unidades_Obtener(int CodCliente, string cod_contabilidad, string rol, string usuario)
         {
-            return _db.Rol_Unidades_Obtener(CodCliente, cod_contabilidad, rol, filtro, usuario);
+            return _db.Rol_Unidades_Obtener(CodCliente, cod_contabilidad, rol, usuario);
         }
 
         public ErrorDto Rol_Unidad_Registro(int CodCliente, string cod_contabilidad, string rol, int boolasingado, UnidadesRolDto request)

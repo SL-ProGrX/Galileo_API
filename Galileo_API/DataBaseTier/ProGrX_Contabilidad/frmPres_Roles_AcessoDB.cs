@@ -158,9 +158,9 @@ namespace Galileo.DataBaseTier
                     proc,
                     new
                     {
-                        cod_contabilidad,
+                        contabilidad = cod_contabilidad,
                         rol,
-                        filtro,
+                        filtro = string.Empty,
                         usuario
                     },
                     commandType: CommandType.StoredProcedure
@@ -204,11 +204,11 @@ namespace Galileo.DataBaseTier
                     proc,
                     new
                     {
-                        cod_contabilidad,
+                        contabilidad =cod_contabilidad,
                         rol,
-                        UsuarioMiembro = request.usuario,
-                        UsuarioRegistra = usuario,
-                        Movimiento = mov
+                        miembro = request.usuario,
+                        usuario = usuario,
+                        mov = mov
                     },
                     commandType: CommandType.StoredProcedure
                 );
@@ -247,11 +247,11 @@ namespace Galileo.DataBaseTier
                     proc,
                     new
                     {
-                        cod_contabilidad,
+                        contabilidad = cod_contabilidad,
                         rol,
-                        filtro1 = string.Empty,
-                        filtro2 = string.Empty,
-                        filtro3 = string.Empty,
+                        ctainicio = string.Empty,
+                        ctacorte = string.Empty,
+                        filtro = string.Empty,
                         usuario
                     },
                     commandType: CommandType.StoredProcedure
@@ -293,9 +293,9 @@ namespace Galileo.DataBaseTier
                     proc,
                     new
                     {
-                        cod_contabilidad,
+                        contabilidad =cod_contabilidad,
                         rol,
-                        filtro,
+                        filtro = string.Empty,
                         usuario
                     },
                     commandType: CommandType.StoredProcedure
@@ -338,11 +338,11 @@ namespace Galileo.DataBaseTier
                     proc,
                     new
                     {
-                        cod_contabilidad,
+                        contabilidad = cod_contabilidad,
                         rol,
-                        CodCuentaMask = request.cod_cuenta_mask,
-                        UsuarioRegistra = request.user_registra,
-                        Movimiento = mov
+                        cuenta = request.cod_cuenta_mask,
+                        usuario = request.user_registra,
+                        mov = mov
                     },
                     commandType: CommandType.StoredProcedure
                 );
@@ -434,7 +434,6 @@ namespace Galileo.DataBaseTier
             int CodCliente,
             string cod_contabilidad,
             string rol,
-            string? filtro,
             string usuario)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -450,9 +449,9 @@ namespace Galileo.DataBaseTier
                     proc,
                     new
                     {
-                        cod_contabilidad,
+                        contabilidad = cod_contabilidad,
                         rol,
-                        filtro,
+                        filtro =string.Empty,
                         usuario
                     },
                     commandType: CommandType.StoredProcedure
@@ -496,11 +495,11 @@ namespace Galileo.DataBaseTier
                     proc,
                     new
                     {
-                        cod_contabilidad,
+                        contabilidad = cod_contabilidad,
                         rol,
-                        CodUnidad = request.cod_unidad,
-                        UsuarioRegistra = request.user_registra,
-                        Movimiento = movimiento
+                        unidad = request.cod_unidad,
+                        usuario = request.user_registra,
+                        mov = movimiento
                     },
                     commandType: CommandType.StoredProcedure
                 );
@@ -540,10 +539,10 @@ namespace Galileo.DataBaseTier
                     proc,
                     new
                     {
-                        cod_contabilidad,
+                        contabilidad = cod_contabilidad,
                         rol,
                         unidad,
-                        filtro,
+                        filtro = string.Empty,
                         usuario
                     },
                     commandType: CommandType.StoredProcedure
@@ -588,12 +587,12 @@ namespace Galileo.DataBaseTier
                     proc,
                     new
                     {
-                        cod_contabilidad,
+                        contabilidad = cod_contabilidad,
                         rol,
                         unidad,
-                        CodCentroCosto = request.cod_centro_costo,
-                        UsuarioRegistra = request.user_registra,
-                        Movimiento = movimiento
+                        CentroCosto = request.cod_centro_costo,
+                        usuario = request.user_registra,
+                        mov = movimiento
                     },
                     commandType: CommandType.StoredProcedure
                 );

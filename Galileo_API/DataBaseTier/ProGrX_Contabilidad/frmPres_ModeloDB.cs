@@ -169,8 +169,8 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new
                 {
-                    CodModelo = codModelo,
-                    CodContab = codContab
+                    Cod_Modelo = codModelo,
+                    Cod_Conta = codContab
                 };
 
                 resp.Result = connection.QueryFirstOrDefault<PresModeloData>(
@@ -191,50 +191,47 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Hacer scroll en los modelos
         /// </summary>
-        public ErrorDto<PresModeloData> Pres_Modelo_scroll(int codEmpresa, int scrollValue, string? codModelo, int codContab)
+        public ErrorDto<PresModeloData> Pres_Modelo_scroll(
+            int codEmpresa, int scrollValue, string? codModelo, int codContab)
         {
-            var resp = new ErrorDto<PresModeloData>
-            {
-                Code = 0,
-                Result = new PresModeloData()
-            };
+            var resp = new ErrorDto<PresModeloData> { Code = 0 };
 
             const string sqlNext = @"
-                SELECT TOP 1 COD_MODELO
-                FROM PRES_MODELOS
-                WHERE cod_contabilidad = @CodContab
-                  AND COD_MODELO > @CodModelo
-                ORDER BY COD_MODELO ASC;";
+            SELECT TOP 1 COD_MODELO
+            FROM PRES_MODELOS
+            WHERE cod_contabilidad = @CodContab
+            AND COD_MODELO > @CodModelo
+            ORDER BY COD_MODELO ASC;";
 
             const string sqlPrev = @"
-                SELECT TOP 1 COD_MODELO
-                FROM PRES_MODELOS
-                WHERE cod_contabilidad = @CodContab
-                  AND COD_MODELO < @CodModelo
-                ORDER BY COD_MODELO DESC;";
+            SELECT TOP 1 COD_MODELO
+            FROM PRES_MODELOS
+            WHERE cod_contabilidad = @CodContab
+            AND COD_MODELO < @CodModelo
+            ORDER BY COD_MODELO DESC;";
 
             try
             {
                 using var connection = CreateConnection(codEmpresa);
 
-                var parameters = new
-                {
-                    CodContab = codContab,
-                    CodModelo = codModelo
-                };
-
-                var sql = scrollValue == 1 ? sqlNext : sqlPrev;
-
-                resp.Result = connection.QueryFirstOrDefault<PresModeloData>(sql, parameters);
+                resp.Result = connection.QueryFirstOrDefault<PresModeloData>(
+                    scrollValue == 1 ? sqlNext : sqlPrev,
+                    new
+                    {
+                        CodContab = codContab,
+                        CodModelo = codModelo ?? string.Empty  // <- clave para la primera vez
+                    }
+                );
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = "Pres_Modelo_scroll: " + ex.Message;
-                resp.Result = null;
             }
+
             return resp;
         }
+
 
         /// <summary>Lista de Modelos</summary>
         public ErrorDto<List<PresModeloData>> Pres_Modelos_Lista(int codEmpresa, int codContab)
@@ -276,9 +273,9 @@ namespace Galileo.DataBaseTier
 
             var parameters = new
             {
-                CodModelo = request.Cod_Modelo,
-                CodContab = request.Cod_Contabilidad,
-                IdCierre = request.ID_Cierre,
+                Cod_Modelo = request.Cod_Modelo,
+                Cod_Contab = request.Cod_Contabilidad,
+                Cierre = request.ID_Cierre,
                 Descripcion = request.Descripcion,
                 Notas = request.Notas,
                 Estado = estado,
@@ -300,8 +297,8 @@ namespace Galileo.DataBaseTier
 
             var parameters = new
             {
-                CodModelo = codModelo,
-                CodContab = codContab,
+                Modelo = codModelo,
+                contabilidad = codContab,
                 Usuario = usuario
             };
 
@@ -354,8 +351,8 @@ namespace Galileo.DataBaseTier
         {
             var parameters = new
             {
-                CodContab = codContab,
-                CodModelo = codModelo
+                contabilidad = codContab,
+                Modelo = codModelo
             };
 
             return ExecuteStoredProcList<PressModeloUsuarios>(
@@ -370,8 +367,8 @@ namespace Galileo.DataBaseTier
         {
             var parameters = new
             {
-                CodContab = codContab,
-                CodModelo = codModelo
+                Contabilidad = codContab,
+                Modelo = codModelo
             };
 
             return ExecuteStoredProcList<PressModeloAjustes>(
@@ -386,15 +383,15 @@ namespace Galileo.DataBaseTier
         {
             var parameters = new
             {
-                CodContab = codContab,
-                CodModelo = codModelo
+                Contabilidad = codContab,
+                Modelo = codModelo
             };
 
             return ExecuteStoredProcList<PressModeloAjustes>(
                 codEmpresa,
                 "[spPres_Modelo_Ajustes_Autorizados]",
                 parameters,
-                "Pres_Modelo_Ajustes_Autorizados_SP");
+                "Pres_  Modelo_Ajustes_Autorizados_SP");
         }
 
         /// <summary>Obtiene los usuarios autorizados de un modelo</summary>
@@ -402,8 +399,8 @@ namespace Galileo.DataBaseTier
         {
             var parameters = new
             {
-                CodContab = codContab,
-                CodModelo = codModelo
+                Contabilidad = codContab,
+                Modelo = codModelo
             };
 
             return ExecuteStoredProcList<PressModeloUsuarios>(
@@ -418,8 +415,8 @@ namespace Galileo.DataBaseTier
         {
             var parameters = new
             {
-                CodContab = codContab,
-                CodModelo = codModelo,
+                Contabilidad = codContab,
+                Modelo = codModelo,
                 Usuario = usuario
             };
 
@@ -435,9 +432,9 @@ namespace Galileo.DataBaseTier
         {
             var parameters = new
             {
-                CodContab = codContab,
-                CodModelo = codModelo,
-                CodAjuste = codAjuste
+                Contabilidad = codContab,
+                Modelo = codModelo,
+                Ajuste = codAjuste
             };
 
             return ExecuteStoredProcList<PressModeloUsuarios>(
@@ -452,11 +449,11 @@ namespace Galileo.DataBaseTier
         {
             var parameters = new
             {
-                CodContab = request.CodContab,
-                CodModelo = request.CodModelo,
-                CodAjuste = request.Cod_Ajuste,
+                Contabilidad = request.CodContab,
+                Modelo = request.CodModelo,
+                Ajuste = request.Cod_Ajuste,
                 Usuario = request.Usuario,
-                UsuarioReg = request.UsuarioReg,
+                UserReg = request.UsuarioReg,
                 Activo = ToBit(request.Activo ?? false)
             };
 
@@ -472,10 +469,10 @@ namespace Galileo.DataBaseTier
         {
             var parameters = new
             {
-                CodContab = request.CodContab,
-                CodModelo = request.CodModelo,
-                CodAjuste = request.Cod_Ajuste,
-                UsuarioReg = request.UsuarioReg,
+                Contabilidad = request.CodContab,
+                Modelo = request.CodModelo,
+                Ajuste = request.Cod_Ajuste,
+                UserReg = request.UsuarioReg,
                 Activo = ToBit(request.Activo ?? false)
             };
 
@@ -491,10 +488,10 @@ namespace Galileo.DataBaseTier
         {
             var parameters = new
             {
-                CodContab = request.CodContab,
-                CodModelo = request.CodModelo,
+                Contabilidad = request.CodContab,
+                Modelo = request.CodModelo,
                 Usuario = request.Usuario,
-                UsuarioReg = request.UsuarioReg,
+                UserReg = request.UsuarioReg,
                 Activo = ToBit(request.Activo ?? false)
             };
 
