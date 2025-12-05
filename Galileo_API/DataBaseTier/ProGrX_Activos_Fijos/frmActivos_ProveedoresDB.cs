@@ -11,6 +11,23 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly int vModulo = 36;
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _Security_MainDB;
+        private const string _codproveedor = "COD_PROVEEDOR";
+
+        // Mapa de campos permitidos para ordenamiento (lista blanca)
+        private static readonly Dictionary<string, string> SortFieldMap =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                { _codproveedor, _codproveedor },
+                { "DESCRIPCION", "DESCRIPCION" },
+                { "ACTIVO", "ACTIVO" },
+                { "USUARIO", "REGISTRO_USUARIO" },
+
+                // Si desde el front mandan los nombres de propiedades del modelo:
+                { "cod_proveedor", _codproveedor },
+                { "descripcion", "DESCRIPCION" },
+                { "activo", "ACTIVO" },
+                { "usuario", "REGISTRO_USUARIO" }
+            };
 
         public FrmActivosProveedoresDb(IConfiguration config)
         {
@@ -18,13 +35,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _Security_MainDB = new MSecurityMainDb(config);
         }
 
-
         /// <summary>
         /// Obtiene una lista de proveedores con paginación y filtros.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosProveedoresLista> Activos_ProveedoresLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<ActivosProveedoresLista>
@@ -37,23 +50,39 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                string where = "";
+
+                var where = string.Empty;
+                var parameters = new DynamicParameters();
+
                 if (!string.IsNullOrWhiteSpace(filtros?.filtro))
                 {
-                    var f = filtros.filtro.Replace("'", "''");
-                    where = $" WHERE COD_PROVEEDOR LIKE '%{f}%' OR DESCRIPCION LIKE '%{f}%'";
+                    var f = filtros.filtro.Trim();
+                    // Uso de parámetros para evitar SQL Injection
+                    where = " WHERE COD_PROVEEDOR LIKE @filtro OR DESCRIPCION LIKE @filtro";
+                    parameters.Add("@filtro", $"%{f}%");
                 }
 
+                // Total de registros
                 var queryTotal = $"SELECT COUNT(*) FROM dbo.ACTIVOS_PROVEEDORES {where}";
-                resp.Result.total = cn.QueryFirstOrDefault<int>(queryTotal);
+                resp.Result.total = cn.QueryFirstOrDefault<int>(queryTotal, parameters);
 
-                // Order by
-                string sortField = string.IsNullOrWhiteSpace(filtros?.sortField) ? "COD_PROVEEDOR" : filtros.sortField;
+                // Order by (validando sortField)
+                string sortField = _codproveedor;
+                if (!string.IsNullOrWhiteSpace(filtros?.sortField) &&
+                    SortFieldMap.TryGetValue(filtros.sortField, out var mappedField))
+                {
+                    sortField = mappedField;
+                }
+
+                // sortOrder solo permite ASC/DESC a partir de un entero conocido
                 string sortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC";
 
                 // Paginación
                 int pagina = filtros?.pagina ?? 0;
                 int paginacion = filtros?.paginacion ?? 50;
+
+                parameters.Add("@offset", pagina);
+                parameters.Add("@fetch", paginacion);
 
                 var query = $@"
                     SELECT
@@ -64,10 +93,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FROM dbo.ACTIVOS_PROVEEDORES
                     {where}
                     ORDER BY {sortField} {sortOrder}
-                    OFFSET {pagina} ROWS
-                    FETCH NEXT {paginacion} ROWS ONLY;";
+                    OFFSET @offset ROWS
+                    FETCH NEXT @fetch ROWS ONLY;";
 
-                resp.Result.lista = cn.Query<ActivosProveedoresData>(query).ToList();
+                resp.Result.lista = cn.Query<ActivosProveedoresData>(query, parameters).ToList();
             }
             catch (Exception ex)
             {
@@ -81,10 +110,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         /// <summary>
         /// Obtener lista completa de proveedores (sin paginación), con filtro opcional.
-        /// <param name="CodEmpresa"></param>"
-        /// <param name="filtros"></param>
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<List<ActivosProveedoresData>> Activos_Proveedores_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<List<ActivosProveedoresData>>
@@ -97,11 +123,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                string where = "";
+
+                var where = string.Empty;
+                var parameters = new DynamicParameters();
+
                 if (!string.IsNullOrWhiteSpace(filtros?.filtro))
                 {
-                    var f = filtros.filtro.Replace("'", "''");
-                    where = $" WHERE COD_PROVEEDOR LIKE '%{f}%' OR DESCRIPCION LIKE '%{f}%'";
+                    var f = filtros.filtro.Trim();
+                    where = " WHERE COD_PROVEEDOR LIKE @filtro OR DESCRIPCION LIKE @filtro";
+                    parameters.Add("@filtro", $"%{f}%");
                 }
 
                 var query = $@"
@@ -114,7 +144,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     {where}
                     ORDER BY COD_PROVEEDOR;";
 
-                resp.Result = cn.Query<ActivosProveedoresData>(query).ToList();
+                resp.Result = cn.Query<ActivosProveedoresData>(query, parameters).ToList();
             }
             catch (Exception ex)
             {
@@ -127,11 +157,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         /// <summary>
         /// Inserta o actualiza un proveedor.
-        /// <param name="CodEmpresa"></param>"
-        /// <param name="usuario"></param>"
-        /// <param name="proveedor"></param>"
         /// </summary>
-        /// <returns></returns>
         public ErrorDto Activos_Proveedores_Guardar(int CodEmpresa, string usuario, ActivosProveedoresData proveedor)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -178,14 +204,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Inserta un nuevo proveedor.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="proveedor"></param>
         /// </summary>
-        /// <returns></returns>
         private ErrorDto Activos_Proveedores_Insertar(int CodEmpresa, string usuario, ActivosProveedoresData proveedor)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -228,14 +249,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         /// <summary>
         /// Actualiza un proveedor existente.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="proveedor"></param>
         /// </summary>
-        /// <returns></returns>
         private ErrorDto Activos_Proveedores_Actualizar(int CodEmpresa, string usuario, ActivosProveedoresData proveedor)
         {
-            
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
@@ -278,14 +294,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         /// <summary>
         /// Eliminar proveedor por su código.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="cod_proveedor"></param>
         /// </summary>
-        /// <returns></returns>
         public ErrorDto Activos_Proveedores_Eliminar(int CodEmpresa, string usuario, string cod_proveedor)
         {
-            
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
@@ -320,13 +331,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         /// <summary>
         /// Importar proveedores desde CXP_PROVEEDORES a ACTIVOS_PROVEEDORES.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>"
         /// </summary>
-        /// <returns></returns>
         public ErrorDto Activos_Proveedores_Importar(int CodEmpresa, string usuario)
         {
-            
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
@@ -373,12 +380,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Valida si un código de proveedor ya existe en la base de datos ACTIVOS_PROVEEDORES.
         /// </summary>
-        /// <param name="CodEmpresa">.</param>
-        /// <param name="cod_proveedor"></param>
-        /// <returns></returns>
         public ErrorDto Activos_Proveedores_Valida(int CodEmpresa, string cod_proveedor)
         {
-            
             var resp = new ErrorDto
             {
                 Code = 0,
@@ -413,6 +416,5 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             return resp;
         }
-
     }
 }

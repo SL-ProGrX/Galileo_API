@@ -4,6 +4,7 @@ using Galileo.Models.ERROR;
 using System.Data;
 using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
+using System.Collections.Generic;
 
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -17,6 +18,55 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string _where11 = " WHERE 1=1 ";
         private const string _formatoFecha = "yyyy-MM-dd";
 
+        private const string _anumplaca = "A.num_placa";
+        private const string _anombre = "A.Nombre";
+        private const string _aplacaalterna = "A.Placa_Alterna";
+        private const string _codtraslado = "cod_traslado";
+
+        // Lista blanca de campos para ORDER BY en Activos_Principal
+        private static readonly Dictionary<string, string> SortFieldActivosMap =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                // Columnas en BD
+                { _anumplaca, _anumplaca },
+                { _aplacaalterna, _aplacaalterna },
+                { _anombre, _anombre },
+
+                // Propiedades del modelo / nombres sin alias
+                { "num_placa", _anumplaca },
+                { "placa_alterna", _aplacaalterna },
+                { "Placa_Alterna", _aplacaalterna },
+                { "nombre", _anombre },
+                { "Nombre", _anombre }
+            };
+
+        // Lista blanca de campos para ORDER BY en vActivos_TrasladosHistorico
+        private static readonly Dictionary<string, string> SortFieldBoletasMap =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                // Columnas en la vista
+                { _codtraslado, _codtraslado },
+                { "num_placa", "num_placa" },
+                { "PLACA_ALTERNA", "PLACA_ALTERNA" },
+                { "Descripcion", "Descripcion" },
+                { "Registro_fecha", "Registro_fecha" },
+                { "Registro_Usuario", "Registro_Usuario" },
+                { "Persona", "Persona" },
+                { "Persona_Destino", "Persona_Destino" },
+                { "Motivo", "Motivo" },
+                { "Estado_Desc", "Estado_Desc" },
+
+                // Posibles nombres de propiedades de DTO
+                { "placa_alterna", "PLACA_ALTERNA" },
+                { "descripcion", "Descripcion" },
+                { "registro_fecha", "Registro_fecha" },
+                { "registro_usuario", "Registro_Usuario" },
+                { "persona_origen", "Persona" },
+                { "persona_destino", "Persona_Destino" },
+                { "motivo", "Motivo" },
+                { "estado_desc", "Estado_Desc" }
+            };
+
         public FrmActivosReasignacionesDB(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
@@ -24,7 +74,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
-     
         /// <summary>
         /// Obtiene el consecutivo de las boletas
         /// <param name="CodEmpresa"></param>
@@ -54,17 +103,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Lista paginada de activos para el F4 de No. Placa
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// </summary>
         /// <returns></returns>
-
-        public ErrorDto<ActivosReasignacionesActivosLista> Activos_Reasignacion_Activos_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosReasignacionesActivosLista> Activos_Reasignacion_Activos_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            
             var resp = new ErrorDto<ActivosReasignacionesActivosLista>
             {
                 Code = 0,
@@ -87,21 +133,29 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     OR A.Placa_Alterna LIKE @filtro
                     OR A.Nombre        LIKE @filtro
                 )";
-                    p.Add("@filtro", "%" + filtros.filtro + "%");
+                    p.Add("@filtro", "%" + filtros.filtro.Trim() + "%");
                 }
+
                 var qTotal = $@"SELECT COUNT(1)
                         FROM Activos_Principal A
                         {where}";
                 resp.Result.total = connection.ExecuteScalar<int>(qTotal, p);
-                var sortField = string.IsNullOrWhiteSpace(filtros?.sortField)
-                    ? "A.num_placa"
-                    : filtros.sortField ?? "A.num_placa";
+
+                var sortFieldKey = string.IsNullOrWhiteSpace(filtros?.sortField)
+                    ? _anumplaca
+                    : filtros.sortField!;
+
+                if (!SortFieldActivosMap.TryGetValue(sortFieldKey, out var sortField))
+                    sortField = _anumplaca;
 
                 var sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "ASC" : "DESC";
 
                 var pagina = filtros?.pagina ?? 1;
                 var paginacion = filtros?.paginacion ?? 10;
                 var offset = (pagina <= 1 ? 0 : (pagina - 1) * paginacion);
+
+                p.Add("@offset", offset);
+                p.Add("@fetch", paginacion);
 
                 var qDatos = $@"
             SELECT
@@ -111,8 +165,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             FROM Activos_Principal A
             {where}
             ORDER BY {sortField} {sortOrder}
-            OFFSET {offset} ROWS
-            FETCH NEXT {paginacion} ROWS ONLY;";
+            OFFSET @offset ROWS
+            FETCH NEXT @fetch ROWS ONLY;";
 
                 resp.Result.lista = connection
                     .Query<ActivosReasignacionesActivoResumen>(qDatos, p)
@@ -128,15 +182,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             return resp;
         }
+
         /// <summary>
         /// Trae la información de un activo por número de placa.
         /// <param name="CodEmpresa"></param>
         /// <param name="numPlaca"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<ActivosReasignacionesActivo> Activos_Reasignacion_Activo_Obtener(int CodEmpresa,string numPlaca)
+        public ErrorDto<ActivosReasignacionesActivo> Activos_Reasignacion_Activo_Obtener(int CodEmpresa, string numPlaca)
         {
-            
             var resp = new ErrorDto<ActivosReasignacionesActivo>
             {
                 Code = 0,
@@ -190,6 +244,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             return resp;
         }
+
         /// <summary>
         /// Buscar personas para reasignación de responsables (sin paginación).
         /// <param name="CodEmpresa"></param>"
@@ -198,7 +253,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Reasignacion_Personas_Buscar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
@@ -210,9 +264,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                string where = _where11;
+                var where = _where11;
+                var p = new DynamicParameters();
+
                 if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                    where += " AND (Nombre LIKE '%" + filtros.filtro + "%' OR Identificacion LIKE '%" + filtros.filtro + "%') ";
+                {
+                    where += " AND (Nombre LIKE @filtro OR Identificacion LIKE @filtro) ";
+                    p.Add("@filtro", "%" + filtros.filtro.Trim() + "%");
+                }
 
                 if (!string.IsNullOrWhiteSpace(filtros?.sortField) &&
                     filtros.sortField.StartsWith("excluir:", StringComparison.OrdinalIgnoreCase))
@@ -220,7 +279,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     var splitArr = filtros.sortField.Split(':');
                     var excluir = splitArr[splitArr.Length - 1];
                     if (!string.IsNullOrWhiteSpace(excluir))
-                        where += " AND Identificacion <> '" + excluir + "' ";
+                    {
+                        where += " AND Identificacion <> @excluir ";
+                        p.Add("@excluir", excluir);
+                    }
                 }
 
                 var query = $@"
@@ -229,7 +291,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         {where}
                         ORDER BY Nombre ASC";
 
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                resp.Result = connection.Query<DropDownListaGenericaModel>(query, p).ToList();
             }
             catch (Exception ex)
             {
@@ -248,7 +310,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<ActivosReasignacionesPersona> Activos_Reasignacion_Persona_Obtener(int CodEmpresa, string identificacion)
         {
-            
             var resp = new ErrorDto<ActivosReasignacionesPersona>
             {
                 Code = 0,
@@ -294,6 +355,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             return resp;
         }
+
         /// <summary>
         /// Obtener catálogo de motivos activos para reasignación de activos.
         /// <param name="CodEmpresa"></param>"
@@ -328,13 +390,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             return resp;
         }
+
         /// <summary>
         /// Ejecuta el SP de cambio de responsable (Reasignaciones),
         /// <param name="CodEmpresa"></param>"
         /// <param name="data"></param>"
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<ActivosReasignacionesBoletaResult> Activos_Reasignacion_CambioResponsable(int CodEmpresa,ActivosReasignacionesCambioRequest data)
+        public ErrorDto<ActivosReasignacionesBoletaResult> Activos_Reasignacion_CambioResponsable(int CodEmpresa, ActivosReasignacionesCambioRequest data)
         {
             var resp = new ErrorDto<ActivosReasignacionesBoletaResult>
             {
@@ -381,17 +444,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     };
                 }
 
-                
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var p = new DynamicParameters();
-                p.Add("@Boleta", data.cod_traslado);                         
-                p.Add("@Placa", data.num_placa);                              
-                p.Add("@Motivo", data.cod_motivo);                            
-                p.Add("@Identificacion", data.identificacion_destino);       
+                p.Add("@Boleta", data.cod_traslado);
+                p.Add("@Placa", data.num_placa);
+                p.Add("@Motivo", data.cod_motivo);
+                p.Add("@Identificacion", data.identificacion_destino);
                 p.Add("@Usuario", data.usuario);
                 p.Add("@Notas", data.notas);
-                p.Add("@Estado", "P");                                       
+                p.Add("@Estado", "P");
                 p.Add("@FechaAplicacion", DateTime.ParseExact(data.fecha_aplicacion, _formatoFecha, System.Globalization.CultureInfo.InvariantCulture));
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
@@ -446,9 +508,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="filtros"></param>
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<ActivosReasignacionesBoletaHistorialLista> Activos_Reasignacion_BoletasLista_Obtener(int CodEmpresa,ActivosReasignacionesBoletasFiltros filtros)
+        public ErrorDto<ActivosReasignacionesBoletaHistorialLista> Activos_Reasignacion_BoletasLista_Obtener(int CodEmpresa, ActivosReasignacionesBoletasFiltros filtros)
         {
-            
             var resp = new ErrorDto<ActivosReasignacionesBoletaHistorialLista>
             {
                 Code = 0,
@@ -465,7 +526,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 if (filtros.todosActivos == 0 && !string.IsNullOrWhiteSpace(filtros.numPlaca))
                 {
                     where += " AND num_placa LIKE @numPlaca ";
-                    p.Add("@numPlaca", "%" + filtros.numPlaca + "%");
+                    p.Add("@numPlaca", "%" + filtros.numPlaca.Trim() + "%");
                 }
                 if (!string.IsNullOrWhiteSpace(filtros.fechaInicio))
                 {
@@ -475,31 +536,35 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 if (!string.IsNullOrWhiteSpace(filtros.fechaCorte))
                 {
                     where += " AND Fecha_Aplicacion <= @FechaCorteHasta ";
-                    var corte = DateTime.ParseExact(filtros.fechaCorte, _formatoFecha, System.Globalization.CultureInfo.InvariantCulture).Date.AddDays(1).AddSeconds(-1);
+                    var corte = DateTime.ParseExact(filtros.fechaCorte, _formatoFecha, System.Globalization.CultureInfo.InvariantCulture).Date
+                        .AddDays(1).AddSeconds(-1);
                     p.Add("@FechaCorteHasta", corte);
                 }
                 if (!string.IsNullOrWhiteSpace(filtros.boletaInicio))
                 {
                     where += " AND cod_traslado >= @BoletaInicio ";
-                    p.Add("@BoletaInicio", filtros.boletaInicio);
+                    p.Add("@BoletaInicio", filtros.boletaInicio.Trim());
                 }
                 if (!string.IsNullOrWhiteSpace(filtros.boletaCorte))
                 {
                     where += " AND cod_traslado <= @BoletaCorte ";
-                    p.Add("@BoletaCorte", filtros.boletaCorte);
+                    p.Add("@BoletaCorte", filtros.boletaCorte.Trim());
                 }
 
                 var qTotal = $"SELECT COUNT(1) FROM vActivos_TrasladosHistorico {where}";
                 resp.Result.total = connection.ExecuteScalar<int>(qTotal, p);
 
-                // Orden
-                var sortField = string.IsNullOrWhiteSpace(filtros.sortField)
-                    ? "cod_traslado"
-                    : filtros.sortField;
+                var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
+                    ? _codtraslado
+                    : filtros.sortField!;
+                if (!SortFieldBoletasMap.TryGetValue(sortFieldKey, out var sortField))
+                    sortField = _codtraslado;
 
                 var sortOrder = (filtros.sortOrder == 0 ? "DESC" : "ASC");
 
                 var offset = (filtros.pagina <= 1 ? 0 : (filtros.pagina - 1) * filtros.paginacion);
+                p.Add("@offset", offset);
+                p.Add("@fetch", filtros.paginacion);
 
                 var qDatos = $@"
 SELECT
@@ -516,8 +581,8 @@ SELECT
 FROM vActivos_TrasladosHistorico
 {where}
 ORDER BY {sortField} {sortOrder}
-OFFSET {offset} ROWS
-FETCH NEXT {filtros.paginacion} ROWS ONLY;";
+OFFSET @offset ROWS
+FETCH NEXT @fetch ROWS ONLY;";
 
                 resp.Result.lista = connection.Query<ActivosReasignacionesBoletaHistorialItem>(
                     qDatos, p).ToList();
@@ -532,15 +597,15 @@ FETCH NEXT {filtros.paginacion} ROWS ONLY;";
 
             return resp;
         }
+
         /// <summary>
         /// Obtener una boleta específica de reasignación por código de traslado.
         /// <param name="CodEmpresa"></param>"
-        /// <param name="cod_traslado"></param>"
+        /// <param name=_codtraslado></param>"
         /// </summary>
         /// <returns></returns>
-        public ErrorDto<ActivosReasignacionesBoleta> Activos_Reasignacion_Obtener(int CodEmpresa,string cod_traslado)
+        public ErrorDto<ActivosReasignacionesBoleta> Activos_Reasignacion_Obtener(int CodEmpresa, string cod_traslado)
         {
-            
             var resp = new ErrorDto<ActivosReasignacionesBoleta>
             {
                 Code = 0,
@@ -608,9 +673,8 @@ FETCH NEXT {filtros.paginacion} ROWS ONLY;";
         /// <param name="CodEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<ActivosReasignacionesBoletaHistorialItem>> Activos_Reasignacion_Boletas_Export(int CodEmpresa,ActivosReasignacionesBoletasFiltros filtros)
+        public ErrorDto<List<ActivosReasignacionesBoletaHistorialItem>> Activos_Reasignacion_Boletas_Export(int CodEmpresa, ActivosReasignacionesBoletasFiltros filtros)
         {
-            
             var resp = new ErrorDto<List<ActivosReasignacionesBoletaHistorialItem>>
             {
                 Code = 0,
@@ -627,7 +691,7 @@ FETCH NEXT {filtros.paginacion} ROWS ONLY;";
                 if (filtros.todosActivos == 0 && !string.IsNullOrWhiteSpace(filtros.numPlaca))
                 {
                     where += " AND num_placa LIKE @numPlaca ";
-                    p.Add("@numPlaca", "%" + filtros.numPlaca + "%");
+                    p.Add("@numPlaca", "%" + filtros.numPlaca.Trim() + "%");
                 }
 
                 if (!string.IsNullOrWhiteSpace(filtros.fechaInicio))
@@ -650,18 +714,20 @@ FETCH NEXT {filtros.paginacion} ROWS ONLY;";
                 if (!string.IsNullOrWhiteSpace(filtros.boletaInicio))
                 {
                     where += " AND cod_traslado >= @BoletaInicio ";
-                    p.Add("@BoletaInicio", filtros.boletaInicio);
+                    p.Add("@BoletaInicio", filtros.boletaInicio.Trim());
                 }
 
                 if (!string.IsNullOrWhiteSpace(filtros.boletaCorte))
                 {
                     where += " AND cod_traslado <= @BoletaCorte ";
-                    p.Add("@BoletaCorte", filtros.boletaCorte);
+                    p.Add("@BoletaCorte", filtros.boletaCorte.Trim());
                 }
 
-                var sortField = string.IsNullOrWhiteSpace(filtros.sortField)
-                    ? "cod_traslado"
-                    : filtros.sortField;
+                var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
+                    ? _codtraslado
+                    : filtros.sortField!;
+                if (!SortFieldBoletasMap.TryGetValue(sortFieldKey, out var sortField))
+                    sortField = _codtraslado;
 
                 var sortOrder = (filtros.sortOrder == 0 ? "DESC" : "ASC");
 
@@ -694,7 +760,6 @@ FETCH NEXT {filtros.paginacion} ROWS ONLY;";
 
             return resp;
         }
-
 
         // /// <summary>
         // /// Generar emisión de boletas de reasignación en lote (PDF combinado).
@@ -796,7 +861,6 @@ FETCH NEXT {filtros.paginacion} ROWS ONLY;";
         //         return response;
         //     }
         // }
-
 
     }
 }
