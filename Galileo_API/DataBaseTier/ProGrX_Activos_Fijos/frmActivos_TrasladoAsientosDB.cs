@@ -3,6 +3,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
+
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
     public class FrmActivosTrasladoAsientosDB
@@ -12,6 +13,30 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly MCntLinkDB _mCntLinkDB;
         private readonly PortalDB _portalDB;
+        private const string _numAsiento = "Num_Asiento";
+
+        // Lista blanca de columnas para ORDER BY
+        private static readonly Dictionary<string, string> SortFieldMap =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                // Nombres de columnas en la tabla
+                { _numAsiento, _numAsiento },
+                { "Tipo_Asiento", "Tipo_Asiento" },
+                { "Fecha_Asiento", "Fecha_Asiento" },
+                { "Descripcion", "Descripcion" },
+                { "Anio", "Anio" },
+                { "Mes", "Mes" },
+                { "Cod_Contabilidad", "Cod_Contabilidad" },
+
+                // Posibles nombres desde el front / DTO
+                { "num_asiento", _numAsiento },
+                { "tipo_asiento", "Tipo_Asiento" },
+                { "fecha_asiento", "Fecha_Asiento" },
+                { "descripcion", "Descripcion" },
+                { "anio", "Anio" },
+                { "mes", "Mes" },
+                { "cod_contabilidad", "Cod_Contabilidad" }
+            };
 
         public FrmActivosTrasladoAsientosDB(IConfiguration config)
         {
@@ -44,7 +69,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var (todosActivos, fechaInicio, fechaCorte) = ParseParametros(filtros.parametros ?? new object());
-                var (where, parameters) = BuildWhereClauseAndParameters(todosActivos, fechaInicio, fechaCorte, filtros.filtro ?? string.Empty);
+                var (where, parameters) = BuildWhereClauseAndParameters(
+                    todosActivos,
+                    fechaInicio,
+                    fechaCorte,
+                    filtros.filtro ?? string.Empty
+                );
 
                 var qTotal = $@"SELECT COUNT(1)
                         FROM Activos_Asientos
@@ -52,12 +82,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 resp.Result.total = connection.ExecuteScalar<int>(qTotal, parameters);
 
-                var sortField = string.IsNullOrWhiteSpace(filtros.sortField)
-                    ? "Num_Asiento"
-                    : filtros.sortField;
+                // Orden usando lista blanca
+                var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
+                    ? _numAsiento
+                    : filtros.sortField!;
+                if (!SortFieldMap.TryGetValue(sortFieldKey, out var sortField))
+                    sortField = _numAsiento;
 
                 var sortOrder = filtros.sortOrder == 0 ? "ASC" : "DESC";
-                var offset = (filtros.pagina <= 1 ? 0 : (filtros.pagina - 1) * filtros.paginacion);
+
+                var pagina = filtros.pagina <= 0 ? 1 : filtros.pagina;
+                var paginacion = filtros.paginacion <= 0 ? 10 : filtros.paginacion;
+                var offset = (pagina <= 1 ? 0 : (pagina - 1) * paginacion);
+
+                parameters.Add("@offset", offset);
+                parameters.Add("@fetch", paginacion);
 
                 var qDatos = $@"
             SELECT
@@ -71,10 +110,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             FROM Activos_Asientos
             {where}
             ORDER BY {sortField} {sortOrder}
-            OFFSET {offset} ROWS
-            FETCH NEXT {filtros.paginacion} ROWS ONLY;";
+            OFFSET @offset ROWS
+            FETCH NEXT @fetch ROWS ONLY;";
 
-                resp.Result.lista = connection.Query<ActivosTrasladoAsientosDto>(qDatos, parameters).ToList();
+                resp.Result.lista = connection
+                    .Query<ActivosTrasladoAsientosDto>(qDatos, parameters)
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -86,7 +127,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             return resp;
         }
-        
+
         private static (int todosActivos, DateTime? fechaInicio, DateTime? fechaCorte) ParseParametros(object parametros)
         {
             int todosActivos = 0;
@@ -131,7 +172,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return null;
         }
 
-        private static (string where, DynamicParameters parameters) BuildWhereClauseAndParameters(int todosActivos, DateTime? fechaInicio, DateTime? fechaCorte, string filtro)
+        private static (string where, DynamicParameters parameters) BuildWhereClauseAndParameters(
+            int todosActivos,
+            DateTime? fechaInicio,
+            DateTime? fechaCorte,
+            string filtro)
         {
             var where = " WHERE fecha_traslado IS NULL ";
             var p = new DynamicParameters();

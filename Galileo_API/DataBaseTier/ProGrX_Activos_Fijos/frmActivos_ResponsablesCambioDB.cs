@@ -14,6 +14,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly PortalDB _portalDB;
         private const string _boletaId = "BoletaId";
         private const string _usuario = "Usuario";
+        private const string _codtraslado = "cod_traslado";
+
+        // Lista blanca para ORDER BY en boletas
+        private static readonly Dictionary<string, string> SortFieldBoletasMap =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                { _codtraslado, _codtraslado },
+                { "identificacion", "identificacion" },
+                { "persona", "persona" },
+                { "estado_desc", "estado_desc" },
+                { "registro_fecha", "registro_fecha" }
+            };
 
         public FrmActivosResponsablesCambioDB(IConfiguration config)
         {
@@ -21,14 +33,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
-
         /// <summary>
         /// Obtener lista de boletas de traslado de responsable con paginación y filtros.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
-        public ErrorDto<ActivosResponsablesCambioBoletaLista> Activos_ResponsablesCambio_Boletas_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosResponsablesCambioBoletaLista> Activos_ResponsablesCambio_Boletas_Lista_Obtener(
+            int CodEmpresa,
+            FiltrosLazyLoadData filtros)
         {
             var result = new ErrorDto<ActivosResponsablesCambioBoletaLista>()
             {
@@ -45,19 +55,37 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                string where = "";
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
+                var where = "";
+                var p = new DynamicParameters();
+
+                var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(filtroTexto))
                 {
-                    where = " WHERE ( cod_traslado LIKE '%" + filtros.filtro + "%' " +
-                            " OR persona LIKE '%" + filtros.filtro + "%' " +
-                            " OR identificacion LIKE '%" + filtros.filtro + "%' ) ";
+                    where = @" WHERE ( cod_traslado   LIKE @filtro
+                                   OR persona        LIKE @filtro
+                                   OR identificacion LIKE @filtro )";
+                    p.Add("@filtro", "%" + filtroTexto + "%");
                 }
 
                 var qTotal = $"SELECT COUNT(1) FROM vActivos_Traslados_Boletas {where}";
-                result.Result.total = connection.Query<int>(qTotal).FirstOrDefault();
+                result.Result.total = connection.Query<int>(qTotal, p).FirstOrDefault();
 
-                if (string.IsNullOrWhiteSpace(filtros?.sortField))
-                    filtros!.sortField = "cod_traslado";
+                // ORDER BY con lista blanca
+                var sortKey = string.IsNullOrWhiteSpace(filtros?.sortField)
+                    ? _codtraslado
+                    : filtros.sortField!;
+                if (!SortFieldBoletasMap.TryGetValue(sortKey, out var sortField))
+                    sortField = _codtraslado;
+
+                var sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
+
+                // Paginación (asumimos pagina 1-based)
+                var pagina = filtros?.pagina ?? 1;
+                var paginacion = filtros?.paginacion ?? 10;
+                var offset = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
+
+                p.Add("@offset", offset);
+                p.Add("@fetch", paginacion);
 
                 var qDatos = $@"
                     SELECT 
@@ -68,11 +96,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         CONVERT(varchar(19), registro_fecha, 120) AS registro_fecha
                     FROM vActivos_Traslados_Boletas
                     {where}
-                    ORDER BY {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                    OFFSET {filtros.pagina} ROWS
-                    FETCH NEXT {filtros.paginacion} ROWS ONLY";
+                    ORDER BY {sortField} {sortOrder}
+                    OFFSET @offset ROWS
+                    FETCH NEXT @fetch ROWS ONLY;";
 
-                result.Result.lista = connection.Query<ActivosResponsablesCambioBoletaResumen>(qDatos).ToList();
+                result.Result.lista = connection
+                    .Query<ActivosResponsablesCambioBoletaResumen>(qDatos, p)
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -85,14 +115,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-
         /// <summary>
         /// Buscar personas para traslado de responsables (sin paginación).
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Activos_ResponsablesCambio_Personas_Buscar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_ResponsablesCambio_Personas_Buscar(
+            int CodEmpresa,
+            FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
@@ -104,16 +132,27 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                string where = " WHERE 1=1 ";
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                    where += " AND (Nombre LIKE '%" + filtros.filtro + "%' OR Identificacion LIKE '%" + filtros.filtro + "%') ";
 
-                if (!string.IsNullOrWhiteSpace(filtros?.sortField) && filtros.sortField.StartsWith("excluir:", StringComparison.OrdinalIgnoreCase))
+                var where = " WHERE 1=1 ";
+                var p = new DynamicParameters();
+
+                var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(filtroTexto))
+                {
+                    where += " AND (Nombre LIKE @filtro OR Identificacion LIKE @filtro) ";
+                    p.Add("@filtro", "%" + filtroTexto + "%");
+                }
+
+                if (!string.IsNullOrWhiteSpace(filtros?.sortField) &&
+                    filtros.sortField.StartsWith("excluir:", StringComparison.OrdinalIgnoreCase))
                 {
                     var splitArr = filtros.sortField.Split(':');
                     var excluir = splitArr[splitArr.Length - 1];
                     if (!string.IsNullOrWhiteSpace(excluir))
-                        where += " AND Identificacion <> '" + excluir + "' ";
+                    {
+                        where += " AND Identificacion <> @excluir ";
+                        p.Add("@excluir", excluir);
+                    }
                 }
 
                 var q = $@"
@@ -122,7 +161,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     {where}
                     ORDER BY Nombre ASC";
 
-                resp.Result = connection.Query<DropDownListaGenericaModel>(q).ToList();
+                resp.Result = connection.Query<DropDownListaGenericaModel>(q, p).ToList();
             }
             catch (Exception ex)
             {
@@ -133,15 +172,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Obtener boleta de traslado de responsable por código.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cod_traslado"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<ActivosResponsablesCambioBoleta> Activos_ResponsablesCambio_Boleta_Obtener(int CodEmpresa, string cod_traslado, string usuario)
+        public ErrorDto<ActivosResponsablesCambioBoleta> Activos_ResponsablesCambio_Boleta_Obtener(
+            int CodEmpresa,
+            string cod_traslado,
+            string usuario)
         {
             var resp = new ErrorDto<ActivosResponsablesCambioBoleta> { Code = 0, Description = "", Result = null };
 
@@ -155,7 +192,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var data = connection.QueryFirstOrDefault<ActivosResponsablesCambioBoleta>(
                     "spActivos_Responsable_Cambio_Consulta",
                     p,
-                    commandType: System.Data.CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure);
 
                 if (data == null)
                 {
@@ -178,26 +215,24 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Obtener lista de placas de la boleta (pestaña Activos).
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cod_traslado"></param>
-        /// <param name="identificacion"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<List<ActivosResponsablesCambioPlaca>> Activos_ResponsablesCambio_Placas_Obtener(int CodEmpresa,string? cod_traslado,string identificacion,string usuario)
+        public ErrorDto<List<ActivosResponsablesCambioPlaca>> Activos_ResponsablesCambio_Placas_Obtener(
+            int CodEmpresa,
+            string? cod_traslado,
+            string identificacion,
+            string usuario)
         {
             var resp = new ErrorDto<List<ActivosResponsablesCambioPlaca>> { Code = 0, Description = "Ok", Result = new() };
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
                 var p = new DynamicParameters();
-                p.Add(_boletaId, cod_traslado ?? "");         
+                p.Add(_boletaId, cod_traslado ?? "");
                 p.Add("@Identificacion", identificacion);
                 p.Add(_usuario, usuario);
-                p.Add("@ModoRecepcion", 0);                     
+                p.Add("@ModoRecepcion", 0);
 
                 var lista = connection.Query<ActivosResponsablesCambioPlaca>(
                     "spActivos_Responsable_Cambio_Consulta_Placas",
@@ -216,13 +251,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Verifica si una boleta de traslado de responsable existe.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cod_traslado"></param>
-        /// <returns></returns>
         public ErrorDto Activos_ResponsablesCambio_Boleta_Existe_Obtener(int CodEmpresa, string cod_traslado)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -236,7 +267,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var data = connection.QueryFirstOrDefault<ActivosResponsablesCambioBoleta>(
                     "spActivos_Responsable_Cambio_Consulta",
                     p,
-                    commandType: System.Data.CommandType.StoredProcedure);
+                    commandType: CommandType.StoredProcedure);
 
                 (resp.Code, resp.Description) = (data == null)
                     ? (0, "BOLETA: Libre!")
@@ -250,14 +281,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Guardar boleta de traslado de responsable (router por isNew).
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public ErrorDto<ActivosResponsablesCambioBoletaResult> Activos_ResponsablesCambio_Boleta_Guardar(int CodEmpresa, ActivosResponsablesCambioBoleta data)
+        public ErrorDto<ActivosResponsablesCambioBoletaResult> Activos_ResponsablesCambio_Boleta_Guardar(
+            int CodEmpresa,
+            ActivosResponsablesCambioBoleta data)
         {
             var resp = new ErrorDto<ActivosResponsablesCambioBoletaResult>
             {
@@ -329,15 +358,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             return resp;
         }
-        
-        
+
         /// <summary>
         /// Insertar boleta de traslado de responsable.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        private ErrorDto<ActivosResponsablesCambioBoletaResult> Activos_ResponsablesCambio_Boleta_Insertar(int CodEmpresa, ActivosResponsablesCambioBoleta data)
+        private ErrorDto<ActivosResponsablesCambioBoletaResult> Activos_ResponsablesCambio_Boleta_Insertar(
+            int CodEmpresa,
+            ActivosResponsablesCambioBoleta data)
         {
             var resp = new ErrorDto<ActivosResponsablesCambioBoletaResult>
             {
@@ -404,16 +431,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 resp.Result = null;
             }
 
-                return resp;
-            }
+            return resp;
+        }
 
-    
         /// <summary>
         /// Actualizar boleta de traslado de responsable.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         private ErrorDto Activos_ResponsablesCambio_Boleta_Actualizar(int CodEmpresa, ActivosResponsablesCambioBoleta data)
         {
             var resp = new ErrorDto { Code = 0, Description = "" };
@@ -449,7 +472,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Modulo = vModulo
                 });
 
-                resp.Description = string.IsNullOrWhiteSpace(mensaje) ? "Boleta actualizada satisfactoriamente!" : mensaje;
+                resp.Description = string.IsNullOrWhiteSpace(mensaje)
+                    ? "Boleta actualizada satisfactoriamente!"
+                    : mensaje;
             }
             catch (Exception ex)
             {
@@ -460,14 +485,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Guardar placa asociada a boleta (invocar N veces, primer_lote_bit=1 en la primera).
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        public ErrorDto Activos_ResponsablesCambio_Boleta_Placa_Guardar(int CodEmpresa, ActivosResponsablesCambioPlacaGuardarRequest data)
+        public ErrorDto Activos_ResponsablesCambio_Boleta_Placa_Guardar(
+            int CodEmpresa,
+            ActivosResponsablesCambioPlacaGuardarRequest data)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
@@ -495,15 +518,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Procesar boleta de traslado de responsable.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cod_traslado"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto Activos_ResponsablesCambio_Boleta_Procesar(int CodEmpresa, string cod_traslado, string usuario)
+        public ErrorDto Activos_ResponsablesCambio_Boleta_Procesar(
+            int CodEmpresa,
+            string cod_traslado,
+            string usuario)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
             try
@@ -541,15 +562,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Descartar boleta de traslado de responsable.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cod_traslado"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto Activos_ResponsablesCambio_Boleta_Descartar(int CodEmpresa, string cod_traslado, string usuario)
+        public ErrorDto Activos_ResponsablesCambio_Boleta_Descartar(
+            int CodEmpresa,
+            string cod_traslado,
+            string usuario)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
             try
@@ -587,31 +606,49 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Navegación (scroll) entre boletas de traslado de responsable.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="scroll"></param>
-        /// <param name="cod_traslado"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<ActivosResponsablesCambioBoleta> Activos_ResponsablesCambio_Boleta_Scroll(int CodEmpresa, int scroll, string? cod_traslado, string usuario)
+        public ErrorDto<ActivosResponsablesCambioBoleta> Activos_ResponsablesCambio_Boleta_Scroll(
+            int CodEmpresa,
+            int scroll,
+            string? cod_traslado,
+            string usuario)
         {
             var resp = new ErrorDto<ActivosResponsablesCambioBoleta> { Code = 0, Description = "", Result = null };
             try
             {
-                string whereOrder = (scroll == 1)
-                    ? " WHERE cod_traslado > @cod ORDER BY cod_traslado ASC "
-                    : " WHERE cod_traslado < @cod ORDER BY cod_traslado DESC ";
-
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                string sql;
+                if (scroll == 1)
+                {
+                    sql = @"
+                        SELECT TOP 1 cod_traslado
+                        FROM vActivos_Traslados_Boletas
+                        WHERE cod_traslado > @cod
+                        ORDER BY cod_traslado ASC;";
+                }
+                else
+                {
+                    sql = @"
+                        SELECT TOP 1 cod_traslado
+                        FROM vActivos_Traslados_Boletas
+                        WHERE cod_traslado < @cod
+                        ORDER BY cod_traslado DESC;";
+                }
+
                 var nextCode = connection.QueryFirstOrDefault<string>(
-                    $"SELECT TOP 1 cod_traslado FROM vActivos_Traslados_Boletas {whereOrder}",
+                    sql,
                     new { cod = (cod_traslado ?? string.Empty) });
 
                 if (string.IsNullOrWhiteSpace(nextCode))
-                    return new ErrorDto<ActivosResponsablesCambioBoleta> { Code = -2, Description = "No se encontraron más resultados.", Result = null };
+                    return new ErrorDto<ActivosResponsablesCambioBoleta>
+                    {
+                        Code = -2,
+                        Description = "No se encontraron más resultados.",
+                        Result = null
+                    };
 
                 resp = Activos_ResponsablesCambio_Boleta_Obtener(CodEmpresa, nextCode, usuario);
             }
@@ -624,13 +661,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             return resp;
         }
-        
-        
+
         /// <summary>
         /// Obtener catálogo de motivos activos para traslado de responsables.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_ResponsablesCambio_Motivos_Obtener(int CodEmpresa)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>()
@@ -643,7 +677,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                string q = @"
+                const string q = @"
             SELECT cod_motivo AS item, descripcion
             FROM ACTIVOS_TRASLADOS_MOTIVOS
             WHERE ACTIVO = 1
@@ -660,16 +694,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
-        /// Obtener datos de placas sin paginar  .
+        /// Obtener datos de placas sin paginar.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cod_traslado"
-        /// <param name="identificacion"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
-        public ErrorDto<List<ActivosResponsablesCambioPlaca>> Activos_ResponsablesCambio_Placas_Export(int CodEmpresa, string cod_traslado, string identificacion, string usuario)
+        public ErrorDto<List<ActivosResponsablesCambioPlaca>> Activos_ResponsablesCambio_Placas_Export(
+            int CodEmpresa,
+            string cod_traslado,
+            string identificacion,
+            string usuario)
         {
             var resp = new ErrorDto<List<ActivosResponsablesCambioPlaca>> { Code = 0, Description = "Ok", Result = new List<ActivosResponsablesCambioPlaca>() };
             try
@@ -692,14 +724,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Obtener datos de persona por identificación.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="identificacion"></param>
-        /// <returns></returns>
-        public ErrorDto<ActivosResponsablesPersona> Activos_ResponsablesCambio_Persona_Obtener(int CodEmpresa, string identificacion)
+        public ErrorDto<ActivosResponsablesPersona> Activos_ResponsablesCambio_Persona_Obtener(
+            int CodEmpresa,
+            string identificacion)
         {
             var resp = new ErrorDto<ActivosResponsablesPersona>
             {

@@ -5,7 +5,6 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
 
-
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
     public class FrmActivosTiposActivoDb
@@ -20,16 +19,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
-
         /// <summary>
         /// Obtener lista de tipos de activo.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosTiposActivosLista> Activos_TiposActivosLista_Obtener(int CodEmpresa, string filtros)
         {
             var vfiltro = JsonConvert.DeserializeObject<ActivosTiposActivosFiltros>(filtros);
+
             var resp = new ErrorDto<ActivosTiposActivosLista>
             {
                 Code = 0,
@@ -39,39 +35,45 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             try
             {
-                string where = "", pagina = "", paginacion = "";
-                if (vfiltro != null)
+                string where = "";
+                string paginacionSql = "";
+
+                var p = new DynamicParameters();
+
+                // Filtro por texto
+                var textoFiltro = (vfiltro?.filtro ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(textoFiltro))
                 {
-                    if (!string.IsNullOrWhiteSpace(vfiltro.filtro))
-                    {
-                        where = " WHERE TIPO_ACTIVO LIKE @like OR DESCRIPCION LIKE @like ";
-                    }
-                    if (vfiltro.pagina != null)
-                    {
-                        pagina = " OFFSET " + vfiltro.pagina + " ROWS ";
-                        paginacion = " FETCH NEXT " + (vfiltro.paginacion ?? 10) + " ROWS ONLY ";
-                    }
+                    where = " WHERE TIPO_ACTIVO LIKE @like OR DESCRIPCION LIKE @like ";
+                    p.Add("@like", "%" + textoFiltro + "%");
+                }
+
+                // Paginación (OFFSET/FETCH como parámetros)
+                if (vfiltro?.pagina != null)
+                {
+                    int offset = vfiltro.pagina.Value;               // en el código original ya venía como OFFSET directo
+                    int pageSize = vfiltro.paginacion ?? 10;
+
+                    paginacionSql = " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
+                    p.Add("@offset", offset);
+                    p.Add("@fetch", pageSize);
                 }
 
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
                 var qTotal = $"SELECT COUNT(*) FROM dbo.ACTIVOS_TIPO_ACTIVO {where}";
-                resp.Result.total = cn.QueryFirstOrDefault<int>(qTotal, new { like = "%" + (vfiltro?.filtro ?? "").Trim() + "%" });
+                resp.Result.total = cn.QueryFirstOrDefault<int>(qTotal, p);
 
                 var qDatos = $@"
                     SELECT
-                    TIPO_ACTIVO AS tipo_activo,
-                    ISNULL(DESCRIPCION,'') AS descripcion
+                        TIPO_ACTIVO              AS tipo_activo,
+                        ISNULL(DESCRIPCION,'')   AS descripcion
                     FROM dbo.ACTIVOS_TIPO_ACTIVO
                     {where}
                     ORDER BY TIPO_ACTIVO
-                    {pagina} {paginacion}";
+                    {paginacionSql}";
 
-                resp.Result.lista = cn.Query<ActivosTiposActivosData>(
-                    qDatos,
-                    new { like = "%" + (vfiltro?.filtro ?? "").Trim() + "%" }
-                ).ToList();
-
+                resp.Result.lista = cn.Query<ActivosTiposActivosData>(qDatos, p).ToList();
             }
             catch (Exception ex)
             {
@@ -84,13 +86,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Verifica si un tipo de activo ya existe en la base de datos.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="tipo_activo"></param>
-        /// <returns></returns>
         public ErrorDto Activos_TiposActivosExiste_Obtener(int CodEmpresa, string tipo_activo)
         {
             var resp = new ErrorDto { Code = 0, Description = "" };
@@ -115,13 +113,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Obtiene los detalles de un tipo de activo específico.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="tipo_activo"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosTiposActivosData> Activos_TiposActivos_Obtener(int CodEmpresa, string tipo_activo)
         {
             var resp = new ErrorDto<ActivosTiposActivosData> { Code = 0, Description = "" };
@@ -190,14 +184,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Navegación (scroll) entre tipos de activo.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="scroll"></param>
-        /// <param name="tipo_activo"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosTiposActivosData> Activos_TiposActivos_Scroll(int CodEmpresa, int scroll, string? tipo_activo)
         {
             var resp = new ErrorDto<ActivosTiposActivosData> { Code = 0, Description = "" };
@@ -280,12 +269,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
+
         /// <summary>
         /// Guarda (inserta o actualiza) un tipo de activo en la base de datos.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         public ErrorDto Activos_TiposActivos_Guardar(int CodEmpresa, ActivosTiposActivosData data)
         {
             var resp = new ErrorDto { Code = 0, Description = "" };
@@ -343,13 +330,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return new ErrorDto { Code = 0, Description = "" };
         }
 
-
         /// <summary>
         /// Inserta un nuevo tipo de activo en la base de datos.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         private ErrorDto Activos_TiposActivos_Insertar(int CodEmpresa, ActivosTiposActivosData data)
         {
             var resp = new ErrorDto { Code = 0, Description = "" };
@@ -400,16 +383,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Actualiza los detalles de un tipo de activo existente en la base de datos.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         private ErrorDto Activos_TiposActivos_Actualizar(int CodEmpresa, ActivosTiposActivosData data)
         {
-
             var resp = new ErrorDto { Code = 0, Description = "" };
 
             try
@@ -465,12 +443,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
         /// <summary>
-        /// Elimina un tipo de activo del sistema (no se permite de momento).
+        /// Elimina un tipo de activo del sistema.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="tipo_activo"></param>
-        /// <returns></returns>
         public ErrorDto Activos_TiposActivos_Eliminar(int CodEmpresa, string usuario, string tipo_activo)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -503,11 +477,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
+
         /// <summary>
-        /// Obtiene una lista de Tipos de depreciación que se guardan en la tabla de tipos de activo.
+        /// Obtiene una lista de Métodos de depreciación.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_TiposActivos_MetodosDepreciacion_Obtener(int CodEmpresa)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
@@ -524,11 +497,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     resp.Result = new List<DropDownListaGenericaModel>
                 {
-                      new() { item = "N", descripcion = "No Deprecia" },
-                      new() { item = "L", descripcion = "Línea Recta" },
-                      new() { item = "S", descripcion = "Suma de Dígitos" },
-                      new() { item = "D", descripcion = "Doblemente Decreciente" },
-                      new() { item = "U", descripcion = "Unidades Producidas" },
+                    new() { item = "N", descripcion = "No Deprecia" },
+                    new() { item = "L", descripcion = "Línea Recta" },
+                    new() { item = "S", descripcion = "Suma de Dígitos" },
+                    new() { item = "D", descripcion = "Doblemente Decreciente" },
+                    new() { item = "U", descripcion = "Unidades Producidas" },
                 };
                 }
             }
@@ -541,11 +514,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
-        /// Obtiene una lista de Tipos de vida util que se guardan en la tabla de tipos de activo.
+        /// Obtiene una lista de Tipos de vida util.
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_TiposActivos_TipoVidaUtil_Obtener()
         {
             return new ErrorDto<List<DropDownListaGenericaModel>>
@@ -560,13 +531,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             };
         }
 
-
         /// <summary>
         /// Obtener lista de tipos de asientos para tipos de activo.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="contabilidad"></param>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_TiposActivos_TiposAsientos_Obtener(int CodEmpresa, int contabilidad)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
@@ -580,7 +547,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
                 var q = @"
-
                 SELECT TIPO_ASIENTO as item, DESCRIPCION
                 FROM dbo.CNTX_TIPOS_ASIENTOS
                 WHERE COD_CONTABILIDAD = @cont AND ACTIVO = 1
