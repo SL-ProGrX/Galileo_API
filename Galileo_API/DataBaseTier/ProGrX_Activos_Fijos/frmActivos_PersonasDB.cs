@@ -72,21 +72,24 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                     p.Add("@codSeccion", codSeccion);
                 }
 
-                // Whitelist de columnas para ORDER BY
+                // Mapear sortField a índice de columna para ORDER BY seguro
                 var sortFieldRaw = (filtros.sortField ?? "Per.IDENTIFICACION").Trim();
                 var sortFieldNorm = sortFieldRaw.ToUpperInvariant();
 
-                string orderByCol = sortFieldNorm switch
+                int orderIndex = sortFieldNorm switch
                 {
-                    "PER.IDENTIFICACION" or "IDENTIFICACION" => "Per.IDENTIFICACION",
-                    "PER.NOMBRE" or "NOMBRE"                 => "Per.NOMBRE",
-                    "DEPT.DESCRIPCION" or "DEPARTAMENTO"     => "Dept.DESCRIPCION",
-                    "SEC.DESCRIPCION" or "SECCION"           => "Sec.DESCRIPCION",
-                    "PER.REGISTRO_USUARIO" or "USUARIO"      => "Per.REGISTRO_USUARIO",
-                    _                                        => "Per.IDENTIFICACION"
+                    "PER.IDENTIFICACION" or "IDENTIFICACION" => 1,
+                    "PER.NOMBRE" or "NOMBRE"                 => 2,
+                    "DEPT.DESCRIPCION" or "DEPARTAMENTO"     => 3,
+                    "SEC.DESCRIPCION" or "SECCION"           => 4,
+                    "PER.REGISTRO_USUARIO" or "USUARIO"      => 5,
+                    _                                        => 1
                 };
+                p.Add("@orderIndex", orderIndex);
 
-                string sortOrder = filtros.sortOrder == 0 ? "DESC" : "ASC";
+                // Dirección: 0 = DESC, 1 = ASC (mismo criterio que ya usabas)
+                int orderDir = filtros.sortOrder == 0 ? 0 : 1;
+                p.Add("@orderDir", orderDir);
 
                 var sqlCount = $@"
                     SELECT COUNT(1)
@@ -127,7 +130,27 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                         ON Tr.IDENTIFICACION = Per.IDENTIFICACION
 
                     {where}
-                    ORDER BY {orderByCol} {sortOrder}
+                    ORDER BY
+                        -- ASC
+                        CASE @orderDir WHEN 1 THEN
+                            CASE @orderIndex
+                                WHEN 1 THEN Per.IDENTIFICACION
+                                WHEN 2 THEN Per.NOMBRE
+                                WHEN 3 THEN Dept.DESCRIPCION
+                                WHEN 4 THEN Sec.DESCRIPCION
+                                WHEN 5 THEN Per.REGISTRO_USUARIO
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @orderDir WHEN 0 THEN
+                            CASE @orderIndex
+                                WHEN 1 THEN Per.IDENTIFICACION
+                                WHEN 2 THEN Per.NOMBRE
+                                WHEN 3 THEN Dept.DESCRIPCION
+                                WHEN 4 THEN Sec.DESCRIPCION
+                                WHEN 5 THEN Per.REGISTRO_USUARIO
+                            END
+                        END DESC
                     OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY;";
 
                 p.Add("@offset", filtros.pagina);

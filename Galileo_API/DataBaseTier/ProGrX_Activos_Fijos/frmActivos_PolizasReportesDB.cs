@@ -15,57 +15,63 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
-
         /// <summary>
         /// Obtener lista de pólizas (paginada y con filtro).
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosPolizasReportesLista> Activos_PolizasReportesLista_Obtener(int CodEmpresa, string filtros)
         {
             var vfiltro = JsonConvert.DeserializeObject<ActivosPolizasFiltros>(filtros);
-            var response = new ErrorDto<ActivosPolizasReportesLista>();
-            response.Result = new ActivosPolizasReportesLista();
-            response.Code = 0;
+
+            var response = new ErrorDto<ActivosPolizasReportesLista>
+            {
+                Code = 0,
+                Result = new ActivosPolizasReportesLista()
+            };
 
             try
             {
-                var query = "";
-                string where = "", paginaActual = "", paginacionActual = "";
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                    if (vfiltro != null)
-                    {
-                        if (!string.IsNullOrEmpty(vfiltro.filtro))
-                        {
-                            where = "WHERE COD_POLIZA LIKE '%" + vfiltro.filtro + "%' "
-                                  + "OR DESCRIPCION LIKE '%" + vfiltro.filtro + "%' "
-                                  + "OR ISNULL(NUM_POLIZA,'') LIKE '%" + vfiltro.filtro + "%' "
-                                  + "OR ISNULL(DOCUMENTO,'') LIKE '%" + vfiltro.filtro + "%' ";
-                        }
+                var p = new DynamicParameters();
 
-                        if (vfiltro.pagina != null)
-                        {
-                            paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
-                            paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
-                        }
-                    }
+                // Filtro
+                string whereSql = string.Empty;
+                if (vfiltro != null && !string.IsNullOrWhiteSpace(vfiltro.filtro))
+                {
+                    whereSql = @"
+WHERE (
+       COD_POLIZA             LIKE @filtro
+    OR DESCRIPCION           LIKE @filtro
+    OR ISNULL(NUM_POLIZA,'') LIKE @filtro
+    OR ISNULL(DOCUMENTO,'')  LIKE @filtro
+)";
+                    p.Add("@filtro", $"%{vfiltro.filtro.Trim()}%");
+                }
 
-                    // Total
-                    query = $"SELECT COUNT(*) FROM ACTIVOS_POLIZAS {where}";
-                    response.Result.total = connection.Query<int>(query).FirstOrDefault();
+                // Paginación
+                int pagina     = vfiltro?.pagina     ?? 0;
+                int paginacion = vfiltro?.paginacion ?? 50;
+                p.Add("@offset", pagina);
+                p.Add("@rows",   paginacion);
 
-                    // Datos (código + descripción)
-                    query = $@"
-                        SELECT COD_POLIZA AS cod_poliza,
-                               DESCRIPCION AS descripcion
-                        FROM ACTIVOS_POLIZAS
-                        {where}
-                        ORDER BY COD_POLIZA
-                        {paginaActual} {paginacionActual}";
-                    response.Result.lista = connection.Query<ActivosPolizasReportesData>(query).ToList();
-                
+                // Total
+                var countSql = $@"SELECT COUNT(*) FROM ACTIVOS_POLIZAS {whereSql};";
+                response.Result.total = connection.QueryFirstOrDefault<int>(countSql, p);
+
+                // Datos (código + descripción) paginados
+                var dataSql = $@"
+SELECT 
+    COD_POLIZA  AS cod_poliza,
+    DESCRIPCION AS descripcion
+FROM ACTIVOS_POLIZAS
+{whereSql}
+ORDER BY COD_POLIZA
+OFFSET @offset ROWS 
+FETCH NEXT @rows ROWS ONLY;";
+
+                response.Result.lista = connection
+                    .Query<ActivosPolizasReportesData>(dataSql, p)
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -78,12 +84,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return response;
         }
 
-
         /// <summary>
-        /// Catalgo de tipos de polizas.
-        /// <param name="CodEmpresa"></param>
+        /// Catálogo de tipos de pólizas.
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_PolizasReportes_Tipos_Lista_Obtener(int CodEmpresa)
         {
             var result = new ErrorDto<List<DropDownListaGenericaModel>>()
@@ -95,18 +98,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             try
             {
-                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                    string q = @"
-                SELECT 
-                    RTRIM(TIPO_POLIZA)   AS item,        -- Idx en VB6
-                    RTRIM(DESCRIPCION)   AS descripcion  -- ItmX en VB6
-                FROM ACTIVOS_POLIZAS_TIPOS
-                ORDER BY TIPO_POLIZA";
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                const string q = @"
+SELECT 
+    RTRIM(TIPO_POLIZA) AS item,        -- Idx en VB6
+    RTRIM(DESCRIPCION) AS descripcion  -- ItmX en VB6
+FROM ACTIVOS_POLIZAS_TIPOS
+ORDER BY TIPO_POLIZA;";
 
-                    result.Result = connection
-                        .Query<DropDownListaGenericaModel>(q)
-                        .ToList();
-                
+                result.Result = connection
+                    .Query<DropDownListaGenericaModel>(q)
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -118,27 +120,23 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-        
         /// <summary>
-        /// Catalgo de tipos de Estados.
-        /// <param name="CodEmpresa"></param>
+        /// Catálogo de tipos de estados.
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_PolizasReportes_Estados_Lista_Obtener(int CodEmpresa)
         {
             var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-        {
-            new DropDownListaGenericaModel { item = "",  descripcion = "Todas"   },
-            new DropDownListaGenericaModel { item = "1", descripcion = "Activas" },
-            new DropDownListaGenericaModel { item = "0", descripcion = "Vencidas"},
-        }
+                Result = new List<DropDownListaGenericaModel>
+                {
+                    new DropDownListaGenericaModel { item = "",  descripcion = "Todas"    },
+                    new DropDownListaGenericaModel { item = "1", descripcion = "Activas"  },
+                    new DropDownListaGenericaModel { item = "0", descripcion = "Vencidas" },
+                }
             };
             return result;
         }
-
     }
 }

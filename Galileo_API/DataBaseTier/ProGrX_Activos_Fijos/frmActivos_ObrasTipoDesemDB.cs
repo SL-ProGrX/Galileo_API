@@ -12,7 +12,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly int vModulo = 36;
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
-        private const string _coddesembolso = "cod_desembolso";
+
+        private const string CodDesembolsoCol = "cod_desembolso";
 
         public FrmActivosObrasTipoDesemDb(IConfiguration config)
         {
@@ -25,11 +26,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<ActivosObrasTipoDesemDataLista> Activos_ObrasTipoDesem_Consultar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<ActivosObrasTipoDesemDataLista>()
+            var result = new ErrorDto<ActivosObrasTipoDesemDataLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new ActivosObrasTipoDesemDataLista()
+                Result = new ActivosObrasTipoDesemDataLista
                 {
                     total = 0,
                     lista = new List<ActivosObrasTipoDesemData>()
@@ -40,11 +41,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                // 1) Total (como en tu código original: sin filtro)
+                // Total sin filtro (igual que tu versión original)
                 const string countSql = @"SELECT COUNT(cod_desembolso) FROM Activos_obras_tdesem";
                 result.Result.total = connection.QueryFirstOrDefault<int>(countSql);
 
-                // 2) Parámetros de filtro / paginación
+                // Parámetros
                 var p = new DynamicParameters();
 
                 string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
@@ -57,16 +58,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p.Add("@offset", pagina, DbType.Int32);
                 p.Add("@rows", paginacion, DbType.Int32);
 
-                // 3) Sort seguro (whitelist de columnas)
-                var sortFieldRaw = (filtros?.sortField ?? _coddesembolso).Trim();
+                // Sort seguro (whitelist de columnas)
+                var sortFieldRaw = (filtros?.sortField ?? CodDesembolsoCol).Trim();
                 var sortFieldNorm = sortFieldRaw.ToLowerInvariant();
 
                 string orderByCol = sortFieldNorm switch
                 {
-                    _coddesembolso => _coddesembolso,
+                    CodDesembolsoCol => CodDesembolsoCol,
                     "descripcion"    => "descripcion",
                     "activo"         => "activo",
-                    _                => _coddesembolso
+                    _                => CodDesembolsoCol
                 };
 
                 string orderDir = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
@@ -101,6 +102,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Result.total = 0;
                 result.Result.lista = [];
             }
+
             return result;
         }
 
@@ -109,7 +111,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<ActivosObrasTipoDesemData>> Activos_ObrasTipoDesem_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<ActivosObrasTipoDesemData>>()
+            var result = new ErrorDto<List<ActivosObrasTipoDesemData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -153,6 +155,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
@@ -161,19 +164,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_ObrasTipoDesem_Guardar(int CodEmpresa, string usuario, ActivosObrasTipoDesemData datos)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
+                const string queryExiste = @"
                     SELECT COALESCE(COUNT(*),0) AS Existe
                     FROM   Activos_obras_tdesem
                     WHERE  cod_desembolso = @codigo";
-                var existe = connection.QueryFirstOrDefault<int>(query, new { codigo = datos.cod_desembolso });
+
+                var existe = connection.QueryFirstOrDefault<int>(queryExiste, new { codigo = datos.cod_desembolso });
 
                 if (datos.isNew)
                 {
@@ -187,7 +192,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         result = Activos_ObrasTipoDesem_Insertar(CodEmpresa, usuario, datos);
                     }
                 }
-                else if (existe == 0 && !datos.isNew)
+                else if (existe == 0)
                 {
                     result.Code = -2;
                     result.Description = $"El Tipo de Desembolso con el código {datos.cod_desembolso} no existe.";
@@ -202,6 +207,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -210,11 +216,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         private ErrorDto Activos_ObrasTipoDesem_Actualizar(int CodEmpresa, string usuario, ActivosObrasTipoDesemData datos)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
@@ -248,6 +255,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -256,11 +264,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         private ErrorDto Activos_ObrasTipoDesem_Insertar(int CodEmpresa, string usuario, ActivosObrasTipoDesemData datos)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
@@ -292,6 +301,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -300,11 +310,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_ObrasTipoDesem_Eliminar(int CodEmpresa, string usuario, string cod_desembolso)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
@@ -325,6 +336,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
     }

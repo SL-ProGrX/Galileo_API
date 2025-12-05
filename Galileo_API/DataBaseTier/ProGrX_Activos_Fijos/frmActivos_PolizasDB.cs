@@ -55,8 +55,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var sqlCount = $@"SELECT COUNT(*) FROM ACTIVOS_POLIZAS {where}";
                 response.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
 
-                int pagina      = vfiltro?.pagina     ?? 0;
-                int paginacion  = vfiltro?.paginacion ?? 50;
+                int pagina = vfiltro?.pagina ?? 0;
+                int paginacion = vfiltro?.paginacion ?? 50;
 
                 var sqlPage = $@"
                     SELECT 
@@ -69,7 +69,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FETCH NEXT @rows ROWS ONLY;";
 
                 p.Add("@offset", pagina);
-                p.Add("@rows",   paginacion);
+                p.Add("@rows", paginacion);
 
                 response.Result.lista = connection.Query<ActivosPolizasData>(sqlPage, p).ToList();
             }
@@ -278,15 +278,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 connection.Execute(query, new
                 {
-                    cod         = data.cod_poliza.ToUpper(),
-                    tipo        = data.tipo_poliza.ToUpper(),
+                    cod = data.cod_poliza.ToUpper(),
+                    tipo = data.tipo_poliza.ToUpper(),
                     descripcion = data.descripcion?.ToUpper(),
                     observacion = string.IsNullOrWhiteSpace(data.observacion) ? null : data.observacion,
-                    fi          = string.IsNullOrWhiteSpace(data.fecha_inicio) ? null : data.fecha_inicio,
-                    fv          = string.IsNullOrWhiteSpace(data.fecha_vence) ? null : data.fecha_vence,
-                    monto       = data.monto,
-                    num_poliza  = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
-                    documento   = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
+                    fi = string.IsNullOrWhiteSpace(data.fecha_inicio) ? null : data.fecha_inicio,
+                    fv = string.IsNullOrWhiteSpace(data.fecha_vence) ? null : data.fecha_vence,
+                    monto = data.monto,
+                    num_poliza = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
+                    documento = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
                     reg_usuario = string.IsNullOrWhiteSpace(data.registro_usuario) ? null : data.registro_usuario
                 });
 
@@ -336,15 +336,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 connection.Execute(query, new
                 {
-                    cod         = data.cod_poliza.ToUpper(),
-                    tipo        = data.tipo_poliza.ToUpper(),
+                    cod = data.cod_poliza.ToUpper(),
+                    tipo = data.tipo_poliza.ToUpper(),
                     descripcion = data.descripcion?.ToUpper(),
                     observacion = string.IsNullOrWhiteSpace(data.observacion) ? null : data.observacion,
-                    fi          = string.IsNullOrWhiteSpace(data.fecha_inicio) ? null : data.fecha_inicio,
-                    fv          = string.IsNullOrWhiteSpace(data.fecha_vence) ? null : data.fecha_vence,
-                    monto       = data.monto,
-                    num_poliza  = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
-                    documento   = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
+                    fi = string.IsNullOrWhiteSpace(data.fecha_inicio) ? null : data.fecha_inicio,
+                    fv = string.IsNullOrWhiteSpace(data.fecha_vence) ? null : data.fecha_vence,
+                    monto = data.monto,
+                    num_poliza = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
+                    documento = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
                     mod_usuario = string.IsNullOrWhiteSpace(data.modifica_usuario) ? null : data.modifica_usuario
                 });
 
@@ -537,21 +537,23 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     {where}";
                 resp.Result.total = cn.QueryFirstOrDefault<int>(queryTotal, p);
 
-                // Ordenamiento seguro
-                var sortFieldRaw  = filtros?.sortField ?? _numplaca;
+                // Ordenamiento seguro usando índice + CASE para cumplir S2077
+                var sortFieldRaw = filtros?.sortField ?? _numplaca;
                 var sortFieldNorm = sortFieldRaw.Trim().ToUpperInvariant();
 
-                string orderByCol = sortFieldNorm switch
+                int sortIndex = sortFieldNorm switch
                 {
-                    _numplaca or "NUM_PLACA" => _numplaca,
-                    "A.NOMBRE"    or "NOMBRE"    => "A.NOMBRE",
-                    "A.ESTADO"    or "ESTADO"    => "A.ESTADO",
-                    _                            => _numplaca
+                    _numplaca or "NUM_PLACA"      => 1,
+                    "A.NOMBRE"   or "NOMBRE"      => 2,
+                    "A.ESTADO"   or "ESTADO"      => 3,
+                    _                              => 1
                 };
+                p.Add("@sortIndex", sortIndex);
 
-                string sortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC";
+                int sortDir = filtros?.sortOrder == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
+                p.Add("@sortDir", sortDir);
 
-                int pagina     = filtros?.pagina     ?? 0;
+                int pagina = filtros?.pagina ?? 0;
                 int paginacion = filtros?.paginacion ?? 50;
 
                 string query = $@"
@@ -565,19 +567,35 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                            ON X.NUM_PLACA = A.NUM_PLACA
                           AND X.COD_POLIZA = @p
                     {where}
-                    ORDER BY {orderByCol} {sortOrder}
+                    ORDER BY
+                        -- ASC
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN A.NUM_PLACA
+                                WHEN 2 THEN A.NOMBRE
+                                WHEN 3 THEN A.ESTADO
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN A.NUM_PLACA
+                                WHEN 2 THEN A.NOMBRE
+                                WHEN 3 THEN A.ESTADO
+                            END
+                        END DESC
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
 
                 p.Add("@offset", pagina);
-                p.Add("@rows",   paginacion);
+                p.Add("@rows", paginacion);
 
                 var filas = cn.Query<ActivosPolizasAsignacionItem>(query, p).ToList();
-                resp.Description = JsonConvert.SerializeObject(filas); // si ya lo usabas así, lo mantengo
+                resp.Description = JsonConvert.SerializeObject(filas);
                 resp.Result.lista = filas.Select(f => new ActivosPolizasData
                 {
-                    cod_poliza   = cod_poliza.ToUpper(),
-                    descripcion  = f.nombre
+                    cod_poliza = cod_poliza.ToUpper(),
+                    descripcion = f.nombre
                 }).ToList();
             }
             catch (Exception ex)

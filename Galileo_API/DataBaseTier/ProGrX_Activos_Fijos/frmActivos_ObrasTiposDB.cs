@@ -59,26 +59,31 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p.Add("@offset", pagina, DbType.Int32);
                 p.Add("@rows", paginacion, DbType.Int32);
 
-                // Sort seguro (whitelist)
+                // Sort seguro → índice de columna
                 var sortFieldRaw = (filtros?.sortField ?? _codtipo).Trim();
                 var sortFieldNorm = sortFieldRaw.ToLowerInvariant();
 
-                string orderByCol = sortFieldNorm switch
+                int orderIndex = sortFieldNorm switch
                 {
-                    _codtipo    => _codtipo,
-                    "descripcion" => "descripcion",
-                    "activo"      => "activo",
-                    _             => _codtipo
+                    "cod_tipo"    => 1,
+                    "descripcion" => 2,
+                    "activo"      => 3,
+                    _             => 1
                 };
+                p.Add("@orderIndex", orderIndex, DbType.Int32);
 
-                string orderDir = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
+                // Dirección: 0 = DESC, 1 = ASC
+                int orderDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1;
+                p.Add("@orderDir", orderDir, DbType.Int32);
 
                 const string whereSql = @"
                     WHERE (@filtro IS NULL
                            OR cod_tipo    LIKE @filtro
                            OR descripcion LIKE @filtro)";
 
-                string dataSql = $@"
+                // ORDER BY sin concatenar strings: constante,
+                // y se decide columna/dirección con CASE + parámetros.
+                const string dataSql = @"
                     SELECT cod_tipo,
                            descripcion,
                            activo,
@@ -87,8 +92,24 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                            modifica_usuario,
                            modifica_fecha
                     FROM   Activos_obras_tipos
-                    {whereSql}
-                    ORDER BY {orderByCol} {orderDir}
+                    " + whereSql + @"
+                    ORDER BY
+                        -- ASC
+                        CASE @orderDir WHEN 1 THEN
+                            CASE @orderIndex
+                                WHEN 1 THEN cod_tipo
+                                WHEN 2 THEN descripcion
+                                WHEN 3 THEN CAST(activo AS INT)
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @orderDir WHEN 0 THEN
+                            CASE @orderIndex
+                                WHEN 1 THEN cod_tipo
+                                WHEN 2 THEN descripcion
+                                WHEN 3 THEN CAST(activo AS INT)
+                            END
+                        END DESC
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
 

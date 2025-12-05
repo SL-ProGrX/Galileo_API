@@ -24,19 +24,20 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Obras_Actualizar(int CodEmpresa, string estado, DateTime fecha_finiquito, string contrato)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
                 const string query = @"
                     UPDATE Activos_obras 
-                       SET estado = @estado,
+                       SET estado         = @estado,
                            fecha_finiquito = @fecha_finiquito 
-                     WHERE contrato = @contrato";
+                     WHERE contrato       = @contrato";
 
                 connection.Execute(query, new { estado, fecha_finiquito, contrato });
             }
@@ -45,6 +46,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -53,18 +55,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_ObrasTipos_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new List<DropDownListaGenericaModel>()
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"SELECT RTRIM(cod_tipo) AS item,
-                                              RTRIM(descripcion) AS descripcion 
-                                       FROM Activos_obras_tipos";
+                const string query = @"
+                    SELECT RTRIM(cod_tipo)     AS item,
+                           RTRIM(descripcion) AS descripcion 
+                    FROM   Activos_obras_tipos";
+
                 result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
@@ -73,6 +78,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
@@ -81,18 +87,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_ObrasTiposDesem_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new List<DropDownListaGenericaModel>()
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"SELECT cod_desembolso AS item,
-                                              descripcion   AS descripcion 
-                                       FROM Activos_obras_tDesem";
+                const string query = @"
+                    SELECT cod_desembolso AS item,
+                           descripcion    AS descripcion 
+                    FROM   Activos_obras_tDesem";
+
                 result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
@@ -101,6 +110,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
@@ -109,18 +119,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Obras_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new List<DropDownListaGenericaModel>()
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"SELECT RTRIM(contrato)    AS item,
-                                              RTRIM(descripcion) AS descripcion 
-                                       FROM Activos_obras";
+                const string query = @"
+                    SELECT RTRIM(contrato)   AS item,
+                           RTRIM(descripcion) AS descripcion 
+                    FROM   Activos_obras";
+
                 result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
@@ -129,6 +142,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
@@ -137,18 +151,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Obra_Proveedores_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new List<DropDownListaGenericaModel>()
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"SELECT cod_proveedor AS item,
-                                              descripcion   AS descripcion 
-                                       FROM Activos_proveedores";
+                const string query = @"
+                    SELECT cod_proveedor AS item,
+                           descripcion   AS descripcion 
+                    FROM   Activos_proveedores";
+
                 result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
@@ -157,6 +174,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
@@ -165,12 +183,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<ActivosObrasData> Activos_Obras_Consultar(int CodEmpresa, string contrato)
         {
-            var result = new ErrorDto<ActivosObrasData>()
+            var result = new ErrorDto<ActivosObrasData>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new ActivosObrasData()
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
@@ -210,15 +229,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
         /// <summary>
-        /// Consulta de tipos de adendums de una obra (paginado + filtro) – refactor S2077
+        /// Consulta de adendums (paginado + filtro, seguro para S2077)
         /// </summary>
         public ErrorDto<List<ActivosObrasProcesoAdendumsData>> Activos_ObrasAdendums_Obtener(int CodEmpresa, string contrato, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<ActivosObrasProcesoAdendumsData>>()
+            var result = new ErrorDto<List<ActivosObrasProcesoAdendumsData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -237,7 +257,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     : $"%{filtros.filtro.Trim()}%";
                 p.Add("@filtro", filtroLike, DbType.String);
 
-                // Sort seguro
+                // sortField con whitelist
                 var sortFieldRaw = (filtros?.sortField ?? "cod_Adendum").Trim();
                 var sortFieldNorm = sortFieldRaw.ToLowerInvariant();
 
@@ -261,9 +281,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     WHERE contrato = @contrato
                       AND (
                             @filtro IS NULL
-                            OR cod_Adendum  LIKE @filtro
-                            OR descripcion  LIKE @filtro
-                            OR CONVERT(varchar(10), fecha, 120) LIKE @filtro
+                            OR cod_Adendum                      LIKE @filtro
+                            OR descripcion                      LIKE @filtro
+                            OR CONVERT(varchar(10), fecha,120) LIKE @filtro
                             OR CONVERT(varchar(30), monto)      LIKE @filtro
                           )";
 
@@ -293,11 +313,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
         /// <summary>
-        /// Consulta de lista de desembolsos de una obra en proceso – refactor S2077
+        /// Consulta de lista de desembolsos (paginado + filtro, seguro para S2077)
         /// </summary>
         public ErrorDto<List<ActivosObrasProcesoDesembolsosData>> Activos_ObrasDesembolsos_Obtener(int CodEmpresa, string contrato, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<ActivosObrasProcesoDesembolsosData>>()
+            var result = new ErrorDto<List<ActivosObrasProcesoDesembolsosData>>
             {
                 Code = 0,
                 Description = "Ok",
@@ -316,19 +336,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     : $"%{filtros.filtro.Trim()}%";
                 p.Add("@filtro", filtroLike, DbType.String);
 
-                // Normalizar sortField (puede venir como "D.secuencia")
+                // Normalización de sortField (puede venir como "D.secuencia")
                 var sortFieldRaw = (filtros?.sortField ?? "D.secuencia").Trim();
                 var sfNorm = sortFieldRaw.ToLowerInvariant().Replace("d.", "");
 
                 string orderByCol = sfNorm switch
                 {
-                    "secuencia"     => "D.secuencia",
-                    "cod_desembolso"=> "D.cod_desembolso",
-                    "cod_proveedor" => "D.COD_PROVEEDOR",
-                    "documento"     => "D.Documento",
-                    "fecha"         => "D.fecha",
-                    "monto"         => "D.monto",
-                    _               => "D.secuencia"
+                    "secuencia"      => "D.secuencia",
+                    "cod_desembolso" => "D.cod_desembolso",
+                    "cod_proveedor"  => "D.COD_PROVEEDOR",
+                    "documento"      => "D.Documento",
+                    "fecha"          => "D.fecha",
+                    "monto"          => "D.monto",
+                    _                => "D.secuencia"
                 };
 
                 string orderDir = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
@@ -342,10 +362,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     WHERE D.contrato = @contrato
                       AND (
                             @filtro IS NULL
-                            OR D.cod_desembolso      LIKE @filtro
-                            OR D.COD_PROVEEDOR       LIKE @filtro
-                            OR D.Documento           LIKE @filtro
-                            OR CONVERT(varchar(10), D.fecha, 120) LIKE @filtro
+                            OR D.cod_desembolso                   LIKE @filtro
+                            OR D.COD_PROVEEDOR                    LIKE @filtro
+                            OR D.Documento                        LIKE @filtro
+                            OR CONVERT(varchar(10), D.fecha,120)  LIKE @filtro
                             OR CONVERT(varchar(30), D.monto)      LIKE @filtro
                           )";
 
@@ -376,6 +396,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
@@ -384,12 +405,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<ActivosObrasProcesoResultadosData>> Activos_ObrasResultados_Obtener(int CodEmpresa, string contrato)
         {
-            var result = new ErrorDto<List<ActivosObrasProcesoResultadosData>>()
+            var result = new ErrorDto<List<ActivosObrasProcesoResultadosData>>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new List<ActivosObrasProcesoResultadosData>()
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
@@ -402,9 +424,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                            A.nombre,
                            T.descripcion AS TA
                     FROM   Activos_obras_resultados O 
-                    INNER JOIN Activos_Principal     A ON O.num_placa = A.num_placa
-                    INNER JOIN Activos_tipo_activo   T ON A.tipo_activo = T.tipo_activo
-                    WHERE  O.tipo = 'A' 
+                    INNER JOIN Activos_Principal   A ON O.num_placa   = A.num_placa
+                    INNER JOIN Activos_tipo_activo T ON A.tipo_activo = T.tipo_activo
+                    WHERE  O.tipo     = 'A' 
                        AND O.contrato = @contrato
                     UNION
                     SELECT O.ID_RESULTADOS,
@@ -418,7 +440,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     INNER JOIN Activos_retiro_adicion A ON O.num_placa  = A.num_placa
                                                        AND O.id_adicion = A.ID_ADDRET
                     INNER JOIN Activos_justificaciones T ON A.cod_justificacion = T.cod_justificacion
-                    WHERE  O.tipo = 'M' 
+                    WHERE  O.tipo     = 'M' 
                        AND O.contrato = @contrato";
 
                 result.Result = connection
@@ -431,11 +453,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
         /// <summary>
-        /// Metodo para modificar el registro de la obre en proceso
+        /// Metodo para modificar el registro de la obra en proceso
         /// </summary>
         public ErrorDto Activos_Obras_Modificar(int CodEmpresa, ActivosObrasData data, string usuario)
         {
@@ -444,6 +467,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
@@ -490,6 +514,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -503,6 +528,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
@@ -545,13 +571,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Movimiento = "Registra - WEB",
                     Modulo = vModulo
                 });
-
             }
             catch (Exception ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -565,6 +591,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
@@ -585,6 +612,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -598,6 +626,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
@@ -605,6 +634,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     SELECT COALESCE(COUNT(*),0) AS Existe 
                     FROM   Activos_obras_ade 
                     WHERE  cod_adendum = @cod_adendum";
+
                 var existe = connection.QueryFirstOrDefault<int>(query, new { cod_adendum = dato.cod_Adendum });
                 if (existe == 0)
                 {
@@ -622,6 +652,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -633,6 +664,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                    SET addendums   = addendums   + @monto,
                        presu_actual = presu_actual + @monto  
                  WHERE contrato   = @contrato";
+
             connection.Execute(query, new { monto, contrato });
         }
 
@@ -665,6 +697,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
@@ -672,8 +705,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     SELECT COALESCE(COUNT(*),0) + 1 AS Secuencia 
                     FROM   Activos_obras_desem 
                     WHERE  contrato = @contrato";
+
                 var secuencia = connection.QueryFirstOrDefault<int>(query, new { contrato });
                 dato.secuencia = secuencia;
+
                 Activos_Desembolso_Insertar(CodEmpresa, dato, contrato);
                 Activos_ObrasDesembolso_Actualizar(CodEmpresa, contrato, dato.monto);
             }
@@ -682,6 +717,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -693,6 +729,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                    SET desembolsado = desembolsado + @monto,
                        presu_actual = presu_actual - @monto  
                  WHERE contrato    = @contrato";
+
             connection.Execute(query, new { monto, contrato });
         }
 
