@@ -1,0 +1,800 @@
+﻿using Dapper;
+using Microsoft.Data.SqlClient;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.ProGrX_Activos_Fijos;
+using Galileo.Models.Security;
+
+namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
+{
+    public class FrmActivosPersonasDB
+    {
+        private readonly int vModulo = 36; // Módulo de Activos
+        private readonly MSecurityMainDb _Security_MainDB;
+        //private readonly mReportingServicesDB _mReporting;
+       // private readonly MProGrXAuxiliarDB _mAuxiliar;
+        private readonly PortalDB _portalDB;
+
+        private const string _todos = "TODOS";
+
+        public FrmActivosPersonasDB(IConfiguration config)
+        {
+            _Security_MainDB = new MSecurityMainDb(config);
+            //_mReporting = new mReportingServicesDB(_config);
+            //_mAuxiliar = new MProGrXAuxiliarDB(config);
+            _portalDB = new PortalDB(config);
+        }
+
+        
+        /// <summary>
+        /// Obtiene lista paginada de personas con filtros y joins a Departamentos/Secciones (Tab Nómina).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <param name="codDepartamento"></param>
+        /// <param name="codSeccion"></param>
+        /// <returns></returns>
+        public ErrorDto<ActivosPersonasLista> Activos_Personas_Lista_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,string? codDepartamento = null,string? codSeccion = null)
+        {
+            
+            var result = new ErrorDto<ActivosPersonasLista>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new ActivosPersonasLista { total = 0, lista = new List<ActivosPersonasData>() }
+            };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var where = " WHERE 1=1 ";
+                var p = new DynamicParameters();
+
+                if (!string.IsNullOrWhiteSpace(filtros.filtro))
+                {
+                    where += @" AND (
+                 Per.IDENTIFICACION    LIKE @filtro
+              OR Per.NOMBRE           LIKE @filtro
+              OR Dept.DESCRIPCION     LIKE @filtro
+              OR Sec.DESCRIPCION      LIKE @filtro
+              OR Per.REGISTRO_USUARIO LIKE @filtro
+            )";
+                    p.Add("@filtro", $"%{filtros.filtro}%");
+                }
+
+                if (!string.IsNullOrWhiteSpace(codDepartamento) && codDepartamento != _todos)
+                {
+                    where += " AND Per.COD_DEPARTAMENTO = @codDepartamento ";
+                    p.Add("@codDepartamento", codDepartamento);
+                }
+
+                if (!string.IsNullOrWhiteSpace(codSeccion) && codSeccion != _todos)
+                {
+                    where += " AND Per.COD_SECCION = @codSeccion ";
+                    p.Add("@codSeccion", codSeccion);
+                }
+
+                var sortField = string.IsNullOrWhiteSpace(filtros.sortField)
+                    ? "Per.IDENTIFICACION"
+                    : filtros.sortField;
+                var sortOrder = filtros.sortOrder == 0 ? "DESC" : "ASC";
+
+                var sqlCount = $@"
+            SELECT COUNT(1)
+            FROM ACTIVOS_PERSONAS Per
+            INNER JOIN ACTIVOS_DEPARTAMENTOS Dept ON Per.COD_DEPARTAMENTO = Dept.COD_DEPARTAMENTO
+            INNER JOIN ACTIVOS_SECCIONES    Sec  ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO AND Per.COD_SECCION = Sec.COD_SECCION
+            {where};";
+
+                result.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
+                var sqlPage = $@"
+            SELECT 
+                Per.IDENTIFICACION    AS identificacion,
+                Per.NOMBRE            AS nombre,
+                Per.COD_DEPARTAMENTO  AS cod_departamento,
+                Per.COD_SECCION       AS cod_seccion,
+                Per.COD_ALTERNO       AS cod_alterno,
+                CASE WHEN Per.ACTIVO = 1 THEN 1 ELSE 0 END AS activo,
+                Dept.DESCRIPCION      AS departamento,
+                Sec.DESCRIPCION       AS seccion,
+                Per.REGISTRO_USUARIO  AS usuario,
+                Tr.COD_TRASLADO       AS cod_traslado
+            FROM ACTIVOS_PERSONAS Per
+            INNER JOIN ACTIVOS_DEPARTAMENTOS Dept 
+                ON Per.COD_DEPARTAMENTO = Dept.COD_DEPARTAMENTO
+            INNER JOIN ACTIVOS_SECCIONES Sec  
+                ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO 
+               AND Per.COD_SECCION      = Sec.COD_SECCION
+            LEFT JOIN (
+                SELECT  IDENTIFICACION,
+                        MAX(COD_TRASLADO) AS COD_TRASLADO
+                FROM    ACTIVOS_TRASLADOS
+                GROUP BY IDENTIFICACION
+            ) Tr
+                ON Tr.IDENTIFICACION = Per.IDENTIFICACION
+
+            {where}
+            ORDER BY {sortField} {sortOrder}
+            OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY;";
+
+                p.Add("@offset", filtros.pagina);
+                p.Add("@rows", filtros.paginacion);
+
+                result.Result.lista = connection.Query<ActivosPersonasData>(sqlPage, p).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result.total = 0;
+                result.Result.lista = [];
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Obtiene lista completa de personas sin paginación (Tab Mantenimiento).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <param name="codDepartamento"></param>
+        /// <param name="codSeccion"></param>
+        /// <returns></returns>
+        public ErrorDto<List<ActivosPersonasData>> Activos_Personas_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,string? codDepartamento = null,string? codSeccion = null)
+        {
+            
+            var result = new ErrorDto<List<ActivosPersonasData>>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new List<ActivosPersonasData>()
+            };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var where = " WHERE 1=1 ";
+                var p = new DynamicParameters();
+
+                if (!string.IsNullOrWhiteSpace(filtros.filtro))
+                {
+                    where += @" AND (
+                   Per.IDENTIFICACION    LIKE @filtro
+                OR Per.NOMBRE           LIKE @filtro
+                OR Dept.DESCRIPCION     LIKE @filtro
+                OR Sec.DESCRIPCION      LIKE @filtro
+                OR Per.REGISTRO_USUARIO LIKE @filtro
+            )";
+                    p.Add("@filtro", $"%{filtros.filtro}%");
+                }
+
+                if (!string.IsNullOrWhiteSpace(codDepartamento) && codDepartamento != _todos)
+                {
+                    where += " AND Per.COD_DEPARTAMENTO = @codDepartamento ";
+                    p.Add("@codDepartamento", codDepartamento);
+                }
+                if (!string.IsNullOrWhiteSpace(codSeccion) && codSeccion != _todos)
+                {
+                    where += " AND Per.COD_SECCION = @codSeccion ";
+                    p.Add("@codSeccion", codSeccion);
+                }
+
+                var sql = $@"
+            SELECT
+                Per.IDENTIFICACION   AS identificacion,
+                Per.NOMBRE           AS nombre,
+                Per.COD_DEPARTAMENTO AS cod_departamento,
+                Per.COD_SECCION      AS cod_seccion,
+                Per.COD_ALTERNO      AS cod_alterno,
+                CASE WHEN Per.ACTIVO = 1 THEN 1 ELSE 0 END AS activo,
+                Dept.DESCRIPCION     AS departamento,
+                Sec.DESCRIPCION      AS seccion,
+                Per.REGISTRO_USUARIO AS usuario
+            FROM ACTIVOS_PERSONAS Per
+            LEFT JOIN ACTIVOS_DEPARTAMENTOS Dept 
+                ON Per.COD_DEPARTAMENTO = Dept.COD_DEPARTAMENTO
+            LEFT JOIN ACTIVOS_SECCIONES Sec 
+                ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO 
+               AND Per.COD_SECCION      = Sec.COD_SECCION
+            {where}
+            ORDER BY Per.IDENTIFICACION;";
+
+                result.Result = connection.Query<ActivosPersonasData>(sql, p).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = null;
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Inserta o actualiza persona según isNew (Tab Mantenimiento).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="persona"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_Personas_Guardar(int CodEmpresa, string usuario, ActivosPersonasData persona)
+        {
+            
+            var result = new ErrorDto()
+            {
+                Code = 0,
+                Description = "Ok"
+            };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                    // Verifico existencia
+                    var qExiste = $@"SELECT ISNULL(COUNT(*),0) FROM ACTIVOS_PERSONAS WHERE UPPER(IDENTIFICACION) = '{persona.identificacion.ToUpper()}' ";
+                    int existe = connection.QueryFirstOrDefault<int>(qExiste);
+
+                    if (persona.isNew)
+                    {
+                        if (existe > 0)
+                        {
+                            result.Code = -2;
+                            result.Description = $"La persona con identificación {persona.identificacion} ya existe.";
+                        }
+                        else
+                        {
+                            result = Activos_Personas_Insertar(CodEmpresa, usuario, persona);
+                        }
+                    }
+                    else if (existe == 0 && !persona.isNew)
+                    {
+                        result.Code = -2;
+                        result.Description = $"La persona con identificación {persona.identificacion} no existe.";
+                    }
+                    else
+                    {
+                        result = Activos_Personas_Actualizar(CodEmpresa, usuario, persona);
+                    }
+                
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Actualiza una persona existente (Tab Mantenimiento).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="persona"></param>
+        /// <returns></returns>
+        private ErrorDto Activos_Personas_Actualizar(int CodEmpresa, string usuario, ActivosPersonasData persona)
+        {
+            
+            var result = new ErrorDto()
+            {
+                Code = 0,
+                Description = "Ok"
+            };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                    var query = $@"
+                        UPDATE ACTIVOS_PERSONAS
+                           SET NOMBRE = '{persona.nombre.ToUpper()}',
+                               COD_DEPARTAMENTO = '{persona.cod_departamento}',
+                               COD_SECCION = '{persona.cod_seccion}',
+                               COD_ALTERNO = '{persona.cod_alterno.ToUpper()}',
+                               ACTIVO = {(persona.activo ? 1 : 0)},
+                               MODIFICA_USUARIO = '{usuario}',
+                               MODIFICA_FECHA = GETDATE()
+                         WHERE IDENTIFICACION = '{persona.identificacion.ToUpper()}'";
+                    connection.Execute(query);
+
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = CodEmpresa,
+                        Usuario = usuario,
+                        DetalleMovimiento = $"Persona : {persona.identificacion}",
+                        Movimiento = "Modifica - WEB",
+                        Modulo = vModulo
+                    });
+                
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Inserta una nueva persona (Tab Mantenimiento).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="persona"></param>
+        /// <returns></returns>
+        private ErrorDto Activos_Personas_Insertar(int CodEmpresa, string usuario, ActivosPersonasData persona)
+        {
+            
+            var result = new ErrorDto()
+            {
+                Code = 0,
+                Description = "Ok"
+            };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                    var query = $@"
+                        INSERT INTO ACTIVOS_PERSONAS
+                          (COD_DEPARTAMENTO, COD_SECCION, IDENTIFICACION, NOMBRE, COD_ALTERNO, ACTIVO, REGISTRO_USUARIO, REGISTRO_FECHA)
+                        VALUES
+                          ('{persona.cod_departamento}','{persona.cod_seccion}','{persona.identificacion.ToUpper()}','{persona.nombre.ToUpper()}','{persona.cod_alterno.ToUpper()}',{(persona.activo ? 1 : 0)},'{usuario}',GETDATE())";
+                    connection.Execute(query);
+
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = CodEmpresa,
+                        Usuario = usuario,
+                        DetalleMovimiento = $"Persona : {persona.identificacion}",
+                        Movimiento = "Registra - WEB",
+                        Modulo = vModulo
+                    });
+                
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Elimina una persona por identificación (Tab Mantenimiento).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="identificacion"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_Personas_Eliminar(int CodEmpresa, string identificacion, string usuario)
+        {
+            
+            var result = new ErrorDto { Code = 0, Description = "Ok" };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var sql = @"DELETE FROM ACTIVOS_PERSONAS WHERE IDENTIFICACION = @identificacion";
+                var rows = connection.Execute(sql, new { identificacion = identificacion?.ToUpper() });
+
+                if (rows == 0)
+                {
+                    result.Code = -2;
+                    result.Description = $"No se encontró la persona {identificacion} para eliminar.";
+                    return result;
+                }
+
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario,
+                    DetalleMovimiento = $"Persona : {identificacion}",
+                    Movimiento = "Elimina - WEB",
+                    Modulo = vModulo
+                });
+            }
+            catch (SqlException ex) when (ex.Number == 547) // FK constraint
+            {
+                result.Code = -2;
+                result.Description = "Registro en uso. No se puede eliminar.";
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+
+            return result;
+        }
+        /// <summary>
+        /// Valida si una identificación ya existe en ACTIVOS_PERSONAS.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="identificacion"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_Personas_Valida(int CodEmpresa, string identificacion)
+        {
+            
+            var result = new ErrorDto()
+            {
+                Code = 0,
+                Description = "Ok"
+            };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                    var query = $@"SELECT COUNT(IDENTIFICACION) FROM ACTIVOS_PERSONAS WHERE UPPER(IDENTIFICACION) = '{identificacion.ToUpper()}'";
+                    var existe = connection.QueryFirstOrDefault<int>(query);
+
+                    if (existe > 0)
+                    {
+                        result.Code = -1;
+                        result.Description = "La identificación ya existe.";
+                    }
+                    else
+                    {
+                        result.Code = 0;
+                        result.Description = "La identificación es válida.";
+                    }
+                
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+            return result;
+        }
+
+
+        /// <summary>
+        /// Aplica el cambio de Departamento/Sección llamando a spActivos_DepartamentoCambio. Devuelve Boleta.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        public ErrorDto<CambioDeptoResponse> Activos_Personas_CambioDepto_Aplicar(int CodEmpresa, string usuario, CambioDeptoRequest request)
+        {
+            
+            var result = new ErrorDto<CambioDeptoResponse>()
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new CambioDeptoResponse()
+            };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                    string q = "exec spActivos_DepartamentoCambio '" + request.identificacion + "','" + request.cod_departamento + "','" + request.cod_seccion + "','" + usuario + "','" + request.fecha.ToString("yyyy/MM/dd") + "'";
+                    var rs = connection.Query<dynamic>(q).FirstOrDefault();
+                    string boleta = "";
+                    if (rs is not null)
+                    {
+                        var dict = rs as IDictionary<string, object>;
+                        if (dict != null && dict.ContainsKey("Boleta") && dict["Boleta"] != null)
+                        {
+                            boleta = dict["Boleta"].ToString() ?? "";
+                        }
+                    }
+                    result.Result.boleta = boleta;
+
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = CodEmpresa,
+                        Usuario = usuario,
+                        DetalleMovimiento = $"Aplica Cambio Dpto/Sec a: {request.identificacion} Boleta:{result.Result.boleta}",
+                        Movimiento = "Aplica - WEB",
+                        Modulo = vModulo
+                    });
+                
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = null;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Ejecuta la sincronización con RRHH llamando a spActivos_Sincroniza_RH.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_Personas_SincronizarRH(int CodEmpresa, string usuario)
+        {
+            
+            var result = new ErrorDto()
+            {
+                Code = 0,
+                Description = "Ok"
+            };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                    string q = "exec spActivos_Sincroniza_RH";
+                    connection.Execute(q);
+
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = CodEmpresa,
+                        Usuario = usuario,
+                        DetalleMovimiento = "Sincronización con RRHH finalizada",
+                        Movimiento = "Procesa - WEB",
+                        Modulo = vModulo
+                    });
+                
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+            return result;
+        }
+
+
+        /// <summary>
+        /// Obtiene catálogo de Departamentos (item, descripcion).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Departamentos_Obtener(int CodEmpresa)
+        {
+            
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new List<DropDownListaGenericaModel>()
+            };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                    string q = @"
+                        SELECT COD_DEPARTAMENTO AS item, DESCRIPCION
+                        FROM ACTIVOS_DEPARTAMENTOS
+                        ORDER BY COD_DEPARTAMENTO";
+                    result.Result = connection.Query<DropDownListaGenericaModel>(q).ToList();
+                
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = null;
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Obtiene catálogo de Secciones por Departamento (item, descripcion).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cod_departamento"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Secciones_ObtenerPorDepto(int CodEmpresa, string cod_departamento)
+        {
+            
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new List<DropDownListaGenericaModel>()
+            };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                    string q = @"
+                        SELECT COD_SECCION AS item, DESCRIPCION
+                        FROM ACTIVOS_SECCIONES
+                        WHERE COD_DEPARTAMENTO = '" + cod_departamento + @"'
+                        ORDER BY COD_SECCION";
+                    result.Result = connection.Query<DropDownListaGenericaModel>(q).ToList();
+                
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = null;
+            }
+            return result;
+        }
+
+        // /// <summary>
+        // /// Generar emision de documentos.
+        // /// </summary>
+        // /// <param name="codEmpresa"></param>
+        // /// <param name="request"></param>
+        // /// <returns></returns>
+        // public ErrorDto<object> Activos_BoletaActivosAsignados_Lote(int codEmpresa,ActivosPersonasReporteLoteRequest request)
+        // {
+        //     var response = new ErrorDto<object> { Code = 0 };
+
+        //     if (request.Identificaciones == null || request.Identificaciones.Count == 0)
+        //     {
+        //         response.Code = -1;
+        //         response.Description = "No se recibieron identificaciones para generar la boleta.";
+        //         return response;
+        //     }
+
+        //     try
+        //     {
+        //         var pdfs = new List<byte[]>();
+
+        //         foreach (var id in request.Identificaciones.Distinct())
+        //         {
+        //             var parametros = new
+        //             {
+        //                 filtros =
+        //                     $" WHERE ACTIVOS_PERSONAS.IDENTIFICACION = '{id}'" +
+        //                     $" AND ACTIVOS_PRINCIPAL.ESTADO <> 'R'",
+        //                 Empresa = (string?)null,
+        //                 fxUsuario = request.Usuario,
+        //                 fxSubTitulo = "ACTIVOS VIGENTES"
+        //             };
+
+        //             var reporteData = new FrmReporteGlobal
+        //             {
+        //                 codEmpresa = codEmpresa,
+        //                 parametros = JsonConvert.SerializeObject(parametros),
+        //                 nombreReporte = "Activos_BoletaActivosAsignados",
+        //                 usuario = request.Usuario,
+        //                 cod_reporte = "P",
+        //                 folder = "Activos"
+        //             };
+
+        //             var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
+
+
+        //             if (actionResult is ObjectResult objectResult)
+        //             {
+        //                 var res = objectResult.Value;
+        //                 var jres = System.Text.Json.JsonSerializer.Serialize(res);
+        //                 var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
+
+        //                 response.Code = -1;
+        //                 response.Description =
+        //                     err?.Description ?? $"Error al generar boleta para identificación {id}.";
+        //                 return response;
+        //             }
+
+        //             var fileResult = actionResult as FileContentResult;
+
+        //             if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
+        //             {
+        //                 response.Code = -1;
+        //                 response.Description =
+        //                     $"Ocurrió un error al generar la boleta, contenido nulo/vacío para identificación {id}.";
+        //                 return response;
+        //             }
+
+        //             pdfs.Add(fileResult.FileContents);
+        //         }
+
+        //         if (!pdfs.Any())
+        //         {
+        //             response.Code = -1;
+        //             response.Description = "No se generaron boletas para las identificaciones indicadas.";
+        //             return response;
+        //         }
+
+        //         // Combinar los bytes de todos los PDFs en uno solo
+        //         var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
+
+        //         var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
+        //         {
+        //             FileDownloadName = "Activos_BoletaActivosAsignados.pdf"
+        //         };
+
+        //         // Igual que en Tesorería: devolver el FileContentResult serializado
+        //         response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
+        //         return response;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         response.Code = -1;
+        //         response.Description = ex.Message;
+        //         response.Result = null;
+        //         return response;
+        //     }
+        // }
+        //// <summary>
+        /// Generar emision de documentos.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        // public ErrorDto<object> Activos_ContratoResponsabilidad_Lote(int codEmpresa,ActivosPersonasReporteLoteRequest request)
+        // {
+            // var response = new ErrorDto<object> { Code = 0 };
+
+            // if (request.Identificaciones == null || request.Identificaciones.Count == 0)
+            // {
+            //     response.Code = -1;
+            //     response.Description = "No se recibieron identificaciones para generar el contrato.";
+            //     return response;
+            // }
+
+            // try
+            // {
+            //     var pdfs = new List<byte[]>();
+
+            //     foreach (var id in request.Identificaciones.Distinct())
+            //     {
+            //         var parametros = new
+            //         {
+            //             filtros =
+            //                 $" WHERE ACTIVOS_PERSONAS.IDENTIFICACION = '{id}'" +
+            //                 $" AND ACTIVOS_PRINCIPAL.ESTADO <> 'R'",
+            //             Empresa = (string?)null,
+            //             fxUsuario = request.Usuario,
+            //             fxSubTitulo = "CONTRATO DE RESPONSABILIDAD"
+            //         };
+
+            //         var reporteData = new FrmReporteGlobal
+            //         {
+            //             codEmpresa = codEmpresa,
+            //             parametros = JsonConvert.SerializeObject(parametros),
+            //             nombreReporte = "Activos_ContratoResponsabilidad",
+            //             usuario = request.Usuario,
+            //             cod_reporte = "P",
+            //             folder = "Activos"
+            //         };
+
+                    //var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
+
+                    // if (actionResult is ObjectResult objectResult)
+                    // {
+                    //     var res = objectResult.Value;
+                    //     var jres = System.Text.Json.JsonSerializer.Serialize(res);
+                    //     var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
+
+                    //     response.Code = -1;
+                    //     response.Description =
+                    //         err?.Description ?? $"Error al generar contrato para identificación {id}.";
+                    //     return response;
+                    // }
+
+                    // var fileResult = actionResult as FileContentResult;
+
+                    // if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
+                    // {
+                    //     response.Code = -1;
+                    //     response.Description =
+                    //         $"Ocurrió un error al generar el contrato, contenido nulo/vacío para identificación {id}.";
+                    //     return response;
+                    // }
+
+                    //pdfs.Add(fileResult.FileContents);
+            //     }
+
+            //     if (!pdfs.Any())
+            //     {
+            //         response.Code = -1;
+            //         response.Description = "No se generaron contratos para las identificaciones indicadas.";
+            //         return response;
+            //     }
+
+            //     var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
+
+            //     var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
+            //     {
+            //         FileDownloadName = "Activos_ContratoResponsabilidad.pdf"
+            //     };
+
+            //     response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
+            //     return response;
+            // }
+            // catch (Exception ex)
+            // {
+            //     response.Code = -1;
+            //     response.Description = ex.Message;
+            //     response.Result = null;
+            //     return response;
+            // }
+        //}
+
+    }
+}

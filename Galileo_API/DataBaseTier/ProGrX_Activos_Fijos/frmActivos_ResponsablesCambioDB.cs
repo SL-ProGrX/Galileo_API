@@ -1,0 +1,748 @@
+﻿using Dapper;
+using System.Data;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.ProGrX_Activos_Fijos;
+using Galileo.Models.Security;
+
+namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
+{
+    public class FrmActivosResponsablesCambioDB
+    {
+        private readonly int vModulo = 36;
+        private readonly MSecurityMainDb _Security_MainDB;
+        private readonly PortalDB _portalDB;
+        private const string _boletaId = "BoletaId";
+        private const string _usuario = "Usuario";
+
+        public FrmActivosResponsablesCambioDB(IConfiguration config)
+        {
+            _Security_MainDB = new MSecurityMainDb(config);
+            _portalDB = new PortalDB(config);
+        }
+
+
+        /// <summary>
+        /// Obtener lista de boletas de traslado de responsable con paginación y filtros.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+        public ErrorDto<ActivosResponsablesCambioBoletaLista> Activos_ResponsablesCambio_Boletas_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        {
+            var result = new ErrorDto<ActivosResponsablesCambioBoletaLista>()
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new ActivosResponsablesCambioBoletaLista
+                {
+                    total = 0,
+                    lista = new List<ActivosResponsablesCambioBoletaResumen>()
+                }
+            };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                string where = "";
+                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
+                {
+                    where = " WHERE ( cod_traslado LIKE '%" + filtros.filtro + "%' " +
+                            " OR persona LIKE '%" + filtros.filtro + "%' " +
+                            " OR identificacion LIKE '%" + filtros.filtro + "%' ) ";
+                }
+
+                var qTotal = $"SELECT COUNT(1) FROM vActivos_Traslados_Boletas {where}";
+                result.Result.total = connection.Query<int>(qTotal).FirstOrDefault();
+
+                if (string.IsNullOrWhiteSpace(filtros?.sortField))
+                    filtros!.sortField = "cod_traslado";
+
+                var qDatos = $@"
+                    SELECT 
+                        cod_traslado,
+                        identificacion,
+                        persona,
+                        estado_desc,
+                        CONVERT(varchar(19), registro_fecha, 120) AS registro_fecha
+                    FROM vActivos_Traslados_Boletas
+                    {where}
+                    ORDER BY {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
+                    OFFSET {filtros.pagina} ROWS
+                    FETCH NEXT {filtros.paginacion} ROWS ONLY";
+
+                result.Result.lista = connection.Query<ActivosResponsablesCambioBoletaResumen>(qDatos).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result.total = 0;
+                result.Result.lista = [];
+            }
+
+            return result;
+        }
+
+
+        /// <summary>
+        /// Buscar personas para traslado de responsables (sin paginación).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_ResponsablesCambio_Personas_Buscar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        {
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>()
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                string where = " WHERE 1=1 ";
+                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
+                    where += " AND (Nombre LIKE '%" + filtros.filtro + "%' OR Identificacion LIKE '%" + filtros.filtro + "%') ";
+
+                if (!string.IsNullOrWhiteSpace(filtros?.sortField) && filtros.sortField.StartsWith("excluir:", StringComparison.OrdinalIgnoreCase))
+                {
+                    var splitArr = filtros.sortField.Split(':');
+                    var excluir = splitArr[splitArr.Length - 1];
+                    if (!string.IsNullOrWhiteSpace(excluir))
+                        where += " AND Identificacion <> '" + excluir + "' ";
+                }
+
+                var q = $@"
+                    SELECT Identificacion AS item, Nombre AS descripcion
+                    FROM Activos_Personas
+                    {where}
+                    ORDER BY Nombre ASC";
+
+                resp.Result = connection.Query<DropDownListaGenericaModel>(q).ToList();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Obtener boleta de traslado de responsable por código.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cod_traslado"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto<ActivosResponsablesCambioBoleta> Activos_ResponsablesCambio_Boleta_Obtener(int CodEmpresa, string cod_traslado, string usuario)
+        {
+            var resp = new ErrorDto<ActivosResponsablesCambioBoleta> { Code = 0, Description = "", Result = null };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var p = new DynamicParameters();
+                p.Add(_boletaId, cod_traslado);
+                p.Add(_usuario, usuario);
+
+                var data = connection.QueryFirstOrDefault<ActivosResponsablesCambioBoleta>(
+                    "spActivos_Responsable_Cambio_Consulta",
+                    p,
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+                if (data == null)
+                {
+                    resp.Code = -2;
+                    resp.Description = "Boleta no encontrada.";
+                }
+                else
+                {
+                    resp.Result = data;
+                    resp.Description = "Ok";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Obtener lista de placas de la boleta (pestaña Activos).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cod_traslado"></param>
+        /// <param name="identificacion"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto<List<ActivosResponsablesCambioPlaca>> Activos_ResponsablesCambio_Placas_Obtener(int CodEmpresa,string? cod_traslado,string identificacion,string usuario)
+        {
+            var resp = new ErrorDto<List<ActivosResponsablesCambioPlaca>> { Code = 0, Description = "Ok", Result = new() };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var p = new DynamicParameters();
+                p.Add(_boletaId, cod_traslado ?? "");         
+                p.Add("@Identificacion", identificacion);
+                p.Add(_usuario, usuario);
+                p.Add("@ModoRecepcion", 0);                     
+
+                var lista = connection.Query<ActivosResponsablesCambioPlaca>(
+                    "spActivos_Responsable_Cambio_Consulta_Placas",
+                    p,
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                resp.Result = lista;
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Verifica si una boleta de traslado de responsable existe.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cod_traslado"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_ResponsablesCambio_Boleta_Existe_Obtener(int CodEmpresa, string cod_traslado)
+        {
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var p = new DynamicParameters();
+                p.Add(_boletaId, cod_traslado);
+                p.Add(_usuario, "");
+
+                var data = connection.QueryFirstOrDefault<ActivosResponsablesCambioBoleta>(
+                    "spActivos_Responsable_Cambio_Consulta",
+                    p,
+                    commandType: System.Data.CommandType.StoredProcedure);
+
+                (resp.Code, resp.Description) = (data == null)
+                    ? (0, "BOLETA: Libre!")
+                    : (-2, "BOLETA: Ocupada!");
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Guardar boleta de traslado de responsable (router por isNew).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public ErrorDto<ActivosResponsablesCambioBoletaResult> Activos_ResponsablesCambio_Boleta_Guardar(int CodEmpresa, ActivosResponsablesCambioBoleta data)
+        {
+            var resp = new ErrorDto<ActivosResponsablesCambioBoletaResult>
+            {
+                Code = 0,
+                Description = "",
+                Result = null
+            };
+
+            try
+            {
+                if (data == null)
+                    return new ErrorDto<ActivosResponsablesCambioBoletaResult>
+                    { Code = -1, Description = "Datos no proporcionados.", Result = null };
+
+                var errores = new List<string>();
+                if (string.IsNullOrWhiteSpace(data.cod_motivo)) errores.Add("No ha indicado el motivo.");
+                if (string.IsNullOrWhiteSpace(data.notas) || data.notas.Trim().Length < 3) errores.Add("No ha indicado una nota válida.");
+                if (string.IsNullOrWhiteSpace(data.identificacion)) errores.Add("No ha indicado el responsable actual.");
+                if (string.IsNullOrWhiteSpace(data.identificacion_destino)) errores.Add("No ha indicado el responsable destino.");
+                if (string.IsNullOrWhiteSpace(data.fecha_aplicacion)) errores.Add("No ha indicado la fecha de aplicación (YYYY-MM-DD).");
+
+                if (errores.Count > 0)
+                    return new ErrorDto<ActivosResponsablesCambioBoletaResult>
+                    {
+                        Code = -1,
+                        Description = string.Join(" | ", errores),
+                        Result = null
+                    };
+
+                if (data.isNew)
+                {
+                    var exi = Activos_ResponsablesCambio_Boleta_Existe_Obtener(CodEmpresa, data.cod_traslado ?? "");
+                    if (exi.Code == -2)
+                        return new ErrorDto<ActivosResponsablesCambioBoletaResult>
+                        {
+                            Code = -2,
+                            Description = $"La boleta {data.cod_traslado} ya existe.",
+                            Result = null
+                        };
+
+                    resp = Activos_ResponsablesCambio_Boleta_Insertar(CodEmpresa, data);
+                }
+                else
+                {
+                    var exi = Activos_ResponsablesCambio_Boleta_Existe_Obtener(CodEmpresa, data.cod_traslado ?? "");
+                    if (exi.Code == 0)
+                        return new ErrorDto<ActivosResponsablesCambioBoletaResult>
+                        {
+                            Code = -2,
+                            Description = $"La boleta {data.cod_traslado} no existe.",
+                            Result = null
+                        };
+
+                    var upd = Activos_ResponsablesCambio_Boleta_Actualizar(CodEmpresa, data);
+                    resp.Code = upd.Code;
+                    resp.Description = upd.Description;
+                    resp.Result = new ActivosResponsablesCambioBoletaResult
+                    {
+                        cod_traslado = data.cod_traslado ?? ""
+                    };
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+        
+        
+        /// <summary>
+        /// Insertar boleta de traslado de responsable.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private ErrorDto<ActivosResponsablesCambioBoletaResult> Activos_ResponsablesCambio_Boleta_Insertar(int CodEmpresa, ActivosResponsablesCambioBoleta data)
+        {
+            var resp = new ErrorDto<ActivosResponsablesCambioBoletaResult>
+            {
+                Code = 0,
+                Description = "",
+                Result = null
+            };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var p = new DynamicParameters();
+                p.Add(_boletaId, data.cod_traslado);
+                p.Add("@MotivoId", data.cod_motivo);
+                p.Add("@Notas", data.notas);
+                p.Add("@A_Id", data.identificacion);
+                p.Add("@N_Id", data.identificacion_destino);
+                p.Add(_usuario, data.registro_usuario);
+                p.Add("@FechaAplicacion", data.fecha_aplicacion);
+
+                var rs = connection.QueryFirstOrDefault<dynamic>(
+                    "spActivos_Responsable_Cambio_Boleta_Add",
+                    p,
+                    commandType: CommandType.StoredProcedure
+                );
+
+                int pass = (int)(rs?.Pass ?? 0);
+                string mensaje = (string)(rs?.Mensaje ?? "Error al insertar");
+                string boleta = (string)(rs?.Boleta ?? "");
+
+                if (pass != 1)
+                    return new ErrorDto<ActivosResponsablesCambioBoletaResult>
+                    {
+                        Code = -2,
+                        Description = mensaje,
+                        Result = null
+                    };
+
+                if (!string.IsNullOrWhiteSpace(boleta))
+                    data.cod_traslado = boleta;
+
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = data.registro_usuario ?? "",
+                    DetalleMovimiento = $"Boleta de Cambio Responsable: {data.cod_traslado}",
+                    Movimiento = "Registra - WEB",
+                    Modulo = vModulo
+                });
+
+                resp.Code = 0;
+                resp.Description = string.IsNullOrWhiteSpace(mensaje)
+                    ? "Boleta registrada satisfactoriamente!"
+                    : mensaje;
+                resp.Result = new ActivosResponsablesCambioBoletaResult
+                {
+                    cod_traslado = data.cod_traslado ?? ""
+                };
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+
+                return resp;
+            }
+
+    
+        /// <summary>
+        /// Actualizar boleta de traslado de responsable.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        private ErrorDto Activos_ResponsablesCambio_Boleta_Actualizar(int CodEmpresa, ActivosResponsablesCambioBoleta data)
+        {
+            var resp = new ErrorDto { Code = 0, Description = "" };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var p = new DynamicParameters();
+                p.Add(_boletaId, data.cod_traslado);
+                p.Add("@MotivoId", data.cod_motivo);
+                p.Add("@Notas", data.notas);
+                p.Add("@A_Id", data.identificacion);
+                p.Add("@N_Id", data.identificacion_destino);
+                p.Add(_usuario, data.registro_usuario);
+                p.Add("@FechaAplicacion", data.fecha_aplicacion);
+
+                var rs = connection.QueryFirstOrDefault<dynamic>(
+                    "spActivos_Responsable_Cambio_Boleta_Add",
+                    p,
+                    commandType: CommandType.StoredProcedure);
+
+                int pass = (int)(rs?.Pass ?? 0);
+                string mensaje = (string)(rs?.Mensaje ?? " Error al actualizar");
+
+                if (pass != 1) return new ErrorDto { Code = -2, Description = mensaje };
+
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = data.registro_usuario ?? "",
+                    DetalleMovimiento = $"Boleta de Cambio Responsable: {data.cod_traslado}",
+                    Movimiento = "Modifica - WEB",
+                    Modulo = vModulo
+                });
+
+                resp.Description = string.IsNullOrWhiteSpace(mensaje) ? "Boleta actualizada satisfactoriamente!" : mensaje;
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Guardar placa asociada a boleta (invocar N veces, primer_lote_bit=1 en la primera).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_ResponsablesCambio_Boleta_Placa_Guardar(int CodEmpresa, ActivosResponsablesCambioPlacaGuardarRequest data)
+        {
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
+            try
+            {
+                if (data == null)
+                    return new ErrorDto { Code = -1, Description = "Datos no proporcionados." };
+
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var p = new DynamicParameters();
+                p.Add(_boletaId, data.cod_traslado);
+                p.Add("@Placa", data.num_placa);
+                p.Add(_usuario, data.usuario);
+                p.Add("@Inicial", data.primer_lote_bit);
+
+                connection.Execute("spActivos_Responsable_Cambio_Boleta_Placas",
+                    p, commandType: CommandType.StoredProcedure);
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Procesar boleta de traslado de responsable.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cod_traslado"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_ResponsablesCambio_Boleta_Procesar(int CodEmpresa, string cod_traslado, string usuario)
+        {
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var p = new DynamicParameters();
+                p.Add("@Boleta", cod_traslado);
+                p.Add(_usuario, usuario);
+
+                var rs = connection.QueryFirstOrDefault<dynamic>(
+                    "spActivos_Responsable_Cambio_Procesa",
+                    p,
+                    commandType: CommandType.StoredProcedure);
+
+                int pass = (int)(rs?.Pass ?? 0);
+                string mensaje = (string)(rs?.Mensaje ?? "Error al procesar");
+
+                if (pass != 1) return new ErrorDto { Code = -2, Description = mensaje };
+
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario ?? "",
+                    DetalleMovimiento = $"Boleta de Cambio Responsable: {cod_traslado}",
+                    Movimiento = "Procesa - WEB",
+                    Modulo = vModulo
+                });
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Descartar boleta de traslado de responsable.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cod_traslado"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_ResponsablesCambio_Boleta_Descartar(int CodEmpresa, string cod_traslado, string usuario)
+        {
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var p = new DynamicParameters();
+                p.Add(_boletaId, cod_traslado);
+                p.Add(_usuario, usuario);
+
+                var rs = connection.QueryFirstOrDefault<dynamic>(
+                    "spActivos_Responsable_Cambio_Descarta",
+                    p,
+                    commandType: CommandType.StoredProcedure);
+
+                int pass = (int)(rs?.Pass ?? 0);
+                string mensaje = (string)(rs?.Mensaje ?? " Error al descartar");
+
+                if (pass != 1) return new ErrorDto { Code = -2, Description = mensaje };
+
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = CodEmpresa,
+                    Usuario = usuario ?? "",
+                    DetalleMovimiento = $"Boleta de Cambio Responsable: {cod_traslado}",
+                    Movimiento = "Descarta - WEB",
+                    Modulo = vModulo
+                });
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Navegación (scroll) entre boletas de traslado de responsable.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="scroll"></param>
+        /// <param name="cod_traslado"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto<ActivosResponsablesCambioBoleta> Activos_ResponsablesCambio_Boleta_Scroll(int CodEmpresa, int scroll, string? cod_traslado, string usuario)
+        {
+            var resp = new ErrorDto<ActivosResponsablesCambioBoleta> { Code = 0, Description = "", Result = null };
+            try
+            {
+                string whereOrder = (scroll == 1)
+                    ? " WHERE cod_traslado > @cod ORDER BY cod_traslado ASC "
+                    : " WHERE cod_traslado < @cod ORDER BY cod_traslado DESC ";
+
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var nextCode = connection.QueryFirstOrDefault<string>(
+                    $"SELECT TOP 1 cod_traslado FROM vActivos_Traslados_Boletas {whereOrder}",
+                    new { cod = (cod_traslado ?? string.Empty) });
+
+                if (string.IsNullOrWhiteSpace(nextCode))
+                    return new ErrorDto<ActivosResponsablesCambioBoleta> { Code = -2, Description = "No se encontraron más resultados.", Result = null };
+
+                resp = Activos_ResponsablesCambio_Boleta_Obtener(CodEmpresa, nextCode, usuario);
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+        
+        
+        /// <summary>
+        /// Obtener catálogo de motivos activos para traslado de responsables.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_ResponsablesCambio_Motivos_Obtener(int CodEmpresa)
+        {
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>()
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                string q = @"
+            SELECT cod_motivo AS item, descripcion
+            FROM ACTIVOS_TRASLADOS_MOTIVOS
+            WHERE ACTIVO = 1
+            ORDER BY descripcion ASC";
+                resp.Result = connection.Query<DropDownListaGenericaModel>(q).ToList();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Obtener datos de placas sin paginar  .
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cod_traslado"
+        /// <param name="identificacion"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
+        public ErrorDto<List<ActivosResponsablesCambioPlaca>> Activos_ResponsablesCambio_Placas_Export(int CodEmpresa, string cod_traslado, string identificacion, string usuario)
+        {
+            var resp = new ErrorDto<List<ActivosResponsablesCambioPlaca>> { Code = 0, Description = "Ok", Result = new List<ActivosResponsablesCambioPlaca>() };
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                var p = new DynamicParameters();
+                p.Add(_boletaId, cod_traslado);
+                p.Add("@Identificacion", identificacion);
+                p.Add(_usuario, usuario);
+                resp.Result = connection.Query<ActivosResponsablesCambioPlaca>(
+                    "spActivos_Responsable_Cambio_Consulta_Placas",
+                    p, commandType: CommandType.StoredProcedure).ToList();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+            return resp;
+        }
+
+
+        /// <summary>
+        /// Obtener datos de persona por identificación.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="identificacion"></param>
+        /// <returns></returns>
+        public ErrorDto<ActivosResponsablesPersona> Activos_ResponsablesCambio_Persona_Obtener(int CodEmpresa, string identificacion)
+        {
+            var resp = new ErrorDto<ActivosResponsablesPersona>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = null
+            };
+
+            const string sql = @"
+            SET NOCOUNT ON;
+
+            SELECT TOP (1)
+                p.IDENTIFICACION                         AS identificacion,
+                p.NOMBRE                                 AS persona,
+                p.COD_DEPARTAMENTO                       AS cod_departamento,
+                ISNULL(d.DESCRIPCION, '')                AS departamento,
+                p.COD_SECCION                            AS cod_seccion,
+                ISNULL(s.DESCRIPCION, '')                AS seccion
+            FROM ACTIVOS_PERSONAS p
+            LEFT JOIN ACTIVOS_DEPARTAMENTOS d
+                   ON d.COD_DEPARTAMENTO = p.COD_DEPARTAMENTO
+            LEFT JOIN ACTIVOS_SECCIONES s
+                   ON s.COD_DEPARTAMENTO = p.COD_DEPARTAMENTO
+                  AND s.COD_SECCION      = p.COD_SECCION
+            WHERE p.IDENTIFICACION = @identificacion;";
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                resp.Result = connection.QueryFirstOrDefault<ActivosResponsablesPersona>(sql, new { identificacion });
+
+                if (resp.Result is null)
+                {
+                    resp.Description = "No encontrado";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+            return resp;
+        }
+    }
+}

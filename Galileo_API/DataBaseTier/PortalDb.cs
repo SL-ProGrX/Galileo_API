@@ -1,5 +1,6 @@
 ﻿
 using Galileo.Models;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier
 {
@@ -28,6 +29,12 @@ namespace Galileo.DataBaseTier
                 _ = ex.Message;
             }
             return connectionString;
+        }
+
+        public SqlConnection CreateConnection(int codEmpresa)
+        {
+            var stringConn = ObtenerDbConnStringEmpresa(codEmpresa);
+            return new SqlConnection(stringConn);
         }
     }
 }
