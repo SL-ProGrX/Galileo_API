@@ -9,11 +9,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
     public class FrmActivosLocalizacionesListDb
     {
-        private readonly int vModulo = 36; // Modulo de Tesorería
+        private readonly int vModulo = 36; // Modulo de Activos Fijos
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
 
+        private const string _where = "{WHERE}";
+        private const string _offsetRows = " OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY;";
         private const string _codlocaliza = "COD_LOCALIZA";
+
         public FrmActivosLocalizacionesListDb(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
@@ -48,26 +51,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     : $"%{filtros.filtro.Trim()}%";
                 p.Add("@filtro", filtroLike, DbType.String);
 
-                // Campo de orden, solo permitimos columnas conocidas
-                string sortFieldNorm = (filtros?.sortField ?? _codlocaliza)
-                    .Trim()
-                    .ToUpperInvariant();
-
-                string orderByCol = sortFieldNorm switch
-                {
-                    _codlocaliza      => _codlocaliza,
-                    "DESCRIPCION"       => "DESCRIPCION",
-                    "REGISTRO_USUARIO"  => "REGISTRO_USUARIO",
-                    "MODIFICA_USUARIO"  => "MODIFICA_USUARIO",
-                    _                   => _codlocaliza
-                };
-
-                string orderDir = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
-
                 int pagina = filtros?.pagina ?? 0;
                 int paginacion = filtros?.paginacion ?? 50;
                 p.Add("@offset", pagina, DbType.Int32);
                 p.Add("@rows", paginacion, DbType.Int32);
+
+                // Campo de orden normalizado
+                string sortFieldNorm = (filtros?.sortField ?? _codlocaliza)
+                    .Trim()
+                    .ToUpperInvariant();
+
+                // Dirección de orden
+                bool desc = (filtros?.sortOrder ?? 0) == 0;
 
                 const string whereSql = @"
                     WHERE (@filtro IS NULL
@@ -84,8 +79,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 result.Result.total = connection.QueryFirstOrDefault<int>(countSql, p);
 
-                // Datos paginados
-                string dataSql = $@"
+                // Base del SELECT
+                const string baseSelect = @"
                     SELECT
                         COD_LOCALIZA                               AS cod_localiza,
                         DESCRIPCION                                AS descripcion,
@@ -95,10 +90,54 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         CONVERT(varchar(19), REGISTRO_FECHA, 120)  AS registro_fecha,
                         ISNULL(CONVERT(varchar(19), MODIFICA_FECHA, 120), '') AS modifica_fecha
                     FROM dbo.ACTIVOS_LOCALIZACIONES
-                    {whereSql}
-                    ORDER BY {orderByCol} {orderDir}
-                    OFFSET @offset ROWS
-                    FETCH NEXT @rows ROWS ONLY;";
+                    {WHERE}";
+
+                string dataSql;
+
+                // Elegimos la columna de orden en base a una whitelist.
+                switch (sortFieldNorm)
+                {
+                    case _codlocaliza:
+                        dataSql = baseSelect.Replace(_where, whereSql) +
+                                  (desc
+                                      ? " ORDER BY COD_LOCALIZA DESC"
+                                      : " ORDER BY COD_LOCALIZA ASC") +
+                                  _offsetRows;
+                        break;
+
+                    case "DESCRIPCION":
+                        dataSql = baseSelect.Replace(_where, whereSql) +
+                                  (desc
+                                      ? " ORDER BY DESCRIPCION DESC"
+                                      : " ORDER BY DESCRIPCION ASC") +
+                                  _offsetRows;
+                        break;
+
+                    case "REGISTRO_USUARIO":
+                        dataSql = baseSelect.Replace(_where, whereSql) +
+                                  (desc
+                                      ? " ORDER BY REGISTRO_USUARIO DESC"
+                                      : " ORDER BY REGISTRO_USUARIO ASC") +
+                                  _offsetRows;
+                        break;
+
+                    case "MODIFICA_USUARIO":
+                        dataSql = baseSelect.Replace(_where, whereSql) +
+                                  (desc
+                                      ? " ORDER BY MODIFICA_USUARIO DESC"
+                                      : " ORDER BY MODIFICA_USUARIO ASC") +
+                                  _offsetRows;
+                        break;
+
+                    default:
+                        // Fallback seguro: orden por COD_LOCALIZA
+                        dataSql = baseSelect.Replace(_where, whereSql) +
+                                  (desc
+                                      ? " ORDER BY COD_LOCALIZA DESC"
+                                      : " ORDER BY COD_LOCALIZA ASC") +
+                                  _offsetRows;
+                        break;
+                }
 
                 result.Result.lista = connection
                     .Query<ActivosLocalizacionesData>(dataSql, p)
@@ -170,7 +209,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
         /// <summary>
-        /// Inserta o actualiza una localizacion de activo.
+        /// Inserta o actualiza una localización de activo.
         /// </summary>
         public ErrorDto Activos_Localizaciones_Guardar(int CodEmpresa, string usuario, ActivosLocalizacionesData localizacion)
         {
@@ -183,10 +222,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 // Verifico si existe usuario (activo)
                 var qUsuario = @"SELECT COUNT(Nombre) 
-                             FROM usuarios 
-                             WHERE estado = 'A' AND UPPER(Nombre) LIKE '%' + @usr + '%'";
+                                 FROM usuarios 
+                                 WHERE estado = 'A' AND UPPER(Nombre) LIKE '%' + @usr + '%'";
                 int existeuser = connection.QueryFirstOrDefault<int>(qUsuario, new { usr = usuario.ToUpper() });
                 if (existeuser == 0)
                 {
@@ -197,8 +237,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 // Verifico si existe localización por código
                 var qExiste = @"SELECT ISNULL(COUNT(*),0) 
-                            FROM dbo.ACTIVOS_LOCALIZACIONES  
-                            WHERE UPPER(COD_LOCALIZA) = @cod";
+                                FROM dbo.ACTIVOS_LOCALIZACIONES  
+                                WHERE UPPER(COD_LOCALIZA) = @cod";
                 var existe = connection.QueryFirstOrDefault<int>(qExiste, new { cod = localizacion.cod_localiza.ToUpper() });
 
                 if (localizacion.isNew)
@@ -244,12 +284,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
                 var query = @"
-                                UPDATE dbo.ACTIVOS_LOCALIZACIONES
-                                SET DESCRIPCION      = @descripcion,
-                                    ACTIVA           = @activo,
-                                    MODIFICA_USUARIO = @modifica_usuario,
-                                    MODIFICA_FECHA   = SYSDATETIME()
-                                WHERE COD_LOCALIZA     = @cod_localiza";
+                    UPDATE dbo.ACTIVOS_LOCALIZACIONES
+                       SET DESCRIPCION      = @descripcion,
+                           ACTIVA           = @activo,
+                           MODIFICA_USUARIO = @modifica_usuario,
+                           MODIFICA_FECHA   = SYSDATETIME()
+                     WHERE COD_LOCALIZA     = @cod_localiza";
 
                 connection.Execute(query, new
                 {
@@ -267,7 +307,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Movimiento = "Modifica - WEB",
                     Modulo = vModulo
                 });
-
             }
             catch (Exception ex)
             {
@@ -289,10 +328,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
                 var query = @"
-                                INSERT INTO dbo.ACTIVOS_LOCALIZACIONES
-                                    (COD_LOCALIZA, DESCRIPCION, ACTIVA, REGISTRO_USUARIO, REGISTRO_FECHA, MODIFICA_USUARIO, MODIFICA_FECHA)
-                                VALUES
-                                    (@cod_localiza, @descripcion, @activo, @registro_usuario, SYSDATETIME(), NULL, NULL)";
+                    INSERT INTO dbo.ACTIVOS_LOCALIZACIONES
+                        (COD_LOCALIZA, DESCRIPCION, ACTIVA, REGISTRO_USUARIO, REGISTRO_FECHA, MODIFICA_USUARIO, MODIFICA_FECHA)
+                    VALUES
+                        (@cod_localiza, @descripcion, @activo, @registro_usuario, SYSDATETIME(), NULL, NULL)";
 
                 connection.Execute(query, new
                 {
@@ -310,7 +349,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Movimiento = "Registra - WEB",
                     Modulo = vModulo // 36
                 });
-
             }
             catch (Exception ex)
             {
@@ -341,7 +379,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Movimiento = "Elimina - WEB",
                     Modulo = vModulo // 36
                 });
-
             }
             catch (Exception ex)
             {
@@ -363,8 +400,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var query = @"SELECT COUNT(COD_LOCALIZA)
-                          FROM dbo.ACTIVOS_LOCALIZACIONES
-                          WHERE UPPER(COD_LOCALIZA) = @cod_localiza";
+                              FROM dbo.ACTIVOS_LOCALIZACIONES
+                              WHERE UPPER(COD_LOCALIZA) = @cod_localiza";
                 var existe = connection.QueryFirstOrDefault<int>(query, new { cod_localiza = cod_localiza.ToUpper() });
 
                 if (existe > 0)
@@ -377,7 +414,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     result.Code = 0;
                     result.Description = "El código de localización es válido.";
                 }
-
             }
             catch (Exception ex)
             {
