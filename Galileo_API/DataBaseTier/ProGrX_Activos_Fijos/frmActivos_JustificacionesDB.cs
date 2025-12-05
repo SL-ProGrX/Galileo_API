@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using System.Data;
+using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -20,56 +21,77 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
-
         /// <summary>
         /// Obtener lista de justificaciones
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosJustificacionesLista> Activos_JustificacionesLista_Obtener(int CodEmpresa, string filtros)
         {
-            var vfiltro = JsonConvert.DeserializeObject<ActivosJustificacionesFiltros>(filtros);
-            var response = new ErrorDto<ActivosJustificacionesLista>();
-            response.Result = new ActivosJustificacionesLista();
-            response.Code = 0;
+            var response = new ErrorDto<ActivosJustificacionesLista>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new ActivosJustificacionesLista()
+            };
+
+            ActivosJustificacionesFiltros? vfiltro = null;
+            try
+            {
+                vfiltro = JsonConvert.DeserializeObject<ActivosJustificacionesFiltros>(filtros ?? "{}")
+                          ?? new ActivosJustificacionesFiltros();
+            }
+            catch
+            {
+                vfiltro = new ActivosJustificacionesFiltros();
+            }
 
             try
             {
-                var query = "";
-                string where = "", paginaActual = "", paginacionActual = "";
-
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                if (vfiltro != null)
-                {
-                    if (!string.IsNullOrEmpty(vfiltro.filtro))
-                    {
-                        where = "WHERE COD_JUSTIFICACION LIKE '%" + vfiltro.filtro + "%' OR DESCRIPCION LIKE '%" + vfiltro.filtro + "%' ";
-                    }
 
-                    if (vfiltro.pagina != null)
-                    {
-                        paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
-                    }
+                var p = new DynamicParameters();
+
+                // Filtro de búsqueda
+                string? filtroLike = string.IsNullOrWhiteSpace(vfiltro.filtro)
+                    ? null
+                    : $"%{vfiltro.filtro.Trim()}%";
+                p.Add("@filtro", filtroLike, DbType.String);
+
+                // Paginación
+                bool usarPaginacion = vfiltro.pagina != null && vfiltro.paginacion != null;
+                if (usarPaginacion)
+                {
+                    p.Add("@offset", vfiltro!.pagina!.Value, DbType.Int32);
+                    p.Add("@rows", vfiltro!.paginacion!.Value, DbType.Int32);
                 }
 
+                const string whereSql = @"
+                    WHERE (@filtro IS NULL
+                           OR COD_JUSTIFICACION LIKE @filtro
+                           OR DESCRIPCION       LIKE @filtro)";
+
                 // Total de registros
-                query = $"SELECT COUNT(*) FROM ACTIVOS_JUSTIFICACIONES {where}";
-                response.Result.total = connection.Query<int>(query).FirstOrDefault();
+                string countSql = $"SELECT COUNT(*) FROM ACTIVOS_JUSTIFICACIONES {whereSql}";
+                response.Result.total = connection.QueryFirstOrDefault<int>(countSql, p);
 
                 // Datos paginados (solo código y descripción)
-                query = $@"
+                string dataSql = $@"
                     SELECT 
                         COD_JUSTIFICACION AS cod_justificacion, 
                         DESCRIPCION       AS descripcion
                     FROM ACTIVOS_JUSTIFICACIONES
-                    {where}
-                    ORDER BY COD_JUSTIFICACION
-                    {paginaActual} {paginacionActual}";
+                    {whereSql}
+                    ORDER BY COD_JUSTIFICACION";
 
-                response.Result.lista = connection.Query<ActivosJustificacionesData>(query).ToList();
+                if (usarPaginacion)
+                {
+                    dataSql += @"
+                    OFFSET @offset ROWS 
+                    FETCH NEXT @rows ROWS ONLY";
+                }
 
+                response.Result.lista = connection
+                    .Query<ActivosJustificacionesData>(dataSql, p)
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -82,13 +104,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return response;
         }
 
-
         /// <summary>
         /// Verifica si una justificación ya existe en la base de datos.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cod_justificacion"></param>
-        /// <returns></returns>
         public ErrorDto Activos_JustificacionesExiste_Obtener(int CodEmpresa, string cod_justificacion)
         {
             var resp = new ErrorDto { Code = 0 };
@@ -97,7 +115,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = @"SELECT COUNT(*) 
+                const string query = @"SELECT COUNT(*) 
                       FROM dbo.ACTIVOS_JUSTIFICACIONES 
                       WHERE UPPER(COD_JUSTIFICACION) = @cod";
                 int result = connection.QueryFirstOrDefault<int>(query, new { cod = cod_justificacion.ToUpper() });
@@ -114,13 +132,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Obtiene los detalles de una justificación específica.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cod_justificacion"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosJustificacionesData> Activos_Justificaciones_Obtener(int CodEmpresa, string cod_justificacion)
         {
             var resp = new ErrorDto<ActivosJustificacionesData> { Code = 0 };
@@ -129,7 +143,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = @"
+                const string query = @"
                     SELECT
                         j.COD_JUSTIFICACION                                                  AS cod_justificacion,
                         ISNULL(j.TIPO,'')                                                    AS tipo,
@@ -141,9 +155,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         ISNULL(j.COD_CUENTA_04,'')                                           AS cod_cuenta_04,
                         ISNULL(j.ESTADO,'')                                                  AS estado,
                         ISNULL(j.REGISTRO_USUARIO,'')                                        AS registro_usuario,
-                        ISNULL(CONVERT(varchar(19), j.REGISTRO_FECHA,120),'')                 AS registro_fecha,
+                        ISNULL(CONVERT(varchar(19), j.REGISTRO_FECHA,120),'')                AS registro_fecha,
                         ISNULL(j.MODIFICA_USUARIO,'')                                        AS modifica_usuario,
-                        ISNULL(CONVERT(varchar(19), j.MODIFICA_FECHA,120),'')                 AS modifica_fecha,
+                        ISNULL(CONVERT(varchar(19), j.MODIFICA_FECHA,120),'')                AS modifica_fecha,
 
                         -- Decorados
                         ISNULL(ta.DESCRIPCION,'')                                            AS tipo_asiento_desc,
@@ -184,66 +198,96 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Navegación (scroll) entre justificaciones.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="scroll"></param>
-        /// <param name="cod_justificacion"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosJustificacionesData> Activos_Justificacion_Scroll(int CodEmpresa, int scroll, string? cod_justificacion)
         {
             var resp = new ErrorDto<ActivosJustificacionesData> { Code = 0 };
 
             try
             {
-                string whereOrder = (scroll == 1)
-                    ? " WHERE j.COD_JUSTIFICACION > @cod ORDER BY j.COD_JUSTIFICACION ASC "
-                    : " WHERE j.COD_JUSTIFICACION < @cod ORDER BY j.COD_JUSTIFICACION DESC ";
-
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = $@"
-                    SELECT TOP 1
-                        j.COD_JUSTIFICACION                                                  AS cod_justificacion,
-                        ISNULL(j.TIPO,'')                                                    AS tipo,
-                        ISNULL(j.DESCRIPCION,'')                                             AS descripcion,
-                        ISNULL(j.TIPO_ASIENTO,'')                                            AS tipo_asiento,
-                        ISNULL(j.COD_CUENTA_01,'')                                           AS cod_cuenta_01,
-                        ISNULL(j.COD_CUENTA_02,'')                                           AS cod_cuenta_02,
-                        ISNULL(j.COD_CUENTA_03,'')                                           AS cod_cuenta_03,
-                        ISNULL(j.COD_CUENTA_04,'')                                           AS cod_cuenta_04,
-                        ISNULL(j.ESTADO,'')                                                  AS estado,
-                        ISNULL(j.REGISTRO_USUARIO,'')                                        AS registro_usuario,
-                        ISNULL(CONVERT(varchar(19), j.REGISTRO_FECHA,120),'')                 AS registro_fecha,
-                        ISNULL(j.MODIFICA_USUARIO,'')                                        AS modifica_usuario,
-                        ISNULL(CONVERT(varchar(19), j.MODIFICA_FECHA,120),'')                 AS modifica_fecha,
+                string sql = (scroll == 1)
+                    ? @"
+                        SELECT TOP 1
+                            j.COD_JUSTIFICACION                                                  AS cod_justificacion,
+                            ISNULL(j.TIPO,'')                                                    AS tipo,
+                            ISNULL(j.DESCRIPCION,'')                                             AS descripcion,
+                            ISNULL(j.TIPO_ASIENTO,'')                                            AS tipo_asiento,
+                            ISNULL(j.COD_CUENTA_01,'')                                           AS cod_cuenta_01,
+                            ISNULL(j.COD_CUENTA_02,'')                                           AS cod_cuenta_02,
+                            ISNULL(j.COD_CUENTA_03,'')                                           AS cod_cuenta_03,
+                            ISNULL(j.COD_CUENTA_04,'')                                           AS cod_cuenta_04,
+                            ISNULL(j.ESTADO,'')                                                  AS estado,
+                            ISNULL(j.REGISTRO_USUARIO,'')                                        AS registro_usuario,
+                            ISNULL(CONVERT(varchar(19), j.REGISTRO_FECHA,120),'')                AS registro_fecha,
+                            ISNULL(j.MODIFICA_USUARIO,'')                                        AS modifica_usuario,
+                            ISNULL(CONVERT(varchar(19), j.MODIFICA_FECHA,120),'')                AS modifica_fecha,
 
-                        -- Decorados
-                        ISNULL(ta.DESCRIPCION,'')                                            AS tipo_asiento_desc,
+                            ISNULL(ta.DESCRIPCION,'')                                            AS tipo_asiento_desc,
 
-                        ISNULL(c1.COD_CUENTA_MASK,'')                                        AS cod_cuenta_01_mask,
-                        ISNULL(c1.DESCRIPCION,'')                                            AS cod_cuenta_01_desc,
+                            ISNULL(c1.COD_CUENTA_MASK,'')                                        AS cod_cuenta_01_mask,
+                            ISNULL(c1.DESCRIPCION,'')                                            AS cod_cuenta_01_desc,
 
-                        ISNULL(c2.COD_CUENTA_MASK,'')                                        AS cod_cuenta_02_mask,
-                        ISNULL(c2.DESCRIPCION,'')                                            AS cod_cuenta_02_desc,
+                            ISNULL(c2.COD_CUENTA_MASK,'')                                        AS cod_cuenta_02_mask,
+                            ISNULL(c2.DESCRIPCION,'')                                            AS cod_cuenta_02_desc,
 
-                        ISNULL(c3.COD_CUENTA_MASK,'')                                        AS cod_cuenta_03_mask,
-                        ISNULL(c3.DESCRIPCION,'')                                            AS cod_cuenta_03_desc,
+                            ISNULL(c3.COD_CUENTA_MASK,'')                                        AS cod_cuenta_03_mask,
+                            ISNULL(c3.DESCRIPCION,'')                                            AS cod_cuenta_03_desc,
 
-                        ISNULL(c4.COD_CUENTA_MASK,'')                                        AS cod_cuenta_04_mask,
-                        ISNULL(c4.DESCRIPCION,'')                                            AS cod_cuenta_04_desc
-                    FROM dbo.ACTIVOS_JUSTIFICACIONES j
-                    LEFT JOIN dbo.CNTX_TIPOS_ASIENTOS ta  ON ta.TIPO_ASIENTO = j.TIPO_ASIENTO
-                    LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c1 ON c1.COD_CUENTA = j.COD_CUENTA_01
-                    LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c2 ON c2.COD_CUENTA = j.COD_CUENTA_02
-                    LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c3 ON c3.COD_CUENTA = j.COD_CUENTA_03
-                    LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c4 ON c4.COD_CUENTA = j.COD_CUENTA_04
-                    {whereOrder};";
+                            ISNULL(c4.COD_CUENTA_MASK,'')                                        AS cod_cuenta_04_mask,
+                            ISNULL(c4.DESCRIPCION,'')                                            AS cod_cuenta_04_desc
+                        FROM dbo.ACTIVOS_JUSTIFICACIONES j
+                        LEFT JOIN dbo.CNTX_TIPOS_ASIENTOS ta  ON ta.TIPO_ASIENTO = j.TIPO_ASIENTO
+                        LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c1 ON c1.COD_CUENTA = j.COD_CUENTA_01
+                        LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c2 ON c2.COD_CUENTA = j.COD_CUENTA_02
+                        LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c3 ON c3.COD_CUENTA = j.COD_CUENTA_03
+                        LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c4 ON c4.COD_CUENTA = j.COD_CUENTA_04
+                        WHERE j.COD_JUSTIFICACION > @cod
+                        ORDER BY j.COD_JUSTIFICACION ASC;"
+                    : @"
+                        SELECT TOP 1
+                            j.COD_JUSTIFICACION                                                  AS cod_justificacion,
+                            ISNULL(j.TIPO,'')                                                    AS tipo,
+                            ISNULL(j.DESCRIPCION,'')                                             AS descripcion,
+                            ISNULL(j.TIPO_ASIENTO,'')                                            AS tipo_asiento,
+                            ISNULL(j.COD_CUENTA_01,'')                                           AS cod_cuenta_01,
+                            ISNULL(j.COD_CUENTA_02,'')                                           AS cod_cuenta_02,
+                            ISNULL(j.COD_CUENTA_03,'')                                           AS cod_cuenta_03,
+                            ISNULL(j.COD_CUENTA_04,'')                                           AS cod_cuenta_04,
+                            ISNULL(j.ESTADO,'')                                                  AS estado,
+                            ISNULL(j.REGISTRO_USUARIO,'')                                        AS registro_usuario,
+                            ISNULL(CONVERT(varchar(19), j.REGISTRO_FECHA,120),'')                AS registro_fecha,
+                            ISNULL(j.MODIFICA_USUARIO,'')                                        AS modifica_usuario,
+                            ISNULL(CONVERT(varchar(19), j.MODIFICA_FECHA,120),'')                AS modifica_fecha,
+
+                            ISNULL(ta.DESCRIPCION,'')                                            AS tipo_asiento_desc,
+
+                            ISNULL(c1.COD_CUENTA_MASK,'')                                        AS cod_cuenta_01_mask,
+                            ISNULL(c1.DESCRIPCION,'')                                            AS cod_cuenta_01_desc,
+
+                            ISNULL(c2.COD_CUENTA_MASK,'')                                        AS cod_cuenta_02_mask,
+                            ISNULL(c2.DESCRIPCION,'')                                            AS cod_cuenta_02_desc,
+
+                            ISNULL(c3.COD_CUENTA_MASK,'')                                        AS cod_cuenta_03_mask,
+                            ISNULL(c3.DESCRIPCION,'')                                            AS cod_cuenta_03_desc,
+
+                            ISNULL(c4.COD_CUENTA_MASK,'')                                        AS cod_cuenta_04_mask,
+                            ISNULL(c4.DESCRIPCION,'')                                            AS cod_cuenta_04_desc
+                        FROM dbo.ACTIVOS_JUSTIFICACIONES j
+                        LEFT JOIN dbo.CNTX_TIPOS_ASIENTOS ta  ON ta.TIPO_ASIENTO = j.TIPO_ASIENTO
+                        LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c1 ON c1.COD_CUENTA = j.COD_CUENTA_01
+                        LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c2 ON c2.COD_CUENTA = j.COD_CUENTA_02
+                        LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c3 ON c3.COD_CUENTA = j.COD_CUENTA_03
+                        LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL c4 ON c4.COD_CUENTA = j.COD_CUENTA_04
+                        WHERE j.COD_JUSTIFICACION < @cod
+                        ORDER BY j.COD_JUSTIFICACION DESC;";
 
                 resp.Result = connection.QueryFirstOrDefault<ActivosJustificacionesData>(
-                    query, new { cod = (cod_justificacion ?? string.Empty).ToUpper() });
+                    sql,
+                    new { cod = (cod_justificacion ?? string.Empty).ToUpper() });
 
                 if (resp.Result == null)
                 {
@@ -254,7 +298,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     resp.Description = "Ok";
                 }
-
             }
             catch (Exception)
             {
@@ -266,13 +309,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
         /// <summary>
         /// Guarda (inserta o actualiza) una justificación en la base de datos.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         public ErrorDto Activos_Justificaciones_Guardar(int CodEmpresa, ActivosJustificacionesData data)
         {
             var resp = new ErrorDto { Code = 0, Description = string.Empty };
@@ -298,14 +337,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                // 2) Existe?
                 const string qExiste = @"
                                         SELECT COUNT(1)
                                         FROM dbo.ACTIVOS_JUSTIFICACIONES
                                         WHERE COD_JUSTIFICACION = @cod";
                 int existe = connection.QueryFirstOrDefault<int>(qExiste, new { cod = data.cod_justificacion.ToUpper() });
 
-                // 3) Upsert
                 if (data.isNew)
                 {
                     if (existe > 0)
@@ -338,13 +375,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
-        /// <summary>
-        /// Inserta una nueva justificación en la base de datos.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         private ErrorDto Activos_Justificaciones_Insertar(int CodEmpresa, ActivosJustificacionesData data)
         {
             var resp = new ErrorDto { Code = 0 };
@@ -353,7 +383,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = @"
+                const string query = @"
                                 INSERT INTO dbo.ACTIVOS_JUSTIFICACIONES
                                     (COD_JUSTIFICACION, DESCRIPCION, TIPO, TIPO_ASIENTO,
                                     COD_CUENTA_01, COD_CUENTA_02, COD_CUENTA_03, COD_CUENTA_04,
@@ -367,7 +397,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     cod = data.cod_justificacion.ToUpper(),
                     descripcion = data.descripcion?.ToUpper(),
-                    tipo = (data.tipo ?? "").ToUpper(), // 'A','R','V','D','M'
+                    tipo = (data.tipo ?? "").ToUpper(),
                     tipo_asiento = data.tipo_asiento?.ToUpper(),
                     cta1 = string.IsNullOrWhiteSpace(data.cod_cuenta_01) ? null : data.cod_cuenta_01.ToUpper(),
                     cta2 = string.IsNullOrWhiteSpace(data.cod_cuenta_02) ? null : data.cod_cuenta_02.ToUpper(),
@@ -376,18 +406,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     reg_usuario = string.IsNullOrWhiteSpace(data.registro_usuario) ? null : data.registro_usuario
                 });
 
-                // Bitácora
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = string.IsNullOrWhiteSpace(data.registro_usuario) ? "" : data.registro_usuario,
                     DetalleMovimiento = $"Justificación: {data.cod_justificacion} - {data.descripcion}",
                     Movimiento = "Registra - WEB",
-                    Modulo = vModulo // 36
+                    Modulo = vModulo
                 });
 
                 resp.Description = "Justificación Ingresada Satisfactoriamente!";
-
             }
             catch (Exception ex)
             {
@@ -398,13 +426,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
-        /// <summary>
-        /// Actualiza los detalles de una justificación existente en la base de datos.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         private ErrorDto Activos_Justificaciones_Actualizar(int CodEmpresa, ActivosJustificacionesData data)
         {
             var resp = new ErrorDto { Code = 0 };
@@ -413,7 +434,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = @"
+                const string query = @"
                                 UPDATE dbo.ACTIVOS_JUSTIFICACIONES
                                 SET DESCRIPCION      = @descripcion,
                                     TIPO             = @tipo,
@@ -439,18 +460,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     mod_usuario = string.IsNullOrWhiteSpace(data.modifica_usuario) ? null : data.modifica_usuario
                 });
 
-                // Bitácora
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = string.IsNullOrWhiteSpace(data.modifica_usuario) ? "" : data.modifica_usuario,
                     DetalleMovimiento = $"Justificación: {data.cod_justificacion} - {data.descripcion}",
                     Movimiento = "Modifica - WEB",
-                    Modulo = vModulo // 36
+                    Modulo = vModulo
                 });
 
                 resp.Description = "Justificación Actualizada Satisfactoriamente!";
-
             }
             catch (Exception ex)
             {
@@ -461,14 +480,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
-        /// <summary>
-        /// Elimina una justificación del sistema (no se permite de momento).
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="cod_justificacion"></param>
-        /// <returns></returns>
         public ErrorDto Activos_Justificaciones_Eliminar(int CodEmpresa, string usuario, string cod_justificacion)
         {
             var resp = new ErrorDto
@@ -480,7 +491,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = @"DELETE FROM dbo.ACTIVOS_JUSTIFICACIONES 
+                const string query = @"DELETE FROM dbo.ACTIVOS_JUSTIFICACIONES 
                           WHERE COD_JUSTIFICACION = @cod_justificacion";
 
                 int rows = connection.Execute(query, new { cod_justificacion = cod_justificacion.ToUpper() });
@@ -492,14 +503,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     return resp;
                 }
 
-                // Bitácora
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"Justificación: {cod_justificacion}",
                     Movimiento = "Elimina - WEB",
-                    Modulo = vModulo // 36
+                    Modulo = vModulo
                 });
 
             }
@@ -512,12 +522,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-
-        /// <summary>
-        /// Obtiene una lista de Tipos que se guardan en la tabla de justificaciones.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_JustificacionesTipos_Obtener(int CodEmpresa)
         {
             return new ErrorDto<List<DropDownListaGenericaModel>>
@@ -525,23 +529,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 Code = 0,
                 Description = "Ok",
                 Result = new List<DropDownListaGenericaModel>
-        {
-            new() { item = "A", descripcion = "Adiciones y Mejoras" },
-            new() { item = "R", descripcion = "Retiros (Salidas)" },
-            new() { item = "V", descripcion = "Revaluaciones" },
-            new() { item = "D", descripcion = "Deterioros y Desvalorizaciones" },
-            new() { item = "M", descripcion = "Mantenimiento" }
-        }
+                {
+                    new() { item = "A", descripcion = "Adiciones y Mejoras" },
+                    new() { item = "R", descripcion = "Retiros (Salidas)" },
+                    new() { item = "V", descripcion = "Revaluaciones" },
+                    new() { item = "D", descripcion = "Deterioros y Desvalorizaciones" },
+                    new() { item = "M", descripcion = "Mantenimiento" }
+                }
             };
         }
 
-
-        /// <summary>
-        /// Obtener lista de tipos de asientos para justificaciones
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="contabilidad"></param>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_JustificacionesTiposAsientos_Obtener(int CodEmpresa, int contabilidad)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>
@@ -553,10 +550,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = @"select Tipo_Asiento as 'item',descripcion from CNTX_TIPOS_ASIENTOS
+                const string query = @"select Tipo_Asiento as 'item',descripcion 
+                                    from CNTX_TIPOS_ASIENTOS
                                     where cod_contabilidad = @contabilidad AND ACTIVO = 1
                                     order by descripcion asc";
-                response.Result = connection.Query<DropDownListaGenericaModel>(query, new { contabilidad = contabilidad }).ToList();
+                response.Result = connection
+                    .Query<DropDownListaGenericaModel>(query, new { contabilidad })
+                    .ToList();
             }
             catch (Exception ex)
             {

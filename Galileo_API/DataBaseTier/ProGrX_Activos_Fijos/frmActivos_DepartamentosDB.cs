@@ -1,10 +1,9 @@
-﻿using Dapper;
-using Galileo.DataBaseTier;
+﻿using System.Data;
+using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
-
 
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -13,6 +12,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly int vModulo = 36; // Activos Fijos
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
+        private const string _filtro = "@filtro";
 
         public FrmActivosSeccionesDb(IConfiguration config)
         {
@@ -20,13 +20,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
-
         /// <summary>
         /// Lista paginada (lazy) de departamentos.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<ActivosDepartamentosLista> Activos_DepartamentosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<ActivosDepartamentosLista>
@@ -39,32 +35,47 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                string where = "";
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    var f = filtros.filtro.Replace("'", "''");
-                    where = $@" WHERE  d.COD_DEPARTAMENTO LIKE '%{f}%'
-                                OR    d.DESCRIPCION    LIKE '%{f}%'
-                                OR    d.COD_UNIDAD     LIKE '%{f}%'
-                                OR    ISNULL(u.DESCRIPCION,'') LIKE '%{f}%'";
-                }
 
-                // total
-                string queryTotal = $@"SELECT COUNT(DISTINCT d.COD_DEPARTAMENTO)
-                                    FROM dbo.ACTIVOS_DEPARTAMENTOS d
-                                    LEFT JOIN dbo.CNTX_UNIDADES u
-                                      ON u.COD_UNIDAD = d.COD_UNIDAD
-                                       {where}";
-                resp.Result.total = cn.QueryFirstOrDefault<int>(queryTotal);
+                var p = new DynamicParameters();
 
-                // sort y paginación
-                string sortField = string.IsNullOrWhiteSpace(filtros?.sortField) ? "d.COD_DEPARTAMENTO" : filtros.sortField;
-                string sortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC";
+                // Filtro
+                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
+                    ? null
+                    : $"%{filtros.filtro.Trim()}%";
+                p.Add(_filtro, filtroLike, DbType.String);
+
+                // Sorting
+                var sortFieldNorm = (filtros?.sortField ?? "cod_departamento")
+                    .Trim()
+                    .ToLowerInvariant();
+                int sortOrder = filtros?.sortOrder == 0 ? 0 : 1; // 0 = DESC (como tenías), 1 = ASC
+                p.Add("@sortField", sortFieldNorm, DbType.String);
+                p.Add("@sortOrder", sortOrder, DbType.Int32);
+
+                // Paginación
                 int pagina = filtros?.pagina ?? 0;
                 int paginacion = filtros?.paginacion ?? 50;
+                p.Add("@offset", pagina, DbType.Int32);
+                p.Add("@rows", paginacion, DbType.Int32);
 
-                string query = $@"
-                       SELECT DISTINCT
+                const string sqlCount = @"
+                    SELECT COUNT(DISTINCT d.COD_DEPARTAMENTO)
+                    FROM dbo.ACTIVOS_DEPARTAMENTOS d
+                    LEFT JOIN dbo.CNTX_UNIDADES u
+                      ON u.COD_UNIDAD = d.COD_UNIDAD
+                    WHERE 1 = 1
+                      AND (
+                            @filtro IS NULL
+                            OR d.COD_DEPARTAMENTO LIKE @filtro
+                            OR d.DESCRIPCION      LIKE @filtro
+                            OR d.COD_UNIDAD       LIKE @filtro
+                            OR ISNULL(u.DESCRIPCION,'') LIKE @filtro
+                          );";
+
+                resp.Result.total = cn.QueryFirstOrDefault<int>(sqlCount, p);
+
+                const string sqlData = @"
+                    SELECT DISTINCT
                         d.COD_DEPARTAMENTO            AS cod_departamento,
                         ISNULL(d.DESCRIPCION,'')      AS descripcion,
                         ISNULL(d.COD_UNIDAD,'')       AS cod_unidad,
@@ -73,11 +84,31 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FROM dbo.ACTIVOS_DEPARTAMENTOS d
                     LEFT JOIN dbo.CNTX_UNIDADES u
                       ON u.COD_UNIDAD = d.COD_UNIDAD
-                    {where}
-                    ORDER BY {sortField} {sortOrder}
-                    OFFSET {pagina} ROWS FETCH NEXT {paginacion} ROWS ONLY;";
+                    WHERE 1 = 1
+                      AND (
+                            @filtro IS NULL
+                            OR d.COD_DEPARTAMENTO LIKE @filtro
+                            OR d.DESCRIPCION      LIKE @filtro
+                            OR d.COD_UNIDAD       LIKE @filtro
+                            OR ISNULL(u.DESCRIPCION,'') LIKE @filtro
+                          )
+                    ORDER BY
+                        -- sortOrder = 0 => DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_departamento' THEN d.COD_DEPARTAMENTO END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion'      THEN d.DESCRIPCION      END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_unidad'       THEN d.COD_UNIDAD       END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'unidad_desc'      THEN u.DESCRIPCION      END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'usuario'          THEN d.REGISTRO_USUARIO END DESC,
 
-                resp.Result.lista = cn.Query<ActivosDepartamentosData>(query).ToList();
+                        -- sortOrder = 1 => ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_departamento' THEN d.COD_DEPARTAMENTO END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion'      THEN d.DESCRIPCION      END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_unidad'       THEN d.COD_UNIDAD       END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'unidad_desc'      THEN u.DESCRIPCION      END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'usuario'          THEN d.REGISTRO_USUARIO END ASC
+                    OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY;";
+
+                resp.Result.lista = cn.Query<ActivosDepartamentosData>(sqlData, p).ToList();
             }
             catch (Exception ex)
             {
@@ -88,12 +119,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
+
         /// <summary>
         /// Lista completa de departamentos (sin paginar) para exportar.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<List<ActivosDepartamentosData>> Activos_Departamentos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<List<ActivosDepartamentosData>>
@@ -106,31 +135,35 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                string where = "";
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    var f = filtros.filtro.Replace("'", "''");
-                    where = $@" WHERE  d.COD_DEPARTAMENTO LIKE '%{f}%'
-                                OR    d.DESCRIPCION    LIKE '%{f}%'
-                                OR    d.COD_UNIDAD     LIKE '%{f}%'
-                                OR    ISNULL(u.DESCRIPCION,'') LIKE '%{f}%'
-                                OR    ISNULL(d.REGISTRO_USUARIO,'') LIKE '%{f}%'";
-                }
 
-                string query = $@"
+                var p = new DynamicParameters();
+                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
+                    ? null
+                    : $"%{filtros.filtro.Trim()}%";
+                p.Add(_filtro, filtroLike, DbType.String);
+
+                const string query = @"
                     SELECT
-                        d.COD_DEPARTAMENTO                         AS cod_departamento,
-                        ISNULL(d.DESCRIPCION,'')                   AS descripcion,
-                        ISNULL(d.COD_UNIDAD,'')                    AS cod_unidad,
-                        ISNULL(u.DESCRIPCION,'')                   AS unidad_desc,
-                        ISNULL(d.REGISTRO_USUARIO,'')              AS usuario
+                        d.COD_DEPARTAMENTO            AS cod_departamento,
+                        ISNULL(d.DESCRIPCION,'')      AS descripcion,
+                        ISNULL(d.COD_UNIDAD,'')       AS cod_unidad,
+                        ISNULL(u.DESCRIPCION,'')      AS unidad_desc,
+                        ISNULL(d.REGISTRO_USUARIO,'') AS usuario
                     FROM dbo.ACTIVOS_DEPARTAMENTOS d
                     LEFT JOIN dbo.CNTX_UNIDADES u
                       ON u.COD_UNIDAD = d.COD_UNIDAD
-                    {where}
+                    WHERE 1 = 1
+                      AND (
+                            @filtro IS NULL
+                            OR d.COD_DEPARTAMENTO LIKE @filtro
+                            OR d.DESCRIPCION      LIKE @filtro
+                            OR d.COD_UNIDAD       LIKE @filtro
+                            OR ISNULL(u.DESCRIPCION,'') LIKE @filtro
+                            OR ISNULL(d.REGISTRO_USUARIO,'') LIKE @filtro
+                          )
                     ORDER BY d.COD_DEPARTAMENTO;";
 
-                resp.Result = cn.Query<ActivosDepartamentosData>(query).ToList();
+                resp.Result = cn.Query<ActivosDepartamentosData>(query, p).ToList();
             }
             catch (Exception ex)
             {
@@ -140,11 +173,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
+
         /// <summary>
         /// Guardar un departamento.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="departamento"></param>
         /// </summary>
         public ErrorDto Activos_Departamentos_Guardar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
         {
@@ -193,13 +224,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
-        /// <summary>
-        /// Inserta un nuevo departamento.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="departamento"></param>
-        /// </summary>
-        /// <returns></returns>
+
         private ErrorDto Activos_Departamentos_Insertar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -208,7 +233,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                string query = @"
+                const string query = @"
                     INSERT INTO dbo.ACTIVOS_DEPARTAMENTOS
                        (COD_DEPARTAMENTO, DESCRIPCION, COD_UNIDAD,
                         REGISTRO_FECHA, REGISTRO_USUARIO, MODIFICA_USUARIO, MODIFICA_FECHA)
@@ -242,13 +267,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
-        /// <summary>
-        /// Actualiza un departamento existente.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="departamento"></param>
-        /// </summary>
-        /// <returns></returns>
+
         private ErrorDto Activos_Departamentos_Actualizar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -257,7 +276,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                string query = @"
+                const string query = @"
                     UPDATE dbo.ACTIVOS_DEPARTAMENTOS
                        SET DESCRIPCION      = @desc,
                            COD_UNIDAD       = @unidad,
@@ -292,13 +311,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Eliminar departamento por su código.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="cod_departamento"></param>
-        /// </summary>
-        /// <returns></returns>
         public ErrorDto Activos_Departamentos_Eliminar(int CodEmpresa, string usuario, string cod_departamento)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -310,7 +322,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                string query = @"DELETE FROM dbo.ACTIVOS_DEPARTAMENTOS WHERE COD_DEPARTAMENTO = @cod;";
+                const string query = @"DELETE FROM dbo.ACTIVOS_DEPARTAMENTOS WHERE COD_DEPARTAMENTO = @cod;";
                 int rows = cn.Execute(query, new { cod = cod_departamento.ToUpper() });
 
                 if (rows == 0)
@@ -332,12 +344,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
-        /// <summary>
-        /// Valida si un código de departamento ya existe en la base de datos ACTIVOS_Departamentos.
-        /// </summary>
-        /// <param name="CodEmpresa">.</param>
-        /// <param name="cod_departamento"></param>
-        /// <returns></returns>
+
         public ErrorDto Activos_Departamentos_Valida(int CodEmpresa, string cod_departamento)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -368,13 +375,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
+
         /// <summary>
         /// Lista paginada (lazy) de secciones. Puede filtrar por cod_departamento.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cod_departamento"></param>
-        /// <param name="filtros"></param>
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<ActivosSeccionesLista> Activos_SeccionesLista_Obtener(int CodEmpresa, string? cod_departamento, FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<ActivosSeccionesLista>
@@ -388,36 +392,50 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                string where = " WHERE 1=1 ";
-                if (!string.IsNullOrWhiteSpace(cod_departamento))
-                    where += " AND s.COD_DEPARTAMENTO = @dept ";
+                var p = new DynamicParameters();
+                string? dept = string.IsNullOrWhiteSpace(cod_departamento)
+                    ? null
+                    : cod_departamento.ToUpper();
+                p.Add("@dept", dept, DbType.String);
 
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    var f = filtros.filtro.Replace("'", "''");
-                    where += $@" AND (  s.COD_SECCION LIKE '%{f}%'
-                                     OR s.DESCRIPCION LIKE '%{f}%'
-                                     OR s.COD_CENTRO_COSTO LIKE '%{f}%'
-                                     OR ISNULL(cc.DESCRIPCION,'') LIKE '%{f}%'
-                                     OR ISNULL(d.DESCRIPCION,'')  LIKE '%{f}%')";
-                }
+                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
+                    ? null
+                    : $"%{filtros.filtro.Trim()}%";
+                p.Add(_filtro, filtroLike, DbType.String);
 
-                string qTotal = $@"
+                var sortFieldNorm = (filtros?.sortField ?? "cod_seccion")
+                    .Trim()
+                    .ToLowerInvariant();
+                int sortOrder = filtros?.sortOrder == 0 ? 0 : 1;
+                p.Add("@sortField", sortFieldNorm, DbType.String);
+                p.Add("@sortOrder", sortOrder, DbType.Int32);
+
+                int pagina = filtros?.pagina ?? 0;
+                int paginacion = filtros?.paginacion ?? 50;
+                p.Add("@offset", pagina, DbType.Int32);
+                p.Add("@rows", paginacion, DbType.Int32);
+
+                const string qTotal = @"
                     SELECT COUNT(1)
                     FROM dbo.ACTIVOS_SECCIONES s
                     LEFT JOIN dbo.CNTX_CENTRO_COSTOS cc
                         ON cc.COD_CENTRO_COSTO = s.COD_CENTRO_COSTO
                     LEFT JOIN dbo.ACTIVOS_DEPARTAMENTOS d
                         ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENTO
-                    {where};";
-                resp.Result.total = cn.QueryFirstOrDefault<int>(qTotal, new { dept = cod_departamento?.ToUpper() });
+                    WHERE 1 = 1
+                      AND (@dept IS NULL OR s.COD_DEPARTAMENTO = @dept)
+                      AND (
+                            @filtro IS NULL
+                            OR s.COD_SECCION       LIKE @filtro
+                            OR s.DESCRIPCION       LIKE @filtro
+                            OR s.COD_CENTRO_COSTO  LIKE @filtro
+                            OR ISNULL(cc.DESCRIPCION,'') LIKE @filtro
+                            OR ISNULL(d.DESCRIPCION,'')  LIKE @filtro
+                          );";
 
-                string sortField = string.IsNullOrWhiteSpace(filtros?.sortField) ? "s.COD_SECCION" : filtros.sortField;
-                string sortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC";
-                int pagina = filtros?.pagina ?? 0;
-                int paginacion = filtros?.paginacion ?? 50;
+                resp.Result.total = cn.QueryFirstOrDefault<int>(qTotal, p);
 
-                string query = $@"
+                const string query = @"
                     SELECT
                         s.COD_DEPARTAMENTO             AS cod_departamento,
                         ISNULL(d.DESCRIPCION,'')       AS departamento_desc,
@@ -431,11 +449,38 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         ON cc.COD_CENTRO_COSTO = s.COD_CENTRO_COSTO
                     LEFT JOIN dbo.ACTIVOS_DEPARTAMENTOS d
                         ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENTO
-                    {where}
-                    ORDER BY {sortField} {sortOrder}
-                    OFFSET {pagina} ROWS
-                    FETCH NEXT {paginacion} ROWS ONLY;";
-                resp.Result.lista = cn.Query<ActivosSeccionesData>(query, new { dept = cod_departamento?.ToUpper() }).ToList();
+                    WHERE 1 = 1
+                      AND (@dept IS NULL OR s.COD_DEPARTAMENTO = @dept)
+                      AND (
+                            @filtro IS NULL
+                            OR s.COD_SECCION       LIKE @filtro
+                            OR s.DESCRIPCION       LIKE @filtro
+                            OR s.COD_CENTRO_COSTO  LIKE @filtro
+                            OR ISNULL(cc.DESCRIPCION,'') LIKE @filtro
+                            OR ISNULL(d.DESCRIPCION,'')  LIKE @filtro
+                          )
+                    ORDER BY
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_departamento'   THEN s.COD_DEPARTAMENTO   END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'departamento_desc'  THEN d.DESCRIPCION        END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_seccion'        THEN s.COD_SECCION        END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion'        THEN s.DESCRIPCION        END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_centro_costo'   THEN s.COD_CENTRO_COSTO   END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'centro_costo_desc'  THEN cc.DESCRIPCION       END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'usuario'            THEN s.REGISTRO_USUARIO   END DESC,
+
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_departamento'   THEN s.COD_DEPARTAMENTO   END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'departamento_desc'  THEN d.DESCRIPCION        END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_seccion'        THEN s.COD_SECCION        END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion'        THEN s.DESCRIPCION        END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_centro_costo'   THEN s.COD_CENTRO_COSTO   END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'centro_costo_desc'  THEN cc.DESCRIPCION       END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'usuario'            THEN s.REGISTRO_USUARIO   END ASC
+                    OFFSET @offset ROWS
+                    FETCH NEXT @rows ROWS ONLY;";
+
+                resp.Result.lista = cn.Query<ActivosSeccionesData>(query, p).ToList();
             }
             catch (Exception ex)
             {
@@ -449,11 +494,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         /// <summary>
         /// Lista completa de secciones (sin paginar) para exportar. Puede filtrar por cod_departamento.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="cod_departamento"></param>
-        /// <param name="filtros"></param>
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<List<ActivosSeccionesData>> Activos_Secciones_Obtener(int CodEmpresa, string? cod_departamento, FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<List<ActivosSeccionesData>>
@@ -467,21 +508,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                string where = " WHERE 1=1 ";
-                if (!string.IsNullOrWhiteSpace(cod_departamento))
-                    where += " AND s.COD_DEPARTAMENTO = @dept ";
+                var p = new DynamicParameters();
+                string? dept = string.IsNullOrWhiteSpace(cod_departamento)
+                    ? null
+                    : cod_departamento.ToUpper();
+                p.Add("@dept", dept, DbType.String);
 
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    var f = filtros.filtro.Replace("'", "''");
-                    where += $@" AND (  s.COD_SECCION LIKE '%{f}%'
-                                     OR s.DESCRIPCION LIKE '%{f}%'
-                                     OR s.COD_CENTRO_COSTO LIKE '%{f}%'
-                                     OR ISNULL(cc.DESCRIPCION,'') LIKE '%{f}%'
-                                     OR ISNULL(d.DESCRIPCION,'')  LIKE '%{f}%')";
-                }
+                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
+                    ? null
+                    : $"%{filtros.filtro.Trim()}%";
+                p.Add(_filtro, filtroLike, DbType.String);
 
-                string query = $@"
+                const string query = @"
                     SELECT
                         s.COD_DEPARTAMENTO             AS cod_departamento,
                         ISNULL(d.DESCRIPCION,'')       AS departamento_desc,
@@ -495,9 +533,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         ON cc.COD_CENTRO_COSTO = s.COD_CENTRO_COSTO
                     LEFT JOIN dbo.ACTIVOS_DEPARTAMENTOS d
                         ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENTO
-                    {where}
+                    WHERE 1 = 1
+                      AND (@dept IS NULL OR s.COD_DEPARTAMENTO = @dept)
+                      AND (
+                            @filtro IS NULL
+                            OR s.COD_SECCION       LIKE @filtro
+                            OR s.DESCRIPCION       LIKE @filtro
+                            OR s.COD_CENTRO_COSTO  LIKE @filtro
+                            OR ISNULL(cc.DESCRIPCION,'') LIKE @filtro
+                            OR ISNULL(d.DESCRIPCION,'')  LIKE @filtro
+                          )
                     ORDER BY s.COD_SECCION;";
-                resp.Result = cn.Query<ActivosSeccionesData>(query, new { dept = cod_departamento?.ToUpper() }).ToList();
+
+                resp.Result = cn.Query<ActivosSeccionesData>(query, p).ToList();
             }
             catch (Exception ex)
             {
@@ -508,12 +556,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Guardar una sección.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="seccion"></param>
-        /// </summary>
+        // --- Resto de métodos se quedan igual (ya usan parámetros) ---
+
         public ErrorDto Activos_Secciones_Guardar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -559,13 +603,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Inserta una nueva sección.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="seccion"></param>
-        /// </summary>
-        /// <returns></returns>
         private ErrorDto Activos_Secciones_Insertar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -573,7 +610,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                string query = @"
+                const string query = @"
                     INSERT INTO dbo.ACTIVOS_SECCIONES
                         (COD_DEPARTAMENTO, COD_SECCION, DESCRIPCION, COD_CENTRO_COSTO, REGISTRO_USUARIO, REGISTRO_FECHA, MODIFICA_USUARIO, MODIFICA_FECHA)
                     VALUES
@@ -607,13 +644,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Actualiza una sección existente.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="seccion"></param>
-        /// </summary>
-        /// <returns></returns>
         private ErrorDto Activos_Secciones_Actualizar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -621,7 +651,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                string query = @"
+                const string query = @"
                     UPDATE dbo.ACTIVOS_SECCIONES
                        SET DESCRIPCION      = @desc,
                            COD_CENTRO_COSTO = @cc,
@@ -658,14 +688,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Eliminar sección por su código y departamento.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="cod_departamento"></param>
-        /// <param name="cod_seccion"></param>
-        /// </summary>
-        /// <returns></returns>
         public ErrorDto Activos_Secciones_Eliminar(int CodEmpresa, string usuario, string cod_departamento, string cod_seccion)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -676,7 +698,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     return new ErrorDto { Code = -1, Description = "Debe indicar departamento y sección." };
 
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                string query = @"
+                const string query = @"
                     DELETE FROM dbo.ACTIVOS_SECCIONES
                     WHERE COD_DEPARTAMENTO = @dept AND COD_SECCION = @sec;";
                 int rows = cn.Execute(query, new { dept = cod_departamento.ToUpper(), sec = cod_seccion.ToUpper() });
@@ -701,13 +723,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Valida si un código de sección ya existe en la base de datos ACTIVOS_SECCIONES.
-        /// </summary>
-        /// <param name="CodEmpresa">.</param>
-        /// <param name="cod_departamento"></param>
-        /// <param name="cod_seccion"></param>
-        /// <returns></returns>
         public ErrorDto Activos_Secciones_Valida(int CodEmpresa, string cod_departamento, string cod_seccion)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -741,12 +756,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Obtiene una lista de centros de costo activos por contabilidad.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="contabilidad"></param>
-        /// </summary>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Secciones_CentrosCostos_Obtener(int CodEmpresa, int contabilidad)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
@@ -759,7 +768,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                string query = @"
+                const string query = @"
                     SELECT COD_CENTRO_COSTO AS item, DESCRIPCION
                     FROM dbo.CNTX_CENTRO_COSTOS
                     WHERE COD_CONTABILIDAD = @contabilidad AND ACTIVO = 1
@@ -774,12 +783,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
-        /// <summary>
-        /// Lista de Unidades Contables activas por contabilidad.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="contabilidad"></param>
-        /// </summary>
-        /// <returns></returns>
+
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Departamentos_Unidades_Obtener(int CodEmpresa, int contabilidad)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
@@ -792,7 +796,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                string query = @"
+                const string query = @"
             SELECT COD_UNIDAD AS item, DESCRIPCION
             FROM dbo.CNTX_UNIDADES
             WHERE COD_CONTABILIDAD = @contabilidad AND ACTIVA = 1
@@ -807,11 +811,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
-        /// <summary>
-        /// Lista los departamentos.
-        /// <param name="CodEmpresa"></param>
-        /// </summary>
-        /// <returns></returns>
+
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Departamentos_Dropdown_Obtener(int CodEmpresa)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Description = "Ok", Result = new() };
@@ -830,6 +830,5 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             return resp;
         }
-
     }
 }

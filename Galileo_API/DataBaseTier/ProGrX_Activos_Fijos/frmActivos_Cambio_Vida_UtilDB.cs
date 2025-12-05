@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
@@ -51,63 +50,106 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                const string selectBase = @"
-                SELECT
-                    A.NUM_PLACA     AS numPlaca,
-                    A.PLACA_ALTERNA AS placaAlterna,
-                    A.NOMBRE        AS nombre
-                FROM ACTIVOS_PRINCIPAL A
-                ";
-                var whereParts = new List<string>();
+
+                // Normalizamos filtros a parámetros (null si vienen vacíos)
                 var p = new DynamicParameters();
 
-                if (!string.IsNullOrWhiteSpace(vfiltro.filtro))
+                string? g = string.IsNullOrWhiteSpace(vfiltro.filtro)
+                    ? null
+                    : $"%{vfiltro.filtro.Trim().ToUpper()}%";
+
+                string? placa = string.IsNullOrWhiteSpace(vfiltro.placa)
+                    ? null
+                    : $"%{vfiltro.placa.Trim().ToUpper()}%";
+
+                string? alterna = string.IsNullOrWhiteSpace(vfiltro.alterna)
+                    ? null
+                    : $"%{vfiltro.alterna.Trim().ToUpper()}%";
+
+                string? nombre = string.IsNullOrWhiteSpace(vfiltro.nombre)
+                    ? null
+                    : $"%{vfiltro.nombre.Trim().ToUpper()}%";
+
+                p.Add("@g", g, DbType.String);
+                p.Add("@placa", placa, DbType.String);
+                p.Add("@alterna", alterna, DbType.String);
+                p.Add("@nombre", nombre, DbType.String);
+
+                // Sort seguro: usamos CASE en el ORDER BY, sin concatenar nombres de columnas
+                string sortField = (vfiltro.sortField ?? "placa").Trim().ToLowerInvariant();
+                int sortOrder = vfiltro.sortOrder ?? 0; // 0 = ASC, 1 = DESC
+                p.Add("@sortField", sortField, DbType.String);
+                p.Add("@sortOrder", sortOrder, DbType.Int32);
+
+                // Paginación
+                bool usarPaginacion = vfiltro.pagina.HasValue && vfiltro.paginacion.HasValue;
+                if (usarPaginacion)
                 {
-                    whereParts.Add(@"(
-                    UPPER(A.NUM_PLACA)     LIKE @g
-                 OR UPPER(A.PLACA_ALTERNA) LIKE @g
-                 OR UPPER(A.NOMBRE)        LIKE @g
-                )");
-                    p.Add("@g", $"%{vfiltro.filtro.Trim().ToUpper()}%", DbType.String);
-                }
-                if (!string.IsNullOrWhiteSpace(vfiltro.placa))
-                {
-                    whereParts.Add("UPPER(A.NUM_PLACA) LIKE @placa");
-                    p.Add("@placa", $"%{vfiltro.placa.Trim().ToUpper()}%", DbType.String);
-                }
-                if (!string.IsNullOrWhiteSpace(vfiltro.alterna))
-                {
-                    whereParts.Add("UPPER(A.PLACA_ALTERNA) LIKE @alterna");
-                    p.Add("@alterna", $"%{vfiltro.alterna.Trim().ToUpper()}%", DbType.String);
-                }
-                if (!string.IsNullOrWhiteSpace(vfiltro.nombre))
-                {
-                    whereParts.Add("UPPER(A.NOMBRE) LIKE @nombre");
-                    p.Add("@nombre", $"%{vfiltro.nombre.Trim().ToUpper()}%", DbType.String);
+                    p.Add("@offset", vfiltro.pagina.GetValueOrDefault(), DbType.Int32);
+                    p.Add("@rows", vfiltro.paginacion.GetValueOrDefault(), DbType.Int32);
                 }
 
-                var whereSql = whereParts.Count > 0 ? "WHERE " + string.Join(" AND ", whereParts) : string.Empty;
+                const string selectBase = @"
+                    SELECT
+                        A.NUM_PLACA     AS numPlaca,
+                        A.PLACA_ALTERNA AS placaAlterna,
+                        A.NOMBRE        AS nombre
+                    FROM ACTIVOS_PRINCIPAL A
+                ";
 
-                string orderByCol = (vfiltro.sortField ?? "placa").Trim().ToLowerInvariant() switch
-                {
-                    "alterna" => "A.PLACA_ALTERNA",
-                    "nombre" => "A.NOMBRE",
-                    _ => "A.NUM_PLACA"
-                };
-                string orderDir = (vfiltro.sortOrder ?? 0) == 1 ? "DESC" : "ASC";
-                string orderSql = $"ORDER BY {orderByCol} {orderDir}";
+                // WHERE totalmente estático. La activación depende de que el parámetro sea NULL o no.
+                const string whereSql = @"
+                    WHERE 1 = 1
+                      AND (
+                            @g IS NULL
+                            OR UPPER(A.NUM_PLACA)     LIKE @g
+                            OR UPPER(A.PLACA_ALTERNA) LIKE @g
+                            OR UPPER(A.NOMBRE)        LIKE @g
+                          )
+                      AND (
+                            @placa IS NULL
+                            OR UPPER(A.NUM_PLACA) LIKE @placa
+                          )
+                      AND (
+                            @alterna IS NULL
+                            OR UPPER(A.PLACA_ALTERNA) LIKE @alterna
+                          )
+                      AND (
+                            @nombre IS NULL
+                            OR UPPER(A.NOMBRE) LIKE @nombre
+                          )
+                ";
 
-                string pagingSql = string.Empty;
-                if (vfiltro.pagina != null && vfiltro.paginacion != null)
-                {
-                    p.Add("@offset", vfiltro.pagina.Value, DbType.Int32);
-                    p.Add("@rows", vfiltro.paginacion.Value, DbType.Int32);
-                    pagingSql = " OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY ";
-                }
+                // ORDER BY estático, usando CASE sobre parámetros @sortField y @sortOrder
+                const string orderSql = @"
+                    ORDER BY
+                        CASE 
+                            WHEN @sortOrder = 0 AND @sortField = 'placa'   THEN A.NUM_PLACA
+                            WHEN @sortOrder = 0 AND @sortField = 'alterna' THEN A.PLACA_ALTERNA
+                            WHEN @sortOrder = 0 AND @sortField = 'nombre'  THEN A.NOMBRE
+                        END ASC,
+                        CASE 
+                            WHEN @sortOrder = 1 AND @sortField = 'placa'   THEN A.NUM_PLACA
+                            WHEN @sortOrder = 1 AND @sortField = 'alterna' THEN A.PLACA_ALTERNA
+                            WHEN @sortOrder = 1 AND @sortField = 'nombre'  THEN A.NOMBRE
+                        END DESC
+                ";
 
-                string countSql = $"SELECT COUNT(1) FROM ACTIVOS_PRINCIPAL A {whereSql}";
+                const string pagingSql = @"
+                    OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY
+                ";
+
+                // COUNT: mismo WHERE, sin ORDER/PAGING
+                string countSql = "SELECT COUNT(1) FROM ACTIVOS_PRINCIPAL A " + whereSql;
                 res.Result.total = cn.ExecuteScalar<int>(countSql, p, commandTimeout: 60);
-                string dataSql = $"{selectBase} {whereSql} {orderSql} {pagingSql}";
+
+                // DATA: SELECT + WHERE + ORDER [+ PAGING]
+                string dataSql = selectBase + whereSql + orderSql;
+                if (usarPaginacion)
+                {
+                    dataSql += pagingSql;
+                }
+
                 res.Result.lista = cn.Query<ActivoLite>(dataSql, p, commandTimeout: 60).ToList();
 
                 return res;
@@ -126,9 +168,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Consulta un activo por número de placa desde ACTIVOS_PRINCIPAL y devuelve datos básicos para la vista.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="numPlaca"></param>
-        /// <returns></returns>
         public ErrorDto<ActivoBuscarResponse> Activos_CambioVU_Activo_Obtener(int CodEmpresa, string numPlaca)
         {
             var result = new ErrorDto<ActivoBuscarResponse>
@@ -162,12 +201,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     var cod = (act.metDepreciacion ?? string.Empty).Trim().ToUpperInvariant();
                     var metodoTxt = cod switch
                     {
-                        "L" => "Línea Recta",
-                        "N" => "No Deprecia",
+                        "L"  => "Línea Recta",
+                        "N"  => "No Deprecia",
                         "SD" => "Suma Dígitos",
                         "DD" => "Doblemente Decreciente",
                         "UP" => "Unidades Producidas",
-                        _ => cod
+                        _    => cod
                     };
 
                     act.resumenActual = $"{metodoTxt}, VU: {act.vidaUtil} {(act.vidaUtilEn == "M" ? "meses" : "años")}";
@@ -193,8 +232,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Lista métodos de depreciación disponibles (DISTINCT desde ACTIVOS_PRINCIPAL) y devuelve item/descripcion.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_CambioVU_MetodosDepreciacion_Obtener(int CodEmpresa)
         {
             return new ErrorDto<List<DropDownListaGenericaModel>>
@@ -202,24 +239,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 Code = 0,
                 Description = "Ok",
                 Result = new List<DropDownListaGenericaModel>
-        {
-            new DropDownListaGenericaModel { item = "L", descripcion = "Línea Recta" },
-            new DropDownListaGenericaModel { item = "N", descripcion = "No Deprecia" },
-            new DropDownListaGenericaModel { item = "S", descripcion = "Suma Dígitos (Años)" },
-            new DropDownListaGenericaModel { item = "D", descripcion = "Doble Decreciente" },
-            new DropDownListaGenericaModel { item = "U", descripcion = "Unidades Producidas" }
-        }
+                {
+                    new DropDownListaGenericaModel { item = "L",  descripcion = "Línea Recta" },
+                    new DropDownListaGenericaModel { item = "N",  descripcion = "No Deprecia" },
+                    new DropDownListaGenericaModel { item = "S",  descripcion = "Suma Dígitos (Años)" },
+                    new DropDownListaGenericaModel { item = "D",  descripcion = "Doble Decreciente" },
+                    new DropDownListaGenericaModel { item = "U",  descripcion = "Unidades Producidas" }
+                }
             };
         }
-
 
         /// <summary>
         /// Aplica cambio de vida útil (spActivos_Cambio_Vida_Util) y sincroniza unidad/método en ACTIVOS_PRINCIPAL; registra bitácora.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="dto"></param>
-        /// <returns></returns>
         public ErrorDto<CambioVidaUtilAplicarResponse> Activos_CambioVU_Aplicar(int CodEmpresa, string usuario, CambioVidaUtilAplicarRequest dto)
         {
             var res = new ErrorDto<CambioVidaUtilAplicarResponse>
@@ -282,12 +314,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     var cod = (act.metDepreciacion ?? string.Empty).Trim().ToUpperInvariant();
                     var metodoTxt = cod switch
                     {
-                        "L" => "Línea Recta",
-                        "N" => "No Deprecia",
+                        "L"  => "Línea Recta",
+                        "N"  => "No Deprecia",
                         "SD" => "Suma Dígitos",
                         "DD" => "Doble Decreciente",
                         "UP" => "Unidades Producidas",
-                        _ => cod
+                        _    => cod
                     };
 
                     act.resumenActual = $"{metodoTxt}, VU: {act.vidaUtil} {(act.vidaUtilEn == "M" ? "meses" : "años")}";

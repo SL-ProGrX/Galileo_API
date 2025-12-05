@@ -123,7 +123,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 resp.Code = -1;
                 resp.Description = ex.Message;
                 resp.Result.total = 0;
-                resp.Result.lista = null;
+                resp.Result.lista = [];
             }
 
             return resp;

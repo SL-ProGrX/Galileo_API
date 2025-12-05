@@ -1,10 +1,10 @@
-﻿using Dapper;
+﻿using System.Data;
+using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
-
 
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -13,6 +13,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly int vModulo = 36;
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
+        private const string _codtipo = "cod_tipo";
 
         public FrmActivosObrasTiposDb(IConfiguration config)
         {
@@ -20,13 +21,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
-
         /// <summary>
-        /// Metodo para consultar la lista de tipos de obras en proceso
+        /// Metodo para consultar la lista de tipos de obras en proceso (paginado).
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosObrasTipoDataLista> Activos_ObrasTipos_Consultar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var result = new ErrorDto<ActivosObrasTipoDataLista>()
@@ -42,30 +39,62 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             try
             {
-                var query = "";
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                query = $@"select COUNT(cod_tipo) from Activos_obras_tipos";
-                result.Result.total = connection.Query<int>(query).FirstOrDefault();
 
-                if (filtros.filtro != null)
+                // Total (como en tu código original, sin filtro)
+                const string countSql = @"SELECT COUNT(cod_tipo) FROM Activos_obras_tipos;";
+                result.Result.total = connection.QueryFirstOrDefault<int>(countSql);
+
+                var p = new DynamicParameters();
+
+                // Filtro
+                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
+                    ? null
+                    : $"%{filtros.filtro.Trim()}%";
+                p.Add("@filtro", filtroLike, DbType.String);
+
+                // Paginación
+                int pagina = filtros?.pagina ?? 0;
+                int paginacion = filtros?.paginacion ?? 50;
+                p.Add("@offset", pagina, DbType.Int32);
+                p.Add("@rows", paginacion, DbType.Int32);
+
+                // Sort seguro (whitelist)
+                var sortFieldRaw = (filtros?.sortField ?? _codtipo).Trim();
+                var sortFieldNorm = sortFieldRaw.ToLowerInvariant();
+
+                string orderByCol = sortFieldNorm switch
                 {
-                    filtros.filtro = " WHERE ( cod_tipo LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%'  ) ";
-                }
+                    _codtipo    => _codtipo,
+                    "descripcion" => "descripcion",
+                    "activo"      => "activo",
+                    _             => _codtipo
+                };
 
-                if (filtros.sortField == "" || filtros.sortField == null)
-                {
-                    filtros.sortField = "cod_tipo";
-                }
+                string orderDir = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
 
-                query = $@"select * from Activos_obras_tipos 
-                                        {filtros.filtro} 
-                                     order by {filtros.sortField}   {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                         OFFSET {filtros.pagina} ROWS 
-                                         FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                result.Result.lista = connection.Query<ActivosObrasTipoData>(query).ToList();
+                const string whereSql = @"
+                    WHERE (@filtro IS NULL
+                           OR cod_tipo    LIKE @filtro
+                           OR descripcion LIKE @filtro)";
 
+                string dataSql = $@"
+                    SELECT cod_tipo,
+                           descripcion,
+                           activo,
+                           registro_usuario,
+                           registro_fecha,
+                           modifica_usuario,
+                           modifica_fecha
+                    FROM   Activos_obras_tipos
+                    {whereSql}
+                    ORDER BY {orderByCol} {orderDir}
+                    OFFSET @offset ROWS 
+                    FETCH NEXT @rows ROWS ONLY;";
 
+                result.Result.lista = connection
+                    .Query<ActivosObrasTipoData>(dataSql, p)
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -78,11 +107,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
         /// <summary>
-        /// Metodo para consultar lista de tipos de obras en proceso a exportar
+        /// Metodo para consultar lista de tipos de obras en proceso a exportar (sin paginar).
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
         public ErrorDto<List<ActivosObrasTipoData>> Activos_ObrasTipos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var result = new ErrorDto<List<ActivosObrasTipoData>>()
@@ -94,19 +120,34 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             try
             {
-                var query = "";
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                if (filtros.filtro != null)
-                {
-                    filtros.filtro = " WHERE ( cod_tipo LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%'  ) ";
+                var p = new DynamicParameters();
+                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
+                    ? null
+                    : $"%{filtros.filtro.Trim()}%";
+                p.Add("@filtro", filtroLike, DbType.String);
 
-                }
-                query = $@"select * from Activos_obras_tipos 
-                                    {filtros.filtro} 
-                                    order by cod_tipo";
-                result.Result = connection.Query<ActivosObrasTipoData>(query).ToList();
+                const string whereSql = @"
+                    WHERE (@filtro IS NULL
+                           OR cod_tipo    LIKE @filtro
+                           OR descripcion LIKE @filtro)";
+
+                string query = $@"
+                    SELECT cod_tipo,
+                           descripcion,
+                           activo,
+                           registro_usuario,
+                           registro_fecha,
+                           modifica_usuario,
+                           modifica_fecha
+                    FROM   Activos_obras_tipos
+                    {whereSql}
+                    ORDER BY cod_tipo;";
+
+                result.Result = connection
+                    .Query<ActivosObrasTipoData>(query, p)
+                    .ToList();
 
             }
             catch (Exception ex)
@@ -118,14 +159,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-
         /// <summary>
         /// Metodo para actualizar o insertar un nuevo tipo de obras en proceso
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
         public ErrorDto Activos_ObrasTipos_Guardar(int CodEmpresa, string usuario, ActivosObrasTipoData datos)
         {
             var result = new ErrorDto()
@@ -136,7 +172,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = $@"select coalesce(count(*),0) as Existe from Activos_obras_tipos where cod_tipo = @codigo ";
+                const string query = @"
+                    SELECT COALESCE(COUNT(*),0) AS Existe
+                    FROM   Activos_obras_tipos
+                    WHERE  cod_tipo = @codigo;";
                 var existe = connection.QueryFirstOrDefault<int>(query, new { codigo = datos.cod_tipo });
 
                 if (datos.isNew)
@@ -169,14 +208,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-
         /// <summary>
         /// Metodo para actualizar un nuevo tipo de obras en proceso
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
         private ErrorDto Activos_ObrasTipos_Actualizar(int CodEmpresa, string usuario, ActivosObrasTipoData datos)
         {
             var result = new ErrorDto()
@@ -187,12 +221,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = $@"UPDATE  Activos_obras_tipos
-                                    SET descripcion = @descripcion,
-                                        activo = @activo,
-                                        modifica_usuario = @usuario,
-                                        modifica_fecha = getdate()
-                                    WHERE cod_tipo = @cod_tipo";
+                const string query = @"
+                    UPDATE Activos_obras_tipos
+                       SET descripcion      = @descripcion,
+                           activo           = @activo,
+                           modifica_usuario = @usuario,
+                           modifica_fecha   = GETDATE()
+                     WHERE cod_tipo        = @cod_tipo;";
                 connection.Execute(query, new
                 {
                     datos.cod_tipo,
@@ -219,14 +254,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-
         /// <summary>
         /// Metodo para insertar un nuevo tipo de obras en proceso
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
         private ErrorDto Activos_ObrasTipos_Insertar(int CodEmpresa, string usuario, ActivosObrasTipoData datos)
         {
             var result = new ErrorDto()
@@ -237,8 +267,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = $@"insert into Activos_obras_tipos(cod_tipo,descripcion,activo,registro_usuario,registro_fecha)
-                                    VALUES (@cod_tipo, @descripcion, @activo, @usuario,getdate())";
+                const string query = @"
+                    INSERT INTO Activos_obras_tipos
+                        (cod_tipo, descripcion, activo, registro_usuario, registro_fecha)
+                    VALUES (@cod_tipo, @descripcion, @activo, @usuario, GETDATE());";
                 connection.Execute(query, new
                 {
                     datos.cod_tipo,
@@ -267,10 +299,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Metodo para eliminar un tipo de obras en proceso
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="cod_tipo"></param>
-        /// <returns></returns>
         public ErrorDto Activos_ObrasTipos_Eliminar(int CodEmpresa, string usuario, string cod_tipo)
         {
             var result = new ErrorDto()
@@ -281,7 +309,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = $@"DELETE FROM Activos_obras_tipos WHERE cod_tipo = @cod_tipo";
+                const string query = @"DELETE FROM Activos_obras_tipos WHERE cod_tipo = @cod_tipo;";
                 connection.Execute(query, new { cod_tipo });
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {

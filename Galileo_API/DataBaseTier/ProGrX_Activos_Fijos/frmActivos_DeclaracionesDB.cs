@@ -29,10 +29,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         /// <summary>
         /// Obtiene el historial de declaraciones por lazy loading.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<ActivosDeclaracionLista> Activos_Declaraciones_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             var result = new ErrorDto<ActivosDeclaracionLista>
@@ -50,31 +47,55 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                string where = " WHERE 1 = 1 ";
+                // --------------------------
+                // Parámetros de filtro
+                // --------------------------
+                var p = new DynamicParameters();
+                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
+                    ? null
+                    : $"%{filtros.filtro.Trim()}%";
+                p.Add("@filtro", filtroLike, DbType.String);
 
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
+                // --------------------------
+                // Parámetros de ordenamiento
+                // --------------------------
+                var sortFieldNorm = (filtros?.sortField ?? "id_declara")
+                    .Trim()
+                    .ToLowerInvariant();
+
+                int sortOrder = filtros?.sortOrder ?? 0; // 0 = DESC (como tenías), 1 = ASC
+                p.Add("@sortField", sortFieldNorm, DbType.String);
+                p.Add("@sortOrder", sortOrder, DbType.Int32);
+
+                // --------------------------
+                // Paginación
+                // --------------------------
+                bool sinPaginacion = filtros == null || filtros.paginacion <= 0;
+                if (filtros != null && filtros.paginacion > 0)
                 {
-                    where +=
-                        " AND ( CONVERT(varchar(10), id_declara) LIKE '%" + filtros.filtro + "%' " +
-                        "   OR notas LIKE '%" + filtros.filtro + "%' ) ";
+                    p.Add("@offset", filtros.pagina, DbType.Int32);
+                    p.Add("@rows", filtros.paginacion, DbType.Int32);
                 }
 
-                var qTotal = $"SELECT COUNT(1) FROM vActivos_Declara {where}";
-                result.Result.total = connection.Query<int>(qTotal).FirstOrDefault();
+                // --------------------------
+                // COUNT estático y parametrizado
+                // --------------------------
+                const string countSql = @"
+                    SELECT COUNT(1)
+                    FROM vActivos_Declara
+                    WHERE 1 = 1
+                      AND (
+                            @filtro IS NULL
+                            OR CONVERT(varchar(10), id_declara) LIKE @filtro
+                            OR notas LIKE @filtro
+                          );";
 
-                if (string.IsNullOrWhiteSpace(filtros?.sortField))
-                    filtros!.sortField = "id_declara";
+                result.Result.total = connection.QueryFirstOrDefault<int>(countSql, p);
 
-                var orden = filtros.sortOrder == 0 ? "DESC" : "ASC";
-
-                bool sinPaginacion = filtros.paginacion <= 0;
-
-                var orderBy = $" ORDER BY {filtros.sortField} {orden} ";
-                var paging = sinPaginacion
-                    ? ""
-                    : $" OFFSET {filtros.pagina} ROWS FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-
-                var qDatos = $@"
+                // --------------------------
+                // SELECT datos con WHERE + ORDER BY seguros
+                // --------------------------
+                const string selectBase = @"
                     SELECT
                         id_declara,
                         tipo_desc,
@@ -89,12 +110,53 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         procesado_fecha,
                         procesado_usuario
                     FROM vActivos_Declara
-                    {where}
-                    {orderBy}
-                    {paging};";
+                    WHERE 1 = 1
+                      AND (
+                            @filtro IS NULL
+                            OR CONVERT(varchar(10), id_declara) LIKE @filtro
+                            OR notas LIKE @filtro
+                          )
+                    ORDER BY
+                        -- sortOrder = 0 => DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'id_declara'       THEN id_declara       END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'tipo_desc'        THEN tipo_desc        END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'estado_desc'      THEN estado_desc      END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'fecha_inicio'     THEN fecha_inicio     END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'fecha_corte'      THEN fecha_corte      END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'notas'            THEN notas            END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'registro_fecha'   THEN registro_fecha   END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'registro_usuario' THEN registro_usuario END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cerrado_fecha'    THEN cerrado_fecha    END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cerrado_usuario'  THEN cerrado_usuario  END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'procesado_fecha'  THEN procesado_fecha  END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'procesado_usuario'THEN procesado_usuarioEND DESC,
+
+                        -- sortOrder = 1 => ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'id_declara'       THEN id_declara       END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'tipo_desc'        THEN tipo_desc        END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'estado_desc'      THEN estado_desc      END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'fecha_inicio'     THEN fecha_inicio     END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'fecha_corte'      THEN fecha_corte      END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'notas'            THEN notas            END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'registro_fecha'   THEN registro_fecha   END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'registro_usuario' THEN registro_usuario END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cerrado_fecha'    THEN cerrado_fecha    END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cerrado_usuario'  THEN cerrado_usuario  END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'procesado_fecha'  THEN procesado_fecha  END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'procesado_usuario'THEN procesado_usuarioEND ASC
+                ";
+
+                const string pagingSql = @"
+                    OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY";
+
+                string dataSql = selectBase;
+                if (!sinPaginacion)
+                {
+                    dataSql += pagingSql;
+                }
 
                 result.Result.lista = connection
-                    .Query<ActivosDeclaracionResumen>(qDatos)
+                    .Query<ActivosDeclaracionResumen>(dataSql, p)
                     .ToList();
             }
             catch (Exception ex)
@@ -110,10 +172,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         /// <summary>
         /// Obtiene una declaración específica por Id.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_declara"></param>
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<ActivosDeclaracion> Activos_Declaraciones_Registro_Obtener(int CodEmpresa, int id_declara)
         {
             var connStr = GetConn(CodEmpresa);
@@ -170,12 +229,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Verifica si existe una declaración (para validar números manuales).
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_declara"></param>
-        /// </summary>
-        /// <returns></returns>
         public ErrorDto Activos_Declaraciones_Registro_Existe_Obtener(int CodEmpresa, int id_declara)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
@@ -201,12 +254,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Guarda una declaración de activos (insertar o actualizar).
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// </summary>
-        /// <returns></returns>
         public ErrorDto<ActivosDeclaracionResult> Activos_Declaraciones_Registro_Guardar(int CodEmpresa, ActivosDeclaracionGuardarRequest data)
         {
             if (data == null)
@@ -290,12 +337,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             };
         }
 
-        /// <summary>
-        /// Inserta una nueva declaración de activos.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// </summary>
-        /// <returns></returns>
         private ErrorDto<ActivosDeclaracionResult> Activos_Declaraciones_Registro_Insertar(int CodEmpresa, ActivosDeclaracionGuardarRequest data)
         {
             var resp = new ErrorDto<ActivosDeclaracionResult>
@@ -311,9 +352,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var p = new DynamicParameters();
                 p.Add(_declaraId, 0);
                 p.Add("@Notas", data.notas);
-                p.Add("@Tipo", data.tipo); 
+                p.Add("@Tipo", data.tipo);
                 p.Add("@Inicio", data.fecha_inicio);
-                p.Add("@Corte", data.fecha_corte);    
+                p.Add("@Corte", data.fecha_corte);
                 p.Add(_usuario, data.usuario);
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
@@ -347,7 +388,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 resp.Code = 0;
                 resp.Description = string.IsNullOrWhiteSpace(mensaje)
-                    ? "Declaración registrada satisfactoriamente!"
+                    ? "Declaración registrado satisfactoriamente!"
                     : mensaje;
                 resp.Result = new ActivosDeclaracionResult { id_declara = data.id_declara };
             }
@@ -361,12 +402,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Actualiza una declaración de activos existente.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="data"></param>
-        /// </summary>
-        /// <returns></returns>
         private ErrorDto Activos_Declaraciones_Registro_Actualizar(int CodEmpresa, ActivosDeclaracionGuardarRequest data)
         {
             var resp = new ErrorDto { Code = 0, Description = "" };
@@ -415,13 +450,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Elimina una declaración de activos (si no tiene registros).
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_declara"></param>
-        /// <param name="usuario"></param>
-        /// </summary>
-        /// <returns></returns>
         public ErrorDto Activos_Declaraciones_Registro_Eliminar(int CodEmpresa, int id_declara, string usuario)
         {
             var connStr = GetConn(CodEmpresa);
@@ -463,13 +491,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Cierra una declaración de activos (cambia a estado C).
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_declara"></param>
-        /// <param name="usuario"></param>
-        /// </summary>
-        /// <returns></returns>
         public ErrorDto Activos_Declaraciones_Registro_Cerrar(int CodEmpresa, int id_declara, string usuario)
         {
             var connStr = GetConn(CodEmpresa);
@@ -515,13 +536,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        /// <summary>
-        /// Procesa una declaración de activos (cambia a estado P).
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_declara"></param>
-        /// <param name="usuario"></param>
-        /// </summary>
-        /// <returns></returns>
         public ErrorDto Activos_Declaraciones_Registro_Procesar(int CodEmpresa, int id_declara, string usuario)
         {
             var connStr = GetConn(CodEmpresa);
@@ -569,12 +583,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         /// <summary>
         /// Navega entre declaraciones (anterior / siguiente) usando el Id.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="scroll"></param>
-        /// <param name="id_declara"></param>
-        /// <param name="usuario"></param>
         /// </summary>
-        /// <returns></returns>
         public ErrorDto<ActivosDeclaracion> Activos_Declaraciones_Registro_Scroll(int CodEmpresa, int scroll, int? id_declara, string usuario)
         {
             var connStr = GetConn(CodEmpresa);
@@ -587,13 +596,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             try
             {
-                string whereOrder = (scroll == 1)
-                    ? " WHERE ID_DECLARA > @id ORDER BY ID_DECLARA ASC "
-                    : " WHERE ID_DECLARA < @id ORDER BY ID_DECLARA DESC ";
-
                 using var connection = new SqlConnection(connStr);
+
+                // SQL estático (sin concatenar trozos variables)
+                string sqlNext = scroll == 1
+                    ? @"SELECT TOP 1 ID_DECLARA 
+                        FROM vActivos_Declara 
+                        WHERE ID_DECLARA > @id 
+                        ORDER BY ID_DECLARA ASC;"
+                    : @"SELECT TOP 1 ID_DECLARA 
+                        FROM vActivos_Declara 
+                        WHERE ID_DECLARA < @id 
+                        ORDER BY ID_DECLARA DESC;";
+
                 var nextId = connection.QueryFirstOrDefault<int?>(
-                    $"SELECT TOP 1 ID_DECLARA FROM vActivos_Declara {whereOrder}",
+                    sqlNext,
                     new { id = id_declara ?? 0 });
 
                 if (nextId == null)
