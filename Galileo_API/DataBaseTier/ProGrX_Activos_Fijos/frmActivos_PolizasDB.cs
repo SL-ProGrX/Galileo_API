@@ -13,6 +13,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
         private const string _numplaca = "A.NUM_PLACA";
+        private const string TipoActivoParam = "@tipo_activo";
+         private const string _filtro = "@filtro";
 
         public FrmActivosPolizasDb(IConfiguration config)
         {
@@ -36,40 +38,50 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var where = string.Empty;
                 var p = new DynamicParameters();
-
-                if (vfiltro != null && !string.IsNullOrWhiteSpace(vfiltro.filtro))
+                string? filtroTexto = (vfiltro?.filtro ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(filtroTexto))
                 {
-                    where = @"
-                        WHERE (
-                               COD_POLIZA              LIKE @filtro
-                            OR DESCRIPCION            LIKE @filtro
-                            OR ISNULL(NUM_POLIZA,'')  LIKE @filtro
-                            OR ISNULL(DOCUMENTO,'')   LIKE @filtro
-                        )";
-                    p.Add("@filtro", $"%{vfiltro.filtro}%");
+                    p.Add(_filtro, null);
+                }
+                else
+                {
+                    p.Add(_filtro, $"%{filtroTexto}%");
                 }
 
-                // Total
-                var sqlCount = $@"SELECT COUNT(*) FROM ACTIVOS_POLIZAS {where}";
-                response.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
-
-                int pagina = vfiltro?.pagina ?? 0;
+                int pagina = vfiltro?.pagina ?? 0;         // ya venía como offset
                 int paginacion = vfiltro?.paginacion ?? 50;
 
-                var sqlPage = $@"
+                p.Add("@offset", pagina);
+                p.Add("@rows", paginacion);
+
+                // Total (misma lógica de filtro pero sin paginación)
+                const string sqlCount = @"
+                    SELECT COUNT(*)
+                    FROM ACTIVOS_POLIZAS
+                    WHERE
+                        (@filtro IS NULL OR
+                         COD_POLIZA             LIKE @filtro OR
+                         DESCRIPCION           LIKE @filtro OR
+                         ISNULL(NUM_POLIZA,'') LIKE @filtro OR
+                         ISNULL(DOCUMENTO,'')  LIKE @filtro);";
+
+                response.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
+
+                const string sqlPage = @"
                     SELECT 
                         COD_POLIZA  AS cod_poliza,
                         DESCRIPCION AS descripcion
                     FROM ACTIVOS_POLIZAS
-                    {where}
+                    WHERE
+                        (@filtro IS NULL OR
+                         COD_POLIZA             LIKE @filtro OR
+                         DESCRIPCION           LIKE @filtro OR
+                         ISNULL(NUM_POLIZA,'') LIKE @filtro OR
+                         ISNULL(DOCUMENTO,'')  LIKE @filtro)
                     ORDER BY COD_POLIZA
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
-
-                p.Add("@offset", pagina);
-                p.Add("@rows", paginacion);
 
                 response.Result.lista = connection.Query<ActivosPolizasData>(sqlPage, p).ToList();
             }
@@ -95,10 +107,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = @"SELECT COUNT(*) 
-                              FROM dbo.ACTIVOS_POLIZAS 
-                              WHERE UPPER(COD_POLIZA) = @cod";
-                int result = connection.QueryFirstOrDefault<int>(query, new { cod = cod_poliza.ToUpper() });
+                const string query = @"
+                    SELECT COUNT(*) 
+                    FROM dbo.ACTIVOS_POLIZAS 
+                    WHERE UPPER(COD_POLIZA) = @cod;";
+
+                int result = connection.QueryFirstOrDefault<int>(query, new { cod = (cod_poliza ?? string.Empty).ToUpper() });
 
                 (resp.Code, resp.Description) =
                     (result == 0) ? (0, "POLIZA: Libre") : (-2, "POLIZA: Ocupado");
@@ -122,7 +136,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = @"
+                const string query = @"
                     SELECT
                         p.COD_POLIZA                                         AS cod_poliza,
                         ISNULL(p.TIPO_POLIZA,'')                              AS tipo_poliza,
@@ -148,7 +162,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     WHERE p.COD_POLIZA = @cod;";
 
                 resp.Result = connection.QueryFirstOrDefault<ActivosPolizasData>(
-                    query, new { cod = cod_poliza.ToUpper() });
+                    query, new { cod = (cod_poliza ?? string.Empty).ToUpper() });
 
                 resp.Description = (resp.Result == null) ? "Póliza no encontrada." : "Ok";
                 resp.Code = (resp.Result == null) ? -2 : 0;
@@ -181,7 +195,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 const string qExiste = @"
                     SELECT COUNT(1)
                     FROM dbo.ACTIVOS_POLIZAS
-                    WHERE COD_POLIZA = @cod";
+                    WHERE COD_POLIZA = @cod;";
+
                 int existe = connection.QueryFirstOrDefault<int>(qExiste, new { cod = data.cod_poliza.ToUpper() });
 
                 if (data.isNew)
@@ -266,15 +281,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = @"
-                        INSERT INTO dbo.ACTIVOS_POLIZAS
-                            (COD_POLIZA, TIPO_POLIZA, DESCRIPCION, OBSERVACION, 
-                             FECHA_INICIO, FECHA_VENCE, MONTO, NUM_POLIZA, DOCUMENTO,
-                             REGISTRO_FECHA, REGISTRO_USUARIO, MODIFICA_USUARIO, MODIFICA_FECHA)
-                        VALUES
-                            (@cod, @tipo, @descripcion, @observacion,
-                             @fi, @fv, @monto, @num_poliza, @documento,
-                             SYSDATETIME(), @reg_usuario, NULL, NULL)";
+                const string query = @"
+                    INSERT INTO dbo.ACTIVOS_POLIZAS
+                        (COD_POLIZA, TIPO_POLIZA, DESCRIPCION, OBSERVACION, 
+                         FECHA_INICIO, FECHA_VENCE, MONTO, NUM_POLIZA, DOCUMENTO,
+                         REGISTRO_FECHA, REGISTRO_USUARIO, MODIFICA_USUARIO, MODIFICA_FECHA)
+                    VALUES
+                        (@cod, @tipo, @descripcion, @observacion,
+                         @fi, @fv, @monto, @num_poliza, @documento,
+                         SYSDATETIME(), @reg_usuario, NULL, NULL);";
 
                 connection.Execute(query, new
                 {
@@ -320,19 +335,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = @"
-                        UPDATE dbo.ACTIVOS_POLIZAS
-                           SET TIPO_POLIZA      = @tipo,
-                               DESCRIPCION      = @descripcion,
-                               OBSERVACION      = @observacion,
-                               FECHA_INICIO     = @fi,
-                               FECHA_VENCE      = @fv,
-                               MONTO            = @monto,
-                               NUM_POLIZA       = @num_poliza,
-                               DOCUMENTO        = @documento,
-                               MODIFICA_USUARIO = @mod_usuario,
-                               MODIFICA_FECHA   = SYSDATETIME()
-                         WHERE COD_POLIZA = @cod";
+                const string query = @"
+                    UPDATE dbo.ACTIVOS_POLIZAS
+                       SET TIPO_POLIZA      = @tipo,
+                           DESCRIPCION      = @descripcion,
+                           OBSERVACION      = @observacion,
+                           FECHA_INICIO     = @fi,
+                           FECHA_VENCE      = @fv,
+                           MONTO            = @monto,
+                           NUM_POLIZA       = @num_poliza,
+                           DOCUMENTO        = @documento,
+                           MODIFICA_USUARIO = @mod_usuario,
+                           MODIFICA_FECHA   = SYSDATETIME()
+                     WHERE COD_POLIZA = @cod;";
 
                 connection.Execute(query, new
                 {
@@ -383,8 +398,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var qAsg = @"SELECT COUNT(*) FROM dbo.ACTIVOS_POLIZAS_ASG WHERE COD_POLIZA = @cod";
-                int cntAsg = connection.QueryFirstOrDefault<int>(qAsg, new { cod = cod_poliza.ToUpper() });
+                const string qAsg = @"SELECT COUNT(*) FROM dbo.ACTIVOS_POLIZAS_ASG WHERE COD_POLIZA = @cod;";
+                int cntAsg = connection.QueryFirstOrDefault<int>(qAsg, new { cod = (cod_poliza ?? string.Empty).ToUpper() });
                 if (cntAsg > 0)
                 {
                     resp.Code = -2;
@@ -392,15 +407,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     return resp;
                 }
 
-                var query = @"DELETE FROM dbo.ACTIVOS_POLIZAS 
-                              WHERE COD_POLIZA = @cod_poliza";
+                const string query = @"DELETE FROM dbo.ACTIVOS_POLIZAS WHERE COD_POLIZA = @cod_poliza;";
 
-                int rows = connection.Execute(query, new { cod_poliza = cod_poliza.ToUpper() });
+                int rows = connection.Execute(query, new { cod_poliza = (cod_poliza ?? string.Empty).ToUpper() });
 
                 if (rows == 0)
                 {
                     resp.Code = -2;
-                    resp.Description = $"La póliza {cod_poliza.ToUpper()} no existe.";
+                    resp.Description = $"La póliza {(cod_poliza ?? string.Empty).ToUpper()} no existe.";
                     return resp;
                 }
 
@@ -437,9 +451,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = @"SELECT TIPO_POLIZA AS item, DESCRIPCION 
-                              FROM dbo.ACTIVOS_POLIZAS_TIPOS
-                              ORDER BY DESCRIPCION";
+                const string query = @"
+                    SELECT TIPO_POLIZA AS item, DESCRIPCION 
+                    FROM dbo.ACTIVOS_POLIZAS_TIPOS
+                    ORDER BY DESCRIPCION;";
                 response.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
@@ -465,11 +480,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = @"
+                const string query = @"
                     SELECT TIPO_ACTIVO AS item,
                            DESCRIPCION
                     FROM dbo.ACTIVOS_TIPO_ACTIVO
-                    ORDER BY DESCRIPCION";
+                    ORDER BY DESCRIPCION;";
                 response.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
@@ -510,34 +525,38 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                var where = " WHERE 1=1 ";
                 var p = new DynamicParameters();
-
-                if (!string.IsNullOrWhiteSpace(tipo_activo))
-                {
-                    where += " AND A.TIPO_ACTIVO = @tipo_activo";
-                    p.Add("@tipo_activo", tipo_activo);
-                }
-
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    where += @" AND (
-                                   A.NUM_PLACA LIKE @filtro
-                                OR A.NOMBRE    LIKE @filtro
-                               )";
-                    p.Add("@filtro", $"%{filtros.filtro}%");
-                }
-
                 p.Add("@p", cod_poliza.ToUpper());
+                // Filtro tipo_activo
+                if (string.IsNullOrWhiteSpace(tipo_activo))
+                    p.Add(TipoActivoParam, null);
+                else
+                    p.Add(TipoActivoParam, tipo_activo);
+                    p.Add(TipoActivoParam, tipo_activo);
 
-                // total
-                string queryTotal = $@"
+                // Filtro texto
+                var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(filtroTexto))
+                    p.Add(_filtro, null);
+                else
+                    p.Add(_filtro, $"%{filtroTexto}%");
+
+                // Total
+                const string queryTotal = @"
                     SELECT COUNT(1)
                     FROM dbo.ACTIVOS_PRINCIPAL A
-                    {where}";
+                    WHERE
+                        (@tipo_activo IS NULL OR A.TIPO_ACTIVO = @tipo_activo)
+                        AND
+                        (
+                            @filtro IS NULL OR
+                            A.NUM_PLACA LIKE @filtro OR
+                            A.NOMBRE    LIKE @filtro
+                        );";
+
                 resp.Result.total = cn.QueryFirstOrDefault<int>(queryTotal, p);
 
-                // Ordenamiento seguro usando índice + CASE para cumplir S2077
+                // Ordenamiento seguro usando índice + CASE
                 var sortFieldRaw = filtros?.sortField ?? _numplaca;
                 var sortFieldNorm = sortFieldRaw.Trim().ToUpperInvariant();
 
@@ -550,13 +569,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 };
                 p.Add("@sortIndex", sortIndex);
 
-                int sortDir = filtros?.sortOrder == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
+                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
                 p.Add("@sortDir", sortDir);
 
-                int pagina = filtros?.pagina ?? 0;
+                int pagina = filtros?.pagina ?? 0;       // ya se usaba como offset
                 int paginacion = filtros?.paginacion ?? 50;
 
-                string query = $@"
+                p.Add("@offset", pagina);
+                p.Add("@rows", paginacion);
+
+                const string query = @"
                     SELECT 
                         A.NUM_PLACA AS num_placa,
                         A.NOMBRE    AS nombre,
@@ -566,7 +588,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     LEFT JOIN dbo.ACTIVOS_POLIZAS_ASG X
                            ON X.NUM_PLACA = A.NUM_PLACA
                           AND X.COD_POLIZA = @p
-                    {where}
+                    WHERE
+                        (@tipo_activo IS NULL OR A.TIPO_ACTIVO = @tipo_activo)
+                        AND
+                        (
+                            @filtro IS NULL OR
+                            A.NUM_PLACA LIKE @filtro OR
+                            A.NOMBRE    LIKE @filtro
+                        )
                     ORDER BY
                         -- ASC
                         CASE @sortDir WHEN 1 THEN
@@ -587,14 +616,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
 
-                p.Add("@offset", pagina);
-                p.Add("@rows", paginacion);
-
                 var filas = cn.Query<ActivosPolizasAsignacionItem>(query, p).ToList();
                 resp.Description = JsonConvert.SerializeObject(filas);
                 resp.Result.lista = filas.Select(f => new ActivosPolizasData
                 {
-                    cod_poliza = cod_poliza.ToUpper(),
+                    cod_poliza = (cod_poliza ?? string.Empty).ToUpper(),
                     descripcion = f.nombre
                 }).ToList();
             }
@@ -637,27 +663,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                var where = " WHERE 1=1 ";
                 var p = new DynamicParameters();
-
-                if (!string.IsNullOrWhiteSpace(tipo_activo))
-                {
-                    where += " AND A.TIPO_ACTIVO = @tipo_activo";
-                    p.Add("@tipo_activo", tipo_activo);
-                }
-
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    where += @" AND (
-                                   A.NUM_PLACA LIKE @filtro
-                                OR A.NOMBRE    LIKE @filtro
-                               )";
-                    p.Add("@filtro", $"%{filtros.filtro}%");
-                }
-
                 p.Add("@p", cod_poliza.ToUpper());
 
-                string query = $@"
+                if (string.IsNullOrWhiteSpace(tipo_activo))
+                    p.Add(TipoActivoParam, null);
+                else
+                    p.Add(TipoActivoParam, tipo_activo);
+
+                var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
+                if (string.IsNullOrWhiteSpace(filtroTexto))
+                    p.Add(_filtro, null);
+                else
+                    p.Add(_filtro, $"%{filtroTexto}%");
+
+                const string query = @"
                     SELECT 
                         A.NUM_PLACA AS num_placa,
                         A.NOMBRE    AS nombre,
@@ -667,7 +687,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     LEFT JOIN dbo.ACTIVOS_POLIZAS_ASG X
                            ON X.NUM_PLACA = A.NUM_PLACA
                           AND X.COD_POLIZA = @p
-                    {where}
+                    WHERE
+                        (@tipo_activo IS NULL OR A.TIPO_ACTIVO = @tipo_activo)
+                        AND
+                        (
+                            @filtro IS NULL OR
+                            A.NUM_PLACA LIKE @filtro OR
+                            A.NOMBRE    LIKE @filtro
+                        )
                     ORDER BY A.NUM_PLACA;";
 
                 resp.Result = cn.Query<ActivosPolizasAsignacionItem>(query, p).ToList();
@@ -698,10 +725,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 connection.Open();
                 using var tx = connection.BeginTransaction();
 
-                var insert = @"
+                const string insert = @"
                     IF NOT EXISTS(SELECT 1 FROM dbo.ACTIVOS_POLIZAS_ASG WHERE COD_POLIZA=@p AND NUM_PLACA=@pl)
                     INSERT INTO dbo.ACTIVOS_POLIZAS_ASG (COD_POLIZA, NUM_PLACA, REGISTRO_FECHA, REGISTRO_USUARIO)
-                    VALUES (@p, @pl, SYSDATETIME(), @u)";
+                    VALUES (@p, @pl, SYSDATETIME(), @u);";
 
                 foreach (var pl in placas)
                 {
@@ -744,9 +771,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 connection.Open();
                 using var tx = connection.BeginTransaction();
 
-                var delete = @"
+                const string delete = @"
                     DELETE FROM dbo.ACTIVOS_POLIZAS_ASG
-                    WHERE COD_POLIZA=@p AND NUM_PLACA=@pl";
+                    WHERE COD_POLIZA=@p AND NUM_PLACA=@pl;";
 
                 foreach (var pl in placas)
                 {
