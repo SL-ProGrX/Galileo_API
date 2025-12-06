@@ -15,18 +15,30 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MSecurityMainDb _security;
         private readonly PortalDB _portalDb;
 
-        private const string MsgOk = "Ok";
-        private const string Table = "ACTIVOS_TRASLADOS_MOTIVOS";
+        private const string MsgOk  = "Ok";
+        private const string Table  = "ACTIVOS_TRASLADOS_MOTIVOS";
 
-        private const string ColCodMotivo = "cod_motivo";
+        private const string ColCodMotivo   = "cod_motivo";
         private const string ColDescripcion = "descripcion";
-        private const string ColActivo = "activo";
-        private const string ColRegUsuario = "registro_usuario";
-        private const string ColRegFecha = "registro_fecha";
+        private const string ColActivo      = "activo";
+        private const string ColRegUsuario  = "registro_usuario";
+        private const string ColRegFecha    = "registro_fecha";
 
         private const string ParamFiltro = "@filtro";
 
-        private const string MovimientoLabel = "Motivo de Traslado: ";
+        private const string MovimientoLabel   = "Motivo de Traslado: ";
+        private const string MsgMotivoExiste   = "El Motivo {0} ya existe.";
+        private const string MsgMotivoNoExiste = "El Motivo {0} no existe.";
+
+        // SELECT base común para evitar duplicar el literal (S1192)
+        private static readonly string SelectBase = $@"
+                    SELECT 
+                        {ColCodMotivo}   AS cod_motivo,
+                        {ColDescripcion} AS descripcion,
+                        {ColActivo}      AS activo,
+                        {ColRegUsuario}  AS registro_usuario,
+                        {ColRegFecha}    AS registro_fecha
+                    FROM {Table}";
 
         public FrmActivosTrasladosMotivosDb(IConfiguration config)
         {
@@ -49,6 +61,22 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             };
         }
 
+        // WHERE común para filtro de texto (evita duplicar literal, S1192)
+        private static string BuildWhereFiltro(string filtroTxt, DynamicParameters p)
+        {
+            filtroTxt = (filtroTxt ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(filtroTxt))
+            {
+                return string.Empty;
+            }
+
+            p.Add(ParamFiltro, "%" + filtroTxt + "%");
+
+            return $@"
+                    WHERE ({ColCodMotivo}   LIKE {ParamFiltro}
+                       OR {ColDescripcion} LIKE {ParamFiltro}) ";
+        }
+
         // ===============================================================
         // CONSULTAR LISTA PAGINADA
         // ===============================================================
@@ -58,9 +86,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var result = new ErrorDto<ActivosTrasladosMotivosDataLista>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MsgOk,
-                Result = new ActivosTrasladosMotivosDataLista
+                Result      = new ActivosTrasladosMotivosDataLista
                 {
                     total = 0,
                     lista = new List<ActivosTrasladosMotivosData>()
@@ -71,16 +99,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDb.CreateConnection(CodEmpresa);
 
-                var where = string.Empty;
-                var p = new DynamicParameters();
-
-                string filtroTxt = (filtros?.filtro ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(filtroTxt))
-                {
-                    where = $@" WHERE ({ColCodMotivo} LIKE {ParamFiltro}
-                               OR {ColDescripcion} LIKE {ParamFiltro}) ";
-                    p.Add(ParamFiltro, "%" + filtroTxt + "%");
-                }
+                var p     = new DynamicParameters();
+                var where = BuildWhereFiltro(filtros?.filtro ?? string.Empty, p);
 
                 // TOTAL
                 string sqlTotal = $@"
@@ -94,31 +114,27 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 string sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
 
                 // PAGINACIÓN
-                int pagina = filtros?.pagina ?? 1;
+                int pagina   = filtros?.pagina     ?? 1;
                 int pageSize = filtros?.paginacion ?? 10;
-                int offset = pagina <= 1 ? 0 : (pagina - 1) * pageSize;
+                int offset   = pagina <= 1 ? 0 : (pagina - 1) * pageSize;
 
                 p.Add("@offset", offset);
-                p.Add("@fetch", pageSize);
+                p.Add("@fetch",  pageSize);
 
                 string sql = $@"
-                    SELECT 
-                        {ColCodMotivo} AS cod_motivo,
-                        {ColDescripcion} AS descripcion,
-                        {ColActivo} AS activo,
-                        {ColRegUsuario} AS registro_usuario,
-                        {ColRegFecha} AS registro_fecha
-                    FROM {Table}
+                    {SelectBase}
                     {where}
                     ORDER BY {sortField} {sortOrder}
                     OFFSET @offset ROWS
                     FETCH NEXT @fetch ROWS ONLY;";
 
-                result.Result.lista = cn.Query<ActivosTrasladosMotivosData>(sql, p).ToList();
+                result.Result.lista = cn
+                    .Query<ActivosTrasladosMotivosData>(sql, p)
+                    .ToList();
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
                 result.Result.lista = [];
             }
@@ -135,42 +151,30 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<List<ActivosTrasladosMotivosData>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MsgOk,
-                Result = new List<ActivosTrasladosMotivosData>()
+                Result      = new List<ActivosTrasladosMotivosData>()
             };
 
             try
             {
                 using var cn = _portalDb.CreateConnection(CodEmpresa);
 
-                var where = string.Empty;
-                var p = new DynamicParameters();
-
-                string filtroTxt = (filtros?.filtro ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(filtroTxt))
-                {
-                    where = $@" WHERE ({ColCodMotivo}   LIKE {ParamFiltro}
-                               OR {ColDescripcion} LIKE {ParamFiltro}) ";
-                    p.Add(ParamFiltro, "%" + filtroTxt + "%");
-                }
+                var p     = new DynamicParameters();
+                var where = BuildWhereFiltro(filtros?.filtro ?? string.Empty, p);
 
                 string sql = $@"
-                    SELECT 
-                        {ColCodMotivo} AS cod_motivo,
-                        {ColDescripcion} AS descripcion,
-                        {ColActivo} AS activo,
-                        {ColRegUsuario} AS registro_usuario,
-                        {ColRegFecha} AS registro_fecha
-                    FROM {Table}
+                    {SelectBase}
                     {where}
                     ORDER BY {ColCodMotivo};";
 
-                resp.Result = cn.Query<ActivosTrasladosMotivosData>(sql, p).ToList();
+                resp.Result = cn
+                    .Query<ActivosTrasladosMotivosData>(sql, p)
+                    .ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -180,7 +184,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         // ===============================================================
         // GUARDAR (INSERTAR / ACTUALIZAR)
         // ===============================================================
-        public ErrorDto Activos_TrasladosMotivos_Guardar(int CodEmpresa, string usuario, ActivosTrasladosMotivosData datos)
+        public ErrorDto Activos_TrasladosMotivos_Guardar(
+            int CodEmpresa,
+            string usuario,
+            ActivosTrasladosMotivosData datos)
         {
             var resp = new ErrorDto { Code = 0, Description = MsgOk };
 
@@ -193,26 +200,38 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FROM {Table}
                     WHERE {ColCodMotivo} = @codigo";
 
-                int existe = cn.QueryFirstOrDefault<int>(sqlExiste, new { codigo = datos.cod_motivo });
+                int existe = cn.QueryFirstOrDefault<int>(
+                    sqlExiste,
+                    new { codigo = datos.cod_motivo });
 
                 if (datos.isNew)
                 {
                     if (existe > 0)
-                        return new ErrorDto { Code = -2, Description = $"El Motivo {datos.cod_motivo} ya existe." };
+                    {
+                        return new ErrorDto
+                        {
+                            Code        = -2,
+                            Description = string.Format(MsgMotivoExiste, datos.cod_motivo)
+                        };
+                    }
 
                     return Activos_TrasladosMotivos_Insertar(CodEmpresa, usuario, datos);
                 }
-                else
-                {
-                    if (existe == 0)
-                        return new ErrorDto { Code = -2, Description = $"El Motivo {datos.cod_motivo} no existe." };
 
-                    return Activos_TrasladosMotivos_Actualizar(CodEmpresa, usuario, datos);
+                if (existe == 0)
+                {
+                    return new ErrorDto
+                    {
+                        Code        = -2,
+                        Description = string.Format(MsgMotivoNoExiste, datos.cod_motivo)
+                    };
                 }
+
+                return Activos_TrasladosMotivos_Actualizar(CodEmpresa, usuario, datos);
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -222,7 +241,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         // ===============================================================
         // ACTUALIZAR
         // ===============================================================
-        private ErrorDto Activos_TrasladosMotivos_Actualizar(int CodEmpresa, string usuario, ActivosTrasladosMotivosData datos)
+        private ErrorDto Activos_TrasladosMotivos_Actualizar(
+            int CodEmpresa,
+            string usuario,
+            ActivosTrasladosMotivosData datos)
         {
             var resp = new ErrorDto { Code = 0, Description = MsgOk };
 
@@ -245,16 +267,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 _security.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = usuario,
                     DetalleMovimiento = $"{MovimientoLabel}{datos.cod_motivo}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
+                    Movimiento        = "Modifica - WEB",
+                    Modulo            = vModulo
                 });
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -264,7 +286,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         // ===============================================================
         // INSERTAR
         // ===============================================================
-        private ErrorDto Activos_TrasladosMotivos_Insertar(int CodEmpresa, string usuario, ActivosTrasladosMotivosData datos)
+        private ErrorDto Activos_TrasladosMotivos_Insertar(
+            int CodEmpresa,
+            string usuario,
+            ActivosTrasladosMotivosData datos)
         {
             var resp = new ErrorDto { Code = 0, Description = MsgOk };
 
@@ -288,16 +313,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 _security.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = usuario,
                     DetalleMovimiento = $"{MovimientoLabel}{datos.cod_motivo}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
+                    Movimiento        = "Registra - WEB",
+                    Modulo            = vModulo
                 });
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -307,7 +332,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         // ===============================================================
         // ELIMINAR
         // ===============================================================
-        public ErrorDto Activos_TrasladosMotivos_Eliminar(int CodEmpresa, string usuario, string cod_motivo)
+        public ErrorDto Activos_TrasladosMotivos_Eliminar(
+            int CodEmpresa,
+            string usuario,
+            string cod_motivo)
         {
             var resp = new ErrorDto { Code = 0, Description = MsgOk };
 
@@ -320,16 +348,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 _security.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = usuario,
                     DetalleMovimiento = $"{MovimientoLabel}{cod_motivo}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
+                    Movimiento        = "Elimina - WEB",
+                    Modulo            = vModulo
                 });
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 

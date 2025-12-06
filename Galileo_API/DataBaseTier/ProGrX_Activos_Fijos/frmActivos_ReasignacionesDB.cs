@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
+﻿using System.Data;
 using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -17,7 +14,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         //private readonly mReportingServicesDB _mReporting;
         private readonly PortalDB _portalDB;
 
-        private const string WhereBase             = " WHERE 1=1 ";
         private const string FormatoFecha          = "yyyy-MM-dd";
 
         private const string ColA_NumPlaca         = "A.num_placa";
@@ -111,71 +107,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 ColEstadoDesc      => 10,
                 _                  => 1 // cod_traslado
             };
-        }
-
-        private static string BuildBoletasWhere(ActivosReasignacionesBoletasFiltros filtros, DynamicParameters p)
-        {
-            var where = WhereBase;
-
-            if (filtros.todosActivos == 0 && !string.IsNullOrWhiteSpace(filtros.numPlaca))
-            {
-                where += " AND num_placa LIKE @numPlaca ";
-                p.Add("@numPlaca", "%" + filtros.numPlaca.Trim() + "%");
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtros.fechaInicio))
-            {
-                var fechaInicio = DateTime.ParseExact(
-                    filtros.fechaInicio,
-                    FormatoFecha,
-                    System.Globalization.CultureInfo.InvariantCulture
-                ).Date;
-
-                where += " AND Fecha_Aplicacion >= @FechaInicioDesde ";
-                p.Add("@FechaInicioDesde", fechaInicio);
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtros.fechaCorte))
-            {
-                var fechaCorte = DateTime.ParseExact(
-                    filtros.fechaCorte,
-                    FormatoFecha,
-                    System.Globalization.CultureInfo.InvariantCulture
-                ).Date.AddDays(1).AddSeconds(-1);
-
-                where += " AND Fecha_Aplicacion <= @FechaCorteHasta ";
-                p.Add("@FechaCorteHasta", fechaCorte);
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtros.boletaInicio))
-            {
-                where += " AND cod_traslado >= @BoletaInicio ";
-                p.Add("@BoletaInicio", filtros.boletaInicio.Trim());
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtros.boletaCorte))
-            {
-                where += " AND cod_traslado <= @BoletaCorte ";
-                p.Add("@BoletaCorte", filtros.boletaCorte.Trim());
-            }
-
-            return where;
-        }
-
-        private static void AddSortParametersForBoletas(ActivosReasignacionesBoletasFiltros filtros, DynamicParameters p)
-        {
-            var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
-                ? ColCodTraslado
-                : filtros.sortField!;
-
-            if (!SortFieldBoletasMap.TryGetValue(sortFieldKey, out var sortFieldCanonical))
-                sortFieldCanonical = ColCodTraslado;
-
-            var sortIndex = GetBoletaSortIndex(sortFieldCanonical);
-            p.Add("@sortIndex", sortIndex);
-
-            var sortDir = filtros.sortOrder == 0 ? 0 : 1;
-            p.Add("@sortDir", sortDir);
         }
 
         #endregion
@@ -664,19 +595,80 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var p     = new DynamicParameters();
-                var where = BuildBoletasWhere(filtros, p);
 
-                var qTotal = $"SELECT COUNT(1) FROM vActivos_TrasladosHistorico {where}";
-                resp.Result.total = connection.ExecuteScalar<int>(qTotal, p);
+                // Normalizar filtros a parámetros opcionales
+                string? numPlacaLike = null;
+                if (filtros.todosActivos == 0 && !string.IsNullOrWhiteSpace(filtros.numPlaca))
+                    numPlacaLike = "%" + filtros.numPlaca.Trim() + "%";
 
-                AddSortParametersForBoletas(filtros, p);
+                DateTime? fechaInicioDesde = null;
+                if (!string.IsNullOrWhiteSpace(filtros.fechaInicio))
+                {
+                    fechaInicioDesde = DateTime.ParseExact(
+                        filtros.fechaInicio,
+                        FormatoFecha,
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ).Date;
+                }
 
-                var offset = filtros.pagina <= 1 ? 0 : (filtros.pagina - 1) * filtros.paginacion;
-                p.Add("@offset", offset);
-                p.Add("@fetch",  filtros.paginacion);
+                DateTime? fechaCorteHasta = null;
+                if (!string.IsNullOrWhiteSpace(filtros.fechaCorte))
+                {
+                    fechaCorteHasta = DateTime.ParseExact(
+                        filtros.fechaCorte,
+                        FormatoFecha,
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ).Date.AddDays(1).AddSeconds(-1);
+                }
 
-                var qDatos = @"
+                string? boletaInicio = string.IsNullOrWhiteSpace(filtros.boletaInicio)
+                    ? null
+                    : filtros.boletaInicio.Trim();
+
+                string? boletaCorte = string.IsNullOrWhiteSpace(filtros.boletaCorte)
+                    ? null
+                    : filtros.boletaCorte.Trim();
+
+                var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
+                    ? ColCodTraslado
+                    : filtros.sortField!;
+
+                if (!SortFieldBoletasMap.TryGetValue(sortFieldKey, out var sortFieldCanonical))
+                    sortFieldCanonical = ColCodTraslado;
+
+                var sortIndex = GetBoletaSortIndex(sortFieldCanonical);
+                var sortDir   = filtros.sortOrder == 0 ? 0 : 1;
+
+                var offset = filtros.pagina <= 1
+                    ? 0
+                    : (filtros.pagina - 1) * filtros.paginacion;
+
+                var parametros = new
+                {
+                    NumPlacaLike     = numPlacaLike,
+                    FechaInicioDesde = fechaInicioDesde,
+                    FechaCorteHasta  = fechaCorteHasta,
+                    BoletaInicio     = boletaInicio,
+                    BoletaCorte      = boletaCorte,
+                    sortIndex,
+                    sortDir,
+                    offset,
+                    fetch            = filtros.paginacion
+                };
+
+                const string qTotal = @"
+                    SELECT COUNT(1)
+                    FROM vActivos_TrasladosHistorico
+                    WHERE 1 = 1
+                      AND (@NumPlacaLike     IS NULL OR num_placa LIKE @NumPlacaLike)
+                      AND (@FechaInicioDesde IS NULL OR Fecha_Aplicacion >= @FechaInicioDesde)
+                      AND (@FechaCorteHasta  IS NULL OR Fecha_Aplicacion <= @FechaCorteHasta)
+                      AND (@BoletaInicio     IS NULL OR cod_traslado >= @BoletaInicio)
+                      AND (@BoletaCorte      IS NULL OR cod_traslado <= @BoletaCorte);";
+
+                resp.Result.total = connection.ExecuteScalar<int>(qTotal, parametros);
+
+                const string qDatos = @"
                     SELECT
                         cod_traslado,
                         num_placa,
@@ -689,7 +681,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         Motivo,
                         Estado_Desc       AS estado_desc
                     FROM vActivos_TrasladosHistorico
-                    " + where + @"
+                    WHERE 1 = 1
+                      AND (@NumPlacaLike     IS NULL OR num_placa LIKE @NumPlacaLike)
+                      AND (@FechaInicioDesde IS NULL OR Fecha_Aplicacion >= @FechaInicioDesde)
+                      AND (@FechaCorteHasta  IS NULL OR Fecha_Aplicacion <= @FechaCorteHasta)
+                      AND (@BoletaInicio     IS NULL OR cod_traslado >= @BoletaInicio)
+                      AND (@BoletaCorte      IS NULL OR cod_traslado <= @BoletaCorte)
                     ORDER BY
                         -- ASC
                         CASE @sortDir WHEN 1 THEN
@@ -725,7 +722,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FETCH NEXT @fetch ROWS ONLY;";
 
                 resp.Result.lista = connection
-                    .Query<ActivosReasignacionesBoletaHistorialItem>(qDatos, p)
+                    .Query<ActivosReasignacionesBoletaHistorialItem>(qDatos, parametros)
                     .ToList();
             }
             catch (Exception ex)
@@ -825,12 +822,62 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var p     = new DynamicParameters();
-                var where = BuildBoletasWhere(filtros, p);
 
-                AddSortParametersForBoletas(filtros, p);
+                // Normalizar filtros a parámetros opcionales
+                string? numPlacaLike = null;
+                if (filtros.todosActivos == 0 && !string.IsNullOrWhiteSpace(filtros.numPlaca))
+                    numPlacaLike = "%" + filtros.numPlaca.Trim() + "%";
 
-                var qDatos = @"
+                DateTime? fechaInicioDesde = null;
+                if (!string.IsNullOrWhiteSpace(filtros.fechaInicio))
+                {
+                    fechaInicioDesde = DateTime.ParseExact(
+                        filtros.fechaInicio,
+                        FormatoFecha,
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ).Date;
+                }
+
+                DateTime? fechaCorteHasta = null;
+                if (!string.IsNullOrWhiteSpace(filtros.fechaCorte))
+                {
+                    fechaCorteHasta = DateTime.ParseExact(
+                        filtros.fechaCorte,
+                        FormatoFecha,
+                        System.Globalization.CultureInfo.InvariantCulture
+                    ).Date.AddDays(1).AddSeconds(-1);
+                }
+
+                string? boletaInicio = string.IsNullOrWhiteSpace(filtros.boletaInicio)
+                    ? null
+                    : filtros.boletaInicio.Trim();
+
+                string? boletaCorte = string.IsNullOrWhiteSpace(filtros.boletaCorte)
+                    ? null
+                    : filtros.boletaCorte.Trim();
+
+                var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
+                    ? ColCodTraslado
+                    : filtros.sortField!;
+
+                if (!SortFieldBoletasMap.TryGetValue(sortFieldKey, out var sortFieldCanonical))
+                    sortFieldCanonical = ColCodTraslado;
+
+                var sortIndex = GetBoletaSortIndex(sortFieldCanonical);
+                var sortDir   = filtros.sortOrder == 0 ? 0 : 1;
+
+                var parametros = new
+                {
+                    NumPlacaLike     = numPlacaLike,
+                    FechaInicioDesde = fechaInicioDesde,
+                    FechaCorteHasta  = fechaCorteHasta,
+                    BoletaInicio     = boletaInicio,
+                    BoletaCorte      = boletaCorte,
+                    sortIndex,
+                    sortDir
+                };
+
+                const string qDatos = @"
                     SELECT
                         cod_traslado,
                         num_placa,
@@ -843,7 +890,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         Motivo,
                         Estado_Desc       AS estado_desc
                     FROM vActivos_TrasladosHistorico
-                    " + where + @"
+                    WHERE 1 = 1
+                      AND (@NumPlacaLike     IS NULL OR num_placa LIKE @NumPlacaLike)
+                      AND (@FechaInicioDesde IS NULL OR Fecha_Aplicacion >= @FechaInicioDesde)
+                      AND (@FechaCorteHasta  IS NULL OR Fecha_Aplicacion <= @FechaCorteHasta)
+                      AND (@BoletaInicio     IS NULL OR cod_traslado >= @BoletaInicio)
+                      AND (@BoletaCorte      IS NULL OR cod_traslado <= @BoletaCorte)
                     ORDER BY
                         -- ASC
                         CASE @sortDir WHEN 1 THEN
@@ -877,7 +929,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         END DESC;";
 
                 resp.Result = connection
-                    .Query<ActivosReasignacionesBoletaHistorialItem>(qDatos, p)
+                    .Query<ActivosReasignacionesBoletaHistorialItem>(qDatos, parametros)
                     .ToList();
             }
             catch (Exception ex)

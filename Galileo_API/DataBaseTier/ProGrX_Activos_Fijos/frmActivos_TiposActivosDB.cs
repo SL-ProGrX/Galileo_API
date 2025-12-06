@@ -13,9 +13,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
 
-        private const string TablaTiposActivo = "dbo.ACTIVOS_TIPO_ACTIVO";
-        private const string ColTipoActivo    = "TIPO_ACTIVO";
-
         private const string MsgOk                         = "Ok";
         private const string MsgVacio                      = "";
         private const string MsgDatosNoProporcionados      = "Datos no proporcionados.";
@@ -33,7 +30,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string MsgTipoActivoUpdateOk         = "Tipo de Activo actualizado satisfactoriamente.";
 
         // SELECT común (sin WHERE / ORDER) para evitar duplicar el bloque enorme
-        private static readonly string SelectTipoActivoBase = $@"
+        private const string SelectTipoActivoBase = @"
             SELECT
                 a.TIPO_ACTIVO                                            AS tipo_activo,
                 ISNULL(a.DESCRIPCION,'')                                 AS descripcion,
@@ -65,17 +62,40 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 ISNULL(ct.COD_CUENTA_MASK,'')                            AS cod_cuenta_transitoria_mask,
                 ISNULL(ct.DESCRIPCION,'')                                AS cod_cuenta_transitoria_desc
-            FROM {TablaTiposActivo} a
+            FROM dbo.ACTIVOS_TIPO_ACTIVO a
             LEFT JOIN dbo.CNTX_TIPOS_ASIENTOS ta ON ta.TIPO_ASIENTO = a.ASIENTO_GENERA
             LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL ca ON ca.COD_CUENTA   = a.COD_CUENTA_ACTIVO
             LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL cg ON cg.COD_CUENTA   = a.COD_CUENTA_GASTOS
             LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL cd ON cd.COD_CUENTA   = a.COD_CUENTA_DEPACUM
             LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL ct ON ct.COD_CUENTA   = a.COD_CUENTA_TRANSITORIA";
 
+        // --- CONSTANTES PARA EL SCROLL (evitan S1192) -------------------------
+        private const string SqlScrollBasePrefix = @"
+SELECT TOP 1 *
+FROM (
+" + SelectTipoActivoBase + @"
+";
+
+        private const string SqlScrollOrderAsc = @"
+) x
+ORDER BY x.tipo_activo ASC;";
+
+        private const string SqlScrollOrderDesc = @"
+) x
+ORDER BY x.tipo_activo DESC;";
+
+        private const string SqlScrollWhereGreater = @"
+WHERE a.TIPO_ACTIVO > @cod
+";
+
+        private const string SqlScrollWhereLess = @"
+WHERE a.TIPO_ACTIVO < @cod
+";
+
         public FrmActivosTiposActivoDb(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
-            _portalDB = new PortalDB(config);
+            _portalDB        = new PortalDB(config);
         }
 
         /// <summary>
@@ -87,57 +107,72 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             var resp = new ErrorDto<ActivosTiposActivosLista>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MsgVacio,
-                Result = new ActivosTiposActivosLista()
+                Result      = new ActivosTiposActivosLista()
             };
 
             try
             {
-                string where = string.Empty;
-                string paginacionSql = string.Empty;
-
-                var p = new DynamicParameters();
-
-                // Filtro por texto
-                var textoFiltro = (vfiltro?.filtro ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(textoFiltro))
-                {
-                    where = $" WHERE {ColTipoActivo} LIKE @like OR DESCRIPCION LIKE @like ";
-                    p.Add("@like", "%" + textoFiltro + "%");
-                }
-
-                // Paginación (OFFSET/FETCH como parámetros)
-                if (vfiltro?.pagina != null)
-                {
-                    int offset   = vfiltro.pagina.Value;          // ya viene como offset
-                    int pageSize = vfiltro.paginacion ?? 10;
-
-                    paginacionSql = " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
-                    p.Add("@offset", offset);
-                    p.Add("@fetch", pageSize);
-                }
-
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                var qTotal = $"SELECT COUNT(*) FROM {TablaTiposActivo} {where}";
+                var textoFiltro = (vfiltro?.filtro ?? string.Empty).Trim();
+                string? filtroLike = string.IsNullOrWhiteSpace(textoFiltro)
+                    ? null
+                    : $"%{textoFiltro}%";
+
+                var p = new DynamicParameters();
+                p.Add("@filtro", filtroLike);
+
+                const string qTotal = @"
+                    SELECT COUNT(*)
+                    FROM dbo.ACTIVOS_TIPO_ACTIVO
+                    WHERE (@filtro IS NULL
+                           OR TIPO_ACTIVO LIKE @filtro
+                           OR DESCRIPCION LIKE @filtro);";
+
                 resp.Result.total = cn.QueryFirstOrDefault<int>(qTotal, p);
 
-                var qDatos = $@"
-                    SELECT
-                        {ColTipoActivo}        AS tipo_activo,
-                        ISNULL(DESCRIPCION,'') AS descripcion
-                    FROM {TablaTiposActivo}
-                    {where}
-                    ORDER BY {ColTipoActivo}
-                    {paginacionSql}";
+                bool tienePaginacion = vfiltro?.pagina != null;
+                if (tienePaginacion)
+                {
+                    int offset   = vfiltro!.pagina!.Value;          // ya viene como offset
+                    int pageSize = vfiltro.paginacion ?? 10;
+                    p.Add("@offset", offset);
+                    p.Add("@fetch",  pageSize);
 
-                resp.Result.lista = cn.Query<ActivosTiposActivosData>(qDatos, p).ToList();
+                    const string qDatosPag = @"
+                        SELECT
+                            TIPO_ACTIVO            AS tipo_activo,
+                            ISNULL(DESCRIPCION,'') AS descripcion
+                        FROM dbo.ACTIVOS_TIPO_ACTIVO
+                        WHERE (@filtro IS NULL
+                               OR TIPO_ACTIVO LIKE @filtro
+                               OR DESCRIPCION LIKE @filtro)
+                        ORDER BY TIPO_ACTIVO
+                        OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                    resp.Result.lista = cn.Query<ActivosTiposActivosData>(qDatosPag, p).ToList();
+                }
+                else
+                {
+                    const string qDatos = @"
+                        SELECT
+                            TIPO_ACTIVO            AS tipo_activo,
+                            ISNULL(DESCRIPCION,'') AS descripcion
+                        FROM dbo.ACTIVOS_TIPO_ACTIVO
+                        WHERE (@filtro IS NULL
+                               OR TIPO_ACTIVO LIKE @filtro
+                               OR DESCRIPCION LIKE @filtro)
+                        ORDER BY TIPO_ACTIVO;";
+
+                    resp.Result.lista = cn.Query<ActivosTiposActivosData>(qDatos, p).ToList();
+                }
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Code         = -1;
+                resp.Description  = ex.Message;
                 resp.Result.total = 0;
                 resp.Result.lista = [];
             }
@@ -154,20 +189,23 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                var q = $@"
-                SELECT COUNT(1)
-                FROM {TablaTiposActivo}
-                WHERE UPPER({ColTipoActivo}) = @cod";
 
-                int n = cn.QueryFirstOrDefault<int>(q, new { cod = (tipo_activo ?? string.Empty).ToUpper() });
+                const string q = @"
+                    SELECT COUNT(1)
+                    FROM dbo.ACTIVOS_TIPO_ACTIVO
+                    WHERE UPPER(TIPO_ACTIVO) = @cod;";
+
+                int n = cn.QueryFirstOrDefault<int>(
+                    q,
+                    new { cod = (tipo_activo ?? string.Empty).ToUpper() });
 
                 (resp.Code, resp.Description) = n == 0
-                    ? (0, MsgTipoActivoLibre)
+                    ? (0,  MsgTipoActivoLibre)
                     : (-2, MsgTipoActivoOcupado);
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
             return resp;
@@ -183,16 +221,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                var q = $@"
-{SelectTipoActivoBase}
-WHERE a.{ColTipoActivo} = @cod;";
+                const string q = SelectTipoActivoBase + @"
+WHERE a.TIPO_ACTIVO = @cod;";
 
                 resp.Result = cn.QueryFirstOrDefault<ActivosTiposActivosData>(
-                    q, new { cod = (tipo_activo ?? string.Empty).Trim().ToUpper() });
+                    q,
+                    new { cod = (tipo_activo ?? string.Empty).Trim().ToUpper() });
 
                 if (resp.Result == null)
                 {
-                    resp.Code = -2;
+                    resp.Code        = -2;
                     resp.Description = MsgTipoActivoNoEncontrado;
                 }
                 else
@@ -202,9 +240,9 @@ WHERE a.{ColTipoActivo} = @cod;";
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = MsgErrorObtenerTipoActivo + ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
             return resp;
         }
@@ -212,41 +250,44 @@ WHERE a.{ColTipoActivo} = @cod;";
         /// <summary>
         /// Navegación (scroll) entre tipos de activo.
         /// </summary>
-        public ErrorDto<ActivosTiposActivosData> Activos_TiposActivos_Scroll(int CodEmpresa, int scroll, string? tipo_activo)
+        public ErrorDto<ActivosTiposActivosData> Activos_TiposActivos_Scroll(
+            int CodEmpresa,
+            int scroll,
+            string? tipo_activo)
         {
             var resp = new ErrorDto<ActivosTiposActivosData> { Code = 0, Description = MsgVacio };
+
             try
             {
                 var cod = (tipo_activo ?? string.Empty).Trim().ToUpper();
-
-                string where = string.Empty;
-                if (!string.IsNullOrEmpty(cod))
-                {
-                    where = scroll == 1
-                        ? $" WHERE a.{ColTipoActivo} > @cod "
-                        : $" WHERE a.{ColTipoActivo} < @cod ";
-                }
-
-                // El ORDER se hace sobre el alias de salida (tipo_activo)
-                string order = scroll == 1
-                    ? " ORDER BY x.tipo_activo ASC "
-                    : " ORDER BY x.tipo_activo DESC ";
-
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                var q = $@"
-SELECT TOP 1 *
-FROM (
-{SelectTipoActivoBase}
-{where}
-) x
-{order};";
+                string sql;
+                object parametros;
 
-                resp.Result = cn.QueryFirstOrDefault<ActivosTiposActivosData>(q, new { cod });
+                if (string.IsNullOrEmpty(cod))
+                {
+                    // Sin código base: devolver el primero o el último
+                    sql = scroll == 1
+                        ? SqlScrollBasePrefix + SqlScrollOrderAsc
+                        : SqlScrollBasePrefix + SqlScrollOrderDesc;
+
+                    parametros = new { };
+                }
+                else
+                {
+                    sql = scroll == 1
+                        ? SqlScrollBasePrefix + SqlScrollWhereGreater + SqlScrollOrderAsc
+                        : SqlScrollBasePrefix + SqlScrollWhereLess    + SqlScrollOrderDesc;
+
+                    parametros = new { cod };
+                }
+
+                resp.Result = cn.QueryFirstOrDefault<ActivosTiposActivosData>(sql, parametros);
 
                 if (resp.Result == null)
                 {
-                    resp.Code = -2;
+                    resp.Code        = -2;
                     resp.Description = MsgNoMasResultados;
                 }
                 else
@@ -256,9 +297,9 @@ FROM (
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = MsgErrorScrollTipoActivo + ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
             return resp;
         }
@@ -277,24 +318,41 @@ FROM (
 
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                var qExiste = $@"SELECT COUNT(1) FROM {TablaTiposActivo} WHERE {ColTipoActivo} = @cod";
-                int existe = cn.QueryFirstOrDefault<int>(qExiste, new { cod = data.tipo_activo.ToUpper() });
+                const string qExiste = @"
+                    SELECT COUNT(1)
+                    FROM dbo.ACTIVOS_TIPO_ACTIVO
+                    WHERE TIPO_ACTIVO = @cod;";
+
+                int existe = cn.QueryFirstOrDefault<int>(
+                    qExiste,
+                    new { cod = data.tipo_activo.ToUpper() });
 
                 if (data.isNew)
                 {
                     if (existe > 0)
-                        return new ErrorDto { Code = -2, Description = $"El Tipo de Activo {data.tipo_activo.ToUpper()} ya existe." };
+                        return new ErrorDto
+                        {
+                            Code        = -2,
+                            Description = $"El Tipo de Activo {data.tipo_activo.ToUpper()} ya existe."
+                        };
+
                     return Activos_TiposActivos_Insertar(CodEmpresa, data);
                 }
 
                 if (existe == 0)
-                    return new ErrorDto { Code = -2, Description = $"El Tipo de Activo {data.tipo_activo.ToUpper()} no existe." };
+                {
+                    return new ErrorDto
+                    {
+                        Code        = -2,
+                        Description = $"El Tipo de Activo {data.tipo_activo.ToUpper()} no existe."
+                    };
+                }
 
                 return Activos_TiposActivos_Actualizar(CodEmpresa, data);
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
             return resp;
@@ -319,8 +377,11 @@ FROM (
                     errores.Add(MsgTipoVidaUtilInvalida);
             }
 
-            if (!string.IsNullOrWhiteSpace(data.vida_util) && !int.TryParse(data.vida_util, out _))
+            if (!string.IsNullOrWhiteSpace(data.vida_util) &&
+                !int.TryParse(data.vida_util, out _))
+            {
                 errores.Add(MsgVidaUtilDebeEntero);
+            }
 
             if (errores.Count > 0)
                 return new ErrorDto { Code = -1, Description = string.Join(" | ", errores) };
@@ -337,9 +398,10 @@ FROM (
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                var q = $@"
-            INSERT INTO {TablaTiposActivo}
-                ({ColTipoActivo}, DESCRIPCION, MET_DEPRECIACION, TIPO_VIDA_UTIL, VIDA_UTIL,
+
+                const string q = @"
+            INSERT INTO dbo.ACTIVOS_TIPO_ACTIVO
+                (TIPO_ACTIVO, DESCRIPCION, MET_DEPRECIACION, TIPO_VIDA_UTIL, VIDA_UTIL,
                  ASIENTO_GENERA, COD_CUENTA_ACTIVO, COD_CUENTA_DEPACUM, COD_CUENTA_GASTOS, COD_CUENTA_TRANSITORIA,
                  REGISTRO_USUARIO, REGISTRO_FECHA, MODIFICA_USUARIO, MODIFICA_FECHA)
             VALUES
@@ -349,23 +411,41 @@ FROM (
 
                 cn.Execute(q, new
                 {
-                    cod          = data.tipo_activo.ToUpper(),
-                    descripcion  = data.descripcion?.ToUpper(),
-                    met          = (data.met_depreciacion ?? string.Empty).ToUpper(),
-                    tvu          = string.IsNullOrWhiteSpace(data.tipo_vida_util) ? null : data.tipo_vida_util.ToUpper(),
-                    vu           = string.IsNullOrWhiteSpace(data.vida_util) ? null : data.vida_util,
-                    tasiento     = string.IsNullOrWhiteSpace(data.asiento_genera) ? null : data.asiento_genera.ToUpper(),
-                    cta_activo   = string.IsNullOrWhiteSpace(data.cod_cuenta_actvo) ? null : data.cod_cuenta_actvo.ToUpper(),
-                    cta_depacum  = string.IsNullOrWhiteSpace(data.cod_cuenta_depacum) ? null : data.cod_cuenta_depacum.ToUpper(),
-                    cta_gastos   = string.IsNullOrWhiteSpace(data.cod_cuenta_gastos) ? null : data.cod_cuenta_gastos.ToUpper(),
-                    cta_trans    = string.IsNullOrWhiteSpace(data.cod_cuenta_transitoria) ? null : data.cod_cuenta_transitoria.ToUpper(),
-                    reg_usuario  = string.IsNullOrWhiteSpace(data.registro_usuario) ? null : data.registro_usuario
+                    cod         = data.tipo_activo.ToUpper(),
+                    descripcion = data.descripcion?.ToUpper(),
+                    met         = (data.met_depreciacion ?? string.Empty).ToUpper(),
+                    tvu         = string.IsNullOrWhiteSpace(data.tipo_vida_util)
+                                     ? null
+                                     : data.tipo_vida_util.ToUpper(),
+                    vu          = string.IsNullOrWhiteSpace(data.vida_util)
+                                     ? null
+                                     : data.vida_util,
+                    tasiento    = string.IsNullOrWhiteSpace(data.asiento_genera)
+                                     ? null
+                                     : data.asiento_genera.ToUpper(),
+                    cta_activo  = string.IsNullOrWhiteSpace(data.cod_cuenta_actvo)
+                                     ? null
+                                     : data.cod_cuenta_actvo.ToUpper(),
+                    cta_depacum = string.IsNullOrWhiteSpace(data.cod_cuenta_depacum)
+                                     ? null
+                                     : data.cod_cuenta_depacum.ToUpper(),
+                    cta_gastos  = string.IsNullOrWhiteSpace(data.cod_cuenta_gastos)
+                                     ? null
+                                     : data.cod_cuenta_gastos.ToUpper(),
+                    cta_trans   = string.IsNullOrWhiteSpace(data.cod_cuenta_transitoria)
+                                     ? null
+                                     : data.cod_cuenta_transitoria.ToUpper(),
+                    reg_usuario = string.IsNullOrWhiteSpace(data.registro_usuario)
+                                     ? null
+                                     : data.registro_usuario
                 });
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId         = CodEmpresa,
-                    Usuario           = string.IsNullOrWhiteSpace(data.registro_usuario) ? string.Empty : data.registro_usuario,
+                    Usuario           = string.IsNullOrWhiteSpace(data.registro_usuario)
+                                            ? string.Empty
+                                            : data.registro_usuario,
                     DetalleMovimiento = $"Tipo Activo: {data.tipo_activo} - {data.descripcion}",
                     Movimiento        = "Registra - WEB",
                     Modulo            = vModulo
@@ -375,7 +455,7 @@ FROM (
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
             return resp;
@@ -391,8 +471,9 @@ FROM (
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                var q = $@"
-            UPDATE {TablaTiposActivo}
+
+                const string q = @"
+            UPDATE dbo.ACTIVOS_TIPO_ACTIVO
                SET DESCRIPCION            = @descripcion,
                    MET_DEPRECIACION       = @met,
                    TIPO_VIDA_UTIL         = @tvu,
@@ -404,27 +485,45 @@ FROM (
                    COD_CUENTA_TRANSITORIA = @cta_trans,
                    MODIFICA_USUARIO       = @mod_usuario,
                    MODIFICA_FECHA         = SYSDATETIME()
-             WHERE {ColTipoActivo} = @cod;";
+             WHERE TIPO_ACTIVO = @cod;";
 
                 cn.Execute(q, new
                 {
                     cod         = data.tipo_activo.ToUpper(),
                     descripcion = data.descripcion?.ToUpper(),
                     met         = (data.met_depreciacion ?? string.Empty).ToUpper(),
-                    tvu         = string.IsNullOrWhiteSpace(data.tipo_vida_util) ? null : data.tipo_vida_util.ToUpper(),
-                    vu          = string.IsNullOrWhiteSpace(data.vida_util) ? null : data.vida_util,
-                    tasiento    = string.IsNullOrWhiteSpace(data.asiento_genera) ? null : data.asiento_genera.ToUpper(),
-                    cta_activo  = string.IsNullOrWhiteSpace(data.cod_cuenta_actvo) ? null : data.cod_cuenta_actvo.ToUpper(),
-                    cta_depacum = string.IsNullOrWhiteSpace(data.cod_cuenta_depacum) ? null : data.cod_cuenta_depacum.ToUpper(),
-                    cta_gastos  = string.IsNullOrWhiteSpace(data.cod_cuenta_gastos) ? null : data.cod_cuenta_gastos.ToUpper(),
-                    cta_trans   = string.IsNullOrWhiteSpace(data.cod_cuenta_transitoria) ? null : data.cod_cuenta_transitoria.ToUpper(),
-                    mod_usuario = string.IsNullOrWhiteSpace(data.modifica_usuario) ? null : data.modifica_usuario
+                    tvu         = string.IsNullOrWhiteSpace(data.tipo_vida_util)
+                                     ? null
+                                     : data.tipo_vida_util.ToUpper(),
+                    vu          = string.IsNullOrWhiteSpace(data.vida_util)
+                                     ? null
+                                     : data.vida_util,
+                    tasiento    = string.IsNullOrWhiteSpace(data.asiento_genera)
+                                     ? null
+                                     : data.asiento_genera.ToUpper(),
+                    cta_activo  = string.IsNullOrWhiteSpace(data.cod_cuenta_actvo)
+                                     ? null
+                                     : data.cod_cuenta_actvo.ToUpper(),
+                    cta_depacum = string.IsNullOrWhiteSpace(data.cod_cuenta_depacum)
+                                     ? null
+                                     : data.cod_cuenta_depacum.ToUpper(),
+                    cta_gastos  = string.IsNullOrWhiteSpace(data.cod_cuenta_gastos)
+                                     ? null
+                                     : data.cod_cuenta_gastos.ToUpper(),
+                    cta_trans   = string.IsNullOrWhiteSpace(data.cod_cuenta_transitoria)
+                                     ? null
+                                     : data.cod_cuenta_transitoria.ToUpper(),
+                    mod_usuario = string.IsNullOrWhiteSpace(data.modifica_usuario)
+                                     ? null
+                                     : data.modifica_usuario
                 });
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId         = CodEmpresa,
-                    Usuario           = string.IsNullOrWhiteSpace(data.modifica_usuario) ? string.Empty : data.modifica_usuario,
+                    Usuario           = string.IsNullOrWhiteSpace(data.modifica_usuario)
+                                            ? string.Empty
+                                            : data.modifica_usuario,
                     DetalleMovimiento = $"Tipo Activo: {data.tipo_activo} - {data.descripcion}",
                     Movimiento        = "Modifica - WEB",
                     Modulo            = vModulo
@@ -434,7 +533,7 @@ FROM (
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
             return resp;
@@ -449,12 +548,16 @@ FROM (
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                var q = $@"DELETE FROM {TablaTiposActivo} WHERE {ColTipoActivo} = @cod";
+
+                const string q = @"
+                    DELETE FROM dbo.ACTIVOS_TIPO_ACTIVO
+                    WHERE TIPO_ACTIVO = @cod;";
+
                 int rows = cn.Execute(q, new { cod = (tipo_activo ?? string.Empty).ToUpper() });
 
                 if (rows == 0)
                 {
-                    resp.Code = -2;
+                    resp.Code        = -2;
                     resp.Description = $"El Tipo de Activo {(tipo_activo ?? string.Empty).ToUpper()} no existe.";
                     return resp;
                 }
@@ -470,7 +573,7 @@ FROM (
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
             return resp;
@@ -483,14 +586,15 @@ FROM (
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MsgOk,
-                Result = new List<DropDownListaGenericaModel>()
+                Result      = new List<DropDownListaGenericaModel>()
             };
 
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
+
                 if (resp.Result.Count == 0)
                 {
                     resp.Result = new List<DropDownListaGenericaModel>
@@ -505,9 +609,9 @@ FROM (
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
             return resp;
         }
@@ -519,9 +623,9 @@ FROM (
         {
             return new ErrorDto<List<DropDownListaGenericaModel>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MsgOk,
-                Result = new List<DropDownListaGenericaModel>
+                Result      = new List<DropDownListaGenericaModel>
                 {
                     new() { item = "A", descripcion = "Años" },
                     new() { item = "M", descripcion = "Meses" }
@@ -536,26 +640,30 @@ FROM (
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MsgVacio,
-                Result = new List<DropDownListaGenericaModel>()
+                Result      = new List<DropDownListaGenericaModel>()
             };
 
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
+
                 const string q = @"
                 SELECT TIPO_ASIENTO as item, DESCRIPCION
                 FROM dbo.CNTX_TIPOS_ASIENTOS
                 WHERE COD_CONTABILIDAD = @cont AND ACTIVO = 1
-                ORDER BY DESCRIPCION ASC";
-                resp.Result = cn.Query<DropDownListaGenericaModel>(q, new { cont = contabilidad }).ToList();
+                ORDER BY DESCRIPCION ASC;";
+
+                resp.Result = cn.Query<DropDownListaGenericaModel>(
+                    q,
+                    new { cont = contabilidad }).ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
             return resp;
         }

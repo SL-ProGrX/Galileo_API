@@ -28,9 +28,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string MensajeNoMasRes        = "No se encontraron más resultados.";
         private const string MensajeNoEncontrado    = "No encontrado";
 
-        private const string VistaTrasladosBoletas  = "vActivos_Traslados_Boletas";
-        private const string WhereBase              = " WHERE 1=1 ";
-
         private const string BitacoraPrefijoBoleta  = "Boleta de Cambio Responsable: ";
 
         // Lista blanca para ORDER BY en boletas
@@ -72,58 +69,91 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var where = string.Empty;
-                var p     = new DynamicParameters();
-
+                // Filtro opcional
                 var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(filtroTexto))
-                {
-                    where = @"
-                        WHERE (
-                               cod_traslado   LIKE @filtro
-                            OR persona        LIKE @filtro
-                            OR identificacion LIKE @filtro
-                        )";
-                    p.Add("@filtro", $"%{filtroTexto}%");
-                }
+                string? filtroLike = string.IsNullOrWhiteSpace(filtroTexto)
+                    ? null
+                    : $"%{filtroTexto}%";
 
-                var qTotal = $@"
-                    SELECT COUNT(1)
-                    FROM {VistaTrasladosBoletas}
-                    {where}";
-
-                result.Result.total = connection.QueryFirstOrDefault<int>(qTotal, p);
-
-                // ORDER BY con lista blanca
+                // ORDER BY con lista blanca -> índice de columna
                 var sortKey = string.IsNullOrWhiteSpace(filtros?.sortField)
                     ? CodTrasladoCol
                     : filtros.sortField!;
 
-                if (!SortFieldBoletasMap.TryGetValue(sortKey, out var sortField))
+                if (!SortFieldBoletasMap.TryGetValue(sortKey, out var sortFieldCanonical))
                 {
-                    sortField = CodTrasladoCol;
+                    sortFieldCanonical = CodTrasladoCol;
                 }
 
-                var sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
+                int sortIndex = sortFieldCanonical switch
+                {
+                    CodTrasladoCol      => 1,
+                    "identificacion"    => 2,
+                    "persona"           => 3,
+                    "estado_desc"       => 4,
+                    "registro_fecha"    => 5,
+                    _                   => 1
+                };
+
+                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1;
 
                 // Paginación (pagina 1-based)
                 var pagina     = filtros?.pagina     ?? 1;
                 var paginacion = filtros?.paginacion ?? 10;
                 var offset     = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
 
-                p.Add("@offset", offset);
-                p.Add("@fetch",  paginacion);
+                var p = new
+                {
+                    filtro    = filtroLike,
+                    sortIndex,
+                    sortDir,
+                    offset,
+                    fetch     = paginacion
+                };
 
-                var qDatos = $@"
+                const string qTotal = @"
+                    SELECT COUNT(1)
+                    FROM vActivos_Traslados_Boletas
+                    WHERE (@filtro IS NULL
+                           OR cod_traslado   LIKE @filtro
+                           OR persona        LIKE @filtro
+                           OR identificacion LIKE @filtro);";
+
+                result.Result.total = connection.QueryFirstOrDefault<int>(qTotal, p);
+
+                const string qDatos = @"
                     SELECT 
                         cod_traslado,
                         identificacion,
                         persona,
                         estado_desc,
                         CONVERT(varchar(19), registro_fecha, 120) AS registro_fecha
-                    FROM {VistaTrasladosBoletas}
-                    {where}
-                    ORDER BY {sortField} {sortOrder}
+                    FROM vActivos_Traslados_Boletas
+                    WHERE (@filtro IS NULL
+                           OR cod_traslado   LIKE @filtro
+                           OR persona        LIKE @filtro
+                           OR identificacion LIKE @filtro)
+                    ORDER BY
+                        -- ASC
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN cod_traslado
+                                WHEN 2 THEN identificacion
+                                WHEN 3 THEN persona
+                                WHEN 4 THEN estado_desc
+                                WHEN 5 THEN registro_fecha
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN cod_traslado
+                                WHEN 2 THEN identificacion
+                                WHEN 3 THEN persona
+                                WHEN 4 THEN estado_desc
+                                WHEN 5 THEN registro_fecha
+                            END
+                        END DESC
                     OFFSET @offset ROWS
                     FETCH NEXT @fetch ROWS ONLY;";
 
@@ -133,8 +163,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                result.Code        = -1;
-                result.Description = ex.Message;
+                result.Code         = -1;
+                result.Description  = ex.Message;
                 result.Result.total = 0;
                 result.Result.lista = [];
             }
@@ -160,34 +190,37 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var where = WhereBase;
-                var p     = new DynamicParameters();
-
                 var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(filtroTexto))
-                {
-                    where += " AND (Nombre LIKE @filtro OR Identificacion LIKE @filtro) ";
-                    p.Add("@filtro", $"%{filtroTexto}%");
-                }
+                var tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
+                string? filtroLike = tieneFiltro ? $"%{filtroTexto}%" : null;
 
+                string? excluir = null;
                 if (!string.IsNullOrWhiteSpace(filtros?.sortField) &&
                     filtros.sortField.StartsWith("excluir:", StringComparison.OrdinalIgnoreCase))
                 {
                     var splitArr = filtros.sortField.Split(':');
-                    var excluir  = splitArr[^1];
-
-                    if (!string.IsNullOrWhiteSpace(excluir))
-                    {
-                        where += " AND Identificacion <> @excluir ";
-                        p.Add("@excluir", excluir);
-                    }
+                    excluir      = splitArr[^1];
                 }
 
-                var q = $@"
+                var tieneExcluir = !string.IsNullOrWhiteSpace(excluir);
+
+                var p = new
+                {
+                    tieneFiltro  = tieneFiltro ? 1 : 0,
+                    filtro       = filtroLike,
+                    tieneExcluir = tieneExcluir ? 1 : 0,
+                    excluir
+                };
+
+                const string q = @"
                     SELECT Identificacion AS item, Nombre AS descripcion
                     FROM Activos_Personas
-                    {where}
-                    ORDER BY Nombre ASC";
+                    WHERE (@tieneFiltro = 0
+                           OR Nombre         LIKE @filtro
+                           OR Identificacion LIKE @filtro)
+                      AND (@tieneExcluir = 0
+                           OR Identificacion <> @excluir)
+                    ORDER BY Nombre ASC;";
 
                 resp.Result = connection.Query<DropDownListaGenericaModel>(q, p).ToList();
             }
@@ -459,11 +492,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 var p = new DynamicParameters();
                 p.Add(BoletaIdParam, data.cod_traslado);
-                p.Add("@MotivoId",      data.cod_motivo);
-                p.Add("@Notas",         data.notas);
-                p.Add("@A_Id",          data.identificacion);
-                p.Add("@N_Id",          data.identificacion_destino);
-                p.Add(UsuarioParam,     data.registro_usuario);
+                p.Add("@MotivoId",        data.cod_motivo);
+                p.Add("@Notas",           data.notas);
+                p.Add("@A_Id",            data.identificacion);
+                p.Add("@N_Id",            data.identificacion_destino);
+                p.Add(UsuarioParam,       data.registro_usuario);
                 p.Add("@FechaAplicacion", data.fecha_aplicacion);
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
@@ -538,11 +571,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 var p = new DynamicParameters();
                 p.Add(BoletaIdParam, data.cod_traslado);
-                p.Add("@MotivoId",      data.cod_motivo);
-                p.Add("@Notas",         data.notas);
-                p.Add("@A_Id",          data.identificacion);
-                p.Add("@N_Id",          data.identificacion_destino);
-                p.Add(UsuarioParam,     data.registro_usuario);
+                p.Add("@MotivoId",        data.cod_motivo);
+                p.Add("@Notas",           data.notas);
+                p.Add("@A_Id",            data.identificacion);
+                p.Add("@N_Id",            data.identificacion_destino);
+                p.Add(UsuarioParam,       data.registro_usuario);
                 p.Add("@FechaAplicacion", data.fecha_aplicacion);
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
@@ -764,17 +797,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var sql = scroll == 1
-                    ? $@"
-                        SELECT TOP 1 {CodTrasladoCol}
-                        FROM {VistaTrasladosBoletas}
-                        WHERE {CodTrasladoCol} > @cod
-                        ORDER BY {CodTrasladoCol} ASC;"
-                    : $@"
-                        SELECT TOP 1 {CodTrasladoCol}
-                        FROM {VistaTrasladosBoletas}
-                        WHERE {CodTrasladoCol} < @cod
-                        ORDER BY {CodTrasladoCol} DESC;";
+                const string sqlNext = @"
+                    SELECT TOP 1 cod_traslado
+                    FROM vActivos_Traslados_Boletas
+                    WHERE cod_traslado > @cod
+                    ORDER BY cod_traslado ASC;";
+
+                const string sqlPrev = @"
+                    SELECT TOP 1 cod_traslado
+                    FROM vActivos_Traslados_Boletas
+                    WHERE cod_traslado < @cod
+                    ORDER BY cod_traslado DESC;";
+
+                var sql = scroll == 1 ? sqlNext : sqlPrev;
 
                 var nextCode = connection.QueryFirstOrDefault<string>(
                     sql,
