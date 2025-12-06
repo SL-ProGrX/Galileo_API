@@ -17,60 +17,60 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MCntLinkDB _mCntLinkDB;
         private readonly PortalDB _portalDB;
 
-        private const string OkMessage                     = "Ok";
-        private const string MsgTrasladoOk                 = "Traslado realizado satisfactoriamente.";
-        private const string MsgSinAsientos                 = "No se recibieron asientos para trasladar.";
-        private const string MsgPeriodoCerradoParcial       = "Algunos asientos no se trasladaron porque el período contable está cerrado.";
+        private const string OkMessage               = "Ok";
+        private const string MsgTrasladoOk           = "Traslado realizado satisfactoriamente.";
+        private const string MsgSinAsientos          = "No se recibieron asientos para trasladar.";
+        private const string MsgPeriodoCerradoParcial = "Algunos asientos no se trasladaron porque el período contable está cerrado.";
 
-        private const string TableActivosAsientos           = "Activos_Asientos";
-        private const string TableActivosAsientosDetalle    = "Activos_Asientos_detalle";
-        private const string TableCntAsientos               = "CntX_Asientos";
-        private const string TableCntAsientosDetalle        = "CntX_Asientos_detalle";
+        private const string TableActivosAsientos        = "Activos_Asientos";
+        private const string TableActivosAsientosDetalle = "Activos_Asientos_detalle";
+        private const string TableCntAsientos            = "CntX_Asientos";
+        private const string TableCntAsientosDetalle     = "CntX_Asientos_detalle";
 
-        private const string ColNumAsiento                  = "Num_Asiento";
-        private const string ColTipoAsiento                 = "Tipo_Asiento";
-        private const string ColFechaAsiento                = "Fecha_Asiento";
-        private const string ColDescripcion                 = "Descripcion";
-        private const string ColAnio                        = "Anio";
-        private const string ColMes                         = "Mes";
-        private const string ColCodContabilidad             = "Cod_Contabilidad";
-        private const string ColFechaTraslado               = "fecha_traslado";
-        private const string ColUserTraslada                = "user_traslada";
+        private const string ColNumAsiento      = "Num_Asiento";
+        private const string ColTipoAsiento     = "Tipo_Asiento";
+        private const string ColFechaAsiento    = "Fecha_Asiento";
+        private const string ColDescripcion     = "Descripcion";
+        private const string ColAnio            = "Anio";
+        private const string ColMes             = "Mes";
+        private const string ColCodContabilidad = "Cod_Contabilidad";
+        private const string ColFechaTraslado   = "fecha_traslado";
+        private const string ColUserTraslada    = "user_traslada";
 
-        private const string ParamFiltro                    = "@filtro";
-        private const string ParamFechaInicio               = "@fechaInicio";
-        private const string ParamFechaCorte                = "@fechaCorte";
+        private const string ParamFiltro      = "@filtro";
+        private const string ParamFechaInicio = "@fechaInicio";
+        private const string ParamFechaCorte  = "@fechaCorte";
 
-        private const string _numAsiento                    = ColNumAsiento;
-
-        // Lista blanca de columnas para ORDER BY
-        private static readonly Dictionary<string, string> SortFieldMap =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                // Nombres de columnas en la tabla
-                { _numAsiento,       ColNumAsiento },
-                { ColTipoAsiento,    ColTipoAsiento },
-                { ColFechaAsiento,   ColFechaAsiento },
-                { ColDescripcion,    ColDescripcion },
-                { ColAnio,           ColAnio },
-                { ColMes,            ColMes },
-                { ColCodContabilidad, ColCodContabilidad },
-
-                // Posibles nombres desde el front / DTO
-                { "num_asiento",     ColNumAsiento },
-                { "tipo_asiento",    ColTipoAsiento },
-                { "fecha_asiento",   ColFechaAsiento },
-                { "descripcion",     ColDescripcion },
-                { "anio",            ColAnio },
-                { "mes",             ColMes },
-                { "cod_contabilidad", ColCodContabilidad }
-            };
+        private const string DefaultSortField = ColNumAsiento;
 
         public FrmActivosTrasladoAsientosDB(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
             _mCntLinkDB = new MCntLinkDB(config);
             _portalDB = new PortalDB(config);
+        }
+
+        // --------------------------------------------------------
+        // Resolución segura del campo de ordenamiento (anti S2077)
+        // --------------------------------------------------------
+        private static string ResolveSortField(string? sortFieldRaw)
+        {
+            var key = (sortFieldRaw ?? string.Empty).Trim().ToLowerInvariant();
+
+            return key switch
+            {
+                // posibles nombres desde el front / DTO
+                "num_asiento"      => ColNumAsiento,
+                "tipo_asiento"     => ColTipoAsiento,
+                "fecha_asiento"    => ColFechaAsiento,
+                "descripcion"      => ColDescripcion,
+                "anio"             => ColAnio,
+                "mes"              => ColMes,
+                "cod_contabilidad" => ColCodContabilidad,
+
+                // por defecto
+                _ => DefaultSortField
+            };
         }
 
         /// <summary>
@@ -110,13 +110,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 resp.Result.total = connection.ExecuteScalar<int>(qTotal, parameters);
 
-                // Orden usando lista blanca
-                var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
-                    ? _numAsiento
-                    : filtros.sortField!;
-                if (!SortFieldMap.TryGetValue(sortFieldKey, out var sortField))
-                    sortField = _numAsiento;
-
+                // Orden usando switch seguro
+                var sortField = ResolveSortField(filtros.sortField);
                 var sortOrder = filtros.sortOrder == 0 ? "ASC" : "DESC";
 
                 var pagina = filtros.pagina <= 0 ? 1 : filtros.pagina;

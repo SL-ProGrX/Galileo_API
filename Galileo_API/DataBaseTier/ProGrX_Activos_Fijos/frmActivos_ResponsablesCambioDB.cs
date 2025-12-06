@@ -13,24 +13,25 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
 
-        private const string BoletaIdParam                = "BoletaId";
-        private const string UsuarioParam                 = "Usuario";
-        private const string CodTrasladoCol               = "cod_traslado";
+        private const string BoletaIdParam          = "BoletaId";
+        private const string UsuarioParam           = "Usuario";
 
-        private const string MensajeOk                    = "Ok";
-        private const string MensajeDatosNoProporcionados = "Datos no proporcionados.";
-        private const string MensajeBoletaNoEncontrada    = "Boleta no encontrada.";
-        private const string MensajeErrorInsertar         = "Error al insertar";
-        private const string MensajeErrorActualizar       = " Error al actualizar";
-        private const string MensajeErrorProcesar         = "Error al procesar";
-        private const string MensajeErrorDescartar        = " Error al descartar";
-        private const string MensajeNoMasResultados       = "No se encontraron más resultados.";
-        private const string MensajeNoEncontrado          = "No encontrado";
+        private const string CodTrasladoCol         = "cod_traslado";
 
-        private const string VistaTrasladosBoletas        = "vActivos_Traslados_Boletas";
-        private const string WhereBase                    = " WHERE 1=1 ";
+        private const string MensajeOk              = "Ok";
+        private const string MensajeDatosNoProv     = "Datos no proporcionados.";
+        private const string MensajeBoletaNoEnc     = "Boleta no encontrada.";
+        private const string MensajeErrorInsertar   = "Error al insertar";
+        private const string MensajeErrorActualizar = " Error al actualizar";
+        private const string MensajeErrorProcesar   = "Error al procesar";
+        private const string MensajeErrorDescartar  = " Error al descartar";
+        private const string MensajeNoMasRes        = "No se encontraron más resultados.";
+        private const string MensajeNoEncontrado    = "No encontrado";
 
-        private const string BitacoraPrefijoBoleta        = "Boleta de Cambio Responsable: ";
+        private const string VistaTrasladosBoletas  = "vActivos_Traslados_Boletas";
+        private const string WhereBase              = " WHERE 1=1 ";
+
+        private const string BitacoraPrefijoBoleta  = "Boleta de Cambio Responsable: ";
 
         // Lista blanca para ORDER BY en boletas
         private static readonly Dictionary<string, string> SortFieldBoletasMap =
@@ -46,7 +47,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         public FrmActivosResponsablesCambioDB(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
-            _portalDB = new PortalDB(config);
+            _portalDB        = new PortalDB(config);
         }
 
         /// <summary>
@@ -58,9 +59,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var result = new ErrorDto<ActivosResponsablesCambioBoletaLista>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = new ActivosResponsablesCambioBoletaLista
+                Result      = new ActivosResponsablesCambioBoletaLista
                 {
                     total = 0,
                     lista = new List<ActivosResponsablesCambioBoletaResumen>()
@@ -72,36 +73,46 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var where = string.Empty;
-                var p = new DynamicParameters();
+                var p     = new DynamicParameters();
 
                 var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
                 if (!string.IsNullOrWhiteSpace(filtroTexto))
                 {
-                    where = @" WHERE ( cod_traslado   LIKE @filtro
-                                   OR persona        LIKE @filtro
-                                   OR identificacion LIKE @filtro )";
+                    where = @"
+                        WHERE (
+                               cod_traslado   LIKE @filtro
+                            OR persona        LIKE @filtro
+                            OR identificacion LIKE @filtro
+                        )";
                     p.Add("@filtro", $"%{filtroTexto}%");
                 }
 
-                var qTotal = $"SELECT COUNT(1) FROM {VistaTrasladosBoletas} {where}";
+                var qTotal = $@"
+                    SELECT COUNT(1)
+                    FROM {VistaTrasladosBoletas}
+                    {where}";
+
                 result.Result.total = connection.QueryFirstOrDefault<int>(qTotal, p);
 
                 // ORDER BY con lista blanca
                 var sortKey = string.IsNullOrWhiteSpace(filtros?.sortField)
                     ? CodTrasladoCol
                     : filtros.sortField!;
+
                 if (!SortFieldBoletasMap.TryGetValue(sortKey, out var sortField))
+                {
                     sortField = CodTrasladoCol;
+                }
 
                 var sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
 
-                // Paginación (asumimos pagina 1-based)
-                var pagina = filtros?.pagina ?? 1;
+                // Paginación (pagina 1-based)
+                var pagina     = filtros?.pagina     ?? 1;
                 var paginacion = filtros?.paginacion ?? 10;
-                var offset = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
+                var offset     = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
 
                 p.Add("@offset", offset);
-                p.Add("@fetch", paginacion);
+                p.Add("@fetch",  paginacion);
 
                 var qDatos = $@"
                     SELECT 
@@ -122,7 +133,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
                 result.Result.total = 0;
                 result.Result.lista = [];
@@ -140,9 +151,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = new List<DropDownListaGenericaModel>()
+                Result      = new List<DropDownListaGenericaModel>()
             };
 
             try
@@ -150,7 +161,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var where = WhereBase;
-                var p = new DynamicParameters();
+                var p     = new DynamicParameters();
 
                 var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
                 if (!string.IsNullOrWhiteSpace(filtroTexto))
@@ -163,7 +174,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     filtros.sortField.StartsWith("excluir:", StringComparison.OrdinalIgnoreCase))
                 {
                     var splitArr = filtros.sortField.Split(':');
-                    var excluir = splitArr[^1];
+                    var excluir  = splitArr[^1];
+
                     if (!string.IsNullOrWhiteSpace(excluir))
                     {
                         where += " AND Identificacion <> @excluir ";
@@ -181,10 +193,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
+
             return resp;
         }
 
@@ -198,17 +211,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<ActivosResponsablesCambioBoleta>
             {
-                Code = 0,
+                Code        = 0,
                 Description = string.Empty,
-                Result = null
+                Result      = null
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 var p = new DynamicParameters();
                 p.Add(BoletaIdParam, cod_traslado);
-                p.Add(UsuarioParam, usuario);
+                p.Add(UsuarioParam,  usuario);
 
                 var data = connection.QueryFirstOrDefault<ActivosResponsablesCambioBoleta>(
                     "spActivos_Responsable_Cambio_Consulta",
@@ -217,20 +231,20 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 if (data == null)
                 {
-                    resp.Code = -2;
-                    resp.Description = MensajeBoletaNoEncontrada;
+                    resp.Code        = -2;
+                    resp.Description = MensajeBoletaNoEnc;
                 }
                 else
                 {
-                    resp.Result = data;
+                    resp.Result      = data;
                     resp.Description = MensajeOk;
                 }
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
@@ -247,33 +261,34 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<List<ActivosResponsablesCambioPlaca>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = new List<ActivosResponsablesCambioPlaca>()
+                Result      = new List<ActivosResponsablesCambioPlaca>()
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 var p = new DynamicParameters();
                 p.Add(BoletaIdParam, cod_traslado ?? string.Empty);
                 p.Add("@Identificacion", identificacion);
-                p.Add(UsuarioParam, usuario);
+                p.Add(UsuarioParam,  usuario);
                 p.Add("@ModoRecepcion", 0);
 
                 resp.Result = connection.Query<ActivosResponsablesCambioPlaca>(
                         "spActivos_Responsable_Cambio_Consulta_Placas",
                         p,
-                        commandType: CommandType.StoredProcedure
-                    )
+                        commandType: CommandType.StoredProcedure)
                     .ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
+
             return resp;
         }
 
@@ -282,13 +297,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_ResponsablesCambio_Boleta_Existe_Obtener(int CodEmpresa, string cod_traslado)
         {
-            var resp = new ErrorDto { Code = 0, Description = MensajeOk };
+            var resp = new ErrorDto
+            {
+                Code        = 0,
+                Description = MensajeOk
+            };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 var p = new DynamicParameters();
                 p.Add(BoletaIdParam, cod_traslado);
-                p.Add(UsuarioParam, string.Empty);
+                p.Add(UsuarioParam,  string.Empty);
 
                 var data = connection.QueryFirstOrDefault<ActivosResponsablesCambioBoleta>(
                     "spActivos_Responsable_Cambio_Consulta",
@@ -296,18 +317,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     commandType: CommandType.StoredProcedure);
 
                 (resp.Code, resp.Description) = data == null
-                    ? (0, "BOLETA: Libre!")
+                    ? (0,  "BOLETA: Libre!")
                     : (-2, "BOLETA: Ocupada!");
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
 
-        // ---- helpers de validación para bajar complejidad (S3776) ----
+        // ---- Helpers de validación para bajar complejidad (S3776) ----
 
         private static List<string> ValidarBoletaDatos(ActivosResponsablesCambioBoleta data)
         {
@@ -315,12 +337,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             if (string.IsNullOrWhiteSpace(data.cod_motivo))
                 errores.Add("No ha indicado el motivo.");
+
             if (string.IsNullOrWhiteSpace(data.notas) || data.notas.Trim().Length < 3)
                 errores.Add("No ha indicado una nota válida.");
+
             if (string.IsNullOrWhiteSpace(data.identificacion))
                 errores.Add("No ha indicado el responsable actual.");
+
             if (string.IsNullOrWhiteSpace(data.identificacion_destino))
                 errores.Add("No ha indicado el responsable destino.");
+
             if (string.IsNullOrWhiteSpace(data.fecha_aplicacion))
                 errores.Add("No ha indicado la fecha de aplicación (YYYY-MM-DD).");
 
@@ -336,9 +362,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<ActivosResponsablesCambioBoletaResult>
             {
-                Code = 0,
+                Code        = 0,
                 Description = string.Empty,
-                Result = null
+                Result      = null
             };
 
             try
@@ -347,9 +373,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     return new ErrorDto<ActivosResponsablesCambioBoletaResult>
                     {
-                        Code = -1,
-                        Description = MensajeDatosNoProporcionados,
-                        Result = null
+                        Code        = -1,
+                        Description = MensajeDatosNoProv,
+                        Result      = null
                     };
                 }
 
@@ -358,22 +384,24 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     return new ErrorDto<ActivosResponsablesCambioBoletaResult>
                     {
-                        Code = -1,
+                        Code        = -1,
                         Description = string.Join(" | ", errores),
-                        Result = null
+                        Result      = null
                     };
                 }
 
+                var codBoleta = data.cod_traslado ?? string.Empty;
+
                 if (data.isNew)
                 {
-                    var exi = Activos_ResponsablesCambio_Boleta_Existe_Obtener(CodEmpresa, data.cod_traslado ?? string.Empty);
+                    var exi = Activos_ResponsablesCambio_Boleta_Existe_Obtener(CodEmpresa, codBoleta);
                     if (exi.Code == -2)
                     {
                         return new ErrorDto<ActivosResponsablesCambioBoletaResult>
                         {
-                            Code = -2,
+                            Code        = -2,
                             Description = $"La boleta {data.cod_traslado} ya existe.",
-                            Result = null
+                            Result      = null
                         };
                     }
 
@@ -381,31 +409,31 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 }
                 else
                 {
-                    var exi = Activos_ResponsablesCambio_Boleta_Existe_Obtener(CodEmpresa, data.cod_traslado ?? string.Empty);
+                    var exi = Activos_ResponsablesCambio_Boleta_Existe_Obtener(CodEmpresa, codBoleta);
                     if (exi.Code == 0)
                     {
                         return new ErrorDto<ActivosResponsablesCambioBoletaResult>
                         {
-                            Code = -2,
+                            Code        = -2,
                             Description = $"La boleta {data.cod_traslado} no existe.",
-                            Result = null
+                            Result      = null
                         };
                     }
 
                     var upd = Activos_ResponsablesCambio_Boleta_Actualizar(CodEmpresa, data);
-                    resp.Code = upd.Code;
+                    resp.Code        = upd.Code;
                     resp.Description = upd.Description;
-                    resp.Result = new ActivosResponsablesCambioBoletaResult
+                    resp.Result      = new ActivosResponsablesCambioBoletaResult
                     {
-                        cod_traslado = data.cod_traslado ?? string.Empty
+                        cod_traslado = codBoleta
                     };
                 }
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
@@ -420,40 +448,40 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<ActivosResponsablesCambioBoletaResult>
             {
-                Code = 0,
+                Code        = 0,
                 Description = string.Empty,
-                Result = null
+                Result      = null
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 var p = new DynamicParameters();
                 p.Add(BoletaIdParam, data.cod_traslado);
-                p.Add("@MotivoId", data.cod_motivo);
-                p.Add("@Notas", data.notas);
-                p.Add("@A_Id", data.identificacion);
-                p.Add("@N_Id", data.identificacion_destino);
-                p.Add(UsuarioParam, data.registro_usuario);
+                p.Add("@MotivoId",      data.cod_motivo);
+                p.Add("@Notas",         data.notas);
+                p.Add("@A_Id",          data.identificacion);
+                p.Add("@N_Id",          data.identificacion_destino);
+                p.Add(UsuarioParam,     data.registro_usuario);
                 p.Add("@FechaAplicacion", data.fecha_aplicacion);
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
                     "spActivos_Responsable_Cambio_Boleta_Add",
                     p,
-                    commandType: CommandType.StoredProcedure
-                );
+                    commandType: CommandType.StoredProcedure);
 
-                int pass = (int)(rs?.Pass ?? 0);
-                string mensaje = (string)(rs?.Mensaje ?? MensajeErrorInsertar);
-                string boleta = (string)(rs?.Boleta ?? string.Empty);
+                var pass    = (int)(rs?.Pass    ?? 0);
+                var mensaje = (string)(rs?.Mensaje ?? MensajeErrorInsertar);
+                var boleta  = (string)(rs?.Boleta  ?? string.Empty);
 
                 if (pass != 1)
                 {
                     return new ErrorDto<ActivosResponsablesCambioBoletaResult>
                     {
-                        Code = -2,
+                        Code        = -2,
                         Description = mensaje,
-                        Result = null
+                        Result      = null
                     };
                 }
 
@@ -464,17 +492,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.registro_usuario ?? string.Empty,
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = data.registro_usuario ?? string.Empty,
                     DetalleMovimiento = $"{BitacoraPrefijoBoleta}{data.cod_traslado}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
+                    Movimiento        = "Registra - WEB",
+                    Modulo            = vModulo
                 });
 
-                resp.Code = 0;
+                resp.Code        = 0;
                 resp.Description = string.IsNullOrWhiteSpace(mensaje)
                     ? "Boleta registrada satisfactoriamente!"
                     : mensaje;
+
                 resp.Result = new ActivosResponsablesCambioBoletaResult
                 {
                     cod_traslado = data.cod_traslado ?? string.Empty
@@ -482,9 +511,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
@@ -493,20 +522,27 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Actualizar boleta de traslado de responsable.
         /// </summary>
-        private ErrorDto Activos_ResponsablesCambio_Boleta_Actualizar(int CodEmpresa, ActivosResponsablesCambioBoleta data)
+        private ErrorDto Activos_ResponsablesCambio_Boleta_Actualizar(
+            int CodEmpresa,
+            ActivosResponsablesCambioBoleta data)
         {
-            var resp = new ErrorDto { Code = 0, Description = string.Empty };
+            var resp = new ErrorDto
+            {
+                Code        = 0,
+                Description = string.Empty
+            };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 var p = new DynamicParameters();
                 p.Add(BoletaIdParam, data.cod_traslado);
-                p.Add("@MotivoId", data.cod_motivo);
-                p.Add("@Notas", data.notas);
-                p.Add("@A_Id", data.identificacion);
-                p.Add("@N_Id", data.identificacion_destino);
-                p.Add(UsuarioParam, data.registro_usuario);
+                p.Add("@MotivoId",      data.cod_motivo);
+                p.Add("@Notas",         data.notas);
+                p.Add("@A_Id",          data.identificacion);
+                p.Add("@N_Id",          data.identificacion_destino);
+                p.Add(UsuarioParam,     data.registro_usuario);
                 p.Add("@FechaAplicacion", data.fecha_aplicacion);
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
@@ -514,21 +550,25 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     p,
                     commandType: CommandType.StoredProcedure);
 
-                int pass = (int)(rs?.Pass ?? 0);
-                string mensaje = (string)(rs?.Mensaje ?? MensajeErrorActualizar);
+                var pass    = (int)(rs?.Pass    ?? 0);
+                var mensaje = (string)(rs?.Mensaje ?? MensajeErrorActualizar);
 
                 if (pass != 1)
                 {
-                    return new ErrorDto { Code = -2, Description = mensaje };
+                    return new ErrorDto
+                    {
+                        Code        = -2,
+                        Description = mensaje
+                    };
                 }
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.registro_usuario ?? string.Empty,
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = data.registro_usuario ?? string.Empty,
                     DetalleMovimiento = $"{BitacoraPrefijoBoleta}{data.cod_traslado}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
+                    Movimiento        = "Modifica - WEB",
+                    Modulo            = vModulo
                 });
 
                 resp.Description = string.IsNullOrWhiteSpace(mensaje)
@@ -537,7 +577,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -551,7 +591,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             int CodEmpresa,
             ActivosResponsablesCambioPlacaGuardarRequest data)
         {
-            var resp = new ErrorDto { Code = 0, Description = MensajeOk };
+            var resp = new ErrorDto
+            {
+                Code        = 0,
+                Description = MensajeOk
+            };
 
             try
             {
@@ -559,17 +603,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     return new ErrorDto
                     {
-                        Code = -1,
-                        Description = MensajeDatosNoProporcionados
+                        Code        = -1,
+                        Description = MensajeDatosNoProv
                     };
                 }
 
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 var p = new DynamicParameters();
                 p.Add(BoletaIdParam, data.cod_traslado);
-                p.Add("@Placa", data.num_placa);
-                p.Add(UsuarioParam, data.usuario);
-                p.Add("@Inicial", data.primer_lote_bit);
+                p.Add("@Placa",      data.num_placa);
+                p.Add(UsuarioParam,  data.usuario);
+                p.Add("@Inicial",    data.primer_lote_bit);
 
                 connection.Execute(
                     "spActivos_Responsable_Cambio_Boleta_Placas",
@@ -578,7 +623,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -593,12 +638,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             string cod_traslado,
             string usuario)
         {
-            var resp = new ErrorDto { Code = 0, Description = MensajeOk };
+            var resp = new ErrorDto
+            {
+                Code        = 0,
+                Description = MensajeOk
+            };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 var p = new DynamicParameters();
-                p.Add("@Boleta", cod_traslado);
+                p.Add("@Boleta",  cod_traslado);
                 p.Add(UsuarioParam, usuario);
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
@@ -606,26 +657,30 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     p,
                     commandType: CommandType.StoredProcedure);
 
-                int pass = (int)(rs?.Pass ?? 0);
-                string mensaje = (string)(rs?.Mensaje ?? MensajeErrorProcesar);
+                var pass    = (int)(rs?.Pass    ?? 0);
+                var mensaje = (string)(rs?.Mensaje ?? MensajeErrorProcesar);
 
                 if (pass != 1)
                 {
-                    return new ErrorDto { Code = -2, Description = mensaje };
+                    return new ErrorDto
+                    {
+                        Code        = -2,
+                        Description = mensaje
+                    };
                 }
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? string.Empty,
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = usuario ?? string.Empty,
                     DetalleMovimiento = $"{BitacoraPrefijoBoleta}{cod_traslado}",
-                    Movimiento = "Procesa - WEB",
-                    Modulo = vModulo
+                    Movimiento        = "Procesa - WEB",
+                    Modulo            = vModulo
                 });
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -640,39 +695,49 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             string cod_traslado,
             string usuario)
         {
-            var resp = new ErrorDto { Code = 0, Description = MensajeOk };
+            var resp = new ErrorDto
+            {
+                Code        = 0,
+                Description = MensajeOk
+            };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 var p = new DynamicParameters();
                 p.Add(BoletaIdParam, cod_traslado);
-                p.Add(UsuarioParam, usuario);
+                p.Add(UsuarioParam,  usuario);
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
                     "spActivos_Responsable_Cambio_Descarta",
                     p,
                     commandType: CommandType.StoredProcedure);
 
-                int pass = (int)(rs?.Pass ?? 0);
-                string mensaje = (string)(rs?.Mensaje ?? MensajeErrorDescartar);
+                var pass    = (int)(rs?.Pass    ?? 0);
+                var mensaje = (string)(rs?.Mensaje ?? MensajeErrorDescartar);
 
                 if (pass != 1)
                 {
-                    return new ErrorDto { Code = -2, Description = mensaje };
+                    return new ErrorDto
+                    {
+                        Code        = -2,
+                        Description = mensaje
+                    };
                 }
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? string.Empty,
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = usuario ?? string.Empty,
                     DetalleMovimiento = $"{BitacoraPrefijoBoleta}{cod_traslado}",
-                    Movimiento = "Descarta - WEB",
-                    Modulo = vModulo
+                    Movimiento        = "Descarta - WEB",
+                    Modulo            = vModulo
                 });
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -690,16 +755,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<ActivosResponsablesCambioBoleta>
             {
-                Code = 0,
+                Code        = 0,
                 Description = string.Empty,
-                Result = null
+                Result      = null
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                string sql = scroll == 1
+                var sql = scroll == 1
                     ? $@"
                         SELECT TOP 1 {CodTrasladoCol}
                         FROM {VistaTrasladosBoletas}
@@ -719,9 +784,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     return new ErrorDto<ActivosResponsablesCambioBoleta>
                     {
-                        Code = -2,
-                        Description = MensajeNoMasResultados,
-                        Result = null
+                        Code        = -2,
+                        Description = MensajeNoMasRes,
+                        Result      = null
                     };
                 }
 
@@ -729,9 +794,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
@@ -744,26 +809,28 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = new List<DropDownListaGenericaModel>()
+                Result      = new List<DropDownListaGenericaModel>()
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 const string q = @"
-            SELECT cod_motivo AS item, descripcion
-            FROM ACTIVOS_TRASLADOS_MOTIVOS
-            WHERE ACTIVO = 1
-            ORDER BY descripcion ASC";
+                    SELECT cod_motivo AS item, descripcion
+                    FROM ACTIVOS_TRASLADOS_MOTIVOS
+                    WHERE ACTIVO = 1
+                    ORDER BY descripcion ASC";
+
                 resp.Result = connection.Query<DropDownListaGenericaModel>(q).ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
@@ -780,18 +847,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<List<ActivosResponsablesCambioPlaca>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = new List<ActivosResponsablesCambioPlaca>()
+                Result      = new List<ActivosResponsablesCambioPlaca>()
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 var p = new DynamicParameters();
                 p.Add(BoletaIdParam, cod_traslado);
                 p.Add("@Identificacion", identificacion);
-                p.Add(UsuarioParam, usuario);
+                p.Add(UsuarioParam,  usuario);
 
                 resp.Result = connection.Query<ActivosResponsablesCambioPlaca>(
                         "spActivos_Responsable_Cambio_Consulta_Placas",
@@ -801,10 +869,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
+
             return resp;
         }
 
@@ -817,9 +886,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<ActivosResponsablesPersona>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = null
+                Result      = null
             };
 
             const string sql = @"
@@ -843,6 +912,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 resp.Result = connection.QueryFirstOrDefault<ActivosResponsablesPersona>(
                     sql,
                     new { identificacion });
@@ -854,10 +924,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
+
             return resp;
         }
     }

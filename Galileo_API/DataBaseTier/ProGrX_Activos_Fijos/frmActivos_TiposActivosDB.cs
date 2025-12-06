@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using Dapper;
+﻿using Dapper;
 using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -35,7 +33,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string MsgTipoActivoUpdateOk         = "Tipo de Activo actualizado satisfactoriamente.";
 
         // SELECT común (sin WHERE / ORDER) para evitar duplicar el bloque enorme
-        private const string SelectTipoActivoBase = @"
+        private static readonly string SelectTipoActivoBase = $@"
             SELECT
                 a.TIPO_ACTIVO                                            AS tipo_activo,
                 ISNULL(a.DESCRIPCION,'')                                 AS descripcion,
@@ -67,7 +65,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 ISNULL(ct.COD_CUENTA_MASK,'')                            AS cod_cuenta_transitoria_mask,
                 ISNULL(ct.DESCRIPCION,'')                                AS cod_cuenta_transitoria_desc
-            FROM dbo.ACTIVOS_TIPO_ACTIVO a
+            FROM {TablaTiposActivo} a
             LEFT JOIN dbo.CNTX_TIPOS_ASIENTOS ta ON ta.TIPO_ASIENTO = a.ASIENTO_GENERA
             LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL ca ON ca.COD_CUENTA   = a.COD_CUENTA_ACTIVO
             LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL cg ON cg.COD_CUENTA   = a.COD_CUENTA_GASTOS
@@ -112,7 +110,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 // Paginación (OFFSET/FETCH como parámetros)
                 if (vfiltro?.pagina != null)
                 {
-                    int offset   = vfiltro.pagina.Value;          // ya lo traes como offset
+                    int offset   = vfiltro.pagina.Value;          // ya viene como offset
                     int pageSize = vfiltro.paginacion ?? 10;
 
                     paginacionSql = " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY ";
@@ -127,8 +125,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 var qDatos = $@"
                     SELECT
-                        {ColTipoActivo}            AS tipo_activo,
-                        ISNULL(DESCRIPCION,'')     AS descripcion
+                        {ColTipoActivo}        AS tipo_activo,
+                        ISNULL(DESCRIPCION,'') AS descripcion
                     FROM {TablaTiposActivo}
                     {where}
                     ORDER BY {ColTipoActivo}
@@ -156,10 +154,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                const string q = @"
+                var q = $@"
                 SELECT COUNT(1)
-                FROM dbo.ACTIVOS_TIPO_ACTIVO
-                WHERE UPPER(TIPO_ACTIVO) = @cod";
+                FROM {TablaTiposActivo}
+                WHERE UPPER({ColTipoActivo}) = @cod";
+
                 int n = cn.QueryFirstOrDefault<int>(q, new { cod = (tipo_activo ?? string.Empty).ToUpper() });
 
                 (resp.Code, resp.Description) = n == 0
@@ -228,9 +227,10 @@ WHERE a.{ColTipoActivo} = @cod;";
                         : $" WHERE a.{ColTipoActivo} < @cod ";
                 }
 
+                // El ORDER se hace sobre el alias de salida (tipo_activo)
                 string order = scroll == 1
-                    ? $" ORDER BY a.{ColTipoActivo} ASC "
-                    : $" ORDER BY a.{ColTipoActivo} DESC ";
+                    ? " ORDER BY x.tipo_activo ASC "
+                    : " ORDER BY x.tipo_activo DESC ";
 
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
@@ -277,7 +277,7 @@ FROM (
 
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                const string qExiste = "SELECT COUNT(1) FROM dbo.ACTIVOS_TIPO_ACTIVO WHERE TIPO_ACTIVO = @cod";
+                var qExiste = $@"SELECT COUNT(1) FROM {TablaTiposActivo} WHERE {ColTipoActivo} = @cod";
                 int existe = cn.QueryFirstOrDefault<int>(qExiste, new { cod = data.tipo_activo.ToUpper() });
 
                 if (data.isNew)
@@ -337,9 +337,9 @@ FROM (
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                const string q = @"
-            INSERT INTO dbo.ACTIVOS_TIPO_ACTIVO
-                (TIPO_ACTIVO, DESCRIPCION, MET_DEPRECIACION, TIPO_VIDA_UTIL, VIDA_UTIL,
+                var q = $@"
+            INSERT INTO {TablaTiposActivo}
+                ({ColTipoActivo}, DESCRIPCION, MET_DEPRECIACION, TIPO_VIDA_UTIL, VIDA_UTIL,
                  ASIENTO_GENERA, COD_CUENTA_ACTIVO, COD_CUENTA_DEPACUM, COD_CUENTA_GASTOS, COD_CUENTA_TRANSITORIA,
                  REGISTRO_USUARIO, REGISTRO_FECHA, MODIFICA_USUARIO, MODIFICA_FECHA)
             VALUES
@@ -391,8 +391,8 @@ FROM (
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                const string q = @"
-            UPDATE dbo.ACTIVOS_TIPO_ACTIVO
+                var q = $@"
+            UPDATE {TablaTiposActivo}
                SET DESCRIPCION            = @descripcion,
                    MET_DEPRECIACION       = @met,
                    TIPO_VIDA_UTIL         = @tvu,
@@ -404,7 +404,7 @@ FROM (
                    COD_CUENTA_TRANSITORIA = @cta_trans,
                    MODIFICA_USUARIO       = @mod_usuario,
                    MODIFICA_FECHA         = SYSDATETIME()
-             WHERE TIPO_ACTIVO = @cod;";
+             WHERE {ColTipoActivo} = @cod;";
 
                 cn.Execute(q, new
                 {
@@ -449,7 +449,7 @@ FROM (
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                const string q = @"DELETE FROM dbo.ACTIVOS_TIPO_ACTIVO WHERE TIPO_ACTIVO = @cod";
+                var q = $@"DELETE FROM {TablaTiposActivo} WHERE {ColTipoActivo} = @cod";
                 int rows = cn.Execute(q, new { cod = (tipo_activo ?? string.Empty).ToUpper() });
 
                 if (rows == 0)
