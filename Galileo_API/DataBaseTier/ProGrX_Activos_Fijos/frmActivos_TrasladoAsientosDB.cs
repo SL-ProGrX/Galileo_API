@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
+﻿using System.Globalization;
 using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -40,13 +37,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string ParamFiltro      = "@filtro";
         private const string ParamFechaInicio = "@fechaInicio";
         private const string ParamFechaCorte  = "@fechaCorte";
+        private const string ParamOffset      = "@offset";
+        private const string ParamFetch       = "@fetch";
 
         private const string DefaultSortField = ColNumAsiento;
 
-        // 🔹 claves del JSON de parámetros (para evitar literales repetidos)
-        private const string ParamKeyTodosActivos = "todosActivos";
-        private const string ParamKeyFechaInicio  = "fechaInicio";
-        private const string ParamKeyFechaCorte   = "fechaCorte";
+        private const string SortAsc  = "ASC";
+        private const string SortDesc = "DESC";
+
+        private const string LikeWildcard = "%";
 
         // Bloques WHERE reutilizables para evitar S1192
         private const string WhereActivosKey = @"
@@ -130,14 +129,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 // Orden usando campo resuelto de forma segura
                 var sortField = ResolveSortField(filtros.sortField);
-                var sortOrder = filtros.sortOrder == 0 ? "ASC" : "DESC";
+                var sortOrder = filtros.sortOrder == 0 ? SortAsc : SortDesc;
 
                 var pagina     = filtros.pagina     <= 0 ? 1  : filtros.pagina;
                 var paginacion = filtros.paginacion <= 0 ? 10 : filtros.paginacion;
                 var offset     = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
 
-                parameters.Add("@offset", offset);
-                parameters.Add("@fetch",  paginacion);
+                parameters.Add(ParamOffset, offset);
+                parameters.Add(ParamFetch,  paginacion);
 
                 var qDatos = $@"
                     SELECT
@@ -151,8 +150,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FROM {TableActivosAsientos}
                     {where}
                     ORDER BY {sortField} {sortOrder}
-                    OFFSET @offset ROWS
-                    FETCH NEXT @fetch ROWS ONLY;";
+                    OFFSET {ParamOffset} ROWS
+                    FETCH NEXT {ParamFetch} ROWS ONLY;";
 
                 resp.Result.lista = connection
                     .Query<ActivosTrasladoAsientosDto>(qDatos, parameters)
@@ -180,8 +179,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             if (dict != null)
             {
                 todosActivos = ParseTodosActivos(dict);
-                fechaInicio  = ParseFecha(dict, ParamKeyFechaInicio);
-                fechaCorte   = ParseFecha(dict, ParamKeyFechaCorte);
+                fechaInicio  = ParseFecha(dict, "fechaInicio");
+                fechaCorte   = ParseFecha(dict, "fechaCorte");
             }
 
             return (todosActivos, fechaInicio, fechaCorte);
@@ -200,8 +199,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         private static int ParseTodosActivos(Dictionary<string, object> dict)
         {
-            if (dict.ContainsKey(ParamKeyTodosActivos))
-                return Convert.ToInt32(dict[ParamKeyTodosActivos]);
+            if (dict.ContainsKey("todosActivos"))
+                return Convert.ToInt32(dict["todosActivos"]);
             return 0;
         }
 
@@ -234,6 +233,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             if (!string.IsNullOrWhiteSpace(filtro))
             {
+                p.Add(ParamFiltro, LikeWildcard + filtro + LikeWildcard);
+
                 where += $@"
                 AND (
                        {ColNumAsiento}  LIKE {ParamFiltro}
@@ -243,7 +244,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     OR CONVERT(varchar(4), {ColAnio}) LIKE {ParamFiltro}
                     OR CONVERT(varchar(2), {ColMes})  LIKE {ParamFiltro}
                 )";
-                p.Add(ParamFiltro, "%" + filtro + "%");
             }
 
             return (where, p);

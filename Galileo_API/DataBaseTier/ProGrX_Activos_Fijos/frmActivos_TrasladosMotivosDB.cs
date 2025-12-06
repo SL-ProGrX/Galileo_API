@@ -1,4 +1,7 @@
-﻿using Dapper;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
@@ -199,13 +202,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDb.CreateConnection(CodEmpresa);
 
-                string sqlExiste = $@"
+                const string SqlExiste = @"
                     SELECT COUNT(*) 
-                    FROM {Table}
-                    WHERE {ColCodMotivo} = @codigo";
+                    FROM ACTIVOS_TRASLADOS_MOTIVOS
+                    WHERE cod_motivo = @codigo";
 
                 int existe = cn.QueryFirstOrDefault<int>(
-                    sqlExiste,
+                    SqlExiste,
                     new { codigo = datos.cod_motivo });
 
                 if (datos.isNew)
