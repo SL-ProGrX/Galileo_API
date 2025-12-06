@@ -50,49 +50,20 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             {
                 using var connection = _portalDb.CreateConnection(CodEmpresa);
 
-                const string fromSql = @"
-                    FROM ACTIVOS_PERSONAS Per
-                    INNER JOIN ACTIVOS_DEPARTAMENTOS Dept 
-                        ON Per.COD_DEPARTAMENTO = Dept.COD_DEPARTAMENTO
-                    INNER JOIN ACTIVOS_SECCIONES Sec  
-                        ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO 
-                       AND Per.COD_SECCION      = Sec.COD_SECCION
-                    LEFT JOIN (
-                        SELECT  IDENTIFICACION,
-                                MAX(COD_TRASLADO) AS COD_TRASLADO
-                        FROM    ACTIVOS_TRASLADOS
-                        GROUP BY IDENTIFICACION
-                    ) Tr
-                        ON Tr.IDENTIFICACION = Per.IDENTIFICACION";
+                // Normalizo filtros a NULL cuando no aplican
+                string? filtroValor = string.IsNullOrWhiteSpace(filtros.filtro)
+                    ? null
+                    : $"%{filtros.filtro}%";
 
-                // WHERE dinámico (solo texto constante + parámetros)
-                var where = " WHERE 1 = 1 ";
-                var p = new DynamicParameters();
+                string? codDepartamentoParam =
+                    !string.IsNullOrWhiteSpace(codDepartamento) && codDepartamento != Todos
+                        ? codDepartamento
+                        : null;
 
-                if (!string.IsNullOrWhiteSpace(filtros.filtro))
-                {
-                    where += @"
-                        AND (
-                               Per.IDENTIFICACION    LIKE @filtro
-                            OR Per.NOMBRE           LIKE @filtro
-                            OR Dept.DESCRIPCION     LIKE @filtro
-                            OR Sec.DESCRIPCION      LIKE @filtro
-                            OR Per.REGISTRO_USUARIO LIKE @filtro
-                        )";
-                    p.Add("@filtro", $"%{filtros.filtro}%");
-                }
-
-                if (!string.IsNullOrWhiteSpace(codDepartamento) && codDepartamento != Todos)
-                {
-                    where += " AND Per.COD_DEPARTAMENTO = @codDepartamento ";
-                    p.Add("@codDepartamento", codDepartamento);
-                }
-
-                if (!string.IsNullOrWhiteSpace(codSeccion) && codSeccion != Todos)
-                {
-                    where += " AND Per.COD_SECCION = @codSeccion ";
-                    p.Add("@codSeccion", codSeccion);
-                }
+                string? codSeccionParam =
+                    !string.IsNullOrWhiteSpace(codSeccion) && codSeccion != Todos
+                        ? codSeccion
+                        : null;
 
                 // Mapear sortField a índice de columna para ORDER BY seguro
                 var sortFieldRaw = (filtros.sortField ?? "Per.IDENTIFICACION").Trim();
@@ -107,22 +78,53 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                     "PER.REGISTRO_USUARIO" or "USUARIO"      => 5,
                     _                                        => 1
                 };
-                p.Add("@orderIndex", orderIndex);
 
                 // Dirección: 0 = DESC, 1 = ASC
                 int orderDir = filtros.sortOrder == 0 ? 0 : 1;
-                p.Add("@orderDir", orderDir);
 
-                // Paginación
-                p.Add("@offset", filtros.pagina);
-                p.Add("@rows", filtros.paginacion);
+                var parametros = new
+                {
+                    filtro = filtroValor,
+                    codDepartamento = codDepartamentoParam,
+                    codSeccion = codSeccionParam,
+                    orderIndex,
+                    orderDir,
+                    offset = filtros.pagina,
+                    rows = filtros.paginacion
+                };
 
-                // TOTAL
-                var sqlCount = "SELECT COUNT(1) " + fromSql + where + ";";
-                result.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
+                // TOTAL (SQL 100% constante)
+                const string sqlCount = @"
+                    SELECT COUNT(1)
+                    FROM ACTIVOS_PERSONAS Per
+                    INNER JOIN ACTIVOS_DEPARTAMENTOS Dept 
+                        ON Per.COD_DEPARTAMENTO = Dept.COD_DEPARTAMENTO
+                    INNER JOIN ACTIVOS_SECCIONES Sec  
+                        ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO 
+                       AND Per.COD_SECCION      = Sec.COD_SECCION
+                    LEFT JOIN (
+                        SELECT  IDENTIFICACION,
+                                MAX(COD_TRASLADO) AS COD_TRASLADO
+                        FROM    ACTIVOS_TRASLADOS
+                        GROUP BY IDENTIFICACION
+                    ) Tr
+                        ON Tr.IDENTIFICACION = Per.IDENTIFICACION
+                    WHERE 1 = 1
+                      AND (
+                            @filtro IS NULL
+                            OR Per.IDENTIFICACION    LIKE @filtro
+                            OR Per.NOMBRE           LIKE @filtro
+                            OR Dept.DESCRIPCION     LIKE @filtro
+                            OR Sec.DESCRIPCION      LIKE @filtro
+                            OR Per.REGISTRO_USUARIO LIKE @filtro
+                          )
+                      AND (@codDepartamento IS NULL OR Per.COD_DEPARTAMENTO = @codDepartamento)
+                      AND (@codSeccion      IS NULL OR Per.COD_SECCION      = @codSeccion);";
 
-                // PAGE con ORDER BY seguro
-                var sqlPage = @"
+                result.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, parametros);
+
+                // PAGE con ORDER BY seguro (también SQL constante)
+                const string sqlPage = @"
                     SELECT 
                         Per.IDENTIFICACION    AS identificacion,
                         Per.NOMBRE            AS nombre,
@@ -134,8 +136,30 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                         Sec.DESCRIPCION       AS seccion,
                         Per.REGISTRO_USUARIO  AS usuario,
                         Tr.COD_TRASLADO       AS cod_traslado
-                    " + fromSql + @"
-                    " + where + @"
+                    FROM ACTIVOS_PERSONAS Per
+                    INNER JOIN ACTIVOS_DEPARTAMENTOS Dept 
+                        ON Per.COD_DEPARTAMENTO = Dept.COD_DEPARTAMENTO
+                    INNER JOIN ACTIVOS_SECCIONES Sec  
+                        ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO 
+                       AND Per.COD_SECCION      = Sec.COD_SECCION
+                    LEFT JOIN (
+                        SELECT  IDENTIFICACION,
+                                MAX(COD_TRASLADO) AS COD_TRASLADO
+                        FROM    ACTIVOS_TRASLADOS
+                        GROUP BY IDENTIFICACION
+                    ) Tr
+                        ON Tr.IDENTIFICACION = Per.IDENTIFICACION
+                    WHERE 1 = 1
+                      AND (
+                            @filtro IS NULL
+                            OR Per.IDENTIFICACION    LIKE @filtro
+                            OR Per.NOMBRE           LIKE @filtro
+                            OR Dept.DESCRIPCION     LIKE @filtro
+                            OR Sec.DESCRIPCION      LIKE @filtro
+                            OR Per.REGISTRO_USUARIO LIKE @filtro
+                          )
+                      AND (@codDepartamento IS NULL OR Per.COD_DEPARTAMENTO = @codDepartamento)
+                      AND (@codSeccion      IS NULL OR Per.COD_SECCION      = @codSeccion)
                     ORDER BY
                         -- ASC
                         CASE @orderDir WHEN 1 THEN
@@ -159,7 +183,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                         END DESC
                     OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY;";
 
-                result.Result.lista = connection.Query<ActivosPersonasData>(sqlPage, p).ToList();
+                result.Result.lista = connection.Query<ActivosPersonasData>(sqlPage, parametros).ToList();
             }
             catch (Exception ex)
             {
@@ -192,35 +216,29 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             {
                 using var connection = _portalDb.CreateConnection(CodEmpresa);
 
-                var where = " WHERE 1 = 1 ";
-                var p = new DynamicParameters();
+                string? filtroValor = string.IsNullOrWhiteSpace(filtros.filtro)
+                    ? null
+                    : $"%{filtros.filtro}%";
 
-                if (!string.IsNullOrWhiteSpace(filtros.filtro))
+                string? codDepartamentoParam =
+                    !string.IsNullOrWhiteSpace(codDepartamento) && codDepartamento != Todos
+                        ? codDepartamento
+                        : null;
+
+                string? codSeccionParam =
+                    !string.IsNullOrWhiteSpace(codSeccion) && codSeccion != Todos
+                        ? codSeccion
+                        : null;
+
+                var parametros = new
                 {
-                    where += @"
-                        AND (
-                               Per.IDENTIFICACION    LIKE @filtro
-                            OR Per.NOMBRE           LIKE @filtro
-                            OR Dept.DESCRIPCION     LIKE @filtro
-                            OR Sec.DESCRIPCION      LIKE @filtro
-                            OR Per.REGISTRO_USUARIO LIKE @filtro
-                        )";
-                    p.Add("@filtro", $"%{filtros.filtro}%");
-                }
+                    filtro = filtroValor,
+                    codDepartamento = codDepartamentoParam,
+                    codSeccion = codSeccionParam
+                };
 
-                if (!string.IsNullOrWhiteSpace(codDepartamento) && codDepartamento != Todos)
-                {
-                    where += " AND Per.COD_DEPARTAMENTO = @codDepartamento ";
-                    p.Add("@codDepartamento", codDepartamento);
-                }
-
-                if (!string.IsNullOrWhiteSpace(codSeccion) && codSeccion != Todos)
-                {
-                    where += " AND Per.COD_SECCION = @codSeccion ";
-                    p.Add("@codSeccion", codSeccion);
-                }
-
-                var sql = @"
+                // SQL constante, con filtros opcionales
+                const string sql = @"
                     SELECT
                         Per.IDENTIFICACION   AS identificacion,
                         Per.NOMBRE           AS nombre,
@@ -237,10 +255,20 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                     LEFT JOIN ACTIVOS_SECCIONES Sec 
                         ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO 
                        AND Per.COD_SECCION      = Sec.COD_SECCION
-                    " + where + @"
+                    WHERE 1 = 1
+                      AND (
+                            @filtro IS NULL
+                            OR Per.IDENTIFICACION    LIKE @filtro
+                            OR Per.NOMBRE           LIKE @filtro
+                            OR Dept.DESCRIPCION     LIKE @filtro
+                            OR Sec.DESCRIPCION      LIKE @filtro
+                            OR Per.REGISTRO_USUARIO LIKE @filtro
+                          )
+                      AND (@codDepartamento IS NULL OR Per.COD_DEPARTAMENTO = @codDepartamento)
+                      AND (@codSeccion      IS NULL OR Per.COD_SECCION      = @codSeccion)
                     ORDER BY Per.IDENTIFICACION;";
 
-                result.Result = connection.Query<ActivosPersonasData>(sql, p).ToList();
+                result.Result = connection.Query<ActivosPersonasData>(sql, parametros).ToList();
             }
             catch (Exception ex)
             {
@@ -335,13 +363,13 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 
                 connection.Execute(query, new
                 {
-                    nombre = persona.nombre?.ToUpper(),
+                    nombre           = persona.nombre?.ToUpper(),
                     cod_departamento = persona.cod_departamento,
-                    cod_seccion = persona.cod_seccion,
-                    cod_alterno = persona.cod_alterno?.ToUpper(),
-                    activo = persona.activo ? 1 : 0,
+                    cod_seccion      = persona.cod_seccion,
+                    cod_alterno      = persona.cod_alterno?.ToUpper(),
+                    activo           = persona.activo ? 1 : 0,
                     usuario,
-                    identificacion = persona.identificacion.ToUpper()
+                    identificacion   = persona.identificacion.ToUpper()
                 });
 
                 _securityMainDb.Bitacora(new BitacoraInsertarDto
@@ -386,11 +414,11 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                 connection.Execute(query, new
                 {
                     cod_departamento = persona.cod_departamento,
-                    cod_seccion = persona.cod_seccion,
-                    identificacion = persona.identificacion.ToUpper(),
-                    nombre = persona.nombre?.ToUpper(),
-                    cod_alterno = persona.cod_alterno?.ToUpper(),
-                    activo = persona.activo ? 1 : 0,
+                    cod_seccion      = persona.cod_seccion,
+                    identificacion   = persona.identificacion.ToUpper(),
+                    nombre           = persona.nombre?.ToUpper(),
+                    cod_alterno      = persona.cod_alterno?.ToUpper(),
+                    activo           = persona.activo ? 1 : 0,
                     usuario
                 });
 
@@ -528,11 +556,11 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                     "spActivos_DepartamentoCambio",
                     new
                     {
-                        Identificacion = request.identificacion,
+                        Identificacion  = request.identificacion,
                         CodDepartamento = request.cod_departamento,
-                        CodSeccion = request.cod_seccion,
-                        Usuario = usuario,
-                        Fecha = request.fecha
+                        CodSeccion      = request.cod_seccion,
+                        Usuario         = usuario,
+                        Fecha           = request.fecha
                     },
                     commandType: CommandType.StoredProcedure
                 ) ?? string.Empty;
