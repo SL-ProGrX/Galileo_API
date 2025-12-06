@@ -58,26 +58,29 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p.Add("@offset", pagina, DbType.Int32);
                 p.Add("@rows", paginacion, DbType.Int32);
 
-                // Sort seguro (whitelist de columnas)
+                // Sort seguro con índice (para evitar S2077)
                 var sortFieldRaw = (filtros?.sortField ?? CodDesembolsoCol).Trim();
                 var sortFieldNorm = sortFieldRaw.ToLowerInvariant();
 
-                string orderByCol = sortFieldNorm switch
+                int sortIndex = sortFieldNorm switch
                 {
-                    CodDesembolsoCol => CodDesembolsoCol,
-                    "descripcion"    => "descripcion",
-                    "activo"         => "activo",
-                    _                => CodDesembolsoCol
+                    CodDesembolsoCol         => 1,
+                    "descripcion"            => 2,
+                    "activo"                 => 3,
+                    _                        => 1
                 };
+                p.Add("@sortIndex", sortIndex, DbType.Int32);
 
-                string orderDir = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
+                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
+                p.Add("@sortDir", sortDir, DbType.Int32);
 
                 const string whereSql = @"
                     WHERE (@filtro IS NULL
                            OR cod_desembolso LIKE @filtro
                            OR descripcion    LIKE @filtro)";
 
-                string dataSql = $@"
+                // ORDER BY usando CASE en lugar de interpolar columna/dirección
+                const string dataSql = @"
                     SELECT cod_desembolso,
                            descripcion,
                            activo,
@@ -86,8 +89,24 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                            modifica_usuario,
                            modifica_fecha
                     FROM   Activos_obras_tdesem
-                    {whereSql}
-                    ORDER BY {orderByCol} {orderDir}
+                    " + whereSql + @"
+                    ORDER BY
+                        -- ASC
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN cod_desembolso
+                                WHEN 2 THEN descripcion
+                                WHEN 3 THEN CAST(activo AS varchar(10))
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN cod_desembolso
+                                WHEN 2 THEN descripcion
+                                WHEN 3 THEN CAST(activo AS varchar(10))
+                            END
+                        END DESC
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
 

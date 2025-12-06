@@ -1,11 +1,10 @@
-﻿using Dapper;
+﻿using System;
+using System.Collections.Generic;
+using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -14,18 +13,22 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly int vModulo = 36;
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
-        private const string _numPlaca = "num_placa";
+
+        private const string ColNumPlaca      = "num_placa";
+        private const string ColPlacaAlterna  = "Placa_Alterna";
+        private const string ColNombre        = "Nombre";
+        private const string MensajeOk        = "Ok";
 
         // Lista blanca para ORDER BY
         private static readonly Dictionary<string, string> SortFieldMap =
             new(StringComparer.OrdinalIgnoreCase)
             {
-                { _numPlaca, _numPlaca },
-                { "Placa_Alterna", "Placa_Alterna" },
-                { "Nombre", "Nombre" },
+                { ColNumPlaca,     ColNumPlaca },
+                { ColPlacaAlterna, ColPlacaAlterna },
+                { ColNombre,       ColNombre },
                 // por si vienen en minúsculas desde el front:
-                { "placa_alterna", "Placa_Alterna" },
-                { "nombre", "Nombre" }
+                { "placa_alterna", ColPlacaAlterna },
+                { "nombre",        ColNombre }
             };
 
         public FrmActivosRenumeracionDb(IConfiguration config)
@@ -42,7 +45,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             var response = new ErrorDto<ActivosDataLista>
             {
                 Code = 0,
-                Description = "Ok",
+                Description = MensajeOk,
                 Result = new ActivosDataLista
                 {
                     total = 0,
@@ -54,54 +57,85 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var where = "";
                 var p = new DynamicParameters();
 
-                // Filtro texto
-                var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
-                if (!string.IsNullOrWhiteSpace(filtroTexto))
-                {
-                    where = @" WHERE ( num_placa     LIKE @filtro
-                                    OR Placa_Alterna LIKE @filtro
-                                    OR Nombre        LIKE @filtro )";
-                    p.Add("@filtro", "%" + filtroTexto + "%");
-                }
+                // Filtro texto parametrizado (sin concatenar WHERE)
+                string? filtroTexto = filtros?.filtro;
+                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
+                p.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
+                p.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
 
                 // Total
-                var qTotal = $@"SELECT COUNT(num_placa) 
-                                FROM Activos_Principal
-                                {where}";
-                response.Result.total = connection.Query<int>(qTotal, p).FirstOrDefault();
+                string qTotal = $@"
+                    SELECT COUNT({ColNumPlaca}) 
+                    FROM Activos_Principal
+                    WHERE (@tieneFiltro = 0
+                           OR {ColNumPlaca}     LIKE @filtro
+                           OR {ColPlacaAlterna} LIKE @filtro
+                           OR {ColNombre}       LIKE @filtro);";
 
-                // ORDER BY con lista blanca
+                response.Result.total = connection.QueryFirstOrDefault<int>(qTotal, p);
+
+                // ORDER BY con lista blanca -> índice de columna
                 var sortKey = string.IsNullOrWhiteSpace(filtros?.sortField)
-                    ? _numPlaca
+                    ? ColNumPlaca
                     : filtros.sortField!;
-                if (!SortFieldMap.TryGetValue(sortKey, out var sortField))
-                    sortField = _numPlaca;
 
-                var sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
+                if (!SortFieldMap.TryGetValue(sortKey, out var sortFieldCanonical))
+                    sortFieldCanonical = ColNumPlaca;
 
-                // Paginación (asumimos pagina 1-based)
-                var pagina = filtros?.pagina ?? 1;
-                var paginacion = filtros?.paginacion ?? 10;
-                var offset = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
+                int sortIndex = sortFieldCanonical switch
+                {
+                    var s when s == ColPlacaAlterna => 2,
+                    var s when s == ColNombre       => 3,
+                    _                               => 1 // num_placa
+                };
+                p.Add("@sortIndex", sortIndex);
+
+                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
+                p.Add("@sortDir", sortDir);
+
+                // Paginación (pagina 1-based)
+                int pagina = filtros?.pagina ?? 1;
+                int paginacion = filtros?.paginacion ?? 10;
+                int offset = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
 
                 p.Add("@offset", offset);
                 p.Add("@fetch", paginacion);
 
-                var query = $@"
+                string query = $@"
                     SELECT  
-                        num_placa, 
-                        Placa_Alterna, 
-                        Nombre 
+                        {ColNumPlaca}     AS num_placa, 
+                        {ColPlacaAlterna} AS Placa_Alterna, 
+                        {ColNombre}       AS Nombre 
                     FROM Activos_Principal  
-                    {where}
-                    ORDER BY {sortField} {sortOrder}
+                    WHERE (@tieneFiltro = 0
+                           OR {ColNumPlaca}     LIKE @filtro
+                           OR {ColPlacaAlterna} LIKE @filtro
+                           OR {ColNombre}       LIKE @filtro)
+                    ORDER BY
+                        -- ASC
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN {ColNumPlaca}
+                                WHEN 2 THEN {ColPlacaAlterna}
+                                WHEN 3 THEN {ColNombre}
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN {ColNumPlaca}
+                                WHEN 2 THEN {ColPlacaAlterna}
+                                WHEN 3 THEN {ColNombre}
+                            END
+                        END DESC
                     OFFSET @offset ROWS 
                     FETCH NEXT @fetch ROWS ONLY;";
 
-                response.Result.lista = connection.Query<ActivosData>(query, p).ToList();
+                response.Result.lista = connection
+                    .Query<ActivosData>(query, p)
+                    .ToList();
             }
             catch (Exception ex)
             {
@@ -121,7 +155,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             var result = new ErrorDto<ActivosRenumeracionData>()
             {
                 Code = 0,
-                Description = "Ok",
+                Description = MensajeOk,
                 Result = new ActivosRenumeracionData()
             };
             try
@@ -155,10 +189,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Renumeracion_Actualizar(int CodEmpresa, string usuario, string num_placa, string nuevo_num)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
-                Description = "Ok"
+                Description = MensajeOk
             };
             try
             {

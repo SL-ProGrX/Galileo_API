@@ -1,11 +1,11 @@
-﻿using Dapper;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -14,15 +14,26 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly int vModulo = 36;
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
-        private const string _codMotivo = "cod_motivo";
+
+        private const string OkMessage              = "Ok";
+        private const string TableMotivos           = "ACTIVOS_TRASLADOS_MOTIVOS";
+        private const string ColCodMotivo           = "cod_motivo";
+        private const string ColDescripcion         = "descripcion";
+        private const string ColActivo              = "activo";
+        private const string ColRegistroUsuario     = "registro_usuario";
+        private const string ColRegistroFecha       = "registro_fecha";
+        private const string ParamFiltro            = "@filtro";
+        private const string MovimientoDetalleLabel = "Motivo de Traslado: ";
+
+        private const string _codMotivo = ColCodMotivo;
 
         // Lista blanca para ORDER BY
         private static readonly Dictionary<string, string> SortFieldMap =
             new(StringComparer.OrdinalIgnoreCase)
             {
-                { _codMotivo, _codMotivo },
-                { "descripcion", "descripcion" },
-                { "activo", "activo" }
+                { _codMotivo,       ColCodMotivo   },
+                { ColDescripcion,   ColDescripcion },
+                { ColActivo,        ColActivo      }
             };
 
         public FrmActivosTrasladosMotivosDb(IConfiguration config)
@@ -36,11 +47,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<ActivosTrasladosMotivosDataLista> Activos_TrasladosMotivos_Consultar(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<ActivosTrasladosMotivosDataLista>()
+            var result = new ErrorDto<ActivosTrasladosMotivosDataLista>
             {
                 Code = 0,
-                Description = "Ok",
-                Result = new ActivosTrasladosMotivosDataLista()
+                Description = OkMessage,
+                Result = new ActivosTrasladosMotivosDataLista
                 {
                     total = 0,
                     lista = new List<ActivosTrasladosMotivosData>()
@@ -51,21 +62,22 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var where = "";
+                var where = string.Empty;
                 var p = new DynamicParameters();
 
                 var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
                 if (!string.IsNullOrWhiteSpace(filtroTexto))
                 {
-                    where = @" WHERE ( cod_motivo   LIKE @filtro
-                                   OR descripcion LIKE @filtro ) ";
-                    p.Add("@filtro", "%" + filtroTexto + "%");
+                    where = $@" WHERE ( {ColCodMotivo}   LIKE {ParamFiltro}
+                                   OR {ColDescripcion} LIKE {ParamFiltro} ) ";
+                    p.Add(ParamFiltro, "%" + filtroTexto + "%");
                 }
 
                 // Total
-                var qTotal = $@"SELECT COUNT(cod_motivo)
-                                FROM ACTIVOS_TRASLADOS_MOTIVOS
-                                {where}";
+                var qTotal = $@"
+                    SELECT COUNT({ColCodMotivo})
+                    FROM {TableMotivos}
+                    {where}";
                 result.Result.total = connection.Query<int>(qTotal, p).FirstOrDefault();
 
                 // Orden
@@ -77,7 +89,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 var sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
 
-                // Paginación (asumo pagina 1-based)
+                // Paginación (pagina 1-based)
                 var pagina = filtros?.pagina ?? 1;
                 var paginacion = filtros?.paginacion ?? 10;
                 var offset = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
@@ -86,17 +98,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p.Add("@fetch", paginacion);
 
                 var qDatos = $@"
-                SELECT 
-                    cod_motivo,
-                    descripcion,
-                    activo,
-                    registro_usuario,
-                    registro_fecha
-                FROM ACTIVOS_TRASLADOS_MOTIVOS
-                {where}
-                ORDER BY {sortField} {sortOrder}
-                OFFSET @offset ROWS 
-                FETCH NEXT @fetch ROWS ONLY;";
+                    SELECT 
+                        {ColCodMotivo}       AS cod_motivo,
+                        {ColDescripcion}     AS descripcion,
+                        {ColActivo}          AS activo,
+                        {ColRegistroUsuario} AS registro_usuario,
+                        {ColRegistroFecha}   AS registro_fecha
+                    FROM {TableMotivos}
+                    {where}
+                    ORDER BY {sortField} {sortOrder}
+                    OFFSET @offset ROWS 
+                    FETCH NEXT @fetch ROWS ONLY;";
 
                 result.Result.lista = connection
                     .Query<ActivosTrasladosMotivosData>(qDatos, p)
@@ -117,10 +129,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<ActivosTrasladosMotivosData>> Activos_TrasladosMotivos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<ActivosTrasladosMotivosData>>()
+            var result = new ErrorDto<List<ActivosTrasladosMotivosData>>
             {
                 Code = 0,
-                Description = "Ok",
+                Description = OkMessage,
                 Result = new List<ActivosTrasladosMotivosData>()
             };
 
@@ -128,27 +140,27 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var where = "";
+                var where = string.Empty;
                 var p = new DynamicParameters();
 
                 var filtroTexto = (filtros?.filtro ?? string.Empty).Trim();
                 if (!string.IsNullOrWhiteSpace(filtroTexto))
                 {
-                    where = @" WHERE ( cod_motivo   LIKE @filtro
-                                   OR descripcion LIKE @filtro ) ";
-                    p.Add("@filtro", "%" + filtroTexto + "%");
+                    where = $@" WHERE ( {ColCodMotivo}   LIKE {ParamFiltro}
+                                   OR {ColDescripcion} LIKE {ParamFiltro} ) ";
+                    p.Add(ParamFiltro, "%" + filtroTexto + "%");
                 }
 
                 var query = $@"
-                SELECT 
-                    cod_motivo,
-                    descripcion,
-                    activo,
-                    registro_usuario,
-                    registro_fecha
-                FROM ACTIVOS_TRASLADOS_MOTIVOS 
-                {where}
-                ORDER BY cod_motivo;";
+                    SELECT 
+                        {ColCodMotivo}       AS cod_motivo,
+                        {ColDescripcion}     AS descripcion,
+                        {ColActivo}          AS activo,
+                        {ColRegistroUsuario} AS registro_usuario,
+                        {ColRegistroFecha}   AS registro_fecha
+                    FROM {TableMotivos}
+                    {where}
+                    ORDER BY {ColCodMotivo};";
 
                 result.Result = connection
                     .Query<ActivosTrasladosMotivosData>(query, p)
@@ -168,17 +180,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_TrasladosMotivos_Guardar(int CodEmpresa, string usuario, ActivosTrasladosMotivosData datos)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
-                Description = "Ok"
+                Description = OkMessage
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string queryExiste = @"SELECT COALESCE(COUNT(*),0) as Existe 
-                                             FROM ACTIVOS_TRASLADOS_MOTIVOS  
-                                             WHERE cod_motivo = @codigo ";
+                var queryExiste = $@"
+                    SELECT COALESCE(COUNT(*),0) as Existe 
+                    FROM {TableMotivos}  
+                    WHERE {ColCodMotivo} = @codigo ";
                 var existe = connection.QueryFirstOrDefault<int>(queryExiste, new { codigo = datos.cod_motivo });
 
                 if (datos.isNew)
@@ -216,19 +230,20 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         private ErrorDto Activos_TrasladosMotivos_Actualizar(int CodEmpresa, string usuario, ActivosTrasladosMotivosData datos)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
-                Description = "Ok"
+                Description = OkMessage
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    UPDATE ACTIVOS_TRASLADOS_MOTIVOS 
-                       SET descripcion = @descripcion,
-                           activo      = @activo
-                     WHERE cod_motivo  = @cod_motivo";
+                var query = $@"
+                    UPDATE {TableMotivos} 
+                       SET {ColDescripcion} = @{ColDescripcion},
+                           {ColActivo}      = @{ColActivo}
+                     WHERE {ColCodMotivo}  = @{ColCodMotivo}";
 
                 connection.Execute(query, new
                 {
@@ -241,7 +256,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
-                    DetalleMovimiento = $"Motivo de Traslado:  {datos.cod_motivo}",
+                    DetalleMovimiento = $"{MovimientoDetalleLabel}{datos.cod_motivo}",
                     Movimiento = "Modifica - WEB",
                     Modulo = vModulo
                 });
@@ -259,17 +274,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         private ErrorDto Activos_TrasladosMotivos_Insertar(int CodEmpresa, string usuario, ActivosTrasladosMotivosData datos)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
-                Description = "Ok"
+                Description = OkMessage
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    INSERT INTO ACTIVOS_TRASLADOS_MOTIVOS
-                        (cod_motivo, descripcion, activo, registro_usuario, registro_fecha)
+                var query = $@"
+                    INSERT INTO {TableMotivos}
+                        ({ColCodMotivo}, {ColDescripcion}, {ColActivo}, {ColRegistroUsuario}, {ColRegistroFecha})
                     VALUES 
                         (@cod_motivo, @descripcion, @activo, @usuario, GETDATE());";
 
@@ -285,7 +301,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
-                    DetalleMovimiento = $"Motivo de Traslado: {datos.cod_motivo}",
+                    DetalleMovimiento = $"{MovimientoDetalleLabel}{datos.cod_motivo}",
                     Movimiento = "Registra - WEB",
                     Modulo = vModulo
                 });
@@ -303,22 +319,23 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_TrasladosMotivos_Eliminar(int CodEmpresa, string usuario, string cod_motivo)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
-                Description = "Ok"
+                Description = OkMessage
             };
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"DELETE FROM ACTIVOS_TRASLADOS_MOTIVOS WHERE cod_motivo = @cod_motivo";
+                var query = $@"DELETE FROM {TableMotivos} WHERE {ColCodMotivo} = @{ColCodMotivo}";
                 connection.Execute(query, new { cod_motivo });
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
-                    DetalleMovimiento = $"Motivo de Traslado: {cod_motivo}",
+                    DetalleMovimiento = $"{MovimientoDetalleLabel}{cod_motivo}",
                     Movimiento = "Elimina - WEB",
                     Modulo = vModulo
                 });

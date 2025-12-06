@@ -130,7 +130,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
                 const string query = @"
-                    SELECT RTRIM(contrato)   AS item,
+                    SELECT RTRIM(contrato)    AS item,
                            RTRIM(descripcion) AS descripcion 
                     FROM   Activos_obras";
 
@@ -257,44 +257,61 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     : $"%{filtros.filtro.Trim()}%";
                 p.Add("@filtro", filtroLike, DbType.String);
 
-                // sortField con whitelist
+                // sortField con whitelist -> índice numérico
                 var sortFieldRaw = (filtros?.sortField ?? "cod_Adendum").Trim();
                 var sortFieldNorm = sortFieldRaw.ToLowerInvariant();
 
-                string orderByCol = sortFieldNorm switch
+                int sortIndex = sortFieldNorm switch
                 {
-                    "cod_adendum" => "cod_Adendum",
-                    "descripcion" => "descripcion",
-                    "fecha"       => "fecha",
-                    "monto"       => "monto",
-                    _             => "cod_Adendum"
+                    "cod_adendum" => 1,
+                    "descripcion" => 2,
+                    "fecha"       => 3,
+                    "monto"       => 4,
+                    _             => 1
                 };
+                p.Add("@sortIndex", sortIndex, DbType.Int32);
 
-                string orderDir = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
+                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
+                p.Add("@sortDir", sortDir, DbType.Int32);
 
                 int pagina = filtros?.pagina ?? 0;
                 int paginacion = filtros?.paginacion ?? 50;
                 p.Add("@offset", pagina, DbType.Int32);
                 p.Add("@rows", paginacion, DbType.Int32);
 
-                const string whereSql = @"
-                    WHERE contrato = @contrato
+                const string query = @"
+                    SELECT cod_Adendum,
+                           descripcion,
+                           fecha,
+                           monto
+                    FROM   Activos_obras_ade
+                    WHERE  contrato = @contrato
                       AND (
                             @filtro IS NULL
                             OR cod_Adendum                      LIKE @filtro
                             OR descripcion                      LIKE @filtro
                             OR CONVERT(varchar(10), fecha,120) LIKE @filtro
                             OR CONVERT(varchar(30), monto)      LIKE @filtro
-                          )";
-
-                string query = $@"
-                    SELECT cod_Adendum,
-                           descripcion,
-                           fecha,
-                           monto
-                    FROM   Activos_obras_ade
-                    {whereSql}
-                    ORDER BY {orderByCol} {orderDir}
+                          )
+                    ORDER BY
+                        -- ASC
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN cod_Adendum
+                                WHEN 2 THEN descripcion
+                                WHEN 3 THEN fecha
+                                WHEN 4 THEN monto
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN cod_Adendum
+                                WHEN 2 THEN descripcion
+                                WHEN 3 THEN fecha
+                                WHEN 4 THEN monto
+                            END
+                        END DESC
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
 
@@ -336,40 +353,31 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     : $"%{filtros.filtro.Trim()}%";
                 p.Add("@filtro", filtroLike, DbType.String);
 
-                // Normalización de sortField (puede venir como "D.secuencia")
+                // sortField con whitelist -> índice numérico
                 var sortFieldRaw = (filtros?.sortField ?? "D.secuencia").Trim();
                 var sfNorm = sortFieldRaw.ToLowerInvariant().Replace("d.", "");
 
-                string orderByCol = sfNorm switch
+                int sortIndex = sfNorm switch
                 {
-                    "secuencia"      => "D.secuencia",
-                    "cod_desembolso" => "D.cod_desembolso",
-                    "cod_proveedor"  => "D.COD_PROVEEDOR",
-                    "documento"      => "D.Documento",
-                    "fecha"          => "D.fecha",
-                    "monto"          => "D.monto",
-                    _                => "D.secuencia"
+                    "secuencia"      => 1,
+                    "cod_desembolso" => 2,
+                    "cod_proveedor"  => 3,
+                    "documento"      => 4,
+                    "fecha"          => 5,
+                    "monto"          => 6,
+                    _                => 1
                 };
+                p.Add("@sortIndex", sortIndex, DbType.Int32);
 
-                string orderDir = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
+                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
+                p.Add("@sortDir", sortDir, DbType.Int32);
 
                 int pagina = filtros?.pagina ?? 0;
                 int paginacion = filtros?.paginacion ?? 50;
                 p.Add("@offset", pagina, DbType.Int32);
                 p.Add("@rows", paginacion, DbType.Int32);
 
-                const string whereSql = @"
-                    WHERE D.contrato = @contrato
-                      AND (
-                            @filtro IS NULL
-                            OR D.cod_desembolso                   LIKE @filtro
-                            OR D.COD_PROVEEDOR                    LIKE @filtro
-                            OR D.Documento                        LIKE @filtro
-                            OR CONVERT(varchar(10), D.fecha,120)  LIKE @filtro
-                            OR CONVERT(varchar(30), D.monto)      LIKE @filtro
-                          )";
-
-                string query = $@"
+                const string query = @"
                     SELECT D.secuencia,
                            D.cod_desembolso,
                            D.COD_PROVEEDOR,
@@ -380,9 +388,39 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                            P.descripcion AS Proveedor
                     FROM   Activos_Obras_Desem D
                     INNER JOIN Activos_obras_tDesem T ON D.cod_desembolso = T.cod_desembolso
-                    INNER JOIN Activos_Proveedores P ON D.cod_proveedor  = P.cod_Proveedor 
-                    {whereSql}
-                    ORDER BY {orderByCol} {orderDir}
+                    INNER JOIN Activos_Proveedores P  ON D.cod_proveedor  = P.cod_Proveedor 
+                    WHERE  D.contrato = @contrato
+                      AND (
+                            @filtro IS NULL
+                            OR D.cod_desembolso                  LIKE @filtro
+                            OR D.COD_PROVEEDOR                   LIKE @filtro
+                            OR D.Documento                       LIKE @filtro
+                            OR CONVERT(varchar(10), D.fecha,120) LIKE @filtro
+                            OR CONVERT(varchar(30), D.monto)     LIKE @filtro
+                          )
+                    ORDER BY
+                        -- ASC
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN D.secuencia
+                                WHEN 2 THEN D.cod_desembolso
+                                WHEN 3 THEN D.COD_PROVEEDOR
+                                WHEN 4 THEN D.Documento
+                                WHEN 5 THEN D.fecha
+                                WHEN 6 THEN D.monto
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN D.secuencia
+                                WHEN 2 THEN D.cod_desembolso
+                                WHEN 3 THEN D.COD_PROVEEDOR
+                                WHEN 4 THEN D.Documento
+                                WHEN 5 THEN D.fecha
+                                WHEN 6 THEN D.monto
+                            END
+                        END DESC
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
 

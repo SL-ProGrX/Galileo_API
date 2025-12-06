@@ -13,22 +13,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MSecurityMainDb _Security_MainDB;
         private const string _codproveedor = "COD_PROVEEDOR";
 
-        // Mapa de campos permitidos para ordenamiento (lista blanca)
-        private static readonly Dictionary<string, string> SortFieldMap =
-            new(StringComparer.OrdinalIgnoreCase)
-            {
-                { _codproveedor, _codproveedor },
-                { "DESCRIPCION", "DESCRIPCION" },
-                { "ACTIVO", "ACTIVO" },
-                { "USUARIO", "REGISTRO_USUARIO" },
-
-                // Si desde el front mandan los nombres de propiedades del modelo:
-                { "cod_proveedor", _codproveedor },
-                { "descripcion", "DESCRIPCION" },
-                { "activo", "ACTIVO" },
-                { "usuario", "REGISTRO_USUARIO" }
-            };
-
         public FrmActivosProveedoresDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -51,31 +35,40 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                var where = string.Empty;
                 var parameters = new DynamicParameters();
 
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    var f = filtros.filtro.Trim();
-                    // Uso de parámetros para evitar SQL Injection
-                    where = " WHERE COD_PROVEEDOR LIKE @filtro OR DESCRIPCION LIKE @filtro";
-                    parameters.Add("@filtro", $"%{f}%");
-                }
+                // Filtro seguro (sin WHERE dinámico)
+                string? filtroTexto = filtros?.filtro;
+                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
+                parameters.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
+                parameters.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
 
                 // Total de registros
-                var queryTotal = $"SELECT COUNT(*) FROM dbo.ACTIVOS_PROVEEDORES {where}";
+                const string queryTotal = @"
+                    SELECT COUNT(*)
+                    FROM dbo.ACTIVOS_PROVEEDORES
+                    WHERE (@tieneFiltro = 0
+                           OR COD_PROVEEDOR LIKE @filtro
+                           OR DESCRIPCION  LIKE @filtro);";
+
                 resp.Result.total = cn.QueryFirstOrDefault<int>(queryTotal, parameters);
 
-                // Order by (validando sortField)
-                string sortField = _codproveedor;
-                if (!string.IsNullOrWhiteSpace(filtros?.sortField) &&
-                    SortFieldMap.TryGetValue(filtros.sortField, out var mappedField))
-                {
-                    sortField = mappedField;
-                }
+                // Order by seguro: usamos índice + CASE
+                var sortFieldRaw = filtros?.sortField ?? _codproveedor;
+                var sortFieldNorm = sortFieldRaw.Trim().ToUpperInvariant();
 
-                // sortOrder solo permite ASC/DESC a partir de un entero conocido
-                string sortOrder = filtros?.sortOrder == 0 ? "DESC" : "ASC";
+                int sortIndex = sortFieldNorm switch
+                {
+                    "COD_PROVEEDOR"                => 1,
+                    "DESCRIPCION"                  => 2,
+                    "ACTIVO"                       => 3,
+                    "REGISTRO_USUARIO" or "USUARIO"=> 4,
+                    _                              => 1
+                };
+                parameters.Add("@sortIndex", sortIndex);
+
+                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
+                parameters.Add("@sortDir", sortDir);
 
                 // Paginación
                 int pagina = filtros?.pagina ?? 0;
@@ -84,15 +77,35 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 parameters.Add("@offset", pagina);
                 parameters.Add("@fetch", paginacion);
 
-                var query = $@"
+                const string query = @"
                     SELECT
-                        COD_PROVEEDOR                                     AS cod_proveedor,
-                        ISNULL(DESCRIPCION,'')                            AS descripcion,
+                        COD_PROVEEDOR                                           AS cod_proveedor,
+                        ISNULL(DESCRIPCION,'')                                  AS descripcion,
                         CAST(CASE WHEN ISNULL(ACTIVO,1)=1 THEN 1 ELSE 0 END AS bit) AS activo,
-                        ISNULL(REGISTRO_USUARIO,'')                       AS usuario
+                        ISNULL(REGISTRO_USUARIO,'')                             AS usuario
                     FROM dbo.ACTIVOS_PROVEEDORES
-                    {where}
-                    ORDER BY {sortField} {sortOrder}
+                    WHERE (@tieneFiltro = 0
+                           OR COD_PROVEEDOR LIKE @filtro
+                           OR DESCRIPCION  LIKE @filtro)
+                    ORDER BY
+                        -- ASC
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN COD_PROVEEDOR
+                                WHEN 2 THEN DESCRIPCION
+                                WHEN 3 THEN ACTIVO
+                                WHEN 4 THEN REGISTRO_USUARIO
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN COD_PROVEEDOR
+                                WHEN 2 THEN DESCRIPCION
+                                WHEN 3 THEN ACTIVO
+                                WHEN 4 THEN REGISTRO_USUARIO
+                            END
+                        END DESC
                     OFFSET @offset ROWS
                     FETCH NEXT @fetch ROWS ONLY;";
 
@@ -124,24 +137,23 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                var where = string.Empty;
                 var parameters = new DynamicParameters();
 
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    var f = filtros.filtro.Trim();
-                    where = " WHERE COD_PROVEEDOR LIKE @filtro OR DESCRIPCION LIKE @filtro";
-                    parameters.Add("@filtro", $"%{f}%");
-                }
+                string? filtroTexto = filtros?.filtro;
+                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
+                parameters.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
+                parameters.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
 
-                var query = $@"
+                const string query = @"
                     SELECT
-                        COD_PROVEEDOR                                     AS cod_proveedor,
-                        ISNULL(DESCRIPCION,'')                            AS descripcion,
+                        COD_PROVEEDOR                                           AS cod_proveedor,
+                        ISNULL(DESCRIPCION,'')                                  AS descripcion,
                         CAST(CASE WHEN ISNULL(ACTIVO,1)=1 THEN 1 ELSE 0 END AS bit) AS activo,
-                        ISNULL(REGISTRO_USUARIO,'')                       AS usuario
+                        ISNULL(REGISTRO_USUARIO,'')                             AS usuario
                     FROM dbo.ACTIVOS_PROVEEDORES
-                    {where}
+                    WHERE (@tieneFiltro = 0
+                           OR COD_PROVEEDOR LIKE @filtro
+                           OR DESCRIPCION  LIKE @filtro)
                     ORDER BY COD_PROVEEDOR;";
 
                 resp.Result = cn.Query<ActivosProveedoresData>(query, parameters).ToList();

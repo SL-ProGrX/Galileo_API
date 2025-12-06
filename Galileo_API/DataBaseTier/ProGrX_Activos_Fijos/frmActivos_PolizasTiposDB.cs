@@ -41,56 +41,74 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 var p = new DynamicParameters();
 
-                // Filtro
-                string whereSql = string.Empty;
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    whereSql = @"
-WHERE ( tipo_poliza LIKE @filtro
-    OR  descripcion LIKE @filtro )";
-                    p.Add("@filtro", $"%{filtros.filtro.Trim()}%");
-                }
+                // Normalizamos filtro para evitar SQL dinámico (S2077)
+                string? filtroTexto = filtros?.filtro;
+                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
 
-                // Total con los mismos filtros
-                var countSql = $@"
-SELECT COUNT(tipo_poliza)
-FROM   activos_polizas_tipos
-{whereSql};";
-
-                result.Result.total = connection.QueryFirstOrDefault<int>(countSql, p);
+                p.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
+                p.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
 
                 // Paginación
-                int pagina     = filtros?.pagina     ?? 0;
+                int pagina = filtros?.pagina ?? 0;
                 int paginacion = filtros?.paginacion ?? 50;
                 p.Add("@offset", pagina);
-                p.Add("@rows",   paginacion);
+                p.Add("@rows", paginacion);
 
-                // Sort seguro (whitelist)
-                var sortFieldRaw  = filtros?.sortField ?? _tipoPolizaCol;
+                // Sort seguro mediante índice + CASE
+                var sortFieldRaw = filtros?.sortField ?? _tipoPolizaCol;
                 var sortFieldNorm = sortFieldRaw.Trim().ToLowerInvariant();
 
-                string orderByCol = sortFieldNorm switch
+                int sortIndex = sortFieldNorm switch
                 {
-                    "tipo_poliza" => "tipo_poliza",
-                    "descripcion" => "descripcion",
-                    "activo"      => "ACTIVO",
-                    _             => _tipoPolizaCol
+                    "tipo_poliza" => 1,
+                    "descripcion" => 2,
+                    "activo"      => 3,
+                    _             => 1
                 };
+                p.Add("@sortIndex", sortIndex);
 
-                string sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
+                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
+                p.Add("@sortDir", sortDir);
 
-                var dataSql = $@"
+                const string baseCountSql = @"
+SELECT COUNT(tipo_poliza)
+FROM   activos_polizas_tipos
+WHERE (@tieneFiltro = 0
+       OR tipo_poliza LIKE @filtro
+       OR descripcion LIKE @filtro);";
+
+                result.Result.total = connection.QueryFirstOrDefault<int>(baseCountSql, p);
+
+                const string baseDataSql = @"
 SELECT tipo_poliza,
        descripcion,
        CASE WHEN ISNULL(ACTIVO, 0) = 0 THEN 0 ELSE 1 END AS ACTIVO
 FROM   activos_polizas_tipos
-{whereSql}
-ORDER BY {orderByCol} {sortOrder}
+WHERE (@tieneFiltro = 0
+       OR tipo_poliza LIKE @filtro
+       OR descripcion LIKE @filtro)
+ORDER BY
+    -- ASC
+    CASE @sortDir WHEN 1 THEN
+        CASE @sortIndex
+            WHEN 1 THEN tipo_poliza
+            WHEN 2 THEN descripcion
+            WHEN 3 THEN ACTIVO
+        END
+    END ASC,
+    -- DESC
+    CASE @sortDir WHEN 0 THEN
+        CASE @sortIndex
+            WHEN 1 THEN tipo_poliza
+            WHEN 2 THEN descripcion
+            WHEN 3 THEN ACTIVO
+        END
+    END DESC
 OFFSET @offset ROWS 
 FETCH NEXT @rows ROWS ONLY;";
 
                 result.Result.lista = connection
-                    .Query<ActivosPolizasTiposData>(dataSql, p)
+                    .Query<ActivosPolizasTiposData>(baseDataSql, p)
                     .ToList();
             }
             catch (Exception ex)
@@ -120,22 +138,20 @@ FETCH NEXT @rows ROWS ONLY;";
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var p = new DynamicParameters();
-                string whereSql = string.Empty;
+                string? filtroTexto = filtros?.filtro;
+                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
 
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    whereSql = @"
-WHERE ( tipo_poliza LIKE @filtro
-    OR  descripcion LIKE @filtro )";
-                    p.Add("@filtro", $"%{filtros.filtro.Trim()}%");
-                }
+                p.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
+                p.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
 
-                var query = $@"
+                const string query = @"
 SELECT tipo_poliza,
        descripcion,
        CASE WHEN ISNULL(ACTIVO, 0) = 0 THEN 0 ELSE 1 END AS ACTIVO
 FROM   activos_polizas_tipos
-{whereSql}
+WHERE (@tieneFiltro = 0
+       OR tipo_poliza LIKE @filtro
+       OR descripcion LIKE @filtro)
 ORDER BY tipo_poliza;";
 
                 result.Result = connection
@@ -241,10 +257,10 @@ UPDATE activos_polizas_tipos
 
                 connection.Execute(query, new
                 {
-                    tipo_poliza       = tipoPoliza.tipo_poliza.ToUpper(),
-                    descripcion       = tipoPoliza.descripcion?.ToUpper(),
-                    activo            = tipoPoliza.activo,
-                    modifica_usuario  = usuario
+                    tipo_poliza      = tipoPoliza.tipo_poliza.ToUpper(),
+                    descripcion      = tipoPoliza.descripcion?.ToUpper(),
+                    activo           = tipoPoliza.activo,
+                    modifica_usuario = usuario
                 });
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto

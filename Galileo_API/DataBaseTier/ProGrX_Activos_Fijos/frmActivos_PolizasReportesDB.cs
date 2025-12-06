@@ -34,41 +34,60 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 var p = new DynamicParameters();
 
-                // Filtro
-                string whereSql = string.Empty;
-                if (vfiltro != null && !string.IsNullOrWhiteSpace(vfiltro.filtro))
-                {
-                    whereSql = @"
-WHERE (
-       COD_POLIZA             LIKE @filtro
-    OR DESCRIPCION           LIKE @filtro
-    OR ISNULL(NUM_POLIZA,'') LIKE @filtro
-    OR ISNULL(DOCUMENTO,'')  LIKE @filtro
-)";
-                    p.Add("@filtro", $"%{vfiltro.filtro.Trim()}%");
-                }
-
                 // Paginación
                 int pagina     = vfiltro?.pagina     ?? 0;
                 int paginacion = vfiltro?.paginacion ?? 50;
                 p.Add("@offset", pagina);
                 p.Add("@rows",   paginacion);
 
-                // Total
-                var countSql = $@"SELECT COUNT(*) FROM ACTIVOS_POLIZAS {whereSql};";
-                response.Result.total = connection.QueryFirstOrDefault<int>(countSql, p);
+                // Normalizamos el texto de filtro para evitar S2589
+                string? filtroTexto = vfiltro?.filtro;
+                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
 
-                // Datos (código + descripción) paginados
-                var dataSql = $@"
+                if (tieneFiltro)
+                {
+                    p.Add("@filtro", $"%{filtroTexto!.Trim()}%");
+                }
+
+                const string baseCountSql = @"SELECT COUNT(*) FROM ACTIVOS_POLIZAS";
+                const string baseDataSql  = @"
 SELECT 
     COD_POLIZA  AS cod_poliza,
     DESCRIPCION AS descripcion
-FROM ACTIVOS_POLIZAS
-{whereSql}
+FROM ACTIVOS_POLIZAS";
+
+                const string whereBlock = @"
+WHERE (
+       COD_POLIZA             LIKE @filtro
+    OR DESCRIPCION           LIKE @filtro
+    OR ISNULL(NUM_POLIZA,'') LIKE @filtro
+    OR ISNULL(DOCUMENTO,'')  LIKE @filtro
+)";
+
+                string countSql;
+                string dataSql;
+
+                if (tieneFiltro)
+                {
+                    countSql = baseCountSql + whereBlock + ";";
+                    dataSql  = baseDataSql  + whereBlock + @"
 ORDER BY COD_POLIZA
 OFFSET @offset ROWS 
 FETCH NEXT @rows ROWS ONLY;";
+                }
+                else
+                {
+                    countSql = baseCountSql + ";";
+                    dataSql  = baseDataSql  + @"
+ORDER BY COD_POLIZA
+OFFSET @offset ROWS 
+FETCH NEXT @rows ROWS ONLY;";
+                }
 
+                // Total
+                response.Result.total = connection.QueryFirstOrDefault<int>(countSql, p);
+
+                // Datos
                 response.Result.lista = connection
                     .Query<ActivosPolizasReportesData>(dataSql, p)
                     .ToList();

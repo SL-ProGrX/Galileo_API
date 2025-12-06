@@ -34,7 +34,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             string? codDepartamento = null,
             string? codSeccion = null)
         {
-
             var result = new ErrorDto<ActivosPersonasLista>
             {
                 Code = 0,
@@ -45,6 +44,23 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                const string fromSql = @"
+                    FROM ACTIVOS_PERSONAS Per
+                    INNER JOIN ACTIVOS_DEPARTAMENTOS Dept 
+                        ON Per.COD_DEPARTAMENTO = Dept.COD_DEPARTAMENTO
+                    INNER JOIN ACTIVOS_SECCIONES Sec  
+                        ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO 
+                       AND Per.COD_SECCION      = Sec.COD_SECCION
+                    LEFT JOIN (
+                        SELECT  IDENTIFICACION,
+                                MAX(COD_TRASLADO) AS COD_TRASLADO
+                        FROM    ACTIVOS_TRASLADOS
+                        GROUP BY IDENTIFICACION
+                    ) Tr
+                        ON Tr.IDENTIFICACION = Per.IDENTIFICACION";
+
+                // WHERE dinámico, pero solo con fragmentos constantes + parámetros
                 var where = " WHERE 1=1 ";
                 var p = new DynamicParameters();
 
@@ -87,23 +103,20 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                 };
                 p.Add("@orderIndex", orderIndex);
 
-                // Dirección: 0 = DESC, 1 = ASC (mismo criterio que ya usabas)
+                // Dirección: 0 = DESC, 1 = ASC (igual que estabas usando)
                 int orderDir = filtros.sortOrder == 0 ? 0 : 1;
                 p.Add("@orderDir", orderDir);
 
-                var sqlCount = $@"
-                    SELECT COUNT(1)
-                    FROM ACTIVOS_PERSONAS Per
-                    INNER JOIN ACTIVOS_DEPARTAMENTOS Dept 
-                        ON Per.COD_DEPARTAMENTO = Dept.COD_DEPARTAMENTO
-                    INNER JOIN ACTIVOS_SECCIONES Sec  
-                        ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO 
-                       AND Per.COD_SECCION      = Sec.COD_SECCION
-                    {where};";
+                // Paginación
+                p.Add("@offset", filtros.pagina);
+                p.Add("@rows", filtros.paginacion);
 
+                // TOTAL
+                var sqlCount = "SELECT COUNT(1) " + fromSql + where + ";";
                 result.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
 
-                var sqlPage = $@"
+                // PAGE con ORDER BY seguro (sin concatenar columnas ni dirección desde el usuario)
+                var sqlPage = @"
                     SELECT 
                         Per.IDENTIFICACION    AS identificacion,
                         Per.NOMBRE            AS nombre,
@@ -115,21 +128,8 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                         Sec.DESCRIPCION       AS seccion,
                         Per.REGISTRO_USUARIO  AS usuario,
                         Tr.COD_TRASLADO       AS cod_traslado
-                    FROM ACTIVOS_PERSONAS Per
-                    INNER JOIN ACTIVOS_DEPARTAMENTOS Dept 
-                        ON Per.COD_DEPARTAMENTO = Dept.COD_DEPARTAMENTO
-                    INNER JOIN ACTIVOS_SECCIONES Sec  
-                        ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO 
-                       AND Per.COD_SECCION      = Sec.COD_SECCION
-                    LEFT JOIN (
-                        SELECT  IDENTIFICACION,
-                                MAX(COD_TRASLADO) AS COD_TRASLADO
-                        FROM    ACTIVOS_TRASLADOS
-                        GROUP BY IDENTIFICACION
-                    ) Tr
-                        ON Tr.IDENTIFICACION = Per.IDENTIFICACION
-
-                    {where}
+                    " + fromSql + @"
+                    " + where + @"
                     ORDER BY
                         -- ASC
                         CASE @orderDir WHEN 1 THEN
@@ -153,9 +153,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                         END DESC
                     OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY;";
 
-                p.Add("@offset", filtros.pagina);
-                p.Add("@rows", filtros.paginacion);
-
                 result.Result.lista = connection.Query<ActivosPersonasData>(sqlPage, p).ToList();
             }
             catch (Exception ex)
@@ -178,7 +175,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             string? codDepartamento = null,
             string? codSeccion = null)
         {
-
             var result = new ErrorDto<List<ActivosPersonasData>>
             {
                 Code = 0,
@@ -215,7 +211,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                     p.Add("@codSeccion", codSeccion);
                 }
 
-                var sql = $@"
+                var sql = @"
                     SELECT
                         Per.IDENTIFICACION   AS identificacion,
                         Per.NOMBRE           AS nombre,
@@ -232,7 +228,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                     LEFT JOIN ACTIVOS_SECCIONES Sec 
                         ON Per.COD_DEPARTAMENTO = Sec.COD_DEPARTAMENTO 
                        AND Per.COD_SECCION      = Sec.COD_SECCION
-                    {where}
+                    " + where + @"
                     ORDER BY Per.IDENTIFICACION;";
 
                 result.Result = connection.Query<ActivosPersonasData>(sql, p).ToList();
@@ -252,7 +248,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Personas_Guardar(int CodEmpresa, string usuario, ActivosPersonasData persona)
         {
-
             var result = new ErrorDto()
             {
                 Code = 0,
@@ -306,7 +301,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         private ErrorDto Activos_Personas_Actualizar(int CodEmpresa, string usuario, ActivosPersonasData persona)
         {
-
             var result = new ErrorDto()
             {
                 Code = 0,
@@ -360,7 +354,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         private ErrorDto Activos_Personas_Insertar(int CodEmpresa, string usuario, ActivosPersonasData persona)
         {
-
             var result = new ErrorDto()
             {
                 Code = 0,
@@ -409,7 +402,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Personas_Eliminar(int CodEmpresa, string identificacion, string usuario)
         {
-
             var result = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
@@ -453,7 +445,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Personas_Valida(int CodEmpresa, string identificacion)
         {
-
             var result = new ErrorDto()
             {
                 Code = 0,
@@ -496,7 +487,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         public ErrorDto<CambioDeptoResponse> Activos_Personas_CambioDepto_Aplicar(
             int CodEmpresa, string usuario, CambioDeptoRequest request)
         {
-
             var result = new ErrorDto<CambioDeptoResponse>()
             {
                 Code = 0,
@@ -559,7 +549,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Personas_SincronizarRH(int CodEmpresa, string usuario)
         {
-
             var result = new ErrorDto()
             {
                 Code = 0,
@@ -593,7 +582,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Departamentos_Obtener(int CodEmpresa)
         {
-
             var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
@@ -624,7 +612,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Secciones_ObtenerPorDepto(int CodEmpresa, string cod_departamento)
         {
-
             var result = new ErrorDto<List<DropDownListaGenericaModel>>()
             {
                 Code = 0,
