@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using System.Data;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -9,20 +10,20 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 {
     public class FrmActivosPersonasDB
     {
-        private readonly int vModulo = 36; // Módulo de Activos
-        private readonly MSecurityMainDb _Security_MainDB;
+        private const int ModuloActivos = 36; // Módulo de Activos
+        private const string Todos = "TODOS";
+
+        private readonly MSecurityMainDb _securityMainDb;
         //private readonly mReportingServicesDB _mReporting;
         //private readonly MProGrXAuxiliarDB _mAuxiliar;
-        private readonly PortalDB _portalDB;
-
-        private const string _todos = "TODOS";
+        private readonly PortalDB _portalDb;
 
         public FrmActivosPersonasDB(IConfiguration config)
         {
-            _Security_MainDB = new MSecurityMainDb(config);
+            _securityMainDb = new MSecurityMainDb(config);
             //_mReporting = new mReportingServicesDB(_config);
             //_mAuxiliar = new MProGrXAuxiliarDB(config);
-            _portalDB = new PortalDB(config);
+            _portalDb = new PortalDB(config);
         }
 
         /// <summary>
@@ -38,12 +39,16 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new ActivosPersonasLista { total = 0, lista = new List<ActivosPersonasData>() }
+                Result = new ActivosPersonasLista
+                {
+                    total = 0,
+                    lista = new List<ActivosPersonasData>()
+                }
             };
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
 
                 const string fromSql = @"
                     FROM ACTIVOS_PERSONAS Per
@@ -60,29 +65,30 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                     ) Tr
                         ON Tr.IDENTIFICACION = Per.IDENTIFICACION";
 
-                // WHERE dinámico, pero solo con fragmentos constantes + parámetros
-                var where = " WHERE 1=1 ";
+                // WHERE dinámico (solo texto constante + parámetros)
+                var where = " WHERE 1 = 1 ";
                 var p = new DynamicParameters();
 
                 if (!string.IsNullOrWhiteSpace(filtros.filtro))
                 {
-                    where += @" AND (
-                         Per.IDENTIFICACION    LIKE @filtro
-                      OR Per.NOMBRE           LIKE @filtro
-                      OR Dept.DESCRIPCION     LIKE @filtro
-                      OR Sec.DESCRIPCION      LIKE @filtro
-                      OR Per.REGISTRO_USUARIO LIKE @filtro
-                    )";
+                    where += @"
+                        AND (
+                               Per.IDENTIFICACION    LIKE @filtro
+                            OR Per.NOMBRE           LIKE @filtro
+                            OR Dept.DESCRIPCION     LIKE @filtro
+                            OR Sec.DESCRIPCION      LIKE @filtro
+                            OR Per.REGISTRO_USUARIO LIKE @filtro
+                        )";
                     p.Add("@filtro", $"%{filtros.filtro}%");
                 }
 
-                if (!string.IsNullOrWhiteSpace(codDepartamento) && codDepartamento != _todos)
+                if (!string.IsNullOrWhiteSpace(codDepartamento) && codDepartamento != Todos)
                 {
                     where += " AND Per.COD_DEPARTAMENTO = @codDepartamento ";
                     p.Add("@codDepartamento", codDepartamento);
                 }
 
-                if (!string.IsNullOrWhiteSpace(codSeccion) && codSeccion != _todos)
+                if (!string.IsNullOrWhiteSpace(codSeccion) && codSeccion != Todos)
                 {
                     where += " AND Per.COD_SECCION = @codSeccion ";
                     p.Add("@codSeccion", codSeccion);
@@ -103,7 +109,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                 };
                 p.Add("@orderIndex", orderIndex);
 
-                // Dirección: 0 = DESC, 1 = ASC (igual que estabas usando)
+                // Dirección: 0 = DESC, 1 = ASC
                 int orderDir = filtros.sortOrder == 0 ? 0 : 1;
                 p.Add("@orderDir", orderDir);
 
@@ -115,7 +121,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                 var sqlCount = "SELECT COUNT(1) " + fromSql + where + ";";
                 result.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
 
-                // PAGE con ORDER BY seguro (sin concatenar columnas ni dirección desde el usuario)
+                // PAGE con ORDER BY seguro
                 var sqlPage = @"
                     SELECT 
                         Per.IDENTIFICACION    AS identificacion,
@@ -160,7 +166,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                 result.Code = -1;
                 result.Description = ex.Message;
                 result.Result.total = 0;
-                result.Result.lista = [];
+                result.Result.lista = new List<ActivosPersonasData>();
             }
 
             return result;
@@ -184,28 +190,31 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var where = " WHERE 1=1 ";
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
+
+                var where = " WHERE 1 = 1 ";
                 var p = new DynamicParameters();
 
                 if (!string.IsNullOrWhiteSpace(filtros.filtro))
                 {
-                    where += @" AND (
-                       Per.IDENTIFICACION    LIKE @filtro
-                    OR Per.NOMBRE           LIKE @filtro
-                    OR Dept.DESCRIPCION     LIKE @filtro
-                    OR Sec.DESCRIPCION      LIKE @filtro
-                    OR Per.REGISTRO_USUARIO LIKE @filtro
-                    )";
+                    where += @"
+                        AND (
+                               Per.IDENTIFICACION    LIKE @filtro
+                            OR Per.NOMBRE           LIKE @filtro
+                            OR Dept.DESCRIPCION     LIKE @filtro
+                            OR Sec.DESCRIPCION      LIKE @filtro
+                            OR Per.REGISTRO_USUARIO LIKE @filtro
+                        )";
                     p.Add("@filtro", $"%{filtros.filtro}%");
                 }
 
-                if (!string.IsNullOrWhiteSpace(codDepartamento) && codDepartamento != _todos)
+                if (!string.IsNullOrWhiteSpace(codDepartamento) && codDepartamento != Todos)
                 {
                     where += " AND Per.COD_DEPARTAMENTO = @codDepartamento ";
                     p.Add("@codDepartamento", codDepartamento);
                 }
-                if (!string.IsNullOrWhiteSpace(codSeccion) && codSeccion != _todos)
+
+                if (!string.IsNullOrWhiteSpace(codSeccion) && codSeccion != Todos)
                 {
                     where += " AND Per.COD_SECCION = @codSeccion ";
                     p.Add("@codSeccion", codSeccion);
@@ -248,7 +257,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Personas_Guardar(int CodEmpresa, string usuario, ActivosPersonasData persona)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
@@ -256,13 +265,15 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                // Verifico existencia
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
+
                 const string qExiste = @"
-                    SELECT ISNULL(COUNT(*),0) 
+                    SELECT ISNULL(COUNT(*), 0) 
                     FROM ACTIVOS_PERSONAS 
                     WHERE UPPER(IDENTIFICACION) = @ident;";
-                int existe = connection.QueryFirstOrDefault<int>(qExiste,
+
+                int existe = connection.QueryFirstOrDefault<int>(
+                    qExiste,
                     new { ident = persona.identificacion.ToUpper() });
 
                 if (persona.isNew)
@@ -277,7 +288,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                         result = Activos_Personas_Insertar(CodEmpresa, usuario, persona);
                     }
                 }
-                else if (existe == 0 && !persona.isNew)
+                else if (existe == 0)
                 {
                     result.Code = -2;
                     result.Description = $"La persona con identificación {persona.identificacion} no existe.";
@@ -286,13 +297,13 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                 {
                     result = Activos_Personas_Actualizar(CodEmpresa, usuario, persona);
                 }
-
             }
             catch (Exception ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -301,14 +312,16 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         private ErrorDto Activos_Personas_Actualizar(int CodEmpresa, string usuario, ActivosPersonasData persona)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
+
                 const string query = @"
                     UPDATE ACTIVOS_PERSONAS
                        SET NOMBRE           = @nombre,
@@ -322,30 +335,30 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 
                 connection.Execute(query, new
                 {
-                    nombre           = persona.nombre?.ToUpper(),
+                    nombre = persona.nombre?.ToUpper(),
                     cod_departamento = persona.cod_departamento,
-                    cod_seccion      = persona.cod_seccion,
-                    cod_alterno      = persona.cod_alterno?.ToUpper(),
-                    activo           = persona.activo ? 1 : 0,
+                    cod_seccion = persona.cod_seccion,
+                    cod_alterno = persona.cod_alterno?.ToUpper(),
+                    activo = persona.activo ? 1 : 0,
                     usuario,
-                    identificacion   = persona.identificacion.ToUpper()
+                    identificacion = persona.identificacion.ToUpper()
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"Persona : {persona.identificacion}",
                     Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
+                    Modulo = ModuloActivos
                 });
-
             }
             catch (Exception ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -354,14 +367,16 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         private ErrorDto Activos_Personas_Insertar(int CodEmpresa, string usuario, ActivosPersonasData persona)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
+
                 const string query = @"
                     INSERT INTO ACTIVOS_PERSONAS
                       (COD_DEPARTAMENTO, COD_SECCION, IDENTIFICACION, NOMBRE, COD_ALTERNO, ACTIVO, REGISTRO_USUARIO, REGISTRO_FECHA)
@@ -371,29 +386,29 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                 connection.Execute(query, new
                 {
                     cod_departamento = persona.cod_departamento,
-                    cod_seccion      = persona.cod_seccion,
-                    identificacion   = persona.identificacion.ToUpper(),
-                    nombre           = persona.nombre?.ToUpper(),
-                    cod_alterno      = persona.cod_alterno?.ToUpper(),
-                    activo           = persona.activo ? 1 : 0,
+                    cod_seccion = persona.cod_seccion,
+                    identificacion = persona.identificacion.ToUpper(),
+                    nombre = persona.nombre?.ToUpper(),
+                    cod_alterno = persona.cod_alterno?.ToUpper(),
+                    activo = persona.activo ? 1 : 0,
                     usuario
                 });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"Persona : {persona.identificacion}",
                     Movimiento = "Registra - WEB",
-                    Modulo = vModulo
+                    Modulo = ModuloActivos
                 });
-
             }
             catch (Exception ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -406,9 +421,14 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string sql = @"DELETE FROM ACTIVOS_PERSONAS WHERE IDENTIFICACION = @identificacion";
-                var rows = connection.Execute(sql, new { identificacion = identificacion?.ToUpper() });
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
+
+                const string sql = @"DELETE FROM ACTIVOS_PERSONAS WHERE IDENTIFICACION = @identificacion;";
+
+                var rows = connection.Execute(sql, new
+                {
+                    identificacion = identificacion.ToUpper()
+                });
 
                 if (rows == 0)
                 {
@@ -417,13 +437,13 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                     return result;
                 }
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"Persona : {identificacion}",
                     Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
+                    Modulo = ModuloActivos
                 });
             }
             catch (SqlException ex) when (ex.Number == 547) // FK constraint
@@ -445,20 +465,23 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Personas_Valida(int CodEmpresa, string identificacion)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
+
                 const string query = @"
                     SELECT COUNT(IDENTIFICACION) 
                     FROM ACTIVOS_PERSONAS 
                     WHERE UPPER(IDENTIFICACION) = @ident;";
 
-                var existe = connection.QueryFirstOrDefault<int>(query,
+                var existe = connection.QueryFirstOrDefault<int>(
+                    query,
                     new { ident = identificacion.ToUpper() });
 
                 if (existe > 0)
@@ -471,13 +494,13 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                     result.Code = 0;
                     result.Description = "La identificación es válida.";
                 }
-
             }
             catch (Exception ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -485,55 +508,45 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// Aplica el cambio de Departamento/Sección llamando a spActivos_DepartamentoCambio. Devuelve Boleta.
         /// </summary>
         public ErrorDto<CambioDeptoResponse> Activos_Personas_CambioDepto_Aplicar(
-            int CodEmpresa, string usuario, CambioDeptoRequest request)
+            int CodEmpresa,
+            string usuario,
+            CambioDeptoRequest request)
         {
-            var result = new ErrorDto<CambioDeptoResponse>()
+            var result = new ErrorDto<CambioDeptoResponse>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new CambioDeptoResponse()
             };
+
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
 
-                const string sql = @"
-                    EXEC spActivos_DepartamentoCambio 
-                        @Identificacion, 
-                        @CodDepartamento, 
-                        @CodSeccion, 
-                        @Usuario, 
-                        @Fecha;";
-
-                var rs = connection.Query<dynamic>(sql, new
-                {
-                    Identificacion  = request.identificacion,
-                    CodDepartamento = request.cod_departamento,
-                    CodSeccion      = request.cod_seccion,
-                    Usuario         = usuario,
-                    Fecha           = request.fecha // DateTime
-                }).FirstOrDefault();
-
-                string boleta = "";
-                if (rs is not null)
-                {
-                    var dict = rs as IDictionary<string, object>;
-                    if (dict != null && dict.ContainsKey("Boleta") && dict["Boleta"] != null)
+                // Llamada segura al stored procedure (sin EXEC concatenado)
+                var boleta = connection.QueryFirstOrDefault<string>(
+                    "spActivos_DepartamentoCambio",
+                    new
                     {
-                        boleta = dict["Boleta"]?.ToString() ?? "";
-                    }
-                }
+                        Identificacion = request.identificacion,
+                        CodDepartamento = request.cod_departamento,
+                        CodSeccion = request.cod_seccion,
+                        Usuario = usuario,
+                        Fecha = request.fecha
+                    },
+                    commandType: CommandType.StoredProcedure
+                ) ?? string.Empty;
+
                 result.Result.boleta = boleta;
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = $"Aplica Cambio Dpto/Sec a: {request.identificacion} Boleta:{result.Result.boleta}",
                     Movimiento = "Aplica - WEB",
-                    Modulo = vModulo
+                    Modulo = ModuloActivos
                 });
-
             }
             catch (Exception ex)
             {
@@ -541,6 +554,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
@@ -549,31 +563,35 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Personas_SincronizarRH(int CodEmpresa, string usuario)
         {
-            var result = new ErrorDto()
+            var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
+
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                connection.Execute("spActivos_Sincroniza_RH", commandType: System.Data.CommandType.StoredProcedure);
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                connection.Execute(
+                    "spActivos_Sincroniza_RH",
+                    commandType: CommandType.StoredProcedure);
+
+                _securityMainDb.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
                     DetalleMovimiento = "Sincronización con RRHH finalizada",
                     Movimiento = "Procesa - WEB",
-                    Modulo = vModulo
+                    Modulo = ModuloActivos
                 });
-
             }
             catch (Exception ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
@@ -582,21 +600,23 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Departamentos_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new List<DropDownListaGenericaModel>()
             };
+
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
+
                 const string q = @"
                     SELECT COD_DEPARTAMENTO AS item, DESCRIPCION
                     FROM ACTIVOS_DEPARTAMENTOS
                     ORDER BY COD_DEPARTAMENTO;";
-                result.Result = connection.Query<DropDownListaGenericaModel>(q).ToList();
 
+                result.Result = connection.Query<DropDownListaGenericaModel>(q).ToList();
             }
             catch (Exception ex)
             {
@@ -604,6 +624,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
@@ -612,22 +633,26 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Secciones_ObtenerPorDepto(int CodEmpresa, string cod_departamento)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            var result = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new List<DropDownListaGenericaModel>()
             };
+
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                using var connection = _portalDb.CreateConnection(CodEmpresa);
+
                 const string q = @"
                     SELECT COD_SECCION AS item, DESCRIPCION
                     FROM ACTIVOS_SECCIONES
                     WHERE COD_DEPARTAMENTO = @cod_departamento
                     ORDER BY COD_SECCION;";
-                result.Result = connection.Query<DropDownListaGenericaModel>(q, new { cod_departamento }).ToList();
 
+                result.Result = connection.Query<DropDownListaGenericaModel>(
+                    q,
+                    new { cod_departamento }).ToList();
             }
             catch (Exception ex)
             {
@@ -635,30 +660,35 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
                 result.Description = ex.Message;
                 result.Result = null;
             }
+
             return result;
         }
 
-        // /// <summary>
-        // /// Generar emision de documentos.
-        // /// </summary>
-        // /// <param name="codEmpresa"></param>
-        // /// <param name="request"></param>
-        // /// <returns></returns>
+        // ------------------------------------------------------------------------------------
+        // CÓDIGO DE REPORTES MANTENIDO (COMENTADO)
+        // ------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Generar emision de documentos.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         // public ErrorDto<object> Activos_BoletaActivosAsignados_Lote(int codEmpresa,ActivosPersonasReporteLoteRequest request)
         // {
         //     var response = new ErrorDto<object> { Code = 0 };
-
+        //
         //     if (request.Identificaciones == null || request.Identificaciones.Count == 0)
         //     {
         //         response.Code = -1;
         //         response.Description = "No se recibieron identificaciones para generar la boleta.";
         //         return response;
         //     }
-
+        //
         //     try
         //     {
         //         var pdfs = new List<byte[]>();
-
+        //
         //         foreach (var id in request.Identificaciones.Distinct())
         //         {
         //             var parametros = new
@@ -670,7 +700,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         //                 fxUsuario = request.Usuario,
         //                 fxSubTitulo = "ACTIVOS VIGENTES"
         //             };
-
+        //
         //             var reporteData = new FrmReporteGlobal
         //             {
         //                 codEmpresa = codEmpresa,
@@ -680,24 +710,24 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         //                 cod_reporte = "P",
         //                 folder = "Activos"
         //             };
-
+        //
         //             var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
-
-
+        //
+        //
         //             if (actionResult is ObjectResult objectResult)
         //             {
         //                 var res = objectResult.Value;
         //                 var jres = System.Text.Json.JsonSerializer.Serialize(res);
         //                 var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
-
+        //
         //                 response.Code = -1;
         //                 response.Description =
         //                     err?.Description ?? $"Error al generar boleta para identificación {id}.";
         //                 return response;
         //             }
-
+        //
         //             var fileResult = actionResult as FileContentResult;
-
+        //
         //             if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
         //             {
         //                 response.Code = -1;
@@ -705,25 +735,25 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         //                     $"Ocurrió un error al generar la boleta, contenido nulo/vacío para identificación {id}.";
         //                 return response;
         //             }
-
+        //
         //             pdfs.Add(fileResult.FileContents);
         //         }
-
+        //
         //         if (!pdfs.Any())
         //         {
         //             response.Code = -1;
         //             response.Description = "No se generaron boletas para las identificaciones indicadas.";
         //             return response;
         //         }
-
+        //
         //         // Combinar los bytes de todos los PDFs en uno solo
         //         var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
-
+        //
         //         var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
         //         {
         //             FileDownloadName = "Activos_BoletaActivosAsignados.pdf"
         //         };
-
+        //
         //         // Igual que en Tesorería: devolver el FileContentResult serializado
         //         response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
         //         return response;
@@ -746,18 +776,18 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         // public ErrorDto<object> Activos_ContratoResponsabilidad_Lote(int codEmpresa,ActivosPersonasReporteLoteRequest request)
         // {
         //     var response = new ErrorDto<object> { Code = 0 };
-
+        //
         //     if (request.Identificaciones == null || request.Identificaciones.Count == 0)
         //     {
         //         response.Code = -1;
         //         response.Description = "No se recibieron identificaciones para generar el contrato.";
         //         return response;
         //     }
-
+        //
         //     try
         //     {
         //         var pdfs = new List<byte[]>();
-
+        //
         //         foreach (var id in request.Identificaciones.Distinct())
         //         {
         //             var parametros = new
@@ -769,7 +799,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         //                 fxUsuario = request.Usuario,
         //                 fxSubTitulo = "CONTRATO DE RESPONSABILIDAD"
         //             };
-
+        //
         //             var reporteData = new FrmReporteGlobal
         //             {
         //                 codEmpresa = codEmpresa,
@@ -779,23 +809,23 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         //                 cod_reporte = "P",
         //                 folder = "Activos"
         //             };
-
+        //
         //             var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
-
+        //
         //             if (actionResult is ObjectResult objectResult)
         //             {
         //                 var res = objectResult.Value;
         //                 var jres = System.Text.Json.JsonSerializer.Serialize(res);
         //                 var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
-
+        //
         //                 response.Code = -1;
         //                 response.Description =
         //                     err?.Description ?? $"Error al generar contrato para identificación {id}.";
         //                 return response;
         //             }
-
+        //
         //             var fileResult = actionResult as FileContentResult;
-
+        //
         //             if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
         //             {
         //                 response.Code = -1;
@@ -803,24 +833,24 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         //                     $"Ocurrió un error al generar el contrato, contenido nulo/vacío para identificación {id}.";
         //                 return response;
         //             }
-
+        //
         //             pdfs.Add(fileResult.FileContents);
         //         }
-
+        //
         //         if (!pdfs.Any())
         //         {
         //             response.Code = -1;
         //             response.Description = "No se generaron contratos para las identificaciones indicadas.";
         //             return response;
         //         }
-
+        //
         //         var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
-
+        //
         //         var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
         //         {
         //             FileDownloadName = "Activos_ContratoResponsabilidad.pdf"
         //         };
-
+        //
         //         response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
         //         return response;
         //     }

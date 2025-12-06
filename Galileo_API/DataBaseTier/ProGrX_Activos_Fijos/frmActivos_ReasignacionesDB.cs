@@ -1,4 +1,7 @@
-﻿using System.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
 using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -14,42 +17,47 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         //private readonly mReportingServicesDB _mReporting;
         private readonly PortalDB _portalDB;
 
-        private const string _where11 = " WHERE 1=1 ";
-        private const string _formatoFecha = "yyyy-MM-dd";
+        private const string WhereBase             = " WHERE 1=1 ";
+        private const string FormatoFecha          = "yyyy-MM-dd";
 
-        private const string _anumplaca = "A.num_placa";
-        private const string _anombre = "A.Nombre";
-        private const string _aplacaalterna = "A.Placa_Alterna";
-        private const string _codtraslado = "cod_traslado";
+        private const string ColA_NumPlaca         = "A.num_placa";
+        private const string ColA_Nombre           = "A.Nombre";
+        private const string ColA_PlacaAlterna     = "A.Placa_Alterna";
+        private const string ColCodTraslado        = "cod_traslado";
 
-        // columnas para boletas (para S1192)
-        private const string ColNumPlaca          = "num_placa";
-        private const string ColPlacaAlterna      = "PLACA_ALTERNA";
-        private const string ColDescripcion       = "Descripcion";
-        private const string ColRegistroFecha     = "Registro_fecha";
-        private const string ColRegistroUsuario   = "Registro_Usuario";
-        private const string ColPersona           = "Persona";
-        private const string ColPersonaDestino    = "Persona_Destino";
-        private const string ColMotivo            = "Motivo";
-        private const string ColEstadoDesc        = "Estado_Desc";
+        // columnas para boletas
+        private const string ColNumPlaca           = "num_placa";
+        private const string ColPlacaAlterna       = "PLACA_ALTERNA";
+        private const string ColDescripcion        = "Descripcion";
+        private const string ColRegistroFecha      = "Registro_fecha";
+        private const string ColRegistroUsuario    = "Registro_Usuario";
+        private const string ColPersona            = "Persona";
+        private const string ColPersonaDestino     = "Persona_Destino";
+        private const string ColMotivo             = "Motivo";
+        private const string ColEstadoDesc         = "Estado_Desc";
 
-        private const string MensajeOk = "Ok";
+        private const string MensajeOk             = "Ok";
+        private const string MensajeNoEncontrado   = "No encontrado";
+        private const string MensajeDatosNoProv    = "Datos no proporcionados.";
+        private const string MensajeActivoNoEnc    = "Activo no encontrado.";
+        private const string MensajeBoletaNoGen    = "No se pudo generar la boleta de reasignación.";
+        private const string MensajeTrasladoOk     = "Traslado realizado satisfactoriamente.";
 
         // Lista blanca de campos para ORDER BY en Activos_Principal
         private static readonly Dictionary<string, string> SortFieldActivosMap =
             new(StringComparer.OrdinalIgnoreCase)
             {
                 // Columnas en BD
-                { _anumplaca,      _anumplaca },
-                { _aplacaalterna,  _aplacaalterna },
-                { _anombre,        _anombre },
+                { ColA_NumPlaca,        ColA_NumPlaca },
+                { ColA_PlacaAlterna,    ColA_PlacaAlterna },
+                { ColA_Nombre,          ColA_Nombre },
 
                 // Propiedades del modelo / nombres sin alias
-                { "num_placa",     _anumplaca },
-                { "placa_alterna", _aplacaalterna },
-                { "Placa_Alterna", _aplacaalterna },
-                { "nombre",        _anombre },
-                { "Nombre",        _anombre }
+                { "num_placa",          ColA_NumPlaca },
+                { "placa_alterna",      ColA_PlacaAlterna },
+                { "Placa_Alterna",      ColA_PlacaAlterna },
+                { "nombre",             ColA_Nombre },
+                { "Nombre",             ColA_Nombre }
             };
 
         // Lista blanca de campos para ORDER BY en vActivos_TrasladosHistorico
@@ -57,26 +65,26 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             new(StringComparer.OrdinalIgnoreCase)
             {
                 // Columnas en la vista
-                { _codtraslado,       _codtraslado },
-                { ColNumPlaca,        ColNumPlaca },
-                { ColPlacaAlterna,    ColPlacaAlterna },
-                { ColDescripcion,     ColDescripcion },
-                { ColRegistroFecha,   ColRegistroFecha },
-                { ColRegistroUsuario, ColRegistroUsuario },
-                { ColPersona,         ColPersona },
-                { ColPersonaDestino,  ColPersonaDestino },
-                { ColMotivo,          ColMotivo },
-                { ColEstadoDesc,      ColEstadoDesc },
+                { ColCodTraslado,       ColCodTraslado },
+                { ColNumPlaca,          ColNumPlaca },
+                { ColPlacaAlterna,      ColPlacaAlterna },
+                { ColDescripcion,       ColDescripcion },
+                { ColRegistroFecha,     ColRegistroFecha },
+                { ColRegistroUsuario,   ColRegistroUsuario },
+                { ColPersona,           ColPersona },
+                { ColPersonaDestino,    ColPersonaDestino },
+                { ColMotivo,            ColMotivo },
+                { ColEstadoDesc,        ColEstadoDesc },
 
                 // Posibles nombres de propiedades de DTO
-                { "placa_alterna",    ColPlacaAlterna },
-                { "descripcion",      ColDescripcion },
-                { "registro_fecha",   ColRegistroFecha },
-                { "registro_usuario", ColRegistroUsuario },
-                { "persona_origen",   ColPersona },
-                { "persona_destino",  ColPersonaDestino },
-                { "motivo",           ColMotivo },
-                { "estado_desc",      ColEstadoDesc }
+                { "placa_alterna",      ColPlacaAlterna },
+                { "descripcion",        ColDescripcion },
+                { "registro_fecha",     ColRegistroFecha },
+                { "registro_usuario",   ColRegistroUsuario },
+                { "persona_origen",     ColPersona },
+                { "persona_destino",    ColPersonaDestino },
+                { "motivo",             ColMotivo },
+                { "estado_desc",        ColEstadoDesc }
             };
 
         public FrmActivosReasignacionesDB(IConfiguration config)
@@ -107,7 +115,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         private static string BuildBoletasWhere(ActivosReasignacionesBoletasFiltros filtros, DynamicParameters p)
         {
-            var where = _where11;
+            var where = WhereBase;
 
             if (filtros.todosActivos == 0 && !string.IsNullOrWhiteSpace(filtros.numPlaca))
             {
@@ -119,9 +127,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 var fechaInicio = DateTime.ParseExact(
                     filtros.fechaInicio,
-                    _formatoFecha,
+                    FormatoFecha,
                     System.Globalization.CultureInfo.InvariantCulture
                 ).Date;
+
                 where += " AND Fecha_Aplicacion >= @FechaInicioDesde ";
                 p.Add("@FechaInicioDesde", fechaInicio);
             }
@@ -130,9 +139,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 var fechaCorte = DateTime.ParseExact(
                     filtros.fechaCorte,
-                    _formatoFecha,
+                    FormatoFecha,
                     System.Globalization.CultureInfo.InvariantCulture
                 ).Date.AddDays(1).AddSeconds(-1);
+
                 where += " AND Fecha_Aplicacion <= @FechaCorteHasta ";
                 p.Add("@FechaCorteHasta", fechaCorte);
             }
@@ -155,16 +165,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private static void AddSortParametersForBoletas(ActivosReasignacionesBoletasFiltros filtros, DynamicParameters p)
         {
             var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
-                ? _codtraslado
+                ? ColCodTraslado
                 : filtros.sortField!;
 
             if (!SortFieldBoletasMap.TryGetValue(sortFieldKey, out var sortFieldCanonical))
-                sortFieldCanonical = _codtraslado;
+                sortFieldCanonical = ColCodTraslado;
 
-            int sortIndex = GetBoletaSortIndex(sortFieldCanonical);
+            var sortIndex = GetBoletaSortIndex(sortFieldCanonical);
             p.Add("@sortIndex", sortIndex);
 
-            int sortDir = filtros.sortOrder == 0 ? 0 : 1;
+            var sortDir = filtros.sortOrder == 0 ? 0 : 1;
             p.Add("@sortDir", sortDir);
         }
 
@@ -175,23 +185,28 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<string> Activos_Reasignacion_SiguienteBoleta_Obtener(int CodEmpresa)
         {
-            var resp = new ErrorDto<string> { Code = 0, Description = MensajeOk, Result = "" };
+            var resp = new ErrorDto<string>
+            {
+                Code        = 0,
+                Description = MensajeOk,
+                Result      = string.Empty
+            };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 const string sql = @"
-            SELECT RIGHT('0000000000' + CAST(ISNULL(MAX(COD_TRASLADO), 0) + 1 AS VARCHAR(10)), 10)
-            FROM ACTIVOS_TRASLADOS;";
+                    SELECT RIGHT('0000000000' + CAST(ISNULL(MAX(COD_TRASLADO), 0) + 1 AS VARCHAR(10)), 10)
+                    FROM ACTIVOS_TRASLADOS;";
 
                 resp.Result = connection.ExecuteScalar<string>(sql);
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = "";
+                resp.Result      = string.Empty;
             }
 
             return resp;
@@ -200,25 +215,27 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Lista paginada de activos para el F4 de No. Placa.
         /// </summary>
-        public ErrorDto<ActivosReasignacionesActivosLista> Activos_Reasignacion_Activos_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosReasignacionesActivosLista> Activos_Reasignacion_Activos_Lista_Obtener(
+            int CodEmpresa,
+            FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<ActivosReasignacionesActivosLista>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = new ActivosReasignacionesActivosLista()
+                Result      = new ActivosReasignacionesActivosLista()
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p = new DynamicParameters();
+                var p           = new DynamicParameters();
+                var filtroTexto = filtros?.filtro;
+                var tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
 
-                string? filtroTexto = filtros?.filtro;
-                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
                 p.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
-                p.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
+                p.Add("@filtro",      tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
 
                 const string qTotal = @"
                     SELECT COUNT(1)
@@ -231,59 +248,59 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 resp.Result.total = connection.ExecuteScalar<int>(qTotal, p);
 
                 var sortFieldKey = string.IsNullOrWhiteSpace(filtros?.sortField)
-                    ? _anumplaca
+                    ? ColA_NumPlaca
                     : filtros.sortField!;
 
                 if (!SortFieldActivosMap.TryGetValue(sortFieldKey, out var sortFieldCanonical))
-                    sortFieldCanonical = _anumplaca;
+                    sortFieldCanonical = ColA_NumPlaca;
 
-                int sortIndex = sortFieldCanonical switch
+                var sortIndex = sortFieldCanonical switch
                 {
-                    _aplacaalterna => 2,
-                    _anombre       => 3,
-                    _              => 1
+                    ColA_PlacaAlterna => 2,
+                    ColA_Nombre       => 3,
+                    _                 => 1
                 };
                 p.Add("@sortIndex", sortIndex);
 
-                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1;
+                var sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1;
                 p.Add("@sortDir", sortDir);
 
-                var pagina = filtros?.pagina ?? 1;
+                var pagina     = filtros?.pagina     ?? 1;
                 var paginacion = filtros?.paginacion ?? 10;
-                var offset = (pagina <= 1 ? 0 : (pagina - 1) * paginacion);
+                var offset     = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
 
                 p.Add("@offset", offset);
-                p.Add("@fetch", paginacion);
+                p.Add("@fetch",  paginacion);
 
                 const string qDatos = @"
-                SELECT
-                    A.num_placa          AS num_placa,
-                    A.Placa_Alterna      AS placa_alterna,
-                    A.Nombre             AS nombre
-                FROM Activos_Principal A
-                WHERE (@tieneFiltro = 0
-                       OR A.num_placa     LIKE @filtro
-                       OR A.Placa_Alterna LIKE @filtro
-                       OR A.Nombre        LIKE @filtro)
-                ORDER BY
-                    -- ASC
-                    CASE @sortDir WHEN 1 THEN
-                        CASE @sortIndex
-                            WHEN 1 THEN A.num_placa
-                            WHEN 2 THEN A.Placa_Alterna
-                            WHEN 3 THEN A.Nombre
-                        END
-                    END ASC,
-                    -- DESC
-                    CASE @sortDir WHEN 0 THEN
-                        CASE @sortIndex
-                            WHEN 1 THEN A.num_placa
-                            WHEN 2 THEN A.Placa_Alterna
-                            WHEN 3 THEN A.Nombre
-                        END
-                    END DESC
-                OFFSET @offset ROWS
-                FETCH NEXT @fetch ROWS ONLY;";
+                    SELECT
+                        A.num_placa          AS num_placa,
+                        A.Placa_Alterna      AS placa_alterna,
+                        A.Nombre             AS nombre
+                    FROM Activos_Principal A
+                    WHERE (@tieneFiltro = 0
+                           OR A.num_placa     LIKE @filtro
+                           OR A.Placa_Alterna LIKE @filtro
+                           OR A.Nombre        LIKE @filtro)
+                    ORDER BY
+                        -- ASC
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN A.num_placa
+                                WHEN 2 THEN A.Placa_Alterna
+                                WHEN 3 THEN A.Nombre
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1 THEN A.num_placa
+                                WHEN 2 THEN A.Placa_Alterna
+                                WHEN 3 THEN A.Nombre
+                            END
+                        END DESC
+                    OFFSET @offset ROWS
+                    FETCH NEXT @fetch ROWS ONLY;";
 
                 resp.Result.lista = connection
                     .Query<ActivosReasignacionesActivoResumen>(qDatos, p)
@@ -291,10 +308,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result.total = 0;
-                resp.Result.lista = [];
+                resp.Code              = -1;
+                resp.Description       = ex.Message;
+                resp.Result.total      = 0;
+                resp.Result.lista      = [];
             }
 
             return resp;
@@ -303,41 +320,43 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Trae la información de un activo por número de placa.
         /// </summary>
-        public ErrorDto<ActivosReasignacionesActivo> Activos_Reasignacion_Activo_Obtener(int CodEmpresa, string numPlaca)
+        public ErrorDto<ActivosReasignacionesActivo> Activos_Reasignacion_Activo_Obtener(
+            int CodEmpresa,
+            string numPlaca)
         {
             var resp = new ErrorDto<ActivosReasignacionesActivo>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = null
+                Result      = null
             };
+
+            const string sql = @"
+                SET NOCOUNT ON;
+
+                SELECT TOP (1)
+                    A.NUM_PLACA        AS num_placa,
+                    A.NOMBRE           AS nombre,
+                    A.TIPO_ACTIVO      AS tipo_activo,
+                    A.COD_DEPARTAMENTO AS cod_departamento,
+                    ISNULL(D.DESCRIPCION, '') AS departamento,
+                    A.COD_SECCION      AS cod_seccion,
+                    ISNULL(S.DESCRIPCION, '') AS seccion,
+                    A.IDENTIFICACION   AS identificacion,
+                    ISNULL(P.NOMBRE, '')      AS persona
+                FROM ACTIVOS_PRINCIPAL A
+                LEFT JOIN ACTIVOS_PERSONAS P
+                       ON P.IDENTIFICACION = A.IDENTIFICACION
+                LEFT JOIN ACTIVOS_DEPARTAMENTOS D
+                       ON D.COD_DEPARTAMENTO = A.COD_DEPARTAMENTO
+                LEFT JOIN ACTIVOS_SECCIONES S
+                       ON S.COD_DEPARTAMENTO = A.COD_DEPARTAMENTO
+                      AND S.COD_SECCION      = A.COD_SECCION
+                WHERE A.NUM_PLACA = @numPlaca;";
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                const string sql = @"
-            SET NOCOUNT ON;
-
-            SELECT TOP (1)
-                A.NUM_PLACA        AS num_placa,
-                A.NOMBRE           AS nombre,
-                A.TIPO_ACTIVO      AS tipo_activo,
-                A.COD_DEPARTAMENTO AS cod_departamento,
-                ISNULL(D.DESCRIPCION, '') AS departamento,
-                A.COD_SECCION      AS cod_seccion,
-                ISNULL(S.DESCRIPCION, '') AS seccion,
-                A.IDENTIFICACION   AS identificacion,
-                ISNULL(P.NOMBRE, '')      AS persona
-            FROM ACTIVOS_PRINCIPAL A
-            LEFT JOIN ACTIVOS_PERSONAS P
-                   ON P.IDENTIFICACION = A.IDENTIFICACION
-            LEFT JOIN ACTIVOS_DEPARTAMENTOS D
-                   ON D.COD_DEPARTAMENTO = A.COD_DEPARTAMENTO
-            LEFT JOIN ACTIVOS_SECCIONES S
-                   ON S.COD_DEPARTAMENTO = A.COD_DEPARTAMENTO
-                  AND S.COD_SECCION      = A.COD_SECCION
-            WHERE A.NUM_PLACA = @numPlaca;";
 
                 resp.Result = connection.QueryFirstOrDefault<ActivosReasignacionesActivo>(
                     sql,
@@ -345,15 +364,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 if (resp.Result is null)
                 {
-                    resp.Code = -2;
-                    resp.Description = "Activo no encontrado.";
+                    resp.Code        = -2;
+                    resp.Description = MensajeActivoNoEnc;
                 }
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
@@ -362,55 +381,59 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Buscar personas para reasignación de responsables (sin paginación).
         /// </summary>
-        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Reasignacion_Personas_Buscar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Reasignacion_Personas_Buscar(
+            int CodEmpresa,
+            FiltrosLazyLoadData filtros)
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = new List<DropDownListaGenericaModel>()
+                Result      = new List<DropDownListaGenericaModel>()
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p = new DynamicParameters();
+                var p           = new DynamicParameters();
+                var filtroTexto = filtros?.filtro;
+                var tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
 
-                string? filtroTexto = filtros?.filtro;
-                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
                 p.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
-                p.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
+                p.Add("@filtro",      tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
 
                 string? excluir = null;
                 if (!string.IsNullOrWhiteSpace(filtros?.sortField) &&
                     filtros.sortField.StartsWith("excluir:", StringComparison.OrdinalIgnoreCase))
                 {
                     var splitArr = filtros.sortField.Split(':');
-                    excluir = splitArr[^1];
+                    excluir      = splitArr[^1];
                 }
 
-                bool tieneExcluir = !string.IsNullOrWhiteSpace(excluir);
+                var tieneExcluir = !string.IsNullOrWhiteSpace(excluir);
                 p.Add("@tieneExcluir", tieneExcluir ? 1 : 0);
-                p.Add("@excluir", tieneExcluir ? excluir : null);
+                p.Add("@excluir",      tieneExcluir ? excluir : null);
 
                 const string query = @"
-                        SELECT Identificacion AS item, Nombre AS descripcion
-                        FROM Activos_Personas
-                        WHERE (@tieneFiltro = 0
-                               OR Nombre         LIKE @filtro
-                               OR Identificacion LIKE @filtro)
-                          AND (@tieneExcluir = 0
-                               OR Identificacion <> @excluir)
-                        ORDER BY Nombre ASC;";
+                    SELECT Identificacion AS item, Nombre AS descripcion
+                    FROM Activos_Personas
+                    WHERE (@tieneFiltro = 0
+                           OR Nombre         LIKE @filtro
+                           OR Identificacion LIKE @filtro)
+                      AND (@tieneExcluir = 0
+                           OR Identificacion <> @excluir)
+                    ORDER BY Nombre ASC;";
 
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, p).ToList();
+                resp.Result = connection
+                    .Query<DropDownListaGenericaModel>(query, p)
+                    .ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
@@ -419,13 +442,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Obtener datos de persona por identificación.
         /// </summary>
-        public ErrorDto<ActivosReasignacionesPersona> Activos_Reasignacion_Persona_Obtener(int CodEmpresa, string identificacion)
+        public ErrorDto<ActivosReasignacionesPersona> Activos_Reasignacion_Persona_Obtener(
+            int CodEmpresa,
+            string identificacion)
         {
             var resp = new ErrorDto<ActivosReasignacionesPersona>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = null
+                Result      = null
             };
 
             const string sql = @"
@@ -449,19 +474,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 resp.Result = connection.QueryFirstOrDefault<ActivosReasignacionesPersona>(
-                    sql, new { identificacion });
+                    sql,
+                    new { identificacion });
 
                 if (resp.Result is null)
                 {
-                    resp.Description = "No encontrado";
+                    resp.Description = MensajeNoEncontrado;
                 }
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
@@ -474,42 +501,67 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = new List<DropDownListaGenericaModel>()
+                Result      = new List<DropDownListaGenericaModel>()
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                SELECT cod_motivo AS item, descripcion
-                FROM ACTIVOS_TRASLADOS_MOTIVOS
-                WHERE ACTIVO = 1
-                ORDER BY descripcion ASC";
 
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                const string query = @"
+                    SELECT cod_motivo AS item, descripcion
+                    FROM ACTIVOS_TRASLADOS_MOTIVOS
+                    WHERE ACTIVO = 1
+                    ORDER BY descripcion ASC";
+
+                resp.Result = connection
+                    .Query<DropDownListaGenericaModel>(query)
+                    .ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
         }
 
+        // ---- Validación de datos de cambio de responsable ----
+
+        private static List<string> ValidarCambioResponsable(ActivosReasignacionesCambioRequest data)
+        {
+            var errores = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(data.num_placa))
+                errores.Add("No se especificó ningún activo.");
+            if (string.IsNullOrWhiteSpace(data.identificacion))
+                errores.Add("No se especificó el responsable actual.");
+            if (string.IsNullOrWhiteSpace(data.identificacion_destino))
+                errores.Add("No se especificó el responsable nuevo.");
+            if (string.IsNullOrWhiteSpace(data.cod_motivo))
+                errores.Add("No se indicó el motivo.");
+            if (string.IsNullOrWhiteSpace(data.fecha_aplicacion))
+                errores.Add("No se indicó la fecha de aplicación (YYYY-MM-DD).");
+
+            return errores;
+        }
+
         /// <summary>
         /// Ejecuta el SP de cambio de responsable (Reasignaciones).
         /// </summary>
-        public ErrorDto<ActivosReasignacionesBoletaResult> Activos_Reasignacion_CambioResponsable(int CodEmpresa, ActivosReasignacionesCambioRequest data)
+        public ErrorDto<ActivosReasignacionesBoletaResult> Activos_Reasignacion_CambioResponsable(
+            int CodEmpresa,
+            ActivosReasignacionesCambioRequest data)
         {
             var resp = new ErrorDto<ActivosReasignacionesBoletaResult>
             {
-                Code = 0,
+                Code        = 0,
                 Description = string.Empty,
-                Result = null
+                Result      = null
             };
 
             try
@@ -518,48 +570,36 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     return new ErrorDto<ActivosReasignacionesBoletaResult>
                     {
-                        Code = -1,
-                        Description = "Datos no proporcionados.",
-                        Result = null
+                        Code        = -1,
+                        Description = MensajeDatosNoProv,
+                        Result      = null
                     };
                 }
 
-                var errores = new List<string>();
-
-                if (string.IsNullOrWhiteSpace(data.num_placa))
-                    errores.Add("No se especificó ningún activo.");
-                if (string.IsNullOrWhiteSpace(data.identificacion))
-                    errores.Add("No se especificó el responsable actual.");
-                if (string.IsNullOrWhiteSpace(data.identificacion_destino))
-                    errores.Add("No se especificó el responsable nuevo.");
-                if (string.IsNullOrWhiteSpace(data.cod_motivo))
-                    errores.Add("No se indicó el motivo.");
-                if (string.IsNullOrWhiteSpace(data.fecha_aplicacion))
-                    errores.Add("No se indicó la fecha de aplicación (YYYY-MM-DD).");
-
+                var errores = ValidarCambioResponsable(data);
                 if (errores.Count > 0)
                 {
                     return new ErrorDto<ActivosReasignacionesBoletaResult>
                     {
-                        Code = -1,
+                        Code        = -1,
                         Description = string.Join(" | ", errores),
-                        Result = null
+                        Result      = null
                     };
                 }
 
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var p = new DynamicParameters();
-                p.Add("@Boleta", data.cod_traslado);
-                p.Add("@Placa", data.num_placa);
-                p.Add("@Motivo", data.cod_motivo);
-                p.Add("@Identificacion", data.identificacion_destino);
-                p.Add("@Usuario", data.usuario);
-                p.Add("@Notas", data.notas);
-                p.Add("@Estado", "P");
+                p.Add("@Boleta",          data.cod_traslado);
+                p.Add("@Placa",           data.num_placa);
+                p.Add("@Motivo",          data.cod_motivo);
+                p.Add("@Identificacion",  data.identificacion_destino);
+                p.Add("@Usuario",         data.usuario);
+                p.Add("@Notas",           data.notas);
+                p.Add("@Estado",          "P");
                 p.Add("@FechaAplicacion", DateTime.ParseExact(
                     data.fecha_aplicacion,
-                    _formatoFecha,
+                    FormatoFecha,
                     System.Globalization.CultureInfo.InvariantCulture));
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
@@ -573,35 +613,35 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 {
                     return new ErrorDto<ActivosReasignacionesBoletaResult>
                     {
-                        Code = -2,
-                        Description = "No se pudo generar la boleta de reasignación.",
-                        Result = null
+                        Code        = -2,
+                        Description = MensajeBoletaNoGen,
+                        Result      = null
                     };
                 }
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.usuario ?? string.Empty,
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = data.usuario ?? string.Empty,
                     DetalleMovimiento = $"Reasignación de activo: {data.num_placa}, " +
                                         $"Persona Origen: {data.identificacion}, " +
                                         $"Persona Destino: {data.identificacion_destino}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
+                    Movimiento        = "Registra - WEB",
+                    Modulo            = vModulo
                 });
 
-                resp.Code = 0;
-                resp.Description = "Traslado realizado satisfactoriamente.";
-                resp.Result = new ActivosReasignacionesBoletaResult
+                resp.Code        = 0;
+                resp.Description = MensajeTrasladoOk;
+                resp.Result      = new ActivosReasignacionesBoletaResult
                 {
                     cod_traslado = boleta
                 };
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
@@ -610,88 +650,90 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Lista paginada de boletas de reasignación (historial).
         /// </summary>
-        public ErrorDto<ActivosReasignacionesBoletaHistorialLista> Activos_Reasignacion_BoletasLista_Obtener(int CodEmpresa, ActivosReasignacionesBoletasFiltros filtros)
+        public ErrorDto<ActivosReasignacionesBoletaHistorialLista> Activos_Reasignacion_BoletasLista_Obtener(
+            int CodEmpresa,
+            ActivosReasignacionesBoletasFiltros filtros)
         {
             var resp = new ErrorDto<ActivosReasignacionesBoletaHistorialLista>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = new ActivosReasignacionesBoletaHistorialLista()
+                Result      = new ActivosReasignacionesBoletaHistorialLista()
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var p = new DynamicParameters();
-
-                string where = BuildBoletasWhere(filtros, p);
+                var p     = new DynamicParameters();
+                var where = BuildBoletasWhere(filtros, p);
 
                 var qTotal = $"SELECT COUNT(1) FROM vActivos_TrasladosHistorico {where}";
                 resp.Result.total = connection.ExecuteScalar<int>(qTotal, p);
 
                 AddSortParametersForBoletas(filtros, p);
 
-                var offset = (filtros.pagina <= 1 ? 0 : (filtros.pagina - 1) * filtros.paginacion);
+                var offset = filtros.pagina <= 1 ? 0 : (filtros.pagina - 1) * filtros.paginacion;
                 p.Add("@offset", offset);
-                p.Add("@fetch", filtros.paginacion);
+                p.Add("@fetch",  filtros.paginacion);
 
                 var qDatos = @"
-SELECT
-    cod_traslado,
-    num_placa,
-    PLACA_ALTERNA     AS placa_alterna,
-    Descripcion       AS descripcion,
-    CONVERT(varchar(19), Registro_fecha, 120) AS registro_fecha,
-    Registro_Usuario  AS registro_usuario,
-    Persona           AS persona_origen,
-    Persona_Destino   AS persona_destino,
-    Motivo,
-    Estado_Desc       AS estado_desc
-FROM vActivos_TrasladosHistorico
-" + where + @"
-ORDER BY
-    -- ASC
-    CASE @sortDir WHEN 1 THEN
-        CASE @sortIndex
-            WHEN 1  THEN cod_traslado
-            WHEN 2  THEN num_placa
-            WHEN 3  THEN PLACA_ALTERNA
-            WHEN 4  THEN Descripcion
-            WHEN 5  THEN Registro_fecha
-            WHEN 6  THEN Registro_Usuario
-            WHEN 7  THEN Persona
-            WHEN 8  THEN Persona_Destino
-            WHEN 9  THEN Motivo
-            WHEN 10 THEN Estado_Desc
-        END
-    END ASC,
-    -- DESC
-    CASE @sortDir WHEN 0 THEN
-        CASE @sortIndex
-            WHEN 1  THEN cod_traslado
-            WHEN 2  THEN num_placa
-            WHEN 3  THEN PLACA_ALTERNA
-            WHEN 4  THEN Descripcion
-            WHEN 5  THEN Registro_fecha
-            WHEN 6  THEN Registro_Usuario
-            WHEN 7  THEN Persona
-            WHEN 8  THEN Persona_Destino
-            WHEN 9  THEN Motivo
-            WHEN 10 THEN Estado_Desc
-        END
-    END DESC
-OFFSET @offset ROWS
-FETCH NEXT @fetch ROWS ONLY;";
+                    SELECT
+                        cod_traslado,
+                        num_placa,
+                        PLACA_ALTERNA     AS placa_alterna,
+                        Descripcion       AS descripcion,
+                        CONVERT(varchar(19), Registro_fecha, 120) AS registro_fecha,
+                        Registro_Usuario  AS registro_usuario,
+                        Persona           AS persona_origen,
+                        Persona_Destino   AS persona_destino,
+                        Motivo,
+                        Estado_Desc       AS estado_desc
+                    FROM vActivos_TrasladosHistorico
+                    " + where + @"
+                    ORDER BY
+                        -- ASC
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1  THEN cod_traslado
+                                WHEN 2  THEN num_placa
+                                WHEN 3  THEN PLACA_ALTERNA
+                                WHEN 4  THEN Descripcion
+                                WHEN 5  THEN Registro_fecha
+                                WHEN 6  THEN Registro_Usuario
+                                WHEN 7  THEN Persona
+                                WHEN 8  THEN Persona_Destino
+                                WHEN 9  THEN Motivo
+                                WHEN 10 THEN Estado_Desc
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1  THEN cod_traslado
+                                WHEN 2  THEN num_placa
+                                WHEN 3  THEN PLACA_ALTERNA
+                                WHEN 4  THEN Descripcion
+                                WHEN 5  THEN Registro_fecha
+                                WHEN 6  THEN Registro_Usuario
+                                WHEN 7  THEN Persona
+                                WHEN 8  THEN Persona_Destino
+                                WHEN 9  THEN Motivo
+                                WHEN 10 THEN Estado_Desc
+                            END
+                        END DESC
+                    OFFSET @offset ROWS
+                    FETCH NEXT @fetch ROWS ONLY;";
 
-                resp.Result.lista = connection.Query<ActivosReasignacionesBoletaHistorialItem>(
-                    qDatos, p).ToList();
+                resp.Result.lista = connection
+                    .Query<ActivosReasignacionesBoletaHistorialItem>(qDatos, p)
+                    .ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result.total = 0;
-                resp.Result.lista = null;
+                resp.Code              = -1;
+                resp.Description       = ex.Message;
+                resp.Result.total      = 0;
+                resp.Result.lista      = [];
             }
 
             return resp;
@@ -700,20 +742,18 @@ FETCH NEXT @fetch ROWS ONLY;";
         /// <summary>
         /// Obtener una boleta específica de reasignación por código de traslado.
         /// </summary>
-        public ErrorDto<ActivosReasignacionesBoleta> Activos_Reasignacion_Obtener(int CodEmpresa, string cod_traslado)
+        public ErrorDto<ActivosReasignacionesBoleta> Activos_Reasignacion_Obtener(
+            int CodEmpresa,
+            string cod_traslado)
         {
             var resp = new ErrorDto<ActivosReasignacionesBoleta>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = null
+                Result      = null
             };
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                const string sql = @"
+            const string sql = @"
                 SELECT TOP (1)
                     cod_traslado,
                     num_placa,
@@ -725,7 +765,7 @@ FETCH NEXT @fetch ROWS ONLY;";
                     registro_usuario,
                     CONVERT(varchar(19), registro_fecha, 120) AS registro_fecha,
                     cerrado_usuario,
-                    CONVERT(varchar(19), cerrado_fecha, 120)  AS cerrado_fecha,
+                    CONVERT(varchar(19), cerrado_fecha, 120)   AS cerrado_fecha,
                     procesado_usuario,
                     CONVERT(varchar(19), procesado_fecha, 120) AS procesado_fecha,
                     CONVERT(varchar(10), fecha_aplicacion, 120) AS fecha_aplicacion,
@@ -744,20 +784,25 @@ FETCH NEXT @fetch ROWS ONLY;";
                 FROM vActivos_TrasladosHistorico
                 WHERE cod_traslado = @cod_traslado;";
 
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 resp.Result = connection.QueryFirstOrDefault<ActivosReasignacionesBoleta>(
-                    sql, new { cod_traslado });
+                    sql,
+                    new { cod_traslado });
 
                 if (resp.Result == null)
                 {
-                    resp.Code = -2;
+                    resp.Code        = -2;
                     resp.Description = "Boleta no encontrada.";
                 }
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
@@ -766,68 +811,70 @@ FETCH NEXT @fetch ROWS ONLY;";
         /// <summary>
         /// Obtener lista completa de boletas de reasignación (historial) para exportar.
         /// </summary>
-        public ErrorDto<List<ActivosReasignacionesBoletaHistorialItem>> Activos_Reasignacion_Boletas_Export(int CodEmpresa, ActivosReasignacionesBoletasFiltros filtros)
+        public ErrorDto<List<ActivosReasignacionesBoletaHistorialItem>> Activos_Reasignacion_Boletas_Export(
+            int CodEmpresa,
+            ActivosReasignacionesBoletasFiltros filtros)
         {
             var resp = new ErrorDto<List<ActivosReasignacionesBoletaHistorialItem>>
             {
-                Code = 0,
+                Code        = 0,
                 Description = MensajeOk,
-                Result = new List<ActivosReasignacionesBoletaHistorialItem>()
+                Result      = new List<ActivosReasignacionesBoletaHistorialItem>()
             };
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var p = new DynamicParameters();
+                var p     = new DynamicParameters();
+                var where = BuildBoletasWhere(filtros, p);
 
-                string where = BuildBoletasWhere(filtros, p);
                 AddSortParametersForBoletas(filtros, p);
 
                 var qDatos = @"
-                SELECT
-                    cod_traslado,
-                    num_placa,
-                    PLACA_ALTERNA     AS placa_alterna,
-                    Descripcion       AS descripcion,
-                    CONVERT(varchar(19), Registro_fecha, 120) AS registro_fecha,
-                    Registro_Usuario  AS registro_usuario,
-                    Persona           AS persona_origen,
-                    Persona_Destino   AS persona_destino,
-                    Motivo,
-                    Estado_Desc       AS estado_desc
-                FROM vActivos_TrasladosHistorico
-                " + where + @"
-                ORDER BY
-                    -- ASC
-                    CASE @sortDir WHEN 1 THEN
-                        CASE @sortIndex
-                            WHEN 1  THEN cod_traslado
-                            WHEN 2  THEN num_placa
-                            WHEN 3  THEN PLACA_ALTERNA
-                            WHEN 4  THEN Descripcion
-                            WHEN 5  THEN Registro_fecha
-                            WHEN 6  THEN Registro_Usuario
-                            WHEN 7  THEN Persona
-                            WHEN 8  THEN Persona_Destino
-                            WHEN 9  THEN Motivo
-                            WHEN 10 THEN Estado_Desc
-                        END
-                    END ASC,
-                    -- DESC
-                    CASE @sortDir WHEN 0 THEN
-                        CASE @sortIndex
-                            WHEN 1  THEN cod_traslado
-                            WHEN 2  THEN num_placa
-                            WHEN 3  THEN PLACA_ALTERNA
-                            WHEN 4  THEN Descripcion
-                            WHEN 5  THEN Registro_fecha
-                            WHEN 6  THEN Registro_Usuario
-                            WHEN 7  THEN Persona
-                            WHEN 8  THEN Persona_Destino
-                            WHEN 9  THEN Motivo
-                            WHEN 10 THEN Estado_Desc
-                        END
-                    END DESC;";
+                    SELECT
+                        cod_traslado,
+                        num_placa,
+                        PLACA_ALTERNA     AS placa_alterna,
+                        Descripcion       AS descripcion,
+                        CONVERT(varchar(19), Registro_fecha, 120) AS registro_fecha,
+                        Registro_Usuario  AS registro_usuario,
+                        Persona           AS persona_origen,
+                        Persona_Destino   AS persona_destino,
+                        Motivo,
+                        Estado_Desc       AS estado_desc
+                    FROM vActivos_TrasladosHistorico
+                    " + where + @"
+                    ORDER BY
+                        -- ASC
+                        CASE @sortDir WHEN 1 THEN
+                            CASE @sortIndex
+                                WHEN 1  THEN cod_traslado
+                                WHEN 2  THEN num_placa
+                                WHEN 3  THEN PLACA_ALTERNA
+                                WHEN 4  THEN Descripcion
+                                WHEN 5  THEN Registro_fecha
+                                WHEN 6  THEN Registro_Usuario
+                                WHEN 7  THEN Persona
+                                WHEN 8  THEN Persona_Destino
+                                WHEN 9  THEN Motivo
+                                WHEN 10 THEN Estado_Desc
+                            END
+                        END ASC,
+                        -- DESC
+                        CASE @sortDir WHEN 0 THEN
+                            CASE @sortIndex
+                                WHEN 1  THEN cod_traslado
+                                WHEN 2  THEN num_placa
+                                WHEN 3  THEN PLACA_ALTERNA
+                                WHEN 4  THEN Descripcion
+                                WHEN 5  THEN Registro_fecha
+                                WHEN 6  THEN Registro_Usuario
+                                WHEN 7  THEN Persona
+                                WHEN 8  THEN Persona_Destino
+                                WHEN 9  THEN Motivo
+                                WHEN 10 THEN Estado_Desc
+                            END
+                        END DESC;";
 
                 resp.Result = connection
                     .Query<ActivosReasignacionesBoletaHistorialItem>(qDatos, p)
@@ -835,16 +882,15 @@ FETCH NEXT @fetch ROWS ONLY;";
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
         }
 
-        // Desactivamos la regla S125 SOLO alrededor del código comentado de reportes,
-        // para mantenerlo sin que Sonar marque error.
+        // Mantener código de reportes comentado: se desactiva S125 alrededor de este bloque.
         #pragma warning disable S125
 
         // /// <summary>
@@ -949,6 +995,5 @@ FETCH NEXT @fetch ROWS ONLY;";
         // }
 
         #pragma warning restore S125
-
     }
 }
