@@ -43,6 +43,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         private const string DefaultSortField = ColNumAsiento;
 
+        // 🔹 claves del JSON de parámetros (para evitar literales repetidos)
+        private const string ParamKeyTodosActivos = "todosActivos";
+        private const string ParamKeyFechaInicio  = "fechaInicio";
+        private const string ParamKeyFechaCorte   = "fechaCorte";
+
         // Bloques WHERE reutilizables para evitar S1192
         private const string WhereActivosKey = @"
                             WHERE Cod_Contabilidad = @cc
@@ -175,8 +180,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             if (dict != null)
             {
                 todosActivos = ParseTodosActivos(dict);
-                fechaInicio  = ParseFecha(dict, "fechaInicio");
-                fechaCorte   = ParseFecha(dict, "fechaCorte");
+                fechaInicio  = ParseFecha(dict, ParamKeyFechaInicio);
+                fechaCorte   = ParseFecha(dict, ParamKeyFechaCorte);
             }
 
             return (todosActivos, fechaInicio, fechaCorte);
@@ -195,8 +200,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         private static int ParseTodosActivos(Dictionary<string, object> dict)
         {
-            if (dict.ContainsKey("todosActivos"))
-                return Convert.ToInt32(dict["todosActivos"]);
+            if (dict.ContainsKey(ParamKeyTodosActivos))
+                return Convert.ToInt32(dict[ParamKeyTodosActivos]);
             return 0;
         }
 

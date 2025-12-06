@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Dapper;
+﻿using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
@@ -25,10 +22,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string ColRegFecha    = "registro_fecha";
 
         private const string ParamFiltro = "@filtro";
+        private const string ParamOffset = "@offset";
+        private const string ParamFetch  = "@fetch";
 
         private const string MovimientoLabel   = "Motivo de Traslado: ";
         private const string MsgMotivoExiste   = "El Motivo {0} ya existe.";
         private const string MsgMotivoNoExiste = "El Motivo {0} no existe.";
+
+        private const string SortAsc  = "ASC";
+        private const string SortDesc = "DESC";
+
+        private const string LikeWildcard = "%";
 
         // SELECT base común para evitar duplicar el literal (S1192)
         private static readonly string SelectBase = $@"
@@ -70,7 +74,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 return string.Empty;
             }
 
-            p.Add(ParamFiltro, "%" + filtroTxt + "%");
+            p.Add(ParamFiltro, LikeWildcard + filtroTxt + LikeWildcard);
 
             return $@"
                     WHERE ({ColCodMotivo}   LIKE {ParamFiltro}
@@ -111,22 +115,22 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 // ORDENAMIENTO seguro (S2077 compliant)
                 string sortField = ResolveSortField(filtros?.sortField ?? string.Empty);
-                string sortOrder = (filtros?.sortOrder ?? 0) == 0 ? "DESC" : "ASC";
+                string sortOrder = (filtros?.sortOrder ?? 0) == 0 ? SortDesc : SortAsc;
 
                 // PAGINACIÓN
                 int pagina   = filtros?.pagina     ?? 1;
                 int pageSize = filtros?.paginacion ?? 10;
                 int offset   = pagina <= 1 ? 0 : (pagina - 1) * pageSize;
 
-                p.Add("@offset", offset);
-                p.Add("@fetch",  pageSize);
+                p.Add(ParamOffset, offset);
+                p.Add(ParamFetch,  pageSize);
 
                 string sql = $@"
                     {SelectBase}
                     {where}
                     ORDER BY {sortField} {sortOrder}
-                    OFFSET @offset ROWS
-                    FETCH NEXT @fetch ROWS ONLY;";
+                    OFFSET {ParamOffset} ROWS
+                    FETCH NEXT {ParamFetch} ROWS ONLY;";
 
                 result.Result.lista = cn
                     .Query<ActivosTrasladosMotivosData>(sql, p)
@@ -134,8 +138,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                result.Code        = -1;
-                result.Description = ex.Message;
+                result.Code         = -1;
+                result.Description  = ex.Message;
                 result.Result.lista = [];
             }
 
