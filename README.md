@@ -45,9 +45,7 @@ Diseñada para entornos privados y uso interno, con prácticas seguras para mane
    cd Galileo_API/Galileo_API
 
 
-2. **Configurar Secretos de Usuario**
-  ```bash
-  dotnet user-secrets init
-  dotnet user-secrets set "Jwt:Secret" "tu_clave_larga_y_segura"
+2. **Configurar Secretos de Usuario según las indicaciones brindadas**
+ 
 
 
