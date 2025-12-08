@@ -46,6 +46,29 @@ Diseñada para entornos privados y uso interno, con prácticas seguras para mane
 
 
 2. **Configurar Secretos de Usuario según las indicaciones brindadas**
- 
+
+---
+
+### 🔐 Configuración de Secretos de Usuario (.NET User-Secrets)
+
+Para mantener seguras las credenciales y claves sensibles durante el desarrollo, este proyecto utiliza  
+**.NET User Secrets**, evitando exponer información en el repositorio.
+
+Cada desarrollador debe configurar sus secrets localmente siguiendo estos pasos:
+
+---
+
+## 1️⃣ Solicitar los secretos del proyecto
+Pide al responsable técnico el archivo `secrets.json` o las claves necesarias.
+
+Ejemplo:
+
+```json
+{
+  "Jwt:Secret": "XXXXXXXXXXXXXXXXXXXX",
+  "ConnectionStrings:DefaultConnString": "...",
+  "ConnectionStrings:GAConnString": "...",
+  "ConnectionStrings:BaseConnString": "..."
+}
 
 
