@@ -19,35 +19,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string MsgSinAsientos           = "No se recibieron asientos para trasladar.";
         private const string MsgPeriodoCerradoParcial = "Algunos asientos no se trasladaron porque el período contable está cerrado.";
 
-        private const string TableActivosAsientos        = "Activos_Asientos";
-        private const string TableActivosAsientosDetalle = "Activos_Asientos_detalle";
-        private const string TableCntAsientos            = "CntX_Asientos";
-        private const string TableCntAsientosDetalle     = "CntX_Asientos_detalle";
-
-        private const string ColNumAsiento      = "Num_Asiento";
-        private const string ColTipoAsiento     = "Tipo_Asiento";
-        private const string ColFechaAsiento    = "Fecha_Asiento";
-        private const string ColDescripcion     = "Descripcion";
-        private const string ColAnio            = "Anio";
-        private const string ColMes             = "Mes";
-        private const string ColCodContabilidad = "Cod_Contabilidad";
-        private const string ColFechaTraslado   = "fecha_traslado";
-        private const string ColUserTraslada    = "user_traslada";
-
-        private const string ParamFiltro      = "@filtro";
-        private const string ParamFechaInicio = "@fechaInicio";
-        private const string ParamFechaCorte  = "@fechaCorte";
-        private const string ParamOffset      = "@offset";
-        private const string ParamFetch       = "@fetch";
-
-        private const string DefaultSortField = ColNumAsiento;
-
         private const string SortAsc  = "ASC";
         private const string SortDesc = "DESC";
 
         private const string LikeWildcard = "%";
 
-        // Bloques WHERE reutilizables para evitar S1192
+        // Bloques WHERE reutilizables (solo constantes → no dispara S2077)
         private const string WhereActivosKey = @"
                             WHERE Cod_Contabilidad = @cc
                               AND Num_Asiento      = @na
@@ -58,6 +35,104 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                               AND num_asiento      = @na
                               AND tipo_asiento     = @ta";
 
+        // WHERE común para la lista de pendientes (solo constantes)
+        private const string WhereActivosPendientes = @"
+WHERE fecha_traslado IS NULL
+  AND (
+        @todosActivos = 1
+        OR (
+            @todosActivos = 0
+            AND @fechaInicio IS NOT NULL
+            AND @fechaCorte  IS NOT NULL
+            AND Fecha_Asiento BETWEEN @fechaInicio AND @fechaCorte
+        )
+      )
+  AND (
+        @filtro IS NULL
+        OR Num_Asiento LIKE @filtro
+        OR Tipo_Asiento LIKE @filtro
+        OR Descripcion LIKE @filtro
+        OR CONVERT(varchar(10), Fecha_Asiento, 23) LIKE @filtro
+        OR CONVERT(varchar(4), Anio) LIKE @filtro
+        OR CONVERT(varchar(2), Mes)  LIKE @filtro
+      )";
+
+        // Query COUNT (constante)
+        private const string SqlActivosCount = @"
+SELECT COUNT(1)
+FROM Activos_Asientos
+" + WhereActivosPendientes + ";";
+
+        // Query SELECT paginada con ORDER BY dinámico pero usando CASE + parámetros (query constante)
+        private const string SqlActivosSelect = @"
+SELECT
+    Num_Asiento      AS num_asiento,
+    Tipo_Asiento     AS tipo_asiento,
+    Fecha_Asiento    AS fecha_asiento,
+    Descripcion      AS descripcion,
+    Anio             AS anio,
+    Mes              AS mes,
+    Cod_Contabilidad AS cod_contabilidad
+FROM Activos_Asientos
+" + WhereActivosPendientes + @"
+ORDER BY
+    -- Orden ascendente
+    CASE 
+        WHEN @sortOrder = 'ASC' AND @sortField = 'Num_Asiento'      THEN Num_Asiento
+        WHEN @sortOrder = 'ASC' AND @sortField = 'Tipo_Asiento'     THEN Tipo_Asiento
+        WHEN @sortOrder = 'ASC' AND @sortField = 'Fecha_Asiento'    THEN Fecha_Asiento
+        WHEN @sortOrder = 'ASC' AND @sortField = 'Descripcion'      THEN Descripcion
+        WHEN @sortOrder = 'ASC' AND @sortField = 'Anio'             THEN Anio
+        WHEN @sortOrder = 'ASC' AND @sortField = 'Mes'              THEN Mes
+        WHEN @sortOrder = 'ASC' AND @sortField = 'Cod_Contabilidad' THEN Cod_Contabilidad
+    END ASC,
+    -- Orden descendente
+    CASE 
+        WHEN @sortOrder = 'DESC' AND @sortField = 'Num_Asiento'      THEN Num_Asiento
+        WHEN @sortOrder = 'DESC' AND @sortField = 'Tipo_Asiento'     THEN Tipo_Asiento
+        WHEN @sortOrder = 'DESC' AND @sortField = 'Fecha_Asiento'    THEN Fecha_Asiento
+        WHEN @sortOrder = 'DESC' AND @sortField = 'Descripcion'      THEN Descripcion
+        WHEN @sortOrder = 'DESC' AND @sortField = 'Anio'             THEN Anio
+        WHEN @sortOrder = 'DESC' AND @sortField = 'Mes'              THEN Mes
+        WHEN @sortOrder = 'DESC' AND @sortField = 'Cod_Contabilidad' THEN Cod_Contabilidad
+    END DESC
+OFFSET @offset ROWS
+FETCH NEXT @fetch ROWS ONLY;";
+
+        // SQL usados en el traslado (todo constante)
+        private const string SqlSelectFechaAsiento = @"
+SELECT Fecha_Asiento 
+FROM Activos_Asientos
+" + WhereActivosKey + ";";
+
+        private const string SqlInsertMaestro = @"
+INSERT INTO CntX_Asientos
+(COD_CONTABILIDAD, tipo_asiento, num_asiento, anio, mes, fecha_asiento,
+ descripcion, balanceado, notas, referencia, modulo, user_crea)
+SELECT 
+    Cod_Contabilidad, Tipo_Asiento, Num_Asiento, Anio, Mes, Fecha_Asiento,
+    Descripcion, 'S', ISNULL(Notas,''), ISNULL(Referencia,''), @modulo, user_crea
+FROM Activos_Asientos
+" + WhereActivosKey + ";";
+
+        private const string SqlInsertDetalle = @"
+INSERT INTO CntX_Asientos_detalle
+(num_linea, COD_CONTABILIDAD, tipo_asiento, num_asiento, cod_cuenta,
+ documento, detalle, tipo_cambio, monto_debito, monto_credito,
+ cod_unidad, cod_divisa, cod_centro_costo)
+SELECT 
+    num_linea, COD_CONTABILIDAD, tipo_asiento, num_asiento, cod_cuenta,
+    documento, detalle, 1, monto_debito, monto_credito,
+    cod_unidad, cod_divisa, cod_centro_costo
+FROM Activos_Asientos_detalle
+" + WhereActivosDetalleKey + ";";
+
+        private const string SqlUpdateOrigen = @"
+UPDATE Activos_Asientos
+SET fecha_traslado = GETDATE(),
+    user_traslada  = @usuario
+" + WhereActivosKey + ";";
+
         public FrmActivosTrasladoAsientosDB(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
@@ -66,7 +141,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
         // --------------------------------------------------------
-        // Resolución segura del campo de ordenamiento (anti S2077)
+        // Resolución segura del campo de ordenamiento
+        // (devuelve tokens que usamos en @sortField del ORDER BY)
         // --------------------------------------------------------
         private static string ResolveSortField(string? sortFieldRaw)
         {
@@ -74,17 +150,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             return key switch
             {
-                // posibles nombres desde el front / DTO
-                "num_asiento"      => ColNumAsiento,
-                "tipo_asiento"     => ColTipoAsiento,
-                "fecha_asiento"    => ColFechaAsiento,
-                "descripcion"      => ColDescripcion,
-                "anio"             => ColAnio,
-                "mes"              => ColMes,
-                "cod_contabilidad" => ColCodContabilidad,
-
-                // por defecto
-                _ => DefaultSortField
+                "num_asiento"      => "Num_Asiento",
+                "tipo_asiento"     => "Tipo_Asiento",
+                "fecha_asiento"    => "Fecha_Asiento",
+                "descripcion"      => "Descripcion",
+                "anio"             => "Anio",
+                "mes"              => "Mes",
+                "cod_contabilidad" => "Cod_Contabilidad",
+                _                  => "Num_Asiento"
             };
         }
 
@@ -113,19 +186,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var (todosActivos, fechaInicio, fechaCorte) =
                     ParseParametros(filtros.parametros ?? new object());
 
-                var (where, parameters) = BuildWhereClauseAndParameters(
-                    todosActivos,
-                    fechaInicio,
-                    fechaCorte,
-                    filtros.filtro ?? string.Empty
-                );
-
-                var qTotal = $@"
-                    SELECT COUNT(1)
-                    FROM {TableActivosAsientos}
-                    {where}";
-
-                resp.Result.total = connection.ExecuteScalar<int>(qTotal, parameters);
+                var filtroTexto = filtros.filtro ?? string.Empty;
 
                 // Orden usando campo resuelto de forma segura
                 var sortField = ResolveSortField(filtros.sortField);
@@ -135,26 +196,23 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var paginacion = filtros.paginacion <= 0 ? 10 : filtros.paginacion;
                 var offset     = pagina <= 1 ? 0 : (pagina - 1) * paginacion;
 
-                parameters.Add(ParamOffset, offset);
-                parameters.Add(ParamFetch,  paginacion);
+                var parameters = new DynamicParameters();
+                parameters.Add("@todosActivos", todosActivos);
+                parameters.Add("@fechaInicio", fechaInicio);
+                parameters.Add("@fechaCorte",  fechaCorte);
+                parameters.Add("@filtro", string.IsNullOrWhiteSpace(filtroTexto)
+                    ? null
+                    : LikeWildcard + filtroTexto + LikeWildcard);
+                parameters.Add("@sortField", sortField);
+                parameters.Add("@sortOrder", sortOrder);
+                parameters.Add("@offset",    offset);
+                parameters.Add("@fetch",     paginacion);
 
-                var qDatos = $@"
-                    SELECT
-                        {ColNumAsiento}      AS num_asiento,
-                        {ColTipoAsiento}     AS tipo_asiento,
-                        {ColFechaAsiento}    AS fecha_asiento,
-                        {ColDescripcion}     AS descripcion,
-                        {ColAnio}            AS anio,
-                        {ColMes}             AS mes,
-                        {ColCodContabilidad} AS cod_contabilidad
-                    FROM {TableActivosAsientos}
-                    {where}
-                    ORDER BY {sortField} {sortOrder}
-                    OFFSET {ParamOffset} ROWS
-                    FETCH NEXT {ParamFetch} ROWS ONLY;";
+                // Queries totalmente constantes → Sonar ya no ve SQL dinámico
+                resp.Result.total = connection.ExecuteScalar<int>(SqlActivosCount, parameters);
 
                 resp.Result.lista = connection
-                    .Query<ActivosTrasladoAsientosDto>(qDatos, parameters)
+                    .Query<ActivosTrasladoAsientosDto>(SqlActivosSelect, parameters)
                     .ToList();
             }
             catch (Exception ex)
@@ -215,40 +273,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return null;
         }
 
-        private static (string where, DynamicParameters parameters) BuildWhereClauseAndParameters(
-            int todosActivos,
-            DateTime? fechaInicio,
-            DateTime? fechaCorte,
-            string filtro)
-        {
-            var where = $" WHERE {ColFechaTraslado} IS NULL ";
-            var p     = new DynamicParameters();
-
-            if (todosActivos == 0 && fechaInicio.HasValue && fechaCorte.HasValue)
-            {
-                where += $" AND {ColFechaAsiento} BETWEEN {ParamFechaInicio} AND {ParamFechaCorte} ";
-                p.Add(ParamFechaInicio, fechaInicio.Value.Date);
-                p.Add(ParamFechaCorte,  fechaCorte.Value.Date);
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtro))
-            {
-                p.Add(ParamFiltro, LikeWildcard + filtro + LikeWildcard);
-
-                where += $@"
-                AND (
-                       {ColNumAsiento}  LIKE {ParamFiltro}
-                    OR {ColTipoAsiento} LIKE {ParamFiltro}
-                    OR {ColDescripcion} LIKE {ParamFiltro}
-                    OR CONVERT(varchar(10), {ColFechaAsiento}, 23) LIKE {ParamFiltro}
-                    OR CONVERT(varchar(4), {ColAnio}) LIKE {ParamFiltro}
-                    OR CONVERT(varchar(2), {ColMes})  LIKE {ParamFiltro}
-                )";
-            }
-
-            return (where, p);
-        }
-
         /// <summary>
         /// Traslada en bloque los asientos seleccionados (igual que el For del VB6).
         /// </summary>
@@ -290,13 +314,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                     try
                     {
-                        var sqlFecha = $@"
-                            SELECT {ColFechaAsiento} 
-                            FROM {TableActivosAsientos}
-                            {WhereActivosKey}";
-
                         var fecha = connection.ExecuteScalar<DateTime?>(
-                            sqlFecha,
+                            SqlSelectFechaAsiento,
                             new
                             {
                                 cc = item.cod_contabilidad,
@@ -319,18 +338,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                             continue;
                         }
 
-                        var insertMaestro = $@"
-                            INSERT INTO {TableCntAsientos}
-                            (COD_CONTABILIDAD, tipo_asiento, num_asiento, anio, mes, fecha_asiento,
-                             descripcion, balanceado, notas, referencia, modulo, user_crea)
-                            SELECT 
-                                {ColCodContabilidad}, {ColTipoAsiento}, {ColNumAsiento}, {ColAnio}, {ColMes}, {ColFechaAsiento},
-                                {ColDescripcion}, 'S', ISNULL(Notas,''), ISNULL(Referencia,''), @modulo, user_crea
-                            FROM {TableActivosAsientos}
-                            {WhereActivosKey}";
-
                         connection.Execute(
-                            insertMaestro,
+                            SqlInsertMaestro,
                             new
                             {
                                 cc     = item.cod_contabilidad,
@@ -340,20 +349,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                             },
                             tran);
 
-                        var insertDetalle = $@"
-                            INSERT INTO {TableCntAsientosDetalle}
-                            (num_linea, COD_CONTABILIDAD, tipo_asiento, num_asiento, cod_cuenta,
-                             documento, detalle, tipo_cambio, monto_debito, monto_credito,
-                             cod_unidad, cod_divisa, cod_centro_costo)
-                            SELECT 
-                                num_linea, COD_CONTABILIDAD, tipo_asiento, num_asiento, cod_cuenta,
-                                documento, detalle, 1, monto_debito, monto_credito,
-                                cod_unidad, cod_divisa, cod_centro_costo
-                            FROM {TableActivosAsientosDetalle}
-                            {WhereActivosDetalleKey}";
-
                         connection.Execute(
-                            insertDetalle,
+                            SqlInsertDetalle,
                             new
                             {
                                 cc = item.cod_contabilidad,
@@ -362,14 +359,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                             },
                             tran);
 
-                        var updateOrigen = $@"
-                            UPDATE {TableActivosAsientos}
-                            SET {ColFechaTraslado} = GETDATE(),
-                                {ColUserTraslada}  = @usuario
-                            {WhereActivosKey}";
-
                         connection.Execute(
-                            updateOrigen,
+                            SqlUpdateOrigen,
                             new
                             {
                                 usuario = item.usuario,
