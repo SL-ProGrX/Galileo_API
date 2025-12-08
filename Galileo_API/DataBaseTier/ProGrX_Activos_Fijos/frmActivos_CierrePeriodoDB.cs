@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos

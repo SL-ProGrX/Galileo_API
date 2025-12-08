@@ -48,29 +48,29 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+
+                var query = $@"SELECT ISNULL(COUNT(*),0) AS Existe FROM pv_periodos WHERE mes > MONTH('{vfecha}')  AND anio = YEAR('{vfecha}') AND estado = 'C'";
+                var resp = connection.Query<int>(query).FirstOrDefault();
+                if (resp > 0)
                 {
-                    var query = $@"SELECT ISNULL(COUNT(*),0) AS Existe FROM pv_periodos WHERE mes > MONTH('{vfecha}')  AND anio = YEAR('{vfecha}') AND estado = 'C'";
-                    var resp = connection.Query<int>(query).FirstOrDefault();
-                    if (resp > 0)
+                    vPasa = false;
+                }
+                else
+                {
+                    vPasa = true;
+                }
+
+                if (vPasa)
+                {
+                    query = $@"Select estado from pv_periodos where anio = YEAR('{vfecha}') AND mes = MONTH('{vfecha}') ";
+                    var estado = connection.Query<string>(query).FirstOrDefault();
+                    if (estado == "C")
                     {
                         vPasa = false;
                     }
-                    else
-                    {
-                        vPasa = true;
-                    }
-
-                    if (vPasa)
-                    {
-                        query = $@"Select estado from pv_periodos where anio = YEAR('{vfecha}') AND mes = MONTH('{vfecha}') ";
-                        var estado = connection.Query<string>(query).FirstOrDefault();
-                        if (estado == "C")
-                        {
-                            vPasa = false;
-                        }
-                    }
-
                 }
+
+
             }
             catch (Exception ex)
             {
@@ -94,27 +94,27 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var procedure = "spINVAfectacion";
-                    var parameters = new
-                    {
-                        @CodProd = req.CodProducto,
-                        @Cantidad = req.Cantidad,
-                        @Bodega = req.CodBodega,
-                        @CodTipo = req.CodTipo,
-                        @Origen = req.Origen,
-                        @Fecha = req.Fecha,
-                        @Precio = req.Precio,
-                        @ImpCon = req.ImpConsumo,
-                        @ImpVenta = req.ImpVentas,
-                        @TipoMov = req.TipoMov,
-                        @Usuario = req.Usuario
-                    };
 
-                    connection.Execute(procedure, parameters, commandType: CommandType.StoredProcedure);
-                    result.Code = 0;
-                    result.Description = "ok";
-                }
+                var procedure = "spINVAfectacion";
+                var parameters = new
+                {
+                    @CodProd = req.CodProducto,
+                    @Cantidad = req.Cantidad,
+                    @Bodega = req.CodBodega,
+                    @CodTipo = req.CodTipo,
+                    @Origen = req.Origen,
+                    @Fecha = req.Fecha,
+                    @Precio = req.Precio,
+                    @ImpCon = req.ImpConsumo,
+                    @ImpVenta = req.ImpVentas,
+                    @TipoMov = req.TipoMov,
+                    @Usuario = req.Usuario
+                };
+
+                connection.Execute(procedure, parameters, commandType: CommandType.StoredProcedure);
+                result.Code = 0;
+                result.Description = "ok";
+
             }
             catch (Exception ex)
             {
@@ -272,18 +272,18 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+
+                var query = $@"select estado from pv_periodos where anio = YEAR('{vfecha}')  and mes = MONTH('{vfecha}') ";
+                vNum = connection.Query<string>(query).FirstOrDefault();
+                if (vNum == "C")
                 {
-                    var query = $@"select estado from pv_periodos where anio = YEAR('{vfecha}')  and mes = MONTH('{vfecha}') ";
-                    vNum = connection.Query<string>(query).FirstOrDefault();
-                    if (vNum == "C")
-                    {
-                        vPasa = false;
-                    }
-                    else
-                    {
-                        vPasa = true;
-                    }
+                    vPasa = false;
                 }
+                else
+                {
+                    vPasa = true;
+                }
+
             }
             catch (Exception ex)
             {
@@ -311,20 +311,17 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
+                var query = $@"SELECT cod_parametro, valor FROM cxp_parametros WHERE cod_parametro = '{Cod_Parametro}'";
+
+                response.Result = connection.Query<ParametroValor>(query).FirstOrDefault();
+
+                if (response.Result == null || response.Result.Valor == null)
                 {
-                    var query = $@"SELECT cod_parametro, valor FROM cxp_parametros WHERE cod_parametro = '{Cod_Parametro}'";
-
-                    response.Result = connection.Query<ParametroValor>(query).FirstOrDefault();
-
-                    if (response.Result == null || response.Result.Valor == null)
+                    response.Result = new ParametroValor
                     {
-                        response.Result = new ParametroValor
-                        {
-                            Cod_Parametro = Cod_Parametro,
-                            Valor = "GEN"
-                        };
-                    }
-
+                        Cod_Parametro = Cod_Parametro,
+                        Valor = "GEN"
+                    };
                 }
             }
             catch (Exception ex)
@@ -357,32 +354,31 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
+
+                var query1 = $@"select genera_user from pv_invTransac where Tipo = '{TipoTran}' and Boleta = '{Boleta}'";
+                var generaUser = connection.ExecuteScalar<string>(query1);
+
+                if (string.IsNullOrEmpty(generaUser))
                 {
-                    var query1 = $@"select genera_user from pv_invTransac where Tipo = '{TipoTran}' and Boleta = '{Boleta}'";
-                    var generaUser = connection.ExecuteScalar<string>(query1);
+                    info.Code = 0;
+                    info.Description = $"No se encontró el usuario que generó la boleta '{Boleta}', verifique que la boleta exista";
+                    return info;
+                }
 
-                    if (string.IsNullOrEmpty(generaUser))
-                    {
-                        info.Code = 0;
-                        info.Description = $"No se encontró el usuario que generó la boleta '{Boleta}', verifique que la boleta exista";
-                        return info;
-                    }
+                var query2 = $@"select isnull(count(*),0) as Existe from pv_orden_autousers where Usuario = '{AutorizaUser}' and Usuario_Asignado = '{generaUser}' and ENTRADAS = 1";
+                int valideAutorizacion = connection.ExecuteScalar<int>(query2);
 
-                    var query2 = $@"select isnull(count(*),0) as Existe from pv_orden_autousers where Usuario = '{AutorizaUser}' and Usuario_Asignado = '{generaUser}' and ENTRADAS = 1";
-                    int valideAutorizacion = connection.ExecuteScalar<int>(query2);
-
-                    if (valideAutorizacion == 1)
-                    {
-                        info.Code = valideAutorizacion;
-                        info.Description = generaUser;
-                        return info;
-                    }
-                    else
-                    {
-                        info.Code = valideAutorizacion;
-                        info.Description = "Usted no se encuentra Registrado como Autorizado del Usuario " + generaUser + " que Generó la Transacción...(Verifique)";
-                        return info;
-                    }
+                if (valideAutorizacion == 1)
+                {
+                    info.Code = valideAutorizacion;
+                    info.Description = generaUser;
+                    return info;
+                }
+                else
+                {
+                    info.Code = valideAutorizacion;
+                    info.Description = "Usted no se encuentra Registrado como Autorizado del Usuario " + generaUser + " que Generó la Transacción...(Verifique)";
+                    return info;
                 }
             }
             catch (Exception ex)
@@ -413,9 +409,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    info = connection.Query<ConsultaDescripcion>(strSQL).FirstOrDefault() ?? new ConsultaDescripcion();
-                }
+
+                info = connection.Query<ConsultaDescripcion>(strSQL).FirstOrDefault() ?? new ConsultaDescripcion();
+
             }
             catch (Exception ex)
             {
@@ -605,9 +601,9 @@ namespace Galileo.DataBaseTier
             {
 
                 using var connection = new SqlConnection(stringConn);
-                {
 
-                    var strSQL = $@"INSERT INTO [dbo].[BITACORA_PRODUCTOS]
+
+                var strSQL = $@"INSERT INTO [dbo].[BITACORA_PRODUCTOS]
                                            ([COD_PRODUCTO]
                                            ,[CONSEC]
                                            ,[MOVIMIENTO]
@@ -622,9 +618,9 @@ namespace Galileo.DataBaseTier
                                            , getdate()
                                            , '{req.registro_usuario}' )";
 
-                    resp.Code = connection.Execute(strSQL);
-                    resp.Description = "Ok";
-                }
+                resp.Code = connection.Execute(strSQL);
+                resp.Description = "Ok";
+
             }
             catch (Exception ex)
             {
@@ -648,10 +644,10 @@ namespace Galileo.DataBaseTier
             {
 
                 using var connection = new SqlConnection(stringConn);
-                {
 
 
-                    var strSQL = $@"INSERT INTO [dbo].[BITACORA_PROVEEDOR]
+
+                var strSQL = $@"INSERT INTO [dbo].[BITACORA_PROVEEDOR]
                                            ([COD_PROVEEDOR]
                                            ,[CONSEC]
                                            ,[MOVIMIENTO]
@@ -666,9 +662,9 @@ namespace Galileo.DataBaseTier
                                            , getdate()
                                            , '{req.registro_usuario}' )";
 
-                    resp.Code = connection.Execute(strSQL);
-                    resp.Description = "Ok";
-                }
+                resp.Code = connection.Execute(strSQL);
+                resp.Description = "Ok";
+
             }
             catch (Exception ex)
             {
@@ -687,11 +683,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "select CODIGO_SINPE as item, rtrim(Descripcion) as descripcion from AFI_TIPOS_IDS " +
-                        " order by Tipo_Id ";
-                    resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-                }
+                var query = "select CODIGO_SINPE as item, rtrim(Descripcion) as descripcion from AFI_TIPOS_IDS " +
+                    " order by Tipo_Id ";
+                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
             {
@@ -801,7 +795,7 @@ namespace Galileo.DataBaseTier
 
                 // Llamada al método refactorizado
                 result = InsertarTablaControl(ctx, payload);
-              
+
             }
             catch (Exception ex)
             {
@@ -1076,60 +1070,58 @@ VALUES (
             try
             {
                 using var connection = new SqlConnection(stringConn);
+
+                //busco el registro en la tabla de control
+                var query = $@"SELECT * FROM FND_CONTROL_CAMBIOS_APROB WHERE ID_CAMBIO = {idCambio}";
+                var dtCambio = connection.Query<FndControlCambioAprobDto>(query).FirstOrDefault();
+                if (dtCambio == null)
                 {
-                    //busco el registro en la tabla de control
-                    var query = $@"SELECT * FROM FND_CONTROL_CAMBIOS_APROB WHERE ID_CAMBIO = {idCambio}";
-                    var dtCambio = connection.Query<FndControlCambioAprobDto>(query).FirstOrDefault();
-                    if (dtCambio == null)
-                    {
+                    result.Code = -1;
+                    result.Description = "No se encontró el registro en la tabla de control.";
+                    return result.Code ?? -1;
+                }
+
+                switch (dtCambio.cod_evento)
+                {
+                    case "UPDATE":
+                        // Parsear el JSON
+                        var cambios = JsonConvert.DeserializeObject<List<CampoCambio>>(dtCambio.valoresjsondif ?? string.Empty);
+
+                        //Armo el query de update 
+                        var setParts = (cambios ?? new List<CampoCambio>()).Select(c => $"{c.Campo} = {FormatearValorSql(c.ValorNuevo ?? string.Empty)}");
+
+                        var llaves = dtCambio.llaves != null ? dtCambio.llaves.Trim('"') : string.Empty;
+                        query = $"UPDATE {dtCambio.nom_tabla} SET {string.Join(", ", setParts)} WHERE {llaves};";
+                        result.Code = connection.Execute(query);
+
+                        break;
+                    case "INSERT":
+                        query = dtCambio.valoresjsonact != null ? dtCambio.valoresjsonact.Trim('"') : string.Empty;
+                        result.Code = connection.Execute(query);
+                        break;
+                    case "DELETE":
+                        var llavesDelete = dtCambio.llaves != null ? dtCambio.llaves.Trim('"') : string.Empty;
+                        query = $"DELETE {dtCambio.nom_tabla} WHERE {llavesDelete};";
+                        result.Code = connection.Execute(query);
+                        break;
+                    default:
                         result.Code = -1;
-                        result.Description = "No se encontró el registro en la tabla de control.";
+                        result.Description = "Tipo de evento no soportado.";
                         return result.Code ?? -1;
-                    }
+                }
 
-                    switch (dtCambio.cod_evento)
-                    {
-                        case "UPDATE":
-                            // Parsear el JSON
-                            var cambios = JsonConvert.DeserializeObject<List<CampoCambio>>(dtCambio.valoresjsondif ?? string.Empty);
-
-                            //Armo el query de update 
-                            var setParts = (cambios ?? new List<CampoCambio>()).Select(c => $"{c.Campo} = {FormatearValorSql(c.ValorNuevo ?? string.Empty)}");
-
-                            var llaves = dtCambio.llaves != null ? dtCambio.llaves.Trim('"') : string.Empty;
-                            query = $"UPDATE {dtCambio.nom_tabla} SET {string.Join(", ", setParts)} WHERE {llaves};";
-                            result.Code = connection.Execute(query);
-
-                            break;
-                        case "INSERT":
-                            query = dtCambio.valoresjsonact != null ? dtCambio.valoresjsonact.Trim('"') : string.Empty;
-                            result.Code = connection.Execute(query);
-                            break;
-                        case "DELETE":
-                            var llavesDelete = dtCambio.llaves != null ? dtCambio.llaves.Trim('"') : string.Empty;
-                            query = $"DELETE {dtCambio.nom_tabla} WHERE {llavesDelete};";
-                            result.Code = connection.Execute(query);
-                            break;
-                        default:
-                            result.Code = -1;
-                            result.Description = "Tipo de evento no soportado.";
-                            return result.Code ?? -1;
-                    }
-
-                    if (result.Code != -1)
-                    {
-                        //Actualizo el estado de la tabla de control
-                        query = $@"UPDATE FND_CONTROL_CAMBIOS_APROB SET COD_ESTADO = 'V', USUARIO_APRUEBA = '{usuario}' , FECHA_APRUEBA = getDate()
+                if (result.Code != -1)
+                {
+                    //Actualizo el estado de la tabla de control
+                    query = $@"UPDATE FND_CONTROL_CAMBIOS_APROB SET COD_ESTADO = 'V', USUARIO_APRUEBA = '{usuario}' , FECHA_APRUEBA = getDate()
                                     WHERE ID_CAMBIO = {idCambio}";
-                        connection.Execute(query);
-                        result.Description = "ok";
-                    }
-                    else
-                    {
-                        result.Code = -1;
-                        result.Description = "Error al actualizar la tabla de control.";
-                    }
-
+                    connection.Execute(query);
+                    result.Description = "ok";
+                }
+                else
+                {
+                    result.Code = -1;
+                    result.Description = "Error al actualizar la tabla de control.";
                 }
             }
             catch (Exception ex)
