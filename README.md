@@ -71,4 +71,54 @@ Ejemplo:
   "ConnectionStrings:BaseConnString": "..."
 }
 
+```  
+
+```bash
+
+# Crear los User Secrets del proyecto
+dotnet user-secrets init
+dotnet user-secrets set InitKey InitValue
+
+# ----------------------------
+# 📂 ABRIR CARPETA DE SECRETS
+# ----------------------------
+
+# 🍎 macOS (abrir carpeta de secrets)
+open ~/.microsoft/usersecrets/<UserSecretsId>
+
+# 🪟 Windows (abrir esta ruta en el Explorador)
+# C:\Users\<TU_USUARIO>\AppData\Roaming\Microsoft\UserSecrets\<UserSecretsId>\
+
+# ----------------------------
+# ✏️ EDITAR secrets.json
+# ----------------------------
+# 1. Abrir secrets.json
+# 2. Borrar todo su contenido
+# 3. Pegar los secrets proporcionados por el equipo
+# 4. Guardar el archivo
+
+# ----------------------------
+# ✅ VERIFICAR SECRETS
+# ----------------------------
+dotnet user-secrets list
+
+# ----------------------------
+# 🧼 (Opcional) borrar clave temporal
+# ----------------------------
+dotnet user-secrets remove InitKey
+
+# -----------------------------------
+# 🔄 Actualizar valores usando dotnet CLI
+# (equivalente a lo que va dentro de secrets.json)
+# -----------------------------------
+
+# JWT Secret
+dotnet user-secrets set "Jwt:Secret" "XXXXXXXXXXXXXXXXXXXX"
+
+# Connection Strings
+dotnet user-secrets set "ConnectionStrings:DefaultConnString" "<valor>"
+dotnet user-secrets set "ConnectionStrings:GAConnString" "<valor>"
+dotnet user-secrets set "ConnectionStrings:BaseConnString" "<valor>"
+
+
 
