@@ -16,10 +16,13 @@ namespace Galileo.DataBaseTier
         private readonly IRdlcPathResolver _paths;
         private readonly IRdlcExecutor _executor;
 
+        // Timeout común para las expresiones regulares de esta clase
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+
         public SubreportCoordinator(IRdlcMetaReader meta, IRdlcPathResolver paths, IRdlcExecutor executor)
         {
-            _meta = meta;
-            _paths = paths;
+            _meta    = meta;
+            _paths   = paths;
             _executor = executor;
         }
 
@@ -226,7 +229,7 @@ namespace Galileo.DataBaseTier
 
         private static Dictionary<string, List<string>> ReadParentSubreportParamNames(string parentRdlcPath)
         {
-            var x = XDocument.Load(parentRdlcPath);
+            var x  = XDocument.Load(parentRdlcPath);
             var ns = x.Root!.GetDefaultNamespace();
             var map = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
@@ -263,7 +266,16 @@ namespace Galileo.DataBaseTier
             {
                 var valExpr = qp.Element(ns + "Value")?.Value;
                 if (string.IsNullOrWhiteSpace(valExpr)) continue;
-                var m = Regex.Match(valExpr.Trim(), @"^=Parameters!(?<p>\w+)\.Value$", RegexOptions.IgnoreCase);
+
+                var trimmed = valExpr.Trim();
+
+                // Antes: Regex.Match(trimmed, @"^=Parameters!(?<p>\w+)\.Value$", RegexOptions.IgnoreCase);
+                var m = Regex.Match(
+                    trimmed,
+                    @"^=Parameters!(?<p>\w+)\.Value$",
+                    RegexOptions.IgnoreCase,
+                    RegexTimeout);
+
                 if (m.Success) expected.Add(m.Groups["p"].Value);
             }
 

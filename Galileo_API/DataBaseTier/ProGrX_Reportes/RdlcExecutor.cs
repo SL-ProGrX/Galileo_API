@@ -15,6 +15,9 @@ namespace Galileo.DataBaseTier
     /// </summary>
     public sealed class RdlcExecutor : IRdlcExecutor
     {
+        // Timeout común para todas las expresiones regulares de esta clase
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+
         public bool TryExecDataSet(
             SqlConnection connection,
             RdlcDataSetMeta ds,
@@ -30,15 +33,15 @@ namespace Galileo.DataBaseTier
             try
             {
                 var paramPairs = BuildParameterPairs(ds, ctx, jsonParams);
-                var sqlText = PrepareSql(ds, jsonParams, allowFiltrosReplacement);
-                var dp = BuildDynamicParameters(paramPairs);
+                var sqlText    = PrepareSql(ds, jsonParams, allowFiltrosReplacement);
+                var dp         = BuildDynamicParameters(paramPairs);
 
                 return ExecuteQuery(connection, ds, sqlText, dp, out rows, out error);
             }
             catch (Exception ex)
             {
                 error = $"[{ds.DataSetName}] {ex.GetType().Name}: {ex.Message}";
-                rows = Enumerable.Empty<object>();
+                rows  = Enumerable.Empty<object>();
                 return false;
             }
         }
@@ -123,7 +126,7 @@ namespace Galileo.DataBaseTier
             out string? error)
         {
             error = null;
-            rows = Enumerable.Empty<object>();
+            rows  = Enumerable.Empty<object>();
 
             var isStoredProc = string.Equals(ds.CommandType, "StoredProcedure", StringComparison.OrdinalIgnoreCase)
                                || LooksLikeSpName(sqlText);
@@ -144,7 +147,7 @@ namespace Galileo.DataBaseTier
             out string? error)
         {
             error = null;
-            rows = Enumerable.Empty<object>();
+            rows  = Enumerable.Empty<object>();
 
             var result = connection.Query(sqlText, dp, commandType: CommandType.StoredProcedure).ToList();
             if (result.Count > 0)
@@ -180,7 +183,13 @@ namespace Galileo.DataBaseTier
                 return DBNull.Value;
 
             var e = expr.Trim();
-            var m = Regex.Match(e, @"^=Parameters!(?<p>\w+)\.Value$", RegexOptions.IgnoreCase);
+
+            // Antes: Regex.Match(e, @"^=Parameters!(?<p>\w+)\.Value$", RegexOptions.IgnoreCase);
+            var m = Regex.Match(
+                e,
+                @"^=Parameters!(?<p>\w+)\.Value$",
+                RegexOptions.IgnoreCase,
+                RegexTimeout);
 
             if (m.Success)
             {
@@ -211,7 +220,7 @@ namespace Galileo.DataBaseTier
 
             return !(
                 q.StartsWith("select", StringComparison.OrdinalIgnoreCase) ||
-                q.StartsWith("with", StringComparison.OrdinalIgnoreCase) ||
+                q.StartsWith("with",   StringComparison.OrdinalIgnoreCase) ||
                 q.StartsWith("insert", StringComparison.OrdinalIgnoreCase) ||
                 q.StartsWith("update", StringComparison.OrdinalIgnoreCase) ||
                 q.StartsWith("delete", StringComparison.OrdinalIgnoreCase));
