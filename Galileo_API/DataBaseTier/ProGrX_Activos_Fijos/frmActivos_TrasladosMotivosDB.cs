@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using Dapper;
+﻿using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
@@ -53,9 +50,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDb = new PortalDB(config);
         }
 
-        // ------------------------------
-        // VALIDACIÓN DE ORDEN (S2077)
-        // ------------------------------
+
         private static string ResolveSortField(string input)
         {
             var key = (input ?? string.Empty).Trim().ToLowerInvariant();

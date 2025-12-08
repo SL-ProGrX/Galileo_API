@@ -4,6 +4,8 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
@@ -11,7 +13,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
     {
         private readonly int vModulo = 36;
         private readonly MSecurityMainDb _Security_MainDB;
-        //private readonly mReportingServicesDB _mReporting;
+        private readonly MReportingServicesDB _mReporting;
         private readonly PortalDB _portalDB;
 
         private const string FormatoFecha          = "yyyy-MM-dd";
@@ -86,7 +88,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         public FrmActivosReasignacionesDB(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
-            //_mReporting = new mReportingServicesDB(_config);
+            _mReporting = new MReportingServicesDB(config);
             _portalDB = new PortalDB(config);
         }
 
@@ -942,110 +944,106 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
-        // Mantener código de reportes comentado: se desactiva S125 alrededor de este bloque.
-        #pragma warning disable S125
+        /// <summary>
+        /// Generar emisión de boletas de reasignación en lote (PDF combinado).
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// </summary>
+        /// <returns></returns>
+        public ErrorDto<object> Activos_Reasignacion_Boletas_Lote(int codEmpresa,ActivosReasignacionesBoletasLoteRequest request)
+        {
+            var response = new ErrorDto<object> { Code = 0 };
+        
+            if (request.Boletas == null || request.Boletas.Count == 0)
+            {
+                response.Code = -1;
+                response.Description = "No se recibieron boletas para generar el reporte.";
+                return response;
+            }
+        
+            try
+            {
+                var pdfs = new List<byte[]>();
+        
+                foreach (var boleta in request.Boletas.Distinct())
+                {
+                    if (string.IsNullOrWhiteSpace(boleta))
+                        continue;
+        
+                    var parametros = new
+                    {
+                        filtros =
+                            $" WHERE ACTIVOS_TRASLADOS.COD_TRASLADO = '{boleta}'",
+                        Empresa = (string?)null,
+                        fxUsuario = request.Usuario,
+                        fxSubTitulo = "TRASLADO DE ACTIVOS Y CAMBIO DE RESPONSABLES"
+                    };
+        
+                    var reporteData = new FrmReporteGlobal
+                    {
+                        codEmpresa = codEmpresa,
+                        parametros = JsonConvert.SerializeObject(parametros),
+                        nombreReporte = "Activos_BoletaTraslado",
+                        usuario = request.Usuario,
+                        cod_reporte = "P",
+                        folder = "Activos"
+                    };
+        
+                    var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
+        
+                    // Si viene un ObjectResult, interpretamos que hay ErrorDto adentro
+                    if (actionResult is ObjectResult objectResult)
+                    {
+                        var res = objectResult.Value;
+                        var jres = System.Text.Json.JsonSerializer.Serialize(res);
+                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
+        
+                        response.Code = -1;
+                        response.Description =
+                            err?.Description ?? $"Error al generar boleta {boleta}.";
+                        return response;
+                    }
+        
+                    var fileResult = actionResult as FileContentResult;
+        
+                    if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
+                    {
+                        response.Code = -1;
+                        response.Description =
+                            $"Ocurrió un error al generar la boleta, contenido nulo/vacío para boleta {boleta}.";
+                        return response;
+                    }
+        
+                    pdfs.Add(fileResult.FileContents);
+                }
+        
+                if (!pdfs.Any())
+                {
+                    response.Code = -1;
+                    response.Description = "No se generaron boletas para los códigos indicados.";
+                    return response;
+                }
+        
+                // Combinar los bytes de todos los PDFs en uno solo
+                var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
+        
+                var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
+                {
+                    FileDownloadName = "Activos_Reasignacion_Boletas.pdf"
+                };
+        
+                // Devolver el FileContentResult serializado (igual que en Personas/Tesorería)
+                response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
+                return response;
+            }
+        }
 
-        // /// <summary>
-        // /// Generar emisión de boletas de reasignación en lote (PDF combinado).
-        // /// <param name="codEmpresa"></param>
-        // /// <param name="request"></param>
-        // /// </summary>
-        // /// <returns></returns>
-        // public ErrorDto<object> Activos_Reasignacion_Boletas_Lote(int codEmpresa,ActivosReasignacionesBoletasLoteRequest request)
-        // {
-        //     var response = new ErrorDto<object> { Code = 0 };
-        //
-        //     if (request.Boletas == null || request.Boletas.Count == 0)
-        //     {
-        //         response.Code = -1;
-        //         response.Description = "No se recibieron boletas para generar el reporte.";
-        //         return response;
-        //     }
-        //
-        //     try
-        //     {
-        //         var pdfs = new List<byte[]>();
-        //
-        //         foreach (var boleta in request.Boletas.Distinct())
-        //         {
-        //             if (string.IsNullOrWhiteSpace(boleta))
-        //                 continue;
-        //
-        //             var parametros = new
-        //             {
-        //                 filtros =
-        //                     $" WHERE ACTIVOS_TRASLADOS.COD_TRASLADO = '{boleta}'",
-        //                 Empresa = (string?)null,
-        //                 fxUsuario = request.Usuario,
-        //                 fxSubTitulo = "TRASLADO DE ACTIVOS Y CAMBIO DE RESPONSABLES"
-        //             };
-        //
-        //             var reporteData = new FrmReporteGlobal
-        //             {
-        //                 codEmpresa = codEmpresa,
-        //                 parametros = JsonConvert.SerializeObject(parametros),
-        //                 nombreReporte = "Activos_BoletaTraslado",
-        //                 usuario = request.Usuario,
-        //                 cod_reporte = "P",
-        //                 folder = "Activos"
-        //             };
-        //
-        //             var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
-        //
-        //             // Si viene un ObjectResult, interpretamos que hay ErrorDto adentro
-        //             if (actionResult is ObjectResult objectResult)
-        //             {
-        //                 var res = objectResult.Value;
-        //                 var jres = System.Text.Json.JsonSerializer.Serialize(res);
-        //                 var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
-        //
-        //                 response.Code = -1;
-        //                 response.Description =
-        //                     err?.Description ?? $"Error al generar boleta {boleta}.";
-        //                 return response;
-        //             }
-        //
-        //             var fileResult = actionResult as FileContentResult;
-        //
-        //             if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
-        //             {
-        //                 response.Code = -1;
-        //                 response.Description =
-        //                     $"Ocurrió un error al generar la boleta, contenido nulo/vacío para boleta {boleta}.";
-        //                 return response;
-        //             }
-        //
-        //             pdfs.Add(fileResult.FileContents);
-        //         }
-        //
-        //         if (!pdfs.Any())
-        //         {
-        //             response.Code = -1;
-        //             response.Description = "No se generaron boletas para los códigos indicados.";
-        //             return response;
-        //         }
-        //
-        //         // Combinar los bytes de todos los PDFs en uno solo
-        //         var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
-        //
-        //         var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
-        //         {
-        //             FileDownloadName = "Activos_Reasignacion_Boletas.pdf"
-        //         };
-        //
-        //         // Devolver el FileContentResult serializado (igual que en Personas/Tesorería)
-        //         response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
-        //         return response;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         response.Code = -1;
-        //         response.Description = ex.Message;
-        //         response.Result = null;
-        //         return response;
-        //     }
-        // }
-
-        #pragma warning restore S125
     }
 }

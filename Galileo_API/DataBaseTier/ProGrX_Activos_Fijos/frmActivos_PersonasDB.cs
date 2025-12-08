@@ -5,6 +5,8 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo.Models.Security;
+using Newtonsoft.Json;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 {
@@ -14,15 +16,13 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         private const string Todos = "TODOS";
 
         private readonly MSecurityMainDb _securityMainDb;
-        //private readonly mReportingServicesDB _mReporting;
-        //private readonly MProGrXAuxiliarDB _mAuxiliar;
+        private readonly MReportingServicesDB _mReporting;
         private readonly PortalDB _portalDb;
 
         public FrmActivosPersonasDB(IConfiguration config)
         {
             _securityMainDb = new MSecurityMainDb(config);
-            //_mReporting = new mReportingServicesDB(_config);
-            //_mAuxiliar = new MProGrXAuxiliarDB(config);
+            _mReporting = new MReportingServicesDB(config);
             _portalDb = new PortalDB(config);
         }
 
@@ -196,6 +196,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             return result;
         }
 
+
         /// <summary>
         /// Obtiene lista completa de personas sin paginación (Tab Mantenimiento).
         /// </summary>
@@ -280,6 +281,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             return result;
         }
 
+
         /// <summary>
         /// Inserta o actualiza persona según isNew (Tab Mantenimiento).
         /// </summary>
@@ -334,6 +336,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 
             return result;
         }
+
 
         /// <summary>
         /// Actualiza una persona existente (Tab Mantenimiento).
@@ -390,6 +393,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             return result;
         }
 
+
         /// <summary>
         /// Inserta una nueva persona (Tab Mantenimiento).
         /// </summary>
@@ -440,6 +444,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             return result;
         }
 
+
         /// <summary>
         /// Elimina una persona por identificación (Tab Mantenimiento).
         /// </summary>
@@ -488,6 +493,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             return result;
         }
 
+
         /// <summary>
         /// Valida si una identificación ya existe en ACTIVOS_PERSONAS.
         /// </summary>
@@ -531,6 +537,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 
             return result;
         }
+
 
         /// <summary>
         /// Aplica el cambio de Departamento/Sección llamando a spActivos_DepartamentoCambio. Devuelve Boleta.
@@ -586,6 +593,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             return result;
         }
 
+
         /// <summary>
         /// Ejecuta la sincronización con RRHH llamando a spActivos_Sincroniza_RH.
         /// </summary>
@@ -623,6 +631,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             return result;
         }
 
+
         /// <summary>
         /// Obtiene catálogo de Departamentos (item, descripcion).
         /// </summary>
@@ -655,6 +664,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 
             return result;
         }
+
 
         /// <summary>
         /// Obtiene catálogo de Secciones por Departamento (item, descripcion).
@@ -692,9 +702,6 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             return result;
         }
 
-        // ------------------------------------------------------------------------------------
-        // CÓDIGO DE REPORTES MANTENIDO (COMENTADO)
-        // ------------------------------------------------------------------------------------
 
         /// <summary>
         /// Generar emision de documentos.
@@ -702,193 +709,193 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
         /// <param name="codEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        // public ErrorDto<object> Activos_BoletaActivosAsignados_Lote(int codEmpresa,ActivosPersonasReporteLoteRequest request)
-        // {
-        //     var response = new ErrorDto<object> { Code = 0 };
-        //
-        //     if (request.Identificaciones == null || request.Identificaciones.Count == 0)
-        //     {
-        //         response.Code = -1;
-        //         response.Description = "No se recibieron identificaciones para generar la boleta.";
-        //         return response;
-        //     }
-        //
-        //     try
-        //     {
-        //         var pdfs = new List<byte[]>();
-        //
-        //         foreach (var id in request.Identificaciones.Distinct())
-        //         {
-        //             var parametros = new
-        //             {
-        //                 filtros =
-        //                     $" WHERE ACTIVOS_PERSONAS.IDENTIFICACION = '{id}'" +
-        //                     $" AND ACTIVOS_PRINCIPAL.ESTADO <> 'R'",
-        //                 Empresa = (string?)null,
-        //                 fxUsuario = request.Usuario,
-        //                 fxSubTitulo = "ACTIVOS VIGENTES"
-        //             };
-        //
-        //             var reporteData = new FrmReporteGlobal
-        //             {
-        //                 codEmpresa = codEmpresa,
-        //                 parametros = JsonConvert.SerializeObject(parametros),
-        //                 nombreReporte = "Activos_BoletaActivosAsignados",
-        //                 usuario = request.Usuario,
-        //                 cod_reporte = "P",
-        //                 folder = "Activos"
-        //             };
-        //
-        //             var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
-        //
-        //
-        //             if (actionResult is ObjectResult objectResult)
-        //             {
-        //                 var res = objectResult.Value;
-        //                 var jres = System.Text.Json.JsonSerializer.Serialize(res);
-        //                 var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
-        //
-        //                 response.Code = -1;
-        //                 response.Description =
-        //                     err?.Description ?? $"Error al generar boleta para identificación {id}.";
-        //                 return response;
-        //             }
-        //
-        //             var fileResult = actionResult as FileContentResult;
-        //
-        //             if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
-        //             {
-        //                 response.Code = -1;
-        //                 response.Description =
-        //                     $"Ocurrió un error al generar la boleta, contenido nulo/vacío para identificación {id}.";
-        //                 return response;
-        //             }
-        //
-        //             pdfs.Add(fileResult.FileContents);
-        //         }
-        //
-        //         if (!pdfs.Any())
-        //         {
-        //             response.Code = -1;
-        //             response.Description = "No se generaron boletas para las identificaciones indicadas.";
-        //             return response;
-        //         }
-        //
-        //         // Combinar los bytes de todos los PDFs en uno solo
-        //         var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
-        //
-        //         var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
-        //         {
-        //             FileDownloadName = "Activos_BoletaActivosAsignados.pdf"
-        //         };
-        //
-        //         // Igual que en Tesorería: devolver el FileContentResult serializado
-        //         response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
-        //         return response;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         response.Code = -1;
-        //         response.Description = ex.Message;
-        //         response.Result = null;
-        //         return response;
-        //     }
-        // }
+        public ErrorDto<object> Activos_BoletaActivosAsignados_Lote(int codEmpresa,ActivosPersonasReporteLoteRequest request)
+        {
+            var response = new ErrorDto<object> { Code = 0 };
+        
+            if (request.Identificaciones == null || request.Identificaciones.Count == 0)
+            {
+                response.Code = -1;
+                response.Description = "No se recibieron identificaciones para generar la boleta.";
+                return response;
+            }
+        
+            try
+            {
+                var pdfs = new List<byte[]>();
+        
+                foreach (var id in request.Identificaciones.Distinct())
+                {
+                    var parametros = new
+                    {
+                        filtros =
+                            $" WHERE ACTIVOS_PERSONAS.IDENTIFICACION = '{id}'" +
+                            $" AND ACTIVOS_PRINCIPAL.ESTADO <> 'R'",
+                        Empresa = (string?)null,
+                        fxUsuario = request.Usuario,
+                        fxSubTitulo = "ACTIVOS VIGENTES"
+                    };
+        
+                    var reporteData = new FrmReporteGlobal
+                    {
+                        codEmpresa = codEmpresa,
+                        parametros = JsonConvert.SerializeObject(parametros),
+                        nombreReporte = "Activos_BoletaActivosAsignados",
+                        usuario = request.Usuario,
+                        cod_reporte = "P",
+                        folder = "Activos"
+                    };
+        
+                    var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
+        
+        
+                    if (actionResult is ObjectResult objectResult)
+                    {
+                        var res = objectResult.Value;
+                        var jres = System.Text.Json.JsonSerializer.Serialize(res);
+                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
+        
+                        response.Code = -1;
+                        response.Description =
+                            err?.Description ?? $"Error al generar boleta para identificación {id}.";
+                        return response;
+                    }
+        
+                    var fileResult = actionResult as FileContentResult;
+        
+                    if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
+                    {
+                        response.Code = -1;
+                        response.Description =
+                            $"Ocurrió un error al generar la boleta, contenido nulo/vacío para identificación {id}.";
+                        return response;
+                    }
+        
+                    pdfs.Add(fileResult.FileContents);
+                }
+        
+                if (!pdfs.Any())
+                {
+                    response.Code = -1;
+                    response.Description = "No se generaron boletas para las identificaciones indicadas.";
+                    return response;
+                }
+        
+                // Combinar los bytes de todos los PDFs en uno solo
+                var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
+        
+                var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
+                {
+                    FileDownloadName = "Activos_BoletaActivosAsignados.pdf"
+                };
+        
+                // Igual que en Tesorería: devolver el FileContentResult serializado
+                response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
+                return response;
+            }
+        }
 
-        //// <summary>
-        /// Generar emision de documentos.
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
-        /// <returns></returns>
-        // public ErrorDto<object> Activos_ContratoResponsabilidad_Lote(int codEmpresa,ActivosPersonasReporteLoteRequest request)
-        // {
-        //     var response = new ErrorDto<object> { Code = 0 };
-        //
-        //     if (request.Identificaciones == null || request.Identificaciones.Count == 0)
-        //     {
-        //         response.Code = -1;
-        //         response.Description = "No se recibieron identificaciones para generar el contrato.";
-        //         return response;
-        //     }
-        //
-        //     try
-        //     {
-        //         var pdfs = new List<byte[]>();
-        //
-        //         foreach (var id in request.Identificaciones.Distinct())
-        //         {
-        //             var parametros = new
-        //             {
-        //                 filtros =
-        //                     $" WHERE ACTIVOS_PERSONAS.IDENTIFICACION = '{id}'" +
-        //                     $" AND ACTIVOS_PRINCIPAL.ESTADO <> 'R'",
-        //                 Empresa = (string?)null,
-        //                 fxUsuario = request.Usuario,
-        //                 fxSubTitulo = "CONTRATO DE RESPONSABILIDAD"
-        //             };
-        //
-        //             var reporteData = new FrmReporteGlobal
-        //             {
-        //                 codEmpresa = codEmpresa,
-        //                 parametros = JsonConvert.SerializeObject(parametros),
-        //                 nombreReporte = "Activos_ContratoResponsabilidad",
-        //                 usuario = request.Usuario,
-        //                 cod_reporte = "P",
-        //                 folder = "Activos"
-        //             };
-        //
-        //             var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
-        //
-        //             if (actionResult is ObjectResult objectResult)
-        //             {
-        //                 var res = objectResult.Value;
-        //                 var jres = System.Text.Json.JsonSerializer.Serialize(res);
-        //                 var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
-        //
-        //                 response.Code = -1;
-        //                 response.Description =
-        //                     err?.Description ?? $"Error al generar contrato para identificación {id}.";
-        //                 return response;
-        //             }
-        //
-        //             var fileResult = actionResult as FileContentResult;
-        //
-        //             if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
-        //             {
-        //                 response.Code = -1;
-        //                 response.Description =
-        //                     $"Ocurrió un error al generar el contrato, contenido nulo/vacío para identificación {id}.";
-        //                 return response;
-        //             }
-        //
-        //             pdfs.Add(fileResult.FileContents);
-        //         }
-        //
-        //         if (!pdfs.Any())
-        //         {
-        //             response.Code = -1;
-        //             response.Description = "No se generaron contratos para las identificaciones indicadas.";
-        //             return response;
-        //         }
-        //
-        //         var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
-        //
-        //         var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
-        //         {
-        //             FileDownloadName = "Activos_ContratoResponsabilidad.pdf"
-        //         };
-        //
-        //         response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
-        //         return response;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         response.Code = -1;
-        //         response.Description = ex.Message;
-        //         response.Result = null;
-        //         return response;
-        //     }
-        // }
+       /// <summary>
+       /// Generar emision de documentos.
+       /// </summary>
+       /// <param name="codEmpresa"></param>
+       /// <param name="request"></param>
+       /// <returns></returns>
+        public ErrorDto<object> Activos_ContratoResponsabilidad_Lote(int codEmpresa,ActivosPersonasReporteLoteRequest request)
+        {
+            var response = new ErrorDto<object> { Code = 0 };
+        
+            if (request.Identificaciones == null || request.Identificaciones.Count == 0)
+            {
+                response.Code = -1;
+                response.Description = "No se recibieron identificaciones para generar el contrato.";
+                return response;
+            }
+        
+            try
+            {
+                var pdfs = new List<byte[]>();
+        
+                foreach (var id in request.Identificaciones.Distinct())
+                {
+                    var parametros = new
+                    {
+                        filtros =
+                            $" WHERE ACTIVOS_PERSONAS.IDENTIFICACION = '{id}'" +
+                            $" AND ACTIVOS_PRINCIPAL.ESTADO <> 'R'",
+                        Empresa = (string?)null,
+                        fxUsuario = request.Usuario,
+                        fxSubTitulo = "CONTRATO DE RESPONSABILIDAD"
+                    };
+        
+                    var reporteData = new FrmReporteGlobal
+                    {
+                        codEmpresa = codEmpresa,
+                        parametros = JsonConvert.SerializeObject(parametros),
+                        nombreReporte = "Activos_ContratoResponsabilidad",
+                        usuario = request.Usuario,
+                        cod_reporte = "P",
+                        folder = "Activos"
+                    };
+        
+                    var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
+        
+                    if (actionResult is ObjectResult objectResult)
+                    {
+                        var res = objectResult.Value;
+                        var jres = System.Text.Json.JsonSerializer.Serialize(res);
+                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
+        
+                        response.Code = -1;
+                        response.Description =
+                            err?.Description ?? $"Error al generar contrato para identificación {id}.";
+                        return response;
+                    }
+        
+                    var fileResult = actionResult as FileContentResult;
+        
+                    if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
+                    {
+                        response.Code = -1;
+                        response.Description =
+                            $"Ocurrió un error al generar el contrato, contenido nulo/vacío para identificación {id}.";
+                        return response;
+                    }
+        
+                    pdfs.Add(fileResult.FileContents);
+                }
+        
+                if (!pdfs.Any())
+                {
+                    response.Code = -1;
+                    response.Description = "No se generaron contratos para las identificaciones indicadas.";
+                    return response;
+                }
+        
+                var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
+        
+                var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
+                {
+                    FileDownloadName = "Activos_ContratoResponsabilidad.pdf"
+                };
+        
+                response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
+                return response;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
+                return response;
+            }
+        }
     }
 }

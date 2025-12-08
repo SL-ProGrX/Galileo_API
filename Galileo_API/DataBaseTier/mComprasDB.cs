@@ -26,12 +26,12 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "SELECT cod_cargo,descripcion  FROM cxp_cargos order by cod_cargo";
 
-                    info = connection.Query<CargoPeriodicoDto>(query).ToList();
+                var query = "SELECT cod_cargo,descripcion  FROM cxp_cargos order by cod_cargo";
 
-                }
+                info = connection.Query<CargoPeriodicoDto>(query).ToList();
+
+
             }
             catch (Exception ex)
             {
@@ -49,16 +49,15 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "SELECT ISNULL(COUNT(*),0) AS Existe FROM cpr_INVUSRFECHAS WHERE usuario = @usuario";
-                    var parameters = new DynamicParameters();
-                    parameters.Add("usuario", vUsuario, DbType.String);
 
-                    vNum = connection.ExecuteAsync(query, parameters).Result;
+                var query = "SELECT ISNULL(COUNT(*),0) AS Existe FROM cpr_INVUSRFECHAS WHERE usuario = @usuario";
+                var parameters = new DynamicParameters();
+                parameters.Add("usuario", vUsuario, DbType.String);
 
-                    vCambia = vNum == 1;
+                vNum = connection.ExecuteAsync(query, parameters).Result;
 
-                }
+                vCambia = vNum == 1;
+
             }
             catch (Exception ex)
             {
@@ -75,20 +74,23 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+
+                query = "select isnull(count(*),0) as Existe from cpr_ordenes_detalle WHERE cantidad - isnull(cantidad_despachada,0) > 1 AND cod_orden = @cod_orden";
+
+                var parameters = new DynamicParameters();
+                parameters.Add("cod_orden", vOrden, DbType.String);
+
+                var existe = connection.Query(query, parameters).FirstOrDefault() as dynamic;
+
+                if (existe > 0)
                 {
-                    query = "select isnull(count(*),0) as Existe from cpr_ordenes_detalle WHERE cantidad - isnull(cantidad_despachada,0) > 1 AND cod_orden = @cod_orden";
-
-                    var parameters = new DynamicParameters();
-                    parameters.Add("cod_orden", vOrden, DbType.String);
-
-                    var dapperinfo = connection.Query(query, parameters).FirstOrDefault() as dynamic;
-
-
                     query = "update cpr_ordenes set proceso = 'D' where cod_orden = cod_orden = @cod_orden";
-
-
                     resp.Code = connection.ExecuteAsync(query, parameters).Result;
                     resp.Description = "Ok";
+                }else
+                {
+                    resp.Code = -1;
+                    resp.Description = "No hay cantidades pendientes por despachar";
                 }
             }
             catch (Exception ex)
@@ -101,7 +103,6 @@ namespace Galileo.DataBaseTier
 
         public List<TipoOrdenDto> sbCprCboTiposOrden(int CodEmpresa)
         {
-
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             List<TipoOrdenDto> info = new List<TipoOrdenDto>();
@@ -109,12 +110,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "SELECT tipo_orden,descripcion FROM cpr_tipo_orden";
-
-                    info = connection.Query<TipoOrdenDto>(query).ToList();
-
-                }
+                var query = "SELECT tipo_orden,descripcion FROM cpr_tipo_orden";
+                info = connection.Query<TipoOrdenDto>(query).ToList();
             }
             catch (Exception ex)
             {
@@ -138,25 +135,21 @@ namespace Galileo.DataBaseTier
                 string paginaActual = " ", paginacionActual = " ";
                 string where = $"where COD_CONTABILIDAD = {vfiltro.CodConta}";
                 using var connection = new SqlConnection(clienteConnString);
+                if (vfiltro.filtro != null && vfiltro.filtro != "")
                 {
-                    if (vfiltro.filtro != null && vfiltro.filtro != "")
-                    {
-                        where += " and COD_UNIDAD LIKE '%" + vfiltro.filtro + "%' OR descripcion LIKE '%" + vfiltro.filtro + "%' ";
-                    }
-
-                    if (vfiltro.pagina != null)
-                    {
-                        paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
-                    }
-
-                    query = $"select COUNT(*) from CntX_Unidades {where}";
-                    response.Result.Total = connection.Query<int>(query).FirstOrDefault();
-
-                    query = @$"select cod_unidad as unidad, descripcion from CntX_Unidades 
-                        {where} order by COD_UNIDAD desc {paginaActual} {paginacionActual}";
-                    response.Result.Unidades = connection.Query<UnidadesDto>(query).ToList();
+                    where += " and COD_UNIDAD LIKE '%" + vfiltro.filtro + "%' OR descripcion LIKE '%" + vfiltro.filtro + "%' ";
                 }
+                if (vfiltro.pagina != null)
+                {
+                    paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
+                    paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
+                }
+                query = $"select COUNT(*) from CntX_Unidades {where}";
+                response.Result.Total = connection.Query<int>(query).FirstOrDefault();
+                query = @$"select cod_unidad as unidad, descripcion from CntX_Unidades 
+                        {where} order by COD_UNIDAD desc {paginaActual} {paginacionActual}";
+                response.Result.Unidades = connection.Query<UnidadesDto>(query).ToList();
+
             }
             catch (Exception ex)
             {
@@ -183,25 +176,22 @@ namespace Galileo.DataBaseTier
                 string paginaActual = " ", paginacionActual = " ";
                 string where = $"where COD_CONTABILIDAD = {vfiltro.CodConta}";
                 using var connection = new SqlConnection(clienteConnString);
+
+                if (vfiltro.filtro != null && vfiltro.filtro != "")
                 {
-                    if (vfiltro.filtro != null && vfiltro.filtro != "")
-                    {
-                        where += " and cod_centro_costo LIKE '%" + vfiltro.filtro + "%' OR descripcion LIKE '%" + vfiltro.filtro + "%' ";
-                    }
-
-                    if (vfiltro.pagina != null)
-                    {
-                        paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
-                    }
-
-                    query = $"select COUNT(*) from CNTX_CENTRO_COSTOS {where}";
-                    response.Result.Total = connection.Query<int>(query).FirstOrDefault();
-
-                    query = @$"select cod_centro_costo as centrocosto, descripcion from CNTX_CENTRO_COSTOS
-                        {where} order by cod_centro_costo desc {paginaActual} {paginacionActual}";
-                    response.Result.CentroCostos = connection.Query<CentroCostoDto>(query).ToList();
+                    where += " and cod_centro_costo LIKE '%" + vfiltro.filtro + "%' OR descripcion LIKE '%" + vfiltro.filtro + "%' ";
                 }
+                if (vfiltro.pagina != null)
+                {
+                    paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
+                    paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
+                }
+                query = $"select COUNT(*) from CNTX_CENTRO_COSTOS {where}";
+                response.Result.Total = connection.Query<int>(query).FirstOrDefault();
+                query = @$"select cod_centro_costo as centrocosto, descripcion from CNTX_CENTRO_COSTOS
+                        {where} order by cod_centro_costo desc {paginaActual} {paginacionActual}";
+                response.Result.CentroCostos = connection.Query<CentroCostoDto>(query).ToList();
+
             }
             catch (Exception ex)
             {
@@ -221,11 +211,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = $@"select CATALOGO_ID AS ITEM, DESCRIPCION from CPR_CATALOGOS 
+                var query = $@"select CATALOGO_ID AS ITEM, DESCRIPCION from CPR_CATALOGOS 
                         where Tipo_Id = (select TIPO_ID from CPR_CATALOGOS_TIPOS where DESCRIPCION = '{tipo}') and Activo = 1";
-                    response.Result = connection.Query<CatalogoDto>(query).ToList();
-                }
+                response.Result = connection.Query<CatalogoDto>(query).ToList();
             }
             catch (Exception ex)
             {
@@ -233,7 +221,6 @@ namespace Galileo.DataBaseTier
                 response.Description = ex.Message;
                 response.Result = new List<CatalogoDto>();
             }
-
             return response;
         }
 
@@ -245,24 +232,18 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    //busco cedula juridica del proveedor
-                    string qProv = $@"SELECT CEDJUR FROM CXP_PROVEEDORES WHERE COD_PROVEEDOR = '{cod_proveedor}' ";
-                    string cedJur = connection.Query<string>(qProv).FirstOrDefault() ?? string.Empty;
-
-
-                    string query = $@"UPDATE CPR_FACTURAS_XML SET ESTADO = 'R' 
+                //busco cedula juridica del proveedor
+                string qProv = $@"SELECT CEDJUR FROM CXP_PROVEEDORES WHERE COD_PROVEEDOR = '{cod_proveedor}' ";
+                string cedJur = connection.Query<string>(qProv).FirstOrDefault() ?? string.Empty;
+                string query = $@"UPDATE CPR_FACTURAS_XML SET ESTADO = 'R' 
                                         WHERE COD_DOCUMENTO = '{cod_factura}' AND CED_JUR_PROV = '{cedJur.Replace("-", "").Replace(" ", "")}'";
-                    response.Code = connection.Execute(query);
-
-                }
+                response.Code = connection.Execute(query);
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
             }
-
             return response;
         }
 
