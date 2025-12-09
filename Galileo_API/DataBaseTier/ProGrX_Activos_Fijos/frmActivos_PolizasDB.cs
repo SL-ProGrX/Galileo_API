@@ -183,6 +183,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         END DESC
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;");
+
                 p.Add("@offset", offset);
                 p.Add("@rows", rows);
                 p.Add("@sortIndex", sortIndex ?? 1);
@@ -626,18 +627,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 AddTipoActivo(p, tipo_activo);
                 AddFiltroTexto(p, _filtro, filtros?.filtro);
 
-                const string queryTotal = @"
-                    SELECT COUNT(1)
-                    FROM dbo.ACTIVOS_PRINCIPAL A
-                    WHERE
-                        (@tipo_activo IS NULL OR A.TIPO_ACTIVO = @tipo_activo)
-                        AND
-                        (
-                            @filtro IS NULL OR
-                            A.NUM_PLACA LIKE @filtro OR
-                            A.NOMBRE    LIKE @filtro
-                        );";
-
+                // Usamos la misma base de query que en el listado para evitar duplicación
+                var queryTotal = "SELECT COUNT(1) " + QueryActivosAsignacionBase + ";";
                 resp.Result.total = cn.QueryFirstOrDefault<int>(queryTotal, p);
 
                 int sortIndex = ObtenerSortIndex(filtros?.sortField);
@@ -692,19 +683,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             AddTipoActivo(p, tipo_activo);
             AddFiltroTexto(p, _filtro, filtros?.filtro);
 
-            using var cn = _portalDB.CreateConnection(CodEmpresa);
-            var lista = ObtenerActivosAsignacion(
-                cn,
-                p,
-                paginar: false
-            ).ToList();
+            var query = @"
+                SELECT 
+                    A.NUM_PLACA AS num_placa,
+                    A.NOMBRE    AS nombre,
+                    A.ESTADO    AS estado,
+                    IIF(X.COD_POLIZA IS NULL, 0, 1) AS asignado
+            " + QueryActivosAsignacionBase + @"
+                ORDER BY A.NUM_PLACA;";
 
-            return new ErrorDto<List<ActivosPolizasAsignacionItem>>
-            {
-                Code        = 0,
-                Description = "Ok",
-                Result      = lista
-            };
+            return DbHelper.ExecuteListQuery<ActivosPolizasAsignacionItem>(
+                _portalDB,
+                CodEmpresa,
+                query,
+                p
+            );
         }
 
         /// <summary>
