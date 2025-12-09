@@ -29,7 +29,7 @@ namespace Galileo_API.DataBaseTier
     #pragma warning disable S3241
     #pragma warning disable S2259
     // LEGACY: código histórico, no modificar sin plan de refactor
-    public class AseccssSinpeValidator : IWFCSinpe
+    public class AseccssSinpeValidator : IWfcSinpe
     {
         private readonly IConfiguration _config;
         private readonly SINPE_PINClient _srvSinpePin = new SINPE_PINClient();

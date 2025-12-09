@@ -4,7 +4,7 @@ using Galileo_API.Controllers.WFCSinpe;
 
 namespace Galileo_API.DataBaseTier
 {
-    public class MSrvWfcCoopeSg : IWFCSinpe
+    public class MSrvWfcCoopeSg : IWfcSinpe
     {
         private readonly CoopeSanGabrielValidator _cliente;
 

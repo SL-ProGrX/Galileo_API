@@ -4,7 +4,7 @@ using Galileo_API.Controllers.WFCSinpe;
 
 namespace Galileo_API.DataBaseTier
 {
-    public class MWfcAseccss : IWFCSinpe
+    public class MWfcAseccss : IWfcSinpe
     {
         private readonly AseccssSinpeValidator _cliente;
 

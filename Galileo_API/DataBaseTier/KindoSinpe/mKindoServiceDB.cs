@@ -9,10 +9,11 @@ using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.Linq;
+using System.Data;
 
 namespace Galileo_API.DataBaseTier
 {
-    public class MKindoServiceDb : IWFCSinpe
+    public class MKindoServiceDb : IWfcSinpe
     {
         private readonly IConfiguration _config;
         private readonly SinpeGalileoPin _PIN;
@@ -36,28 +37,60 @@ namespace Galileo_API.DataBaseTier
             return new SqlConnection(cs);
         }
 
+
+        private static readonly IReadOnlyDictionary<string, string> FuncionesSinpeSql =
+     new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+     {
+        {
+            "fnSinpe_ValidaTransaccion",
+            @"
+SELECT *
+FROM dbo.fnSinpe_ValidaTransaccion(
+    @IDENTIFICACION,
+    @CUENTAIBAN,
+    @CODIGO_MONEDA,
+    @CODIGO_SERVICIO,
+    @MONTO,
+    NULL
+);"
+        },
+        {
+            "fnSinpe_ValidaTransaccionMasiva",
+            @"
+SELECT *
+FROM dbo.fnSinpe_ValidaTransaccionMasiva(
+    @IDENTIFICACION,
+    @CUENTAIBAN,
+    @CODIGO_MONEDA,
+    @CODIGO_SERVICIO,
+    @MONTO,
+    NULL
+);"
+        }
+         // agrega aquí todas las funciones permitidas reales
+     };
+
         private CoreInterno.CL_ResultadoValidacion[] ValidaTransacciones(
             int codEmpresa,
             ValidaTransRequest request,
             string sqlFunctionName,
             bool normalizarId)
         {
+            if (string.IsNullOrWhiteSpace(sqlFunctionName) ||
+                !FuncionesSinpeSql.TryGetValue(sqlFunctionName, out var query))
+            {
+                throw new ArgumentException(
+                    $"Función SQL no permitida: '{sqlFunctionName}'",
+                    nameof(sqlFunctionName));
+            }
+
             var resultado = new List<CoreInterno.CL_ResultadoValidacion>();
             using var connection = OpenConnection(codEmpresa);
 
             foreach (var t in request.Transacciones)
             {
-                var query = $@"SELECT * FROM dbo.{sqlFunctionName}(
-                                    @IDENTIFICACION,
-                                    @CUENTAIBAN,
-                                    @CODIGO_MONEDA,
-                                    @CODIGO_SERVICIO,
-                                    @MONTO,
-                                    NULL
-                               )";
-
                 var identificacion = normalizarId
-                    ? t.Identificacion.Trim().Replace("-", "").Replace(" ", "")
+                    ? (t.Identificacion ?? "").Trim().Replace("-", "").Replace(" ", "")
                     : t.Identificacion;
 
                 var valida = connection.QueryFirstOrDefault<dynamic>(query, new
@@ -69,7 +102,7 @@ namespace Galileo_API.DataBaseTier
                     MONTO = t.Monto
                 });
 
-                if (valida?.CODIGO_ERROR > 0)
+                if ((int?)valida?.CODIGO_ERROR > 0)
                 {
                     resultado.Add(new CoreInterno.CL_ResultadoValidacion
                     {
@@ -77,13 +110,13 @@ namespace Galileo_API.DataBaseTier
                         MotivoError = valida.CODIGO_ERROR,
                         InformacionAdicional = new CL_Adicional_Info[]
                         {
-                            new CL_Adicional_Info
-                            {
-                                Mostrar = true,
-                                Nombre = "PgrX",
-                                NombreFisico = "Galileo",
-                                Valor = valida.DETALLE
-                            }
+                    new CL_Adicional_Info
+                    {
+                        Mostrar = true,
+                        Nombre = "PgrX",
+                        NombreFisico = "Galileo",
+                        Valor = valida.DETALLE
+                    }
                         }
                     });
                 }
@@ -100,12 +133,29 @@ namespace Galileo_API.DataBaseTier
             return resultado.ToArray();
         }
 
+        private static readonly HashSet<string> SpCongeladosPermitidos =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                "spSinpe_AplicaCongelados",
+                "spSinpe_AplicaCongeladosMasivo",
+                // pon acá los SP reales permitidos
+            };
+
+
         private CoreInterno.CL_RespuestaTransaccion[] AplicaCongelados(
-            int codEmpresa,
-            CoreInterno.SI_Rastro rastro,
-            CoreInterno.CL_Transaccion[] transacciones,
-            string storedProcedure)
+    int codEmpresa,
+    CoreInterno.SI_Rastro rastro,
+    CoreInterno.CL_Transaccion[] transacciones,
+    string storedProcedure)
         {
+            if (string.IsNullOrWhiteSpace(storedProcedure) ||
+                !SpCongeladosPermitidos.Contains(storedProcedure))
+            {
+                throw new ArgumentException(
+                    $"Stored procedure no permitido: '{storedProcedure}'",
+                    nameof(storedProcedure));
+            }
+
             var resultado = new List<CoreInterno.CL_RespuestaTransaccion>();
             using var connection = OpenConnection(codEmpresa);
 
@@ -113,31 +163,7 @@ namespace Galileo_API.DataBaseTier
             {
                 var trx = fxTesConsultaSolicitud(codEmpresa, Convert.ToInt32(s.CodigoReferencia));
 
-                var query = $@"exec {storedProcedure}  
-                                    @CENTRO_COSTO
-                                   ,@COD_ENTIDAD 
-                                   ,@CODIGO_REFERENCIA 
-                                   ,@COMPROBANTE_CGP
-                                   ,@CUENTA_IBAN_CONTRAPARTE 
-                                   ,@DESCRIPCION
-                                   ,@FECHA_CICLO 
-                                   ,@ID_ORIGEN 
-                                   ,@SERVICIO 
-                                   ,@MONEDA_COMISION 
-                                   ,@MONTO_COMISION 
-                                   ,@NOMBRE_ORIGEN  
-                                   ,@IDENTIFICACION_CONTRAPARTE 
-                                   ,@IDENTIFICACION
-                                   ,@CUENTA_IBAN 
-                                   ,@MONTO 
-                                   ,@CODIGO_MONEDA 
-                                   ,@CODIGO_SERVICIO 
-                                   ,@IDRELACIONCLIENTE
-                                   ,@CANAL
-                                   ,@REGISTRO_USUARIO 
-                                   ,@COD_EMPRESA";
-
-                var res = connection.QueryFirstOrDefault<dynamic>(query, new
+                var parametros = new
                 {
                     CENTRO_COSTO = s.CentroCosto,
                     COD_ENTIDAD = s.CodEntidad,
@@ -149,7 +175,11 @@ namespace Galileo_API.DataBaseTier
                     ID_ORIGEN = s.IdOrigen,
                     SERVICIO = s.Servicio,
                     MONEDA_COMISION = s.MonedaComision,
-                    MONTO_COMISION = s.MonedaComision,
+
+                    // Fix del bug que ya notaste:
+                    // antes estabas mandando MonedaComision como monto
+                    MONTO_COMISION = s.MontoComision, // ajustá al nombre real
+
                     NOMBRE_ORIGEN = s.NombreOrigen,
                     IDENTIFICACION_CONTRAPARTE = s.IdentificacionContraparte,
                     IDENTIFICACION = s.Identificacion,
@@ -159,16 +189,23 @@ namespace Galileo_API.DataBaseTier
                     CODIGO_SERVICIO = s.CodigoServicio,
                     IDRELACIONCLIENTE = s.IdRelacionCliente,
                     CANAL = "SINPE",
-                    REGISTRO_USUARIO = trx.Result.UsuarioGenera,
+                    REGISTRO_USUARIO = trx?.Result?.UsuarioGenera,
                     COD_EMPRESA = codEmpresa
-                });
+                };
 
-                bool rechazo = res?.MOT_RECHAZO > 0;
+                var res = connection.QueryFirstOrDefault<dynamic>(
+                    storedProcedure,
+                    parametros,
+                    commandType: CommandType.StoredProcedure);
+
+                bool rechazo = (res?.MOT_RECHAZO ?? 0) > 0;
 
                 resultado.Add(new CoreInterno.CL_RespuestaTransaccion
                 {
-                    Resultado = rechazo ? CoreInterno.E_Resultado.Rechazo : CoreInterno.E_Resultado.Exitoso,
-                    MotivoError = rechazo ? res.MOT_RECHAZO : 0,
+                    Resultado = rechazo
+                        ? CoreInterno.E_Resultado.Rechazo
+                        : CoreInterno.E_Resultado.Exitoso,
+                    MotivoError = rechazo ? (int)res.MOT_RECHAZO : 0,
                     ComprobanteInterno = res?.ID_REFERENCIA
                 });
             }
@@ -176,35 +213,49 @@ namespace Galileo_API.DataBaseTier
             return resultado.ToArray();
         }
 
+        private static readonly HashSet<string> SpActualizacionPermitidos =
+    new(StringComparer.OrdinalIgnoreCase)
+    {
+        "spSinpe_ActualizaTransaccion",
+        "spSinpe_ReversaTransaccion",
+        // agrega aquí los SP reales que usás
+    };
+
         private CoreInterno.CL_ResultadoActualizacion[] EjecutaActualizacion(
-            int codEmpresa,
-            IEnumerable<CoreInterno.CL_ActualizaTransaccion> transacciones,
-            string storedProcedure)
+      int codEmpresa,
+      IEnumerable<CoreInterno.CL_ActualizaTransaccion> transacciones,
+      string storedProcedure)
         {
+            if (string.IsNullOrWhiteSpace(storedProcedure) ||
+                !SpActualizacionPermitidos.Contains(storedProcedure))
+            {
+                throw new ArgumentException(
+                    $"Stored procedure no permitido: '{storedProcedure}'",
+                    nameof(storedProcedure));
+            }
+
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
             using var connection = OpenConnection(codEmpresa);
 
             foreach (var s in transacciones)
             {
-                var query = $@"exec {storedProcedure}
-                                    @CODIGO_RECHAZO_SINPE,
-                                    @CODIGO_REFERENCIA,
-                                    @COMPTOBANTE_CGP,
-                                    @COMPROBANTE_INTERNO,
-                                    @DESCRIPCION_RECHAZO";
-
-                var res = connection.QueryFirstOrDefault<dynamic>(query, new
-                {
-                    CODIGO_RECHAZO_SINPE = s.CodigoRechazoSINPE,
-                    CODIGO_REFERENCIA = s.CodigoReferencia,
-                    COMPTOBANTE_CGP = s.ComprobanteCGP,
-                    COMPROBANTE_INTERNO = s.ComprobanteInterno,
-                    DESCRIPCION_RECHAZO = s.DescripcionRechazo
-                });
+                // Llamada directa al SP, sin construir EXEC
+                var res = connection.QueryFirstOrDefault<dynamic>(
+                    storedProcedure,
+                    new
+                    {
+                        CODIGO_RECHAZO_SINPE = s.CodigoRechazoSINPE,
+                        CODIGO_REFERENCIA = s.CodigoReferencia,
+                        COMPTOBANTE_CGP = s.ComprobanteCGP,
+                        COMPROBANTE_INTERNO = s.ComprobanteInterno,
+                        DESCRIPCION_RECHAZO = s.DescripcionRechazo
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
 
                 resultado.Add(new CoreInterno.CL_ResultadoActualizacion
                 {
-                    Resultado = res.Resultado,
+                    Resultado = res?.Resultado,   // por si viniera null
                     IdRelacionCliente = s.IdRelacionCliente
                 });
             }
@@ -212,35 +263,51 @@ namespace Galileo_API.DataBaseTier
             return resultado.ToArray();
         }
 
+        private static readonly HashSet<string> SpReversaPermitidos =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                "sp_Sinpe_ReversaCreditos",
+                "sp_Sinpe_ReversaDebitos"
+                
+            };
+
         private CoreInterno.CL_ResultadoActualizacion[] EjecutaReversa(
-            int codEmpresa,
-            IEnumerable<CoreInterno.TransaccionRechazada> transacciones,
-            string storedProcedure)
+    int codEmpresa,
+    IEnumerable<CoreInterno.TransaccionRechazada> transacciones,
+    string storedProcedure)
         {
+            if (string.IsNullOrWhiteSpace(storedProcedure) ||
+                !SpReversaPermitidos.Contains(storedProcedure))
+            {
+                throw new ArgumentException(
+                    $"Stored procedure no permitido: '{storedProcedure}'",
+                    nameof(storedProcedure));
+            }
+
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
             using var connection = OpenConnection(codEmpresa);
 
             foreach (var s in transacciones)
             {
-                var query = $@"exec {storedProcedure}
-                                    @CODIGO_RECHAZO_SINPE,
-                                    @CODIGO_REFERENCIA,
-                                    @COMPTOBANTE_CGP,
-                                    @COMPROBANTE_INTERNO,
-                                    @DESCRIPCION_RECHAZO";
+                var res = connection.QueryFirstOrDefault<dynamic>(
+                    storedProcedure,
+                    new
+                    {
+                        CODIGO_RECHAZO_SINPE = s.CodigoRechazoSINPE,
+                        CODIGO_REFERENCIA = s.CodigoReferencia,
+                        COMPTOBANTE_CGP = s.ComprobanteCGP,
+                        COMPROBANTE_INTERNO = s.ComprobanteInterno,
+                        DESCRIPCION_RECHAZO = s.DescripcionRechazo
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure
+                );
 
-                var res = connection.QueryFirstOrDefault<dynamic>(query, new
-                {
-                    CODIGO_RECHAZO_SINPE = s.CodigoRechazoSINPE,
-                    CODIGO_REFERENCIA = s.CodigoReferencia,
-                    COMPTOBANTE_CGP = s.ComprobanteCGP,
-                    COMPROBANTE_INTERNO = s.ComprobanteInterno,
-                    DESCRIPCION_RECHAZO = s.DescripcionRechazo
-                });
+                // por si el SP devuelve null o sin propiedad Resultado
+                var r = res?.Resultado ?? CoreInterno.E_ResultadoActualizacion.Error;
 
                 resultado.Add(new CoreInterno.CL_ResultadoActualizacion
                 {
-                    Resultado = res.Resultado,
+                    Resultado = r,
                     IdRelacionCliente = s.IdRelacionCliente
                 });
             }

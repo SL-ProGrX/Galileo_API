@@ -169,7 +169,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return _db.Tes_BitacoraTransaccion(CodEmpresa, solicitud);
         }
 
-        public ErrorDto<string> NumeroALetras(decimal numero)
+        public static ErrorDto<string> NumeroALetras(decimal numero)
         {
             return FrmTesTransaccionesDb.NumeroALetras(numero);
         }

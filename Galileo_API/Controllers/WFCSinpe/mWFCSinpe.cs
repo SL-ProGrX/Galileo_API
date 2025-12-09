@@ -2,7 +2,7 @@
 
 namespace Galileo_API.Controllers.WFCSinpe
 {
-    public interface IWFCSinpe
+    public interface IWfcSinpe
     {
         #region KINDO
         /// <summary>

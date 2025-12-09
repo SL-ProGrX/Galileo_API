@@ -13,7 +13,7 @@ namespace Galileo_API.DataBaseTier
             _sinpe = new MKindoServiceDb(config);
         }
 
-        public IWFCSinpe CrearServicio(int CodEmpresa, string usuario)
+        public IWfcSinpe CrearServicio(int CodEmpresa, string usuario)
         {
             var nombreTipo = _sinpe.GetUriEmpresa(CodEmpresa, usuario).Result.ServiciosSinpe;
 
@@ -30,7 +30,7 @@ namespace Galileo_API.DataBaseTier
             var instancia = Activator.CreateInstance(tipo, _config);
 
             // Valida que realmente implemente la interfaz
-            if (instancia is not IWFCSinpe servicio)
+            if (instancia is not IWfcSinpe servicio)
                 throw new InvalidCastException($"El tipo '{nombreTipo}' no implementa IWFCSinpe.");
 
             return servicio;
