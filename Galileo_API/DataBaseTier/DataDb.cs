@@ -893,16 +893,24 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
 
 
 
-                    if (filtro != null)
+                    string whereClause = "";
+                    DynamicParameters parameters = new DynamicParameters();
+                    if (!string.IsNullOrEmpty(filtro))
                     {
-                        filtro = " WHERE  S.cedula LIKE '%" + filtro + "%' " +
-                            " OR S.cedular LIKE '%" + filtro + "%' " +
-                        " OR S.nombre LIKE '%" + filtro + "%'" +
-                        " OR M.Membresia LIKE '%" + filtro + "%' ";
+                        whereClause = @" WHERE  
+                            S.cedula LIKE @filtroCedula OR 
+                            S.cedular LIKE @filtroCedular OR 
+                            S.nombre LIKE @filtroNombre OR 
+                            M.Membresia LIKE @filtroMembresia ";
+                        string filtroParam = "%" + filtro + "%";
+                        parameters.Add("filtroCedula", filtroParam);
+                        parameters.Add("filtroCedular", filtroParam);
+                        parameters.Add("filtroNombre", filtroParam);
+                        parameters.Add("filtroMembresia", filtroParam);
                     }
                     //Busco Total
-                    query = $"Select count(*) from SOCIOS S left join vAFI_Membresias M ON M.Cedula = S.CEDULA {filtro}";
-                    response.Result.Total = connection.Query<int>(query).FirstOrDefault();
+                    query = $"Select count(*) from SOCIOS S left join vAFI_Membresias M ON M.Cedula = S.CEDULA {whereClause}";
+                    response.Result.Total = connection.Query<int>(query, parameters).FirstOrDefault();
 
                     if (pagina != null)
                     {
@@ -911,12 +919,12 @@ P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS n
                     }
 
                     query = $@"Select S.cedula,S.cedular,S.nombre, M.Membresia from SOCIOS S
-                                      left join vAFI_Membresias M ON M.Cedula = S.CEDULA
-                                         {filtro} 
-                                       ORDER BY S.cedula
-                                        {paginaActual}
-                                        {paginacionActual} ";
-                    response.Result.socios = connection.Query<SociosData>(query).ToList();
+                                  left join vAFI_Membresias M ON M.Cedula = S.CEDULA
+                                     {whereClause} 
+                                   ORDER BY S.cedula
+                                    {paginaActual}
+                                    {paginacionActual} ";
+                    response.Result.socios = connection.Query<SociosData>(query, parameters).ToList();
                 }
 
             }
