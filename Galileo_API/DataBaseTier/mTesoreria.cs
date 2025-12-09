@@ -555,14 +555,23 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                // 1) Lista blanca de columnas permitidas
-                var camposPermitidos = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                    {
-                        "mod_consec",
-                        "Comprobante"
-                    };
 
-                if (!camposPermitidos.Contains(Campo))
+                string query = Campo?.Trim().ToLowerInvariant() switch
+                {
+                    "mod_consec" => @"
+                select mod_consec as item
+                from tes_banco_docs
+                where tipo = @tipoDoc and id_banco = @banco",
+
+                    "comprobante" => @"
+                select Comprobante as item
+                from tes_banco_docs
+                where tipo = @tipoDoc and id_banco = @banco",
+
+                    _ => null
+                };
+
+                if (query == null)
                 {
                     resp.Code = -1;
                     resp.Description = "Campo no permitido para consulta.";
@@ -570,16 +579,15 @@ namespace Galileo.DataBaseTier
                     return resp;
                 }
 
-                var query = $"select {Campo} as item from tes_banco_docs where tipo = @tipoDoc and id_banco = @banco";
-
-                resp.Result = connection.QueryFirstOrDefault<string>(query, new { banco = Banco, tipoDoc = TipoDoc });
-            
+                resp.Result = connection.QueryFirstOrDefault<string>(
+                    query,
+                    new { banco = Banco, tipoDoc = TipoDoc }
+                );
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
-
                 resp.Result = "";
             }
 
