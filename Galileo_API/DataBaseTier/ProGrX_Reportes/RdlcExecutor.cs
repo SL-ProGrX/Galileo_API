@@ -184,7 +184,6 @@ namespace Galileo.DataBaseTier
 
             var e = expr.Trim();
 
-            // Antes: Regex.Match(e, @"^=Parameters!(?<p>\w+)\.Value$", RegexOptions.IgnoreCase);
             var m = Regex.Match(
                 e,
                 @"^=Parameters!(?<p>\w+)\.Value$",
