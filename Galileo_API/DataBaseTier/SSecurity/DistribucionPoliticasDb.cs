@@ -43,8 +43,8 @@ namespace Galileo.DataBaseTier
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
-                    var strSQL = "select Cod_Pais_N1,Descripcion,Activo from PGX_PAIS_N1 where Cod_Pais = '" + CodPais + "'";
-                    resp = connection.Query<ProvinciasObtenerDto>(strSQL).ToList();
+                    var strSQL = "select Cod_Pais_N1,Descripcion,Activo from PGX_PAIS_N1 where Cod_Pais = @CodPais";
+                    resp = connection.Query<ProvinciasObtenerDto>(strSQL, new { CodPais }).ToList();
                 }
             }
             catch (Exception)
@@ -62,10 +62,10 @@ namespace Galileo.DataBaseTier
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
-                    var strSQL = "select Cod_Pais_N2,Descripcion,Activo "
-                                 + " from PGX_PAIS_N2 where Cod_Pais = '" + CodPais
-                                 + "' and cod_Pais_N1 = '" + CodProvincia + "'";
-                    resp = connection.Query<CantonesObtenerDto>(strSQL).ToList();
+                    var strSQL = "select Cod_Pais_N2,Descripcion,Activo from PGX_PAIS_N2 where Cod_Pais = @CodPais and cod_Pais_N1 = @CodProvincia";
+                    
+                    
+                    resp = connection.Query<CantonesObtenerDto>(strSQL, new { CodPais, CodProvincia }).ToList();
                 }
             }
             catch (Exception)
@@ -83,11 +83,11 @@ namespace Galileo.DataBaseTier
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
-                    var strSQL = "select Cod_Pais_N2,Descripcion,Activo "
-                                 + " from PGX_PAIS_N3 where Cod_Pais = '" + CodPais
-                                 + "' and cod_Pais_N1 = '" + CodProvincia
-                                 + "' and cod_Pais_N2 = '" + CodCanton + "'";
-                    resp = connection.Query<DistritosObtenerDto>(strSQL).ToList();
+                    var strSQL = "select Cod_Pais_N2,Descripcion,Activo from PGX_PAIS_N3 where Cod_Pais = @CodPais and cod_Pais_N1 = @CodProvincia and cod_Pais_N2 = @CodCanton";
+                    
+                    
+                    
+                    resp = connection.Query<DistritosObtenerDto>(strSQL, new { CodPais, CodProvincia, CodCanton }).ToList();
                 }
             }
             catch (Exception)
