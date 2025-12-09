@@ -37,16 +37,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             LEFT JOIN dbo.CNTX_CENTRO_COSTOS cc
                 ON cc.COD_CENTRO_COSTO = s.COD_CENTRO_COSTO
             LEFT JOIN dbo.ACTIVOS_DEPARTAMENTOS d
-                ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENTO";
+                ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENT";
 
         private const string SeccWhereFilterSql = @"
             WHERE 1 = 1
               AND (@dept IS NULL OR s.COD_DEPARTAMENTO = @dept)
               AND (
                     @filtro IS NULL
-                    OR s.COD_SECCION           LIKE @filtro
-                    OR s.DESCRIPCION           LIKE @filtro
-                    OR s.COD_CENTRO_COSTO      LIKE @filtro
+                    OR s.COD_SECCION             LIKE @filtro
+                    OR s.DESCRIPCION             LIKE @filtro
+                    OR s.COD_CENTRO_COSTO        LIKE @filtro
                     OR ISNULL(cc.DESCRIPCION,'') LIKE @filtro
                     OR ISNULL(d.DESCRIPCION,'')  LIKE @filtro
                   )";
@@ -64,6 +64,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             var f = filtros?.filtro;
             return string.IsNullOrWhiteSpace(f) ? null : $"%{f.Trim()}%";
         }
+
+        private static string Normalize(string? value) =>
+            (value ?? string.Empty).ToUpper();
 
         /// <summary>
         /// Construye parámetros comunes para listas paginadas (departamentos y secciones)
@@ -96,10 +99,76 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             // Departamento (solo se usa en secciones; en departamentos no afecta)
             string? dept = string.IsNullOrWhiteSpace(codDepartamento)
                 ? null
-                : codDepartamento.ToUpper();
+                : Normalize(codDepartamento);
             p.Add("@dept", dept, DbType.String);
 
             return p;
+        }
+
+        /// <summary>
+        /// Wrapper genérico para ExecuteNonQuery + Bitácora + mensaje OK.
+        /// Centraliza el patrón repetido de insertar/actualizar/eliminar.
+        /// </summary>
+        private ErrorDto ExecuteNonQueryWithBitacora(
+            int CodEmpresa,
+            string? usuario,
+            string sql,
+            object? parameters,
+            string detalleMovimiento,
+            string movimiento,
+            string? mensajeOkOverride = null)
+        {
+            var resp = DbHelper.CreateOkResponse();
+
+            try
+            {
+                var dbResp = DbHelper.ExecuteNonQuery(
+                    _portalDB,
+                    CodEmpresa,
+                    sql,
+                    parameters);
+
+                resp.Code        = dbResp.Code;
+                resp.Description = dbResp.Description;
+
+                if (resp.Code == 0)
+                {
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId         = CodEmpresa,
+                        Usuario           = usuario ?? "",
+                        DetalleMovimiento = detalleMovimiento,
+                        Movimiento        = movimiento,
+                        Modulo            = vModulo
+                    });
+
+                    if (!string.IsNullOrWhiteSpace(mensajeOkOverride))
+                        resp.Description = mensajeOkOverride;
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code        = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
+        /// <summary>
+        /// Helper genérico para SELECT COUNT(1) con manejo de errores.
+        /// </summary>
+        private ErrorDto<int> ExecuteCount(
+            int CodEmpresa,
+            string sql,
+            object parameters)
+        {
+            return DbHelper.ExecuteSingleQuery(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                defaultValue: 0,
+                parameters: parameters);
         }
 
         #endregion
@@ -230,21 +299,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FROM dbo.ACTIVOS_DEPARTAMENTOS
                     WHERE COD_DEPARTAMENTO = @cod;";
 
-                var existeResult = DbHelper.ExecuteSingleQuery<int>(
-                    _portalDB,
+                var existeResult = ExecuteCount(
                     CodEmpresa,
                     queryExiste,
-                    defaultValue: 0,
-                    parameters: new { cod = departamento.cod_departamento.ToUpper() });
+                    new { cod = Normalize(departamento.cod_departamento) });
 
                 if (existeResult.Code != 0)
-                {
                     return new ErrorDto
                     {
                         Code        = existeResult.Code,
                         Description = existeResult.Description
                     };
-                }
 
                 int existe = existeResult.Result;
 
@@ -254,7 +319,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         return new ErrorDto
                         {
                             Code        = -2,
-                            Description = $"El departamento {departamento.cod_departamento.ToUpper()} ya existe."
+                            Description = $"El departamento {Normalize(departamento.cod_departamento)} ya existe."
                         };
 
                     return Activos_Departamentos_Insertar(CodEmpresa, usuario, departamento);
@@ -264,7 +329,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     return new ErrorDto
                     {
                         Code        = -2,
-                        Description = $"El departamento {departamento.cod_departamento.ToUpper()} no existe."
+                        Description = $"El departamento {Normalize(departamento.cod_departamento)} no existe."
                     };
 
                 return Activos_Departamentos_Actualizar(CodEmpresa, usuario, departamento);
@@ -282,54 +347,32 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             string usuario,
             ActivosDepartamentosData departamento)
         {
-            var resp = DbHelper.CreateOkResponse();
+            const string query = @"
+                INSERT INTO dbo.ACTIVOS_DEPARTAMENTOS
+                   (COD_DEPARTAMENTO, DESCRIPCION, COD_UNIDAD,
+                    REGISTRO_FECHA, REGISTRO_USUARIO, MODIFICA_USUARIO, MODIFICA_FECHA)
+                VALUES
+                   (@cod, @desc, @unidad,
+                    SYSDATETIME(), @usr, NULL, NULL);";
 
-            try
+            var parameters = new
             {
-                const string query = @"
-                    INSERT INTO dbo.ACTIVOS_DEPARTAMENTOS
-                       (COD_DEPARTAMENTO, DESCRIPCION, COD_UNIDAD,
-                        REGISTRO_FECHA, REGISTRO_USUARIO, MODIFICA_USUARIO, MODIFICA_FECHA)
-                    VALUES
-                       (@cod, @desc, @unidad,
-                        SYSDATETIME(), @usr, NULL, NULL);";
+                cod    = Normalize(departamento.cod_departamento),
+                desc   = departamento.descripcion?.ToUpper(),
+                unidad = Normalize(departamento.cod_unidad),
+                usr    = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+            };
 
-                var dbResp = DbHelper.ExecuteNonQuery(
-                    _portalDB,
-                    CodEmpresa,
-                    query,
-                    new
-                    {
-                        cod    = departamento.cod_departamento.ToUpper(),
-                        desc   = departamento.descripcion?.ToUpper(),
-                        unidad = departamento.cod_unidad.ToUpper(),
-                        usr    = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-                    });
+            string detalle = $"Departamento: {departamento.cod_departamento} - {departamento.descripcion} / Unidad: {departamento.cod_unidad}";
 
-                resp.Code        = dbResp.Code;
-                resp.Description = dbResp.Description;
-
-                if (resp.Code == 0)
-                {
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId        = CodEmpresa,
-                        Usuario          = usuario ?? "",
-                        DetalleMovimiento =
-                            $"Departamento: {departamento.cod_departamento} - {departamento.descripcion} / Unidad: {departamento.cod_unidad}",
-                        Movimiento       = "Registra - WEB",
-                        Modulo           = vModulo
-                    });
-
-                    resp.Description = "Departamento ingresado satisfactoriamente.";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code        = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return ExecuteNonQueryWithBitacora(
+                CodEmpresa,
+                usuario,
+                query,
+                parameters,
+                detalle,
+                "Registra - WEB",
+                "Departamento ingresado satisfactoriamente.");
         }
 
         private ErrorDto Activos_Departamentos_Actualizar(
@@ -337,54 +380,32 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             string usuario,
             ActivosDepartamentosData departamento)
         {
-            var resp = DbHelper.CreateOkResponse();
+            const string query = @"
+                UPDATE dbo.ACTIVOS_DEPARTAMENTOS
+                   SET DESCRIPCION      = @desc,
+                       COD_UNIDAD       = @unidad,
+                       MODIFICA_USUARIO = @usr,
+                       MODIFICA_FECHA   = SYSDATETIME()
+                 WHERE COD_DEPARTAMENTO = @cod;";
 
-            try
+            var parameters = new
             {
-                const string query = @"
-                    UPDATE dbo.ACTIVOS_DEPARTAMENTOS
-                       SET DESCRIPCION      = @desc,
-                           COD_UNIDAD       = @unidad,
-                           MODIFICA_USUARIO = @usr,
-                           MODIFICA_FECHA   = SYSDATETIME()
-                     WHERE COD_DEPARTAMENTO = @cod;";
+                cod    = Normalize(departamento.cod_departamento),
+                desc   = departamento.descripcion?.ToUpper(),
+                unidad = Normalize(departamento.cod_unidad),
+                usr    = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+            };
 
-                var dbResp = DbHelper.ExecuteNonQuery(
-                    _portalDB,
-                    CodEmpresa,
-                    query,
-                    new
-                    {
-                        cod    = departamento.cod_departamento.ToUpper(),
-                        desc   = departamento.descripcion?.ToUpper(),
-                        unidad = departamento.cod_unidad.ToUpper(),
-                        usr    = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-                    });
+            string detalle = $"Departamento: {departamento.cod_departamento} - {departamento.descripcion} / Unidad: {departamento.cod_unidad}";
 
-                resp.Code        = dbResp.Code;
-                resp.Description = dbResp.Description;
-
-                if (resp.Code == 0)
-                {
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId        = CodEmpresa,
-                        Usuario          = usuario ?? "",
-                        DetalleMovimiento =
-                            $"Departamento: {departamento.cod_departamento} - {departamento.descripcion} / Unidad: {departamento.cod_unidad}",
-                        Movimiento       = "Modifica - WEB",
-                        Modulo           = vModulo
-                    });
-
-                    resp.Description = "Departamento actualizado satisfactoriamente.";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code        = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return ExecuteNonQueryWithBitacora(
+                CodEmpresa,
+                usuario,
+                query,
+                parameters,
+                detalle,
+                "Modifica - WEB",
+                "Departamento actualizado satisfactoriamente.");
         }
 
         public ErrorDto Activos_Departamentos_Eliminar(
@@ -392,42 +413,23 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             string usuario,
             string cod_departamento)
         {
-            var resp = DbHelper.CreateOkResponse();
+            if (string.IsNullOrWhiteSpace(cod_departamento))
+                return new ErrorDto { Code = -1, Description = "Debe indicar el código de departamento." };
 
-            try
-            {
-                if (string.IsNullOrWhiteSpace(cod_departamento))
-                    return new ErrorDto { Code = -1, Description = "Debe indicar el código de departamento." };
+            const string query = @"DELETE FROM dbo.ACTIVOS_DEPARTAMENTOS WHERE COD_DEPARTAMENTO = @cod;";
 
-                const string query = @"DELETE FROM dbo.ACTIVOS_DEPARTAMENTOS WHERE COD_DEPARTAMENTO = @cod;";
+            var parameters = new { cod = Normalize(cod_departamento) };
 
-                var dbResp = DbHelper.ExecuteNonQuery(
-                    _portalDB,
-                    CodEmpresa,
-                    query,
-                    new { cod = cod_departamento.ToUpper() });
+            string detalle = $"Departamento: {cod_departamento}";
 
-                resp.Code        = dbResp.Code;
-                resp.Description = dbResp.Description;
-
-                if (resp.Code == 0)
-                {
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId        = CodEmpresa,
-                        Usuario          = usuario ?? "",
-                        DetalleMovimiento = $"Departamento: {cod_departamento}",
-                        Movimiento        = "Elimina - WEB",
-                        Modulo            = vModulo
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code        = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            // No sobreescribo descripción OK: dejo la que venga del DbHelper
+            return ExecuteNonQueryWithBitacora(
+                CodEmpresa,
+                usuario,
+                query,
+                parameters,
+                detalle,
+                "Elimina - WEB");
         }
 
         public ErrorDto Activos_Departamentos_Valida(int CodEmpresa, string cod_departamento)
@@ -441,12 +443,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FROM dbo.ACTIVOS_DEPARTAMENTOS
                     WHERE UPPER(COD_DEPARTAMENTO) = @cod;";
 
-                var dbResp = DbHelper.ExecuteSingleQuery<int>(
-                    _portalDB,
+                var dbResp = ExecuteCount(
                     CodEmpresa,
                     query,
-                    defaultValue: 0,
-                    parameters: new { cod = (cod_departamento ?? string.Empty).ToUpper() });
+                    new { cod = Normalize(cod_departamento) });
 
                 if (dbResp.Code != 0)
                 {
@@ -566,7 +566,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             string? dept = string.IsNullOrWhiteSpace(cod_departamento)
                 ? null
-                : cod_departamento.ToUpper();
+                : Normalize(cod_departamento);
             p.Add("@dept", dept, DbType.String);
 
             p.Add(_filtro, BuildFiltroLike(filtros), DbType.String);
@@ -591,8 +591,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p);
         }
 
-        // --- Resto de métodos (guardar/actualizar/eliminar/validar secciones y dropdowns) ---
-
         public ErrorDto Activos_Secciones_Guardar(
             int CodEmpresa,
             string usuario,
@@ -616,15 +614,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FROM dbo.ACTIVOS_SECCIONES
                     WHERE COD_DEPARTAMENTO = @dept AND COD_SECCION = @sec;";
 
-                var existeResult = DbHelper.ExecuteSingleQuery<int>(
-                    _portalDB,
+                var existeResult = ExecuteCount(
                     CodEmpresa,
                     qExiste,
-                    defaultValue: 0,
-                    parameters: new
+                    new
                     {
-                        dept = seccion.cod_departamento.ToUpper(),
-                        sec  = seccion.cod_seccion.ToUpper()
+                        dept = Normalize(seccion.cod_departamento),
+                        sec  = Normalize(seccion.cod_seccion)
                     });
 
                 if (existeResult.Code != 0)
@@ -644,7 +640,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         return new ErrorDto
                         {
                             Code        = -2,
-                            Description = $"La sección {seccion.cod_seccion.ToUpper()} ya existe para el departamento {seccion.cod_departamento.ToUpper()}."
+                            Description = $"La sección {Normalize(seccion.cod_seccion)} ya existe para el departamento {Normalize(seccion.cod_departamento)}."
                         };
 
                     resp = Activos_Secciones_Insertar(CodEmpresa, usuario, seccion);
@@ -655,7 +651,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         return new ErrorDto
                         {
                             Code        = -2,
-                            Description = $"La sección {seccion.cod_seccion.ToUpper()} no existe en el departamento {seccion.cod_departamento.ToUpper()}."
+                            Description = $"La sección {Normalize(seccion.cod_seccion)} no existe en el departamento {Normalize(seccion.cod_departamento)}."
                         };
 
                     resp = Activos_Secciones_Actualizar(CodEmpresa, usuario, seccion);
@@ -674,55 +670,34 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             string usuario,
             ActivosSeccionesData seccion)
         {
-            var resp = DbHelper.CreateOkResponse();
+            const string query = @"
+                INSERT INTO dbo.ACTIVOS_SECCIONES
+                    (COD_DEPARTAMENTO, COD_SECCION, DESCRIPCION, COD_CENTRO_COSTO,
+                     REGISTRO_USUARIO, REGISTRO_FECHA, MODIFICA_USUARIO, MODIFICA_FECHA)
+                VALUES
+                    (@dept, @sec, @desc, @cc, @usr, SYSDATETIME(), NULL, NULL);";
 
-            try
+            var parameters = new
             {
-                const string query = @"
-                    INSERT INTO dbo.ACTIVOS_SECCIONES
-                        (COD_DEPARTAMENTO, COD_SECCION, DESCRIPCION, COD_CENTRO_COSTO, REGISTRO_USUARIO, REGISTRO_FECHA, MODIFICA_USUARIO, MODIFICA_FECHA)
-                    VALUES
-                        (@dept, @sec, @desc, @cc, @usr, SYSDATETIME(), NULL, NULL);";
+                dept = Normalize(seccion.cod_departamento),
+                sec  = Normalize(seccion.cod_seccion),
+                desc = seccion.descripcion?.ToUpper(),
+                cc   = string.IsNullOrWhiteSpace(seccion.cod_centro_costo)
+                        ? null
+                        : Normalize(seccion.cod_centro_costo),
+                usr  = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+            };
 
-                var dbResp = DbHelper.ExecuteNonQuery(
-                    _portalDB,
-                    CodEmpresa,
-                    query,
-                    new
-                    {
-                        dept = seccion.cod_departamento.ToUpper(),
-                        sec  = seccion.cod_seccion.ToUpper(),
-                        desc = seccion.descripcion?.ToUpper(),
-                        cc   = string.IsNullOrWhiteSpace(seccion.cod_centro_costo)
-                                ? null
-                                : seccion.cod_centro_costo.ToUpper(),
-                        usr  = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-                    });
+            string detalle = $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}";
 
-                resp.Code        = dbResp.Code;
-                resp.Description = dbResp.Description;
-
-                if (resp.Code == 0)
-                {
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId        = CodEmpresa,
-                        Usuario          = usuario ?? "",
-                        DetalleMovimiento =
-                            $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}",
-                        Movimiento       = "Registra - WEB",
-                        Modulo           = vModulo
-                    });
-
-                    resp.Description = "Sección ingresada satisfactoriamente.";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code        = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return ExecuteNonQueryWithBitacora(
+                CodEmpresa,
+                usuario,
+                query,
+                parameters,
+                detalle,
+                "Registra - WEB",
+                "Sección ingresada satisfactoriamente.");
         }
 
         private ErrorDto Activos_Secciones_Actualizar(
@@ -730,58 +705,36 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             string usuario,
             ActivosSeccionesData seccion)
         {
-            var resp = DbHelper.CreateOkResponse();
+            const string query = @"
+                UPDATE dbo.ACTIVOS_SECCIONES
+                   SET DESCRIPCION      = @desc,
+                       COD_CENTRO_COSTO = @cc,
+                       MODIFICA_USUARIO = @usr,
+                       MODIFICA_FECHA   = SYSDATETIME()
+                 WHERE COD_DEPARTAMENTO = @dept
+                   AND COD_SECCION      = @sec;";
 
-            try
+            var parameters = new
             {
-                const string query = @"
-                    UPDATE dbo.ACTIVOS_SECCIONES
-                       SET DESCRIPCION      = @desc,
-                           COD_CENTRO_COSTO = @cc,
-                           MODIFICA_USUARIO = @usr,
-                           MODIFICA_FECHA   = SYSDATETIME()
-                     WHERE COD_DEPARTAMENTO = @dept
-                       AND COD_SECCION      = @sec;";
+                dept = Normalize(seccion.cod_departamento),
+                sec  = Normalize(seccion.cod_seccion),
+                desc = seccion.descripcion?.ToUpper(),
+                cc   = string.IsNullOrWhiteSpace(seccion.cod_centro_costo)
+                        ? null
+                        : Normalize(seccion.cod_centro_costo),
+                usr  = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+            };
 
-                var dbResp = DbHelper.ExecuteNonQuery(
-                    _portalDB,
-                    CodEmpresa,
-                    query,
-                    new
-                    {
-                        dept = seccion.cod_departamento.ToUpper(),
-                        sec  = seccion.cod_seccion.ToUpper(),
-                        desc = seccion.descripcion?.ToUpper(),
-                        cc   = string.IsNullOrWhiteSpace(seccion.cod_centro_costo)
-                                ? null
-                                : seccion.cod_centro_costo.ToUpper(),
-                        usr  = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-                    });
+            string detalle = $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}";
 
-                resp.Code        = dbResp.Code;
-                resp.Description = dbResp.Description;
-
-                if (resp.Code == 0)
-                {
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId        = CodEmpresa,
-                        Usuario          = usuario ?? "",
-                        DetalleMovimiento =
-                            $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}",
-                        Movimiento       = "Modifica - WEB",
-                        Modulo           = vModulo
-                    });
-
-                    resp.Description = "Sección actualizada satisfactoriamente.";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code        = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return ExecuteNonQueryWithBitacora(
+                CodEmpresa,
+                usuario,
+                query,
+                parameters,
+                detalle,
+                "Modifica - WEB",
+                "Sección actualizada satisfactoriamente.");
         }
 
         public ErrorDto Activos_Secciones_Eliminar(
@@ -790,45 +743,35 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             string cod_departamento,
             string cod_seccion)
         {
-            var resp = DbHelper.CreateOkResponse();
-
-            try
+            if (string.IsNullOrWhiteSpace(cod_departamento) ||
+                string.IsNullOrWhiteSpace(cod_seccion))
             {
-                if (string.IsNullOrWhiteSpace(cod_departamento) ||
-                    string.IsNullOrWhiteSpace(cod_seccion))
-                    return new ErrorDto { Code = -1, Description = "Debe indicar departamento y sección." };
-
-                const string query = @"
-                    DELETE FROM dbo.ACTIVOS_SECCIONES
-                    WHERE COD_DEPARTAMENTO = @dept AND COD_SECCION = @sec;";
-
-                var dbResp = DbHelper.ExecuteNonQuery(
-                    _portalDB,
-                    CodEmpresa,
-                    query,
-                    new { dept = cod_departamento.ToUpper(), sec = cod_seccion.ToUpper() });
-
-                resp.Code        = dbResp.Code;
-                resp.Description = dbResp.Description;
-
-                if (resp.Code == 0)
+                return new ErrorDto
                 {
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId        = CodEmpresa,
-                        Usuario          = usuario ?? "",
-                        DetalleMovimiento = $"Sección: {cod_seccion} - Dept: {cod_departamento}",
-                        Movimiento        = "Elimina - WEB",
-                        Modulo            = vModulo
-                    });
-                }
+                    Code        = -1,
+                    Description = "Debe indicar departamento y sección."
+                };
             }
-            catch (Exception ex)
+
+            const string query = @"
+                DELETE FROM dbo.ACTIVOS_SECCIONES
+                WHERE COD_DEPARTAMENTO = @dept AND COD_SECCION = @sec;";
+
+            var parameters = new
             {
-                resp.Code        = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+                dept = Normalize(cod_departamento),
+                sec  = Normalize(cod_seccion)
+            };
+
+            string detalle = $"Sección: {cod_seccion} - Dept: {cod_departamento}";
+
+            return ExecuteNonQueryWithBitacora(
+                CodEmpresa,
+                usuario,
+                query,
+                parameters,
+                detalle,
+                "Elimina - WEB");
         }
 
         public ErrorDto Activos_Secciones_Valida(
@@ -846,15 +789,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     WHERE UPPER(COD_DEPARTAMENTO) = @dept
                       AND UPPER(COD_SECCION)      = @sec;";
 
-                var dbResp = DbHelper.ExecuteSingleQuery<int>(
-                    _portalDB,
+                var dbResp = ExecuteCount(
                     CodEmpresa,
                     query,
-                    defaultValue: 0,
-                    parameters: new
+                    new
                     {
-                        dept = (cod_departamento ?? "").ToUpper(),
-                        sec  = (cod_seccion ?? "").ToUpper()
+                        dept = Normalize(cod_departamento),
+                        sec  = Normalize(cod_seccion)
                     });
 
                 if (dbResp.Code != 0)

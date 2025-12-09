@@ -13,7 +13,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MActivosFijos _mActivos;
         private readonly PortalDB _portalDB;
 
-
         public FrmActivosDeteriorosDb(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
@@ -21,12 +20,29 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB        = new PortalDB(config);
         }
 
-       
+        #region Helpers privados
+
+        private void RegistrarBitacora(
+            int CodEmpresa,
+            string usuario,
+            string detalle,
+            string movimiento)
+        {
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId         = CodEmpresa,
+                Usuario           = usuario ?? string.Empty,
+                DetalleMovimiento = detalle,
+                Movimiento        = movimiento,
+                Modulo            = vModulo
+            });
+        }
+
+        #endregion
+
         /// <summary>
         /// Método para obtener las justificaciones de deterioro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Deterioros_Justificaciones_Obtener(int CodEmpresa)
         {
             const string sql = @"
@@ -38,12 +54,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql);
         }
 
-
         /// <summary>
         /// Método para obtener los activos disponibles para deterioro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<List<ActivosData>> Activos_Deterioros_Activos_Obtener(int CodEmpresa)
         {
             const string sql = @"
@@ -55,94 +68,70 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return DbHelper.ExecuteListQuery<ActivosData>(_portalDB, CodEmpresa, sql);
         }
 
-
         /// <summary>
         /// Método para consultar los datos de un activo en estado de deterioro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Id_AddRet"></param>
-        /// <param name="placa"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosDeterioroData> Activos_Deterioros_Consultar(int CodEmpresa, int Id_AddRet, string placa)
         {
-            var result = DbHelper.CreateOkResponse(new ActivosDeterioroData());
+            const string sql = @"
+                SELECT X.*,
+                       RTRIM(J.cod_justificacion) AS Motivo_Id,
+                       RTRIM(J.descripcion)       AS Motivo_Desc,
+                       A.nombre,
+                       P.cod_proveedor,
+                       P.descripcion              AS Proveedor
+                FROM   Activos_retiro_adicion X
+                       INNER JOIN Activos_Principal      A ON X.num_placa = A.num_placa
+                       INNER JOIN Activos_justificaciones J ON X.cod_justificacion = J.cod_justificacion
+                       LEFT JOIN  Activos_proveedores     P ON X.compra_proveedor = P.cod_proveedor
+                WHERE  X.Id_AddRet = @Id_AddRet
+                AND    X.num_placa = @placa";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                const string sql = @"
-                    SELECT X.*,
-                           RTRIM(J.cod_justificacion) AS Motivo_Id,
-                           RTRIM(J.descripcion)       AS Motivo_Desc,
-                           A.nombre,
-                           P.cod_proveedor,
-                           P.descripcion              AS Proveedor
-                    FROM   Activos_retiro_adicion X
-                           INNER JOIN Activos_Principal      A ON X.num_placa = A.num_placa
-                           INNER JOIN Activos_justificaciones J ON X.cod_justificacion = J.cod_justificacion
-                           LEFT JOIN  Activos_proveedores     P ON X.compra_proveedor = P.cod_proveedor
-                    WHERE  X.Id_AddRet = @Id_AddRet
-                    AND    X.num_placa = @placa";
-
-                result.Result = connection.Query<ActivosDeterioroData>(sql, new { Id_AddRet, placa })
-                                          .FirstOrDefault()
-                                ?? new ActivosDeterioroData();
-            }
-            catch (Exception ex)
-            {
-                result.Code        = -1;
-                result.Description = ex.Message;
-                result.Result      = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteSingleQuery(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                new ActivosDeterioroData(),
+                new { Id_AddRet, placa });
         }
-
 
         /// <summary>
         /// Método para validar un activo antes de pasarlo a estado de deterioro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <param name="fecha"></param>
-        /// <returns></returns>
         public ErrorDto<string> Activos_Deterioros_Validar(int CodEmpresa, string placa, DateTime fecha)
         {
-            var result = new ErrorDto<string>
-            {
-                Code        = 0,
-                Description = string.Empty,
-                Result      = string.Empty
-            };
+            var result = DbHelper.CreateOkResponse(string.Empty);
 
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
+                // Validación de existencia / fecha de adquisición
                 const string sqlFecha = @"
                     SELECT fecha_adquisicion
                     FROM   Activos_Principal
                     WHERE  num_placa = @placa
                     AND    estado   <> 'R'";
 
-                result.Result = connection.Query<string>(sqlFecha, new { placa }).FirstOrDefault();
+                var fechaAdqStr = connection
+                    .Query<string>(sqlFecha, new { placa })
+                    .FirstOrDefault();
 
-                if (result.Result == null)
+                if (fechaAdqStr == null)
                 {
                     result.Code        = -2;
                     result.Description = "El Activo no existe, o ya fue retirado ...";
-                }
-                else
-                {
-                    var fechaAdquisicion = DateTime.Parse(result.Result, System.Globalization.CultureInfo.InvariantCulture);
-                    if ((fecha - fechaAdquisicion).Days < 1)
-                    {
-                        result.Code        = -2;
-                        result.Description = "La fecha del Movimiento no es válida, ya que es menor a la del activo ...";
-                    }
+                    return result;
                 }
 
+                var fechaAdquisicion = DateTime.Parse(fechaAdqStr, System.Globalization.CultureInfo.InvariantCulture);
+                if ((fecha - fechaAdquisicion).Days < 1)
+                {
+                    result.Code        = -2;
+                    result.Description = "La fecha del Movimiento no es válida, ya que es menor a la del activo ...";
+                }
+
+                // Validación de periodo
                 const string sqlPeriodo = @"
                     SELECT estado,
                            dbo.fxActivos_PeriodoActual() AS PeriodoActual
@@ -150,9 +139,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     WHERE  anio = @anno
                     AND    mes  = @mes";
 
-                var periodo = connection.Query<ActivosPeriodosData>(
-                    sqlPeriodo,
-                    new { anno = fecha.Year, mes = fecha.Month })
+                var periodo = connection
+                    .Query<ActivosPeriodosData>(
+                        sqlPeriodo,
+                        new { anno = fecha.Year, mes = fecha.Month })
                     .FirstOrDefault();
 
                 if (periodo != null)
@@ -175,19 +165,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 result.Code        = -1;
                 result.Description = ex.Message;
-                result.Result      = null;
+                result.Result      = string.Empty;
             }
 
             return result;
         }
 
-        
         /// <summary>
         /// Método para consultar los detalles de un activo en estado de deterioro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <returns></returns>
         public ErrorDto<ActivosDeterioroDetallaData> Activos_DeteriorosDetalle_Consultar(int CodEmpresa, string placa)
         {
             var result = DbHelper.CreateOkResponse(new ActivosDeterioroDetallaData());
@@ -198,7 +184,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 const string sql = @"EXEC spActivos_InfoDepreciacion @placa";
 
-                var data = connection.Query<ActivosDeterioroDetallaData>(sql, new { placa }).FirstOrDefault();
+                var data = connection
+                    .Query<ActivosDeterioroDetallaData>(sql, new { placa })
+                    .FirstOrDefault();
 
                 if (data == null)
                 {
@@ -228,21 +216,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-
         /// <summary>
         /// Método para guardar un activo en estado de deterioro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         public ErrorDto Activos_Deterioros_Guardar(int CodEmpresa, string usuario, ActivosDeterioroData data)
         {
-            var result = new ErrorDto
-            {
-                Code        = 0,
-                Description = "Ok"
-            };
+            var result = DbHelper.CreateOkResponse();
 
             try
             {
@@ -275,14 +254,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 result.Code = linea;
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId         = CodEmpresa,
-                    Usuario           = usuario,
-                    DetalleMovimiento = $"Deterioro (Placa: {data.num_placa})  Deterioro Id:{data.id_addret}_ {data.motivo_desc} ",
-                    Movimiento        = "Registra - WEB",
-                    Modulo            = vModulo
-                });
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuario,
+                    $"Deterioro (Placa: {data.num_placa})  Deterioro Id:{data.id_addret}_ {data.motivo_desc} ",
+                    "Registra - WEB");
             }
             catch (Exception ex)
             {
@@ -293,13 +269,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-
         /// <summary>
         /// Método para consultar el histórico de deterioros de un activo
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <returns></returns>
         public ErrorDto<List<ActivosHistoricoData>> Activos_Deterioros_Historico_Consultar(int CodEmpresa, string placa)
         {
             const string sql = @"
@@ -319,16 +291,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 WHERE  X.num_placa = @placa
                 AND    X.Tipo      = 'D'";
 
-            return DbHelper.ExecuteListQuery<ActivosHistoricoData>(_portalDB, CodEmpresa, sql, new { placa });
+            return DbHelper.ExecuteListQuery<ActivosHistoricoData>(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                new { placa });
         }
-
 
         /// <summary>
         /// Método para consultar el nombre de un activo en estado de deterioro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <returns></returns>
         public ErrorDto<string> Activos_Deterioros_ActivosNombre_Consultar(int CodEmpresa, string placa)
         {
             const string sql = @"
@@ -336,25 +308,20 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 FROM   Activos_Principal
                 WHERE  num_placa = @placa";
 
-            return DbHelper.ExecuteSingleQuery(_portalDB, CodEmpresa, sql, string.Empty, new { placa });
+            return DbHelper.ExecuteSingleQuery(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                string.Empty,
+                new { placa });
         }
-
 
         /// <summary>
         /// Método para eliminar un activo en estado de deterioro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="placa"></param>
-        /// <param name="Id_AddRet"></param>
-        /// <returns></returns>
         public ErrorDto Activos_Deterioros_Eliminar(int CodEmpresa, string usuario, string placa, int Id_AddRet)
         {
-            var result = new ErrorDto
-            {
-                Code        = 0,
-                Description = "Ok"
-            };
+            var result = DbHelper.CreateOkResponse();
 
             try
             {
@@ -367,14 +334,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 connection.Execute(sql, new { placa, Id_AddRet });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId         = CodEmpresa,
-                    Usuario           = usuario,
-                    DetalleMovimiento = $"Deterioro, Placa: {placa}) Id: {Id_AddRet} ",
-                    Movimiento        = "Elimina - WEB",
-                    Modulo            = vModulo
-                });
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuario,
+                    $"Deterioro, Placa: {placa}) Id: {Id_AddRet} ",
+                    "Elimina - WEB");
             }
             catch (Exception ex)
             {
@@ -385,13 +349,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-
         /// <summary>
         /// Método para consultar el periodo actual
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="contabilidad"></param>
-        /// <returns></returns>
         public ErrorDto<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
         {
             var result = DbHelper.CreateOkResponse(DateTime.Now);

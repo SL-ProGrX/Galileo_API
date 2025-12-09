@@ -15,11 +15,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MSecurityMainDb _Security_MainDB;
 
         private const string _declaraId = "DeclaraId";
-        private const string _usuario = "Usuario";
+        private const string _usuario   = "Usuario";
 
         public FrmActivosDeclaracionesDB(IConfiguration config)
         {
-            _portalDB      = new PortalDB(config);
+            _portalDB        = new PortalDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
         }
 
@@ -59,8 +59,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             bool sinPaginacion = filtros == null || filtros.paginacion <= 0;
             if (!sinPaginacion)
             {
-                p.Add("@offset", filtros!.pagina, DbType.Int32);
-                p.Add("@rows", filtros.paginacion, DbType.Int32);
+                p.Add("@offset", filtros!.pagina,      DbType.Int32);
+                p.Add("@rows",   filtros.paginacion,  DbType.Int32);
             }
 
             return (p, sinPaginacion);
@@ -89,9 +89,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p,
                 commandType: CommandType.StoredProcedure);
 
-            int pass       = (int)(rs?.Pass ?? 0);
-            string mensaje = (string)(rs?.Mensaje ?? "Error al procesar declaración.");
-            int idDeclara  = (int)(rs?.ID_DECLARA ?? declaraId);
+            int    pass      = (int)(rs?.Pass       ?? 0);
+            string mensaje   = (string)(rs?.Mensaje ?? "Error al procesar declaración.");
+            int    idDeclara = (int)(rs?.ID_DECLARA ?? declaraId);
 
             return (pass, mensaje, idDeclara);
         }
@@ -117,7 +117,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p,
                 commandType: CommandType.StoredProcedure);
 
-            int pass       = (int)(rs?.Pass ?? 0);
+            int    pass    = (int)(rs?.Pass    ?? 0);
             string mensaje = (string)(rs?.Mensaje ?? defaultErrorMessage);
 
             return (pass, mensaje);
@@ -135,11 +135,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             _Security_MainDB.Bitacora(new BitacoraInsertarDto
             {
-                EmpresaId        = CodEmpresa,
-                Usuario          = usuario ?? "",
+                EmpresaId         = CodEmpresa,
+                Usuario           = usuario ?? "",
                 DetalleMovimiento = detalle,
-                Movimiento       = movimiento,
-                Modulo           = vModulo
+                Movimiento        = movimiento,
+                Modulo            = vModulo
             });
         }
 
@@ -151,6 +151,51 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 Description = description,
                 Result      = null
             };
+        }
+
+        /// <summary>
+        /// Helper genérico para acciones simples (Eliminar / Cerrar / Procesar).
+        /// </summary>
+        private ErrorDto EjecutarAccionDeclaracion(
+            int CodEmpresa,
+            int id_declara,
+            string usuario,
+            string storedProcedure,
+            string movimiento,
+            string defaultErrorMessage,
+            string mensajeOkPorDefecto)
+        {
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
+            try
+            {
+                var (pass, mensaje) = EjecutarSpDeclaraAccion(
+                    CodEmpresa,
+                    storedProcedure,
+                    id_declara,
+                    usuario,
+                    defaultErrorMessage);
+
+                if (pass != 1)
+                    return new ErrorDto { Code = -2, Description = mensaje };
+
+                RegistrarBitacoraDeclaracion(
+                    CodEmpresa,
+                    usuario,
+                    id_declara,
+                    movimiento);
+
+                resp.Description = string.IsNullOrWhiteSpace(mensaje)
+                    ? mensajeOkPorDefecto
+                    : mensaje;
+            }
+            catch (Exception ex)
+            {
+                resp.Code        = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
         }
 
         #endregion
@@ -252,10 +297,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                result.Code           = -1;
-                result.Description    = ex.Message;
-                result.Result.total   = 0;
-                result.Result.lista   = new List<ActivosDeclaracionResumen>();
+                result.Code         = -1;
+                result.Description  = ex.Message;
+                result.Result.total = 0;
+                result.Result.lista = new List<ActivosDeclaracionResumen>();
             }
 
             return result;
@@ -527,33 +572,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             int id_declara,
             string usuario)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
-
-            try
-            {
-                var (pass, mensaje) = EjecutarSpDeclaraAccion(
-                    CodEmpresa,
-                    storedProcedure: "spActivos_Declara_Main_Delete",
-                    id_declara,
-                    usuario,
-                    defaultErrorMessage: "Error");
-
-                if (pass != 1)
-                    return new ErrorDto { Code = -2, Description = mensaje };
-
-                RegistrarBitacoraDeclaracion(
-                    CodEmpresa,
-                    usuario,
-                    id_declara,
-                    movimiento: "Elimina - WEB");
-            }
-            catch (Exception ex)
-            {
-                resp.Code        = -1;
-                resp.Description = ex.Message;
-            }
-
-            return resp;
+            return EjecutarAccionDeclaracion(
+                CodEmpresa,
+                id_declara,
+                usuario,
+                storedProcedure: "spActivos_Declara_Main_Delete",
+                movimiento: "Elimina - WEB",
+                defaultErrorMessage: "Error",
+                mensajeOkPorDefecto: "Declaración eliminada satisfactoriamente!");
         }
 
         public ErrorDto Activos_Declaraciones_Registro_Cerrar(
@@ -561,37 +587,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             int id_declara,
             string usuario)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
-
-            try
-            {
-                var (pass, mensaje) = EjecutarSpDeclaraAccion(
-                    CodEmpresa,
-                    storedProcedure: "spActivos_Declara_Main_Cierra",
-                    id_declara,
-                    usuario,
-                    defaultErrorMessage: "Error");
-
-                if (pass != 1)
-                    return new ErrorDto { Code = -2, Description = mensaje };
-
-                RegistrarBitacoraDeclaracion(
-                    CodEmpresa,
-                    usuario,
-                    id_declara,
-                    movimiento: "Cierra - WEB");
-
-                resp.Description = string.IsNullOrWhiteSpace(mensaje)
-                    ? "Declaración cerrada satisfactoriamente!"
-                    : mensaje;
-            }
-            catch (Exception ex)
-            {
-                resp.Code        = -1;
-                resp.Description = ex.Message;
-            }
-
-            return resp;
+            return EjecutarAccionDeclaracion(
+                CodEmpresa,
+                id_declara,
+                usuario,
+                storedProcedure: "spActivos_Declara_Main_Cierra",
+                movimiento: "Cierra - WEB",
+                defaultErrorMessage: "Error",
+                mensajeOkPorDefecto: "Declaración cerrada satisfactoriamente!");
         }
 
         public ErrorDto Activos_Declaraciones_Registro_Procesar(
@@ -599,37 +602,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             int id_declara,
             string usuario)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
-
-            try
-            {
-                var (pass, mensaje) = EjecutarSpDeclaraAccion(
-                    CodEmpresa,
-                    storedProcedure: "spActivos_Declara_Main_Procesa",
-                    id_declara,
-                    usuario,
-                    defaultErrorMessage: "Error al procesar");
-
-                if (pass != 1)
-                    return new ErrorDto { Code = -2, Description = mensaje };
-
-                RegistrarBitacoraDeclaracion(
-                    CodEmpresa,
-                    usuario,
-                    id_declara,
-                    movimiento: "Procesa - WEB");
-
-                resp.Description = string.IsNullOrWhiteSpace(mensaje)
-                    ? "Declaración procesada satisfactoriamente!"
-                    : mensaje;
-            }
-            catch (Exception ex)
-            {
-                resp.Code        = -1;
-                resp.Description = ex.Message;
-            }
-
-            return resp;
+            return EjecutarAccionDeclaracion(
+                CodEmpresa,
+                id_declara,
+                usuario,
+                storedProcedure: "spActivos_Declara_Main_Procesa",
+                movimiento: "Procesa - WEB",
+                defaultErrorMessage: "Error al procesar",
+                mensajeOkPorDefecto: "Declaración procesada satisfactoriamente!");
         }
 
         /// <summary>
