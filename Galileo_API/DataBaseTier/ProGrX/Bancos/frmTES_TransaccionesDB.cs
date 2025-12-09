@@ -53,23 +53,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
         }
 
-        private ErrorDto WithConn(int codEmpresa, Func<SqlConnection, int> action, string okDesc = "Ok", string failDesc = "No se pudo realizar la transacción")
-        {
-            try
-            {
-                using var conn = OpenConnection(codEmpresa);
-                var code = action(conn);
-                return new ErrorDto
-                {
-                    Code = code == 0 ? 0 : 0, // la mayoría de tus SPs devuelven filas afectadas, no un error real
-                    Description = (code == 0) ? failDesc : okDesc
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto { Code = -1, Description = ex.Message };
-            }
-        }
+      
 
         private static ErrorDto<T> Ok<T>(T result, string desc = "Ok") =>
             new ErrorDto<T> { Code = 0, Description = desc, Result = result };
