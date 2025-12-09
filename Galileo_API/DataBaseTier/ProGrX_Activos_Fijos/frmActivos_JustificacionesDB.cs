@@ -55,7 +55,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         public FrmActivosJustificacionesDb(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
-            _portalDB        = new PortalDB(config);
+            _portalDB = new PortalDB(config);
         }
 
         #region Helpers privados
@@ -67,11 +67,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             _Security_MainDB.Bitacora(new BitacoraInsertarDto
             {
-                EmpresaId         = CodEmpresa,
-                Usuario           = usuario ?? string.Empty,
+                EmpresaId = CodEmpresa,
+                Usuario = usuario ?? string.Empty,
                 DetalleMovimiento = detalle,
-                Movimiento        = movimiento,
-                Modulo            = vModulo
+                Movimiento = movimiento,
+                Modulo = vModulo
             });
         }
 
@@ -80,27 +80,27 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return esInsert
                 ? new
                 {
-                    cod          = NormalizeCode(data.cod_justificacion),
-                    descripcion  = data.descripcion?.ToUpper(),
-                    tipo         = NormalizeCode(data.tipo),
+                    cod = NormalizeCode(data.cod_justificacion),
+                    descripcion = data.descripcion?.ToUpper(),
+                    tipo = NormalizeCode(data.tipo),
                     tipo_asiento = data.tipo_asiento?.ToUpper(),
-                    cta1         = string.IsNullOrWhiteSpace(data.cod_cuenta_01) ? null : NormalizeCode(data.cod_cuenta_01),
-                    cta2         = string.IsNullOrWhiteSpace(data.cod_cuenta_02) ? null : NormalizeCode(data.cod_cuenta_02),
-                    cta3         = string.IsNullOrWhiteSpace(data.cod_cuenta_03) ? null : NormalizeCode(data.cod_cuenta_03),
-                    cta4         = string.IsNullOrWhiteSpace(data.cod_cuenta_04) ? null : NormalizeCode(data.cod_cuenta_04),
-                    reg_usuario  = string.IsNullOrWhiteSpace(data.registro_usuario) ? null : data.registro_usuario
+                    cta1 = string.IsNullOrWhiteSpace(data.cod_cuenta_01) ? null : NormalizeCode(data.cod_cuenta_01),
+                    cta2 = string.IsNullOrWhiteSpace(data.cod_cuenta_02) ? null : NormalizeCode(data.cod_cuenta_02),
+                    cta3 = string.IsNullOrWhiteSpace(data.cod_cuenta_03) ? null : NormalizeCode(data.cod_cuenta_03),
+                    cta4 = string.IsNullOrWhiteSpace(data.cod_cuenta_04) ? null : NormalizeCode(data.cod_cuenta_04),
+                    reg_usuario = string.IsNullOrWhiteSpace(data.registro_usuario) ? null : data.registro_usuario
                 }
                 : new
                 {
-                    cod          = NormalizeCode(data.cod_justificacion),
-                    descripcion  = data.descripcion?.ToUpper(),
-                    tipo         = NormalizeCode(data.tipo),
+                    cod = NormalizeCode(data.cod_justificacion),
+                    descripcion = data.descripcion?.ToUpper(),
+                    tipo = NormalizeCode(data.tipo),
                     tipo_asiento = data.tipo_asiento?.ToUpper(),
-                    cta1         = string.IsNullOrWhiteSpace(data.cod_cuenta_01) ? null : NormalizeCode(data.cod_cuenta_01),
-                    cta2         = string.IsNullOrWhiteSpace(data.cod_cuenta_02) ? null : NormalizeCode(data.cod_cuenta_02),
-                    cta3         = string.IsNullOrWhiteSpace(data.cod_cuenta_03) ? null : NormalizeCode(data.cod_cuenta_03),
-                    cta4         = string.IsNullOrWhiteSpace(data.cod_cuenta_04) ? null : NormalizeCode(data.cod_cuenta_04),
-                    mod_usuario  = string.IsNullOrWhiteSpace(data.modifica_usuario) ? null : data.modifica_usuario
+                    cta1 = string.IsNullOrWhiteSpace(data.cod_cuenta_01) ? null : NormalizeCode(data.cod_cuenta_01),
+                    cta2 = string.IsNullOrWhiteSpace(data.cod_cuenta_02) ? null : NormalizeCode(data.cod_cuenta_02),
+                    cta3 = string.IsNullOrWhiteSpace(data.cod_cuenta_03) ? null : NormalizeCode(data.cod_cuenta_03),
+                    cta4 = string.IsNullOrWhiteSpace(data.cod_cuenta_04) ? null : NormalizeCode(data.cod_cuenta_04),
+                    mod_usuario = string.IsNullOrWhiteSpace(data.modifica_usuario) ? null : data.modifica_usuario
                 };
         }
 
@@ -180,7 +180,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 if (connection != null)
                 {
                     if (response.Result != null)
-                    response.Result.lista = connection.Query<ActivosJustificacionesData>(dataSql, p).ToList();
+                        response.Result.lista = connection.Query<ActivosJustificacionesData>(dataSql, p).ToList();
                 }
                 else
                 {
@@ -190,7 +190,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                response.Code        = -1;
+                response.Code = -1;
                 response.Description = ex.Message;
                 if (response.Result != null)
                 {
@@ -222,12 +222,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 (resp.Code, resp.Description) =
                     (result == 0)
-                        ? (0,  "JUSTIFICACION: Libre!")
+                        ? (0, "JUSTIFICACION: Libre!")
                         : (-2, "JUSTIFICACION: Ocupado!");
             }
             catch (Exception ex)
             {
-                resp.Code        = -1;
+                resp.Code = -1;
                 resp.Description = ex.Message;
             }
 
@@ -257,7 +257,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 if (resp.Result == null)
                 {
-                    resp.Code        = -2;
+                    resp.Code = -2;
                     resp.Description = "Justificación no encontrada.";
                 }
                 else
@@ -267,9 +267,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code        = -1;
+                resp.Code = -1;
                 resp.Description = ex.Message;
-                resp.Result      = null;
+                resp.Result = null;
             }
 
             return resp;
@@ -278,10 +278,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Navegación (scroll) entre justificaciones.
         /// </summary>
-        public ErrorDto<ActivosJustificacionesData> Activos_Justificacion_Scroll(
-            int CodEmpresa,
-            int scroll,
-            string? cod_justificacion)
+        public ErrorDto<ActivosJustificacionesData> Activos_Justificacion_Scroll(int CodEmpresa,int scroll,string? cod_justificacion)
         {
             var resp = DbHelper.CreateOkResponse(new ActivosJustificacionesData());
 
@@ -289,13 +286,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                string op        = (scroll == 1) ? ">"   : "<";
-                string direction = (scroll == 1) ? "ASC" : "DESC";
-
-                string sql = $@"
-                    {JustificacionDetalleSelectSql}
-                    WHERE j.COD_JUSTIFICACION {op} @cod
-                    ORDER BY j.COD_JUSTIFICACION {direction};";
+                var sql = (scroll == 1)
+                    ? JustificacionScrollNextSql   // > ASC
+                    : JustificacionScrollPrevSql;  // < DESC
 
                 resp.Result = connection.QueryFirstOrDefault<ActivosJustificacionesData>(
                     sql,
@@ -303,7 +296,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 if (resp.Result == null)
                 {
-                    resp.Code        = -2;
+                    resp.Code = -2;
                     resp.Description = "No se encontraron más resultados.";
                 }
                 else
@@ -313,13 +306,25 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code        = -1;
+                resp.Code = -1;
                 resp.Description = ex.Message;
-                resp.Result      = null;
+                resp.Result = null;
             }
 
             return resp;
         }
+
+        private const string JustificacionScrollNextSql = @"
+        " + JustificacionDetalleSelectSql + @"
+        WHERE j.COD_JUSTIFICACION > @cod
+        ORDER BY j.COD_JUSTIFICACION ASC;";
+
+        private const string JustificacionScrollPrevSql = @"
+        " + JustificacionDetalleSelectSql + @"
+        WHERE j.COD_JUSTIFICACION < @cod
+        ORDER BY j.COD_JUSTIFICACION DESC;";
+
+
 
         /// <summary>
         /// Guarda (inserta o actualiza) una justificación en la base de datos.
@@ -341,7 +346,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 if (errores.Count > 0)
                 {
-                    resp.Code        = -1;
+                    resp.Code = -1;
                     resp.Description = string.Join(" | ", errores);
                     return resp;
                 }
@@ -362,7 +367,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     resp = (existe > 0)
                         ? new ErrorDto
                         {
-                            Code        = -2,
+                            Code = -2,
                             Description = $"La justificación {NormalizeCode(data.cod_justificacion)} ya existe."
                         }
                         : Activos_Justificaciones_Insertar(CodEmpresa, data);
@@ -372,7 +377,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     resp = (existe == 0)
                         ? new ErrorDto
                         {
-                            Code        = -2,
+                            Code = -2,
                             Description = $"La justificación {NormalizeCode(data.cod_justificacion)} no existe."
                         }
                         : Activos_Justificaciones_Actualizar(CodEmpresa, data);
@@ -380,7 +385,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code        = -1;
+                resp.Code = -1;
                 resp.Description = ex.Message;
             }
 
@@ -409,7 +414,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     query,
                     BuildCuentasParams(data, esInsert: true));
 
-                resp.Code        = dbResp.Code;
+                resp.Code = dbResp.Code;
                 resp.Description = dbResp.Description;
 
                 if (resp.Code == 0)
@@ -425,7 +430,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code        = -1;
+                resp.Code = -1;
                 resp.Description = ex.Message;
             }
 
@@ -457,7 +462,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     query,
                     BuildCuentasParams(data, esInsert: false));
 
-                resp.Code        = dbResp.Code;
+                resp.Code = dbResp.Code;
                 resp.Description = dbResp.Description;
 
                 if (resp.Code == 0)
@@ -473,7 +478,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code        = -1;
+                resp.Code = -1;
                 resp.Description = ex.Message;
             }
 
@@ -498,7 +503,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 if (rows == 0)
                 {
-                    resp.Code        = -2;
+                    resp.Code = -2;
                     resp.Description = $"La justificación {NormalizeCode(cod_justificacion)} no existe.";
                     return resp;
                 }
@@ -511,7 +516,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code        = -1;
+                resp.Code = -1;
                 resp.Description = ex.Message;
             }
 
