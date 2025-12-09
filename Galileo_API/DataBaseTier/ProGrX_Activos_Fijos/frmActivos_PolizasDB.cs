@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using System.Globalization;
+using Dapper;
 using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -15,6 +16,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string _numplaca = "A.NUM_PLACA";
         private const string TipoActivoParam = "@tipo_activo";
         private const string _filtro = "@filtro";
+
+        // Formatos de fecha permitidos (ajusta si lo necesitas)
+        private static readonly string[] DateFormats = { "yyyy-MM-dd", "dd/MM/yyyy" };
+        private static readonly CultureInfo DateCulture = CultureInfo.InvariantCulture;
+        private const DateTimeStyles DateStyles = DateTimeStyles.None;
 
         public FrmActivosPolizasDb(IConfiguration config)
         {
@@ -39,7 +45,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var p = new DynamicParameters();
-                string? filtroTexto = (vfiltro?.filtro ?? string.Empty).Trim();
+                string filtroTexto = (vfiltro?.filtro ?? string.Empty).Trim();
                 if (string.IsNullOrWhiteSpace(filtroTexto))
                     p.Add(_filtro, null);
                 else
@@ -85,7 +91,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 response.Code = -1;
                 response.Description = ex.Message;
                 response.Result.total = 0;
-                response.Result.lista = [];
+                response.Result.lista = new List<ActivosPolizasData>();
             }
 
             return response;
@@ -215,11 +221,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return resp;
         }
 
+        /// <summary>
+        /// Valida los datos de la póliza (incluyendo fechas con format provider).
+        /// </summary>
         private ErrorDto ValidarDatosPoliza(ActivosPolizasData data)
         {
-            var errores = new List<string>();
             if (data == null)
                 return new ErrorDto { Code = -1, Description = "Datos de póliza no proporcionados." };
+
+            var errores = new List<string>();
 
             if (string.IsNullOrWhiteSpace(data.cod_poliza))
                 errores.Add("No ha indicado el código de la póliza.");
@@ -230,10 +240,27 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             if (string.IsNullOrWhiteSpace(data.tipo_poliza))
                 errores.Add("No ha indicado el tipo de póliza.");
 
-            if (!string.IsNullOrWhiteSpace(data.fecha_inicio) &&
-                !string.IsNullOrWhiteSpace(data.fecha_vence) &&
-                DateTime.TryParse(data.fecha_inicio, out var fi) &&
-                DateTime.TryParse(data.fecha_vence, out var fv) &&
+            // Validación de fechas con formato/cultura explícitos
+            bool tieneInicio = !string.IsNullOrWhiteSpace(data.fecha_inicio);
+            bool tieneVence = !string.IsNullOrWhiteSpace(data.fecha_vence);
+
+            DateTime fi, fv;
+
+            if (tieneInicio)
+            {
+                if (!DateTime.TryParseExact(data.fecha_inicio, DateFormats, DateCulture, DateStyles, out fi))
+                    errores.Add("La fecha de inicio no tiene un formato válido.");
+            }
+
+            if (tieneVence)
+            {
+                if (!DateTime.TryParseExact(data.fecha_vence, DateFormats, DateCulture, DateStyles, out fv))
+                    errores.Add("La fecha de vencimiento no tiene un formato válido.");
+            }
+
+            if (tieneInicio && tieneVence &&
+                DateTime.TryParseExact(data.fecha_inicio, DateFormats, DateCulture, DateStyles, out fi) &&
+                DateTime.TryParseExact(data.fecha_vence, DateFormats, DateCulture, DateStyles, out fv) &&
                 fv < fi)
             {
                 errores.Add("La fecha de vencimiento no puede ser menor a la inicial.");
@@ -262,14 +289,30 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                          @fi, @fv, @monto, @num_poliza, @documento,
                          SYSDATETIME(), @reg_usuario, NULL, NULL);";
 
+                // Convertimos las fechas a DateTime? usando el mismo formato/cultura
+                DateTime? fi = null;
+                DateTime? fv = null;
+
+                if (!string.IsNullOrWhiteSpace(data.fecha_inicio) &&
+                    DateTime.TryParseExact(data.fecha_inicio, DateFormats, DateCulture, DateStyles, out var dti))
+                {
+                    fi = dti;
+                }
+
+                if (!string.IsNullOrWhiteSpace(data.fecha_vence) &&
+                    DateTime.TryParseExact(data.fecha_vence, DateFormats, DateCulture, DateStyles, out var dtv))
+                {
+                    fv = dtv;
+                }
+
                 connection.Execute(query, new
                 {
                     cod = data.cod_poliza.ToUpper(),
                     tipo = data.tipo_poliza.ToUpper(),
                     descripcion = data.descripcion?.ToUpper(),
                     observacion = string.IsNullOrWhiteSpace(data.observacion) ? null : data.observacion,
-                    fi = string.IsNullOrWhiteSpace(data.fecha_inicio) ? null : data.fecha_inicio,
-                    fv = string.IsNullOrWhiteSpace(data.fecha_vence) ? null : data.fecha_vence,
+                    fi,
+                    fv,
                     monto = data.monto,
                     num_poliza = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
                     documento = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
@@ -279,7 +322,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
-                    Usuario = data.registro_usuario ?? "",
+                    Usuario = data.registro_usuario ?? string.Empty,
                     DetalleMovimiento = $"Póliza: {data.cod_poliza} - {data.descripcion}",
                     Movimiento = "Registra - WEB",
                     Modulo = vModulo
@@ -317,14 +360,29 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                            MODIFICA_FECHA   = SYSDATETIME()
                      WHERE COD_POLIZA = @cod;";
 
+                DateTime? fi = null;
+                DateTime? fv = null;
+
+                if (!string.IsNullOrWhiteSpace(data.fecha_inicio) &&
+                    DateTime.TryParseExact(data.fecha_inicio, DateFormats, DateCulture, DateStyles, out var dti))
+                {
+                    fi = dti;
+                }
+
+                if (!string.IsNullOrWhiteSpace(data.fecha_vence) &&
+                    DateTime.TryParseExact(data.fecha_vence, DateFormats, DateCulture, DateStyles, out var dtv))
+                {
+                    fv = dtv;
+                }
+
                 connection.Execute(query, new
                 {
                     cod = data.cod_poliza.ToUpper(),
                     tipo = data.tipo_poliza.ToUpper(),
                     descripcion = data.descripcion?.ToUpper(),
                     observacion = string.IsNullOrWhiteSpace(data.observacion) ? null : data.observacion,
-                    fi = string.IsNullOrWhiteSpace(data.fecha_inicio) ? null : data.fecha_inicio,
-                    fv = string.IsNullOrWhiteSpace(data.fecha_vence) ? null : data.fecha_vence,
+                    fi,
+                    fv,
                     monto = data.monto,
                     num_poliza = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
                     documento = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
@@ -334,7 +392,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
-                    Usuario = data.modifica_usuario ?? "",
+                    Usuario = data.modifica_usuario ?? string.Empty,
                     DetalleMovimiento = $"Póliza: {data.cod_poliza} - {data.descripcion}",
                     Movimiento = "Modifica - WEB",
                     Modulo = vModulo
@@ -374,7 +432,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     resp.Code = -1;
                     resp.Description = "Debe indicar la póliza.";
                     resp.Result.total = 0;
-                    resp.Result.lista = [];
+                    resp.Result.lista = new List<ActivosPolizasData>();
                     return resp;
                 }
 
@@ -383,7 +441,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var p = new DynamicParameters();
                 p.Add("@p", cod_poliza.ToUpper());
 
-                // Filtro tipo_activo — CORREGIDO
+                // Filtro tipo_activo
                 p.Add(TipoActivoParam, string.IsNullOrWhiteSpace(tipo_activo) ? null : tipo_activo);
 
                 // Filtro texto
@@ -413,9 +471,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 int sortIndex = sortFieldNorm switch
                 {
                     _numplaca or "NUM_PLACA" => 1,
-                    "A.NOMBRE" or "NOMBRE" => 2,
-                    "A.ESTADO" or "ESTADO" => 3,
-                    _ => 1
+                    "A.NOMBRE" or "NOMBRE"   => 2,
+                    "A.ESTADO" or "ESTADO"   => 3,
+                    _                        => 1
                 };
 
                 p.Add("@sortIndex", sortIndex);
@@ -478,7 +536,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 resp.Code = -1;
                 resp.Description = ex.Message;
                 resp.Result.total = 0;
-                resp.Result.lista = [];
+                resp.Result.lista = new List<ActivosPolizasData>();
             }
 
             return resp;
