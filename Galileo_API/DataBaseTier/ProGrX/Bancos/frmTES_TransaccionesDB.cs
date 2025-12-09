@@ -458,7 +458,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     offset @Offset rows fetch next @PageSize rows only;
                 ";
 
-                var lista = conn.Query<TesSolicitudesData>(sql, parameters).ToList();
+                var lista = conn.Query<Galileo.Models.ProGrX.Bancos.TesSolicitudesData>(sql, parameters).ToList();
 
                 return new TablasListaGenericaModel { total = total, lista = lista };
             });
