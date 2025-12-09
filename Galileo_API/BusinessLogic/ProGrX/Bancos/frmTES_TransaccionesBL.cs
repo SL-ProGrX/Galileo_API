@@ -171,7 +171,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 
         public ErrorDto<string> NumeroALetras(decimal numero)
         {
-            return _db.NumeroALetras(numero);
+            return FrmTesTransaccionesDb.NumeroALetras(numero);
         }
 
         public ErrorDto<string> fxTesBancoDocsValor(int CodEmpresa, int banco, string tipo)

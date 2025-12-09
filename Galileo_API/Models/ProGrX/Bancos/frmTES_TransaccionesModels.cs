@@ -80,7 +80,7 @@ namespace Galileo.Models.TES
         public string? reposicion_nota { get; set; }
         public string? cedula_origen { get; set; }
         public string? cta_iban_origen { get; set; }
-        public int tipo_ced_origen { get; set; } = 1;
+        public int? tipo_ced_origen { get; set; } = 1;
         public string? correo_notifica { get; set; }
         public string? estado_sinpe { get; set; }
         public string? id_rechazo { get; set; }
