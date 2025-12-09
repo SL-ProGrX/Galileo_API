@@ -397,7 +397,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 };
 
                 if (!sortMap.TryGetValue(sortField, out string safeSortField))
-                    safeSortField = "NSOLICITUD";
+                    safeSortField = sortField;
 
                 string safeSortDir = (sortOrder == -1) ? "DESC" : "ASC";
 
