@@ -14,106 +14,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
-        /// <summary>
-        /// Helpers genéricos para reducir duplicación
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="initialResult"></param>
-        /// <returns></returns>
-        private static ErrorDto<T> CreateOkResponse<T>(T initialResult)
-        {
-            return new ErrorDto<T>
-            {
-                Code        = 0,
-                Description = "Ok",
-                Result      = initialResult
-            };
-        }
-
-
-        /// <summary>
-        /// Métodos genéricos para reducir duplicación
-        /// </summary>
-        /// <returns></returns>
-        private static ErrorDto CreateOkResponse()
-        {
-            return new ErrorDto
-            {
-                Code        = 0,
-                Description = "Ok"
-            };
-        }
-
-
-        /// <summary>
-        /// Método genérico para ejecutar consultas que retornan un solo valor
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="codEmpresa"></param>
-        /// <param name="sql"></param>
-        /// <param name="defaultValue"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        private ErrorDto<T> ExecuteSingleQuery<T>(
-            int codEmpresa,
-            string sql,
-            T defaultValue,
-            object? parameters = null)
-        {
-            var result = CreateOkResponse(defaultValue);
-
-            try
-            {
-                using var connection = _portalDB.CreateConnection(codEmpresa);
-                result.Result = connection.Query<T>(sql, parameters).FirstOrDefault()!;
-            }
-            catch (Exception ex)
-            {
-                result.Code        = -1;
-                result.Description = ex.Message;
-                result.Result      = defaultValue;
-            }
-
-            return result;
-        }
-
-
-        /// <summary>
-        /// Método genérico para ejecutar consultas que no retornan valor
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="sql"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        private ErrorDto ExecuteNonQuery(
-            int codEmpresa,
-            string sql,
-            object? parameters = null)
-        {
-            var result = CreateOkResponse();
-
-            try
-            {
-                using var connection = _portalDB.CreateConnection(codEmpresa);
-                connection.Execute(sql, parameters);
-            }
-            catch (Exception ex)
-            {
-                result.Code        = -1;
-                result.Description = ex.Message;
-            }
-
-            return result;
-        }
-
-        // -----------------------------------------------------------------
-        // Métodos públicos
-        // -----------------------------------------------------------------
-
-        /// <summary>
-        /// Método para consultar el estado de un periodo.
-        /// Retorna: "P" si no existe registro.
-        /// </summary>
+       /// <summary>
+       ///  Método para consultar el estado de un periodo.
+       /// </summary>
+       /// <param name="CodEmpresa"></param>
+       /// <param name="periodo"></param>
+       /// <returns></returns>
         public ErrorDto<string> Activos_PeriodoEstado_Obtener(int CodEmpresa, DateTime periodo)
         {
             const string sql = @"
@@ -122,7 +28,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 WHERE  anio = @anno
                 AND    mes  = @mes";
 
-            var result = ExecuteSingleQuery(
+            var result = DbHelper.ExecuteSingleQuery(
+                _portalDB,
                 CodEmpresa,
                 sql,
                 defaultValue: string.Empty,
@@ -137,12 +44,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-        /// <summary>
-        /// Método que ejecuta cierre del periodo.
-        /// </summary>
+       /// <summary>
+       ///  Método que ejecuta cierre del periodo.
+       /// </summary>
+       /// <param name="CodEmpresa"></param>
+       /// <param name="usuario"></param>
+       /// <param name="periodo"></param>
+       /// <returns></returns>
         public ErrorDto Activos_Periodo_Cerrar(int CodEmpresa, string usuario, DateTime periodo)
         {
-            var result = CreateOkResponse();
+            var result = DbHelper.CreateOkResponse();
 
             try
             {
@@ -176,9 +87,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Consulta el periodo pendiente (periodo actual de contabilidad).
         /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="contabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
         {
-            var result = CreateOkResponse(DateTime.Now);
+            var result = DbHelper.CreateOkResponse(DateTime.Now);
 
             try
             {

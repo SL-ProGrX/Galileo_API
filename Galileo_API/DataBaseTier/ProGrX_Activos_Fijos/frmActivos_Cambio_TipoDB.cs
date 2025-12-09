@@ -1,5 +1,4 @@
-﻿using Dapper;
-using Galileo.Models.ERROR;
+﻿using Galileo.Models.ERROR;
 using Galileo.Models;
 using Galileo.Models.ProGrX_Activos_Fijos;
 
@@ -15,87 +14,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
         /// <summary>
-        /// Helpers genéricos para reducir duplicación
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="initialResult"></param>
-        /// <returns></returns>
-        private static ErrorDto<T> CreateOkResponse<T>(T initialResult)
-        {
-            return new ErrorDto<T>
-            {
-                Code        = 0,
-                Description = "Ok",
-                Result      = initialResult
-            };
-        }
-
-
-        /// <summary>
-        /// Método genérico para ejecutar consultas que retornan listas
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="codEmpresa"></param>
-        /// <param name="sql"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        private ErrorDto<List<T>> ExecuteListQuery<T>(
-            int codEmpresa,
-            string sql,
-            object? parameters = null)
-        {
-            var result = CreateOkResponse(new List<T>());
-
-            try
-            {
-                using var connection = _portalDB.CreateConnection(codEmpresa);
-                result.Result = connection.Query<T>(sql, parameters).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code        = -1;
-                result.Description = ex.Message;
-                result.Result      = null;
-            }
-
-            return result;
-        }
-
-
-        /// <summary>
-        /// Método genérico para ejecutar consultas que retornan un solo registro
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="codEmpresa"></param>
-        /// <param name="sql"></param>
-        /// <param name="defaultValue"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        private ErrorDto<T> ExecuteSingleQuery<T>(
-            int codEmpresa,
-            string sql,
-            T defaultValue,
-            object? parameters = null)
-        {
-            var result = CreateOkResponse(defaultValue);
-
-            try
-            {
-                using var connection = _portalDB.CreateConnection(codEmpresa);
-                result.Result = connection.Query<T>(sql, parameters).FirstOrDefault()!;
-            }
-            catch (Exception ex)
-            {
-                result.Code        = -1;
-                result.Description = ex.Message;
-                result.Result      = defaultValue;
-            }
-
-            return result;
-        }
-
-
-        /// <summary>
         /// Obtiene listas genéricas de tipos de activos
         /// </summary>
         /// <param name="CodEmpresa"></param>
@@ -108,7 +26,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 FROM   Activos_tipo_activo
                 ORDER BY tipo_activo";
 
-            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql);
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql);
         }
 
 
@@ -133,7 +51,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                             ON A.tipo_activo = T.tipo_activo
                 WHERE   A.num_placa = @placa";
 
-            return ExecuteSingleQuery(
+            return DbHelper.ExecuteSingleQuery(
+                _portalDB,
                 CodEmpresa,
                 sql,
                 new ActivosPrincipalesData(),
@@ -141,9 +60,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
 
-        /// <summary>
-        /// Obtiene la lista de activos.
-        /// </summary>
+       /// <summary>
+       /// Obtiene la lista de activos.
+       /// </summary>
+       /// <param name="CodEmpresa"></param>
+       /// <returns></returns>
         public ErrorDto<List<ActivosData>> Activos_Obtener(int CodEmpresa)
         {
             const string sql = @"
@@ -153,7 +74,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 FROM   Activos_Principal
                 WHERE  estado = 'A'";
 
-            return ExecuteListQuery<ActivosData>(CodEmpresa, sql);
+            return DbHelper.ExecuteListQuery<ActivosData>(_portalDB, CodEmpresa, sql);
         }
     }
 }

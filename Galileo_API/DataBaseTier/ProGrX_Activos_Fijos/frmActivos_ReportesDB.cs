@@ -17,54 +17,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
         /// <summary>
-        /// Helpers genéricos para reducir duplicación
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="initialResult"></param>
-        /// <returns></returns>
-        private static ErrorDto<T> CreateOkResponse<T>(T initialResult)
-        {
-            return new ErrorDto<T>
-            {
-                Code        = 0,
-                Description = "Ok",
-                Result      = initialResult
-            };
-        }
-
-
-        /// <summary>
-        /// Método genérico para ejecutar consultas que retornan listas
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="codEmpresa"></param>
-        /// <param name="sql"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        private ErrorDto<List<T>> ExecuteListQuery<T>(
-            int codEmpresa,
-            string sql,
-            object? parameters = null)
-        {
-            var result = CreateOkResponse(new List<T>());
-
-            try
-            {
-                using var connection = _portalDB.CreateConnection(codEmpresa);
-                result.Result = connection.Query<T>(sql, parameters).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code        = -1;
-                result.Description = ex.Message;
-                result.Result      = null;
-            }
-
-            return result;
-        }
-
-
-        /// <summary>
         /// Metodo para consultar listado de departamentos
         /// </summary>
         /// <param name="CodEmpresa"></param>
@@ -77,7 +29,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 FROM   Activos_departamentos
                 ORDER BY cod_departamento";
 
-            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql);
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql);
         }
 
 
@@ -96,7 +48,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 WHERE  cod_departamento = @departamento
                 ORDER BY cod_Seccion";
 
-            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql, new { departamento });
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql, new { departamento });
         }
 
 
@@ -113,7 +65,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 FROM   Activos_tipo_activo
                 ORDER BY tipo_activo";
 
-            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql);
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql);
         }
 
 
@@ -131,7 +83,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 WHERE  Activa = 1
                 ORDER BY descripcion";
 
-            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql);
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql);
         }
 
 
@@ -143,7 +95,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<string> Activos_Reportes_PeriodoEstado(int CodEmpresa, DateTime fecha)
         {
-            var result = CreateOkResponse(string.Empty);
+            var result = DbHelper.CreateOkResponse(string.Empty);
 
             try
             {
@@ -186,7 +138,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
         {
-            var result = CreateOkResponse(DateTime.Now);
+            var result = DbHelper.CreateOkResponse(DateTime.Now);
 
             try
             {
@@ -216,7 +168,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                        Seccion
                 FROM vActivos_Personas";
 
-            return ExecuteListQuery<ActivosReportesResponsableData>(CodEmpresa, sql);
+            return DbHelper.ExecuteListQuery<ActivosReportesResponsableData>(_portalDB, CodEmpresa, sql);
         }
     }
 }

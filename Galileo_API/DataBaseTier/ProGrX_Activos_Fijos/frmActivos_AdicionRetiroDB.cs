@@ -21,131 +21,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         }
 
         /// <summary>
-        /// Helpers genéricos para reducir duplicación
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="initialResult"></param>
-        /// <returns></returns>
-        private static ErrorDto<T> CreateOkResponse<T>(T initialResult)
-        {
-            return new ErrorDto<T>
-            {
-                Code        = 0,
-                Description = "Ok",
-                Result      = initialResult
-            };
-        }
-
-
-        /// <summary>
-        /// Método genérico para ejecutar consultas que no retornan datos
-        /// </summary>
-        /// <returns></returns>
-        private static ErrorDto CreateOkResponse()
-        {
-            return new ErrorDto
-            {
-                Code        = 0,
-                Description = "Ok"
-            };
-        }
-
-
-        /// <summary>
-        /// Método genérico para ejecutar consultas que retornan listas
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="codEmpresa"></param>
-        /// <param name="sql"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        private ErrorDto<List<T>> ExecuteListQuery<T>(
-            int codEmpresa,
-            string sql,
-            object? parameters = null)
-        {
-            var result = CreateOkResponse(new List<T>());
-
-            try
-            {
-                using var connection = _portalDB.CreateConnection(codEmpresa);
-                result.Result = connection.Query<T>(sql, parameters).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code        = -1;
-                result.Description = ex.Message;
-                result.Result      = null;
-            }
-
-            return result;
-        }
-
-
-        /// <summary>
-        /// Método genérico para ejecutar consultas que retornan un solo registro
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="codEmpresa"></param>
-        /// <param name="sql"></param>
-        /// <param name="defaultValue"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        private ErrorDto<T> ExecuteSingleQuery<T>(
-            int codEmpresa,
-            string sql,
-            T defaultValue,
-            object? parameters = null)
-        {
-            var result = CreateOkResponse(defaultValue);
-
-            try
-            {
-                using var connection = _portalDB.CreateConnection(codEmpresa);
-                result.Result = connection.Query<T>(sql, parameters).FirstOrDefault()!;
-            }
-            catch (Exception ex)
-            {
-                result.Code        = -1;
-                result.Description = ex.Message;
-                result.Result      = defaultValue;
-            }
-
-            return result;
-        }
-
-
-        /// <summary>
-        /// Método genérico para ejecutar consultas que no retornan datos
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="sql"></param>
-        /// <param name="parameters"></param>
-        /// <returns></returns>
-        private ErrorDto ExecuteNonQuery(
-            int codEmpresa,
-            string sql,
-            object? parameters = null)
-        {
-            var result = CreateOkResponse();
-
-            try
-            {
-                using var connection = _portalDB.CreateConnection(codEmpresa);
-                connection.Execute(sql, parameters);
-            }
-            catch (Exception ex)
-            {
-                result.Code        = -1;
-                result.Description = ex.Message;
-            }
-
-            return result;
-        }
-
-
-
-        /// <summary>
         /// Método para consultar lista de justificaciones
         /// </summary>
         /// <param name="CodEmpresa"></param>
@@ -159,7 +34,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 FROM   Activos_justificaciones
                 WHERE  tipo = @tipo";
 
-            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql, new { tipo });
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql, new { tipo });
         }
 
 
@@ -175,7 +50,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                        descripcion   AS descripcion
                 FROM   Activos_proveedores";
 
-            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql);
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql);
         }
 
 
@@ -193,7 +68,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                        Nombre
                 FROM   Activos_Principal";
 
-            return ExecuteListQuery<ActivosData>(CodEmpresa, sql);
+            return DbHelper.ExecuteListQuery<ActivosData>(_portalDB, CodEmpresa, sql);
         }
 
 
@@ -206,7 +81,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<ActivosRetiroAdicionData> Activos_AdicionRetiro_Consultar(int CodEmpresa, int Id_AddRet, string placa)
         {
-            var result = CreateOkResponse(new ActivosRetiroAdicionData());
+            var result = DbHelper.CreateOkResponse(new ActivosRetiroAdicionData());
 
             try
             {
@@ -341,7 +216,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             const string sql = @"SELECT dbo.fxActivos_VidaUtilPendiente(@placa, @tipo, @fecha)";
 
-            return ExecuteSingleQuery(
+            return DbHelper.ExecuteSingleQuery(
+                _portalDB,
                 CodEmpresa,
                 sql,
                 0,
@@ -357,7 +233,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<ActivosPrincipalData> Activos_AdicionRetiro_DatosActivo_Consultar(int CodEmpresa, string placa)
         {
-            var result = CreateOkResponse(new ActivosPrincipalData());
+            var result = DbHelper.CreateOkResponse(new ActivosPrincipalData());
 
             try
             {
@@ -405,7 +281,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
        /// <returns></returns>
         public ErrorDto Activos_AdicionRetiro_Guardar(int CodEmpresa, string usuario, ActivosRetiroAdicionData data)
         {
-            var result = CreateOkResponse();
+            var result = DbHelper.CreateOkResponse();
 
             try
             {
@@ -491,7 +367,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 WHERE  X.num_placa = @placa
                 AND    X.Tipo IN ('A','R','M')";
 
-            return ExecuteListQuery<ActivosHistoricoData>(CodEmpresa, sql, new { placa });
+            return DbHelper.ExecuteListQuery<ActivosHistoricoData>(_portalDB, CodEmpresa, sql, new { placa });
         }
 
 
@@ -514,7 +390,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 AND    P.Estado     = 'C'
                 ORDER BY A.anio DESC, A.mes DESC";
 
-            return ExecuteListQuery<ActivosRetiroAdicionCierreData>(CodEmpresa, sql, new { placa, Id_AddRet });
+            return DbHelper.ExecuteListQuery<ActivosRetiroAdicionCierreData>(_portalDB, CodEmpresa, sql, new { placa, Id_AddRet });
         }
 
 
@@ -531,7 +407,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 FROM   Activos_Principal
                 WHERE  num_placa = @placa";
 
-            return ExecuteSingleQuery(CodEmpresa, sql, string.Empty, new { placa });
+            return DbHelper.ExecuteSingleQuery(_portalDB, CodEmpresa, sql, string.Empty, new { placa });
         }
 
 
@@ -549,7 +425,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 WHERE  num_placa = @placa
                 AND    Id_AddRet = @Id_AddRet";
 
-            return ExecuteNonQuery(CodEmpresa, sql, new { placa, Id_AddRet });
+            return DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, sql, new { placa, Id_AddRet });
         }
 
 
@@ -561,7 +437,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
         {
-            var result = CreateOkResponse(DateTime.Now);
+            var result = DbHelper.CreateOkResponse(DateTime.Now);
 
             try
             {
