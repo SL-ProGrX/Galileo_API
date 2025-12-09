@@ -27,7 +27,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
 
         #region Helpers privados
 
-        private (string? filtro, string? codDepartamento, string? codSeccion) NormalizarFiltros(
+        private static (string? filtro, string? codDepartamento, string? codSeccion) NormalizarFiltros(
             FiltrosLazyLoadData filtros,
             string? codDepartamento,
             string? codSeccion)
@@ -49,7 +49,7 @@ namespace Galileo.DataBaseTier.ProGrX.Activos_Fijos
             return (filtroValor, codDepartamentoParam, codSeccionParam);
         }
 
-        private (int orderIndex, int orderDir) ObtenerOrden(FiltrosLazyLoadData filtros)
+        private static (int orderIndex, int orderDir) ObtenerOrden(FiltrosLazyLoadData filtros)
         {
             var sortFieldRaw  = (filtros.sortField ?? "Per.IDENTIFICACION").Trim();
             var sortFieldNorm = sortFieldRaw.ToUpperInvariant();

@@ -17,13 +17,9 @@ namespace Galileo.DataBaseTier
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             using var connection = new SqlConnection(stringConn);
-            {
-                var query = $@"select dbo.fxCntX_PeriodoActual(@conta) as 'Periodo'";
-
-                result = connection.Query<DateTime>(query, new { conta = contabilidad }).FirstOrDefault();
-
-            }
-
+            var query = $@"select dbo.fxCntX_PeriodoActual(@conta) as 'Periodo'";
+            result = connection.Query<DateTime>(query, new { conta = contabilidad }).FirstOrDefault();
+            
             return result;
         }
 
@@ -33,10 +29,8 @@ namespace Galileo.DataBaseTier
             DateTime result;
 
             using var connection = new SqlConnection(stringConn);
-            {
-                var query = $@"select dbo.fxActivos_UltimoPeriodoCerrado() as 'Fecha'";
-                result = connection.Query<DateTime>(query).FirstOrDefault();
-            }
+            var query = $@"select dbo.fxActivos_UltimoPeriodoCerrado() as 'Fecha'";
+            result = connection.Query<DateTime>(query).FirstOrDefault();
 
             return result;
         }

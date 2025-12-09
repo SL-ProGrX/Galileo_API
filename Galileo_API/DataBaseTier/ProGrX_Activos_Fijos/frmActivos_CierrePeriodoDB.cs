@@ -20,7 +20,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
        /// <param name="CodEmpresa"></param>
        /// <param name="periodo"></param>
        /// <returns></returns>
-        public ErrorDto<string> Activos_PeriodoEstado_Obtener(int CodEmpresa, DateTime periodo)
+        public ErrorDto<string?> Activos_PeriodoEstado_Obtener(int CodEmpresa, DateTime periodo)
         {
             const string sql = @"
                 SELECT estado

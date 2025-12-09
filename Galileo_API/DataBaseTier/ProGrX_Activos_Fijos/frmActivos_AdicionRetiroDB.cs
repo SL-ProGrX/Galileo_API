@@ -116,7 +116,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 WHERE  X.Id_AddRet  = @Id_AddRet
                 AND    X.num_placa  = @placa";
 
-            var resp = DbHelper.ExecuteSingleQuery(
+            var respNullable = DbHelper.ExecuteSingleQuery<ActivosRetiroAdicionData?>(
                 _portalDB,
                 CodEmpresa,
                 sql,
@@ -124,10 +124,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 new { Id_AddRet, placa });
 
             // Ajuste de tipo_vidautil si la consulta fue exitosa
-            if (resp.Code == 0 && resp.Result != null && resp.Result.tipo_vidautil != "R")
+            if (respNullable.Code == 0 && respNullable.Result != null && respNullable.Result.tipo_vidautil != "R")
             {
-                resp.Result.tipo_vidautil = "S";
+                respNullable.Result.tipo_vidautil = "S";
             }
+
+            // Convert ErrorDto<ActivosRetiroAdicionData?> to ErrorDto<ActivosRetiroAdicionData>
+            var resp = new ErrorDto<ActivosRetiroAdicionData>
+            {
+                Code = respNullable.Code,
+                Description = respNullable.Description,
+                Result = respNullable.Result ?? new ActivosRetiroAdicionData()
+            };
 
             return resp;
         }
@@ -402,7 +410,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Método para obtener el nombre del activo por número de placa
         /// </summary>
-        public ErrorDto<string> Activos_AdicionRetiro_ActivosNombre_Consultar(
+        public ErrorDto<string?> Activos_AdicionRetiro_ActivosNombre_Consultar(
             int CodEmpresa,
             string placa)
         {
