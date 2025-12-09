@@ -4,15 +4,13 @@ using Galileo_API.Controllers.WFCSinpe;
 
 namespace Galileo_API.DataBaseTier
 {
-    public class mSrvWFCCoopeSG : IWFCSinpe
+    public class MSrvWfcCoopeSg : IWFCSinpe
     {
-        private readonly IConfiguration _config;
         private readonly CoopeSanGabrielValidator _cliente;
 
-        public mSrvWFCCoopeSG(IConfiguration config)
+        public MSrvWfcCoopeSg(IConfiguration config)
         {
-            _config = config;
-            _cliente = new CoopeSanGabrielValidator(_config);
+            _cliente = new CoopeSanGabrielValidator(config);
         }
 
         #region Validaciones Galileo -> Kindo

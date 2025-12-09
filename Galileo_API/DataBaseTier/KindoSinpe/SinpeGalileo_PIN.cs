@@ -4,14 +4,13 @@ using System.Text;
 
 namespace Galileo_API.DataBaseTier
 {
-    public class SinpeGalileo_PIN
+    public class SinpeGalileoPin
     {
-        private readonly IConfiguration _config;
-        private HttpClient _client;
+        private readonly HttpClient _client;
+        private readonly string strMediaType = "application/json";
 
-        public SinpeGalileo_PIN(IConfiguration config)
+        public SinpeGalileoPin(IConfiguration config)
         {
-            _config = config;
             _client = new HttpClient();
         }
 
@@ -26,7 +25,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(context);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_PIN + "/IsServiceAvailable", content).Result;
                 if (response.IsSuccessStatusCode)
@@ -78,7 +77,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(accountData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_PIN + "/GetAccountInfo", content).Result;
 

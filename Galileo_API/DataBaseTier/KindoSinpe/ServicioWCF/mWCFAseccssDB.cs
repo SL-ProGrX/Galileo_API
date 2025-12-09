@@ -4,15 +4,13 @@ using Galileo_API.Controllers.WFCSinpe;
 
 namespace Galileo_API.DataBaseTier
 {
-    public class mWFCAseccss : IWFCSinpe
+    public class MWfcAseccss : IWFCSinpe
     {
-        private readonly IConfiguration _config;
         private readonly AseccssSinpeValidator _cliente;
 
-        public mWFCAseccss(IConfiguration config)
+        public MWfcAseccss(IConfiguration config)
         {
-            _config = config;
-            _cliente = new AseccssSinpeValidator(_config);
+            _cliente = new AseccssSinpeValidator(config);
         }
 
         #region Validaciones Galilo -> Kindo

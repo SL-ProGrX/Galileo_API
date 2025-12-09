@@ -5,12 +5,12 @@ namespace Galileo_API.DataBaseTier
     public class VerificadorCoreFactory
     {
         private readonly IConfiguration _config;
-        private readonly mKindoServiceDB _sinpe;
+        private readonly MKindoServiceDb _sinpe;
 
         public VerificadorCoreFactory(IConfiguration config)
         {
             _config = config;
-            _sinpe = new mKindoServiceDB(config);
+            _sinpe = new MKindoServiceDb(config);
         }
 
         public IWFCSinpe CrearServicio(int CodEmpresa, string usuario)

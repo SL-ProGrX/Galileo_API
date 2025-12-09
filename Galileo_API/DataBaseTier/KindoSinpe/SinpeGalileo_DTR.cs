@@ -5,6 +5,8 @@ using System.Text;
 
 namespace Galileo_API.DataBaseTier
 {
+
+   
     /// <summary>
     /// Cliente para consumir los métodos del Servicio DTR de KINDO (Sección 6 del documento).
     /// Estandarizado según el patrón definido por el método final de GetAccountInfo.
@@ -17,14 +19,13 @@ namespace Galileo_API.DataBaseTier
     /// - Requiere que exista el método GetUriEmpresa(int codEmpresa, int operacion, string usuario)
     ///   que devuelva un resultado con Item1.vUriCGP, Item1.vHostPin, Item1.vIpHost, Item1.vUsuarioLog, etc.
     /// </summary>
-    public class SinpeGalileo_DTR
+    public class SinpeGalileoDtr
     {
-        private readonly IConfiguration _config;
-        private HttpClient _client;
+        private readonly HttpClient _client;
+        private readonly string strMediaType = "application/json";
 
-        public SinpeGalileo_DTR(IConfiguration config)
+        public SinpeGalileoDtr(IConfiguration config)
         {
-            _config = config;
             _client = new HttpClient();
         }
 
@@ -40,7 +41,7 @@ namespace Galileo_API.DataBaseTier
             {
 
                 var json = JsonConvert.SerializeObject(context);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_DTR + "/IsServiceAvailable", content).Result;
                 if (response.IsSuccessStatusCode)
@@ -87,7 +88,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(accountData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_DTR + "/GetAccountInfo", content).Result;
 
@@ -135,7 +136,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(debitData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/SendDebit", content).Result;
 
@@ -180,7 +181,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(debitData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/GetDebitResult", content).Result;
 
@@ -218,7 +219,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(debitData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/GetDebitDataByChannelRef", content).Result;
 
@@ -256,7 +257,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(debitData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/GetDebitDataBySINPERef", content).Result;
 
@@ -294,7 +295,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(batchData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/SendBatch", content).Result;
 
@@ -333,7 +334,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(batchData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/GetBatchState", content).Result;
 
@@ -371,7 +372,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(consultData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/GetCustomerDebits", content).Result;
 
@@ -415,7 +416,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(filterData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/GetAllDebits", content).Result;
 
@@ -459,7 +460,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(authorizationData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/RegisterAuthorization", content).Result;
 
@@ -503,7 +504,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(authorizationData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/InactivateAuthorization", content).Result;
 
@@ -547,7 +548,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(authorizationData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_DTR + "/GetStateAuthorization", content).Result;
 

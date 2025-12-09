@@ -19,14 +19,14 @@ namespace Galileo_API.DataBaseTier
         private Galileo.Models.KindoSinpe.ParametrosSinpe _parametrosSinpe;
         private readonly FactElectronica.ServicioClient _srvFactElectronica = new FactElectronica.ServicioClient();
 
-        private readonly mKindoServiceDB _mKindo;
+        private readonly MKindoServiceDb _mKindo;
         private readonly MTesoreria _mTesoreria;
 
         public AseccssSinpeValidator(IConfiguration config)
         {
             _config = config;
             _mTesoreria = new MTesoreria(_config);
-            _mKindo = new mKindoServiceDB(_config);
+            _mKindo = new MKindoServiceDb(_config);
             _parametrosSinpe = new Galileo.Models.KindoSinpe.ParametrosSinpe();
             //_parametrosSinpe.vHostPin = _config.GetSection("Sinpe").GetSection("HostIdPIN").Value.ToString();
             //_parametrosSinpe.vUserCGP = _config.GetSection("Sinpe").GetSection("vUserCGP").Value.ToString();
