@@ -7,10 +7,13 @@ namespace Galileo.DataBaseTier
 {
     public sealed class RdlcCodePatcher  : IRdlcCodePatcher
     {
+        // Timeout común para todas las expresiones regulares
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);
+
         public MemoryStream PatchReportCode(string rdlcPath, string? codeSection)
         {
-            var xdoc = XDocument.Load(rdlcPath);
-            var ns = xdoc.Root!.GetDefaultNamespace();
+            var xdoc   = XDocument.Load(rdlcPath);
+            var ns     = xdoc.Root!.GetDefaultNamespace();
             var codeNode = xdoc.Descendants(ns + "Code").FirstOrDefault();
 
             if (string.IsNullOrWhiteSpace(codeSection))
@@ -64,16 +67,49 @@ namespace Galileo.DataBaseTier
 
         private static string UpsertFunctionReturn(string codeText, string funcName, int ret)
         {
-            var funcBlock = new Regex($@"(?is)Public\s+Function\s+{Regex.Escape(funcName)}\s*\(\s*\)\s+As\s+\w+.*?End\s+Function");
+            // Patrón equivalente al original (?is) => IgnoreCase + Singleline
+            var patternFuncBlock =
+                $@"Public\s+Function\s+{Regex.Escape(funcName)}\s*\(\s*\)\s+As\s+\w+.*?End\s+Function";
+
+            var funcBlock = new Regex(
+                patternFuncBlock,
+                RegexOptions.IgnoreCase | RegexOptions.Singleline,
+                RegexTimeout);
 
             if (funcBlock.IsMatch(codeText))
             {
                 codeText = funcBlock.Replace(codeText, m =>
                 {
                     var body = m.Value;
-                    var withReturn = Regex.Replace(body, @"(?im)^\s*Return\s+.*$", $"    Return {ret}");
-                    if (!Regex.IsMatch(withReturn, @"(?im)^\s*Return\s+", RegexOptions.Multiline))
-                        withReturn = Regex.Replace(withReturn, @"(?i)End\s+Function", $"    Return {ret}\nEnd Function");
+
+                    // ^\s*Return\s+.*$  con IgnoreCase + Multiline
+                    const string patternReturnLine = @"^\s*Return\s+.*$";
+                    var withReturn = Regex.Replace(
+                        body,
+                        patternReturnLine,
+                        $"    Return {ret}",
+                        RegexOptions.IgnoreCase | RegexOptions.Multiline,
+                        RegexTimeout);
+
+                    // ¿ya hay algún Return?
+                    const string patternReturnAny = @"^\s*Return\s+";
+                    var hasReturn = Regex.IsMatch(
+                        withReturn,
+                        patternReturnAny,
+                        RegexOptions.IgnoreCase | RegexOptions.Multiline,
+                        RegexTimeout);
+
+                    if (!hasReturn)
+                    {
+                        const string patternEndFunction = @"End\s+Function";
+                        withReturn = Regex.Replace(
+                            withReturn,
+                            patternEndFunction,
+                            $"    Return {ret}\nEnd Function",
+                            RegexOptions.IgnoreCase,
+                            RegexTimeout);
+                    }
+
                     return withReturn;
                 }, 1);
             }
@@ -117,18 +153,25 @@ End Function
             return tok.Type switch
             {
                 JTokenType.Boolean => ((bool)tok) ? 1 : 0,
-                JTokenType.Integer or JTokenType.Float => Convert.ToInt32(tok.ToString(), CultureInfo.InvariantCulture),
+                JTokenType.Integer or JTokenType.Float
+                    => Convert.ToInt32(tok.ToString(), CultureInfo.InvariantCulture),
                 _ => (int?)null
             };
         }
 
         private static int? GetCodeFunctionConstantReturnFromText(string codeText, string funcName)
         {
-            var pattern = $@"Public\s+Function\s+{Regex.Escape(funcName)}\s*\(\s*\)\s+As\s+\w+.*?Return\s+(?<ret>-?\d+)\s*[\r\n]+End\s+Function";
-            var m = Regex.Match(codeText ?? string.Empty, pattern, RegexOptions.Singleline | RegexOptions.IgnoreCase);
+            var pattern =
+                $@"Public\s+Function\s+{Regex.Escape(funcName)}\s*\(\s*\)\s+As\s+\w+.*?Return\s+(?<ret>-?\d+)\s*[\r\n]+End\s+Function";
+
+            var m = Regex.Match(
+                codeText ?? string.Empty,
+                pattern,
+                RegexOptions.IgnoreCase | RegexOptions.Singleline,
+                RegexTimeout);
+
             if (!m.Success) return null;
             return int.TryParse(m.Groups["ret"].Value, out var val) ? val : null;
         }
     }
 }
-

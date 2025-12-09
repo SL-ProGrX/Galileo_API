@@ -16,38 +16,86 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         public FrmActivosObrasProcesoDB(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
-            _portalDB = new PortalDB(config);
+            _portalDB        = new PortalDB(config);
         }
+
+        #region Helpers privados
+
+        private ErrorDto<List<DropDownListaGenericaModel>> EjecutarDropDown(
+            int CodEmpresa,
+            string sql)
+        {
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                CodEmpresa,
+                sql);
+        }
+
+        private static string? BuildFiltroLike(FiltrosLazyLoadData? filtros)
+        {
+            if (string.IsNullOrWhiteSpace(filtros?.filtro))
+                return null;
+
+            return $"%{filtros.filtro.Trim()}%";
+        }
+
+        /// <summary>
+        /// Crea parámetros comunes para listas paginadas con filtro de texto + contrato
+        /// y mapea el campo de orden a índice entero.
+        /// </summary>
+        private static DynamicParameters BuildPagedParams(
+            FiltrosLazyLoadData? filtros,
+            string contrato,
+            Func<string, int> mapSortIndex,
+            string defaultSortField)
+        {
+            var p = new DynamicParameters();
+            p.Add("@contrato", contrato);
+
+            // Filtro
+            p.Add("@filtro", BuildFiltroLike(filtros), DbType.String);
+
+            // Orden
+            var sortFieldRaw  = (filtros?.sortField ?? defaultSortField).Trim();
+            var sortFieldNorm = sortFieldRaw.ToLowerInvariant();
+
+            int sortIndex = mapSortIndex(sortFieldNorm);
+            p.Add("@sortIndex", sortIndex, DbType.Int32);
+
+            int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
+            p.Add("@sortDir", sortDir, DbType.Int32);
+
+            // Paginación
+            int pagina     = filtros?.pagina ?? 0;
+            int paginacion = filtros?.paginacion ?? 50;
+            p.Add("@offset", pagina, DbType.Int32);
+            p.Add("@rows",   paginacion, DbType.Int32);
+
+            return p;
+        }
+
+        #endregion
 
         /// <summary>
         /// Metodo para actualizar datos de finiquito de una obra en proceso
         /// </summary>
-        public ErrorDto Activos_Obras_Actualizar(int CodEmpresa, string estado, DateTime fecha_finiquito, string contrato)
+        public ErrorDto Activos_Obras_Actualizar(
+            int CodEmpresa,
+            string estado,
+            DateTime fecha_finiquito,
+            string contrato)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            const string query = @"
+                UPDATE Activos_obras 
+                   SET estado          = @estado,
+                       fecha_finiquito = @fecha_finiquito 
+                 WHERE contrato        = @contrato";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    UPDATE Activos_obras 
-                       SET estado         = @estado,
-                           fecha_finiquito = @fecha_finiquito 
-                     WHERE contrato       = @contrato";
-
-                connection.Execute(query, new { estado, fecha_finiquito, contrato });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-
-            return result;
+            return DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new { estado, fecha_finiquito, contrato });
         }
 
         /// <summary>
@@ -55,31 +103,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_ObrasTipos_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            const string query = @"
+                SELECT RTRIM(cod_tipo)     AS item,
+                       RTRIM(descripcion) AS descripcion 
+                FROM   Activos_obras_tipos";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT RTRIM(cod_tipo)     AS item,
-                           RTRIM(descripcion) AS descripcion 
-                    FROM   Activos_obras_tipos";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return EjecutarDropDown(CodEmpresa, query);
         }
 
         /// <summary>
@@ -87,31 +116,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_ObrasTiposDesem_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            const string query = @"
+                SELECT cod_desembolso AS item,
+                       descripcion    AS descripcion 
+                FROM   Activos_obras_tDesem";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT cod_desembolso AS item,
-                           descripcion    AS descripcion 
-                    FROM   Activos_obras_tDesem";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return EjecutarDropDown(CodEmpresa, query);
         }
 
         /// <summary>
@@ -119,31 +129,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Obras_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            const string query = @"
+                SELECT RTRIM(contrato)    AS item,
+                       RTRIM(descripcion) AS descripcion 
+                FROM   Activos_obras";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT RTRIM(contrato)    AS item,
-                           RTRIM(descripcion) AS descripcion 
-                    FROM   Activos_obras";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return EjecutarDropDown(CodEmpresa, query);
         }
 
         /// <summary>
@@ -151,117 +142,69 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Obra_Proveedores_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            const string query = @"
+                SELECT cod_proveedor AS item,
+                       descripcion   AS descripcion 
+                FROM   Activos_proveedores";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT cod_proveedor AS item,
-                           descripcion   AS descripcion 
-                    FROM   Activos_proveedores";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return EjecutarDropDown(CodEmpresa, query);
         }
 
         /// <summary>
         /// Consulta lo datos de una obra en proceso
         /// </summary>
-        public ErrorDto<ActivosObrasData> Activos_Obras_Consultar(int CodEmpresa, string contrato)
+        public ErrorDto<ActivosObrasData> Activos_Obras_Consultar(
+            int CodEmpresa,
+            string contrato)
         {
-            var result = new ErrorDto<ActivosObrasData>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new ActivosObrasData()
-            };
+            const string query = @"
+                SELECT  o.contrato,
+                        o.Descripcion,
+                        o.Estado,
+                        o.Notas,
+                        o.COD_PROVEEDOR,
+                        o.fecha_finiquito,
+                        o.encargado,
+                        o.fecha_Inicio,
+                        o.fecha_estimada,
+                        o.ubicacion,
+                        o.presu_original,
+                        o.addendums,
+                        o.presu_actual,
+                        o.desembolsado,
+                        o.distribuido,
+                        o.Registro_Usuario,
+                        o.Registro_fecha,
+                        o.cod_tipo,
+                        T.descripcion AS TipoObra,
+                        P.descripcion AS Proveedor
+                FROM    Activos_obras O 
+                INNER JOIN Activos_obras_Tipos T ON O.cod_tipo      = T.cod_tipo
+                INNER JOIN cxp_proveedores      P ON O.cod_proveedor = P.cod_proveedor
+                WHERE   O.contrato = @contrato";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT  o.contrato,
-                            o.Descripcion,
-                            o.Estado,
-                            o.Notas,
-                            o.COD_PROVEEDOR,
-                            o.fecha_finiquito,
-                            o.encargado,
-                            o.fecha_Inicio,
-                            o.fecha_estimada,
-                            o.ubicacion,
-                            o.presu_original,
-                            o.addendums,
-                            o.presu_actual,
-                            o.desembolsado,
-                            o.distribuido,
-                            o.Registro_Usuario,
-                            o.Registro_fecha,
-                            o.cod_tipo,
-                            T.descripcion AS TipoObra,
-                            P.descripcion AS Proveedor
-                    FROM    Activos_obras O 
-                    INNER JOIN Activos_obras_Tipos T ON O.cod_tipo      = T.cod_tipo
-                    INNER JOIN cxp_proveedores      P ON O.cod_proveedor = P.cod_proveedor
-                    WHERE   O.contrato = @contrato";
-
-                result.Result = connection
-                    .Query<ActivosObrasData>(query, new { contrato })
-                    .FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteSingleQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new ActivosObrasData(),
+                new { contrato });
         }
 
         /// <summary>
         /// Consulta de adendums (paginado + filtro, seguro para S2077)
         /// </summary>
-        public ErrorDto<List<ActivosObrasProcesoAdendumsData>> Activos_ObrasAdendums_Obtener(int CodEmpresa, string contrato, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ActivosObrasProcesoAdendumsData>> Activos_ObrasAdendums_Obtener(
+            int CodEmpresa,
+            string contrato,
+            FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<ActivosObrasProcesoAdendumsData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<ActivosObrasProcesoAdendumsData>()
-            };
+            var result = DbHelper.CreateOkResponse(new List<ActivosObrasProcesoAdendumsData>());
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                var p = new DynamicParameters();
-                p.Add("@contrato", contrato);
-
-                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
-                    ? null
-                    : $"%{filtros.filtro.Trim()}%";
-                p.Add("@filtro", filtroLike, DbType.String);
-
-                // sortField con whitelist -> índice numérico
-                var sortFieldRaw = (filtros?.sortField ?? "cod_Adendum").Trim();
-                var sortFieldNorm = sortFieldRaw.ToLowerInvariant();
-
-                int sortIndex = sortFieldNorm switch
+                // Mapeo de sortIndex seguro
+                int MapSortIndex(string sfNorm) => sfNorm switch
                 {
                     "cod_adendum" => 1,
                     "descripcion" => 2,
@@ -269,15 +212,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     "monto"       => 4,
                     _             => 1
                 };
-                p.Add("@sortIndex", sortIndex, DbType.Int32);
 
-                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
-                p.Add("@sortDir", sortDir, DbType.Int32);
-
-                int pagina = filtros?.pagina ?? 0;
-                int paginacion = filtros?.paginacion ?? 50;
-                p.Add("@offset", pagina, DbType.Int32);
-                p.Add("@rows", paginacion, DbType.Int32);
+                var p = BuildPagedParams(
+                    filtros,
+                    contrato,
+                    MapSortIndex,
+                    defaultSortField: "cod_adendum");
 
                 const string query = @"
                     SELECT cod_Adendum,
@@ -315,15 +255,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
 
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 result.Result = connection
                     .Query<ActivosObrasProcesoAdendumsData>(query, p)
                     .ToList();
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
-                result.Result = null;
+                result.Result      = null;
             }
 
             return result;
@@ -332,32 +274,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Consulta de lista de desembolsos (paginado + filtro, seguro para S2077)
         /// </summary>
-        public ErrorDto<List<ActivosObrasProcesoDesembolsosData>> Activos_ObrasDesembolsos_Obtener(int CodEmpresa, string contrato, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ActivosObrasProcesoDesembolsosData>> Activos_ObrasDesembolsos_Obtener(
+            int CodEmpresa,
+            string contrato,
+            FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<ActivosObrasProcesoDesembolsosData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<ActivosObrasProcesoDesembolsosData>()
-            };
+            var result = DbHelper.CreateOkResponse(new List<ActivosObrasProcesoDesembolsosData>());
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                var p = new DynamicParameters();
-                p.Add("@contrato", contrato);
-
-                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
-                    ? null
-                    : $"%{filtros.filtro.Trim()}%";
-                p.Add("@filtro", filtroLike, DbType.String);
-
-                // sortField con whitelist -> índice numérico
-                var sortFieldRaw = (filtros?.sortField ?? "D.secuencia").Trim();
-                var sfNorm = sortFieldRaw.ToLowerInvariant().Replace("d.", "");
-
-                int sortIndex = sfNorm switch
+                int MapSortIndex(string sfNorm) => sfNorm switch
                 {
                     "secuencia"      => 1,
                     "cod_desembolso" => 2,
@@ -367,15 +293,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     "monto"          => 6,
                     _                => 1
                 };
-                p.Add("@sortIndex", sortIndex, DbType.Int32);
 
-                int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
-                p.Add("@sortDir", sortDir, DbType.Int32);
+                // Normalizamos removiendo prefijo "d." si viene en el sortField
+                var filtrosLocal = filtros ?? new FiltrosLazyLoadData();
+                var raw = (filtrosLocal.sortField ?? "D.secuencia").Trim();
+                filtrosLocal.sortField = raw.Replace("d.", "", StringComparison.OrdinalIgnoreCase);
 
-                int pagina = filtros?.pagina ?? 0;
-                int paginacion = filtros?.paginacion ?? 50;
-                p.Add("@offset", pagina, DbType.Int32);
-                p.Add("@rows", paginacion, DbType.Int32);
+                var p = BuildPagedParams(
+                    filtrosLocal,
+                    contrato,
+                    MapSortIndex,
+                    defaultSortField: "secuencia");
 
                 const string query = @"
                     SELECT D.secuencia,
@@ -424,15 +352,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
 
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 result.Result = connection
                     .Query<ActivosObrasProcesoDesembolsosData>(query, p)
                     .ToList();
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
-                result.Result = null;
+                result.Result      = null;
             }
 
             return result;
@@ -441,89 +371,72 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Metodo para consulta de resultado de obras en proceso
         /// </summary>
-        public ErrorDto<List<ActivosObrasProcesoResultadosData>> Activos_ObrasResultados_Obtener(int CodEmpresa, string contrato)
+        public ErrorDto<List<ActivosObrasProcesoResultadosData>> Activos_ObrasResultados_Obtener(
+            int CodEmpresa,
+            string contrato)
         {
-            var result = new ErrorDto<List<ActivosObrasProcesoResultadosData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<ActivosObrasProcesoResultadosData>()
-            };
+            const string query = @"
+                SELECT O.ID_RESULTADOS,
+                       'ACTIVO' AS Tipo,
+                       O.num_placa,
+                       A.valor_historico AS Monto,
+                       O.id_adicion,
+                       A.nombre,
+                       T.descripcion AS TA
+                FROM   Activos_obras_resultados O 
+                INNER JOIN Activos_Principal   A ON O.num_placa   = A.num_placa
+                INNER JOIN Activos_tipo_activo T ON A.tipo_activo = T.tipo_activo
+                WHERE  O.tipo     = 'A' 
+                   AND O.contrato = @contrato
+                UNION
+                SELECT O.ID_RESULTADOS,
+                       'MEJORAS' AS Tipo,
+                       O.num_placa,
+                       A.Monto,
+                       O.id_adicion,
+                       A.descripcion AS nombre,
+                       T.descripcion AS TA
+                FROM   Activos_obras_resultados O 
+                INNER JOIN Activos_retiro_adicion A ON O.num_placa  = A.num_placa
+                                                   AND O.id_adicion = A.ID_ADDRET
+                INNER JOIN Activos_justificaciones T ON A.cod_justificacion = T.cod_justificacion
+                WHERE  O.tipo     = 'M' 
+                   AND O.contrato = @contrato";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT O.ID_RESULTADOS,
-                           'ACTIVO' AS Tipo,
-                           O.num_placa,
-                           A.valor_historico AS Monto,
-                           O.id_adicion,
-                           A.nombre,
-                           T.descripcion AS TA
-                    FROM   Activos_obras_resultados O 
-                    INNER JOIN Activos_Principal   A ON O.num_placa   = A.num_placa
-                    INNER JOIN Activos_tipo_activo T ON A.tipo_activo = T.tipo_activo
-                    WHERE  O.tipo     = 'A' 
-                       AND O.contrato = @contrato
-                    UNION
-                    SELECT O.ID_RESULTADOS,
-                           'MEJORAS' AS Tipo,
-                           O.num_placa,
-                           A.Monto,
-                           O.id_adicion,
-                           A.descripcion AS nombre,
-                           T.descripcion AS TA
-                    FROM   Activos_obras_resultados O 
-                    INNER JOIN Activos_retiro_adicion A ON O.num_placa  = A.num_placa
-                                                       AND O.id_adicion = A.ID_ADDRET
-                    INNER JOIN Activos_justificaciones T ON A.cod_justificacion = T.cod_justificacion
-                    WHERE  O.tipo     = 'M' 
-                       AND O.contrato = @contrato";
-
-                result.Result = connection
-                    .Query<ActivosObrasProcesoResultadosData>(query, new { contrato })
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteListQuery<ActivosObrasProcesoResultadosData>(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new { contrato });
         }
 
         /// <summary>
         /// Metodo para modificar el registro de la obra en proceso
         /// </summary>
-        public ErrorDto Activos_Obras_Modificar(int CodEmpresa, ActivosObrasData data, string usuario)
+        public ErrorDto Activos_Obras_Modificar(
+            int CodEmpresa,
+            ActivosObrasData data,
+            string usuario)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            const string query = @"
+                UPDATE Activos_obras 
+                   SET descripcion    = @descripcion,
+                       encargado      = @encargado,
+                       notas          = @notas,
+                       cod_proveedor  = @cod_proveedor,
+                       presu_original = @presu_original,
+                       presu_actual   = @presu_actual,
+                       ubicacion      = @ubicacion,
+                       fecha_inicio   = @fecha_inicio,
+                       fecha_estimada = @fecha_estimada,
+                       cod_tipo       = @cod_tipo
+                 WHERE contrato      = @contrato";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    UPDATE Activos_obras 
-                       SET descripcion    = @descripcion,
-                           encargado      = @encargado,
-                           notas          = @notas,
-                           cod_proveedor  = @cod_proveedor,
-                           presu_original = @presu_original,
-                           presu_actual   = @presu_actual,
-                           ubicacion      = @ubicacion,
-                           fecha_inicio   = @fecha_inicio,
-                           fecha_estimada = @fecha_estimada,
-                           cod_tipo       = @cod_tipo
-                     WHERE contrato      = @contrato";
-
-                connection.Execute(query, new
+            var result = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new
                 {
                     data.descripcion,
                     data.encargado,
@@ -538,19 +451,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     data.contrato
                 });
 
+            if (result.Code == 0)
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
+                    EmpresaId        = CodEmpresa,
+                    Usuario          = usuario,
                     DetalleMovimiento = $"Tipo Activo :  {data.contrato}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
+                    Movimiento       = "Modifica - WEB",
+                    Modulo           = vModulo
                 });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
             }
 
             return result;
@@ -559,30 +469,28 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Metodo para insertar un nuevo registro de una obra en proceso
         /// </summary>
-        public ErrorDto Activos_Obras_Insertar(int CodEmpresa, ActivosObrasData data, string usuario)
+        public ErrorDto Activos_Obras_Insertar(
+            int CodEmpresa,
+            ActivosObrasData data,
+            string usuario)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            const string query = @"
+                INSERT INTO Activos_obras
+                    (contrato, cod_tipo, descripcion, estado, encargado, cod_proveedor,
+                     fecha_inicio, fecha_estimada, notas, ubicacion, presu_original,
+                     addendums, presu_actual, desembolsado, distribuido, 
+                     registro_usuario, registro_fecha)
+                VALUES
+                    (@contrato, @cod_tipo, @descripcion, 'P', @encargado, @cod_proveedor,
+                     @fecha_inicio, @fecha_estimada, @notas, @ubicacion, @presu_original,
+                     @addendums, @presu_actual, @desembolsado, @distribuido,
+                     @usuario, GETDATE())";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    INSERT INTO Activos_obras
-                        (contrato, cod_tipo, descripcion, estado, encargado, cod_proveedor,
-                         fecha_inicio, fecha_estimada, notas, ubicacion, presu_original,
-                         addendums, presu_actual, desembolsado, distribuido, 
-                         registro_usuario, registro_fecha)
-                    VALUES
-                        (@contrato, @cod_tipo, @descripcion, 'P', @encargado, @cod_proveedor,
-                         @fecha_inicio, @fecha_estimada, @notas, @ubicacion, @presu_original,
-                         @addendums, @presu_actual, @desembolsado, @distribuido,
-                         @usuario, GETDATE())";
-
-                connection.Execute(query, new
+            var result = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new
                 {
                     data.contrato,
                     data.cod_tipo,
@@ -601,19 +509,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     usuario
                 });
 
+            if (result.Code == 0)
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
+                    EmpresaId        = CodEmpresa,
+                    Usuario          = usuario,
                     DetalleMovimiento = $"Tipo Activo :  {data.contrato}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
+                    Movimiento       = "Registra - WEB",
+                    Modulo           = vModulo
                 });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
             }
 
             return result;
@@ -622,33 +527,29 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Metodo para eliminar un registro de obras en proceso
         /// </summary>
-        public ErrorDto Activos_Obra_Eliminar(int CodEmpresa, string contrato, string usuario)
+        public ErrorDto Activos_Obra_Eliminar(
+            int CodEmpresa,
+            string contrato,
+            string usuario)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            const string query = @"DELETE FROM Activos_Obras WHERE contrato = @contrato";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"DELETE FROM Activos_Obras WHERE contrato = @contrato";
-                connection.Execute(query, new { contrato });
+            var result = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new { contrato });
 
+            if (result.Code == 0)
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
+                    EmpresaId        = CodEmpresa,
+                    Usuario          = usuario,
                     DetalleMovimiento = $" Tipo Activo : {contrato}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
+                    Movimiento        = "Elimina - WEB",
+                    Modulo            = vModulo
                 });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
             }
 
             return result;
@@ -657,139 +558,189 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Metodo para guardar adendum de una obra en proceso
         /// </summary>
-        public ErrorDto Activos_ObrasAdendum_Guardar(int CodEmpresa, ActivosObrasProcesoAdendumsData dato, string usuario, string contrato, decimal addendums, decimal presu_actual)
+        public ErrorDto Activos_ObrasAdendum_Guardar(
+            int CodEmpresa,
+            ActivosObrasProcesoAdendumsData dato,
+            string usuario,
+            string contrato,
+            decimal addendums,
+            decimal presu_actual)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var result = DbHelper.CreateOkResponse();
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
+                const string queryExiste = @"
                     SELECT COALESCE(COUNT(*),0) AS Existe 
                     FROM   Activos_obras_ade 
                     WHERE  cod_adendum = @cod_adendum";
 
-                var existe = connection.QueryFirstOrDefault<int>(query, new { cod_adendum = dato.cod_Adendum });
-                if (existe == 0)
+                var existeResult = DbHelper.ExecuteSingleQuery<int>(
+                    _portalDB,
+                    CodEmpresa,
+                    queryExiste,
+                    defaultValue: 0,
+                    new { cod_adendum = dato.cod_Adendum });
+
+                if (existeResult.Code != 0)
+                {
+                    result.Code        = existeResult.Code;
+                    result.Description = existeResult.Description;
+                    return result;
+                }
+
+                if (existeResult.Result == 0)
                 {
                     Activos_ObrasAdendum_Insertar(CodEmpresa, dato, contrato);
                     Activos_ObrasAdendum_Actualizar(CodEmpresa, contrato, dato.monto);
                 }
                 else
                 {
-                    result.Code = -2;
+                    result.Code        = -2;
                     result.Description = "No se puede modificar la informacion procesada...";
                 }
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
             }
 
             return result;
         }
 
-        private void Activos_ObrasAdendum_Actualizar(int CodEmpresa, string contrato, decimal monto)
+        private void Activos_ObrasAdendum_Actualizar(
+            int CodEmpresa,
+            string contrato,
+            decimal monto)
         {
-            using var connection = _portalDB.CreateConnection(CodEmpresa);
             const string query = @"
                 UPDATE Activos_obras 
-                   SET addendums   = addendums   + @monto,
+                   SET addendums    = addendums   + @monto,
                        presu_actual = presu_actual + @monto  
-                 WHERE contrato   = @contrato";
+                 WHERE contrato    = @contrato";
 
-            connection.Execute(query, new { monto, contrato });
+            DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new { monto, contrato });
         }
 
-        private void Activos_ObrasAdendum_Insertar(int CodEmpresa, ActivosObrasProcesoAdendumsData data, string contrato)
+        private void Activos_ObrasAdendum_Insertar(
+            int CodEmpresa,
+            ActivosObrasProcesoAdendumsData data,
+            string contrato)
         {
-            using var connection = _portalDB.CreateConnection(CodEmpresa);
             const string query = @"
                 INSERT INTO Activos_obras_ade
                     (cod_adendum, contrato, descripcion, fecha, monto)
                 VALUES
                     (@cod_adendum, @contrato, @descripcion, @fecha, @monto)";
 
-            connection.Execute(query, new
-            {
-                cod_adendum = data.cod_Adendum,
-                contrato,
-                data.descripcion,
-                data.fecha,
-                data.monto
-            });
+            DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new
+                {
+                    cod_adendum = data.cod_Adendum,
+                    contrato,
+                    data.descripcion,
+                    data.fecha,
+                    data.monto
+                });
         }
 
         /// <summary>
         /// Metodo para guardar nuevo desembolso de obra en proceso
         /// </summary>
-        public ErrorDto Activos_ObrasDesembolso_Guardar(int CodEmpresa, ActivosObrasProcesoDesembolsosData dato, string usuario, string contrato)
+        public ErrorDto Activos_ObrasDesembolso_Guardar(
+            int CodEmpresa,
+            ActivosObrasProcesoDesembolsosData dato,
+            string usuario,
+            string contrato)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var result = DbHelper.CreateOkResponse();
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
+                const string querySec = @"
                     SELECT COALESCE(COUNT(*),0) + 1 AS Secuencia 
                     FROM   Activos_obras_desem 
                     WHERE  contrato = @contrato";
 
-                var secuencia = connection.QueryFirstOrDefault<int>(query, new { contrato });
-                dato.secuencia = secuencia;
+                var secResult = DbHelper.ExecuteSingleQuery<int>(
+                    _portalDB,
+                    CodEmpresa,
+                    querySec,
+                    defaultValue: 1,
+                    new { contrato });
+
+                if (secResult.Code != 0)
+                {
+                    result.Code        = secResult.Code;
+                    result.Description = secResult.Description;
+                    return result;
+                }
+
+                dato.secuencia = secResult.Result;
 
                 Activos_Desembolso_Insertar(CodEmpresa, dato, contrato);
                 Activos_ObrasDesembolso_Actualizar(CodEmpresa, contrato, dato.monto);
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
             }
 
             return result;
         }
 
-        private void Activos_ObrasDesembolso_Actualizar(int CodEmpresa, string contrato, decimal monto)
+        private void Activos_ObrasDesembolso_Actualizar(
+            int CodEmpresa,
+            string contrato,
+            decimal monto)
         {
-            using var connection = _portalDB.CreateConnection(CodEmpresa);
             const string query = @"
                 UPDATE Activos_obras 
                    SET desembolsado = desembolsado + @monto,
                        presu_actual = presu_actual - @monto  
                  WHERE contrato    = @contrato";
 
-            connection.Execute(query, new { monto, contrato });
+            DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new { monto, contrato });
         }
 
-        private void Activos_Desembolso_Insertar(int CodEmpresa, ActivosObrasProcesoDesembolsosData data, string contrato)
+        private void Activos_Desembolso_Insertar(
+            int CodEmpresa,
+            ActivosObrasProcesoDesembolsosData data,
+            string contrato)
         {
-            using var connection = _portalDB.CreateConnection(CodEmpresa);
             const string query = @"
                 INSERT INTO Activos_obras_desem
                     (secuencia, contrato, cod_desembolso, cod_proveedor, documento, fecha, monto)
                 VALUES
                     (@secuencia, @contrato, @cod_desembolso, @cod_proveedor, @documento, @fecha, @monto)";
 
-            connection.Execute(query, new
-            {
-                data.secuencia,
-                contrato,
-                data.cod_desembolso,
-                data.cod_proveedor,
-                data.documento,
-                data.fecha,
-                data.monto
-            });
+            DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new
+                {
+                    data.secuencia,
+                    contrato,
+                    data.cod_desembolso,
+                    data.cod_proveedor,
+                    data.documento,
+                    data.fecha,
+                    data.monto
+                });
         }
     }
 }

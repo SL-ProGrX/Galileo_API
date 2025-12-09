@@ -15,25 +15,201 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MSecurityMainDb _Security_MainDB;
 
         private const string _declaraId = "DeclaraId";
-        private const string _usuario = "Usuario";
+        private const string _usuario   = "Usuario";
 
         public FrmActivosDeclaracionesDB(IConfiguration config)
         {
-            _portalDB = new PortalDB(config);
+            _portalDB        = new PortalDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
         }
 
         private string GetConn(int CodEmpresa) =>
            _portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
 
+        #region Helpers privados
+
+        private static string? BuildFiltroLike(FiltrosLazyLoadData? filtros)
+        {
+            if (string.IsNullOrWhiteSpace(filtros?.filtro))
+                return null;
+
+            return $"%{filtros.filtro.Trim()}%";
+        }
+
+        /// <summary>
+        /// Arma DynamicParameters para el listado paginado de declaraciones.
+        /// </summary>
+        private static (DynamicParameters parametros, bool sinPaginacion) BuildListaParametros(FiltrosLazyLoadData? filtros)
+        {
+            var p = new DynamicParameters();
+
+            // Filtro
+            p.Add("@filtro", BuildFiltroLike(filtros), DbType.String);
+
+            // Ordenamiento
+            var sortFieldNorm = (filtros?.sortField ?? "id_declara")
+                .Trim()
+                .ToLowerInvariant();
+            int sortOrder = filtros?.sortOrder ?? 0; // 0 = DESC, 1 = ASC
+
+            p.Add("@sortField", sortFieldNorm, DbType.String);
+            p.Add("@sortOrder", sortOrder, DbType.Int32);
+
+            // Paginación
+            bool sinPaginacion = filtros == null || filtros.paginacion <= 0;
+            if (!sinPaginacion)
+            {
+                p.Add("@offset", filtros!.pagina,      DbType.Int32);
+                p.Add("@rows",   filtros.paginacion,  DbType.Int32);
+            }
+
+            return (p, sinPaginacion);
+        }
+
+        /// <summary>
+        /// Ejecuta el SP spActivos_Declara_Main_Add para insertar/actualizar.
+        /// </summary>
+        private (int pass, string mensaje, int idDeclara) EjecutarSpDeclaraMainAdd(
+            int CodEmpresa,
+            int declaraId,
+            ActivosDeclaracionGuardarRequest data)
+        {
+            using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+            var p = new DynamicParameters();
+            p.Add(_declaraId, declaraId);
+            p.Add("@Notas",   data.notas);
+            p.Add("@Tipo",    data.tipo);
+            p.Add("@Inicio",  data.fecha_inicio);
+            p.Add("@Corte",   data.fecha_corte);
+            p.Add(_usuario,   data.usuario);
+
+            var rs = connection.QueryFirstOrDefault<dynamic>(
+                "spActivos_Declara_Main_Add",
+                p,
+                commandType: CommandType.StoredProcedure);
+
+            int    pass      = (int)(rs?.Pass       ?? 0);
+            string mensaje   = (string)(rs?.Mensaje ?? "Error al procesar declaración.");
+            int    idDeclara = (int)(rs?.ID_DECLARA ?? declaraId);
+
+            return (pass, mensaje, idDeclara);
+        }
+
+        /// <summary>
+        /// Ejecuta un SP simple (Delete/Cierra/Procesa) que recibe DeclaraId y Usuario y devuelve Pass/Mensaje.
+        /// </summary>
+        private (int pass, string mensaje) EjecutarSpDeclaraAccion(
+            int CodEmpresa,
+            string storedProcedure,
+            int id_declara,
+            string usuario,
+            string defaultErrorMessage)
+        {
+            using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+            var p = new DynamicParameters();
+            p.Add(_declaraId, id_declara);
+            p.Add(_usuario,   usuario);
+
+            var rs = connection.QueryFirstOrDefault<dynamic>(
+                storedProcedure,
+                p,
+                commandType: CommandType.StoredProcedure);
+
+            int    pass    = (int)(rs?.Pass    ?? 0);
+            string mensaje = (string)(rs?.Mensaje ?? defaultErrorMessage);
+
+            return (pass, mensaje);
+        }
+
+        private void RegistrarBitacoraDeclaracion(
+            int CodEmpresa,
+            string usuario,
+            int idDeclara,
+            string movimiento,
+            string? detalleExtra = null)
+        {
+            var detalle = detalleExtra ??
+                          $"Declaración de Activo Id: {idDeclara}";
+
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId         = CodEmpresa,
+                Usuario           = usuario ?? "",
+                DetalleMovimiento = detalle,
+                Movimiento        = movimiento,
+                Modulo            = vModulo
+            });
+        }
+
+        private ErrorDto<ActivosDeclaracionResult> ErrorResult(int code, string description)
+        {
+            return new ErrorDto<ActivosDeclaracionResult>
+            {
+                Code        = code,
+                Description = description,
+                Result      = null
+            };
+        }
+
+        /// <summary>
+        /// Helper genérico para acciones simples (Eliminar / Cerrar / Procesar).
+        /// </summary>
+        private ErrorDto EjecutarAccionDeclaracion(
+            int CodEmpresa,
+            int id_declara,
+            string usuario,
+            string storedProcedure,
+            string movimiento,
+            string defaultErrorMessage,
+            string mensajeOkPorDefecto)
+        {
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
+            try
+            {
+                var (pass, mensaje) = EjecutarSpDeclaraAccion(
+                    CodEmpresa,
+                    storedProcedure,
+                    id_declara,
+                    usuario,
+                    defaultErrorMessage);
+
+                if (pass != 1)
+                    return new ErrorDto { Code = -2, Description = mensaje };
+
+                RegistrarBitacoraDeclaracion(
+                    CodEmpresa,
+                    usuario,
+                    id_declara,
+                    movimiento);
+
+                resp.Description = string.IsNullOrWhiteSpace(mensaje)
+                    ? mensajeOkPorDefecto
+                    : mensaje;
+            }
+            catch (Exception ex)
+            {
+                resp.Code        = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
+        #endregion
+
         /// <summary>
         /// Obtiene el historial de declaraciones por lazy loading.
         /// </summary>
-        public ErrorDto<ActivosDeclaracionLista> Activos_Declaraciones_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosDeclaracionLista> Activos_Declaraciones_Lista_Obtener(
+            int CodEmpresa,
+            FiltrosLazyLoadData filtros)
         {
             var result = new ErrorDto<ActivosDeclaracionLista>
             {
-                Code = 0,
+                Code        = 0,
                 Description = "Ok",
                 Result = new ActivosDeclaracionLista
                 {
@@ -46,39 +222,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                // --------------------------
-                // Parámetros de filtro
-                // --------------------------
-                var p = new DynamicParameters();
-                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
-                    ? null
-                    : $"%{filtros.filtro.Trim()}%";
-                p.Add("@filtro", filtroLike, DbType.String);
+                var (p, sinPaginacion) = BuildListaParametros(filtros);
 
-                // --------------------------
-                // Parámetros de ordenamiento
-                // --------------------------
-                var sortFieldNorm = (filtros?.sortField ?? "id_declara")
-                    .Trim()
-                    .ToLowerInvariant();
-
-                int sortOrder = filtros?.sortOrder ?? 0; // 0 = DESC (como tenías), 1 = ASC
-                p.Add("@sortField", sortFieldNorm, DbType.String);
-                p.Add("@sortOrder", sortOrder, DbType.Int32);
-
-                // --------------------------
-                // Paginación
-                // --------------------------
-                bool sinPaginacion = filtros == null || filtros.paginacion <= 0;
-                if (filtros != null && filtros.paginacion > 0)
-                {
-                    p.Add("@offset", filtros.pagina, DbType.Int32);
-                    p.Add("@rows", filtros.paginacion, DbType.Int32);
-                }
-
-                // --------------------------
-                // COUNT estático y parametrizado
-                // --------------------------
                 const string countSql = @"
                     SELECT COUNT(1)
                     FROM vActivos_Declara
@@ -91,9 +236,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 result.Result.total = connection.QueryFirstOrDefault<int>(countSql, p);
 
-                // --------------------------
-                // SELECT datos con WHERE + ORDER BY seguros
-                // --------------------------
                 const string selectBase = @"
                     SELECT
                         id_declara,
@@ -117,42 +259,37 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                           )
                     ORDER BY
                         -- sortOrder = 0 => DESC
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'id_declara'       THEN id_declara       END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'tipo_desc'        THEN tipo_desc        END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'estado_desc'      THEN estado_desc      END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'fecha_inicio'     THEN fecha_inicio     END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'fecha_corte'      THEN fecha_corte      END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'notas'            THEN notas            END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'registro_fecha'   THEN registro_fecha   END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'registro_usuario' THEN registro_usuario END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'cerrado_fecha'    THEN cerrado_fecha    END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'cerrado_usuario'  THEN cerrado_usuario  END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'procesado_fecha'  THEN procesado_fecha  END DESC,
-                        CASE WHEN @sortOrder = 0 AND @sortField = 'procesado_usuario'THEN procesado_usuarioEND DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'id_declara'        THEN id_declara        END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'tipo_desc'         THEN tipo_desc         END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'estado_desc'       THEN estado_desc       END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'fecha_inicio'      THEN fecha_inicio      END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'fecha_corte'       THEN fecha_corte       END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'notas'             THEN notas             END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'registro_fecha'    THEN registro_fecha    END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'registro_usuario'  THEN registro_usuario  END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cerrado_fecha'     THEN cerrado_fecha     END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cerrado_usuario'   THEN cerrado_usuario   END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'procesado_fecha'   THEN procesado_fecha   END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'procesado_usuario' THEN procesado_usuario END DESC,
 
                         -- sortOrder = 1 => ASC
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'id_declara'       THEN id_declara       END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'tipo_desc'        THEN tipo_desc        END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'estado_desc'      THEN estado_desc      END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'fecha_inicio'     THEN fecha_inicio     END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'fecha_corte'      THEN fecha_corte      END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'notas'            THEN notas            END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'registro_fecha'   THEN registro_fecha   END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'registro_usuario' THEN registro_usuario END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'cerrado_fecha'    THEN cerrado_fecha    END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'cerrado_usuario'  THEN cerrado_usuario  END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'procesado_fecha'  THEN procesado_fecha  END ASC,
-                        CASE WHEN @sortOrder = 1 AND @sortField = 'procesado_usuario'THEN procesado_usuarioEND ASC
-                ";
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'id_declara'        THEN id_declara        END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'tipo_desc'         THEN tipo_desc         END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'estado_desc'       THEN estado_desc       END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'fecha_inicio'      THEN fecha_inicio      END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'fecha_corte'       THEN fecha_corte       END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'notas'             THEN notas             END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'registro_fecha'    THEN registro_fecha    END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'registro_usuario'  THEN registro_usuario  END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cerrado_fecha'     THEN cerrado_fecha     END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cerrado_usuario'   THEN cerrado_usuario   END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'procesado_fecha'   THEN procesado_fecha   END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'procesado_usuario' THEN procesado_usuario END ASC";
 
                 const string pagingSql = @"
                     OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY";
 
-                string dataSql = selectBase;
-                if (!sinPaginacion)
-                {
-                    dataSql += pagingSql;
-                }
+                var dataSql = sinPaginacion ? selectBase : selectBase + pagingSql;
 
                 result.Result.lista = connection
                     .Query<ActivosDeclaracionResumen>(dataSql, p)
@@ -160,10 +297,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                result.Code         = -1;
+                result.Description  = ex.Message;
                 result.Result.total = 0;
-                result.Result.lista = [];
+                result.Result.lista = new List<ActivosDeclaracionResumen>();
             }
 
             return result;
@@ -172,14 +309,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Obtiene una declaración específica por Id.
         /// </summary>
-        public ErrorDto<ActivosDeclaracion> Activos_Declaraciones_Registro_Obtener(int CodEmpresa, int id_declara)
+        public ErrorDto<ActivosDeclaracion> Activos_Declaraciones_Registro_Obtener(
+            int CodEmpresa,
+            int id_declara)
         {
-            var connStr = GetConn(CodEmpresa);
             var resp = new ErrorDto<ActivosDeclaracion>
             {
-                Code = 0,
+                Code        = 0,
                 Description = "",
-                Result = null
+                Result      = null
             };
 
             const string sql = @"
@@ -205,12 +343,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
             try
             {
+                var connStr = GetConn(CodEmpresa);
                 using var connection = new SqlConnection(connStr);
-                resp.Result = connection.QueryFirstOrDefault<ActivosDeclaracion>(sql, new { id = id_declara });
+
+                resp.Result = connection.QueryFirstOrDefault<ActivosDeclaracion>(
+                    sql,
+                    new { id = id_declara });
 
                 if (resp.Result is null)
                 {
-                    resp.Code = -2;
+                    resp.Code        = -2;
                     resp.Description = "Declaración no encontrada.";
                 }
                 else
@@ -220,15 +362,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
         }
 
-        public ErrorDto Activos_Declaraciones_Registro_Existe_Obtener(int CodEmpresa, int id_declara)
+        public ErrorDto Activos_Declaraciones_Registro_Existe_Obtener(
+            int CodEmpresa,
+            int id_declara)
         {
             var resp = new ErrorDto { Code = 0, Description = "Ok" };
 
@@ -241,19 +385,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     new { id = id_declara });
 
                 (resp.Code, resp.Description) = (existe == 0)
-                    ? (0, "DECLARACIÓN: Libre!")
+                    ? (0,  "DECLARACIÓN: Libre!")
                     : (-2, "DECLARACIÓN: Ocupada!");
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
             return resp;
         }
 
-        public ErrorDto<ActivosDeclaracionResult> Activos_Declaraciones_Registro_Guardar(int CodEmpresa, ActivosDeclaracionGuardarRequest data)
+        public ErrorDto<ActivosDeclaracionResult> Activos_Declaraciones_Registro_Guardar(
+            int CodEmpresa,
+            ActivosDeclaracionGuardarRequest data)
         {
             if (data == null)
                 return ErrorResult(-1, "Datos no proporcionados.");
@@ -287,8 +433,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             if (!string.IsNullOrWhiteSpace(data.fecha_inicio) &&
                 !string.IsNullOrWhiteSpace(data.fecha_corte))
             {
-                var fi = DateTime.Parse(data.fecha_inicio.Split(' ')[0], System.Globalization.CultureInfo.InvariantCulture);
-                var fc = DateTime.Parse(data.fecha_corte.Split(' ')[0], System.Globalization.CultureInfo.InvariantCulture);
+                var fi = DateTime.Parse(
+                    data.fecha_inicio.Split(' ')[0],
+                    System.Globalization.CultureInfo.InvariantCulture);
+                var fc = DateTime.Parse(
+                    data.fecha_corte.Split(' ')[0],
+                    System.Globalization.CultureInfo.InvariantCulture);
+
                 if (fi >= fc)
                     errores.Add("Verifique el rango de fechas (Inicio debe ser menor que Corte).");
             }
@@ -296,7 +447,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return errores;
         }
 
-        private ErrorDto<ActivosDeclaracionResult> GuardarNuevaDeclaracion(int CodEmpresa, ActivosDeclaracionGuardarRequest data)
+        private ErrorDto<ActivosDeclaracionResult> GuardarNuevaDeclaracion(
+            int CodEmpresa,
+            ActivosDeclaracionGuardarRequest data)
         {
             if (data.id_declara > 0)
             {
@@ -308,7 +461,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return Activos_Declaraciones_Registro_Insertar(CodEmpresa, data);
         }
 
-        private ErrorDto<ActivosDeclaracionResult> ActualizarDeclaracionExistente(int CodEmpresa, ActivosDeclaracionGuardarRequest data)
+        private ErrorDto<ActivosDeclaracionResult> ActualizarDeclaracionExistente(
+            int CodEmpresa,
+            ActivosDeclaracionGuardarRequest data)
         {
             if (data.id_declara <= 0)
                 return ErrorResult(-2, "No se indicó una declaración válida para modificar.");
@@ -320,121 +475,84 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             var upd = Activos_Declaraciones_Registro_Actualizar(CodEmpresa, data);
             return new ErrorDto<ActivosDeclaracionResult>
             {
-                Code = upd.Code,
+                Code        = upd.Code,
                 Description = upd.Description,
-                Result = new ActivosDeclaracionResult { id_declara = data.id_declara }
+                Result      = new ActivosDeclaracionResult { id_declara = data.id_declara }
             };
         }
 
-        private ErrorDto<ActivosDeclaracionResult> ErrorResult(int code, string description)
-        {
-            return new ErrorDto<ActivosDeclaracionResult>
-            {
-                Code = code,
-                Description = description,
-                Result = null
-            };
-        }
-
-        private ErrorDto<ActivosDeclaracionResult> Activos_Declaraciones_Registro_Insertar(int CodEmpresa, ActivosDeclaracionGuardarRequest data)
+        private ErrorDto<ActivosDeclaracionResult> Activos_Declaraciones_Registro_Insertar(
+            int CodEmpresa,
+            ActivosDeclaracionGuardarRequest data)
         {
             var resp = new ErrorDto<ActivosDeclaracionResult>
             {
-                Code = 0,
+                Code        = 0,
                 Description = "",
-                Result = null
+                Result      = null
             };
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var p = new DynamicParameters();
-                p.Add(_declaraId, 0);
-                p.Add("@Notas", data.notas);
-                p.Add("@Tipo", data.tipo);
-                p.Add("@Inicio", data.fecha_inicio);
-                p.Add("@Corte", data.fecha_corte);
-                p.Add(_usuario, data.usuario);
-
-                var rs = connection.QueryFirstOrDefault<dynamic>(
-                    "spActivos_Declara_Main_Add",
-                    p,
-                    commandType: CommandType.StoredProcedure);
-
-                int pass = (int)(rs?.Pass ?? 0);
-                string mensaje = (string)(rs?.Mensaje ?? "Error al insertar");
-                int idDeclara = (int)(rs?.ID_DECLARA ?? 0);
+                var (pass, mensaje, idDeclara) =
+                    EjecutarSpDeclaraMainAdd(CodEmpresa, declaraId: 0, data);
 
                 if (pass != 1)
                     return new ErrorDto<ActivosDeclaracionResult>
                     {
-                        Code = -2,
+                        Code        = -2,
                         Description = mensaje,
-                        Result = null
+                        Result      = null
                     };
 
                 if (idDeclara > 0)
                     data.id_declara = idDeclara;
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.usuario ?? "",
-                    DetalleMovimiento = $"Declaración de Activo Id: {data.id_declara}, Inicio: {data.fecha_inicio}, Corte: {data.fecha_corte}, Tipo: {data.tipo}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
+                var detalle =
+                    $"Declaración de Activo Id: {data.id_declara}, Inicio: {data.fecha_inicio}, Corte: {data.fecha_corte}, Tipo: {data.tipo}";
 
-                resp.Code = 0;
+                RegistrarBitacoraDeclaracion(
+                    CodEmpresa,
+                    data.usuario ?? "",
+                    data.id_declara,
+                    movimiento: "Registra - WEB",
+                    detalleExtra: detalle);
+
+                resp.Code        = 0;
                 resp.Description = string.IsNullOrWhiteSpace(mensaje)
-                    ? "Declaración registrado satisfactoriamente!"
+                    ? "Declaración registrada satisfactoriamente!"
                     : mensaje;
                 resp.Result = new ActivosDeclaracionResult { id_declara = data.id_declara };
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
         }
 
-        private ErrorDto Activos_Declaraciones_Registro_Actualizar(int CodEmpresa, ActivosDeclaracionGuardarRequest data)
+        private ErrorDto Activos_Declaraciones_Registro_Actualizar(
+            int CodEmpresa,
+            ActivosDeclaracionGuardarRequest data)
         {
             var resp = new ErrorDto { Code = 0, Description = "" };
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var p = new DynamicParameters();
-                p.Add(_declaraId, data.id_declara);
-                p.Add("@Notas", data.notas);
-                p.Add("@Tipo", data.tipo);
-                p.Add("@Inicio", data.fecha_inicio);
-                p.Add("@Corte", data.fecha_corte);
-                p.Add(_usuario, data.usuario);
-
-                var rs = connection.QueryFirstOrDefault<dynamic>(
-                    "spActivos_Declara_Main_Add",
-                    p,
-                    commandType: CommandType.StoredProcedure);
-
-                int pass = (int)(rs?.Pass ?? 0);
-                string mensaje = (string)(rs?.Mensaje ?? "Error");
+                var (pass, mensaje, _) =
+                    EjecutarSpDeclaraMainAdd(CodEmpresa, declaraId: data.id_declara, data);
 
                 if (pass != 1)
                     return new ErrorDto { Code = -2, Description = mensaje };
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = data.usuario ?? "",
-                    DetalleMovimiento = $"Declaración de Activo Id: {data.id_declara}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
-                });
+                RegistrarBitacoraDeclaracion(
+                    CodEmpresa,
+                    data.usuario ?? "",
+                    data.id_declara,
+                    movimiento: "Modifica - WEB");
 
                 resp.Description = string.IsNullOrWhiteSpace(mensaje)
                     ? "Declaración actualizada satisfactoriamente!"
@@ -442,162 +560,79 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
             return resp;
         }
 
-        public ErrorDto Activos_Declaraciones_Registro_Eliminar(int CodEmpresa, int id_declara, string usuario)
+        public ErrorDto Activos_Declaraciones_Registro_Eliminar(
+            int CodEmpresa,
+            int id_declara,
+            string usuario)
         {
-            var connStr = GetConn(CodEmpresa);
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
-
-            try
-            {
-                using var connection = new SqlConnection(connStr);
-                var p = new DynamicParameters();
-                p.Add(_declaraId, id_declara);
-                p.Add(_usuario, usuario);
-
-                var rs = connection.QueryFirstOrDefault<dynamic>(
-                    "spActivos_Declara_Main_Delete",
-                    p,
-                    commandType: CommandType.StoredProcedure);
-
-                int pass = (int)(rs?.Pass ?? 0);
-                string mensaje = (string)(rs?.Mensaje ?? "Error");
-
-                if (pass != 1)
-                    return new ErrorDto { Code = -2, Description = mensaje };
-
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Declaración de Activo Id: {id_declara}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-
-            return resp;
+            return EjecutarAccionDeclaracion(
+                CodEmpresa,
+                id_declara,
+                usuario,
+                storedProcedure: "spActivos_Declara_Main_Delete",
+                movimiento: "Elimina - WEB",
+                defaultErrorMessage: "Error",
+                mensajeOkPorDefecto: "Declaración eliminada satisfactoriamente!");
         }
 
-        public ErrorDto Activos_Declaraciones_Registro_Cerrar(int CodEmpresa, int id_declara, string usuario)
+        public ErrorDto Activos_Declaraciones_Registro_Cerrar(
+            int CodEmpresa,
+            int id_declara,
+            string usuario)
         {
-            var connStr = GetConn(CodEmpresa);
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
-
-            try
-            {
-                using var connection = new SqlConnection(connStr);
-                var p = new DynamicParameters();
-                p.Add(_declaraId, id_declara);
-                p.Add(_usuario, usuario);
-
-                var rs = connection.QueryFirstOrDefault<dynamic>(
-                    "spActivos_Declara_Main_Cierra",
-                    p,
-                    commandType: CommandType.StoredProcedure);
-
-                int pass = (int)(rs?.Pass ?? 0);
-                string mensaje = (string)(rs?.Mensaje ?? "Error");
-
-                if (pass != 1)
-                    return new ErrorDto { Code = -2, Description = mensaje };
-
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Declaración de Activo Id: {id_declara}",
-                    Movimiento = "Cierra - WEB",
-                    Modulo = vModulo
-                });
-
-                resp.Description = string.IsNullOrWhiteSpace(mensaje)
-                    ? "Declaración cerrada satisfactoriamente!"
-                    : mensaje;
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-
-            return resp;
+            return EjecutarAccionDeclaracion(
+                CodEmpresa,
+                id_declara,
+                usuario,
+                storedProcedure: "spActivos_Declara_Main_Cierra",
+                movimiento: "Cierra - WEB",
+                defaultErrorMessage: "Error",
+                mensajeOkPorDefecto: "Declaración cerrada satisfactoriamente!");
         }
 
-        public ErrorDto Activos_Declaraciones_Registro_Procesar(int CodEmpresa, int id_declara, string usuario)
+        public ErrorDto Activos_Declaraciones_Registro_Procesar(
+            int CodEmpresa,
+            int id_declara,
+            string usuario)
         {
-            var connStr = GetConn(CodEmpresa);
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
-
-            try
-            {
-                using var connection = new SqlConnection(connStr);
-                var p = new DynamicParameters();
-                p.Add(_declaraId, id_declara);
-                p.Add(_usuario, usuario);
-
-                var rs = connection.QueryFirstOrDefault<dynamic>(
-                    "spActivos_Declara_Main_Procesa",
-                    p,
-                    commandType: CommandType.StoredProcedure);
-
-                int pass = (int)(rs?.Pass ?? 0);
-                string mensaje = (string)(rs?.Mensaje ?? "Error al procesar");
-
-                if (pass != 1)
-                    return new ErrorDto { Code = -2, Description = mensaje };
-
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Declaración de Activo Id: {id_declara}",
-                    Movimiento = "Procesa - WEB",
-                    Modulo = vModulo
-                });
-
-                resp.Description = string.IsNullOrWhiteSpace(mensaje)
-                    ? "Declaración procesada satisfactoriamente!"
-                    : mensaje;
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-
-            return resp;
+            return EjecutarAccionDeclaracion(
+                CodEmpresa,
+                id_declara,
+                usuario,
+                storedProcedure: "spActivos_Declara_Main_Procesa",
+                movimiento: "Procesa - WEB",
+                defaultErrorMessage: "Error al procesar",
+                mensajeOkPorDefecto: "Declaración procesada satisfactoriamente!");
         }
 
         /// <summary>
         /// Navega entre declaraciones (anterior / siguiente) usando el Id.
         /// </summary>
-        public ErrorDto<ActivosDeclaracion> Activos_Declaraciones_Registro_Scroll(int CodEmpresa, int scroll, int? id_declara, string usuario)
+        public ErrorDto<ActivosDeclaracion> Activos_Declaraciones_Registro_Scroll(
+            int CodEmpresa,
+            int scroll,
+            int? id_declara,
+            string usuario)
         {
-            var connStr = GetConn(CodEmpresa);
             var resp = new ErrorDto<ActivosDeclaracion>
             {
-                Code = 0,
+                Code        = 0,
                 Description = "",
-                Result = null
+                Result      = null
             };
 
             try
             {
+                var connStr = GetConn(CodEmpresa);
                 using var connection = new SqlConnection(connStr);
 
-                // SQL estático (sin concatenar trozos variables)
                 string sqlNext = scroll == 1
                     ? @"SELECT TOP 1 ID_DECLARA 
                         FROM vActivos_Declara 
@@ -615,18 +650,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 if (nextId == null)
                     return new ErrorDto<ActivosDeclaracion>
                     {
-                        Code = -2,
+                        Code        = -2,
                         Description = "No se encontraron más resultados.",
-                        Result = null
+                        Result      = null
                     };
 
                 resp = Activos_Declaraciones_Registro_Obtener(CodEmpresa, nextId.Value);
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result      = null;
             }
 
             return resp;
