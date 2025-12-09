@@ -100,8 +100,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = $@"exec spTes_Consulta_Afectacion_Modulos {tesoreria}";
-                    response.Result = connection.Query<TesAfectacionDto>(query).ToList();
+                    var query = $@"exec spTes_Consulta_Afectacion_Modulos @Solicitud";
+                    response.Result = connection.Query<TesAfectacionDto>(query, new { Solicitud = tesoreria }).ToList();
                 }
             }
             catch (Exception ex)
@@ -133,8 +133,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     var query = $@"select H.ID, H.FECHA, H.USUARIO,ISNULL(M.DESCRIPCION,'No identificado') AS MOVIMIENTO,H.DETALLE
                     from TES_HISTORIAL H left join TES_TIPOS_MOVIMIENTOS M on H.COD_MOVIMIENTO = M.COD_MOVIMIENTO
-                    WHERE H.NSOLICITUD = {tesoreria}";
-                    response.Result = connection.Query<TesBitacoraDto>(query).ToList();
+                    WHERE H.NSOLICITUD = @Solicitud";
+                    response.Result = connection.Query<TesBitacoraDto>(query, new { Solicitud = tesoreria }).ToList();
                 }
             }
             catch (Exception ex)
@@ -230,8 +230,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = $@"exec spTes_Transaccion_Consulta {tesoreria}";
-                    response.Result = connection.Query<TesTransaccionDto>(query).FirstOrDefault();
+                    var query = $@"exec spTes_Transaccion_Consulta @Solicitud ";
+                    response.Result = connection.Query<TesTransaccionDto>(query, new { Solicitud = tesoreria }).FirstOrDefault();
 
                     if (response.Result != null)
                     {
@@ -567,8 +567,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     //Busco Total
                     var query = $@"select count(NSOLICITUD) from Tes_Transacciones C
-                                  inner join CntX_Unidades U on C.cod_unidad = U.cod_unidad WHERE U.cod_contabilidad = {contabilidad}";
-                    response.Result.total = connection.Query<int>(query).FirstOrDefault();
+                                  inner join CntX_Unidades U on C.cod_unidad = U.cod_unidad WHERE U.cod_contabilidad = @Contabilidad";
+                    response.Result.total = connection.Query<int>(query, new { Contabilidad = contabilidad }).FirstOrDefault();
 
                     if (filtro.filtro != null && filtro.filtro != "")
                     {
@@ -636,7 +636,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select Top 1 ndocumento from Tes_Transacciones 
-                                     where id_banco = {parametros.id_banco} and Tipo = '{parametros.tipo}'";
+                                     where id_banco = @idBanco and Tipo = @Tipo";
 
                     switch (scrollCode)
                     {
@@ -664,7 +664,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             break;
                     }
 
-                    var documento = connection.Query<string>(query).FirstOrDefault();
+                    var documento = connection.Query<string>(query, new { idBanco = parametros.id_banco, Tipo = parametros.tipo }).FirstOrDefault();
 
                     response = TES_TransaccionDoc_Obtener(
                         CodEmpresa,
@@ -712,8 +712,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 using var connection = new SqlConnection(stringConn);
                 {
                     var query = $@"select Nsolicitud from Tes_Transacciones where 
-                                    ndocumento = '{documento}' and id_banco = {banco} and Tipo = '{tipo}' ";
-                    response.Result = connection.Query<int>(query).FirstOrDefault();
+                                    ndocumento = @Documento  and id_banco = @idBanco and Tipo = @Tipo ";
+                    response.Result = connection.Query<int>(query, new {Documento = documento, idBanco = banco, Tipo = tipo }).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -746,19 +746,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             try
             {
                 using var connection = new SqlConnection(stringConn);
+                var query = $@"exec spTes_Cuenta_Bancaria_Cambio @Solicitud, @Cuenta, @Usuario";
+
+                response.Code = connection.Execute(query, new { Solicitud = solicitud, Cuenta = cuenta, Usuario = usuario });
+                if (response.Code == 0)
                 {
-                    var query = $@"exec spTes_Cuenta_Bancaria_Cambio {solicitud},'{cuenta}','{usuario}' ";
-
-                    response.Code = connection.Execute(query);
-                    if (response.Code == 0)
-                    {
-                        response.Description = "No se pudo realizar el cambio de cuenta bancaria";
-                    }
-                    else
-                    {
-                        response.Description = "Cambio de Cuenta Bancaria realizado satisfactoriamente!";
-                    }
-
+                    response.Description = "No se pudo realizar el cambio de cuenta bancaria";
+                }
+                else
+                {
+                    response.Description = "Cambio de Cuenta Bancaria realizado satisfactoriamente!";
                 }
             }
             catch (Exception ex)

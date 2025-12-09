@@ -9,7 +9,7 @@ namespace Galileo_API.DataBaseTier
         private ErrorDto<Galileo.Models.KindoSinpe.ParametrosSinpe> _parametrosSinpe;
         public InfoSinpeRequest _infoSinpe = new InfoSinpeRequest();
         private readonly SinpeGalileo_DTR _sinpeDTR;
-        private readonly SinpeGalileo_PIN _sinpePIN;
+        //private readonly SinpeGalileo_PIN _sinpePIN; de momento no se usa
 
         private readonly mKindoServiceDB _mKindo;
 
@@ -20,7 +20,7 @@ namespace Galileo_API.DataBaseTier
             _config = config;
             _mKindo = new mKindoServiceDB(_config);
             _sinpeDTR = new SinpeGalileo_DTR(_config);
-            _sinpePIN = new SinpeGalileo_PIN(_config);
+           // _sinpePIN = new SinpeGalileo_PIN(_config);
             _parametrosSinpe = new ErrorDto<ParametrosSinpe>();
 
             OperationId = Guid.NewGuid();
