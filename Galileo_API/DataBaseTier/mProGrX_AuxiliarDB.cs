@@ -355,8 +355,8 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(clienteConnString);
 
-                var query1 = $@"select genera_user from pv_invTransac where Tipo = '{TipoTran}' and Boleta = '{Boleta}'";
-                var generaUser = connection.ExecuteScalar<string>(query1);
+                var query1 = @"select genera_user from pv_invTransac where Tipo = @TipoTran and Boleta = @Boleta";
+                var generaUser = connection.ExecuteScalar<string>(query1, new { TipoTran, Boleta });
 
                 if (string.IsNullOrEmpty(generaUser))
                 {
@@ -365,8 +365,8 @@ namespace Galileo.DataBaseTier
                     return info;
                 }
 
-                var query2 = $@"select isnull(count(*),0) as Existe from pv_orden_autousers where Usuario = '{AutorizaUser}' and Usuario_Asignado = '{generaUser}' and ENTRADAS = 1";
-                int valideAutorizacion = connection.ExecuteScalar<int>(query2);
+                var query2 = @"select isnull(count(*),0) as Existe from pv_orden_autousers where Usuario = @AutorizaUser and Usuario_Asignado = @GUser and ENTRADAS = 1";
+                int valideAutorizacion = connection.ExecuteScalar<int>(query2, new { AutorizaUser, GUser = generaUser });
 
                 if (valideAutorizacion == 1)
                 {
