@@ -20,13 +20,32 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB        = new PortalDB(config);
         }
 
+        #region Helpers privados
+
+        private void RegistrarBitacora(
+            int CodEmpresa,
+            string usuario,
+            string detalle,
+            string movimiento)
+        {
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId         = CodEmpresa,
+                Usuario           = usuario ?? string.Empty,
+                DetalleMovimiento = detalle,
+                Movimiento        = movimiento,
+                Modulo            = vModulo
+            });
+        }
+
+        #endregion
+
         /// <summary>
         /// Método para consultar lista de justificaciones
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="tipo"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Activos_AdicionRetiro_Justificaciones_Obtener(int CodEmpresa, string tipo)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_AdicionRetiro_Justificaciones_Obtener(
+            int CodEmpresa,
+            string tipo)
         {
             const string sql = @"
                 SELECT RTRIM(cod_justificacion) AS item,
@@ -34,32 +53,33 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 FROM   Activos_justificaciones
                 WHERE  tipo = @tipo";
 
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql, new { tipo });
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                new { tipo });
         }
-
 
         /// <summary>
         /// Método para obtener los proveedores de un registro de Adiciones, Mejoras o Retiros del Activo
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Activos_AdicionRetiro_Proveedores_Obtener(int CodEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_AdicionRetiro_Proveedores_Obtener(
+            int CodEmpresa)
         {
             const string sql = @"
                 SELECT cod_proveedor AS item,
                        descripcion   AS descripcion
                 FROM   Activos_proveedores";
 
-            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, sql);
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                CodEmpresa,
+                sql);
         }
-
-
 
         /// <summary>
         /// Método para consultar listado de activos disponibles para Adición o Retiro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<List<ActivosData>> Activos_AdicionRetiro_Activos_Obtener(int CodEmpresa)
         {
             const string sql = @"
@@ -68,74 +88,59 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                        Nombre
                 FROM   Activos_Principal";
 
-            return DbHelper.ExecuteListQuery<ActivosData>(_portalDB, CodEmpresa, sql);
+            return DbHelper.ExecuteListQuery<ActivosData>(
+                _portalDB,
+                CodEmpresa,
+                sql);
         }
-
 
         /// <summary>
         /// Método para consultar retiros/adiciones por número de placa e id
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Id_AddRet"></param>
-        /// <param name="placa"></param>
-        /// <returns></returns>
-        public ErrorDto<ActivosRetiroAdicionData> Activos_AdicionRetiro_Consultar(int CodEmpresa, int Id_AddRet, string placa)
+        public ErrorDto<ActivosRetiroAdicionData> Activos_AdicionRetiro_Consultar(
+            int CodEmpresa,
+            int Id_AddRet,
+            string placa)
         {
-            var result = DbHelper.CreateOkResponse(new ActivosRetiroAdicionData());
+            const string sql = @"
+                SELECT X.*,
+                       RTRIM(J.cod_justificacion) AS Motivo_Id,
+                       RTRIM(J.descripcion)       AS Motivo_Desc,
+                       A.nombre,
+                       P.cod_proveedor,
+                       P.descripcion              AS Proveedor
+                FROM   Activos_retiro_adicion  X
+                       INNER JOIN Activos_Principal      A ON X.num_placa = A.num_placa
+                       INNER JOIN Activos_justificaciones J ON X.cod_justificacion = J.cod_justificacion
+                       LEFT JOIN  Activos_proveedores     P ON X.compra_proveedor = P.cod_proveedor
+                WHERE  X.Id_AddRet  = @Id_AddRet
+                AND    X.num_placa  = @placa";
 
-            try
+            var resp = DbHelper.ExecuteSingleQuery(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                new ActivosRetiroAdicionData(),
+                new { Id_AddRet, placa });
+
+            // Ajuste de tipo_vidautil si la consulta fue exitosa
+            if (resp.Code == 0 && resp.Result != null && resp.Result.tipo_vidautil != "R")
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                const string sql = @"
-                    SELECT X.*,
-                           RTRIM(J.cod_justificacion) AS Motivo_Id,
-                           RTRIM(J.descripcion)       AS Motivo_Desc,
-                           A.nombre,
-                           P.cod_proveedor,
-                           P.descripcion              AS Proveedor
-                    FROM   Activos_retiro_adicion  X
-                           INNER JOIN Activos_Principal      A ON X.num_placa = A.num_placa
-                           INNER JOIN Activos_justificaciones J ON X.cod_justificacion = J.cod_justificacion
-                           LEFT JOIN  Activos_proveedores     P ON X.compra_proveedor = P.cod_proveedor
-                    WHERE  X.Id_AddRet  = @Id_AddRet
-                    AND    X.num_placa  = @placa";
-
-                result.Result = connection.Query<ActivosRetiroAdicionData>(sql, new { Id_AddRet, placa })
-                                          .FirstOrDefault()
-                                ?? new ActivosRetiroAdicionData();
-
-                if (result.Result.tipo_vidautil != "R")
-                {
-                    result.Result.tipo_vidautil = "S";
-                }
-            }
-            catch (Exception ex)
-            {
-                result.Code        = -1;
-                result.Description = ex.Message;
-                result.Result      = null;
+                resp.Result.tipo_vidautil = "S";
             }
 
-            return result;
+            return resp;
         }
 
-        
         /// <summary>
         /// Método para validar un registro de Adiciones, Mejoras o Retiros del Activo
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <param name="fecha"></param>
-        /// <returns></returns>
-        public ErrorDto<string> Activos_AdicionRetiro_Validar(int CodEmpresa, string placa, DateTime fecha)
+        public ErrorDto<string> Activos_AdicionRetiro_Validar(
+            int CodEmpresa,
+            string placa,
+            DateTime fecha)
         {
-            var result = new ErrorDto<string>
-            {
-                Code        = 0,
-                Description = string.Empty,
-                Result      = string.Empty
-            };
+            var result = DbHelper.CreateOkResponse(string.Empty);
 
             try
             {
@@ -147,16 +152,20 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     WHERE  num_placa = @placa
                     AND    estado   <> 'R'";
 
-                result.Result = connection.Query<string>(sqlFecha, new { placa }).FirstOrDefault();
+                var fechaAdqStr = connection
+                    .Query<string>(sqlFecha, new { placa })
+                    .FirstOrDefault();
 
-                if (result.Result == null)
+                if (fechaAdqStr == null)
                 {
                     result.Code        = -2;
                     result.Description = "El Activo no existe, o ya fue retirado ...";
                 }
                 else
                 {
-                    var fechaAdquisicion = DateTime.Parse(result.Result, System.Globalization.CultureInfo.InvariantCulture);
+                    var fechaAdquisicion = DateTime.Parse(
+                        fechaAdqStr,
+                        System.Globalization.CultureInfo.InvariantCulture);
 
                     if ((fecha - fechaAdquisicion).Days < 1)
                     {
@@ -172,9 +181,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     WHERE  anio = @anno
                     AND    mes  = @mes";
 
-                var periodo = connection.Query<ActivosPeriodosData>(
-                    sqlPeriodo,
-                    new { anno = fecha.Year, mes = fecha.Month })
+                var periodo = connection
+                    .Query<ActivosPeriodosData>(
+                        sqlPeriodo,
+                        new { anno = fecha.Year, mes = fecha.Month })
                     .FirstOrDefault();
 
                 if (periodo != null)
@@ -197,22 +207,20 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 result.Code        = -1;
                 result.Description = ex.Message;
-                result.Result      = null;
+                result.Result      = string.Empty;
             }
 
             return result;
         }
 
-        
         /// <summary>
         /// Método para consultar los meses de un registro de Adición/Retiro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <param name="tipo"></param>
-        /// <param name="fecha"></param>
-        /// <returns></returns>
-        public ErrorDto<int> Activos_AdicionRetiro_Meses_Consulta(int CodEmpresa, string placa, string tipo, DateTime fecha)
+        public ErrorDto<int> Activos_AdicionRetiro_Meses_Consulta(
+            int CodEmpresa,
+            string placa,
+            string tipo,
+            DateTime fecha)
         {
             const string sql = @"SELECT dbo.fxActivos_VidaUtilPendiente(@placa, @tipo, @fecha)";
 
@@ -224,14 +232,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 new { placa, tipo, fecha });
         }
 
-
         /// <summary>
         /// Método para consultar los datos de Depreciación del Activo al corte
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <returns></returns>
-        public ErrorDto<ActivosPrincipalData> Activos_AdicionRetiro_DatosActivo_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<ActivosPrincipalData> Activos_AdicionRetiro_DatosActivo_Consultar(
+            int CodEmpresa,
+            string placa)
         {
             var result = DbHelper.CreateOkResponse(new ActivosPrincipalData());
 
@@ -241,7 +247,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 const string sql = @"EXEC spActivos_InfoDepreciacion @placa";
 
-                var data = connection.Query<ActivosPrincipalData>(sql, new { placa }).FirstOrDefault();
+                var data = connection
+                    .Query<ActivosPrincipalData>(sql, new { placa })
+                    .FirstOrDefault();
 
                 if (data == null)
                 {
@@ -271,15 +279,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-       
-       /// <summary>
-       /// Método para guardar un registro de Adiciones, Mejoras o Retiros del Activo
-       /// </summary>
-       /// <param name="CodEmpresa"></param>
-       /// <param name="usuario"></param>
-       /// <param name="data"></param>
-       /// <returns></returns>
-        public ErrorDto Activos_AdicionRetiro_Guardar(int CodEmpresa, string usuario, ActivosRetiroAdicionData data)
+        /// <summary>
+        /// Método para guardar un registro de Adiciones, Mejoras o Retiros del Activo
+        /// </summary>
+        public ErrorDto Activos_AdicionRetiro_Guardar(
+            int CodEmpresa,
+            string usuario,
+            ActivosRetiroAdicionData data)
         {
             var result = DbHelper.CreateOkResponse();
 
@@ -304,31 +310,27 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 var linea = connection.Query<int>(sql, new
                 {
-                    Placa        = data.num_placa,
-                    Tipo         = data.tipo,
-                    Justificacion= data.cod_justificacion,
-                    Descripcion  = data.descripcion,
-                    Fecha        = data.fecha,
-                    Monto        = data.monto,
-                    Meses        = data.meses_calculo,
-                    Usuario      = usuario,
-                    CompraDoc    = data.compra_documento,
-                    CompraProv   = data.proveedor,
-                    VentaDoc     = data.venta_documento,
-                    VentaCliente = data.venta_cliente
+                    Placa         = data.num_placa,
+                    Tipo          = data.tipo,
+                    Justificacion = data.cod_justificacion,
+                    Descripcion   = data.descripcion,
+                    Fecha         = data.fecha,
+                    Monto         = data.monto,
+                    Meses         = data.meses_calculo,
+                    Usuario       = usuario,
+                    CompraDoc     = data.compra_documento,
+                    CompraProv    = data.proveedor,
+                    VentaDoc      = data.venta_documento,
+                    VentaCliente  = data.venta_cliente
                 }).FirstOrDefault();
 
                 result.Code = linea;
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId         = CodEmpresa,
-                    Usuario           = usuario,
-                    DetalleMovimiento =
-                        $"{data.tipoDescripcion} (Placa: {data.num_placa}) Id: {data.tipoDescripcion}:{data.id_addret}_ {data.justificacion} ",
-                    Movimiento        = "Registra - WEB",
-                    Modulo            = vModulo
-                });
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuario,
+                    $"{data.tipoDescripcion} (Placa: {data.num_placa}) Id: {data.tipoDescripcion}:{data.id_addret}_ {data.justificacion} ",
+                    "Registra - WEB");
             }
             catch (Exception ex)
             {
@@ -339,14 +341,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return result;
         }
 
-        
         /// <summary>
         /// Método para consultar el histórico de retiros y adiciones de un activo
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<ActivosHistoricoData>> Activos_AdicionRetiro_Historico_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<List<ActivosHistoricoData>> Activos_AdicionRetiro_Historico_Consultar(
+            int CodEmpresa,
+            string placa)
         {
             const string sql = @"
                 SELECT X.id_AddRet,
@@ -367,18 +367,20 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 WHERE  X.num_placa = @placa
                 AND    X.Tipo IN ('A','R','M')";
 
-            return DbHelper.ExecuteListQuery<ActivosHistoricoData>(_portalDB, CodEmpresa, sql, new { placa });
+            return DbHelper.ExecuteListQuery<ActivosHistoricoData>(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                new { placa });
         }
-
 
         /// <summary>
         /// Método para consultar los cierres de un registro de Adiciones, Mejoras o Retiros del Activo
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <param name="Id_AddRet"></param>
-        /// <returns></returns>
-        public ErrorDto<List<ActivosRetiroAdicionCierreData>> Activos_AdicionRetiro_Cierres_Consultar(int CodEmpresa, string placa, int Id_AddRet)
+        public ErrorDto<List<ActivosRetiroAdicionCierreData>> Activos_AdicionRetiro_Cierres_Consultar(
+            int CodEmpresa,
+            string placa,
+            int Id_AddRet)
         {
             const string sql = @"
                 SELECT A.*
@@ -390,52 +392,59 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 AND    P.Estado     = 'C'
                 ORDER BY A.anio DESC, A.mes DESC";
 
-            return DbHelper.ExecuteListQuery<ActivosRetiroAdicionCierreData>(_portalDB, CodEmpresa, sql, new { placa, Id_AddRet });
+            return DbHelper.ExecuteListQuery<ActivosRetiroAdicionCierreData>(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                new { placa, Id_AddRet });
         }
-
 
         /// <summary>
         /// Método para obtener el nombre del activo por número de placa
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <returns></returns>
-        public ErrorDto<string> Activos_AdicionRetiro_ActivosNombre_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<string> Activos_AdicionRetiro_ActivosNombre_Consultar(
+            int CodEmpresa,
+            string placa)
         {
             const string sql = @"
                 SELECT nombre
                 FROM   Activos_Principal
                 WHERE  num_placa = @placa";
 
-            return DbHelper.ExecuteSingleQuery(_portalDB, CodEmpresa, sql, string.Empty, new { placa });
+            return DbHelper.ExecuteSingleQuery(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                string.Empty,
+                new { placa });
         }
-
 
         /// <summary>
         /// Método para eliminar un registro de Adiciones, Mejoras o Retiros del Activo
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="placa"></param>
-        /// <param name="Id_AddRet"></param>
-        /// <returns></returns>
-        public ErrorDto Activos_AdicionRetiro_Eliminar(int CodEmpresa, string placa, int Id_AddRet)
+        public ErrorDto Activos_AdicionRetiro_Eliminar(
+            int CodEmpresa,
+            string placa,
+            int Id_AddRet)
         {
             const string sql = @"
                 DELETE Activos_retiro_adicion
                 WHERE  num_placa = @placa
                 AND    Id_AddRet = @Id_AddRet";
 
-            return DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, sql, new { placa, Id_AddRet });
+            return DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                sql,
+                new { placa, Id_AddRet });
         }
-
 
         /// <summary>
         /// Consulta el periodo pendiente
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="contabilidad"></param>
-        /// <returns></returns>
-        public ErrorDto<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
+        public ErrorDto<DateTime> Activos_Periodo_Consultar(
+            int CodEmpresa,
+            int contabilidad)
         {
             var result = DbHelper.CreateOkResponse(DateTime.Now);
 
