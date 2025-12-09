@@ -153,7 +153,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Consulta lo datos de una obra en proceso
         /// </summary>
-        public ErrorDto<ActivosObrasData> Activos_Obras_Consultar(
+        public ErrorDto<ActivosObrasData?> Activos_Obras_Consultar(
             int CodEmpresa,
             string contrato)
         {

@@ -36,7 +36,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="CodEmpresa"></param>
         /// <param name="placa"></param>
         /// <returns></returns>
-        public ErrorDto<ActivosPrincipalesData> Activos_DatosActivo_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<ActivosPrincipalesData?> Activos_DatosActivo_Consultar(int CodEmpresa, string placa)
         {
             const string sql = @"
                 SELECT  A.Num_Placa,

@@ -71,7 +71,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Método para consultar los datos de un activo en estado de deterioro
         /// </summary>
-        public ErrorDto<ActivosDeterioroData> Activos_Deterioros_Consultar(int CodEmpresa, int Id_AddRet, string placa)
+        public ErrorDto<ActivosDeterioroData?> Activos_Deterioros_Consultar(int CodEmpresa, int Id_AddRet, string placa)
         {
             const string sql = @"
                 SELECT X.*,
@@ -301,7 +301,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Método para consultar el nombre de un activo en estado de deterioro
         /// </summary>
-        public ErrorDto<string> Activos_Deterioros_ActivosNombre_Consultar(int CodEmpresa, string placa)
+        public ErrorDto<string?> Activos_Deterioros_ActivosNombre_Consultar(int CodEmpresa, string placa)
         {
             const string sql = @"
                 SELECT nombre
