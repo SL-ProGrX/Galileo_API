@@ -120,11 +120,9 @@ namespace Galileo.DataBaseTier
                     }
                     else
                     {
-                        var strSQL = "delete Us_Rol_Permisos where cod_Opcion = " + req.opcion +
-                                     " and estado = '" + req.tipo + "'" +
-                                     " and cod_rol = '" + req.rol + "'";
+                        var strSQL = "DELETE FROM Us_Rol_Permisos WHERE cod_Opcion = @cod_Opcion AND estado = @estado AND cod_rol = @cod_rol";
 
-                        resp.Code = connection.Execute(strSQL);
+                        resp.Code = connection.Execute(strSQL, new { cod_Opcion = req.opcion, estado = req.tipo, cod_rol = req.rol });
                         resp.Description = "Deleted";
                     }
 
