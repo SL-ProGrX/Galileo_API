@@ -1,9 +1,11 @@
-﻿using System.Text;
-using Dapper;
-using Microsoft.Data.SqlClient;
+﻿using Dapper;
 using Galileo.Models;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
+using Microsoft.Data.SqlClient;
+using System.Data;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
@@ -199,12 +201,19 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
+
+                // 1) Lista blanca: SOLO columnas reales permitidas para "gestión"
+                var gestionesPermitidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    query = $@"select id_banco as item,descripcion from Tes_Bancos where Estado = 'A' and id_Banco 
+                    "Autoriza",
+                    "Genera",
+                    "Asientos"
+                };
+
+                query = $@"select id_banco as item,descripcion from Tes_Bancos where Estado = 'A' and id_Banco 
                                     in(select id_banco from tes_documentos_ASG Where nombre = @usuario and {gestion} = 1 
                                     group by id_banco)";
-                    resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { usuario = usuario }).ToList();
-                }
+                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { usuario = usuario }).ToList();
             }
             catch (Exception ex)
             {
@@ -224,18 +233,12 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<string> fxTesBancoDocsValor(int CodEmpresa, int vBanco, string vTipo, string vCampo = "Comprobante")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<string>();
             resp.Code = 0;
             resp.Result = "";
             try
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select {vCampo} as Campo from tes_Banco_docs where id_Banco = @banco and tipo = @tipo";
-                    resp.Result = connection.QueryFirstOrDefault<string>(query, new { banco = vBanco, tipo = vTipo });
-                }
+                resp.Result = fxTesTipoDocExtraeDato(CodEmpresa, vBanco, vTipo, "Comprobante").Result ?? "";
             }
             catch (Exception ex)
             {
@@ -552,12 +555,25 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+                // 1) Lista blanca de columnas permitidas
+                var camposPermitidos = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                    {
+                        "mod_consec",
+                        "Comprobante"
+                    };
+
+                if (!camposPermitidos.Contains(Campo))
+                {
+                    resp.Code = -1;
+                    resp.Description = "Campo no permitido para consulta.";
+                    resp.Result = null;
+                    return resp;
+                }
 
                 var query = $"select {Campo} as item from tes_banco_docs where tipo = @tipoDoc and id_banco = @banco";
 
-                resp.Result = connection
-                    .QueryFirstOrDefault<string>(query,
-                    new { banco = Banco, tipoDoc = TipoDoc });
+                resp.Result = connection.QueryFirstOrDefault<string>(query, new { banco = Banco, tipoDoc = TipoDoc });
+            
             }
             catch (Exception ex)
             {
@@ -1641,10 +1657,11 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    // Verificar si el token está activo
-                    var procedure = $@"EXEC spTes_Token_New '{usuario.ToUpper()}'";
-
-                    var insert = connection.Execute(procedure);
+                    var insert = connection.Execute(
+                            "spTes_Token_New",
+                            new { Usuario = usuario.ToUpper() },
+                            commandType: CommandType.StoredProcedure
+                        );
 
                     if (insert != -1)
                     {

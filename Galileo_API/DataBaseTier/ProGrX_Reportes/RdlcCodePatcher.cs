@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Galileo.DataBaseTier
 {
-    public sealed class RdlcCodePatcher : IRdlcCodePatcher
+    public sealed class RdlcCodePatcher  : IRdlcCodePatcher
     {
         public MemoryStream PatchReportCode(string rdlcPath, string? codeSection)
         {

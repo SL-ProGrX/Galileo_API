@@ -1,8 +1,9 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
+using Microsoft.ReportingServices.Diagnostics.Internal;
 using System.Data;
 using System.Text.RegularExpressions;
 
@@ -251,8 +252,31 @@ namespace Galileo.DataBaseTier
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-                    string query = "select *,dbo.fxSEG_MenuAccess(" + req.Empresa_Id + "," + req.Usuario + "," + req.Modulo + "," + req.Formulario + "," + req.Tipo + ") as Acceso FROM SIF_parametros WHERE cod_parametro = @Codigo";
-                    ParametroDto? resultado = connection.QueryFirstOrDefault<ParametroDto>(query);
+                    string query = @"
+                            SELECT *,
+                                   dbo.fxSEG_MenuAccess(
+                                        @Empresa_Id,
+                                        @Usuario,
+                                        @Modulo,
+                                        @Formulario,
+                                        @Tipo
+                                   ) AS Acceso
+                            FROM SIF_parametros
+                            WHERE cod_parametro = @Codigo;
+                        ";
+
+                    ParametroDto? resultado = connection.QueryFirstOrDefault<ParametroDto>(
+                        query,
+                        new
+                        {
+                            Empresa_Id = req.Empresa_Id,
+                            Usuario = req.Usuario,
+                            Modulo = req.Modulo,
+                            Formulario = req.Formulario,
+                            Tipo = req.Tipo,
+                            Codigo = 21  
+                        }
+                    );
 
                     if (resultado != null)
                     {
@@ -264,7 +288,11 @@ namespace Galileo.DataBaseTier
                             Usuario = req.Usuario
                         };
 
-                        result = connection.Query<MenuUsoResultDto>(procedure, parameters, commandType: CommandType.StoredProcedure).ToList();
+                        result = connection.Query<MenuUsoResultDto>(
+                            procedure,
+                            parameters,
+                            commandType: CommandType.StoredProcedure
+                        ).ToList();
                     }
                 }
             }
@@ -281,17 +309,16 @@ namespace Galileo.DataBaseTier
             List<MenuFavoritosResultDto> result;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "spSEG_MenuFavoritos";
-                    var parameters = new
-                    {
-                        Empresa_Id = req.Empresa_Id,
-                        Usuario = req.Usuario
-                    };
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                    result = connection.Query<MenuFavoritosResultDto>(procedure, parameters, commandType: CommandType.StoredProcedure).ToList();
-                }
+                var procedure = "spSEG_MenuFavoritos";
+                var parameters = new
+                {
+                    Empresa_Id = req.Empresa_Id,
+                    Usuario = req.Usuario
+                };
+
+                result = connection.Query<MenuFavoritosResultDto>(procedure, parameters, commandType: CommandType.StoredProcedure).ToList();
             }
             catch (Exception)
             {
@@ -305,20 +332,38 @@ namespace Galileo.DataBaseTier
             string result = "";
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    string query = "select O.modulo"
-                                   + " from permisos P inner join  opciones O on P.id_opt = O.id_opt"
-                                   + " and P.tipo = 'U' and P.nombre in(select userID from usuarios where nombre = '" + usuario + "')"
-                                   + " group by O.modulo"
-                                   + " Union "
-                                   + " select O.modulo"
-                                   + " from permisos P inner join  opciones O on P.id_opt = O.id_opt"
-                                   + " and P.tipo = 'G' and P.nombre in(select id_Grupo from miembros where nombre = '" + usuario + "')"
-                                   + " group by O.modulo";
-                    result = connection.QueryFirstOrDefault<string>(query) ?? string.Empty;
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)); 
 
-                }
+                    string query = @"
+                        SELECT O.modulo
+                        FROM permisos P
+                        INNER JOIN opciones O ON P.id_opt = O.id_opt
+                        WHERE P.tipo = 'U'
+                          AND P.nombre IN (
+                                SELECT userID
+                                FROM usuarios
+                                WHERE nombre = @Usuario
+                          )
+                        GROUP BY O.modulo
+
+                        UNION
+
+                        SELECT O.modulo
+                        FROM permisos P
+                        INNER JOIN opciones O ON P.id_opt = O.id_opt
+                        WHERE P.tipo = 'G'
+                          AND P.nombre IN (
+                                SELECT id_Grupo
+                                FROM miembros
+                                WHERE nombre = @Usuario
+                          )
+                        GROUP BY O.modulo;
+                    ";
+
+                result = connection.QueryFirstOrDefault<string>(
+                             query,
+                             new { Usuario = usuario }
+                         ) ?? string.Empty;
             }
             catch (Exception ex)
             {

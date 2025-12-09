@@ -24,6 +24,33 @@ namespace Galileo.DataBaseTier
         public string controlAuth { get; set; }
 
         private const string DescripcionColumn = "@descripcion";
+        private static readonly Regex CorreoRegex = new Regex(
+               @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+               RegexOptions.CultureInvariant | RegexOptions.Compiled,
+               matchTimeout: TimeSpan.FromMilliseconds(200)
+           );
+
+        private static readonly Regex UpdateSqlRegex = new Regex(
+            @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline |
+            RegexOptions.CultureInvariant | RegexOptions.Compiled,
+            matchTimeout: TimeSpan.FromMilliseconds(200)
+        );
+
+        private static readonly Regex DeleteSqlRegex = new Regex(
+            @"DELETE\s+(FROM\s+)?(?<table>\w+)\s+WHERE\s+(?<whereClause>.+)$",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline |
+            RegexOptions.CultureInvariant | RegexOptions.Compiled,
+            matchTimeout: TimeSpan.FromMilliseconds(200)
+        );
+
+        // Regex precompilada + timeout para evitar ReDoS (S6444)
+        private static readonly Regex InsertSqlRegex = new Regex(
+            @"insert\s+(?:into\s+)?(?<table>\w+)\s*\((?<columns>[^)]+)\)\s*values\s*\((?<values>.+?)\)",
+            RegexOptions.IgnoreCase | RegexOptions.Singleline |
+            RegexOptions.CultureInvariant | RegexOptions.Compiled,
+            matchTimeout: TimeSpan.FromMilliseconds(200)
+        );
 
         public MProGrXAuxiliarDB(IConfiguration config)
         {
@@ -49,8 +76,8 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
 
-                var query = $@"SELECT ISNULL(COUNT(*),0) AS Existe FROM pv_periodos WHERE mes > MONTH('{vfecha}')  AND anio = YEAR('{vfecha}') AND estado = 'C'";
-                var resp = connection.Query<int>(query).FirstOrDefault();
+                var query = $@"SELECT ISNULL(COUNT(*),0) AS Existe FROM pv_periodos WHERE mes > MONTH(@vfecha)  AND anio = YEAR(@vfecha) AND estado = 'C'";
+                var resp = connection.Query<int>(query, new { vfecha }).FirstOrDefault();
                 if (resp > 0)
                 {
                     vPasa = false;
@@ -62,8 +89,8 @@ namespace Galileo.DataBaseTier
 
                 if (vPasa)
                 {
-                    query = $@"Select estado from pv_periodos where anio = YEAR('{vfecha}') AND mes = MONTH('{vfecha}') ";
-                    var estado = connection.Query<string>(query).FirstOrDefault();
+                    query = $@"Select estado from pv_periodos where anio = YEAR(@vfecha) AND mes = MONTH(@vfecha) ";
+                    var estado = connection.Query<string>(query, new { vfecha }).FirstOrDefault();
                     if (estado == "C")
                     {
                         vPasa = false;
@@ -169,8 +196,17 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select estado from pv_productos where cod_producto = '{item.cod_producto}' ";
-                List<ProductoDto> exist = connection.Query<ProductoDto>(query).ToList();
+
+                var query = @"
+                        SELECT estado
+                        FROM pv_productos
+                        WHERE cod_producto = @CodProducto;
+                    ";
+
+                List<ProductoDto> exist = connection.Query<ProductoDto>(
+                    query,
+                    new { CodProducto = item.cod_producto }
+                ).ToList();
 
                 if (exist.Count == 0)
                 {
@@ -195,8 +231,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = '{item.cod_bodega}' ";
-                var bodega = connection.Query<Models.BodegaDto>(query).FirstOrDefault();
+                var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = @cod_bodega ";
+                var bodega = connection.Query<Models.BodegaDto>(query, new { cod_bodega = item.cod_bodega }).FirstOrDefault();
 
                 if (bodega == null)
                 {
@@ -273,8 +309,8 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
 
-                var query = $@"select estado from pv_periodos where anio = YEAR('{vfecha}')  and mes = MONTH('{vfecha}') ";
-                vNum = connection.Query<string>(query).FirstOrDefault();
+                var query = $@"select estado from pv_periodos where anio = YEAR(@vfecha)  and mes = MONTH(@vfecha) ";
+                vNum = connection.Query<string>(query , new { vfecha }).FirstOrDefault();
                 if (vNum == "C")
                 {
                     vPasa = false;
@@ -311,9 +347,17 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"SELECT cod_parametro, valor FROM cxp_parametros WHERE cod_parametro = '{Cod_Parametro}'";
+                var query = @"
+                    SELECT cod_parametro AS Cod_Parametro,
+                           valor        AS Valor
+                    FROM cxp_parametros
+                    WHERE cod_parametro = @CodParametro;
+                ";
 
-                response.Result = connection.Query<ParametroValor>(query).FirstOrDefault();
+                response.Result = connection.QueryFirstOrDefault<ParametroValor>(
+                    query,
+                    new { CodParametro = Cod_Parametro }
+                );
 
                 if (response.Result == null || response.Result.Valor == null)
                 {
@@ -355,8 +399,17 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(clienteConnString);
 
-                var query1 = $@"select genera_user from pv_invTransac where Tipo = '{TipoTran}' and Boleta = '{Boleta}'";
-                var generaUser = connection.ExecuteScalar<string>(query1);
+                var query1 = @"
+                        SELECT genera_user
+                        FROM pv_invTransac
+                        WHERE Tipo = @TipoTran
+                          AND Boleta = @Boleta;
+                    ";
+
+                var generaUser = connection.ExecuteScalar<string>(
+                    query1,
+                    new { TipoTran, Boleta }
+                );
 
                 if (string.IsNullOrEmpty(generaUser))
                 {
@@ -365,8 +418,18 @@ namespace Galileo.DataBaseTier
                     return info;
                 }
 
-                var query2 = $@"select isnull(count(*),0) as Existe from pv_orden_autousers where Usuario = '{AutorizaUser}' and Usuario_Asignado = '{generaUser}' and ENTRADAS = 1";
-                int valideAutorizacion = connection.ExecuteScalar<int>(query2);
+                var query2 = @"
+                        SELECT ISNULL(COUNT(*), 0)
+                        FROM pv_orden_autousers
+                        WHERE Usuario = @AutorizaUser
+                          AND Usuario_Asignado = @GeneraUser
+                          AND ENTRADAS = 1;
+                    ";
+
+                int valideAutorizacion = connection.ExecuteScalar<int>(
+                    query2,
+                    new { AutorizaUser, GeneraUser = generaUser }
+                );
 
                 if (valideAutorizacion == 1)
                 {
@@ -497,8 +560,18 @@ namespace Galileo.DataBaseTier
 
         public static bool fxCorreoValido(string correo)
         {
-            string patron = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
-            return Regex.IsMatch(correo, patron);
+            if (string.IsNullOrWhiteSpace(correo))
+                return false;
+
+            try
+            {
+                return CorreoRegex.IsMatch(correo);
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                // Si excede el timeout, lo tratamos como inválido por seguridad
+                return false;
+            }
         }
 
         /// <summary>
@@ -547,8 +620,8 @@ namespace Galileo.DataBaseTier
                 {
                     var query = $@"select COUNT(*)  FROM PV_CONTROL_ACTIVOS
                                     WHERE ENTREGA_USUARIO = ''
-                                    AND ESTADO IN ('P', 'R') AND REGISTRO_USUARIO = '{usuario}'";
-                    result.Result = connection.QueryFirstOrDefault<int>(query);
+                                    AND ESTADO IN ('P', 'R') AND REGISTRO_USUARIO = @usuario";
+                    result.Result = connection.QueryFirstOrDefault<int>(query, new { usuario });
                 }
             }
             catch (Exception ex)
@@ -603,22 +676,31 @@ namespace Galileo.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
 
 
-                var strSQL = $@"INSERT INTO [dbo].[BITACORA_PRODUCTOS]
-                                           ([COD_PRODUCTO]
-                                           ,[CONSEC]
-                                           ,[MOVIMIENTO]
-                                           ,[DETALLE]
-                                           ,[REGISTRO_FECHA]
-                                           ,[REGISTRO_USUARIO])
-                                     VALUES
-                                           ('{req.cod_producto}'
-                                           ,{req.consec}
-                                           ,'{req.movimiento}' 
-                                           , '{req.detalle}'
-                                           , getdate()
-                                           , '{req.registro_usuario}' )";
+                var strSQL = @"
+                        INSERT INTO [dbo].[BITACORA_PRODUCTOS]
+                            ([COD_PRODUCTO],
+                             [CONSEC],
+                             [MOVIMIENTO],
+                             [DETALLE],
+                             [REGISTRO_FECHA],
+                             [REGISTRO_USUARIO])
+                        VALUES
+                            (@CodProducto,
+                             @Consec,
+                             @Movimiento,
+                             @Detalle,
+                             GETDATE(),
+                             @RegistroUsuario);
+                    ";
 
-                resp.Code = connection.Execute(strSQL);
+                resp.Code = connection.Execute(strSQL, new
+                {
+                    CodProducto = req.cod_producto,
+                    Consec = req.consec,
+                    Movimiento = req.movimiento,
+                    Detalle = req.detalle,
+                    RegistroUsuario = req.registro_usuario
+                });
                 resp.Description = "Ok";
 
             }
@@ -647,22 +729,31 @@ namespace Galileo.DataBaseTier
 
 
 
-                var strSQL = $@"INSERT INTO [dbo].[BITACORA_PROVEEDOR]
-                                           ([COD_PROVEEDOR]
-                                           ,[CONSEC]
-                                           ,[MOVIMIENTO]
-                                           ,[DETALLE]
-                                           ,[REGISTRO_FECHA]
-                                           ,[REGISTRO_USUARIO])
-                                     VALUES
-                                           ('{req.cod_proveedor}'
-                                           ,{req.consec}
-                                           ,'{req.movimiento}' 
-                                           , '{req.detalle}'
-                                           , getdate()
-                                           , '{req.registro_usuario}' )";
+                var strSQL = @"
+                        INSERT INTO [dbo].[BITACORA_PROVEEDOR]
+                            ([COD_PROVEEDOR],
+                             [CONSEC],
+                             [MOVIMIENTO],
+                             [DETALLE],
+                             [REGISTRO_FECHA],
+                             [REGISTRO_USUARIO])
+                        VALUES
+                            (@CodProveedor,
+                             @Consec,
+                             @Movimiento,
+                             @Detalle,
+                             GETDATE(),
+                             @RegistroUsuario);
+                    ";
 
-                resp.Code = connection.Execute(strSQL);
+                resp.Code = connection.Execute(strSQL, new
+                {
+                    CodProveedor = req.cod_proveedor,
+                    Consec = req.consec,
+                    Movimiento = req.movimiento,
+                    Detalle = req.detalle,
+                    RegistroUsuario = req.registro_usuario
+                });
                 resp.Description = "Ok";
 
             }
@@ -808,9 +899,19 @@ namespace Galileo.DataBaseTier
 
         private static Match? ParseUpdateSql(string sql)
         {
-            string pattern = @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$";
-            var match = Regex.Match(sql, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-            return match.Success ? match : null;
+            if (string.IsNullOrWhiteSpace(sql))
+                return null;
+
+            try
+            {
+                var match = UpdateSqlRegex.Match(sql);
+                return match.Success ? match : null;
+            }
+            catch (RegexMatchTimeoutException)
+            {
+                // Si la regex tarda demasiado, lo tratamos como no parseable
+                return null;
+            }
         }
 
         private static int SetErrorResult(ErrorDto result, string description, int code = -1)
@@ -1071,9 +1172,17 @@ VALUES (
             {
                 using var connection = new SqlConnection(stringConn);
 
-                //busco el registro en la tabla de control
-                var query = $@"SELECT * FROM FND_CONTROL_CAMBIOS_APROB WHERE ID_CAMBIO = {idCambio}";
-                var dtCambio = connection.Query<FndControlCambioAprobDto>(query).FirstOrDefault();
+                // busco el registro en la tabla de control
+                var query = @"
+                    SELECT *
+                    FROM FND_CONTROL_CAMBIOS_APROB
+                    WHERE ID_CAMBIO = @IdCambio;
+                ";
+
+                var dtCambio = connection.QueryFirstOrDefault<FndControlCambioAprobDto>(
+                    query,
+                    new { IdCambio = idCambio }
+                );
                 if (dtCambio == null)
                 {
                     result.Code = -1;
@@ -1113,9 +1222,9 @@ VALUES (
                 if (result.Code != -1)
                 {
                     //Actualizo el estado de la tabla de control
-                    query = $@"UPDATE FND_CONTROL_CAMBIOS_APROB SET COD_ESTADO = 'V', USUARIO_APRUEBA = '{usuario}' , FECHA_APRUEBA = getDate()
-                                    WHERE ID_CAMBIO = {idCambio}";
-                    connection.Execute(query);
+                    query = $@"UPDATE FND_CONTROL_CAMBIOS_APROB SET COD_ESTADO = 'V', USUARIO_APRUEBA = @usuario , FECHA_APRUEBA = getDate()
+                                    WHERE ID_CAMBIO = @idCambio";
+                    connection.Execute(query, new { idCambio = idCambio, usuario = usuario });
                     result.Description = "ok";
                 }
                 else
@@ -1174,9 +1283,18 @@ VALUES (
 
                 try
                 {
-                    //Obtengo el where de la consulta
-                    string patternDelete = @"DELETE\s+(FROM\s+)?(?<table>\w+)\s+WHERE\s+(?<whereClause>.+)$";
-                    var matchDelete = Regex.Match(request.strSQL, patternDelete, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                    Match matchDelete;
+                    try
+                    {
+                        matchDelete = DeleteSqlRegex.Match(request.strSQL ?? string.Empty);
+                    }
+                    catch (RegexMatchTimeoutException)
+                    {
+                        result.Code = -1;
+                        result.Description = "La sentencia SQL no es válida o excede el tiempo de análisis.";
+                        return result.Code ?? -1;
+                    }
+
                     if (!matchDelete.Success)
                     {
                         result.Code = -1;
@@ -1233,8 +1351,18 @@ VALUES (
                 try
                 {
                     //Obtengo el where de la consulta
-                    string patternInsert = @"insert\s+(?:into\s+)?(?<table>\w+)\s*\((?<columns>[^)]+)\)\s*values\s*\((?<values>.+?)\)";
-                    var matchInsert = Regex.Match(request.strSQL, patternInsert, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                    Match matchInsert;
+                    try
+                    {
+                        matchInsert = InsertSqlRegex.Match(request.strSQL ?? string.Empty);
+                    }
+                    catch (RegexMatchTimeoutException)
+                    {
+                        result.Code = -1;
+                        result.Description = "La sentencia SQL no es válida o excede el tiempo de análisis.";
+                        return result.Code ?? -1;
+                    }
+
                     if (!matchInsert.Success)
                     {
                         result.Code = -1;
