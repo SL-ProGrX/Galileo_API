@@ -269,7 +269,6 @@ namespace Galileo.DataBaseTier
 
                 var trimmed = valExpr.Trim();
 
-                // Antes: Regex.Match(trimmed, @"^=Parameters!(?<p>\w+)\.Value$", RegexOptions.IgnoreCase);
                 var m = Regex.Match(
                     trimmed,
                     @"^=Parameters!(?<p>\w+)\.Value$",
