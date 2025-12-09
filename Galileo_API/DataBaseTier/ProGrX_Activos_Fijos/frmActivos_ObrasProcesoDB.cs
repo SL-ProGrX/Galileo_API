@@ -24,30 +24,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Obras_Actualizar(int CodEmpresa, string estado, DateTime fecha_finiquito, string contrato)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            const string query = @"
+                UPDATE Activos_obras 
+                   SET estado          = @estado,
+                       fecha_finiquito = @fecha_finiquito 
+                 WHERE contrato        = @contrato";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    UPDATE Activos_obras 
-                       SET estado         = @estado,
-                           fecha_finiquito = @fecha_finiquito 
-                     WHERE contrato       = @contrato";
-
-                connection.Execute(query, new { estado, fecha_finiquito, contrato });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-
-            return result;
+            return DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new { estado, fecha_finiquito, contrato });
         }
 
         /// <summary>
@@ -55,31 +38,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_ObrasTipos_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            const string query = @"
+                SELECT RTRIM(cod_tipo)     AS item,
+                       RTRIM(descripcion) AS descripcion 
+                FROM   Activos_obras_tipos";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT RTRIM(cod_tipo)     AS item,
-                           RTRIM(descripcion) AS descripcion 
-                    FROM   Activos_obras_tipos";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, query);
         }
 
         /// <summary>
@@ -87,31 +51,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_ObrasTiposDesem_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            const string query = @"
+                SELECT cod_desembolso AS item,
+                       descripcion    AS descripcion 
+                FROM   Activos_obras_tDesem";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT cod_desembolso AS item,
-                           descripcion    AS descripcion 
-                    FROM   Activos_obras_tDesem";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, query);
         }
 
         /// <summary>
@@ -119,31 +64,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Obras_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            const string query = @"
+                SELECT RTRIM(contrato)    AS item,
+                       RTRIM(descripcion) AS descripcion 
+                FROM   Activos_obras";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT RTRIM(contrato)    AS item,
-                           RTRIM(descripcion) AS descripcion 
-                    FROM   Activos_obras";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, query);
         }
 
         /// <summary>
@@ -151,31 +77,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Obra_Proveedores_Obtener(int CodEmpresa)
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            const string query = @"
+                SELECT cod_proveedor AS item,
+                       descripcion   AS descripcion 
+                FROM   Activos_proveedores";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT cod_proveedor AS item,
-                           descripcion   AS descripcion 
-                    FROM   Activos_proveedores";
-
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, query);
         }
 
         /// <summary>
@@ -183,54 +90,38 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<ActivosObrasData> Activos_Obras_Consultar(int CodEmpresa, string contrato)
         {
-            var result = new ErrorDto<ActivosObrasData>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new ActivosObrasData()
-            };
+            const string query = @"
+                SELECT  o.contrato,
+                        o.Descripcion,
+                        o.Estado,
+                        o.Notas,
+                        o.COD_PROVEEDOR,
+                        o.fecha_finiquito,
+                        o.encargado,
+                        o.fecha_Inicio,
+                        o.fecha_estimada,
+                        o.ubicacion,
+                        o.presu_original,
+                        o.addendums,
+                        o.presu_actual,
+                        o.desembolsado,
+                        o.distribuido,
+                        o.Registro_Usuario,
+                        o.Registro_fecha,
+                        o.cod_tipo,
+                        T.descripcion AS TipoObra,
+                        P.descripcion AS Proveedor
+                FROM    Activos_obras O 
+                INNER JOIN Activos_obras_Tipos T ON O.cod_tipo      = T.cod_tipo
+                INNER JOIN cxp_proveedores      P ON O.cod_proveedor = P.cod_proveedor
+                WHERE   O.contrato = @contrato";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT  o.contrato,
-                            o.Descripcion,
-                            o.Estado,
-                            o.Notas,
-                            o.COD_PROVEEDOR,
-                            o.fecha_finiquito,
-                            o.encargado,
-                            o.fecha_Inicio,
-                            o.fecha_estimada,
-                            o.ubicacion,
-                            o.presu_original,
-                            o.addendums,
-                            o.presu_actual,
-                            o.desembolsado,
-                            o.distribuido,
-                            o.Registro_Usuario,
-                            o.Registro_fecha,
-                            o.cod_tipo,
-                            T.descripcion AS TipoObra,
-                            P.descripcion AS Proveedor
-                    FROM    Activos_obras O 
-                    INNER JOIN Activos_obras_Tipos T ON O.cod_tipo      = T.cod_tipo
-                    INNER JOIN cxp_proveedores      P ON O.cod_proveedor = P.cod_proveedor
-                    WHERE   O.contrato = @contrato";
-
-                result.Result = connection
-                    .Query<ActivosObrasData>(query, new { contrato })
-                    .FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteSingleQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new ActivosObrasData(),
+                new { contrato });
         }
 
         /// <summary>
@@ -238,12 +129,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<ActivosObrasProcesoAdendumsData>> Activos_ObrasAdendums_Obtener(int CodEmpresa, string contrato, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<ActivosObrasProcesoAdendumsData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<ActivosObrasProcesoAdendumsData>()
-            };
+            var result = DbHelper.CreateOkResponse(new List<ActivosObrasProcesoAdendumsData>());
 
             try
             {
@@ -334,12 +220,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<ActivosObrasProcesoDesembolsosData>> Activos_ObrasDesembolsos_Obtener(int CodEmpresa, string contrato, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<ActivosObrasProcesoDesembolsosData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<ActivosObrasProcesoDesembolsosData>()
-            };
+            var result = DbHelper.CreateOkResponse(new List<ActivosObrasProcesoDesembolsosData>());
 
             try
             {
@@ -443,56 +324,39 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<ActivosObrasProcesoResultadosData>> Activos_ObrasResultados_Obtener(int CodEmpresa, string contrato)
         {
-            var result = new ErrorDto<List<ActivosObrasProcesoResultadosData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<ActivosObrasProcesoResultadosData>()
-            };
+            const string query = @"
+                SELECT O.ID_RESULTADOS,
+                       'ACTIVO' AS Tipo,
+                       O.num_placa,
+                       A.valor_historico AS Monto,
+                       O.id_adicion,
+                       A.nombre,
+                       T.descripcion AS TA
+                FROM   Activos_obras_resultados O 
+                INNER JOIN Activos_Principal   A ON O.num_placa   = A.num_placa
+                INNER JOIN Activos_tipo_activo T ON A.tipo_activo = T.tipo_activo
+                WHERE  O.tipo     = 'A' 
+                   AND O.contrato = @contrato
+                UNION
+                SELECT O.ID_RESULTADOS,
+                       'MEJORAS' AS Tipo,
+                       O.num_placa,
+                       A.Monto,
+                       O.id_adicion,
+                       A.descripcion AS nombre,
+                       T.descripcion AS TA
+                FROM   Activos_obras_resultados O 
+                INNER JOIN Activos_retiro_adicion A ON O.num_placa  = A.num_placa
+                                                   AND O.id_adicion = A.ID_ADDRET
+                INNER JOIN Activos_justificaciones T ON A.cod_justificacion = T.cod_justificacion
+                WHERE  O.tipo     = 'M' 
+                   AND O.contrato = @contrato";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT O.ID_RESULTADOS,
-                           'ACTIVO' AS Tipo,
-                           O.num_placa,
-                           A.valor_historico AS Monto,
-                           O.id_adicion,
-                           A.nombre,
-                           T.descripcion AS TA
-                    FROM   Activos_obras_resultados O 
-                    INNER JOIN Activos_Principal   A ON O.num_placa   = A.num_placa
-                    INNER JOIN Activos_tipo_activo T ON A.tipo_activo = T.tipo_activo
-                    WHERE  O.tipo     = 'A' 
-                       AND O.contrato = @contrato
-                    UNION
-                    SELECT O.ID_RESULTADOS,
-                           'MEJORAS' AS Tipo,
-                           O.num_placa,
-                           A.Monto,
-                           O.id_adicion,
-                           A.descripcion AS nombre,
-                           T.descripcion AS TA
-                    FROM   Activos_obras_resultados O 
-                    INNER JOIN Activos_retiro_adicion A ON O.num_placa  = A.num_placa
-                                                       AND O.id_adicion = A.ID_ADDRET
-                    INNER JOIN Activos_justificaciones T ON A.cod_justificacion = T.cod_justificacion
-                    WHERE  O.tipo     = 'M' 
-                       AND O.contrato = @contrato";
-
-                result.Result = connection
-                    .Query<ActivosObrasProcesoResultadosData>(query, new { contrato })
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteListQuery<ActivosObrasProcesoResultadosData>(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new { contrato });
         }
 
         /// <summary>
@@ -500,44 +364,37 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Obras_Modificar(int CodEmpresa, ActivosObrasData data, string usuario)
         {
-            var result = new ErrorDto
+            const string query = @"
+                UPDATE Activos_obras 
+                   SET descripcion    = @descripcion,
+                       encargado      = @encargado,
+                       notas          = @notas,
+                       cod_proveedor  = @cod_proveedor,
+                       presu_original = @presu_original,
+                       presu_actual   = @presu_actual,
+                       ubicacion      = @ubicacion,
+                       fecha_inicio   = @fecha_inicio,
+                       fecha_estimada = @fecha_estimada,
+                       cod_tipo       = @cod_tipo
+                 WHERE contrato      = @contrato";
+
+            var result = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
             {
-                Code = 0,
-                Description = "Ok"
-            };
+                data.descripcion,
+                data.encargado,
+                data.notas,
+                data.cod_proveedor,
+                data.presu_original,
+                data.presu_actual,
+                data.ubicacion,
+                data.fecha_inicio,
+                data.fecha_estimada,
+                data.cod_tipo,
+                data.contrato
+            });
 
-            try
+            if (result.Code == 0)
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    UPDATE Activos_obras 
-                       SET descripcion    = @descripcion,
-                           encargado      = @encargado,
-                           notas          = @notas,
-                           cod_proveedor  = @cod_proveedor,
-                           presu_original = @presu_original,
-                           presu_actual   = @presu_actual,
-                           ubicacion      = @ubicacion,
-                           fecha_inicio   = @fecha_inicio,
-                           fecha_estimada = @fecha_estimada,
-                           cod_tipo       = @cod_tipo
-                     WHERE contrato      = @contrato";
-
-                connection.Execute(query, new
-                {
-                    data.descripcion,
-                    data.encargado,
-                    data.notas,
-                    data.cod_proveedor,
-                    data.presu_original,
-                    data.presu_actual,
-                    data.ubicacion,
-                    data.fecha_inicio,
-                    data.fecha_estimada,
-                    data.cod_tipo,
-                    data.contrato
-                });
-
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -546,11 +403,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Movimiento = "Modifica - WEB",
                     Modulo = vModulo
                 });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
             }
 
             return result;
@@ -561,46 +413,39 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Obras_Insertar(int CodEmpresa, ActivosObrasData data, string usuario)
         {
-            var result = new ErrorDto
+            const string query = @"
+                INSERT INTO Activos_obras
+                    (contrato, cod_tipo, descripcion, estado, encargado, cod_proveedor,
+                     fecha_inicio, fecha_estimada, notas, ubicacion, presu_original,
+                     addendums, presu_actual, desembolsado, distribuido, 
+                     registro_usuario, registro_fecha)
+                VALUES
+                    (@contrato, @cod_tipo, @descripcion, 'P', @encargado, @cod_proveedor,
+                     @fecha_inicio, @fecha_estimada, @notas, @ubicacion, @presu_original,
+                     @addendums, @presu_actual, @desembolsado, @distribuido,
+                     @usuario, GETDATE())";
+
+            var result = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
             {
-                Code = 0,
-                Description = "Ok"
-            };
+                data.contrato,
+                data.cod_tipo,
+                data.descripcion,
+                data.encargado,
+                data.cod_proveedor,
+                data.fecha_inicio,
+                data.fecha_estimada,
+                data.notas,
+                data.ubicacion,
+                data.presu_original,
+                data.addendums,
+                data.presu_actual,
+                data.desembolsado,
+                data.distribuido,
+                usuario
+            });
 
-            try
+            if (result.Code == 0)
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    INSERT INTO Activos_obras
-                        (contrato, cod_tipo, descripcion, estado, encargado, cod_proveedor,
-                         fecha_inicio, fecha_estimada, notas, ubicacion, presu_original,
-                         addendums, presu_actual, desembolsado, distribuido, 
-                         registro_usuario, registro_fecha)
-                    VALUES
-                        (@contrato, @cod_tipo, @descripcion, 'P', @encargado, @cod_proveedor,
-                         @fecha_inicio, @fecha_estimada, @notas, @ubicacion, @presu_original,
-                         @addendums, @presu_actual, @desembolsado, @distribuido,
-                         @usuario, GETDATE())";
-
-                connection.Execute(query, new
-                {
-                    data.contrato,
-                    data.cod_tipo,
-                    data.descripcion,
-                    data.encargado,
-                    data.cod_proveedor,
-                    data.fecha_inicio,
-                    data.fecha_estimada,
-                    data.notas,
-                    data.ubicacion,
-                    data.presu_original,
-                    data.addendums,
-                    data.presu_actual,
-                    data.desembolsado,
-                    data.distribuido,
-                    usuario
-                });
-
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -609,11 +454,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Movimiento = "Registra - WEB",
                     Modulo = vModulo
                 });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
             }
 
             return result;
@@ -624,18 +464,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Obra_Eliminar(int CodEmpresa, string contrato, string usuario)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            const string query = @"DELETE FROM Activos_Obras WHERE contrato = @contrato";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"DELETE FROM Activos_Obras WHERE contrato = @contrato";
-                connection.Execute(query, new { contrato });
+            var result = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new { contrato });
 
+            if (result.Code == 0)
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -644,11 +478,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Movimiento = "Elimina - WEB",
                     Modulo = vModulo
                 });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
             }
 
             return result;
@@ -659,11 +488,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_ObrasAdendum_Guardar(int CodEmpresa, ActivosObrasProcesoAdendumsData dato, string usuario, string contrato, decimal addendums, decimal presu_actual)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var result = DbHelper.CreateOkResponse();
 
             try
             {
@@ -730,11 +555,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_ObrasDesembolso_Guardar(int CodEmpresa, ActivosObrasProcesoDesembolsosData dato, string usuario, string contrato)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var result = DbHelper.CreateOkResponse();
 
             try
             {

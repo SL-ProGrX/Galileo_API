@@ -14,6 +14,43 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly PortalDB _portalDB;
         private const string _filtro = "@filtro";
 
+        // SQL base para DEPARTAMENTOS (reutilizado en lista y exportación)
+        private const string DeptSelectBaseSql = @"
+            FROM dbo.ACTIVOS_DEPARTAMENTOS d
+            LEFT JOIN dbo.CNTX_UNIDADES u
+              ON u.COD_UNIDAD = d.COD_UNIDAD";
+
+        private const string DeptWhereFilterSql = @"
+            WHERE 1 = 1
+              AND (
+                    @filtro IS NULL
+                    OR d.COD_DEPARTAMENTO         LIKE @filtro
+                    OR d.DESCRIPCION              LIKE @filtro
+                    OR d.COD_UNIDAD               LIKE @filtro
+                    OR ISNULL(u.DESCRIPCION,'')   LIKE @filtro
+                    OR ISNULL(d.REGISTRO_USUARIO,'') LIKE @filtro
+                  )";
+
+        // SQL base para SECCIONES (reutilizado en lista y exportación)
+        private const string SeccSelectBaseSql = @"
+            FROM dbo.ACTIVOS_SECCIONES s
+            LEFT JOIN dbo.CNTX_CENTRO_COSTOS cc
+                ON cc.COD_CENTRO_COSTO = s.COD_CENTRO_COSTO
+            LEFT JOIN dbo.ACTIVOS_DEPARTAMENTOS d
+                ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENTO";
+
+        private const string SeccWhereFilterSql = @"
+            WHERE 1 = 1
+              AND (@dept IS NULL OR s.COD_DEPARTAMENTO = @dept)
+              AND (
+                    @filtro IS NULL
+                    OR s.COD_SECCION           LIKE @filtro
+                    OR s.DESCRIPCION           LIKE @filtro
+                    OR s.COD_CENTRO_COSTO      LIKE @filtro
+                    OR ISNULL(cc.DESCRIPCION,'') LIKE @filtro
+                    OR ISNULL(d.DESCRIPCION,'')  LIKE @filtro
+                  )";
+
         public FrmActivosSeccionesDb(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
@@ -25,12 +62,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<ActivosDepartamentosLista> Activos_DepartamentosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var resp = new ErrorDto<ActivosDepartamentosLista>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new ActivosDepartamentosLista()
-            };
+            var resp = DbHelper.CreateOkResponse(
+                new ActivosDepartamentosLista
+                {
+                    total = 0,
+                    lista = new List<ActivosDepartamentosData>()
+                });
 
             try
             {
@@ -58,40 +95,25 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p.Add("@offset", pagina, DbType.Int32);
                 p.Add("@rows", paginacion, DbType.Int32);
 
-                const string sqlCount = @"
+                // COUNT reutilizando el FROM/WHERE base
+                string sqlCount = @"
                     SELECT COUNT(DISTINCT d.COD_DEPARTAMENTO)
-                    FROM dbo.ACTIVOS_DEPARTAMENTOS d
-                    LEFT JOIN dbo.CNTX_UNIDADES u
-                      ON u.COD_UNIDAD = d.COD_UNIDAD
-                    WHERE 1 = 1
-                      AND (
-                            @filtro IS NULL
-                            OR d.COD_DEPARTAMENTO LIKE @filtro
-                            OR d.DESCRIPCION      LIKE @filtro
-                            OR d.COD_UNIDAD       LIKE @filtro
-                            OR ISNULL(u.DESCRIPCION,'') LIKE @filtro
-                          );";
+                    " + DeptSelectBaseSql + @"
+                    " + DeptWhereFilterSql + ";";
 
-                resp.Result.total = cn.QueryFirstOrDefault<int>(sqlCount, p);
+                if (resp.Result != null)
+                    resp.Result.total = cn.QueryFirstOrDefault<int?>(sqlCount, p) ?? 0;
 
-                const string sqlData = @"
+                // DATA reutilizando el FROM/WHERE base
+                string sqlData = @"
                     SELECT DISTINCT
                         d.COD_DEPARTAMENTO            AS cod_departamento,
                         ISNULL(d.DESCRIPCION,'')      AS descripcion,
                         ISNULL(d.COD_UNIDAD,'')       AS cod_unidad,
                         ISNULL(u.DESCRIPCION,'')      AS unidad_desc,
                         ISNULL(d.REGISTRO_USUARIO,'') AS usuario
-                    FROM dbo.ACTIVOS_DEPARTAMENTOS d
-                    LEFT JOIN dbo.CNTX_UNIDADES u
-                      ON u.COD_UNIDAD = d.COD_UNIDAD
-                    WHERE 1 = 1
-                      AND (
-                            @filtro IS NULL
-                            OR d.COD_DEPARTAMENTO LIKE @filtro
-                            OR d.DESCRIPCION      LIKE @filtro
-                            OR d.COD_UNIDAD       LIKE @filtro
-                            OR ISNULL(u.DESCRIPCION,'') LIKE @filtro
-                          )
+                    " + DeptSelectBaseSql + @"
+                    " + DeptWhereFilterSql + @"
                     ORDER BY
                         -- sortOrder = 0 => DESC
                         CASE WHEN @sortOrder = 0 AND @sortField = 'cod_departamento' THEN d.COD_DEPARTAMENTO END DESC,
@@ -108,14 +130,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         CASE WHEN @sortOrder = 1 AND @sortField = 'usuario'          THEN d.REGISTRO_USUARIO END ASC
                     OFFSET @offset ROWS FETCH NEXT @rows ROWS ONLY;";
 
-                resp.Result.lista = cn.Query<ActivosDepartamentosData>(sqlData, p).ToList();
+                if (resp.Result != null)
+                    resp.Result.lista = cn.Query<ActivosDepartamentosData>(sqlData, p).ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
-                resp.Result.total = 0;
-                resp.Result.lista = [];
+                if (resp.Result != null)
+                {
+                    resp.Result.total = 0;
+                    resp.Result.lista = [];
+                }
             }
             return resp;
         }
@@ -125,53 +151,28 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<ActivosDepartamentosData>> Activos_Departamentos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            var resp = new ErrorDto<List<ActivosDepartamentosData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<ActivosDepartamentosData>()
-            };
+            var p = new DynamicParameters();
+            string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
+                ? null
+                : $"%{filtros.filtro.Trim()}%";
+            p.Add(_filtro, filtroLike, DbType.String);
 
-            try
-            {
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
+            string query = @"
+                SELECT
+                    d.COD_DEPARTAMENTO            AS cod_departamento,
+                    ISNULL(d.DESCRIPCION,'')      AS descripcion,
+                    ISNULL(d.COD_UNIDAD,'')       AS cod_unidad,
+                    ISNULL(u.DESCRIPCION,'')      AS unidad_desc,
+                    ISNULL(d.REGISTRO_USUARIO,'') AS usuario
+                " + DeptSelectBaseSql + @"
+                " + DeptWhereFilterSql + @"
+                ORDER BY d.COD_DEPARTAMENTO;";
 
-                var p = new DynamicParameters();
-                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
-                    ? null
-                    : $"%{filtros.filtro.Trim()}%";
-                p.Add(_filtro, filtroLike, DbType.String);
-
-                const string query = @"
-                    SELECT
-                        d.COD_DEPARTAMENTO            AS cod_departamento,
-                        ISNULL(d.DESCRIPCION,'')      AS descripcion,
-                        ISNULL(d.COD_UNIDAD,'')       AS cod_unidad,
-                        ISNULL(u.DESCRIPCION,'')      AS unidad_desc,
-                        ISNULL(d.REGISTRO_USUARIO,'') AS usuario
-                    FROM dbo.ACTIVOS_DEPARTAMENTOS d
-                    LEFT JOIN dbo.CNTX_UNIDADES u
-                      ON u.COD_UNIDAD = d.COD_UNIDAD
-                    WHERE 1 = 1
-                      AND (
-                            @filtro IS NULL
-                            OR d.COD_DEPARTAMENTO LIKE @filtro
-                            OR d.DESCRIPCION      LIKE @filtro
-                            OR d.COD_UNIDAD       LIKE @filtro
-                            OR ISNULL(u.DESCRIPCION,'') LIKE @filtro
-                            OR ISNULL(d.REGISTRO_USUARIO,'') LIKE @filtro
-                          )
-                    ORDER BY d.COD_DEPARTAMENTO;";
-
-                resp.Result = cn.Query<ActivosDepartamentosData>(query, p).ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return DbHelper.ExecuteListQuery<ActivosDepartamentosData>(
+                _portalDB,
+                CodEmpresa,
+                query,
+                p);
         }
 
         /// <summary>
@@ -179,7 +180,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_Departamentos_Guardar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
@@ -227,12 +228,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         private ErrorDto Activos_Departamentos_Insertar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
-
                 const string query = @"
                     INSERT INTO dbo.ACTIVOS_DEPARTAMENTOS
                        (COD_DEPARTAMENTO, DESCRIPCION, COD_UNIDAD,
@@ -241,24 +240,34 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                        (@cod, @desc, @unidad,
                         SYSDATETIME(), @usr, NULL, NULL);";
 
-                cn.Execute(query, new
-                {
-                    cod = departamento.cod_departamento.ToUpper(),
-                    desc = departamento.descripcion?.ToUpper(),
-                    unidad = departamento.cod_unidad.ToUpper(),
-                    usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-                });
+                var dbResp = DbHelper.ExecuteNonQuery(
+                    _portalDB,
+                    CodEmpresa,
+                    query,
+                    new
+                    {
+                        cod = departamento.cod_departamento.ToUpper(),
+                        desc = departamento.descripcion?.ToUpper(),
+                        unidad = departamento.cod_unidad.ToUpper(),
+                        usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+                    });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Departamento: {departamento.cod_departamento} - {departamento.descripcion} / Unidad: {departamento.cod_unidad}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
+                resp.Code = dbResp.Code;
+                resp.Description = dbResp.Description;
 
-                resp.Description = "Departamento ingresado satisfactoriamente.";
+                if (resp.Code == 0)
+                {
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = CodEmpresa,
+                        Usuario = usuario ?? "",
+                        DetalleMovimiento = $"Departamento: {departamento.cod_departamento} - {departamento.descripcion} / Unidad: {departamento.cod_unidad}",
+                        Movimiento = "Registra - WEB",
+                        Modulo = vModulo
+                    });
+
+                    resp.Description = "Departamento ingresado satisfactoriamente.";
+                }
             }
             catch (Exception ex)
             {
@@ -270,12 +279,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         private ErrorDto Activos_Departamentos_Actualizar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
-
                 const string query = @"
                     UPDATE dbo.ACTIVOS_DEPARTAMENTOS
                        SET DESCRIPCION      = @desc,
@@ -284,24 +291,34 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                            MODIFICA_FECHA   = SYSDATETIME()
                      WHERE COD_DEPARTAMENTO = @cod;";
 
-                cn.Execute(query, new
-                {
-                    cod = departamento.cod_departamento.ToUpper(),
-                    desc = departamento.descripcion?.ToUpper(),
-                    unidad = departamento.cod_unidad.ToUpper(),
-                    usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-                });
+                var dbResp = DbHelper.ExecuteNonQuery(
+                    _portalDB,
+                    CodEmpresa,
+                    query,
+                    new
+                    {
+                        cod = departamento.cod_departamento.ToUpper(),
+                        desc = departamento.descripcion?.ToUpper(),
+                        unidad = departamento.cod_unidad.ToUpper(),
+                        usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+                    });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Departamento: {departamento.cod_departamento} - {departamento.descripcion} / Unidad: {departamento.cod_unidad}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
-                });
+                resp.Code = dbResp.Code;
+                resp.Description = dbResp.Description;
 
-                resp.Description = "Departamento actualizado satisfactoriamente.";
+                if (resp.Code == 0)
+                {
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = CodEmpresa,
+                        Usuario = usuario ?? "",
+                        DetalleMovimiento = $"Departamento: {departamento.cod_departamento} - {departamento.descripcion} / Unidad: {departamento.cod_unidad}",
+                        Movimiento = "Modifica - WEB",
+                        Modulo = vModulo
+                    });
+
+                    resp.Description = "Departamento actualizado satisfactoriamente.";
+                }
             }
             catch (Exception ex)
             {
@@ -313,29 +330,35 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         public ErrorDto Activos_Departamentos_Eliminar(int CodEmpresa, string usuario, string cod_departamento)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
                 if (string.IsNullOrWhiteSpace(cod_departamento))
                     return new ErrorDto { Code = -1, Description = "Debe indicar el código de departamento." };
 
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
-
                 const string query = @"DELETE FROM dbo.ACTIVOS_DEPARTAMENTOS WHERE COD_DEPARTAMENTO = @cod;";
-                int rows = cn.Execute(query, new { cod = cod_departamento.ToUpper() });
 
-                if (rows == 0)
-                    return new ErrorDto { Code = -2, Description = $"El departamento {cod_departamento.ToUpper()} no existe." };
+                var dbResp = DbHelper.ExecuteNonQuery(
+                    _portalDB,
+                    CodEmpresa,
+                    query,
+                    new { cod = cod_departamento.ToUpper() });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                resp.Code = dbResp.Code;
+                resp.Description = dbResp.Description;
+
+                if (resp.Code == 0)
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Departamento: {cod_departamento}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
-                });
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = CodEmpresa,
+                        Usuario = usuario ?? "",
+                        DetalleMovimiento = $"Departamento: {cod_departamento}",
+                        Movimiento = "Elimina - WEB",
+                        Modulo = vModulo
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -347,7 +370,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         public ErrorDto Activos_Departamentos_Valida(int CodEmpresa, string cod_departamento)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
@@ -381,12 +404,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<ActivosSeccionesLista> Activos_SeccionesLista_Obtener(int CodEmpresa, string? cod_departamento, FiltrosLazyLoadData filtros)
         {
-            var resp = new ErrorDto<ActivosSeccionesLista>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new ActivosSeccionesLista()
-            };
+            var resp = DbHelper.CreateOkResponse(
+                new ActivosSeccionesLista
+                {
+                    total = 0,
+                    lista = new List<ActivosSeccionesData>()
+                });
 
             try
             {
@@ -415,27 +438,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p.Add("@offset", pagina, DbType.Int32);
                 p.Add("@rows", paginacion, DbType.Int32);
 
-                const string qTotal = @"
+                string qTotal = @"
                     SELECT COUNT(1)
-                    FROM dbo.ACTIVOS_SECCIONES s
-                    LEFT JOIN dbo.CNTX_CENTRO_COSTOS cc
-                        ON cc.COD_CENTRO_COSTO = s.COD_CENTRO_COSTO
-                    LEFT JOIN dbo.ACTIVOS_DEPARTAMENTOS d
-                        ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENTO
-                    WHERE 1 = 1
-                      AND (@dept IS NULL OR s.COD_DEPARTAMENTO = @dept)
-                      AND (
-                            @filtro IS NULL
-                            OR s.COD_SECCION       LIKE @filtro
-                            OR s.DESCRIPCION       LIKE @filtro
-                            OR s.COD_CENTRO_COSTO  LIKE @filtro
-                            OR ISNULL(cc.DESCRIPCION,'') LIKE @filtro
-                            OR ISNULL(d.DESCRIPCION,'')  LIKE @filtro
-                          );";
+                    " + SeccSelectBaseSql + @"
+                    " + SeccWhereFilterSql + ";";
 
-                resp.Result.total = cn.QueryFirstOrDefault<int>(qTotal, p);
+                if (resp.Result != null)
+                    resp.Result.total = cn.QueryFirstOrDefault<int>(qTotal, p);
 
-                const string query = @"
+                string query = @"
                     SELECT
                         s.COD_DEPARTAMENTO             AS cod_departamento,
                         ISNULL(d.DESCRIPCION,'')       AS departamento_desc,
@@ -444,21 +455,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         ISNULL(s.COD_CENTRO_COSTO,'')  AS cod_centro_costo,
                         ISNULL(cc.DESCRIPCION,'')      AS centro_costo_desc,
                         ISNULL(s.REGISTRO_USUARIO,'')  AS usuario
-                    FROM dbo.ACTIVOS_SECCIONES s
-                    LEFT JOIN dbo.CNTX_CENTRO_COSTOS cc
-                        ON cc.COD_CENTRO_COSTO = s.COD_CENTRO_COSTO
-                    LEFT JOIN dbo.ACTIVOS_DEPARTAMENTOS d
-                        ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENTO
-                    WHERE 1 = 1
-                      AND (@dept IS NULL OR s.COD_DEPARTAMENTO = @dept)
-                      AND (
-                            @filtro IS NULL
-                            OR s.COD_SECCION       LIKE @filtro
-                            OR s.DESCRIPCION       LIKE @filtro
-                            OR s.COD_CENTRO_COSTO  LIKE @filtro
-                            OR ISNULL(cc.DESCRIPCION,'') LIKE @filtro
-                            OR ISNULL(d.DESCRIPCION,'')  LIKE @filtro
-                          )
+                    " + SeccSelectBaseSql + @"
+                    " + SeccWhereFilterSql + @"
                     ORDER BY
                         -- DESC
                         CASE WHEN @sortOrder = 0 AND @sortField = 'cod_departamento'   THEN s.COD_DEPARTAMENTO   END DESC,
@@ -480,14 +478,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     OFFSET @offset ROWS
                     FETCH NEXT @rows ROWS ONLY;";
 
-                resp.Result.lista = cn.Query<ActivosSeccionesData>(query, p).ToList();
+                if (resp.Result != null)
+                    resp.Result.lista = cn.Query<ActivosSeccionesData>(query, p).ToList();
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
-                resp.Result.total = 0;
-                resp.Result.lista = [];
+                if (resp.Result != null)
+                {
+                    resp.Result.total = 0;
+                    resp.Result.lista = [];
+                }
             }
             return resp;
         }
@@ -497,70 +499,42 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto<List<ActivosSeccionesData>> Activos_Secciones_Obtener(int CodEmpresa, string? cod_departamento, FiltrosLazyLoadData filtros)
         {
-            var resp = new ErrorDto<List<ActivosSeccionesData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<ActivosSeccionesData>()
-            };
+            var p = new DynamicParameters();
+            string? dept = string.IsNullOrWhiteSpace(cod_departamento)
+                ? null
+                : cod_departamento.ToUpper();
+            p.Add("@dept", dept, DbType.String);
 
-            try
-            {
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
+            string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
+                ? null
+                : $"%{filtros.filtro.Trim()}%";
+            p.Add(_filtro, filtroLike, DbType.String);
 
-                var p = new DynamicParameters();
-                string? dept = string.IsNullOrWhiteSpace(cod_departamento)
-                    ? null
-                    : cod_departamento.ToUpper();
-                p.Add("@dept", dept, DbType.String);
+            string query = @"
+                SELECT
+                    s.COD_DEPARTAMENTO             AS cod_departamento,
+                    ISNULL(d.DESCRIPCION,'')       AS departamento_desc,
+                    s.COD_SECCION                  AS cod_seccion,
+                    ISNULL(s.DESCRIPCION,'')       AS descripcion,
+                    ISNULL(s.COD_CENTRO_COSTO,'')  AS cod_centro_costo,
+                    ISNULL(cc.DESCRIPCION,'')      AS centro_costo_desc,
+                    ISNULL(s.REGISTRO_USUARIO,'')  AS usuario
+                " + SeccSelectBaseSql + @"
+                " + SeccWhereFilterSql + @"
+                ORDER BY s.COD_SECCION;";
 
-                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
-                    ? null
-                    : $"%{filtros.filtro.Trim()}%";
-                p.Add(_filtro, filtroLike, DbType.String);
-
-                const string query = @"
-                    SELECT
-                        s.COD_DEPARTAMENTO             AS cod_departamento,
-                        ISNULL(d.DESCRIPCION,'')       AS departamento_desc,
-                        s.COD_SECCION                  AS cod_seccion,
-                        ISNULL(s.DESCRIPCION,'')       AS descripcion,
-                        ISNULL(s.COD_CENTRO_COSTO,'')  AS cod_centro_costo,
-                        ISNULL(cc.DESCRIPCION,'')      AS centro_costo_desc,
-                        ISNULL(s.REGISTRO_USUARIO,'')  AS usuario
-                    FROM dbo.ACTIVOS_SECCIONES s
-                    LEFT JOIN dbo.CNTX_CENTRO_COSTOS cc
-                        ON cc.COD_CENTRO_COSTO = s.COD_CENTRO_COSTO
-                    LEFT JOIN dbo.ACTIVOS_DEPARTAMENTOS d
-                        ON d.COD_DEPARTAMENTO = s.COD_DEPARTAMENTO
-                    WHERE 1 = 1
-                      AND (@dept IS NULL OR s.COD_DEPARTAMENTO = @dept)
-                      AND (
-                            @filtro IS NULL
-                            OR s.COD_SECCION       LIKE @filtro
-                            OR s.DESCRIPCION       LIKE @filtro
-                            OR s.COD_CENTRO_COSTO  LIKE @filtro
-                            OR ISNULL(cc.DESCRIPCION,'') LIKE @filtro
-                            OR ISNULL(d.DESCRIPCION,'')  LIKE @filtro
-                          )
-                    ORDER BY s.COD_SECCION;";
-
-                resp.Result = cn.Query<ActivosSeccionesData>(query, p).ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return DbHelper.ExecuteListQuery<ActivosSeccionesData>(
+                _portalDB,
+                CodEmpresa,
+                query,
+                p);
         }
 
-        // --- Resto de métodos se quedan igual (ya usan parámetros) ---
+        // --- Resto de métodos (guardar/actualizar/eliminar/validar secciones y dropdowns) ---
 
         public ErrorDto Activos_Secciones_Guardar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
@@ -605,36 +579,45 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         private ErrorDto Activos_Secciones_Insertar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
                 const string query = @"
                     INSERT INTO dbo.ACTIVOS_SECCIONES
                         (COD_DEPARTAMENTO, COD_SECCION, DESCRIPCION, COD_CENTRO_COSTO, REGISTRO_USUARIO, REGISTRO_FECHA, MODIFICA_USUARIO, MODIFICA_FECHA)
                     VALUES
                         (@dept, @sec, @desc, @cc, @usr, SYSDATETIME(), NULL, NULL);";
 
-                cn.Execute(query, new
-                {
-                    dept = seccion.cod_departamento.ToUpper(),
-                    sec = seccion.cod_seccion.ToUpper(),
-                    desc = seccion.descripcion?.ToUpper(),
-                    cc = string.IsNullOrWhiteSpace(seccion.cod_centro_costo) ? null : seccion.cod_centro_costo.ToUpper(),
-                    usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-                });
+                var dbResp = DbHelper.ExecuteNonQuery(
+                    _portalDB,
+                    CodEmpresa,
+                    query,
+                    new
+                    {
+                        dept = seccion.cod_departamento.ToUpper(),
+                        sec = seccion.cod_seccion.ToUpper(),
+                        desc = seccion.descripcion?.ToUpper(),
+                        cc = string.IsNullOrWhiteSpace(seccion.cod_centro_costo) ? null : seccion.cod_centro_costo.ToUpper(),
+                        usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+                    });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
+                resp.Code = dbResp.Code;
+                resp.Description = dbResp.Description;
 
-                resp.Description = "Sección ingresada satisfactoriamente.";
+                if (resp.Code == 0)
+                {
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = CodEmpresa,
+                        Usuario = usuario ?? "",
+                        DetalleMovimiento = $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}",
+                        Movimiento = "Registra - WEB",
+                        Modulo = vModulo
+                    });
+
+                    resp.Description = "Sección ingresada satisfactoriamente.";
+                }
             }
             catch (Exception ex)
             {
@@ -646,11 +629,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         private ErrorDto Activos_Secciones_Actualizar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
                 const string query = @"
                     UPDATE dbo.ACTIVOS_SECCIONES
                        SET DESCRIPCION      = @desc,
@@ -660,25 +642,35 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                      WHERE COD_DEPARTAMENTO = @dept
                        AND COD_SECCION      = @sec;";
 
-                cn.Execute(query, new
-                {
-                    dept = seccion.cod_departamento.ToUpper(),
-                    sec = seccion.cod_seccion.ToUpper(),
-                    desc = seccion.descripcion?.ToUpper(),
-                    cc = string.IsNullOrWhiteSpace(seccion.cod_centro_costo) ? null : seccion.cod_centro_costo.ToUpper(),
-                    usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-                });
+                var dbResp = DbHelper.ExecuteNonQuery(
+                    _portalDB,
+                    CodEmpresa,
+                    query,
+                    new
+                    {
+                        dept = seccion.cod_departamento.ToUpper(),
+                        sec = seccion.cod_seccion.ToUpper(),
+                        desc = seccion.descripcion?.ToUpper(),
+                        cc = string.IsNullOrWhiteSpace(seccion.cod_centro_costo) ? null : seccion.cod_centro_costo.ToUpper(),
+                        usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+                    });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
-                });
+                resp.Code = dbResp.Code;
+                resp.Description = dbResp.Description;
 
-                resp.Description = "Sección actualizada satisfactoriamente.";
+                if (resp.Code == 0)
+                {
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = CodEmpresa,
+                        Usuario = usuario ?? "",
+                        DetalleMovimiento = $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}",
+                        Movimiento = "Modifica - WEB",
+                        Modulo = vModulo
+                    });
+
+                    resp.Description = "Sección actualizada satisfactoriamente.";
+                }
             }
             catch (Exception ex)
             {
@@ -690,30 +682,37 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         public ErrorDto Activos_Secciones_Eliminar(int CodEmpresa, string usuario, string cod_departamento, string cod_seccion)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
                 if (string.IsNullOrWhiteSpace(cod_departamento) || string.IsNullOrWhiteSpace(cod_seccion))
                     return new ErrorDto { Code = -1, Description = "Debe indicar departamento y sección." };
 
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
                 const string query = @"
                     DELETE FROM dbo.ACTIVOS_SECCIONES
                     WHERE COD_DEPARTAMENTO = @dept AND COD_SECCION = @sec;";
-                int rows = cn.Execute(query, new { dept = cod_departamento.ToUpper(), sec = cod_seccion.ToUpper() });
 
-                if (rows == 0)
-                    return new ErrorDto { Code = -2, Description = $"La sección {cod_seccion.ToUpper()} no existe para el departamento {cod_departamento.ToUpper()}." };
+                var dbResp = DbHelper.ExecuteNonQuery(
+                    _portalDB,
+                    CodEmpresa,
+                    query,
+                    new { dept = cod_departamento.ToUpper(), sec = cod_seccion.ToUpper() });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                resp.Code = dbResp.Code;
+                resp.Description = dbResp.Description;
+
+                if (resp.Code == 0)
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Sección: {cod_seccion} - Dept: {cod_departamento}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
-                });
+                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                    {
+                        EmpresaId = CodEmpresa,
+                        Usuario = usuario ?? "",
+                        DetalleMovimiento = $"Sección: {cod_seccion} - Dept: {cod_departamento}",
+                        Movimiento = "Elimina - WEB",
+                        Modulo = vModulo
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -725,7 +724,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         public ErrorDto Activos_Secciones_Valida(int CodEmpresa, string cod_departamento, string cod_seccion)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
@@ -758,77 +757,45 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Secciones_CentrosCostos_Obtener(int CodEmpresa, int contabilidad)
         {
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            const string query = @"
+                SELECT COD_CENTRO_COSTO AS item, DESCRIPCION
+                FROM dbo.CNTX_CENTRO_COSTOS
+                WHERE COD_CONTABILIDAD = @contabilidad AND ACTIVO = 1
+                ORDER BY DESCRIPCION ASC;";
 
-            try
-            {
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    SELECT COD_CENTRO_COSTO AS item, DESCRIPCION
-                    FROM dbo.CNTX_CENTRO_COSTOS
-                    WHERE COD_CONTABILIDAD = @contabilidad AND ACTIVO = 1
-                    ORDER BY DESCRIPCION ASC;";
-                resp.Result = cn.Query<DropDownListaGenericaModel>(query, new { contabilidad }).ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new { contabilidad });
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Departamentos_Unidades_Obtener(int CodEmpresa, int contabilidad)
         {
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            const string query = @"
+                SELECT COD_UNIDAD AS item, DESCRIPCION
+                FROM dbo.CNTX_UNIDADES
+                WHERE COD_CONTABILIDAD = @contabilidad AND ACTIVA = 1
+                ORDER BY DESCRIPCION ASC;";
 
-            try
-            {
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-            SELECT COD_UNIDAD AS item, DESCRIPCION
-            FROM dbo.CNTX_UNIDADES
-            WHERE COD_CONTABILIDAD = @contabilidad AND ACTIVA = 1
-            ORDER BY DESCRIPCION ASC;";
-                resp.Result = cn.Query<DropDownListaGenericaModel>(query, new { contabilidad }).ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new { contabilidad });
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Departamentos_Dropdown_Obtener(int CodEmpresa)
         {
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Description = "Ok", Result = new() };
-            try
-            {
-                using var cn = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-            SELECT d.COD_DEPARTAMENTO AS item, d.DESCRIPCION
-            FROM dbo.ACTIVOS_DEPARTAMENTOS d
-            ORDER BY d.DESCRIPCION ASC;";
-                resp.Result = cn.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1; resp.Description = ex.Message; resp.Result = null;
-            }
-            return resp;
+            const string query = @"
+                SELECT d.COD_DEPARTAMENTO AS item, d.DESCRIPCION
+                FROM dbo.ACTIVOS_DEPARTAMENTOS d
+                ORDER BY d.DESCRIPCION ASC;";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                CodEmpresa,
+                query);
         }
     }
 }
