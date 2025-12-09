@@ -3,122 +3,91 @@ using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.AF;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
-using System.Text;
 
 namespace Galileo.DataBaseTier
 {
     public class DataDB
     {
-        private readonly IConfiguration _config;
+            private readonly IConfiguration _config;
         const string AndOperator = " AND ";
         const string Offset = " OFFSET ";
         const string FetchNext = " FETCH NEXT ";
         const string RowsOnly = " ROWS ONLY ";
+        const string Rows = " ROWS ";
 
-        // Literales reutilizados (regla S1192)
-        const string Where = " WHERE ";
-        const string CountAll = "SELECT COUNT(*)";
-
-        const string OrderByCodProveedor = " ORDER BY COD_PROVEEDOR";
-        const string OrderByCodCargo = " ORDER BY COD_CARGO";
-        const string OrderByCodBodega = " ORDER BY cod_bodega";
-        const string OrderByProdCodigo = " ORDER BY P.COD_PRODUCTO";
-        const string OrderByCodOrden = " ORDER BY cod_orden";
-        const string OrderByCodFacturaOrden = " ORDER BY cod_orden";
-        const string OrderByCodCompra = " ORDER BY E.cod_compra";
-        const string OrderByCodBeneficio = " ORDER BY cod_beneficio";
-        const string OrderByNombre = " ORDER BY nombre";
-        const string OrderBySocioCedula = " ORDER BY S.cedula";
-        const string OrderByCodProducto = " ORDER BY cod_producto";
-        const string OrderByCodDepartamento = " ORDER BY cod_departamento";
-        const string OrderByCompraDev = " ORDER BY D.cod_compra_dev";
-
-        const string OffsetFetchPage = " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-        const string OrderByDynamicTemplate = " ORDER BY {0} {1}";
-
-        const string ParamFiltro = "@Filtro";
-        const string ParamOffset = "@Offset";
-        const string ParamPageSize = "@PageSize";
-        const string CedulaColumn = "cedula";
 
         public DataDB(IConfiguration config)
         {
             _config = config;
         }
-
-        #region Proveedores
-
         /// <summary>
         /// Método para obtener los proveedores
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="jFiltros"></param>
+        /// <returns></returns>
         public ErrorDto<ProveedoresDataLista> Proveedores_Obtener(int CodCliente, ProveedorDataFiltros jFiltros)
         {
+
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDto<ProveedoresDataLista>
-            {
-                Result = new ProveedoresDataLista { Total = 0 }
-            };
-
+            var response = new ErrorDto<ProveedoresDataLista>();
+            response.Result = new ProveedoresDataLista();
+            response.Result.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ",
+                valWhere;
                 using var connection = new SqlConnection(clienteConnString);
-
-                var condiciones = new List<string>();
-                var parametros = new DynamicParameters();
-
-                // Estado base
-                condiciones.Add("(ESTADO = 'A' OR ESTADO = 'T')");
-
-                // autoGestion / ventas
-                if (jFiltros.autoGestion == true && jFiltros.ventas == true)
                 {
-                    condiciones.Add("(WEB_AUTO_GESTION = 1 OR WEB_FERIAS = 1)");
+
+
+                    valWhere = $"(ESTADO = 'A' OR ESTADO = 'T')";
+
+
+                    if (jFiltros.autoGestion == true && jFiltros.ventas == true)
+                    {
+                        valWhere += " AND ( WEB_AUTO_GESTION = 1 OR WEB_FERIAS = 1 ) ";
+                    }
+                    else if (jFiltros.autoGestion == true)
+                    {
+                        valWhere += " AND WEB_AUTO_GESTION = 1 ";
+                    }
+                    else if (jFiltros.ventas == true)
+                    {
+                        valWhere += " AND WEB_FERIAS = 1 ";
+                    }
+
+                    //Busco Total
+                    query = $"SELECT COUNT(*) FROM CXP_PROVEEDORES WHERE {valWhere} ";
+                    response.Result.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (jFiltros.filtro != null)
+                    {
+                        valWhere += " AND ( COD_PROVEEDOR LIKE '%" + jFiltros.filtro + "%' OR DESCRIPCION LIKE '%" + jFiltros.filtro + "%') ";
+                    }
+
+                    if (jFiltros.pagina != null)
+                    {
+                        paginaActual = Offset + jFiltros.pagina + Rows;
+                        paginacionActual = FetchNext + jFiltros.paginacion + RowsOnly;
+                    }
+
+                    query = $@"SELECT COD_PROVEEDOR, DESCRIPCION, CEDJUR FROM CXP_PROVEEDORES
+                                        WHERE 
+                                         {valWhere}
+                                    ORDER BY COD_PROVEEDOR
+                                        {paginaActual}
+                                        {paginacionActual} ";
+
+
+                    response.Result.Proveedores = connection.Query<ProveedorData>(query).ToList();
+
                 }
-                else if (jFiltros.autoGestion == true)
-                {
-                    condiciones.Add("WEB_AUTO_GESTION = 1");
-                }
-                else if (jFiltros.ventas == true)
-                {
-                    condiciones.Add("WEB_FERIAS = 1");
-                }
-
-                // filtro de búsqueda
-                if (!string.IsNullOrWhiteSpace(jFiltros.filtro))
-                {
-                    condiciones.Add("(COD_PROVEEDOR LIKE @Filtro OR DESCRIPCION LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{jFiltros.filtro}%");
-                }
-
-                string whereClause = string.Empty;
-
-                if (condiciones.Any(c => !string.IsNullOrWhiteSpace(c)))
-                {
-                    whereClause = " WHERE " + string.Join(AndOperator, condiciones.Where(c => !string.IsNullOrWhiteSpace(c)));
-                }
-
-                // total
-                var sqlCount = CountAll + " FROM CXP_PROVEEDORES" + whereClause;
-                response.Result.Total = connection.QuerySingle<int>(sqlCount, parametros);
-
-                // paginación
-                var orderAndPage = new StringBuilder(OrderByCodProveedor);
-                if (jFiltros.pagina != null && jFiltros.paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, jFiltros.pagina.Value);
-                    parametros.Add(ParamPageSize, jFiltros.paginacion.Value);
-                }
-
-                var sqlData = @"SELECT COD_PROVEEDOR, DESCRIPCION, CEDJUR 
-                                FROM CXP_PROVEEDORES"
-                              + whereClause
-                              + orderAndPage.ToString();
-
-                response.Result.Proveedores = connection.Query<ProveedorData>(sqlData, parametros).ToList();
             }
             catch (Exception ex)
             {
@@ -126,125 +95,124 @@ namespace Galileo.DataBaseTier
                 response.Description = ex.Message;
                 response.Code = -1;
             }
-
             return response;
         }
-
-        #endregion
-
-        #region Cargos
 
         /// <summary>
         /// Método para obtener los cargos
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public CargoDataLista Cargos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
+
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new CargoDataLista { Total = 0 };
-
+            CargoDataLista info = new CargoDataLista();
+            info.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-
-                var condiciones = new List<string> { "ACTIVO = 1" };
-                var parametros = new DynamicParameters();
-
-                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    condiciones.Add("(COD_CARGO LIKE @Filtro OR DESCRIPCION LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtro}%");
+
+                    //Busco Total
+                    query = "select COUNT(COD_CARGO) from CXP_CARGOS where ACTIVO = 1";
+                    info.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtro != null)
+                    {
+                        filtro = " AND COD_CARGO LIKE '%" + filtro + "%' OR DESCRIPCION LIKE '%" + filtro + "%' ";
+                    }
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    query = $@"select COD_CARGO, DESCRIPCION, 0 as MONTO from CXP_CARGOS where ACTIVO = 1
+                                         {filtro} 
+                                        ORDER BY COD_CARGO
+                                        {paginaActual}
+                                        {paginacionActual} ";
+
+
+                    info.Cargos = connection.Query<CargoData>(query).ToList();
+
                 }
-
-                var whereClause = Where + string.Join(AndOperator, condiciones);
-
-                var sqlCount = "SELECT COUNT(COD_CARGO) FROM CXP_CARGOS" + whereClause;
-                info.Total = connection.QuerySingle<int>(sqlCount, parametros);
-
-                var orderAndPage = new StringBuilder(OrderByCodCargo);
-                if (pagina != null && paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
-                }
-
-                var sqlData = @"SELECT COD_CARGO, DESCRIPCION, 0 as MONTO 
-                                FROM CXP_CARGOS"
-                              + whereClause
-                              + orderAndPage.ToString();
-
-                info.Cargos = connection.Query<CargoData>(sqlData, parametros).ToList();
             }
-            catch
+            catch (Exception)
             {
                 info.Total = 0;
                 info.Cargos = new List<CargoData>();
             }
             return info;
         }
-
-        #endregion
-
-        #region Bodegas
-
         /// <summary>
         /// Método para obtener bodegas
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public BodegaDataLista Bodegas_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
+
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new BodegaDataLista { Total = 0 };
-
+            BodegaDataLista info = new BodegaDataLista();
+            info.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-
-                var condiciones = new List<string> { "permite_salidas = 1" };
-                var parametros = new DynamicParameters();
-
-                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    condiciones.Add("(cod_bodega LIKE @Filtro OR descripcion LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtro}%");
+                    //Busco Total
+                    query = $@"select COUNT(cod_bodega) from pv_bodegas where permite_salidas = 1";
+                    info.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtro != null)
+                    {
+                        filtro = " AND cod_bodega LIKE '%" + filtro + "%' OR descripcion LIKE '%" + filtro + "%' ";
+                    }
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    query = $@"select  cod_bodega,descripcion from pv_bodegas where permite_salidas = 1
+                                         {filtro} 
+                                        ORDER BY cod_bodega
+                                        {paginaActual}
+                                        {paginacionActual} ";
+
+
+                    info.bodegas = connection.Query<BodegaData>(query).ToList();
+
                 }
-
-                var whereClause = Where + string.Join(AndOperator, condiciones);
-
-                var sqlCount = "SELECT COUNT(cod_bodega) FROM pv_bodegas" + whereClause;
-                info.Total = connection.QuerySingle<int>(sqlCount, parametros);
-
-                var orderAndPage = new StringBuilder(OrderByCodBodega);
-                if (pagina != null && paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
-                }
-
-                var sqlData = @"SELECT cod_bodega, descripcion 
-                                FROM pv_bodegas"
-                              + whereClause
-                              + orderAndPage.ToString();
-
-                info.bodegas = connection.Query<BodegaData>(sqlData, parametros).ToList();
             }
-            catch
+            catch (Exception)
             {
                 info.Total = 0;
                 info.bodegas = new List<BodegaData>();
             }
             return info;
         }
-
-        #endregion
-
-        #region Artículos
-
         /// <summary>
         /// Método para obtener los artículos
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public ErrorDto<ArticuloDataLista> Articulos_Obtener(int CodCliente, ArticuloDataFiltros filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -252,55 +220,52 @@ namespace Galileo.DataBaseTier
             var response = new ErrorDto<ArticuloDataLista>
             {
                 Code = 0,
-                Result = new ArticuloDataLista { Total = 0 }
+                Result = new ArticuloDataLista()
             };
+            response.Result.Total = 0;
 
             try
             {
-                using var connection = new SqlConnection(clienteConnString);
-
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 string joinProdUen = "";
-                var parametros = new DynamicParameters();
-                string whereEstado = BuildArticulosWhereClause(filtro, ref joinProdUen, parametros);
+                string whereEstado = BuildArticulosWhereClause(filtro, ref joinProdUen);
 
-                var sqlCount = $@"SELECT COUNT(P.COD_PRODUCTO) 
-                                  FROM pv_productos P
-                                  LEFT JOIN PV_PROD_CLASIFICA_SUB Cs 
-                                    ON Cs.COD_PRODCLAS = P.COD_PRODCLAS 
-                                   AND Cs.COD_LINEA_SUB = P.COD_LINEA_SUB
-                                  {joinProdUen}
-                                  {whereEstado}";
-                response.Result.Total = connection.QuerySingle<int>(sqlCount, parametros);
-
-                var orderAndPage = new StringBuilder(OrderByProdCodigo);
-                if (filtro.pagina != null && filtro.paginacion != null)
+                using var connection = new SqlConnection(clienteConnString);
                 {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, filtro.pagina.Value);
-                    parametros.Add(ParamPageSize, filtro.paginacion.Value);
+                    query = $@"SELECT COUNT(P.COD_PRODUCTO) 
+                       FROM pv_productos P {whereEstado}";
+                    response.Result.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtro.pagina != null)
+                    {
+                        paginaActual = Offset + filtro.pagina + Rows;
+                        paginacionActual = FetchNext + filtro.paginacion + RowsOnly;
+                    }
+
+                    query = $@"
+                SELECT 
+                    CONCAT(
+                        FORMAT(Cs.COD_PRODCLAS, ' 0'), 
+                        FORMAT(ISNULL(Cs.NIVEL,' 00'), ' 0'), 
+                        FORMAT(ISNULL(Cs.COD_LINEA_SUB_MADRE,1), ' 0'),
+                        FORMAT(ISNULL(Cs.COD_LINEA_SUB,1), ' '),
+                        P.COD_PRODUCTO
+                    ) AS CODIGO,
+                    P.COD_PRODUCTO, P.CABYS, P.DESCRIPCION, P.COD_BARRAS, P.EXISTENCIA, 
+                    P.COSTO_REGULAR, P.PRECIO_REGULAR, P.IMPUESTO_VENTAS, P.COD_FABRICANTE, 
+                    P.I_STOCK, P.TIPO_PRODUCTO AS Tipo, P.cod_unidad AS unidad
+                FROM pv_productos P
+                LEFT JOIN PV_PROD_CLASIFICA_SUB Cs ON Cs.COD_PRODCLAS = P.COD_PRODCLAS 
+                    AND Cs.COD_LINEA_SUB = P.COD_LINEA_SUB
+                {joinProdUen}
+                {whereEstado}
+                ORDER BY P.COD_PRODUCTO
+                {paginaActual}
+                {paginacionActual}";
+
+                    response.Result.Articulos = connection.Query<ArticuloData>(query).ToList();
                 }
-
-                var sqlData = $@"
-                    SELECT 
-                        CONCAT(
-                            FORMAT(Cs.COD_PRODCLAS, ' 0'), 
-                            FORMAT(ISNULL(Cs.NIVEL,' 00'), ' 0'), 
-                            FORMAT(ISNULL(Cs.COD_LINEA_SUB_MADRE,1), ' 0'),
-                            FORMAT(ISNULL(Cs.COD_LINEA_SUB,1), ' '),
-                            P.COD_PRODUCTO
-                        ) AS CODIGO,
-                        P.COD_PRODUCTO, P.CABYS, P.DESCRIPCION, P.COD_BARRAS, P.EXISTENCIA, 
-                        P.COSTO_REGULAR, P.PRECIO_REGULAR, P.IMPUESTO_VENTAS, P.COD_FABRICANTE, 
-                        P.I_STOCK, P.TIPO_PRODUCTO AS Tipo, P.cod_unidad AS unidad
-                    FROM pv_productos P
-                    LEFT JOIN PV_PROD_CLASIFICA_SUB Cs 
-                        ON Cs.COD_PRODCLAS = P.COD_PRODCLAS 
-                       AND Cs.COD_LINEA_SUB = P.COD_LINEA_SUB
-                    {joinProdUen}
-                    {whereEstado}
-                    {orderAndPage}";
-
-                response.Result.Articulos = connection.Query<ArticuloData>(sqlData, parametros).ToList();
             }
             catch (Exception ex)
             {
@@ -313,8 +278,9 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
-        private static string BuildArticulosWhereClause(ArticuloDataFiltros filtro, ref string joinProdUen, DynamicParameters parametros)
+        private static string BuildArticulosWhereClause(ArticuloDataFiltros filtro, ref string joinProdUen)
         {
+            
             var clauses = new List<string>();
 
             if (filtro.catalogo != 0)
@@ -325,211 +291,229 @@ namespace Galileo.DataBaseTier
             if (!string.IsNullOrEmpty(filtro.cod_unidad) && filtro.cod_unidad != "T")
             {
                 joinProdUen = " LEFT JOIN CPR_PRODUCTOS_UENS PU ON PU.COD_PRODUCTO = P.COD_PRODUCTO ";
-                clauses.Add("PU.COD_UNIDAD = @CodUnidad");
-                parametros.Add("@CodUnidad", filtro.cod_unidad);
+                clauses.Add($"PU.COD_UNIDAD = '{filtro.cod_unidad}'");
             }
 
-            if (!string.IsNullOrWhiteSpace(filtro.filtro))
+            if (!string.IsNullOrEmpty(filtro.filtro))
             {
                 clauses.Add(
-                    "( P.DESCRIPCION LIKE @Filtro " +
+                    "( P.DESCRIPCION LIKE '%" + filtro.filtro + "%' " +
                     "OR CONCAT( FORMAT(Cs.COD_PRODCLAS, ' 0') , " +
                     "FORMAT(ISNULL(Cs.NIVEL,' 00'), ' 0'), " +
                     "FORMAT(ISNULL(Cs.COD_LINEA_SUB_MADRE,1) , ' 0'), " +
                     "FORMAT(ISNULL(Cs.COD_LINEA_SUB,1) , ' ') " +
-                    ",P.COD_PRODUCTO ) LIKE @Filtro " +
-                    "OR P.COD_BARRAS LIKE @Filtro )"
+                    ",P.COD_PRODUCTO ) LIKE '%" + filtro.filtro + "%' " +
+                    "OR P.COD_BARRAS LIKE '%" + filtro.filtro + "%' )"
                 );
-                parametros.Add(ParamFiltro, $"%{filtro.filtro}%");
             }
 
             if (filtro.familia > 0)
             {
-                clauses.Add("P.COD_PRODCLAS = @Familia");
-                parametros.Add("@Familia", filtro.familia);
+                clauses.Add($"P.COD_PRODCLAS = '{filtro.familia}'");
             }
 
             if (!string.IsNullOrEmpty(filtro.sublinea))
             {
-                clauses.Add("P.COD_LINEA_SUB = @Sublinea");
-                parametros.Add("@Sublinea", filtro.sublinea);
+                clauses.Add($"P.COD_LINEA_SUB = '{filtro.sublinea}'");
             }
 
             if (clauses.Count > 0)
             {
-                return Where + string.Join(AndOperator, clauses);
+                return " WHERE " + string.Join(AndOperator, clauses);
             }
-            return string.Empty;
+            return "";
         }
 
-        #endregion
-
-        #region Ordenes
-
+        
         /// <summary>
         /// Método para obtener las ordenes de compra
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public OrdenesDataLista Ordenes_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string? proveedor, string? familia)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new OrdenesDataLista { Total = 0 };
+            OrdenesDataLista info = new OrdenesDataLista();
+            info.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-
-                // Total sin filtros (mismo comportamiento original)
-                var sqlCount = "SELECT COUNT(cod_orden) FROM cpr_ordenes";
-                info.Total = connection.QuerySingle<int>(sqlCount);
-
-                var parametros = new DynamicParameters();
-                var condiciones = new List<string>();
-
-                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    condiciones.Add("(cod_orden LIKE @Filtro OR genera_user LIKE @Filtro OR cod_solicitud LIKE @Filtro OR nota LIKE @Filtro OR familia LIKE @Filtro OR proveedor LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtro}%");
+
+                    //Busco Total
+                    query = "select COUNT(cod_orden) from cpr_ordenes";
+                    info.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    const string LikeOr = "%' OR ";
+                    if (filtro != null)
+                    {
+                        filtro = " where (cod_orden LIKE '%" + filtro + LikeOr +
+                                    "genera_user LIKE '%" + filtro + LikeOr +
+                                     "cod_solicitud LIKE '%" + filtro + LikeOr +
+                                        " nota LIKE '%" + filtro + LikeOr +
+                                        " familia LIKE '%" + filtro + LikeOr +
+                                        "proveedor LIKE '%" + filtro + "%' )";
+                    }
+                    proveedor = (proveedor != null) ? proveedor.Replace("null", "").Trim() : null;
+                    familia = (familia != null) ? familia.Replace("null", "").Trim() : null;
+
+                    if (proveedor != null)
+                    {
+                        if (filtro == null)
+                        {
+                            filtro += " WHERE ";
+                        }
+                        else
+                        {
+                            filtro += AndOperator;
+                        }
+                        filtro += " proveedor LIKE '%" + proveedor + "%'";
+                    }
+
+                    if (familia != null)
+                    {
+                        if (filtro == null)
+                        {
+                            filtro += " WHERE ";
+                        }
+                        else
+                        {
+                            filtro += AndOperator;
+                        }
+                        filtro += " familia LIKE '%" + familia + "%'";
+                    }
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    query = $@"
+                                    SELECT * FROM (
+                                    select RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS cod_solicitud, O.cod_orden,O.genera_user,O.nota,
+                                    O.COD_PROVEEDOR + '-' + cp.DESCRIPCION AS proveedor,
+                                    -- Subconsulta para concatenar familias distintas
+                                    STUFF((
+                                        SELECT DISTINCT ', ' + ppc2.DESCRIPCION
+                                        FROM CPR_ORDENES_DETALLE cod2
+                                        INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
+                                        LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
+                                        WHERE cod2.COD_ORDEN = O.COD_ORDEN
+                                              AND ppc2.DESCRIPCION IS NOT NULL
+                                        FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS familia
+                                    from cpr_ordenes O
+                                   left join CPR_SOLICITUD_PROV sp ON 
+                                        sp.ADJUDICA_ORDEN  = O.COD_ORDEN 
+                                        AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
+                                        LEFT JOIN CXP_PROVEEDORES cp 
+                                            ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
+                                                                                 GROUP BY 
+                                             sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION ) T
+                                         {filtro} 
+                                        ORDER BY cod_orden
+                                        {paginaActual}
+                                        {paginacionActual} ";
+
+
+                    info.Ordenes = connection.Query<OrdenData>(query).ToList();
+
                 }
-
-                proveedor = string.IsNullOrWhiteSpace(proveedor) ? null : proveedor.Replace("null", "").Trim();
-                familia = string.IsNullOrWhiteSpace(familia) ? null : familia.Replace("null", "").Trim();
-
-                if (!string.IsNullOrWhiteSpace(proveedor))
-                {
-                    condiciones.Add("proveedor LIKE @Proveedor");
-                    parametros.Add("@Proveedor", $"%{proveedor}%");
-                }
-
-                if (!string.IsNullOrWhiteSpace(familia))
-                {
-                    condiciones.Add("familia LIKE @Familia");
-                    parametros.Add("@Familia", $"%{familia}%");
-                }
-
-                var whereClause = condiciones.Count > 0
-                    ? Where + string.Join(AndOperator, condiciones)
-                    : string.Empty;
-
-                var orderAndPage = new StringBuilder(OrderByCodOrden);
-                if (pagina != null && paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
-                }
-
-                var query = $@"
-                    SELECT * FROM (
-                        SELECT 
-                            RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS cod_solicitud, 
-                            O.cod_orden,
-                            O.genera_user,
-                            O.nota,
-                            O.COD_PROVEEDOR + '-' + cp.DESCRIPCION AS proveedor,
-                            STUFF((
-                                    SELECT DISTINCT ', ' + ppc2.DESCRIPCION
-                                    FROM CPR_ORDENES_DETALLE cod2
-                                    INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
-                                    LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
-                                    WHERE cod2.COD_ORDEN = O.COD_ORDEN
-                                          AND ppc2.DESCRIPCION IS NOT NULL
-                                    FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS familia
-                        FROM cpr_ordenes O
-                        LEFT JOIN CPR_SOLICITUD_PROV sp 
-                            ON sp.ADJUDICA_ORDEN  = O.COD_ORDEN 
-                           AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-                        LEFT JOIN CXP_PROVEEDORES cp 
-                            ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
-                        GROUP BY 
-                            sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION
-                    ) T
-                    {whereClause}
-                    {orderAndPage}";
-
-                info.Ordenes = connection.Query<OrdenData>(query, parametros).ToList();
             }
-            catch
+            catch (Exception)
             {
                 info.Total = 0;
                 info.Ordenes = new List<OrdenData>();
             }
             return info;
         }
-
+       
+       
         /// <summary>
         /// Método para obtener las ordenes de compra por filtro
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public OrdenesDataLista OrdenesFiltro_Obtener(int CodCliente, int? pagina, int? paginacion,
             string? filtro, string? proveedor, string? familia, string? subfamilia)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new OrdenesDataLista { Total = 0 };
+            OrdenesDataLista info = new OrdenesDataLista();
+            info.Total = 0;
             try
             {
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-
-                // Total base (sin filtros adicionales, mantiene lógica original)
-                var totalQuery = @"SELECT COUNT(O.cod_orden) 
-                                   FROM cpr_ordenes O                       
-                                   LEFT JOIN CPR_SOLICITUD_PROV sp 
-                                     ON sp.ADJUDICA_ORDEN  = O.COD_ORDEN 
-                                    AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-                                   WHERE O.Estado in('A') and O.Proceso in('A','X')";
-                info.Total = connection.QuerySingle<int>(totalQuery);
-
-                var parametros = new DynamicParameters();
-                var whereClause = BuildOrdenesFiltroWhereClause(filtro, proveedor, familia, subfamilia, parametros);
-
-                var orderAndPage = new StringBuilder(OrderByCodOrden);
-                if (pagina != null && paginacion != null)
                 {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
+                    // Busco Total
+                    var totalQuery = @"select COUNT(O.cod_orden) from cpr_ordenes O                       
+                                      left join CPR_SOLICITUD_PROV sp ON 
+                                      sp.ADJUDICA_ORDEN  = O.COD_ORDEN 
+                                      AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
+                               where O.Estado in('A') and O.Proceso in('A','X')";
+                    info.Total = connection.Query<int>(totalQuery).FirstOrDefault();
+
+                    string whereClause = BuildOrdenesFiltroWhereClause(filtro, proveedor, familia, subfamilia);
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    var query = $@"SELECT * FROM (  
+                                    SELECT 
+                                        RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS cod_solicitud, 
+                                        O.cod_orden, 
+                                        O.genera_user,
+                                        O.nota, 
+                                        O.COD_PROVEEDOR + '-' + cp.DESCRIPCION AS proveedor,
+                                        -- Subconsulta para concatenar familias distintas
+                                        STUFF((
+                                            SELECT DISTINCT ', ' + CAST(ppc2.COD_PRODCLAS AS VARCHAR)
+                                            FROM CPR_ORDENES_DETALLE cod2
+                                            INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
+                                            LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
+                                            WHERE cod2.COD_ORDEN = O.COD_ORDEN
+                                                  AND ppc2.DESCRIPCION IS NOT NULL
+                                            FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS familia,
+                                            STUFF((
+                                                SELECT DISTINCT ', ' + CAST(pp2.COD_LINEA_SUB AS VARCHAR)
+                                                FROM CPR_ORDENES_DETALLE cod2
+                                                INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
+                                                WHERE cod2.COD_ORDEN = O.COD_ORDEN
+                                                      AND pp2.DESCRIPCION IS NOT NULL
+                                                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS subfamilia
+                                    FROM cpr_ordenes O
+                                    LEFT JOIN CPR_SOLICITUD_PROV sp 
+                                        ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
+                                        AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
+                                    LEFT JOIN CXP_PROVEEDORES cp 
+                                        ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
+                                    WHERE 
+                                        O.Estado IN ('A') 
+                                        AND O.Proceso IN ('A', 'X')
+                                    GROUP BY 
+                                        sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION) T 
+                                        {whereClause} 
+                                    ORDER BY cod_orden
+                                        {paginaActual}
+                                        {paginacionActual}";
+
+                    info.Ordenes = connection.Query<OrdenData>(query).ToList();
                 }
-
-                var query = $@"
-                    SELECT * FROM (  
-                        SELECT 
-                            RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS cod_solicitud, 
-                            O.cod_orden, 
-                            O.genera_user,
-                            O.nota, 
-                            O.COD_PROVEEDOR + '-' + cp.DESCRIPCION AS proveedor,
-                            STUFF((
-                                SELECT DISTINCT ', ' + CAST(ppc2.COD_PRODCLAS AS VARCHAR)
-                                FROM CPR_ORDENES_DETALLE cod2
-                                INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
-                                LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
-                                WHERE cod2.COD_ORDEN = O.COD_ORDEN
-                                      AND ppc2.DESCRIPCION IS NOT NULL
-                                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS familia,
-                            STUFF((
-                                SELECT DISTINCT ', ' + CAST(pp2.COD_LINEA_SUB AS VARCHAR)
-                                FROM CPR_ORDENES_DETALLE cod2
-                                INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
-                                WHERE cod2.COD_ORDEN = O.COD_ORDEN
-                                      AND pp2.DESCRIPCION IS NOT NULL
-                                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS subfamilia
-                        FROM cpr_ordenes O
-                        LEFT JOIN CPR_SOLICITUD_PROV sp 
-                            ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
-                           AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-                        LEFT JOIN CXP_PROVEEDORES cp 
-                            ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
-                        WHERE 
-                            O.Estado IN ('A') 
-                            AND O.Proceso IN ('A', 'X')
-                        GROUP BY 
-                            sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION
-                    ) T 
-                    {whereClause}
-                    {orderAndPage}";
-
-                info.Ordenes = connection.Query<OrdenData>(query, parametros).ToList();
             }
-            catch
+            catch (Exception)
             {
                 info.Total = 0;
                 info.Ordenes = new List<OrdenData>();
@@ -537,419 +521,404 @@ namespace Galileo.DataBaseTier
             return info;
         }
 
-        private static string BuildOrdenesFiltroWhereClause(string? filtro, string? proveedor, string? familia, string? subfamilia, DynamicParameters parametros)
+        private static string BuildOrdenesFiltroWhereClause(string? filtro, string? proveedor, string? familia, string? subfamilia)
         {
             var clauses = new List<string>();
+            string where = "";
 
             if (!string.IsNullOrWhiteSpace(filtro))
             {
-                clauses.Add("(cod_orden LIKE @Filtro OR genera_user LIKE @Filtro OR cod_solicitud LIKE @Filtro OR nota LIKE @Filtro OR familia LIKE @Filtro OR proveedor LIKE @Filtro)");
-                parametros.Add(ParamFiltro, $"%{filtro}%");
+                clauses.Add($"(cod_orden LIKE '%{filtro}%' OR genera_user LIKE '%{filtro}%' OR cod_solicitud LIKE '%{filtro}%' OR nota LIKE '%{filtro}%' OR familia LIKE '%{filtro}%' OR proveedor LIKE '%{filtro}%')");
             }
 
-            proveedor = string.IsNullOrWhiteSpace(proveedor) ? null : proveedor.Replace("null", "").Trim();
-            familia = string.IsNullOrWhiteSpace(familia) ? null : familia.Replace("null", "").Trim();
-            subfamilia = string.IsNullOrWhiteSpace(subfamilia) ? null : subfamilia.Replace("null", "").Trim();
+            proveedor = (proveedor != null) ? proveedor.Replace("null", "").Trim() : null;
+            familia = (familia != null) ? familia.Replace("null", "").Trim() : null;
+            subfamilia = (subfamilia != null) ? subfamilia.Replace("null", "").Trim() : null;
 
             if (!string.IsNullOrWhiteSpace(proveedor))
             {
-                clauses.Add("proveedor LIKE @Proveedor");
-                parametros.Add("@Proveedor", $"%{proveedor}%");
+                clauses.Add($"proveedor LIKE '%{proveedor}%'");
             }
 
             if (!string.IsNullOrWhiteSpace(familia))
             {
-                clauses.Add("familia LIKE @Familia");
-                parametros.Add("@Familia", $"%{familia}%");
+                clauses.Add($"familia LIKE '%{familia}%'");
             }
 
             if (!string.IsNullOrWhiteSpace(subfamilia))
             {
                 if (subfamilia == "5")
                 {
-                    // Sin filtro real
+                    clauses.Add("subfamilia like '%%'");
                 }
                 else
                 {
-                    clauses.Add("subfamilia LIKE @Subfamilia");
-                    parametros.Add("@Subfamilia", $"%{subfamilia}%");
+                    clauses.Add($"subfamilia LIKE '%{subfamilia}%'");
                 }
             }
 
             if (clauses.Count > 0)
             {
-                return "WHERE " + string.Join(AndOperator, clauses);
+                where = "WHERE " + string.Join(AndOperator, clauses);
             }
 
-            return string.Empty;
+            return where;
         }
 
-        #endregion
-
-        #region Facturas proveedor
 
         /// <summary>
         /// Método para obtener las facturas
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="CodProveedor"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public FacturasDataLista ObtenerListaFacturas(int CodCliente, int CodProveedor, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var info = new FacturasDataLista { Total = 0 };
-
+            FacturasDataLista info = new FacturasDataLista();
+            info.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-                var parametros = new DynamicParameters();
-                parametros.Add("@CodProveedor", CodProveedor);
-
-                var baseFrom = @" FROM cpr_compras E 
-                                  INNER JOIN cxp_Proveedores P 
-                                    ON E.cod_proveedor = P.cod_proveedor 
-                                   AND E.cod_proveedor = @CodProveedor";
-
-                // Total
-                var sqlCount = "SELECT COUNT(cod_factura)" + baseFrom;
-                info.Total = connection.QuerySingle<int>(sqlCount, parametros);
-
-                // Filtro
-                var condiciones = new List<string>();
-                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    condiciones.Add("(E.cod_factura LIKE @Filtro OR P.descripcion LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtro}%");
+
+                    //Busco Total
+                    query = $@"select COUNT(cod_factura)  
+                            from cpr_compras E inner join 
+                            cxp_Proveedores P on E.cod_proveedor = P.cod_proveedor 
+                                    and E.cod_proveedor =  {CodProveedor} ";
+                    info.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtro != null)
+                    {
+                        filtro = " AND (E.cod_factura LIKE '%" + filtro + "%' OR " +
+                                    " P.descripcion LIKE '%" + filtro + "%' ) ";
+                    }
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    query = $@"select  E.cod_factura,P.descripcion as Proveedor,E.total
+                                    from cpr_compras E inner join cxp_Proveedores P on E.cod_proveedor = P.cod_proveedor
+                                         and E.cod_proveedor =  {CodProveedor} 
+                                         {filtro} 
+                                        ORDER BY cod_orden
+                                        {paginaActual}
+                                        {paginacionActual} ";
+
+
+                    info.Facturas = connection.Query<FacturasData>(query).ToList();
+
                 }
-
-                var whereClause = condiciones.Count > 0
-                    ? Where + string.Join(AndOperator, condiciones)
-                    : string.Empty;
-
-                var orderAndPage = new StringBuilder(OrderByCodFacturaOrden);
-                if (pagina != null && paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
-                }
-
-                var sqlData = @"SELECT E.cod_factura,
-                                       P.descripcion as Proveedor,
-                                       E.total"
-                              + baseFrom
-                              + whereClause
-                              + orderAndPage;
-
-                info.Facturas = connection.Query<FacturasData>(sqlData, parametros).ToList();
             }
-            catch
+            catch (Exception ex)
             {
+                _ = ex.Message;
                 info.Total = 0;
                 info.Facturas = new List<FacturasData>();
             }
             return info;
         }
-
-        #endregion
-
-        #region Usuarios
-
+        
+        
         /// <summary>
         /// Método para obtener los usuarios
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public UsuarioDataLista Usuarios_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
+
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new UsuarioDataLista { Total = 0 };
+            UsuarioDataLista info = new UsuarioDataLista();
+            info.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-
-                var parametros = new DynamicParameters();
-                var condiciones = new List<string> { "ESTADO = 'A'" };
-
-                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    condiciones.Add("(nombre LIKE @Filtro OR descripcion LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtro}%");
+
+                    //Busco Total
+                    query = "SELECT COUNT(*) FROM usuarios";
+                    info.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtro != null)
+                    {
+                        filtro = " WHERE nombre LIKE '%" + filtro + "%' OR descripcion LIKE '%" + filtro + "%' AND ESTADO = 'A' ";
+                    }
+
+                    if (filtro == null)
+                    {
+                        filtro = " WHERE ESTADO = 'A' ";
+                    }
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    query = $@"select nombre,descripcion from usuarios
+                                         {filtro}   
+                                        ORDER BY nombre
+                                        {paginaActual}
+                                        {paginacionActual} ";
+
+
+                    info.Usuarios = connection.Query<UsuarioData>(query).ToList();
+
                 }
-
-                var whereClause = Where + string.Join(AndOperator, condiciones);
-
-                var sqlCount = CountAll + " FROM usuarios" + whereClause;
-                info.Total = connection.QuerySingle<int>(sqlCount, parametros);
-
-                var orderAndPage = new StringBuilder(OrderByNombre);
-                if (pagina != null && paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
-                }
-
-                var sqlData = @"SELECT nombre, descripcion 
-                                FROM usuarios"
-                              + whereClause
-                              + orderAndPage;
-
-                info.Usuarios = connection.Query<UsuarioData>(sqlData, parametros).ToList();
             }
-            catch
+            catch (Exception)
             {
                 info.Total = 0;
                 info.Usuarios = new List<UsuarioData>();
             }
             return info;
         }
-
-        #endregion
-
-        #region Facturas proveedor (lista avanzada)
-
         /// <summary>
         /// Método para obtener las facturas de proveedores
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
         public FacturasProveedorLista FacturaProveedor_Obtener(int CodCliente, string filtros)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             var filtrosModel = JsonConvert.DeserializeObject<FacturasProveedorDataFiltros>(filtros) ?? new FacturasProveedorDataFiltros();
-            var info = new FacturasProveedorLista { Total = 0 };
-
+            FacturasProveedorLista info = new FacturasProveedorLista();
+            info.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-                var parametros = new DynamicParameters();
-
-                var fromBase = @" FROM cpr_Compras E 
-                                  INNER JOIN cxp_proveedores P 
-                                    ON E.cod_proveedor = P.cod_proveedor
-                                  LEFT JOIN CPR_SOLICITUD_PROV s 
-                                    ON s.ADJUDICA_ORDEN  = E.COD_ORDEN 
-                                   AND s.PROVEEDOR_CODIGO = E.cod_proveedor";
-
-                // Total sin filtros adicionales
-                var sqlCount = "SELECT COUNT(E.cod_compra) FROM cpr_Compras E INNER JOIN cxp_proveedores P ON E.cod_proveedor = P.cod_proveedor";
-                info.Total = connection.QuerySingle<int>(sqlCount);
-
-                var condiciones = new List<string>();
-
-                if (!string.IsNullOrWhiteSpace(filtrosModel.filtro))
                 {
-                    condiciones.Add("(E.cod_compra LIKE @Filtro OR E.cod_orden LIKE @Filtro OR E.cod_factura LIKE @Filtro OR P.descripcion LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtrosModel.filtro}%");
+
+                    //Busco Total
+                    query = "select COUNT(E.cod_compra) from cpr_Compras E inner join cxp_proveedores P on E.cod_proveedor = P.cod_proveedor";
+                    info.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtrosModel.filtro != "")
+                    {
+                        filtrosModel.filtro = " WHERE  E.cod_compra LIKE '%" + filtrosModel.filtro + "%'" +
+                            " OR E.cod_orden LIKE '%" + filtrosModel.filtro + "%' " +
+                            " OR E.cod_factura LIKE '%" + filtrosModel.filtro + "%' " +
+                            " OR P.descripcion  LIKE '%" + filtrosModel.filtro + "%'";
+                    }
+
+                    if (filtrosModel.cod_proveedor > 0)
+                    {
+                        filtrosModel.filtro += " AND P.cod_proveedor = " + filtrosModel.cod_proveedor;
+                    }
+
+                    if (filtrosModel.pagina == 0)
+                    {
+                        paginaActual = Offset + filtrosModel.pagina + Rows;
+                        paginacionActual = FetchNext + filtrosModel.paginacion + RowsOnly;
+                    }
+
+                    query = $@"select E.cod_compra,E.cod_orden,E.cod_factura, P.descripcion as Proveedor, 
+P.cod_proveedor, RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10)  AS no_solicitud
+                                from cpr_Compras E 
+                                inner join cxp_proveedores P on E.cod_proveedor = P.cod_proveedor
+                                left JOIN CPR_SOLICITUD_PROV s ON 
+                                         s.ADJUDICA_ORDEN  = E .COD_ORDEN 
+                                     AND s.PROVEEDOR_CODIGO = E.cod_proveedor
+                                         {filtrosModel.filtro} 
+                                        ORDER BY E.cod_compra
+                                        {paginaActual}
+                                        {paginacionActual} ";
+
+
+                    info.Facturas = connection.Query<FacturasProveedorData>(query).ToList();
+
                 }
-
-                if (filtrosModel.cod_proveedor > 0)
-                {
-                    condiciones.Add("P.cod_proveedor = @CodProveedor");
-                    parametros.Add("@CodProveedor", filtrosModel.cod_proveedor);
-                }
-
-                var whereClause = condiciones.Count > 0
-                    ? Where + string.Join(AndOperator, condiciones)
-                    : string.Empty;
-
-                var orderAndPage = new StringBuilder(OrderByCodCompra);
-                if (filtrosModel.pagina == 0) // se mantiene la condición original
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, filtrosModel.pagina);
-                    parametros.Add(ParamPageSize, filtrosModel.paginacion);
-                }
-
-                var sqlData = @"SELECT E.cod_compra,
-                                       E.cod_orden,
-                                       E.cod_factura, 
-                                       P.descripcion as Proveedor, 
-                                       P.cod_proveedor, 
-                                       RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10) AS no_solicitud"
-                              + fromBase
-                              + whereClause
-                              + orderAndPage;
-
-                info.Facturas = connection.Query<FacturasProveedorData>(sqlData, parametros).ToList();
             }
-            catch
+            catch (Exception)
             {
                 info.Total = 0;
                 info.Facturas = new List<FacturasProveedorData>();
             }
             return info;
         }
-
-        #endregion
-
-        #region Devoluciones
-
         /// <summary>
         /// Método para obtener las devoluciones de compra
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public CompraDevLista Devoluciones_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new CompraDevLista { Total = 0 };
+            CompraDevLista info = new CompraDevLista();
+            info.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-                var parametros = new DynamicParameters();
-
-                var baseFrom = @" FROM cpr_compras_dev D 
-                                  INNER JOIN cxp_proveedores P 
-                                    ON D.cod_proveedor = P.cod_proveedor";
-
-                // Total
-                var sqlCount = CountAll + baseFrom;
-                info.Total = connection.QuerySingle<int>(sqlCount, parametros);
-
-                var condiciones = new List<string>();
-                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    condiciones.Add("(D.cod_compra_dev LIKE @Filtro OR D.cod_factura LIKE @Filtro OR P.descripcion LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtro}%");
+
+                    //Busco Total
+                    query = "select count(*) from cpr_compras_dev D inner join cxp_proveedores P on D.cod_proveedor = P.cod_proveedor";
+                    info.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtro != null)
+                    {
+                        filtro = " WHERE  D.cod_compra_dev LIKE '%" + filtro + "%' " +
+                            " OR D.cod_factura LIKE '%" + filtro + "%' " +
+                            " OR P.descripcion  LIKE '%" + filtro + "%'";
+                    }
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    query = $@"select D.cod_compra_dev,P.descripcion as Proveedor,D.cod_factura,D.notas,D.fecha
+                                  from cpr_compras_dev D inner join cxp_proveedores P on D.cod_proveedor = P.cod_proveedor
+                                         {filtro} 
+                                       ORDER BY D.cod_compra_dev
+                                        {paginaActual}
+                                        {paginacionActual} ";
+
+
+                    info.devoluciones = connection.Query<CompraDevData>(query).ToList();
+
                 }
-
-                var whereClause = condiciones.Count > 0
-                    ? Where + string.Join(AndOperator, condiciones)
-                    : string.Empty;
-
-                var orderAndPage = new StringBuilder(OrderByCompraDev);
-                if (pagina != null && paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
-                }
-
-                var sqlData = @"SELECT D.cod_compra_dev,
-                                       P.descripcion as Proveedor,
-                                       D.cod_factura,
-                                       D.notas,
-                                       D.fecha"
-                              + baseFrom
-                              + whereClause
-                              + orderAndPage;
-
-                info.devoluciones = connection.Query<CompraDevData>(sqlData, parametros).ToList();
             }
-            catch
+            catch (Exception)
             {
                 info.Total = 0;
                 info.devoluciones = new List<CompraDevData>();
             }
             return info;
         }
-
-        #endregion
-
-        #region Beneficios
-
         /// <summary>
         /// Método para obtener los beneficios
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public BeneficioDataLista Beneficios_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new BeneficioDataLista { Total = 0 };
+            BeneficioDataLista info = new BeneficioDataLista();
+            info.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-                var parametros = new DynamicParameters();
-
-                var baseFrom = " FROM afi_beneficios";
-
-                var sqlCount = "SELECT COUNT(cod_beneficio)" + baseFrom;
-                info.Total = connection.QuerySingle<int>(sqlCount);
-
-                var condiciones = new List<string>();
-                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    condiciones.Add("(cod_beneficio LIKE @Filtro OR descripcion LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtro}%");
+
+                    //Busco Total
+                    query = "select count(cod_beneficio) from afi_beneficios";
+                    info.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtro != null)
+                    {
+                        filtro = " WHERE  cod_beneficio LIKE '%" + filtro + "%' " +
+                            " OR descripcion LIKE '%" + filtro + "%' ";
+                    }
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    query = $@"select cod_beneficio,descripcion from afi_beneficios
+                                         {filtro} 
+                                       ORDER BY cod_beneficio
+                                        {paginaActual}
+                                        {paginacionActual} ";
+                    info.Beneficios = connection.Query<BeneficioData>(query).ToList();
                 }
 
-                var whereClause = condiciones.Count > 0
-                    ? Where + string.Join(AndOperator, condiciones)
-                    : string.Empty;
-
-                var orderAndPage = new StringBuilder(OrderByCodBeneficio);
-                if (pagina != null && paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
-                }
-
-                var sqlData = @"SELECT cod_beneficio, descripcion"
-                              + baseFrom
-                              + whereClause
-                              + orderAndPage;
-
-                info.Beneficios = connection.Query<BeneficioData>(sqlData, parametros).ToList();
             }
-            catch
+            catch (Exception ex)
             {
+                _ = ex.Message;
                 info.Total = 0;
                 info.Beneficios = new List<BeneficioData>();
             }
             return info;
         }
 
-        #endregion
-
-        #region Socios V1
 
         /// <summary>
         /// Método para obtener los socios (V1 Galileo)
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public ErrorDto<SociosDataLista> Socios_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var response = new ErrorDto<SociosDataLista>
-            {
-                Result = new SociosDataLista { Total = 0 }
-            };
+            var response = new ErrorDto<SociosDataLista>();
+            response.Result = new SociosDataLista();
+            response.Result.Total = 0;
 
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-                var parametros = new DynamicParameters();
-
-                var fromBase = @" FROM SOCIOS S 
-                                  LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA";
-
-                var condiciones = new List<string>();
-                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    condiciones.Add(@"( S.cedula LIKE @Filtro 
-                                     OR S.cedular LIKE @Filtro
-                                     OR S.nombre LIKE @Filtro
-                                     OR M.Membresia LIKE @Filtro )");
-                    parametros.Add(ParamFiltro, $"%{filtro}%");
+
+
+
+                    if (filtro != null)
+                    {
+                        filtro = " WHERE  S.cedula LIKE '%" + filtro + "%' " +
+                            " OR S.cedular LIKE '%" + filtro + "%' " +
+                        " OR S.nombre LIKE '%" + filtro + "%'" +
+                        " OR M.Membresia LIKE '%" + filtro + "%' ";
+                    }
+                    //Busco Total
+                    query = $"Select count(*) from SOCIOS S left join vAFI_Membresias M ON M.Cedula = S.CEDULA {filtro}";
+                    response.Result.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    query = $@"Select S.cedula,S.cedular,S.nombre, M.Membresia from SOCIOS S
+                                      left join vAFI_Membresias M ON M.Cedula = S.CEDULA
+                                         {filtro} 
+                                       ORDER BY S.cedula
+                                        {paginaActual}
+                                        {paginacionActual} ";
+                    response.Result.socios = connection.Query<SociosData>(query).ToList();
                 }
 
-                var whereClause = condiciones.Count > 0
-                    ? Where + string.Join(AndOperator, condiciones)
-                    : string.Empty;
-
-                var sqlCount = CountAll + fromBase + whereClause;
-                response.Result.Total = connection.QuerySingle<int>(sqlCount, parametros);
-
-                var orderAndPage = new StringBuilder(OrderBySocioCedula);
-                if (pagina != null && paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
-                }
-
-                var sqlData = @"SELECT S.cedula, S.cedular, S.nombre, M.Membresia"
-                              + fromBase
-                              + whereClause
-                              + orderAndPage;
-
-                response.Result.socios = connection.Query<SociosData>(sqlData, parametros).ToList();
             }
             catch (Exception ex)
             {
@@ -961,13 +930,13 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
-        #endregion
 
-        #region Socios LazyLoad
-
-        /// <summary>
-        /// Método para obtener los socios (Lazy load)
+                /// <summary>
+        /// Método para obtener los socios
         /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="jfiltro"></param>
+        /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string jfiltro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -983,59 +952,39 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var parametros = new DynamicParameters();
-
-                var fromBase = @" FROM SOCIOS S
-                                  LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA";
-
-                var condiciones = new List<string>();
-                if (!string.IsNullOrWhiteSpace(filtro.filtro))
                 {
-                    condiciones.Add(@"( S.cedula LIKE @Filtro 
-                                     OR S.cedular LIKE @Filtro
-                                     OR S.nombre LIKE @Filtro
-                                     OR M.Membresia LIKE @Filtro )");
-                    parametros.Add(ParamFiltro, $"%{filtro.filtro}%");
-                }
 
-                var whereClause = condiciones.Count > 0
-                    ? Where + string.Join(AndOperator, condiciones)
-                    : string.Empty;
 
-                // columnas permitidas para sort
-                var columnasPermitidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    CedulaColumn,
-                    "cedular",
-                    "nombre",
-                    "Membresia"
-                };
+                    if (!string.IsNullOrEmpty(filtro.filtro))
+                    {
+                        filtro.filtro = $@"WHERE ( 
+                                                 S.cedula like '%{filtro.filtro}%' 
+                                              OR S.cedular like '%{filtro.filtro}%'
+                                              OR S.nombre like '%{filtro.filtro}%'
+                                              OR M.membresia like '%{filtro.filtro}%'
+                                          )";
+                    }
 
-                if (string.IsNullOrWhiteSpace(filtro.sortField) || !columnasPermitidas.Contains(filtro.sortField))
-                {
-                    filtro.sortField = CedulaColumn;
-                }
+                    if (filtro.sortField == "" || filtro.sortField == null)
+                    {
+                        filtro.sortField = "cedula";
+                    }
 
-                var sortDirection = filtro.sortOrder == 0 ? "DESC" : "ASC";
-                var orderBy = string.Format(OrderByDynamicTemplate, filtro.sortField, sortDirection);
 
-                var sqlCount = CountAll + fromBase + whereClause;
-                response.Result.total = connection.QuerySingle<int>(sqlCount, parametros);
+                    //Busco Total
+                    var query = $"Select count(*) from SOCIOS S left join vAFI_Membresias M ON M.Cedula = S.CEDULA {filtro.filtro}";
+                    response.Result.total = connection.Query<int>(query).FirstOrDefault();
 
-                if (filtro.pagina == 0)
-                {
-                    var sqlData = $@"
-                        SELECT S.cedula, S.cedular, S.nombre, M.Membresia 
-                        {fromBase}
-                        {whereClause}
-                        {orderBy}
-                        {Offset} @Offset ROWS
-                        {FetchNext} @PageSize {RowsOnly}";
+                    if (filtro.pagina == 0)
+                    {
+                        query = $@"Select S.cedula,S.cedular,S.nombre, M.Membresia from SOCIOS S
+                                      left join vAFI_Membresias M ON M.Cedula = S.CEDULA
+                           {filtro.filtro} order by {filtro.sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}  
+                                      OFFSET {filtro.pagina} ROWS
+                                      FETCH NEXT {filtro.paginacion} ROWS ONLY ";
 
-                    parametros.Add(ParamOffset, filtro.pagina);
-                    parametros.Add(ParamPageSize, filtro.paginacion);
-
-                    response.Result.lista = connection.Query<SociosData>(sqlData, parametros).ToList();
+                        response.Result.lista = connection.Query<SociosData>(query).ToList();
+                    }
                 }
             }
             catch (Exception ex)
@@ -1047,110 +996,110 @@ namespace Galileo.DataBaseTier
             }
             return response;
         }
-
-        #endregion
-
-        #region Beneficio Producto
+    
+    
 
         /// <summary>
         /// Método para obtener los productos de beneficios
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public BeneficioProductoLista BeneficioProducto_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new BeneficioProductoLista { Total = 0 };
+            BeneficioProductoLista info = new BeneficioProductoLista();
+            info.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-                var parametros = new DynamicParameters();
-
-                var fromBase = " FROM afi_bene_productos";
-
-                var sqlCount = "SELECT COUNT(cod_producto)" + fromBase;
-                info.Total = connection.QuerySingle<int>(sqlCount);
-
-                var condiciones = new List<string>();
-                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    condiciones.Add("(cod_producto LIKE @Filtro OR descripcion LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtro}%");
+
+                    //Busco Total
+                    query = "Select count(cod_producto) From afi_bene_productos";
+                    info.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtro != null)
+                    {
+                        filtro = " WHERE  cod_producto LIKE '%" + filtro + "%' " +
+                            " OR descripcion LIKE '%" + filtro + "%' ";
+                    }
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    query = $@"Select cod_producto,descripcion, COSTO_UNIDAD From afi_bene_productos
+                                         {filtro} 
+                                       ORDER BY cod_producto
+                                        {paginaActual}
+                                        {paginacionActual} ";
+                    info.productos = connection.Query<BeneficioProductoData>(query).ToList();
                 }
 
-                var whereClause = condiciones.Count > 0
-                    ? Where + string.Join(AndOperator, condiciones)
-                    : string.Empty;
-
-                var orderAndPage = new StringBuilder(OrderByCodProducto);
-                if (pagina != null && paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
-                }
-
-                var sqlData = @"SELECT cod_producto, descripcion, COSTO_UNIDAD"
-                              + fromBase
-                              + whereClause
-                              + orderAndPage;
-
-                info.productos = connection.Query<BeneficioProductoData>(sqlData, parametros).ToList();
             }
-            catch
+            catch (Exception)
             {
                 info.Total = 0;
                 info.productos = new List<BeneficioProductoData>();
             }
             return info;
         }
-
-        #endregion
-
-        #region Departamentos
-
         /// <summary>
         /// Método para obtener los departamentos
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="Institucion"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public DepartamentoDataLista Departamentos_Obtener(int CodCliente, string Institucion, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
 
-            var info = new DepartamentoDataLista { Total = 0 };
+            DepartamentoDataLista info = new DepartamentoDataLista();
+            info.Total = 0;
             try
             {
+                var query = "";
+                string paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-                var parametros = new DynamicParameters();
-                parametros.Add("@Institucion", Institucion);
-
-                var condiciones = new List<string> { "cod_institucion = @Institucion" };
-
-                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                    condiciones.Add("(cod_departamento LIKE @Filtro OR descripcion LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtro}%");
+
+                    //Busco Total
+                    query = $"Select count(cod_departamento) From AFDepartamentos where cod_institucion = '{Institucion}' ";
+                    info.Total = connection.Query<int>(query).FirstOrDefault();
+
+                    if (filtro != null)
+                    {
+                        filtro = " AND  cod_departamento LIKE '%" + filtro + "%' " +
+                            " OR descripcion LIKE '%" + filtro + "%' ";
+                    }
+
+                    if (pagina != null)
+                    {
+                        paginaActual = Offset + pagina + Rows;
+                        paginacionActual = FetchNext + paginacion + RowsOnly;
+                    }
+
+                    query = $@"select cod_departamento,descripcion from AFDepartamentos where cod_institucion = '{Institucion}' 
+                                         {filtro} 
+                                       ORDER BY cod_departamento
+                                        {paginaActual}
+                                        {paginacionActual} ";
+                    info.departamentos = connection.Query<DepartamentoData>(query).ToList();
                 }
 
-                var whereClause = Where + string.Join(AndOperator, condiciones);
-
-                var sqlCount = "SELECT COUNT(cod_departamento) FROM AFDepartamentos" + whereClause;
-                info.Total = connection.QuerySingle<int>(sqlCount, parametros);
-
-                var orderAndPage = new StringBuilder(OrderByCodDepartamento);
-                if (pagina != null && paginacion != null)
-                {
-                    orderAndPage.Append(OffsetFetchPage);
-                    parametros.Add(ParamOffset, pagina.Value);
-                    parametros.Add(ParamPageSize, paginacion.Value);
-                }
-
-                var sqlData = @"SELECT cod_departamento, descripcion 
-                                FROM AFDepartamentos"
-                              + whereClause
-                              + orderAndPage;
-
-                info.departamentos = connection.Query<DepartamentoData>(sqlData, parametros).ToList();
             }
-            catch
+            catch (Exception)
             {
                 info.Total = 0;
                 info.departamentos = new List<DepartamentoData>();
@@ -1158,13 +1107,13 @@ namespace Galileo.DataBaseTier
             return info;
         }
 
-        #endregion
-
-        #region Catálogos / UEN
-
         /// <summary>
         /// Obtengo catálogos de tabla SYS y BENE donde tipo es el tipo de catalogo y modulo es el código de la tabla
         /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="tipo"></param>
+        /// <param name="modulo"></param>
+        /// <returns></returns>
         public List<CatalogosLista> Catalogo_Obtener(int CodCliente, int tipo, int modulo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
@@ -1172,19 +1121,22 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-
-                var procedure = "[spAFI_Bene_Catalogos_Consulta]";
-                var values = new
                 {
-                    tipo,
-                    Codigo = modulo
-                };
-                lista = connection.Query<CatalogosLista>(procedure, values, commandType: System.Data.CommandType.StoredProcedure).ToList();
+                    var procedure = "[spAFI_Bene_Catalogos_Consulta]";
+                    var values = new
+                    {
+                        tipo = tipo,
+                        Codigo = modulo
+                    };
+                    lista = connection.Query<CatalogosLista>(procedure, values, commandType: System.Data.CommandType.StoredProcedure).ToList();
+                }
+
             }
-            catch
+            catch (Exception)
             {
                 lista = new List<CatalogosLista>();
             }
+
 
             return lista;
         }
@@ -1192,17 +1144,22 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Obtiene UENs
         /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CatalogosLista>> UENS_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CatalogosLista>> { Code = 0 };
+            var response = new ErrorDto<List<CatalogosLista>>
+            {
+                Code = 0
+            };
             try
             {
                 using var connection = new SqlConnection(stringConn);
-
-                var query = @"SELECT COD_UNIDAD as item, DESCRIPCION FROM CORE_UENS";
-                response.Result = connection.Query<CatalogosLista>(query).ToList();
-
+                {
+                    var query = $@"select COD_UNIDAD as item, DESCRIPCION FROM CORE_UENS";
+                    response.Result = connection.Query<CatalogosLista>(query).ToList();
+                }
             }
             catch (Exception ex)
             {
@@ -1213,10 +1170,6 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
-        #endregion
-
-        #region DropDown Ordenes (Proveedores / Familias)
-
         public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -1225,25 +1178,24 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+                {
+                    var Query = $@"SELECT  DISTINCT
+                                  O.COD_PROVEEDOR as item,
+                                  cp.DESCRIPCION AS descripcion
+                                FROM cpr_ordenes O
+                                LEFT JOIN CPR_SOLICITUD_PROV sp 
+                                    ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
+                                    AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
+                                LEFT JOIN CXP_PROVEEDORES cp 
+                                    ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
+                                WHERE 
+                                    O.Estado IN ('A') 
+                                    AND O.Proceso IN ('A', 'X')
+                                GROUP BY 
+                                    sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
 
-                var Query = @"
-                        SELECT DISTINCT
-                               O.COD_PROVEEDOR AS item,
-                               cp.DESCRIPCION AS descripcion
-                        FROM cpr_ordenes O
-                        LEFT JOIN CPR_SOLICITUD_PROV sp 
-                            ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
-                           AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-                        LEFT JOIN CXP_PROVEEDORES cp 
-                            ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
-                        WHERE 
-                            O.Estado IN ('A') 
-                            AND O.Proceso IN ('A', 'X')
-                        GROUP BY 
-                            sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
-
-                resp.Result = connection.Query<DropDownListaGenericaModel>(Query).ToList();
-
+                    resp.Result = connection.Query<DropDownListaGenericaModel>(Query).ToList();
+                }
             }
             catch (Exception ex)
             {
@@ -1263,40 +1215,40 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+                {
+                    var Query = $@"SELECT DISTINCT
+                                        STUFF((
+      								    SELECT DISTINCT ', ' + CAST(ppc2.COD_PRODCLAS AS VARCHAR)
+                                        FROM CPR_ORDENES_DETALLE cod2
+                                        INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
+                                        LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
+                                        WHERE cod2.COD_ORDEN = O.COD_ORDEN
+                                              AND ppc2.DESCRIPCION IS NOT NULL
+                                        FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS item,
 
-                var Query = @"
-                        SELECT DISTINCT
-                            STUFF((
-                                SELECT DISTINCT ', ' + CAST(ppc2.COD_PRODCLAS AS VARCHAR)
-                                FROM CPR_ORDENES_DETALLE cod2
-                                INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
-                                LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
-                                WHERE cod2.COD_ORDEN = O.COD_ORDEN
-                                      AND ppc2.DESCRIPCION IS NOT NULL
-                                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS item,
-                            STUFF((
-                                SELECT DISTINCT ', ' + ppc2.DESCRIPCION
-                                FROM CPR_ORDENES_DETALLE cod2
-                                INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
-                                LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
-                                WHERE cod2.COD_ORDEN = O.COD_ORDEN
-                                      AND ppc2.DESCRIPCION IS NOT NULL
-                                FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS descripcion        
-                        FROM cpr_ordenes O
-                        LEFT JOIN CPR_SOLICITUD_PROV sp 
-                            ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
-                           AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-                        LEFT JOIN CXP_PROVEEDORES cp 
-                            ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
-                        WHERE 
-                            O.Estado IN ('A') 
-                            AND O.Proceso IN ('A', 'X')
-                        GROUP BY 
-                            sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
+                                        STUFF((
+                                        SELECT DISTINCT ', ' + ppc2.DESCRIPCION
+                                        FROM CPR_ORDENES_DETALLE cod2
+                                        INNER JOIN PV_PRODUCTOS pp2 ON cod2.COD_PRODUCTO = pp2.COD_PRODUCTO
+                                        LEFT JOIN PV_PROD_CLASIFICA ppc2 ON ppc2.COD_PRODCLAS = pp2.COD_PRODCLAS
+                                        WHERE cod2.COD_ORDEN = O.COD_ORDEN
+                                              AND ppc2.DESCRIPCION IS NOT NULL
+                                        FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS descripcion        
+                                FROM cpr_ordenes O
+                                LEFT JOIN CPR_SOLICITUD_PROV sp 
+                                    ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
+                                    AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
+                                LEFT JOIN CXP_PROVEEDORES cp 
+                                    ON cp.COD_PROVEEDOR = O.COD_PROVEEDOR
+                                WHERE 
+                                    O.Estado IN ('A') 
+                                    AND O.Proceso IN ('A', 'X')
+                                GROUP BY 
+                                    sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
 
-                resp.Result = connection.Query<DropDownListaGenericaModel>(Query).ToList();
+                    resp.Result = connection.Query<DropDownListaGenericaModel>(Query).ToList();
 
-
+                }
             }
             catch (Exception ex)
             {
@@ -1308,12 +1260,10 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        #endregion
-
-        #region TipoProductoSub (jerárquico)
 
         public ErrorDto<List<TipoProductoSubGradaData>> TipoProductoSub_ObtenerTodos(int CodEmpresa, string Cod_Prodclas)
         {
+
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<List<TipoProductoSubGradaData>>
             {
@@ -1321,41 +1271,35 @@ namespace Galileo.DataBaseTier
                 Result = new List<TipoProductoSubGradaData>()
             };
 
+
             try
             {
                 using var connection = new SqlConnection(stringConn);
-
-                // Convertimos la lista de codigos a lista para IN @param
-                var codList = Cod_Prodclas
-                    .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                    .Select(x => x.Trim())
-                    .Where(x => !string.IsNullOrWhiteSpace(x))
-                    .ToArray();
-
-                var query = @"
-                        SELECT Cod_Prodclas, Cod_Linea_Sub, Descripcion, Activo, Cabys,
-                               COD_CUENTA, NIVEL, COD_LINEA_SUB_MADRE
-                        FROM PV_PROD_CLASIFICA_SUB 
-                        WHERE Cod_Prodclas IN @CodProdclas";
-
-                var info = connection.Query<TipoProductoSubDto>(query, new { CodProdclas = codList }).ToList();
-                foreach (TipoProductoSubDto dt in info)
                 {
-                    dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
+                    var query = $@"SELECT Cod_Prodclas,Cod_Linea_Sub, Descripcion, Activo, Cabys 
+                                          ,COD_CUENTA, NIVEL, COD_LINEA_SUB_MADRE
+                                              FROM PV_PROD_CLASIFICA_SUB 
+                                        WHERE Cod_Prodclas IN ({Cod_Prodclas})";
 
-                    if (dt.Nivel == 1)
+                    var info = connection.Query<TipoProductoSubDto>(query).ToList();
+                    foreach (TipoProductoSubDto dt in info)
                     {
-                        response.Result.Add(new TipoProductoSubGradaData
+                        dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
+
+                        if (dt.Nivel == 1)
                         {
-                            key = dt.Cod_Linea_Sub,
-                            icon = "",
-                            label = dt.Descripcion,
-                            data = dt,
-                            children = TipoProductoSub_SeguienteNivel(CodEmpresa, dt)
-                        });
+                            response.Result.Add(new TipoProductoSubGradaData
+                            {
+                                key = dt.Cod_Linea_Sub,
+                                icon = "",
+                                label = dt.Descripcion,
+                                data = dt,
+                                children = TipoProductoSub_SeguienteNivel(CodEmpresa, dt)
+                            });
+                        }
+
                     }
                 }
-
             }
             catch (Exception ex)
             {
@@ -1373,51 +1317,43 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-
-                var query = @"
-                        SELECT Cod_Prodclas, Cod_Linea_Sub, Descripcion, Activo, Cabys,
-                               COD_CUENTA, NIVEL, COD_LINEA_SUB_MADRE
-                        FROM PV_PROD_CLASIFICA_SUB 
-                        WHERE Cod_Prodclas = @CodProdclas 
-                          AND COD_LINEA_SUB_MADRE = @CodLineaSubMadre";
-
-                var info = connection.Query<TipoProductoSubDto>(query,
-                    new
-                    {
-                        CodProdclas = padre.Cod_Prodclas,
-                        CodLineaSubMadre = padre.Cod_Linea_Sub
-                    }).ToList();
-
-                foreach (TipoProductoSubDto dt in info)
                 {
-                    dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
+                    var query = $@"SELECT Cod_Prodclas,Cod_Linea_Sub, Descripcion, Activo, Cabys 
+                                            ,COD_CUENTA, NIVEL, COD_LINEA_SUB_MADRE
+                                                FROM PV_PROD_CLASIFICA_SUB 
+                                          WHERE Cod_Prodclas = '{padre.Cod_Prodclas}' 
+                                          AND COD_LINEA_SUB_MADRE = '{padre.Cod_Linea_Sub}' ";
 
-                    response.Add(new TipoProductoSubGradaData
+                    var info = connection.Query<TipoProductoSubDto>(query).ToList();
+                    foreach (TipoProductoSubDto dt in info)
                     {
-                        key = dt.Cod_Linea_Sub,
-                        icon = "",
-                        label = dt.Descripcion,
-                        data = dt,
-                        children = TipoProductoSub_SeguienteNivel(CodEmpresa, dt)
-                    });
+                        dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
+
+                        response.Add(new TipoProductoSubGradaData
+                        {
+                            key = dt.Cod_Linea_Sub,
+                            icon = "",
+                            label = dt.Descripcion,
+                            data = dt,
+                            children = TipoProductoSub_SeguienteNivel(CodEmpresa, dt)
+                        });
+                    }
                 }
 
-
             }
-            catch
+            catch (Exception)
             {
                 response = new List<TipoProductoSubGradaData>();
             }
             return response;
         }
 
-        #endregion
-
-        #region Personas
-
         /// <summary>
         /// Obtener lista de personas
         /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="jfiltro"></param>
+        /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> Personas_Obtener(int CodEmpresa, string jfiltro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -1432,53 +1368,33 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var parametros = new DynamicParameters();
-
-                var fromBase = " FROM socios";
-
-                var condiciones = new List<string>();
-                if (!string.IsNullOrWhiteSpace(filtro.filtro))
                 {
-                    condiciones.Add("(cedula LIKE @Filtro OR cedulaR LIKE @Filtro OR nombre LIKE @Filtro)");
-                    parametros.Add(ParamFiltro, $"%{filtro.filtro}%");
-                }
+                    var query = $@"SELECT count(*) From socios";
+                    response.Result.total = connection.Query<int>(query).FirstOrDefault();
 
-                var whereClause = condiciones.Count > 0
-                    ? Where + string.Join(AndOperator, condiciones)
-                    : string.Empty;
+                    if (filtro.filtro != null && filtro.filtro != "")
+                    {
+                        filtro.filtro = $@"WHERE ( 
+                                                 cedula like '%{filtro.filtro}%' 
+                                              OR cedulaR like '%{filtro.filtro}%'
+                                              OR nombre like '%{filtro.filtro}%'
+                                          )";
+                    }
 
-                // sortField permitido
-                var columnasPermitidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    CedulaColumn,
-                    "cedulaR",
-                    "nombre"
-                };
+                    if (filtro.sortField == "" || filtro.sortField == null)
+                    {
+                        filtro.sortField = "cedula";
+                    }
 
-                if (string.IsNullOrWhiteSpace(filtro.sortField) || !columnasPermitidas.Contains(filtro.sortField))
-                {
-                    filtro.sortField = CedulaColumn;
-                }
-                var sortDirection = filtro.sortOrder == 0 ? "DESC" : "ASC";
-                var orderBy = string.Format(OrderByDynamicTemplate, filtro.sortField, sortDirection);
+                    if (filtro.pagina == 0)
+                    {
+                        query = $@"SELECT cedula,cedulaR,nombre From socios
+                           {filtro.filtro} order by {filtro.sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}  
+                                      OFFSET {filtro.pagina} ROWS
+                                      FETCH NEXT {filtro.paginacion} ROWS ONLY ";
 
-                var sqlCount = CountAll + fromBase + whereClause;
-                response.Result.total = connection.QuerySingle<int>(sqlCount, parametros);
-
-                if (filtro.pagina == 0)
-                {
-                    var sqlData = $@"
-                        SELECT cedula, cedulaR, nombre
-                        {fromBase}
-                        {whereClause}
-                        {orderBy}
-                        {Offset} @Offset ROWS
-                        {FetchNext} @PageSize {RowsOnly}";
-
-                    parametros.Add(ParamOffset, filtro.pagina);
-                    parametros.Add(ParamPageSize, filtro.paginacion);
-
-                    response.Result.lista = connection.Query<AFCedulaDto>(sqlData, parametros).ToList();
+                        response.Result.lista = connection.Query<AFCedulaDto>(query).ToList();
+                    }
                 }
             }
             catch (Exception ex)
@@ -1490,6 +1406,7 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
-        #endregion
+
+
     }
 }
