@@ -211,9 +211,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"select CATALOGO_ID AS ITEM, DESCRIPCION from CPR_CATALOGOS 
-                        where Tipo_Id = (select TIPO_ID from CPR_CATALOGOS_TIPOS where DESCRIPCION = '{tipo}') and Activo = 1";
-                response.Result = connection.Query<CatalogoDto>(query).ToList();
+                var query = @"select CATALOGO_ID AS ITEM, DESCRIPCION from CPR_CATALOGOS 
+                        where Tipo_Id = (select TIPO_ID from CPR_CATALOGOS_TIPOS where DESCRIPCION = @tipo) and Activo = 1";
+                response.Result = connection.Query<CatalogoDto>(query, new { tipo }).ToList();
             }
             catch (Exception ex)
             {
