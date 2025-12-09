@@ -15,27 +15,42 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         private const string CodDesembolsoCol = "cod_desembolso";
 
+        // SELECT base común
+        private const string BaseSelectSql = @"
+            SELECT cod_desembolso,
+                   descripcion,
+                   activo,
+                   registro_usuario,
+                   registro_fecha,
+                   modifica_usuario,
+                   modifica_fecha
+            FROM   Activos_obras_tdesem";
+
+        // WHERE común para filtro de texto
+        private const string WhereFilterSql = @"
+            WHERE (@filtro IS NULL
+                   OR cod_desembolso LIKE @filtro
+                   OR descripcion    LIKE @filtro)";
+
         public FrmActivosObrasTipoDesemDb(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
-            _portalDB = new PortalDB(config);
+            _portalDB        = new PortalDB(config);
         }
 
         /// <summary>
         /// Método para consultar la lista de tipos de desembolsos (paginado).
         /// </summary>
-        public ErrorDto<ActivosObrasTipoDesemDataLista> Activos_ObrasTipoDesem_Consultar(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<ActivosObrasTipoDesemDataLista> Activos_ObrasTipoDesem_Consultar(
+            int CodEmpresa,
+            FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<ActivosObrasTipoDesemDataLista>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new ActivosObrasTipoDesemDataLista
+            var result = DbHelper.CreateOkResponse(
+                new ActivosObrasTipoDesemDataLista
                 {
                     total = 0,
                     lista = new List<ActivosObrasTipoDesemData>()
-                }
-            };
+                });
 
             try
             {
@@ -43,7 +58,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 // Total sin filtro (igual que tu versión original)
                 const string countSql = @"SELECT COUNT(cod_desembolso) FROM Activos_obras_tdesem";
-                result.Result.total = connection.QueryFirstOrDefault<int>(countSql);
+                if (result.Result != null)
+                {
+                    result.Result.total = connection.QueryFirstOrDefault<int?>(countSql) ?? 0;
+                }
 
                 // Parámetros
                 var p = new DynamicParameters();
@@ -53,43 +71,28 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     : $"%{filtros.filtro.Trim()}%";
                 p.Add("@filtro", filtroLike, DbType.String);
 
-                int pagina = filtros?.pagina ?? 0;
+                int pagina     = filtros?.pagina     ?? 0;
                 int paginacion = filtros?.paginacion ?? 50;
-                p.Add("@offset", pagina, DbType.Int32);
-                p.Add("@rows", paginacion, DbType.Int32);
+                p.Add("@offset", pagina,     DbType.Int32);
+                p.Add("@rows",   paginacion, DbType.Int32);
 
                 // Sort seguro con índice (para evitar S2077)
-                var sortFieldRaw = (filtros?.sortField ?? CodDesembolsoCol).Trim();
-                var sortFieldNorm = sortFieldRaw.ToLowerInvariant();
-
-                int sortIndex = sortFieldNorm switch
+                var  sortFieldRaw  = (filtros?.sortField ?? CodDesembolsoCol).Trim();
+                var  sortFieldNorm = sortFieldRaw.ToLowerInvariant();
+                int  sortIndex     = sortFieldNorm switch
                 {
-                    CodDesembolsoCol         => 1,
-                    "descripcion"            => 2,
-                    "activo"                 => 3,
-                    _                        => 1
+                    CodDesembolsoCol => 1,
+                    "descripcion"    => 2,
+                    "activo"         => 3,
+                    _                => 1
                 };
-                p.Add("@sortIndex", sortIndex, DbType.Int32);
-
                 int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1; // 0 = DESC, 1 = ASC
-                p.Add("@sortDir", sortDir, DbType.Int32);
-
-                const string whereSql = @"
-                    WHERE (@filtro IS NULL
-                           OR cod_desembolso LIKE @filtro
-                           OR descripcion    LIKE @filtro)";
+                p.Add("@sortIndex", sortIndex, DbType.Int32);
+                p.Add("@sortDir",   sortDir,   DbType.Int32);
 
                 // ORDER BY usando CASE en lugar de interpolar columna/dirección
-                const string dataSql = @"
-                    SELECT cod_desembolso,
-                           descripcion,
-                           activo,
-                           registro_usuario,
-                           registro_fecha,
-                           modifica_usuario,
-                           modifica_fecha
-                    FROM   Activos_obras_tdesem
-                    " + whereSql + @"
+                const string dataSql = BaseSelectSql + @"
+                    " + WhereFilterSql + @"
                     ORDER BY
                         -- ASC
                         CASE @sortDir WHEN 1 THEN
@@ -110,16 +113,22 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     OFFSET @offset ROWS 
                     FETCH NEXT @rows ROWS ONLY;";
 
-                result.Result.lista = connection
-                    .Query<ActivosObrasTipoDesemData>(dataSql, p)
-                    .ToList();
+                if (result.Result != null)
+                {
+                    result.Result.lista = connection
+                        .Query<ActivosObrasTipoDesemData>(dataSql, p)
+                        .ToList();
+                }
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = [];
+                result.Code           = -1;
+                result.Description    = ex.Message;
+                if (result.Result != null)
+                {
+                    result.Result.total = 0;
+                    result.Result.lista = [];
+                }
             }
 
             return result;
@@ -128,66 +137,37 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Método para consultar lista de tipos de desembolsos a exportar (sin paginar).
         /// </summary>
-        public ErrorDto<List<ActivosObrasTipoDesemData>> Activos_ObrasTipoDesem_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<ActivosObrasTipoDesemData>> Activos_ObrasTipoDesem_Obtener(
+            int CodEmpresa,
+            FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<ActivosObrasTipoDesemData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<ActivosObrasTipoDesemData>()
-            };
+            var p = new DynamicParameters();
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
+            string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
+                ? null
+                : $"%{filtros.filtro.Trim()}%";
+            p.Add("@filtro", filtroLike, DbType.String);
 
-                var p = new DynamicParameters();
-                string? filtroLike = string.IsNullOrWhiteSpace(filtros?.filtro)
-                    ? null
-                    : $"%{filtros.filtro.Trim()}%";
-                p.Add("@filtro", filtroLike, DbType.String);
+            const string query = BaseSelectSql + @"
+                " + WhereFilterSql + @"
+                ORDER BY cod_desembolso;";
 
-                const string whereSql = @"
-                    WHERE (@filtro IS NULL
-                           OR cod_desembolso LIKE @filtro
-                           OR descripcion    LIKE @filtro)";
-
-                string query = $@"
-                    SELECT cod_desembolso,
-                           descripcion,
-                           activo,
-                           registro_usuario,
-                           registro_fecha,
-                           modifica_usuario,
-                           modifica_fecha
-                    FROM   Activos_obras_tdesem
-                    {whereSql}
-                    ORDER BY cod_desembolso;";
-
-                result.Result = connection
-                    .Query<ActivosObrasTipoDesemData>(query, p)
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteListQuery<ActivosObrasTipoDesemData>(
+                _portalDB,
+                CodEmpresa,
+                query,
+                p);
         }
 
         /// <summary>
         /// Método para actualizar o insertar un nuevo tipo de desembolso
         /// </summary>
-        public ErrorDto Activos_ObrasTipoDesem_Guardar(int CodEmpresa, string usuario, ActivosObrasTipoDesemData datos)
+        public ErrorDto Activos_ObrasTipoDesem_Guardar(
+            int CodEmpresa,
+            string usuario,
+            ActivosObrasTipoDesemData datos)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var result = DbHelper.CreateOkResponse();
 
             try
             {
@@ -197,14 +177,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FROM   Activos_obras_tdesem
                     WHERE  cod_desembolso = @codigo";
 
-                var existe = connection.QueryFirstOrDefault<int>(queryExiste, new { codigo = datos.cod_desembolso });
+                var existe = connection.QueryFirstOrDefault<int>(
+                    queryExiste,
+                    new { codigo = datos.cod_desembolso });
 
                 if (datos.isNew)
                 {
                     if (existe > 0)
                     {
-                        result.Code = -2;
-                        result.Description = $"El Tipo de Desembolso con el código {datos.cod_desembolso} ya existe.";
+                        result.Code        = -2;
+                        result.Description =
+                            $"El Tipo de Desembolso con el código {datos.cod_desembolso} ya existe.";
                     }
                     else
                     {
@@ -213,8 +196,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 }
                 else if (existe == 0)
                 {
-                    result.Code = -2;
-                    result.Description = $"El Tipo de Desembolso con el código {datos.cod_desembolso} no existe.";
+                    result.Code        = -2;
+                    result.Description =
+                        $"El Tipo de Desembolso con el código {datos.cod_desembolso} no existe.";
                 }
                 else
                 {
@@ -223,7 +207,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
             }
 
@@ -233,26 +217,24 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Método para actualizar un tipo de desembolso
         /// </summary>
-        private ErrorDto Activos_ObrasTipoDesem_Actualizar(int CodEmpresa, string usuario, ActivosObrasTipoDesemData datos)
+        private ErrorDto Activos_ObrasTipoDesem_Actualizar(
+            int CodEmpresa,
+            string usuario,
+            ActivosObrasTipoDesemData datos)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            const string query = @"
+                UPDATE Activos_obras_tdesem
+                   SET descripcion      = @descripcion,
+                       activo           = @activo,
+                       modifica_usuario = @usuario,
+                       modifica_fecha   = GETDATE()
+                 WHERE cod_desembolso   = @cod_desembolso";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    UPDATE Activos_obras_tdesem
-                       SET descripcion      = @descripcion,
-                           activo           = @activo,
-                           modifica_usuario = @usuario,
-                           modifica_fecha   = GETDATE()
-                     WHERE cod_desembolso   = @cod_desembolso";
-
-                connection.Execute(query, new
+            var result = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new
                 {
                     datos.cod_desembolso,
                     datos.descripcion,
@@ -260,19 +242,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     usuario
                 });
 
+            if (result.Code == 0)
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Tipo de Desem. para Obra en Proceso : {datos.cod_desembolso}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = usuario,
+                    DetalleMovimiento =
+                        $"Tipo de Desem. para Obra en Proceso : {datos.cod_desembolso}",
+                    Movimiento        = "Modifica - WEB",
+                    Modulo            = vModulo
                 });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
             }
 
             return result;
@@ -281,24 +261,22 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Método para insertar un nuevo tipo de desembolso
         /// </summary>
-        private ErrorDto Activos_ObrasTipoDesem_Insertar(int CodEmpresa, string usuario, ActivosObrasTipoDesemData datos)
+        private ErrorDto Activos_ObrasTipoDesem_Insertar(
+            int CodEmpresa,
+            string usuario,
+            ActivosObrasTipoDesemData datos)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            const string query = @"
+                INSERT INTO Activos_obras_tdesem
+                    (cod_desembolso, descripcion, activo, registro_usuario, registro_fecha)
+                VALUES
+                    (@cod_desembolso, @descripcion, @activo, @usuario, GETDATE())";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"
-                    INSERT INTO Activos_obras_tdesem
-                        (cod_desembolso, descripcion, activo, registro_usuario, registro_fecha)
-                    VALUES
-                        (@cod_desembolso, @descripcion, @activo, @usuario, GETDATE())";
-
-                connection.Execute(query, new
+            var result = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new
                 {
                     datos.cod_desembolso,
                     datos.descripcion,
@@ -306,19 +284,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     usuario
                 });
 
+            if (result.Code == 0)
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Tipo de Desem. para Obra en Proceso : {datos.cod_desembolso}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = usuario,
+                    DetalleMovimiento =
+                        $"Tipo de Desem. para Obra en Proceso : {datos.cod_desembolso}",
+                    Movimiento        = "Registra - WEB",
+                    Modulo            = vModulo
                 });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
             }
 
             return result;
@@ -327,33 +303,30 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Método para eliminar un tipo de desembolso
         /// </summary>
-        public ErrorDto Activos_ObrasTipoDesem_Eliminar(int CodEmpresa, string usuario, string cod_desembolso)
+        public ErrorDto Activos_ObrasTipoDesem_Eliminar(
+            int CodEmpresa,
+            string usuario,
+            string cod_desembolso)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            const string query = @"DELETE FROM Activos_obras_tdesem WHERE cod_desembolso = @cod_desembolso";
 
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"DELETE FROM Activos_obras_tdesem WHERE cod_desembolso = @cod_desembolso";
-                connection.Execute(query, new { cod_desembolso });
+            var result = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                CodEmpresa,
+                query,
+                new { cod_desembolso });
 
+            if (result.Code == 0)
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Tipo de Desem. para Obra en Proceso : {cod_desembolso}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
+                    EmpresaId         = CodEmpresa,
+                    Usuario           = usuario,
+                    DetalleMovimiento =
+                        $"Tipo de Desem. para Obra en Proceso : {cod_desembolso}",
+                    Movimiento        = "Elimina - WEB",
+                    Modulo            = vModulo
                 });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
             }
 
             return result;
