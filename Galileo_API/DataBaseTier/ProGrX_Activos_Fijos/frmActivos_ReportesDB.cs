@@ -16,6 +16,53 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
+        /// <summary>
+        /// Helpers genéricos para reducir duplicación
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="initialResult"></param>
+        /// <returns></returns>
+        private static ErrorDto<T> CreateOkResponse<T>(T initialResult)
+        {
+            return new ErrorDto<T>
+            {
+                Code        = 0,
+                Description = "Ok",
+                Result      = initialResult
+            };
+        }
+
+
+        /// <summary>
+        /// Método genérico para ejecutar consultas que retornan listas
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="codEmpresa"></param>
+        /// <param name="sql"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        private ErrorDto<List<T>> ExecuteListQuery<T>(
+            int codEmpresa,
+            string sql,
+            object? parameters = null)
+        {
+            var result = CreateOkResponse(new List<T>());
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(codEmpresa);
+                result.Result = connection.Query<T>(sql, parameters).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code        = -1;
+                result.Description = ex.Message;
+                result.Result      = null;
+            }
+
+            return result;
+        }
+
 
         /// <summary>
         /// Metodo para consultar listado de departamentos
@@ -24,62 +71,34 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Reportes_Departamentos_Obtener(int CodEmpresa)
         {
+            const string sql = @"
+                SELECT RTRIM(cod_departamento) AS item,
+                       RTRIM(descripcion)      AS descripcion
+                FROM   Activos_departamentos
+                ORDER BY cod_departamento";
 
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                var query = $@"select rtrim(cod_departamento) as 'item',rtrim(descripcion) as 'descripcion' from Activos_departamentos order by cod_departamento";
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql);
         }
 
+
         /// <summary>
-        /// Metodos para consultar listados de secciones por departamento
+        /// Metodo para consultar listado de secciones por departamento
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="departamento"></param>
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Reportes_Secciones_Obtener(int CodEmpresa, string departamento)
         {
+            const string sql = @"
+                SELECT RTRIM(cod_Seccion) AS item,
+                       RTRIM(descripcion) AS descripcion
+                FROM   Activos_Secciones
+                WHERE  cod_departamento = @departamento
+                ORDER BY cod_Seccion";
 
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                var query = $@"select rtrim(cod_Seccion) as 'item',rtrim(descripcion) as 'descripcion' FROM  Activos_Secciones where cod_departamento = @departamento order by cod_Seccion";
-                result.Result = connection.Query<DropDownListaGenericaModel>(query, new { departamento }).ToList();
-
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql, new { departamento });
         }
+
 
         /// <summary>
         /// Metodo para consultar listado de tipos de activos
@@ -88,30 +107,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Reportes_TipoActivo_Obtener(int CodEmpresa)
         {
+            const string sql = @"
+                SELECT RTRIM(tipo_activo) AS item,
+                       RTRIM(descripcion) AS descripcion
+                FROM   Activos_tipo_activo
+                ORDER BY tipo_activo";
 
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                var query = $@"select rtrim(tipo_activo) as 'item',rtrim(descripcion) as 'descripcion' from Activos_tipo_activo order by tipo_activo";
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql);
         }
+
 
         /// <summary>
         /// Metodo para consultar listado de localizaciones
@@ -120,104 +124,83 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Activos_Reportes_Localizacion_Obtener(int CodEmpresa)
         {
+            const string sql = @"
+                SELECT RTRIM(COD_LOCALIZA) AS item,
+                       RTRIM(descripcion)  AS descripcion
+                FROM   ACTIVOS_LOCALIZACIONES
+                WHERE  Activa = 1
+                ORDER BY descripcion";
 
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-
-                var query = $@"select rtrim(COD_LOCALIZA) as 'item',rtrim(descripcion) as 'descripcion' from ACTIVOS_LOCALIZACIONES Where Activa = 1 order by descripcion";
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql);
         }
 
+
         /// <summary>
-        /// Metodo pata consultar el estado de  un periodo 
+        /// Metodo para consultar el estado de un periodo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="fecha"></param>
         /// <returns></returns>
         public ErrorDto<string> Activos_Reportes_PeriodoEstado(int CodEmpresa, DateTime fecha)
         {
-            var result = new ErrorDto<string>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = "",
-            };
+            var result = CreateOkResponse(string.Empty);
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = $@"select Estado from Activos_Periodos where Anio = @anno and Mes =@mes";
-                var estado = connection.Query<string>(query, new { anno = fecha.Year, mes = fecha.Month }).FirstOrDefault();
-                if (estado == null)
+
+                const string sql = @"
+                    SELECT Estado
+                    FROM   Activos_Periodos
+                    WHERE  Anio = @anno
+                    AND    Mes  = @mes";
+
+                var estado = connection
+                    .Query<string>(sql, new { anno = fecha.Year, mes = fecha.Month })
+                    .FirstOrDefault();
+
+                if (estado is null)
                 {
                     result.Result = "Periodo No Registrado!";
                 }
                 else
                 {
-                    if (estado == "C")
-                    {
-                        result.Result = "CERRADO";
-                    }
-                    else
-                    {
-                        result.Result = "PENDIENTE";
-                    }
+                    result.Result = estado == "C" ? "CERRADO" : "PENDIENTE";
                 }
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
             }
 
             return result;
         }
 
+
         /// <summary>
-        /// Metodo para consultar el periodo actual
+        /// Metodo para consultar el periodo actual de una contabilidad
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="contabilidad"></param>
         /// <returns></returns>
         public ErrorDto<DateTime> Activos_Periodo_Consultar(int CodEmpresa, int contabilidad)
         {
+            var result = CreateOkResponse(DateTime.Now);
 
-
-            var result = new ErrorDto<DateTime>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = DateTime.Now,
-            };
             try
             {
                 result.Result = _mActivos.fxCntX_PeriodoActual(CodEmpresa, contabilidad);
-
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
-
             }
+
             return result;
         }
+
 
         /// <summary>
         /// Metodo para consultar listado de responsables
@@ -226,31 +209,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<List<ActivosReportesResponsableData>> Activos_Reportes_Responsables_Consultart(int CodEmpresa)
         {
+            const string sql = @"
+                SELECT IDENTIFICACION,
+                       NOMBRE,
+                       Departamento,
+                       Seccion
+                FROM vActivos_Personas";
 
-
-
-            var result = new ErrorDto<List<ActivosReportesResponsableData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<ActivosReportesResponsableData>()
-            };
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = $@"select IDENTIFICACION, NOMBRE , Departamento, Seccion  From vActivos_Personas";
-                result.Result = connection.Query<ActivosReportesResponsableData>(query).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-
-            }
-            return result;
+            return ExecuteListQuery<ActivosReportesResponsableData>(CodEmpresa, sql);
         }
-
-
     }
 }

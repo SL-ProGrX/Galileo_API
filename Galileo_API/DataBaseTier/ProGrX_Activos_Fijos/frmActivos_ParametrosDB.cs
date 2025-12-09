@@ -3,130 +3,233 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
 
-
 namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 {
     public class FrmActivosParametrosDB
     {
         private readonly PortalDB _portalDB;
+
         public FrmActivosParametrosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
         }
 
+        /// <summary>
+        /// Helpers genéricos para reducir duplicación
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="initialResult"></param>
+        /// <returns></returns>
+        private static ErrorDto<T> CreateOkResponse<T>(T initialResult)
+        {
+            return new ErrorDto<T>
+            {
+                Code        = 0,
+                Description = "Ok",
+                Result      = initialResult
+            };
+        }
+
 
         /// <summary>
-        /// Método para consultar lista de parámetros generales
+        /// Helpers genéricos para reducir duplicación
         /// </summary>
-        /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Parametros_Contabilidad_Obtener(int CodEmpresa)
+        private static ErrorDto CreateOkResponse()
         {
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
+            return new ErrorDto
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
+                Code        = 0,
+                Description = "Ok"
             };
+        }
+
+
+        /// <summary>
+        /// Método genérico para ejecutar consultas que retornan listas
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="codEmpresa"></param>
+        /// <param name="sql"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        private ErrorDto<List<T>> ExecuteListQuery<T>(
+            int codEmpresa,
+            string sql,
+            object? parameters = null)
+        {
+            var result = CreateOkResponse(new List<T>());
+
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = $@"select rtrim(cod_Contabilidad) as 'item',rtrim(nombre) as 'descripcion' FROM CntX_Contabilidades";
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                using var connection = _portalDB.CreateConnection(codEmpresa);
+                result.Result = connection.Query<T>(sql, parameters).ToList();
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
-                result.Result = null;
+                result.Result      = null;
             }
+
             return result;
         }
 
 
         /// <summary>
-        /// Método para establecer el mes inicial del módulo de activos fijos
+        /// Método genérico para ejecutar consultas que retornan un solo registro
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="periodo"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="codEmpresa"></param>
+        /// <param name="sql"></param>
+        /// <param name="defaultValue"></param>
+        /// <param name="parameters"></param>
         /// <returns></returns>
+        private ErrorDto<T> ExecuteSingleQuery<T>(
+            int codEmpresa,
+            string sql,
+            T defaultValue,
+            object? parameters = null)
+        {
+            var result = CreateOkResponse(defaultValue);
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(codEmpresa);
+                result.Result = connection.Query<T>(sql, parameters).FirstOrDefault()!;
+            }
+            catch (Exception ex)
+            {
+                result.Code        = -1;
+                result.Description = ex.Message;
+                result.Result      = defaultValue;
+            }
+
+            return result;
+        }
+
+        private ErrorDto ExecuteNonQuery(
+            int codEmpresa,
+            string sql,
+            object? parameters = null)
+        {
+            var result = CreateOkResponse();
+
+            try
+            {
+                using var connection = _portalDB.CreateConnection(codEmpresa);
+                connection.Execute(sql, parameters);
+            }
+            catch (Exception ex)
+            {
+                result.Code        = -1;
+                result.Description = ex.Message;
+            }
+
+            return result;
+        }
+
+        // -----------------------------------------------------------------
+        // Métodos públicos
+        // -----------------------------------------------------------------
+
+        /// <summary>
+        /// Método para consultar lista de parámetros generales (contabilidades).
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Parametros_Contabilidad_Obtener(int CodEmpresa)
+        {
+            const string sql = @"
+                SELECT RTRIM(cod_Contabilidad) AS item,
+                       RTRIM(nombre)           AS descripcion
+                FROM   CntX_Contabilidades";
+
+            return ExecuteListQuery<DropDownListaGenericaModel>(CodEmpresa, sql);
+        }
+
+        /// <summary>
+        /// Método para establecer el mes inicial del módulo de activos fijos.
+        /// </summary>
         public ErrorDto Activos_Parametros_EstablecerMes(int CodEmpresa, DateTime periodo)
         {
-            var query = "";
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var result = CreateOkResponse();
+
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                query = $@"select * from Activos_parametros";
-                var existe = connection.QueryFirstOrDefault<int>(query);
+
+                const string sqlExiste = @"SELECT COALESCE(COUNT(*),0) FROM Activos_parametros";
+                var existe = connection.QueryFirstOrDefault<int>(sqlExiste);
 
                 if (existe <= 0)
                 {
-                    result.Code = -2;
-                    result.Description = $"No se han guardado los parámetros, debe guardarlos primero y luego establecer el inicio del módulo.";
+                    result.Code        = -2;
+                    result.Description = "No se han guardado los parámetros, debe guardarlos primero y luego establecer el inicio del módulo.";
+                    return result;
                 }
-                else
+
+                const string sqlUpdateInicio = @"
+                    UPDATE Activos_parametros
+                    SET    inicio_anio = @anno,
+                           inicio_mes  = @mes";
+
+                connection.Execute(sqlUpdateInicio, new
                 {
-                    query = $@"UPDATE  Activos_parametros
-                                    SET set inicio_anio = @anno
-                                   ,inicio_mes =  = @mes";
-                    connection.Execute(query, new { anno = periodo.Year, mes = periodo.Month });
+                    anno = periodo.Year,
+                    mes  = periodo.Month
+                });
 
-                    DateTime vFecha = periodo.AddMonths(-1);
+                // Periodo anterior se marca como cerrado
+                var vFecha = periodo.AddMonths(-1);
 
-                    query = $@"insert Activos_periodos(anio,mes,estado,asientos,traslado) values(
-                                 @anno,@mes,'C','G','G'  )";
-                    connection.Execute(query, new { anno = vFecha.Year, mes = vFecha.Month });
+                const string sqlInsertPeriodo = @"
+                    INSERT INTO Activos_periodos (anio, mes, estado, asientos, traslado)
+                    VALUES (@anno, @mes, 'C', 'G', 'G')";
 
-                }
+                connection.Execute(sqlInsertPeriodo, new
+                {
+                    anno = vFecha.Year,
+                    mes  = vFecha.Month
+                });
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
-
+        
+        
         /// <summary>
-        /// Método para consultar los parámetros generales de activos fijos
+        /// Método para consultar los parámetros generales de activos fijos.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
         public ErrorDto<ActivosParametrosData> Activos_Parametros_Consultar(int CodEmpresa)
         {
-            var query = "";
-            var result = new ErrorDto<ActivosParametrosData>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new ActivosParametrosData()
-            };
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                query = $@"select cod_empresa,Enlace_Conta,Enlace_SIFC,REGISTRO_PERIODO_CERRADO,nombre_empresa,
-                                    forzar_TipoActivo,registroCompras, tipo_anio,inicio_anio 
-                                    from Activos_parametros";
-                result.Result = connection.Query<ActivosParametrosData>(query).First();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            const string sql = @"
+                SELECT cod_empresa,
+                       Enlace_Conta,
+                       Enlace_SIFC,
+                       REGISTRO_PERIODO_CERRADO,
+                       nombre_empresa,
+                       forzar_TipoActivo,
+                       registroCompras,
+                       tipo_anio,
+                       inicio_anio
+                FROM   Activos_parametros";
+
+            return ExecuteSingleQuery(
+                CodEmpresa,
+                sql,
+                new ActivosParametrosData());
         }
 
 
         /// <summary>
-        /// Método para guardar los parámetros generales de activos fijos
+        /// Método para guardar los parámetros generales de activos fijos.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
@@ -134,38 +237,31 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto Activos_Parametros_Guardar(int CodEmpresa, string usuario, ActivosParametrosData datos)
         {
+            var result = CreateOkResponse();
 
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
             try
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = $@"select coalesce(count(*),0) as Existe from Activos_parametros";
-                var existe = connection.QueryFirstOrDefault<int>(query);
 
-                if (existe > 0)
-                {
-                    result = Activos_Parametros_Actualizar(CodEmpresa, usuario, datos);
-                }
-                else
-                {
-                    result = Activos_Parametros_Insertar(CodEmpresa, usuario, datos);
-                }
+                const string sqlExiste = @"SELECT COALESCE(COUNT(*),0) FROM Activos_parametros";
+                var existe = connection.QueryFirstOrDefault<int>(sqlExiste);
+
+                result = existe > 0
+                    ? Activos_Parametros_Actualizar(CodEmpresa, usuario, datos)
+                    : Activos_Parametros_Insertar(CodEmpresa, usuario, datos);
             }
             catch (Exception ex)
             {
-                result.Code = -1;
+                result.Code        = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
 
         /// <summary>
-        /// Método para actualizar los parámetros generales
+        /// Método para actualizar los parámetros generales.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
@@ -173,46 +269,34 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         private ErrorDto Activos_Parametros_Actualizar(int CodEmpresa, string usuario, ActivosParametrosData datos)
         {
-            var result = new ErrorDto()
+            const string sql = @"
+                UPDATE Activos_parametros
+                SET    cod_empresa               = @cod_empresa,
+                       nombre_empresa           = @nombre_empresa,
+                       enlace_conta             = @enlace_conta,
+                       enlace_sifc              = @enlace_sifc,
+                       tipo_anio                = @tipo_anio,
+                       forzar_TipoActivo        = @forzar_tipoactivo,
+                       registroCompras          = @registrocompras,
+                       REGISTRO_PERIODO_CERRADO = @registro_periodo_cerrado";
+
+            return ExecuteNonQuery(CodEmpresa, sql, new
             {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = $@"UPDATE  Activos_parametros
-                                    SET cod_empresa = @cod_empresa,
-                                        nombre_empresa = @nombre_empresa,
-                                        enlace_conta = @enlace_conta,
-                                        enlace_sifc = @enlace_sifc,
-                                        tipo_anio = @tipo_anio,
-                                        forzar_TipoActivo = @forzar_TipoActivo,
-                                        registroCompras = @registroCompras,
-                                        REGISTRO_PERIODO_CERRADO = @REGISTRO_PERIODO_CERRADO";
-                connection.Execute(query, new
-                {
-                    datos.cod_empresa,
-                    datos.nombre_empresa,
-                    datos.enlace_conta,
-                    datos.enlace_sifc,
-                    datos.tipo_anio,
-                    datos.forzar_tipoactivo,
-                    datos.registrocompras,
-                    datos.registro_periodo_cerrado
-                });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+                datos.cod_empresa,
+                datos.nombre_empresa,
+                datos.enlace_conta,
+                datos.enlace_sifc,
+                datos.tipo_anio,
+                datos.forzar_tipoactivo,
+                datos.registrocompras,
+                datos.registro_periodo_cerrado
+            });
         }
 
 
+
         /// <summary>
-        /// Método para insertar los parámetros generales
+        /// Método para insertar los parámetros generales.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
@@ -220,34 +304,37 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         private ErrorDto Activos_Parametros_Insertar(int CodEmpresa, string usuario, ActivosParametrosData datos)
         {
-            var result = new ErrorDto()
+            const string sql = @"
+                INSERT INTO Activos_parametros
+                    (cod_empresa,
+                     nombre_empresa,
+                     enlace_conta,
+                     enlace_sifc,
+                     Tipo_Anio,
+                     forzar_TipoActivo,
+                     RegistroCompras,
+                     REGISTRO_PERIODO_CERRADO)
+                VALUES
+                    (@cod_empresa,
+                     @nombre_empresa,
+                     @enlace_conta,
+                     @enlace_sifc,
+                     @tipo_anio,
+                     @forzar_tipoactivo,
+                     @registrocompras,
+                     @registro_periodo_cerrado)";
+
+            return ExecuteNonQuery(CodEmpresa, sql, new
             {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                var query = $@"insert into Activos_parametros(cod_empresa,nombre_empresa,enlace_conta,enlace_sifc,Tipo_Anio,forzar_TipoActivo,RegistroCompras, REGISTRO_PERIODO_CERRADO)
-                                    VALUES (@cod_empresa, @nombre_empresa, @enlace_conta, @enlace_conta, @enlace_sifc, @tipo_anio, @forzar_tipoactivo, @registrocompras, @registro_periodo_cerrado)";
-                connection.Execute(query, new
-                {
-                    datos.cod_empresa,
-                    datos.nombre_empresa,
-                    datos.enlace_conta,
-                    datos.enlace_sifc,
-                    datos.tipo_anio,
-                    datos.forzar_tipoactivo,
-                    datos.registrocompras,
-                    datos.registro_periodo_cerrado
-                });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+                datos.cod_empresa,
+                datos.nombre_empresa,
+                datos.enlace_conta,
+                datos.enlace_sifc,
+                datos.tipo_anio,
+                datos.forzar_tipoactivo,
+                datos.registrocompras,
+                datos.registro_periodo_cerrado
+            });
         }
     }
 }
