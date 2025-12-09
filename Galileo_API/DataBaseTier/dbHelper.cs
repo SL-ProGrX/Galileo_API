@@ -5,21 +5,22 @@ namespace Galileo.DataBaseTier
 {
     public static class DbHelper
     {
-        public static ErrorDto<T> CreateOkResponse<T>(T initialResult)
+        public static ErrorDto<T> CreateOkResponse<T>(T initialResult = default!)
         {
             return new ErrorDto<T>
             {
-                Code        = 0,
+                Code = 0,
                 Description = "Ok",
-                Result      = initialResult
+                Result = initialResult
             };
         }
+
 
         public static ErrorDto CreateOkResponse()
         {
             return new ErrorDto
             {
-                Code        = 0,
+                Code = 0,
                 Description = "Ok"
             };
         }
@@ -39,19 +40,19 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                result.Code        = -1;
+                result.Code = -1;
                 result.Description = ex.Message;
-                result.Result      = null;
+                result.Result = null;
             }
 
             return result;
         }
 
-        public static ErrorDto<T> ExecuteSingleQuery<T>(
+        public static ErrorDto<T?> ExecuteSingleQuery<T>(
             PortalDB portalDb,
             int codEmpresa,
             string sql,
-            T defaultValue,
+            T? defaultValue = default,
             object? parameters = null)
         {
             var result = CreateOkResponse(defaultValue);
@@ -59,17 +60,18 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = portalDb.CreateConnection(codEmpresa);
-                result.Result = connection.Query<T>(sql, parameters).FirstOrDefault()!;
+                result.Result = connection.QueryFirstOrDefault<T>(sql, parameters);
             }
             catch (Exception ex)
             {
-                result.Code        = -1;
+                result.Code = -1;
                 result.Description = ex.Message;
-                result.Result      = defaultValue;
+                result.Result = defaultValue;
             }
 
             return result;
         }
+
 
         public static ErrorDto ExecuteNonQuery(
             PortalDB portalDb,
@@ -86,7 +88,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                result.Code        = -1;
+                result.Code = -1;
                 result.Description = ex.Message;
             }
 
