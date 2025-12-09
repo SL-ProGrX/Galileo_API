@@ -12,80 +12,41 @@ namespace Galileo.DataBaseTier
     public class DataDB
     {
         private readonly IConfiguration _config;
+        const string AndOperator = " AND ";
+        const string Offset = " OFFSET ";
+        const string FetchNext = " FETCH NEXT ";
+        const string RowsOnly = " ROWS ONLY ";
 
-        // Operadores básicos
-        private const string AndOperator = " AND ";
-        private const string Where = " WHERE ";
+        // Literales reutilizados (regla S1192)
+        const string Where = " WHERE ";
+        const string CountAll = "SELECT COUNT(*)";
 
-        // Fragmentos de paginación
-        private const string Offset = " OFFSET ";
-        private const string FetchNext = " FETCH NEXT ";
-        private const string RowsOnly = " ROWS ONLY ";
-        private const string Rows = " ROWS ";
-        private const string OffsetFetchPage = " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+        const string OrderByCodProveedor = " ORDER BY COD_PROVEEDOR";
+        const string OrderByCodCargo = " ORDER BY COD_CARGO";
+        const string OrderByCodBodega = " ORDER BY cod_bodega";
+        const string OrderByProdCodigo = " ORDER BY P.COD_PRODUCTO";
+        const string OrderByCodOrden = " ORDER BY cod_orden";
+        const string OrderByCodFacturaOrden = " ORDER BY cod_orden";
+        const string OrderByCodCompra = " ORDER BY E.cod_compra";
+        const string OrderByCodBeneficio = " ORDER BY cod_beneficio";
+        const string OrderByNombre = " ORDER BY nombre";
+        const string OrderBySocioCedula = " ORDER BY S.cedula";
+        const string OrderByCodProducto = " ORDER BY cod_producto";
+        const string OrderByCodDepartamento = " ORDER BY cod_departamento";
+        const string OrderByCompraDev = " ORDER BY D.cod_compra_dev";
 
-        // Parámetros usados repetidamente (Sonar S1192)
-        private const string ParamFiltro = "@Filtro";
-        private const string ParamOffset = "@Offset";
-        private const string ParamPageSize = "@PageSize";
+        const string OffsetFetchPage = " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
+        const string OrderByDynamicTemplate = " ORDER BY {0} {1}";
 
-        // Literales de columnas usadas muchas veces
-        private const string CedulaColumn = "cedula";
-
-        // SQL comunes
-        private const string CountAll = "SELECT COUNT(*)";
-        private const string OrderByDynamicTemplate = " ORDER BY {0} {1}";
-
-        // ORDER BY comunes
-        private const string OrderByCodProveedor = " ORDER BY COD_PROVEEDOR";
-        private const string OrderByCodCargo = " ORDER BY COD_CARGO";
-        private const string OrderByCodBodega = " ORDER BY cod_bodega";
-        private const string OrderByProdCodigo = " ORDER BY P.COD_PRODUCTO";
-        private const string OrderByCodOrden = " ORDER BY cod_orden";
-        private const string OrderByCodFacturaOrden = " ORDER BY cod_orden";
-        private const string OrderByCodCompra = " ORDER BY E.cod_compra";
-        private const string OrderByCodBeneficio = " ORDER BY cod_beneficio";
-        private const string OrderByNombre = " ORDER BY nombre";
-        private const string OrderBySocioCedula = " ORDER BY S.cedula";
-        private const string OrderByCodProducto = " ORDER BY cod_producto";
-        private const string OrderByCodDepartamento = " ORDER BY cod_departamento";
-        private const string OrderByCompraDev = " ORDER BY D.cod_compra_dev";
+        const string ParamFiltro = "@Filtro";
+        const string ParamOffset = "@Offset";
+        const string ParamPageSize = "@PageSize";
+        const string CedulaColumn = "cedula";
 
         public DataDB(IConfiguration config)
         {
             _config = config;
         }
-
-        #region Helpers comunes
-
-        private static string BuildWhere(List<string> clauses)
-        {
-            return clauses.Count > 0
-                ? Where + string.Join(AndOperator, clauses)
-                : string.Empty;
-        }
-
-        private static string BuildOrderAndPage(string orderByClause, int? pagina, int? paginacion, DynamicParameters parametros)
-        {
-            var sb = new StringBuilder(orderByClause);
-
-            if (pagina != null && paginacion != null)
-            {
-                sb.Append(OffsetFetchPage);
-                parametros.Add(ParamOffset, pagina.Value);
-                parametros.Add(ParamPageSize, paginacion.Value);
-            }
-
-            return sb.ToString();
-        }
-
-        private static string BuildDynamicOrder(string sortField, int sortOrder)
-        {
-            var direction = sortOrder == 0 ? "DESC" : "ASC";
-            return string.Format(OrderByDynamicTemplate, sortField, direction);
-        }
-
-        #endregion
 
         #region Proveedores
 
@@ -108,8 +69,10 @@ namespace Galileo.DataBaseTier
                 var condiciones = new List<string>();
                 var parametros = new DynamicParameters();
 
+                // Estado base
                 condiciones.Add("(ESTADO = 'A' OR ESTADO = 'T')");
 
+                // autoGestion / ventas
                 if (jFiltros.autoGestion == true && jFiltros.ventas == true)
                 {
                     condiciones.Add("(WEB_AUTO_GESTION = 1 OR WEB_FERIAS = 1)");
@@ -123,23 +86,37 @@ namespace Galileo.DataBaseTier
                     condiciones.Add("WEB_FERIAS = 1");
                 }
 
+                // filtro de búsqueda
                 if (!string.IsNullOrWhiteSpace(jFiltros.filtro))
                 {
                     condiciones.Add("(COD_PROVEEDOR LIKE @Filtro OR DESCRIPCION LIKE @Filtro)");
                     parametros.Add(ParamFiltro, $"%{jFiltros.filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                string whereClause = string.Empty;
 
-                var sqlCount = $"{CountAll} FROM CXP_PROVEEDORES{whereClause}";
+                if (condiciones.Any(c => !string.IsNullOrWhiteSpace(c)))
+                {
+                    whereClause = " WHERE " + string.Join(AndOperator, condiciones.Where(c => !string.IsNullOrWhiteSpace(c)));
+                }
+
+                // total
+                var sqlCount = CountAll + " FROM CXP_PROVEEDORES" + whereClause;
                 response.Result.Total = connection.QuerySingle<int>(sqlCount, parametros);
 
-                var orderAndPage = BuildOrderAndPage(OrderByCodProveedor, jFiltros.pagina, jFiltros.paginacion, parametros);
+                // paginación
+                var orderAndPage = new StringBuilder(OrderByCodProveedor);
+                if (jFiltros.pagina != null && jFiltros.paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, jFiltros.pagina.Value);
+                    parametros.Add(ParamPageSize, jFiltros.paginacion.Value);
+                }
 
                 var sqlData = @"SELECT COD_PROVEEDOR, DESCRIPCION, CEDJUR 
                                 FROM CXP_PROVEEDORES"
                               + whereClause
-                              + orderAndPage;
+                              + orderAndPage.ToString();
 
                 response.Result.Proveedores = connection.Query<ProveedorData>(sqlData, parametros).ToList();
             }
@@ -163,6 +140,7 @@ namespace Galileo.DataBaseTier
         public CargoDataLista Cargos_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
+
             var info = new CargoDataLista { Total = 0 };
 
             try
@@ -178,17 +156,23 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = Where + string.Join(AndOperator, condiciones);
 
                 var sqlCount = "SELECT COUNT(COD_CARGO) FROM CXP_CARGOS" + whereClause;
                 info.Total = connection.QuerySingle<int>(sqlCount, parametros);
 
-                var orderAndPage = BuildOrderAndPage(OrderByCodCargo, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByCodCargo);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var sqlData = @"SELECT COD_CARGO, DESCRIPCION, 0 as MONTO 
                                 FROM CXP_CARGOS"
                               + whereClause
-                              + orderAndPage;
+                              + orderAndPage.ToString();
 
                 info.Cargos = connection.Query<CargoData>(sqlData, parametros).ToList();
             }
@@ -197,7 +181,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.Cargos = new List<CargoData>();
             }
-
             return info;
         }
 
@@ -211,6 +194,7 @@ namespace Galileo.DataBaseTier
         public BodegaDataLista Bodegas_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
+
             var info = new BodegaDataLista { Total = 0 };
 
             try
@@ -226,17 +210,23 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = Where + string.Join(AndOperator, condiciones);
 
                 var sqlCount = "SELECT COUNT(cod_bodega) FROM pv_bodegas" + whereClause;
                 info.Total = connection.QuerySingle<int>(sqlCount, parametros);
 
-                var orderAndPage = BuildOrderAndPage(OrderByCodBodega, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByCodBodega);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var sqlData = @"SELECT cod_bodega, descripcion 
                                 FROM pv_bodegas"
                               + whereClause
-                              + orderAndPage;
+                              + orderAndPage.ToString();
 
                 info.bodegas = connection.Query<BodegaData>(sqlData, parametros).ToList();
             }
@@ -245,7 +235,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.bodegas = new List<BodegaData>();
             }
-
             return info;
         }
 
@@ -270,9 +259,9 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(clienteConnString);
 
-                string joinProdUen = string.Empty;
+                string joinProdUen = "";
                 var parametros = new DynamicParameters();
-                var whereEstado = BuildArticulosWhereClause(filtro, ref joinProdUen, parametros);
+                string whereEstado = BuildArticulosWhereClause(filtro, ref joinProdUen, parametros);
 
                 var sqlCount = $@"SELECT COUNT(P.COD_PRODUCTO) 
                                   FROM pv_productos P
@@ -283,7 +272,13 @@ namespace Galileo.DataBaseTier
                                   {whereEstado}";
                 response.Result.Total = connection.QuerySingle<int>(sqlCount, parametros);
 
-                var orderAndPage = BuildOrderAndPage(OrderByProdCodigo, filtro.pagina, filtro.paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByProdCodigo);
+                if (filtro.pagina != null && filtro.paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, filtro.pagina.Value);
+                    parametros.Add(ParamPageSize, filtro.paginacion.Value);
+                }
 
                 var sqlData = $@"
                     SELECT 
@@ -360,7 +355,11 @@ namespace Galileo.DataBaseTier
                 parametros.Add("@Sublinea", filtro.sublinea);
             }
 
-            return BuildWhere(clauses);
+            if (clauses.Count > 0)
+            {
+                return Where + string.Join(AndOperator, clauses);
+            }
+            return string.Empty;
         }
 
         #endregion
@@ -373,12 +372,13 @@ namespace Galileo.DataBaseTier
         public OrdenesDataLista Ordenes_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro, string? proveedor, string? familia)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var info = new OrdenesDataLista { Total = 0 };
 
+            var info = new OrdenesDataLista { Total = 0 };
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
 
+                // Total sin filtros (mismo comportamiento original)
                 var sqlCount = "SELECT COUNT(cod_orden) FROM cpr_ordenes";
                 info.Total = connection.QuerySingle<int>(sqlCount);
 
@@ -406,9 +406,17 @@ namespace Galileo.DataBaseTier
                     parametros.Add("@Familia", $"%{familia}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = condiciones.Count > 0
+                    ? Where + string.Join(AndOperator, condiciones)
+                    : string.Empty;
 
-                var orderAndPage = BuildOrderAndPage(OrderByCodOrden, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByCodOrden);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var query = $@"
                     SELECT * FROM (
@@ -445,7 +453,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.Ordenes = new List<OrdenData>();
             }
-
             return info;
         }
 
@@ -456,12 +463,13 @@ namespace Galileo.DataBaseTier
             string? filtro, string? proveedor, string? familia, string? subfamilia)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var info = new OrdenesDataLista { Total = 0 };
 
+            var info = new OrdenesDataLista { Total = 0 };
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
 
+                // Total base (sin filtros adicionales, mantiene lógica original)
                 var totalQuery = @"SELECT COUNT(O.cod_orden) 
                                    FROM cpr_ordenes O                       
                                    LEFT JOIN CPR_SOLICITUD_PROV sp 
@@ -473,7 +481,13 @@ namespace Galileo.DataBaseTier
                 var parametros = new DynamicParameters();
                 var whereClause = BuildOrdenesFiltroWhereClause(filtro, proveedor, familia, subfamilia, parametros);
 
-                var orderAndPage = BuildOrderAndPage(OrderByCodOrden, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByCodOrden);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var query = $@"
                     SELECT * FROM (  
@@ -520,7 +534,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.Ordenes = new List<OrdenData>();
             }
-
             return info;
         }
 
@@ -550,13 +563,25 @@ namespace Galileo.DataBaseTier
                 parametros.Add("@Familia", $"%{familia}%");
             }
 
-            if (!string.IsNullOrWhiteSpace(subfamilia) && subfamilia != "5")
+            if (!string.IsNullOrWhiteSpace(subfamilia))
             {
-                clauses.Add("subfamilia LIKE @Subfamilia");
-                parametros.Add("@Subfamilia", $"%{subfamilia}%");
+                if (subfamilia == "5")
+                {
+                    // Sin filtro real
+                }
+                else
+                {
+                    clauses.Add("subfamilia LIKE @Subfamilia");
+                    parametros.Add("@Subfamilia", $"%{subfamilia}%");
+                }
             }
 
-            return BuildWhere(clauses);
+            if (clauses.Count > 0)
+            {
+                return "WHERE " + string.Join(AndOperator, clauses);
+            }
+
+            return string.Empty;
         }
 
         #endregion
@@ -582,9 +607,11 @@ namespace Galileo.DataBaseTier
                                     ON E.cod_proveedor = P.cod_proveedor 
                                    AND E.cod_proveedor = @CodProveedor";
 
+                // Total
                 var sqlCount = "SELECT COUNT(cod_factura)" + baseFrom;
                 info.Total = connection.QuerySingle<int>(sqlCount, parametros);
 
+                // Filtro
                 var condiciones = new List<string>();
                 if (!string.IsNullOrWhiteSpace(filtro))
                 {
@@ -592,9 +619,17 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = condiciones.Count > 0
+                    ? Where + string.Join(AndOperator, condiciones)
+                    : string.Empty;
 
-                var orderAndPage = BuildOrderAndPage(OrderByCodFacturaOrden, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByCodFacturaOrden);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var sqlData = @"SELECT E.cod_factura,
                                        P.descripcion as Proveedor,
@@ -610,7 +645,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.Facturas = new List<FacturasData>();
             }
-
             return info;
         }
 
@@ -624,8 +658,8 @@ namespace Galileo.DataBaseTier
         public UsuarioDataLista Usuarios_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var info = new UsuarioDataLista { Total = 0 };
 
+            var info = new UsuarioDataLista { Total = 0 };
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -639,12 +673,18 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = Where + string.Join(AndOperator, condiciones);
 
-                var sqlCount = $"{CountAll} FROM usuarios{whereClause}";
+                var sqlCount = CountAll + " FROM usuarios" + whereClause;
                 info.Total = connection.QuerySingle<int>(sqlCount, parametros);
 
-                var orderAndPage = BuildOrderAndPage(OrderByNombre, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByNombre);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var sqlData = @"SELECT nombre, descripcion 
                                 FROM usuarios"
@@ -658,7 +698,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.Usuarios = new List<UsuarioData>();
             }
-
             return info;
         }
 
@@ -687,6 +726,7 @@ namespace Galileo.DataBaseTier
                                     ON s.ADJUDICA_ORDEN  = E.COD_ORDEN 
                                    AND s.PROVEEDOR_CODIGO = E.cod_proveedor";
 
+                // Total sin filtros adicionales
                 var sqlCount = "SELECT COUNT(E.cod_compra) FROM cpr_Compras E INNER JOIN cxp_proveedores P ON E.cod_proveedor = P.cod_proveedor";
                 info.Total = connection.QuerySingle<int>(sqlCount);
 
@@ -704,9 +744,17 @@ namespace Galileo.DataBaseTier
                     parametros.Add("@CodProveedor", filtrosModel.cod_proveedor);
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = condiciones.Count > 0
+                    ? Where + string.Join(AndOperator, condiciones)
+                    : string.Empty;
 
-                var orderAndPage = BuildOrderAndPage(OrderByCodCompra, filtrosModel.pagina == 0 ? 0 : (int?)null, filtrosModel.pagina == 0 ? filtrosModel.paginacion : null, parametros);
+                var orderAndPage = new StringBuilder(OrderByCodCompra);
+                if (filtrosModel.pagina == 0) // se mantiene la condición original
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, filtrosModel.pagina);
+                    parametros.Add(ParamPageSize, filtrosModel.paginacion);
+                }
 
                 var sqlData = @"SELECT E.cod_compra,
                                        E.cod_orden,
@@ -725,7 +773,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.Facturas = new List<FacturasProveedorData>();
             }
-
             return info;
         }
 
@@ -739,8 +786,8 @@ namespace Galileo.DataBaseTier
         public CompraDevLista Devoluciones_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var info = new CompraDevLista { Total = 0 };
 
+            var info = new CompraDevLista { Total = 0 };
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -750,8 +797,9 @@ namespace Galileo.DataBaseTier
                                   INNER JOIN cxp_proveedores P 
                                     ON D.cod_proveedor = P.cod_proveedor";
 
+                // Total
                 var sqlCount = CountAll + baseFrom;
-                info.Total = connection.QuerySingle<int>(sqlCount);
+                info.Total = connection.QuerySingle<int>(sqlCount, parametros);
 
                 var condiciones = new List<string>();
                 if (!string.IsNullOrWhiteSpace(filtro))
@@ -760,9 +808,17 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = condiciones.Count > 0
+                    ? Where + string.Join(AndOperator, condiciones)
+                    : string.Empty;
 
-                var orderAndPage = BuildOrderAndPage(OrderByCompraDev, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByCompraDev);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var sqlData = @"SELECT D.cod_compra_dev,
                                        P.descripcion as Proveedor,
@@ -780,7 +836,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.devoluciones = new List<CompraDevData>();
             }
-
             return info;
         }
 
@@ -794,8 +849,8 @@ namespace Galileo.DataBaseTier
         public BeneficioDataLista Beneficios_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var info = new BeneficioDataLista { Total = 0 };
 
+            var info = new BeneficioDataLista { Total = 0 };
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -813,9 +868,17 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = condiciones.Count > 0
+                    ? Where + string.Join(AndOperator, condiciones)
+                    : string.Empty;
 
-                var orderAndPage = BuildOrderAndPage(OrderByCodBeneficio, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByCodBeneficio);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var sqlData = @"SELECT cod_beneficio, descripcion"
                               + baseFrom
@@ -829,7 +892,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.Beneficios = new List<BeneficioData>();
             }
-
             return info;
         }
 
@@ -867,12 +929,20 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = condiciones.Count > 0
+                    ? Where + string.Join(AndOperator, condiciones)
+                    : string.Empty;
 
                 var sqlCount = CountAll + fromBase + whereClause;
                 response.Result.Total = connection.QuerySingle<int>(sqlCount, parametros);
 
-                var orderAndPage = BuildOrderAndPage(OrderBySocioCedula, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderBySocioCedula);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var sqlData = @"SELECT S.cedula, S.cedular, S.nombre, M.Membresia"
                               + fromBase
@@ -888,7 +958,6 @@ namespace Galileo.DataBaseTier
                 response.Result.Total = 0;
                 response.Result.socios = new List<SociosData>();
             }
-
             return response;
         }
 
@@ -902,7 +971,7 @@ namespace Galileo.DataBaseTier
         public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string jfiltro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro) ?? new FiltrosLazyLoadData();
+            FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro) ?? new FiltrosLazyLoadData();
 
             var response = new ErrorDto<TablasListaGenericaModel>
             {
@@ -929,8 +998,11 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro.filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = condiciones.Count > 0
+                    ? Where + string.Join(AndOperator, condiciones)
+                    : string.Empty;
 
+                // columnas permitidas para sort
                 var columnasPermitidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
                     CedulaColumn,
@@ -944,7 +1016,8 @@ namespace Galileo.DataBaseTier
                     filtro.sortField = CedulaColumn;
                 }
 
-                var orderBy = BuildDynamicOrder(filtro.sortField, filtro.sortOrder);
+                var sortDirection = filtro.sortOrder == 0 ? "DESC" : "ASC";
+                var orderBy = string.Format(OrderByDynamicTemplate, filtro.sortField, sortDirection);
 
                 var sqlCount = CountAll + fromBase + whereClause;
                 response.Result.total = connection.QuerySingle<int>(sqlCount, parametros);
@@ -956,8 +1029,8 @@ namespace Galileo.DataBaseTier
                         {fromBase}
                         {whereClause}
                         {orderBy}
-                        {Offset} {ParamOffset} {Rows}
-                        {FetchNext} {ParamPageSize} {RowsOnly}";
+                        {Offset} @Offset ROWS
+                        {FetchNext} @PageSize {RowsOnly}";
 
                     parametros.Add(ParamOffset, filtro.pagina);
                     parametros.Add(ParamPageSize, filtro.paginacion);
@@ -972,7 +1045,6 @@ namespace Galileo.DataBaseTier
                 response.Result.total = 0;
                 response.Result.lista = new List<SociosData>();
             }
-
             return response;
         }
 
@@ -986,8 +1058,8 @@ namespace Galileo.DataBaseTier
         public BeneficioProductoLista BeneficioProducto_Obtener(int CodCliente, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var info = new BeneficioProductoLista { Total = 0 };
 
+            var info = new BeneficioProductoLista { Total = 0 };
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -1005,9 +1077,17 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = condiciones.Count > 0
+                    ? Where + string.Join(AndOperator, condiciones)
+                    : string.Empty;
 
-                var orderAndPage = BuildOrderAndPage(OrderByCodProducto, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByCodProducto);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var sqlData = @"SELECT cod_producto, descripcion, COSTO_UNIDAD"
                               + fromBase
@@ -1021,7 +1101,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.productos = new List<BeneficioProductoData>();
             }
-
             return info;
         }
 
@@ -1035,8 +1114,8 @@ namespace Galileo.DataBaseTier
         public DepartamentoDataLista Departamentos_Obtener(int CodCliente, string Institucion, int? pagina, int? paginacion, string? filtro)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
-            var info = new DepartamentoDataLista { Total = 0 };
 
+            var info = new DepartamentoDataLista { Total = 0 };
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
@@ -1051,12 +1130,18 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = Where + string.Join(AndOperator, condiciones);
 
                 var sqlCount = "SELECT COUNT(cod_departamento) FROM AFDepartamentos" + whereClause;
                 info.Total = connection.QuerySingle<int>(sqlCount, parametros);
 
-                var orderAndPage = BuildOrderAndPage(OrderByCodDepartamento, pagina, paginacion, parametros);
+                var orderAndPage = new StringBuilder(OrderByCodDepartamento);
+                if (pagina != null && paginacion != null)
+                {
+                    orderAndPage.Append(OffsetFetchPage);
+                    parametros.Add(ParamOffset, pagina.Value);
+                    parametros.Add(ParamPageSize, paginacion.Value);
+                }
 
                 var sqlData = @"SELECT cod_departamento, descripcion 
                                 FROM AFDepartamentos"
@@ -1070,7 +1155,6 @@ namespace Galileo.DataBaseTier
                 info.Total = 0;
                 info.departamentos = new List<DepartamentoData>();
             }
-
             return info;
         }
 
@@ -1078,32 +1162,47 @@ namespace Galileo.DataBaseTier
 
         #region Catálogos / UEN
 
+        /// <summary>
+        /// Obtengo catálogos de tabla SYS y BENE donde tipo es el tipo de catalogo y modulo es el código de la tabla
+        /// </summary>
         public List<CatalogosLista> Catalogo_Obtener(int CodCliente, int tipo, int modulo)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
+            List<CatalogosLista> lista;
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                const string procedure = "[spAFI_Bene_Catalogos_Consulta]";
-                var values = new { tipo, Codigo = modulo };
 
-                return connection.Query<CatalogosLista>(procedure, values, commandType: System.Data.CommandType.StoredProcedure).ToList();
+                var procedure = "[spAFI_Bene_Catalogos_Consulta]";
+                var values = new
+                {
+                    tipo,
+                    Codigo = modulo
+                };
+                lista = connection.Query<CatalogosLista>(procedure, values, commandType: System.Data.CommandType.StoredProcedure).ToList();
             }
             catch
             {
-                return new List<CatalogosLista>();
+                lista = new List<CatalogosLista>();
             }
+
+            return lista;
         }
 
+        /// <summary>
+        /// Obtiene UENs
+        /// </summary>
         public ErrorDto<List<CatalogosLista>> UENS_Obtener(int CodEmpresa)
         {
-            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<List<CatalogosLista>> { Code = 0 };
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                const string query = @"SELECT COD_UNIDAD as item, DESCRIPCION FROM CORE_UENS";
+
+                var query = @"SELECT COD_UNIDAD as item, DESCRIPCION FROM CORE_UENS";
                 response.Result = connection.Query<CatalogosLista>(query).ToList();
+
             }
             catch (Exception ex)
             {
@@ -1111,24 +1210,23 @@ namespace Galileo.DataBaseTier
                 response.Description = ex.Message;
                 response.Result = null;
             }
-
             return response;
         }
 
         #endregion
 
-        #region DropDown Ordenes
+        #region DropDown Ordenes (Proveedores / Familias)
 
         public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenProveedoresLista_Obtener(int CodEmpresa)
         {
-            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
 
-                const string query = @"
+                var Query = @"
                         SELECT DISTINCT
                                O.COD_PROVEEDOR AS item,
                                cp.DESCRIPCION AS descripcion
@@ -1144,7 +1242,8 @@ namespace Galileo.DataBaseTier
                         GROUP BY 
                             sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
 
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                resp.Result = connection.Query<DropDownListaGenericaModel>(Query).ToList();
+
             }
             catch (Exception ex)
             {
@@ -1158,14 +1257,14 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<DropDownListaGenericaModel>> CompraOrdenFamiliaLista_Obtener(int CodEmpresa)
         {
-            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
 
-                const string query = @"
+                var Query = @"
                         SELECT DISTINCT
                             STUFF((
                                 SELECT DISTINCT ', ' + CAST(ppc2.COD_PRODCLAS AS VARCHAR)
@@ -1195,7 +1294,9 @@ namespace Galileo.DataBaseTier
                         GROUP BY 
                             sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION";
 
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                resp.Result = connection.Query<DropDownListaGenericaModel>(Query).ToList();
+
+
             }
             catch (Exception ex)
             {
@@ -1213,7 +1314,7 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<TipoProductoSubGradaData>> TipoProductoSub_ObtenerTodos(int CodEmpresa, string Cod_Prodclas)
         {
-            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<List<TipoProductoSubGradaData>>
             {
                 Code = 0,
@@ -1224,20 +1325,21 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
 
+                // Convertimos la lista de codigos a lista para IN @param
                 var codList = Cod_Prodclas
                     .Split(',', StringSplitOptions.RemoveEmptyEntries)
                     .Select(x => x.Trim())
                     .Where(x => !string.IsNullOrWhiteSpace(x))
                     .ToArray();
 
-                const string query = @"
+                var query = @"
                         SELECT Cod_Prodclas, Cod_Linea_Sub, Descripcion, Activo, Cabys,
                                COD_CUENTA, NIVEL, COD_LINEA_SUB_MADRE
                         FROM PV_PROD_CLASIFICA_SUB 
                         WHERE Cod_Prodclas IN @CodProdclas";
 
                 var info = connection.Query<TipoProductoSubDto>(query, new { CodProdclas = codList }).ToList();
-                foreach (var dt in info)
+                foreach (TipoProductoSubDto dt in info)
                 {
                     dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
 
@@ -1253,6 +1355,7 @@ namespace Galileo.DataBaseTier
                         });
                     }
                 }
+
             }
             catch (Exception ex)
             {
@@ -1260,20 +1363,18 @@ namespace Galileo.DataBaseTier
                 response.Description = ex.Message;
                 response.Result = new List<TipoProductoSubGradaData>();
             }
-
             return response;
         }
 
         public List<TipoProductoSubGradaData> TipoProductoSub_SeguienteNivel(int CodEmpresa, TipoProductoSubDto padre)
         {
-            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new List<TipoProductoSubGradaData>();
-
             try
             {
                 using var connection = new SqlConnection(stringConn);
 
-                const string query = @"
+                var query = @"
                         SELECT Cod_Prodclas, Cod_Linea_Sub, Descripcion, Activo, Cabys,
                                COD_CUENTA, NIVEL, COD_LINEA_SUB_MADRE
                         FROM PV_PROD_CLASIFICA_SUB 
@@ -1287,7 +1388,7 @@ namespace Galileo.DataBaseTier
                         CodLineaSubMadre = padre.Cod_Linea_Sub
                     }).ToList();
 
-                foreach (var dt in info)
+                foreach (TipoProductoSubDto dt in info)
                 {
                     dt.Estado = dt.Activo ? "ACTIVO" : "INACTIVO";
 
@@ -1300,12 +1401,13 @@ namespace Galileo.DataBaseTier
                         children = TipoProductoSub_SeguienteNivel(CodEmpresa, dt)
                     });
                 }
+
+
             }
             catch
             {
                 response = new List<TipoProductoSubGradaData>();
             }
-
             return response;
         }
 
@@ -1318,8 +1420,8 @@ namespace Galileo.DataBaseTier
         /// </summary>
         public ErrorDto<TablasListaGenericaModel> Personas_Obtener(int CodEmpresa, string jfiltro)
         {
-            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro) ?? new FiltrosLazyLoadData();
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            FiltrosLazyLoadData filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltro) ?? new FiltrosLazyLoadData();
 
             var response = new ErrorDto<TablasListaGenericaModel>
             {
@@ -1327,13 +1429,12 @@ namespace Galileo.DataBaseTier
                 Description = "Ok",
                 Result = new TablasListaGenericaModel()
             };
-
             try
             {
                 using var connection = new SqlConnection(stringConn);
                 var parametros = new DynamicParameters();
 
-                const string fromBase = " FROM socios";
+                var fromBase = " FROM socios";
 
                 var condiciones = new List<string>();
                 if (!string.IsNullOrWhiteSpace(filtro.filtro))
@@ -1342,8 +1443,11 @@ namespace Galileo.DataBaseTier
                     parametros.Add(ParamFiltro, $"%{filtro.filtro}%");
                 }
 
-                var whereClause = BuildWhere(condiciones);
+                var whereClause = condiciones.Count > 0
+                    ? Where + string.Join(AndOperator, condiciones)
+                    : string.Empty;
 
+                // sortField permitido
                 var columnasPermitidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
                     CedulaColumn,
@@ -1355,8 +1459,8 @@ namespace Galileo.DataBaseTier
                 {
                     filtro.sortField = CedulaColumn;
                 }
-
-                var orderBy = BuildDynamicOrder(filtro.sortField, filtro.sortOrder);
+                var sortDirection = filtro.sortOrder == 0 ? "DESC" : "ASC";
+                var orderBy = string.Format(OrderByDynamicTemplate, filtro.sortField, sortDirection);
 
                 var sqlCount = CountAll + fromBase + whereClause;
                 response.Result.total = connection.QuerySingle<int>(sqlCount, parametros);
@@ -1368,8 +1472,8 @@ namespace Galileo.DataBaseTier
                         {fromBase}
                         {whereClause}
                         {orderBy}
-                        {Offset} {ParamOffset} {Rows}
-                        {FetchNext} {ParamPageSize} {RowsOnly}";
+                        {Offset} @Offset ROWS
+                        {FetchNext} @PageSize {RowsOnly}";
 
                     parametros.Add(ParamOffset, filtro.pagina);
                     parametros.Add(ParamPageSize, filtro.paginacion);
@@ -1383,7 +1487,6 @@ namespace Galileo.DataBaseTier
                 response.Description = ex.Message;
                 response.Result = new TablasListaGenericaModel();
             }
-
             return response;
         }
 
