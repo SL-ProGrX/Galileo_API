@@ -1,7 +1,6 @@
 ﻿using CoreInterno;
 using Dapper;
 using Galileo.DataBaseTier;
-using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.Data.SqlClient;
@@ -12,20 +11,20 @@ using System.Text.RegularExpressions;
 
 namespace Galileo_API.DataBaseTier
 {
-    public class mKindoServiceDB : IWFCSinpe
+    public class MKindoServiceDb : IWFCSinpe
     {
         private readonly IConfiguration _config;
-        private readonly SinpeGalileo_DTR _DTR;
         private readonly SinpeGalileo_PIN _PIN;
 
-        public Guid OperationId;
+        private readonly Guid OperationId;
 
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
 
-        public mKindoServiceDB(IConfiguration config)
+        
+
+        public MKindoServiceDb(IConfiguration config)
         {
             _config = config;
-            _DTR = new SinpeGalileo_DTR(_config);
             _PIN = new SinpeGalileo_PIN(_config);
             OperationId = Guid.NewGuid();
         }
@@ -47,7 +46,7 @@ namespace Galileo_API.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
                 var query = "SELECT COUNT(*) FROM SINPE_PARAMETROS_EMPRESA";
                 response = connection.ExecuteScalar<int>(query) > 0;
-                if (response == true)
+                if (response)
                 {
                     response = true;
                 }
@@ -84,16 +83,13 @@ namespace Galileo_API.DataBaseTier
                 {
                     //Busco el tipo de cedula.
                     var identificacion = "";
-                    string cedulaIBAN = "";
                     if (result.Dimex_Activo == 1)
                     {
                         identificacion = Inferir(result.Dimex_Cedula).Codigo;
-                        cedulaIBAN = result.Dimex_Cedula;
                     }
                     else
                     {
                         identificacion = Inferir(result.CEDULA).Codigo;
-                        cedulaIBAN = result.CEDULA;
                     }
                     result.IdTitular = result.CEDULA;
                     result.NombreTitular = result.NOMBRE;
@@ -579,14 +575,32 @@ namespace Galileo_API.DataBaseTier
 
                 return new CoreInterno.ValidacionPerfilTrx_Response
                 {
+                    Resultado = true,
+                    Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
+                    {
+                        CodMotivoRechazo = "0",
+                        Estado = 1,
+                        MotivoRechazo = "Transacción Autorizada",
+                        NumRefProcesamiento = Guid.NewGuid().ToString()
 
+                    },
+                    Errores = null
                 };
             }
             catch (Exception ex)
             {
                 return new CoreInterno.ValidacionPerfilTrx_Response
                 {
+                    Resultado = true,
+                    Autorizacion = new CoreInterno.CL_AutorizacionPerfilTrx
+                    {
+                        CodMotivoRechazo = "0",
+                        Estado = 1,
+                        MotivoRechazo = "Transacción Autorizada",
+                        NumRefProcesamiento = Guid.NewGuid().ToString()
 
+                    },
+                    Errores = null
                 };
             }
         }
@@ -1032,7 +1046,6 @@ namespace Galileo_API.DataBaseTier
         /// <returns> Objeto que indica si la transacción fue encontrada o no, y su estado. </returns>
         public CoreInterno.ObtieneEstadoTransaccionResponse ObtieneEstadoTransaccion(int CodEmpresa, CoreInterno.ObtieneEstadoTransaccionRequest Request)
         {
-            var resultado = new CoreInterno.ObtieneEstadoTransaccionResponse();
             try
             {
 
@@ -1049,7 +1062,7 @@ namespace Galileo_API.DataBaseTier
 
                 if (result != null)
                 {
-                    resultado = new ObtieneEstadoTransaccionResponse
+                    return new ObtieneEstadoTransaccionResponse
                     {
                         ComprobanteInterno = result.COMPROBANTE_INTERNO,
                         ObtieneEstadoTransaccionResult = true
@@ -1057,25 +1070,21 @@ namespace Galileo_API.DataBaseTier
                 }
                 else
                 {
-                    resultado = new ObtieneEstadoTransaccionResponse
+                    return new ObtieneEstadoTransaccionResponse
                     {
                         ComprobanteInterno = null,
                         ObtieneEstadoTransaccionResult = false
                     };
                 }
-
-
-
             }
             catch (Exception ex)
             {
-                resultado = new ObtieneEstadoTransaccionResponse
+                return new ObtieneEstadoTransaccionResponse
                 {
                     ComprobanteInterno = null,
                     ObtieneEstadoTransaccionResult = false
                 };
             }
-            return resultado;
         }
 
         #endregion
@@ -1093,7 +1102,7 @@ namespace Galileo_API.DataBaseTier
         /// <param name="CodigoReferenciaAnterior"> Código de referencia generado anteriormente. </param>
         /// <param name="CodigoReferenciaNuevo"> Código de referencia generado. </param>
         /// <returns> Objeto con un Boolean que indica si la actualización se realizó correctamente. </returns>
-        public bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
+        public static bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
         {
             try
             {
@@ -1120,7 +1129,7 @@ namespace Galileo_API.DataBaseTier
         /// <param name="Modalidad"> Modalidad del servicio (S=Saliente, E = Entrante). </param>
         /// <param name="FechaCiclo"> Fecha de ciclo hasta la cual se deben liquidar las transacciones. </param>
         /// <returns> Objeto con un Boolean que indica si la liquidación de las transacciones fue correcta. </returns>
-        public bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
+        public static bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
         {
             try
             {
@@ -1203,51 +1212,42 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         /// <param name="request"> Objeto con los datos relacionados con la petición de la información del cliente (ej: identificación). </param>
         /// <returns> Objeto que indica el resultado global de la ejecución y contiene la información del cliente. </returns>
-        public CoreInterno.ObtenerInformacionClienteResponse ObtenerInformacionCliente(int CodEmpresa, CoreInterno.ObtenerInformacionClienteRequest request)
+        public CoreInterno.ObtenerInformacionClienteResponse ObtenerInformacionCliente(
+             int CodEmpresa,
+             CoreInterno.ObtenerInformacionClienteRequest request)
         {
-            var resultado = new CoreInterno.ObtenerInformacionClienteResponse();
             try
             {
-
                 string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
                 using var connection = new SqlConnection(stringConn);
 
-                var query = $@"exec sp_Sinpe_ObtenerInformacionCliente
-                                        @Identificacion ";
+                const string query = @"exec sp_Sinpe_ObtenerInformacionCliente @Identificacion";
 
                 var result = connection.QueryFirstOrDefault<dynamic>(query, new
                 {
                     Identificacion = request.identificacion,
                 });
 
-                if (result.NOMBRE == "")
+                // por seguridad ante null
+                var nombre = (string?)result?.NOMBRE;
+
+                bool existe = !string.IsNullOrWhiteSpace(nombre);
+
+                return new CoreInterno.ObtenerInformacionClienteResponse
                 {
-                    resultado = new CoreInterno.ObtenerInformacionClienteResponse
+                    informacionCliente = new CoreInterno.CL_InformacionCliente
                     {
-                        informacionCliente = new CoreInterno.CL_InformacionCliente
-                        {
-                            Nombre = null,
-                            Existe = false,
-                        },
-                        ObtenerInformacionClienteResult = CoreInterno.E_Resultado.Error
-                    };
-                }
-                else
-                {
-                    resultado = new CoreInterno.ObtenerInformacionClienteResponse
-                    {
-                        informacionCliente = new CoreInterno.CL_InformacionCliente
-                        {
-                            Nombre = result.NOMBRE,
-                            Existe = true
-                        },
-                        ObtenerInformacionClienteResult = CoreInterno.E_Resultado.Exitoso
-                    };
-                }
+                        Nombre = existe ? nombre : null,
+                        Existe = existe
+                    },
+                    ObtenerInformacionClienteResult = existe
+                        ? CoreInterno.E_Resultado.Exitoso
+                        : CoreInterno.E_Resultado.Error
+                };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                resultado = new CoreInterno.ObtenerInformacionClienteResponse
+                return new CoreInterno.ObtenerInformacionClienteResponse
                 {
                     informacionCliente = new CoreInterno.CL_InformacionCliente
                     {
@@ -1257,7 +1257,6 @@ namespace Galileo_API.DataBaseTier
                     ObtenerInformacionClienteResult = CoreInterno.E_Resultado.Error
                 };
             }
-            return resultado;
         }
 
         /// <summary>
@@ -1300,7 +1299,7 @@ namespace Galileo_API.DataBaseTier
                             continue;
                         }
 
-                        if (prod.SINPE_PRODUCTO = 1)
+                        if (prod.SINPE_PRODUCTO == 1)
                         {
                             resultado.productos = resultado.productos.Append(new CoreInterno.CL_ProductoCliente
                             {
@@ -1331,7 +1330,7 @@ namespace Galileo_API.DataBaseTier
         /// Valida si una fecha cumple con el formato ISO 8601.
         /// Ejemplo válido: 2025-11-19T15:30:00Z
         /// </summary>
-        public bool IsValidISO8601Date(string fecha)
+        public static bool IsValidISO8601Date(string fecha)
         {
             if (string.IsNullOrWhiteSpace(fecha)) return false;
             return DateTime.TryParseExact(
@@ -1348,7 +1347,7 @@ namespace Galileo_API.DataBaseTier
         /// o con los valores definidos en la sección 8.2 del documento KINDO.
         /// (Ejemplo: CRC, USD, EUR)
         /// </summary>
-        public string GetCurrencyKindoCode(int? currencyCode = 2)
+        public static string GetCurrencyKindoCode(int? currencyCode = 2)
         {
             return currencyCode switch
             {
@@ -1364,7 +1363,7 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         /// <param name="currency"></param>
         /// <returns></returns>
-        public int GetCurrencyCodeId(string currency)
+        public static int GetCurrencyCodeId(string currency)
         {
             if (string.IsNullOrWhiteSpace(currency))
                 return 0;
@@ -1397,26 +1396,26 @@ namespace Galileo_API.DataBaseTier
         /// Valida si una cuenta IBAN cumple con el formato oficial del Banco Central de Costa Rica.
         /// Formato: CR + 2 dígitos de control + 18 dígitos (total 22 caracteres)
         /// </summary>
-        public bool IsValidCostaRicaIBAN(string iban)
+        public static bool IsValidCostaRicaIBAN(string iban)
         {
             if (string.IsNullOrWhiteSpace(iban)) return false;
-            iban = iban.Replace(" ", "").ToUpper();
+            iban = iban.Replace(" ", "").ToUpperInvariant();
 
-            // Estructura general: CRddnnnnnnnnnnnnnnnnnnnn
             if (!Regex.IsMatch(iban, @"^CR\d{2}\d{18}$", RegexOptions.None, RegexTimeout)) return false;
             if (iban.Length != 22) return false;
 
-            // Validación del dígito de control (mod 97)
             string rearranged = iban.Substring(4) + iban.Substring(0, 4);
             string numericIban = Regex.Replace(
-                    rearranged,
-                    "[A-Z]",
-                    m => (m.Value[0] - 55).ToString(),
-                    RegexOptions.CultureInvariant,
-                    RegexTimeout
-                );
+                rearranged,
+                "[A-Z]",
+                m => (m.Value[0] - 55).ToString(),
+                RegexOptions.CultureInvariant,
+                RegexTimeout
+            );
+
             int remainder = int.Parse(numericIban.Substring(0, 9)) % 97;
             string rest = numericIban.Substring(9);
+
             while (rest.Length > 0)
             {
                 string part = remainder + rest.Substring(0, Math.Min(7, rest.Length));
@@ -1431,36 +1430,28 @@ namespace Galileo_API.DataBaseTier
         /// Valida un número de identificación costarricense (físico o jurídico)
         /// según los estándares del BCCR.
         /// </summary>
-        public bool IsValidCostaRicaId(string id, int tipoID)
+        public static bool IsValidCostaRicaId(string id)
         {
             if (string.IsNullOrWhiteSpace(id)) return false;
 
             id = id.Replace("-", "").Trim();
 
-            // Persona física: 9 dígitos (ej: 101230456)
-            if (Regex.IsMatch(id, @"^\d{9}$",
-               RegexOptions.CultureInvariant, RegexTimeout)) return true;
-
-            // Persona jurídica: 10 dígitos (ej: 3101123456)
-            if (Regex.IsMatch(id, @"^\d{10}$",
-                RegexOptions.CultureInvariant, RegexTimeout)) return true;
-
-            // DIMEX: entre 11 y 12 dígitos (para extranjeros)
-            if (Regex.IsMatch(id, @"^\d{11,12}$",
-                RegexOptions.CultureInvariant, RegexTimeout)) return true;
-
-            return false;
+            // 9 (física), 10 (jurídica), 11-12 (DIMEX)
+            return Regex.IsMatch(id, @"^\d{9}$|^\d{10}$|^\d{11,12}$",
+                RegexOptions.CultureInvariant, RegexTimeout);
         }
 
         /// <summary>
         /// Valida si un número de transacción o lote cumple con el estándar AAAAMMDDSSSSSNNNNNNNNNNNN.
         /// 25 dígitos exactos.
         /// </summary>
-        public bool IsValidTransactionNumber(string numero)
+        public static bool IsValidTransactionNumber(string numero)
         {
             if (string.IsNullOrWhiteSpace(numero)) return false;
+
+            // Debe ser exactamente 25 dígitos
             if (!Regex.IsMatch(numero, @"^\d{25}$",
-                 RegexOptions.CultureInvariant, RegexTimeout))
+                RegexOptions.CultureInvariant, RegexTimeout))
             {
                 return false;
             }
@@ -1469,84 +1460,92 @@ namespace Galileo_API.DataBaseTier
             string canal = numero.Substring(8, 5);
             string consecutivo = numero.Substring(13, 12);
 
-            // Validar fecha
-            if (!DateTime.TryParseExact(fecha, "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            // Validar fecha yyyyMMdd
+            if (!DateTime.TryParseExact(
+                    fecha,
+                    "yyyyMMdd",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out _))
+            {
                 return false;
+            }
 
-            // Canal debe ser numérico, consecutivo también
-            return Regex.IsMatch(canal, @"^\d{5}$",
-           RegexOptions.CultureInvariant, RegexTimeout)
-            && Regex.IsMatch(consecutivo, @"^\d{12}$",
-                   RegexOptions.CultureInvariant, RegexTimeout);
+            // Validar canal (5 dígitos numéricos)
+            if (!Regex.IsMatch(canal, @"^\d{5}$",
+                RegexOptions.CultureInvariant, RegexTimeout))
+            {
+                return false;
+            }
+
+            // Validar consecutivo (12 dígitos numéricos)
+            if (!Regex.IsMatch(consecutivo, @"^\d{12}$",
+                RegexOptions.CultureInvariant, RegexTimeout))
+            {
+                return false;
+            }
+
+            // Si ya validaste 25 dígitos arriba, canal y consecutivo
+            // necesariamente son numéricos y del largo correcto.
+            return true;
         }
 
         public sealed record TipoId(string Codigo, string Descripcion);
+        // Factory methods (0 complejidad, reuso limpio)
+        private static TipoId Desconocido() => new TipoId("", "Desconocido");
+        private static TipoId ExtranjeroNoResidente() => new TipoId("9", "Extranjero No Residente");
+        private static TipoId FisicaNacional() => new TipoId("0", "Persona Física Nacional (Cédula)");
+        private static TipoId Juridica() => new TipoId("3", "Persona Jurídica");
+        private static TipoId Gobierno() => new TipoId("2", "Gobierno");
+        private static TipoId InstitucionAutonoma() => new TipoId("4", "Institución Autónoma");
+        private static TipoId Diplomaticos() => new TipoId("5", "Diplomáticos");
+        private static TipoId FisicaResidente() => new TipoId("1", "Persona Física Residente");
+        private static TipoId BancoInterna() => new TipoId("3", "Banco Interna");
+
         public static TipoId Inferir(string cedula)
         {
-            if (cedula == null) return new TipoId("", "Desconocido");
+            var id = PrepararId(cedula);
+            if (id == null) return Desconocido();
 
-            // Normalizar: quitar espacios y guiones
+            if (TieneLetras(id)) return ExtranjeroNoResidente();
+
+            return InferirPorLongitud(id);
+        }
+
+        private static string? PrepararId(string cedula)
+        {
+            if (string.IsNullOrWhiteSpace(cedula)) return null;
+
             var id = Normalizar(cedula);
+            return id.Length == 0 ? null : id;
+        }
 
-            if (id.Length == 0)
-                return new TipoId("", "Desconocido");
+        private static bool TieneLetras(string id) =>
+            !id.All(char.IsDigit);
 
-            bool soloDigitos = id.All(char.IsDigit);
-
-            // Si trae letras, normalmente es pasaporte u otro doc de extranjero no residente
-            // (SINPE suele codificar eso como 9)
-            if (!soloDigitos)
-                return new TipoId("9", "Extranjero No Residente");
-
-            // Reglas por longitud / prefijo más comunes en CR
-            if (id.Length == 9)
+        private static TipoId InferirPorLongitud(string id)
+        {
+            // switch expression reduce ramas anidadas
+            return id.Length switch
             {
-                // Cédula física nacional: 9 dígitos. :contentReference[oaicite:1]{index=1}
-                return new TipoId("0", "Persona Física Nacional (Cédula)");
-            }
+                9 => FisicaNacional(),
+                10 => InferirLongitud10(id),
+                11 or 12 => FisicaResidente(),
+                < 9 => BancoInterna(),
+                _ => ExtranjeroNoResidente()
+            };
+        }
 
-            if (id.Length == 10)
+        private static TipoId InferirLongitud10(string id)
+        {
+            return id[0] switch
             {
-                char p = id[0];
-
-                // Persona jurídica: 10 dígitos, inicia con 3. :contentReference[oaicite:2]{index=2}
-                if (p == '3')
-                    return new TipoId("3", "Persona Jurídica");
-
-                // Gobierno/instituciones públicas: cédulas que inician con 2. :contentReference[oaicite:3]{index=3}
-                if (p == '2')
-                    return new TipoId("2", "Gobierno");
-
-                // Heurísticas adicionales (ajustables):
-                if (p == '4')
-                    return new TipoId("4", "Institución Autónoma");
-
-                if (p == '5')
-                    return new TipoId("5", "Diplomáticos");
-
-                // Si no calza prefijo conocido, por defecto lo tratamos como jurídica
-                return new TipoId("3", "Persona Jurídica");
-            }
-
-            if (id.Length == 11 || id.Length == 12)
-            {
-                // DIMEX / residencia suele ser 11–12 dígitos. :contentReference[oaicite:4]{index=4}
-                // Con solo el número no hay señal clara para separar residente vs no residente,
-                // así que asumimos residente si es numérico y de esa longitud.
-                return new TipoId("1", "Persona Física Residente");
-            }
-
-            //Si tiene menos de 9 digitos se identifica como (3) Inetrna
-            if (id.Length < 9)
-            {
-                // DIMEX / residencia suele ser 11–12 dígitos. :contentReference[oaicite:4]{index=4}
-                // Con solo el número no hay señal clara para separar residente vs no residente,
-                // así que asumimos residente si es numérico y de esa longitud.
-                return new TipoId("3", "Banco Interna");
-            }
-
-            // Si es numérico pero longitud rara, lo más probable es extranjero no residente (9)
-            return new TipoId("9", "Extranjero No Residente");
+                '3' => Juridica(),
+                '2' => Gobierno(),
+                '4' => InstitucionAutonoma(),
+                '5' => Diplomaticos(),
+                _ => Juridica()
+            };
         }
 
         private static string Normalizar(string x)
@@ -1770,8 +1769,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"SELECT 
+                var query = $@"SELECT 
                                     NSOLICITUD as 'NumeroSolicitud', 
                                     ID_BANCO, 
                                     TIPO, 
@@ -1868,12 +1866,10 @@ namespace Galileo_API.DataBaseTier
                                FROM 
                                     TES_TRANSACCIONES 
                               where Nsolicitud = @solicitud ";
-                    response.Result = connection.Query<TesTransaccion>(query, new { solicitud = Nsolicitud }).FirstOrDefault();
+                response.Result = connection.Query<TesTransaccion>(query, new { solicitud = Nsolicitud }).FirstOrDefault();
 
-                    //'Se valida la cedula de destino
-                    response.Result.Codigo = fxTesConsultaInfoSinpe(CodEmpresa, Nsolicitud.ToString()).Result.Cedula.ToString();
-
-                }
+                //'Se valida la cedula de destino
+                response.Result.Codigo = fxTesConsultaInfoSinpe(CodEmpresa, Nsolicitud.ToString()).Result.Cedula.ToString();
             }
             catch (Exception)
             {
@@ -1950,7 +1946,6 @@ namespace Galileo_API.DataBaseTier
                         return socio.DESCRIPCION;
                     }
                 }
-                ;
             }
             catch (Exception)
             {
