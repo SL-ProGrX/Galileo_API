@@ -14,7 +14,7 @@ namespace Galileo_API.DataBaseTier
     public class MKindoServiceDb : IWFCSinpe
     {
         private readonly IConfiguration _config;
-        private readonly SinpeGalileo_PIN _PIN;
+        private readonly SinpeGalileoPin _PIN;
 
         private readonly Guid OperationId;
 
@@ -25,7 +25,7 @@ namespace Galileo_API.DataBaseTier
         public MKindoServiceDb(IConfiguration config)
         {
             _config = config;
-            _PIN = new SinpeGalileo_PIN(_config);
+            _PIN = new SinpeGalileoPin(_config);
             OperationId = Guid.NewGuid();
         }
 

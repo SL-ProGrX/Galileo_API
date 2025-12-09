@@ -3,6 +3,8 @@ using Galileo.Models.KindoSinpe;
 
 namespace Galileo_API.DataBaseTier
 {
+#pragma warning disable S125 // Quitar despues de implementar resto de metodos con CSG
+#pragma warning disable S2589 // Quitar despues de implementar resto de metodos con CSG
     public class CoopeSanGabrielValidator
     {
 

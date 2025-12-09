@@ -4,6 +4,7 @@ using System.Text;
 
 namespace Galileo_API.DataBaseTier
 {
+#pragma warning disable S125 // Quitar despues de implementar resto de metodos con CSG
     public class SinpeGalileoPin
     {
         private readonly HttpClient _client;

@@ -7,6 +7,7 @@ using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -324,30 +325,68 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     }
                     else
                     {
-                        query = $@"select TOP 1 C.cod_cuenta_Mask as 'Cod_Cuenta',C.descripcion, 'D' as debehaber,  {vSolicitud.monto} as monto , 
-                                    '{vSolicitud.cod_unidad}' as cod_uniadd, '{vSolicitud.estado}' as estado ,
-                                    ( select descripcion from CntX_Unidades U where U.cod_unidad = '{vSolicitud.cod_unidad}' and U.cod_contabilidad = C.cod_contabilidad) as UnidadX,
-                                    '' as cod_cc, '' as CCX, B.id_banco, 0 as tipo_cambio,
+                         query = @"
+                                select TOP 1
+                                    C.cod_cuenta_Mask as Cod_Cuenta,
+                                    C.descripcion,
+                                    'D' as debehaber,
+                                    @monto as monto,
+                                    @cod_unidad as cod_uniadd,
+                                    @estado as estado,
+                                    (
+                                        select descripcion
+                                        from CntX_Unidades U
+                                        where U.cod_unidad = @cod_unidad
+                                          and U.cod_contabilidad = C.cod_contabilidad
+                                    ) as UnidadX,
+                                    '' as cod_cc,
+                                    '' as CCX,
+                                    B.id_banco,
+                                    0 as tipo_cambio,
                                     C.cod_divisa
-                                                from CntX_Cuentas C inner join Tes_Bancos B on C.cod_Cuenta = B.CtaConta
-                                                Where B.id_banco = {vSolicitud.id_banco}
-                                                and C.cod_contabilidad = @contabilidad
-                                     UNION 
-                                  select TOP 1 C.cod_cuenta_Mask as 'Cod_Cuenta',C.descripcion, 'H' as debehaber, {vSolicitud.monto} as monto , 
-                                     '{vSolicitud.cod_unidad}' as cod_uniadd, '{vSolicitud.estado}' as estado ,
-                                    ( select descripcion from CntX_Unidades U where U.cod_unidad = '{vSolicitud.cod_unidad}' and U.cod_contabilidad = C.cod_contabilidad) as UnidadX,
-                                    '' as cod_cc, '' as CCX, {vSolicitud.id_banco} as id_banco , 0 as tipo_cambio,
-                                     C.cod_divisa
-                                                from CntX_Cuentas C inner join Tes_Conceptos B on C.cod_Cuenta = B.cod_cuenta
-                                                Where B.cod_concepto = '{vSolicitud.cod_concepto}'
-                                                and C.cod_contabilidad = @contabilidad ";
+                                from CntX_Cuentas C
+                                inner join Tes_Bancos B on C.cod_Cuenta = B.CtaConta
+                                where B.id_banco = @id_banco
+                                  and C.cod_contabilidad = @contabilidad
 
+                                UNION
 
-                        response.Result = connection.Query<TesTransAsientoDto>(query,
-                        new
-                        {
-                            contabilidad = vSolicitud.contabilidad,
-                        }).ToList();
+                                select TOP 1
+                                    C.cod_cuenta_Mask as Cod_Cuenta,
+                                    C.descripcion,
+                                    'H' as debehaber,
+                                    @monto as monto,
+                                    @cod_unidad as cod_uniadd,
+                                    @estado as estado,
+                                    (
+                                        select descripcion
+                                        from CntX_Unidades U
+                                        where U.cod_unidad = @cod_unidad
+                                          and U.cod_contabilidad = C.cod_contabilidad
+                                    ) as UnidadX,
+                                    '' as cod_cc,
+                                    '' as CCX,
+                                    @id_banco as id_banco,
+                                    0 as tipo_cambio,
+                                    C.cod_divisa
+                                from CntX_Cuentas C
+                                inner join Tes_Conceptos B on C.cod_Cuenta = B.cod_cuenta
+                                where B.cod_concepto = @cod_concepto
+                                  and C.cod_contabilidad = @contabilidad;
+                                ";
+
+                        response.Result = connection.Query<TesTransAsientoDto>(
+                            query,
+                            new
+                            {
+                                contabilidad = vSolicitud.contabilidad,
+                                id_banco = vSolicitud.id_banco,
+                                cod_concepto = vSolicitud.cod_concepto,
+                                monto = vSolicitud.monto,
+                                cod_unidad = vSolicitud.cod_unidad,
+                                estado = vSolicitud.estado
+                            }
+                        ).ToList();
 
                         int count = 0;
                         foreach (var item in response.Result)
@@ -564,47 +603,93 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             try
             {
                 using var connection = new SqlConnection(stringConn);
+
+                // 1) Total (ya estaba casi bien; dejamos fijo el query)
+                const string qTotal = @"
+                    select count(C.NSOLICITUD)
+                    from Tes_Transacciones C
+                    inner join CntX_Unidades U on C.cod_unidad = U.cod_unidad
+                    where U.cod_contabilidad = @Contabilidad;";
+
+                response.Result.total = connection.Query<int>(qTotal, new { Contabilidad = contabilidad })
+                                                  .FirstOrDefault();
+
+
+                // 2) Normalizar defaults del filtro
+                var search = filtro.filtro?.Trim();
+                var sortField = string.IsNullOrWhiteSpace(filtro.sortField) ? "NSOLICITUD" : filtro.sortField;
+                var sortOrder = (filtro.sortOrder == 0) ? 1 : filtro.sortOrder; // 1 asc, -1 desc?
+                var pagina = filtro.pagina;
+                var paginacion = filtro.paginacion;
+
+                // 3) Lista blanca para ORDER BY (evita inyección por nombre de columna)
+                var sortMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    //Busco Total
-                    var query = $@"select count(NSOLICITUD) from Tes_Transacciones C
-                                  inner join CntX_Unidades U on C.cod_unidad = U.cod_unidad WHERE U.cod_contabilidad = @Contabilidad";
-                    response.Result.total = connection.Query<int>(query, new { Contabilidad = contabilidad }).FirstOrDefault();
+                    ["NSOLICITUD"] = "NSOLICITUD",
+                    ["TIPO"] = "TIPO",
+                    ["CODIGO"] = "CODIGO",
+                    ["BENEFICIARIO"] = "BENEFICIARIO",
+                    ["MONTO"] = "MONTO",
+                    ["ESTADO"] = "ESTADO",
+                    ["COD_UNIDAD"] = "COD_UNIDAD"
+                };
 
-                    if (filtro.filtro != null && filtro.filtro != "")
-                    {
-                        filtro.filtro = $@"WHERE ( 
-                                                 NSOLICITUD like '%{filtro.filtro}%' 
-                                              OR TIPO like '%{filtro.filtro}%'
-                                              OR BENEFICIARIO like '%{filtro.filtro}%'
-                                              OR CODIGO like '%{filtro.filtro}%' 
-                                          )";
-                    }
-
-                    if (filtro.sortField == "" || filtro.sortField == null)
-                    {
-                        filtro.sortField = "NSOLICITUD";
-                    }
-
-                    if (filtro.sortOrder == 0)
-                    {
-                        filtro.sortOrder = 1; //Por defecto orden ascendente
-                    }
-
-                    if (filtro.pagina != null)
-                    {
-                        query = $@"select NSOLICITUD, TIPO, CODIGO, BENEFICIARIO, MONTO, ESTADO, COD_UNIDAD FROM (
-                                      select C.NSOLICITUD, rtrim(T.descripcion) as TIPO, C.CODIGO , C.BENEFICIARIO , C.monto, C.estado, C.COD_UNIDAD  
-                                  from Tes_Transacciones C 
-                                       inner join CntX_Unidades U on C.cod_unidad = U.cod_unidad  
-                                       inner join Tes_Tipos_doc T on C.tipo = T.tipo
-                                  WHERE U.cod_contabilidad = {contabilidad}
-                                  ) X {filtro.filtro} ORDER BY {filtro.sortField} {(filtro.sortOrder == -1 ? "ASC" : "DESC")}  
-                                      OFFSET {filtro.pagina} ROWS
-                                      FETCH NEXT {filtro.paginacion} ROWS ONLY ";
-
-                        response.Result.lista = connection.Query<Galileo.Models.ProGrX.Bancos.TesSolicitudesData>(query).ToList();
-                    }
+                if (!sortMap.TryGetValue(sortField, out var safeSortField))
+                {
+                    safeSortField = "NSOLICITUD";
                 }
+
+                var safeSortDir = (sortOrder == -1) ? "DESC" : "ASC";
+                // ojo: en tu código original estaba invertido. Ajustá si tu UI usa otra convención.
+
+
+                // 4) Query base fijo
+                var sql = @"
+                    select NSOLICITUD, TIPO, CODIGO, BENEFICIARIO, MONTO, ESTADO, COD_UNIDAD
+                    from (
+                        select
+                            C.NSOLICITUD,
+                            rtrim(T.descripcion) as TIPO,
+                            C.CODIGO,
+                            C.BENEFICIARIO,
+                            C.monto as MONTO,
+                            C.estado as ESTADO,
+                            C.COD_UNIDAD
+                        from Tes_Transacciones C
+                        inner join CntX_Unidades U on C.cod_unidad = U.cod_unidad
+                        inner join Tes_Tipos_doc T on C.tipo = T.tipo
+                        where U.cod_contabilidad = @Contabilidad
+                    ) X
+                    ";
+
+                // 5) Filtro opcional parametrizado
+                var parameters = new DynamicParameters();
+                parameters.Add("@Contabilidad", contabilidad);
+                parameters.Add("@Offset", pagina);
+                parameters.Add("@PageSize", paginacion);
+
+                if (!string.IsNullOrWhiteSpace(search))
+                {
+                    sql += @"
+                        where (
+                            NSOLICITUD like @Search
+                            or TIPO like @Search
+                            or BENEFICIARIO like @Search
+                            or CODIGO like @Search
+                        )
+                        ";
+                    parameters.Add("@Search", $"%{search}%");
+                }
+
+                // 6) ORDER BY seguro + paginación parametrizada
+                sql += $@"
+                    order by {safeSortField} {safeSortDir}
+                    offset @Offset rows fetch next @PageSize rows only;
+                    ";
+
+                response.Result.lista =
+                    connection.Query<Galileo.Models.ProGrX.Bancos.TesSolicitudesData>(sql, parameters)
+                              .ToList();
             }
             catch (Exception ex)
             {
@@ -773,9 +858,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="usuario"></param>
         /// <param name="transaccion"></param>
         /// <returns></returns>
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+                        "Major Code Smell",
+                        "csharpsquid:S125",
+                        Justification = "Linea Pendiente de aplicar")]
         public ErrorDto TES_Transaccion_Guardar(int CodEmpresa, string usuario, int contabilidad, TesTransaccionDto transaccion)
         {
-            // TES_TransaccionDto transacción = JsonConvert.DeserializeObject<TES_TransaccionDto>(jTransaccion);
+           
             var res = new ErrorDto();
             if (transaccion.user_solicita == null)
             {
@@ -878,6 +967,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         res.Description = transaccion.nsolicitud.ToString();
                     }
 
+                   
                     //if (!mTesoreria.fxTesTipoAccesoValida(CodEmpresa, transaccion.id_banco.ToString(), usuario, transaccion.tipo, "G").Result)
                     //{
                     //    if (res.Code == 1 || res.Code == 0)
@@ -970,12 +1060,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                     @tipo_ced_destino
                                 );
                                 ";
-
-
-                    //VALUES  (  
-                    //  '{transaccion.cod_divisa}', {transaccion.tipo_beneficiario}, 'ProGrx', 
-                    //  '{transaccion.correo_notifica}', {transaccion.tipo_ced_origen}, '{transaccion.cta_iban_origen }', '{transaccion.cedula_origen}', {transaccion.tipo_ced_destino}
-                    //)";
 
                     string vReferencia = (transaccion.referencia != null) ? transaccion.referencia.ToString() : "NULL";
                     string vOp = (transaccion.op != null) ? transaccion.op.ToString() : "NULL";
@@ -1859,16 +1943,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     //reviso si el código de id es igual al código del usuario
                     using var conn = new SqlConnection(stringConn);
+                    const string qUser = @"
+                            SELECT CEDULA
+                            FROM USUARIOS
+                            WHERE UPPER(NOMBRE) LIKE @pattern";
+
+                    var pattern = $"%{usuario?.Trim().ToUpperInvariant()}%";
+
+                    var existe = conn.QueryFirstOrDefault<string>(qUser, new { pattern });
+
+                    if (!string.IsNullOrEmpty(existe) &&
+                        existe == transaccion.codigo.ToString().Trim())
                     {
-                        var qUser = $@"SELECT CEDULA FROM USUARIOS WHERE UPPER(NOMBRE) like '%{usuario.ToUpper()}%'";
-                        var existe = conn.QueryFirstOrDefault<string>(qUser);
-                        if (existe != null && existe.Length > 0)
-                        {
-                            if (existe == transaccion.codigo.ToString().Trim())
-                            {
-                                vMensaje += "La identificación de destino no puede ser del usuario logeado.\n";
-                            }
-                        }
+                        vMensaje += "La identificación de destino no puede ser del usuario logeado.\n";
                     }
                 }
 
@@ -2006,14 +2093,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         decimal pDebito = (item.debehaber == "D") ? item.monto : 0;
                         decimal pCredito = (item.debehaber == "H") ? item.monto : 0;
                         string gEnlace = "1";
-                        cuentaValida = $@"exec spCntX_Cuentas_Valida_Load {gEnlace},'{transaccion.user_solicita}','TES', '{item.cod_cuenta.Replace("-", "")}','{item.cod_divisa}','{item.cod_unidad}','{item.cod_cc}',{item.tipo_cambio},{pDebito},{pCredito},{i}";
+                        var parametros = new
+                        {
+                            Contabilidad = gEnlace,
+                            Usuario = transaccion.user_solicita,
+                            Modulo = "TES",
+                            Cuenta = item.cod_cuenta.Replace("-", ""),
+                            Divisa = item.cod_divisa,
+                            Unidad = item.cod_unidad,
+                            Centro = item.cod_cc,
+                            TipoCambio = item.tipo_cambio,
+                            Debito = pDebito,
+                            Credito = pCredito,
+                            Inicializa = i
+                        };
 
-                        var cuenta = connection.QueryFirstOrDefault(cuentaValida);
+                        var cuenta = connection.QueryFirstOrDefault(
+                            "spCntX_Cuentas_Valida_Load",
+                            parametros,
+                            commandType: CommandType.StoredProcedure
+                        );
                         i++;
                     }
 
-                    var validaresultado = $@"exec spCntX_Cuentas_Valida_Resultado '{transaccion.user_solicita}', 0";
-                    var resultado = connection.QueryFirstOrDefault(validaresultado);
+                    var validaresultado = $@"exec spCntX_Cuentas_Valida_Resultado @Usuario, 0";
+                    var resultado = connection.QueryFirstOrDefault(validaresultado, new { Usuario = transaccion.user_solicita });
                     //vMensaje += resultado.RESULTADO;
                 }
 

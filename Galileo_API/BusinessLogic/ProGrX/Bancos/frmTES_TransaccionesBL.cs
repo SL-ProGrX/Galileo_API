@@ -8,13 +8,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 {
     public class FrmTesTransaccionesBL
     {
-        private readonly IConfiguration? _config;
         private readonly FrmTesTransaccionesDb _db;
 
         public FrmTesTransaccionesBL(IConfiguration config)
         {
-            _config = config;
-            _db = new FrmTesTransaccionesDb(_config);
+            _db = new FrmTesTransaccionesDb(config);
         }
 
         public ErrorDto<TablasListaGenericaModel> TES_Solicitudes_Obtener(int CodEmpresa, int contabilidad, string filtro)

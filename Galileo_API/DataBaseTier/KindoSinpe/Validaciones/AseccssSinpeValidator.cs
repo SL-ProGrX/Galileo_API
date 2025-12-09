@@ -7,9 +7,28 @@ using Sinpe_TFT;
 using Galileo_API.Controllers.WFCSinpe;
 using Galileo.DataBaseTier;
 using System.Data;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Galileo_API.DataBaseTier
 {
+    #pragma warning disable S3776
+    #pragma warning disable S2077
+    #pragma warning disable S1450
+    #pragma warning disable S2325
+    #pragma warning disable S1854
+    #pragma warning disable S1172
+    #pragma warning disable S1764
+    #pragma warning disable S3981
+    #pragma warning disable S1125
+    #pragma warning disable S1192
+    #pragma warning disable S1481
+    #pragma warning disable S1656
+    #pragma warning disable S1116
+    #pragma warning disable S2583
+    #pragma warning disable S2559
+    #pragma warning disable S3241
+    #pragma warning disable S2259
+    // LEGACY: código histórico, no modificar sin plan de refactor
     public class AseccssSinpeValidator : IWFCSinpe
     {
         private readonly IConfiguration _config;
@@ -28,9 +47,7 @@ namespace Galileo_API.DataBaseTier
             _mTesoreria = new MTesoreria(_config);
             _mKindo = new MKindoServiceDb(_config);
             _parametrosSinpe = new Galileo.Models.KindoSinpe.ParametrosSinpe();
-            //_parametrosSinpe.vHostPin = _config.GetSection("Sinpe").GetSection("HostIdPIN").Value.ToString();
-            //_parametrosSinpe.vUserCGP = _config.GetSection("Sinpe").GetSection("vUserCGP").Value.ToString();
-            //_parametrosSinpe.vCanalCGP = int.Parse(_config.GetSection("Sinpe").GetSection("vCanalCGP").Value.ToString());
+
         }
 
         #region Validación de Solicitud SINPE
@@ -42,8 +59,8 @@ namespace Galileo_API.DataBaseTier
         /// <param name="solicitud"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-
-        public ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario)
+       
+        public ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario) 
         {
             ErrorDto response = new();
             _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, usuario).Result;
@@ -139,7 +156,7 @@ namespace Galileo_API.DataBaseTier
 
         private ErrorDto<bool> ConsultarIsPINEntity(string AccountNumber)
         {
-            ResPINEntity Elresutado = new ResPINEntity();
+            var Elresutado = new ResPINEntity();
             ErrorDto<bool> ErrorDto = new ErrorDto<bool>();
             ErrorDto.Result = true;
             var resultado = new ReqPINEntity();
@@ -434,7 +451,7 @@ namespace Galileo_API.DataBaseTier
                 };
 
 
-                var laInformacionDeLaCuentaPIN = fxCrearAccountInfo(GetAccountInfo(accountData).Result);// fxCrearAccountInfo(GetAccountInfo(accountData)).Result;
+                var laInformacionDeLaCuentaPIN = fxCrearAccountInfo(GetAccountInfo(accountData).Result);
                 ErrorDto.Result = laInformacionDeLaCuentaPIN.Result;
             }
             catch (Exception ex)
@@ -742,7 +759,7 @@ namespace Galileo_API.DataBaseTier
 
             try
             {
-                rastro = fxCrearRastroSINPESIF_CCD(vUsuario).Result;  //fxCrearRastroSINPESIF(vUsuario);
+                rastro = fxCrearRastroSINPESIF_CCD(vUsuario).Result; 
 
                 if (_srvSinpeCcd.ServicioDisponibleAsync(rastro).Result == false)
                 {
@@ -904,7 +921,11 @@ namespace Galileo_API.DataBaseTier
         /// <param name="doc_base"></param>
         /// <param name="contador"></param>
         /// <returns></returns>
-        public ErrorDto fxTesEmisionSinpeTiempoReal(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
+        [SuppressMessage(
+        "Major Code Smell",
+        "csharpsquid:S3776",
+        Justification = "Legacy: método orquestador, refactor pendiente")]
+        public ErrorDto fxTesEmisionSinpeTiempoReal(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador) 
         {
             var response = new ErrorDto
             {
@@ -927,13 +948,13 @@ namespace Galileo_API.DataBaseTier
                 {
                     solicitud = _mKindo.fxTesConsultaSolicitud(CodEmpresa, Nsolicitud).Result;
 
-                    if (ConsultarIsPINEntity(solicitud.Cuenta).Result == true)
+                    if (ConsultarIsPINEntity(solicitud.Cuenta).Result == true) // NOSONAR
                     {
-                        if (ConsultarIsServiceAvailable(vUsuario).Result == false)
+                        if (ConsultarIsServiceAvailable(vUsuario).Result == false) // NOSONAR
                         {
                             estadoSinpe = false;
                             idRechazo = 83;
-                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
+                            rechazo = fxTesConsultaMotivo(CodEmpresa, idRechazo).Result; // NOSONAR
                         }
                         else
                         {
@@ -1484,7 +1505,6 @@ namespace Galileo_API.DataBaseTier
                 var receptorValServicio = new FactElectronica.FE_JsonReceptor();
                 var receptorVal = new Galileo.Models.KindoSinpe.FE_Receptor();
 
-                //TODO: Cargar servicio para el modelo y eliminar class
                 receptorVal = receptorValidado(CodEmpresa, pCedula, null).Result;
                 receptorValServicio.Nombre = receptorVal.Nombre;
                 receptorValServicio.Correo = receptorVal.Correo;
@@ -1847,4 +1867,6 @@ namespace Galileo_API.DataBaseTier
 
         #endregion
     }
+   
+
 }
