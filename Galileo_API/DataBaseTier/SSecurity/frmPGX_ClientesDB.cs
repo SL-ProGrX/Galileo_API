@@ -40,12 +40,19 @@ namespace Galileo.DataBaseTier
                 {
 
                     //Busco Total
-                    query = "SELECT COUNT(*) FROM PGX_CLIENTES";
-                    info.Total = connection.Query<int>(query).FirstOrDefault();
-
-                    if (filtro != null)
+                    var countQuery = "SELECT COUNT(*) FROM PGX_CLIENTES";
+                    if (!string.IsNullOrEmpty(filtro))
                     {
-                        filtro = " WHERE COD_EMPRESA LIKE '%" + filtro + "%' OR NOMBRE_LARGO LIKE '%" + filtro + "%' OR NOMBRE_CORTO LIKE '%" + filtro + "%' ";
+                        countQuery += " WHERE COD_EMPRESA LIKE @Filtro OR NOMBRE_LARGO LIKE @Filtro OR NOMBRE_CORTO LIKE @Filtro ";
+                    }
+                    info.Total = connection.Query<int>(countQuery, parameters).FirstOrDefault();
+
+                    var whereClause = "";
+                    var parameters = new DynamicParameters();
+                    if (!string.IsNullOrEmpty(filtro))
+                    {
+                        whereClause = " WHERE COD_EMPRESA LIKE @Filtro OR NOMBRE_LARGO LIKE @Filtro OR NOMBRE_CORTO LIKE @Filtro ";
+                        parameters.Add("Filtro", "%" + filtro + "%");
                     }
 
                     if (pagina != null)
@@ -55,14 +62,12 @@ namespace Galileo.DataBaseTier
                     }
 
                     query = $@"SELECT * FROM PGX_CLIENTES
-                                      
-                                         {filtro} 
+                                        {whereClause}
                                         ORDER BY COD_EMPRESA
                                         {paginaActual}
-                                        {paginacionActual} ";
+                                        {paginacionActual}";
+                    info.Lista = connection.Query<ClienteDto>(query, parameters).ToList();
 
-
-                    info.Lista = connection.Query<ClienteDto>(query).ToList();
 
                 }
             }
