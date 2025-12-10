@@ -172,25 +172,33 @@ namespace Galileo.DataBaseTier
             response.Code = 0;
             try
             {
-                var query = "";
-                string paginaActual = " ", paginacionActual = " ";
-                string where = $"where COD_CONTABILIDAD = {vfiltro.CodConta}";
-                using var connection = new SqlConnection(clienteConnString);
+                string where = "WHERE COD_CONTABILIDAD = @CodConta";
+                var parameters = new DynamicParameters();
+                parameters.Add("@CodConta", vfiltro.CodConta ?? 0, DbType.Int32);
 
-                if (vfiltro.filtro != null && vfiltro.filtro != "")
+                if (!string.IsNullOrWhiteSpace(vfiltro.filtro))
                 {
-                    where += " and cod_centro_costo LIKE '%" + vfiltro.filtro + "%' OR descripcion LIKE '%" + vfiltro.filtro + "%' ";
+                    where += " AND (cod_centro_costo LIKE @Filtro OR descripcion LIKE @Filtro)";
+                    string filtroParam = "%" + vfiltro.filtro + "%";
+                    parameters.Add("@Filtro", filtroParam, DbType.String);
                 }
-                if (vfiltro.pagina != null)
+
+                string paginationClause = "";
+                if (vfiltro.pagina != null && vfiltro.paginacion != null)
                 {
-                    paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
-                    paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
+                    paginationClause = " OFFSET @Pagina ROWS FETCH NEXT @Paginacion ROWS ONLY ";
+                    parameters.Add("@Pagina", vfiltro.pagina, DbType.Int32);
+                    parameters.Add("@Paginacion", vfiltro.paginacion, DbType.Int32);
                 }
-                query = $"select COUNT(*) from CNTX_CENTRO_COSTOS {where}";
-                response.Result.Total = connection.Query<int>(query).FirstOrDefault();
-                query = @$"select cod_centro_costo as centrocosto, descripcion from CNTX_CENTRO_COSTOS
-                        {where} order by cod_centro_costo desc {paginaActual} {paginacionActual}";
-                response.Result.CentroCostos = connection.Query<CentroCostoDto>(query).ToList();
+
+                var countQuery = $"SELECT COUNT(*) FROM CNTX_CENTRO_COSTOS {where}";
+                response.Result.Total = connection.Query<int>(countQuery, parameters).FirstOrDefault();
+
+                var dataQuery = $@"SELECT cod_centro_costo AS centrocosto, descripcion
+                                   FROM CNTX_CENTRO_COSTOS
+                                   {where}
+                                   ORDER BY cod_centro_costo DESC{paginationClause}";
+                response.Result.CentroCostos = connection.Query<CentroCostoDto>(dataQuery, parameters).ToList();
 
             }
             catch (Exception ex)
