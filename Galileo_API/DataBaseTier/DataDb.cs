@@ -34,13 +34,56 @@ namespace Galileo.DataBaseTier
             parameters.Add("@PageSize", pageSize, DbType.Int32);
         }
 
-        // Wrapper for lazy loading scenarios; currently delegates to AddPaginationParameters for consistency.
         private static void AddLazyPaginationParameters(
             DynamicParameters parameters,
             int? pagina,
             int? paginacion)
         {
             AddPaginationParameters(parameters, pagina, paginacion);
+        }
+
+        /// <summary>
+        /// Añade un parámetro string opcional para búsquedas con LIKE.
+        /// Si el valor es nulo o vacío, se envía NULL.
+        /// </summary>
+        private static void AddLikeFilter(DynamicParameters parameters, string paramName, string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                parameters.Add(paramName, dbType: DbType.String, value: null);
+            }
+            else
+            {
+                parameters.Add(paramName, $"%{value}%", DbType.String);
+            }
+        }
+
+        /// <summary>
+        /// Igual que AddLikeFilter, pero antes limpia "null" y trim.
+        /// Útil para filtros de proveedor, familia, etc.
+        /// </summary>
+        private static void AddLikeFilterCleaningNull(DynamicParameters parameters, string paramName, string? value)
+        {
+            value = value?.Replace("null", string.Empty).Trim();
+            AddLikeFilter(parameters, paramName, value);
+        }
+
+        /// <summary>
+        /// Añade un int opcional: si el valor es mayor que 0 se envía, si no, NULL.
+        /// </summary>
+        private static void AddOptionalIntGreaterThanZero(
+            DynamicParameters parameters,
+            string paramName,
+            int? value)
+        {
+            if (value.HasValue && value.Value > 0)
+            {
+                parameters.Add(paramName, value.Value, DbType.Int32);
+            }
+            else
+            {
+                parameters.Add(paramName, dbType: DbType.Int32, value: null);
+            }
         }
 
         #endregion
@@ -63,14 +106,7 @@ namespace Galileo.DataBaseTier
                 parameters.Add("@AutoGestion", (jFiltros.autoGestion ?? false) ? 1 : 0, DbType.Int32);
                 parameters.Add("@Ventas", (jFiltros.ventas ?? false) ? 1 : 0, DbType.Int32);
 
-                if (string.IsNullOrWhiteSpace(jFiltros.filtro))
-                {
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                }
-                else
-                {
-                    parameters.Add(FiltroParam, $"%{jFiltros.filtro}%", DbType.String);
-                }
+                AddLikeFilter(parameters, FiltroParam, jFiltros.filtro);
 
                 AddPaginationParameters(parameters, jFiltros.pagina, jFiltros.paginacion);
 
@@ -135,15 +171,7 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                {
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                }
-                else
-                {
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
-                }
-
+                AddLikeFilter(parameters, FiltroParam, filtro);
                 AddPaginationParameters(parameters, pagina, paginacion);
 
                 const string countSql = @"
@@ -195,15 +223,7 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                {
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                }
-                else
-                {
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
-                }
-
+                AddLikeFilter(parameters, FiltroParam, filtro);
                 AddPaginationParameters(parameters, pagina, paginacion);
 
                 const string countSql = @"
@@ -269,23 +289,8 @@ namespace Galileo.DataBaseTier
                     parameters.Add("@CodUnidad", filtro.cod_unidad, DbType.String);
                 }
 
-                if (string.IsNullOrWhiteSpace(filtro.filtro))
-                {
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                }
-                else
-                {
-                    parameters.Add(FiltroParam, $"%{filtro.filtro}%", DbType.String);
-                }
-
-                if (filtro.familia > 0)
-                {
-                    parameters.Add(_familiaParam, filtro.familia, DbType.Int32);
-                }
-                else
-                {
-                    parameters.Add(_familiaParam, dbType: DbType.Int32, value: null);
-                }
+                AddLikeFilter(parameters, FiltroParam, filtro.filtro);
+                AddOptionalIntGreaterThanZero(parameters, _familiaParam, filtro.familia);
 
                 if (string.IsNullOrWhiteSpace(filtro.sublinea))
                 {
@@ -398,27 +403,9 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                {
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                }
-                else
-                {
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
-                }
-
-                proveedor = proveedor?.Replace("null", string.Empty).Trim();
-                familia = familia?.Replace("null", string.Empty).Trim();
-
-                if (string.IsNullOrWhiteSpace(proveedor))
-                    parameters.Add(_proveedorParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(_proveedorParam, $"%{proveedor}%", DbType.String);
-
-                if (string.IsNullOrWhiteSpace(familia))
-                    parameters.Add(_familiaParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(_familiaParam, $"%{familia}%", DbType.String);
+                AddLikeFilter(parameters, FiltroParam, filtro);
+                AddLikeFilterCleaningNull(parameters, _proveedorParam, proveedor);
+                AddLikeFilterCleaningNull(parameters, _familiaParam, familia);
 
                 AddPaginationParameters(parameters, pagina, paginacion);
 
@@ -449,12 +436,12 @@ namespace Galileo.DataBaseTier
                     ) T
                     WHERE (
                             @Filtro IS NULL
-                         OR cod_orden    LIKE @Filtro
-                         OR genera_user  LIKE @Filtro
+                         OR cod_orden     LIKE @Filtro
+                         OR genera_user   LIKE @Filtro
                          OR cod_solicitud LIKE @Filtro
-                         OR nota         LIKE @Filtro
-                         OR familia      LIKE @Filtro
-                         OR proveedor    LIKE @Filtro
+                         OR nota          LIKE @Filtro
+                         OR familia       LIKE @Filtro
+                         OR proveedor     LIKE @Filtro
                     )
                       AND (
                             @Proveedor IS NULL
@@ -504,29 +491,12 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
+                AddLikeFilter(parameters, FiltroParam, filtro);
+                AddLikeFilterCleaningNull(parameters, _proveedorParam, proveedor);
+                AddLikeFilterCleaningNull(parameters, _familiaParam, familia);
 
-                proveedor = proveedor?.Replace("null", string.Empty).Trim();
-                familia = familia?.Replace("null", string.Empty).Trim();
                 subfamilia = subfamilia?.Replace("null", string.Empty).Trim();
-
-                if (string.IsNullOrWhiteSpace(proveedor))
-                    parameters.Add(_proveedorParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(_proveedorParam, $"%{proveedor}%", DbType.String);
-
-                if (string.IsNullOrWhiteSpace(familia))
-                    parameters.Add(_familiaParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(_familiaParam, $"%{familia}%", DbType.String);
-
-                if (string.IsNullOrWhiteSpace(subfamilia) || subfamilia == "5")
-                    parameters.Add("@Subfamilia", dbType: DbType.String, value: null);
-                else
-                    parameters.Add("@Subfamilia", $"%{subfamilia}%", DbType.String);
+                AddLikeFilter(parameters, "@Subfamilia", subfamilia == "5" ? null : subfamilia);
 
                 AddPaginationParameters(parameters, pagina, paginacion);
 
@@ -567,12 +537,12 @@ namespace Galileo.DataBaseTier
                     ) T 
                     WHERE (
                             @Filtro IS NULL
-                         OR cod_orden    LIKE @Filtro
-                         OR genera_user  LIKE @Filtro
+                         OR cod_orden     LIKE @Filtro
+                         OR genera_user   LIKE @Filtro
                          OR cod_solicitud LIKE @Filtro
-                         OR nota         LIKE @Filtro
-                         OR familia      LIKE @Filtro
-                         OR proveedor    LIKE @Filtro
+                         OR nota          LIKE @Filtro
+                         OR familia       LIKE @Filtro
+                         OR proveedor     LIKE @Filtro
                     )
                       AND (
                             @Proveedor IS NULL
@@ -620,11 +590,7 @@ namespace Galileo.DataBaseTier
                 var parameters = new DynamicParameters();
                 parameters.Add("@CodProveedor", CodProveedor, DbType.Int32);
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
-
+                AddLikeFilter(parameters, FiltroParam, filtro);
                 AddPaginationParameters(parameters, pagina, paginacion);
 
                 const string countSql = @"
@@ -680,15 +646,7 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                {
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                }
-                else
-                {
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
-                }
-
+                AddLikeFilter(parameters, FiltroParam, filtro);
                 AddPaginationParameters(parameters, pagina, paginacion);
 
                 const string countSql = @"
@@ -743,15 +701,8 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtrosModel.filtro))
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(FiltroParam, $"%{filtrosModel.filtro}%", DbType.String);
-
-                if (filtrosModel.cod_proveedor > 0)
-                    parameters.Add("@CodProveedor", filtrosModel.cod_proveedor, DbType.Int32);
-                else
-                    parameters.Add("@CodProveedor", dbType: DbType.Int32, value: null);
+                AddLikeFilter(parameters, FiltroParam, filtrosModel.filtro);
+                AddOptionalIntGreaterThanZero(parameters, "@CodProveedor", filtrosModel.cod_proveedor);
 
                 AddPaginationParameters(parameters, filtrosModel.pagina, filtrosModel.paginacion);
 
@@ -824,11 +775,7 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
-
+                AddLikeFilter(parameters, FiltroParam, filtro);
                 AddPaginationParameters(parameters, pagina, paginacion);
 
                 const string countSql = @"
@@ -886,11 +833,7 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
-
+                AddLikeFilter(parameters, FiltroParam, filtro);
                 AddPaginationParameters(parameters, pagina, paginacion);
 
                 const string countSql = @"
@@ -943,11 +886,7 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
-
+                AddLikeFilter(parameters, FiltroParam, filtro);
                 AddPaginationParameters(parameters, pagina, paginacion);
 
                 const string countSql = @"
@@ -1013,10 +952,7 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro.filtro))
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(FiltroParam, $"%{filtro.filtro}%", DbType.String);
+                AddLikeFilter(parameters, FiltroParam, filtro.filtro);
 
                 var sortField = string.IsNullOrWhiteSpace(filtro.sortField)
                     ? "cedula"
@@ -1094,11 +1030,7 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
-
+                AddLikeFilter(parameters, FiltroParam, filtro);
                 AddPaginationParameters(parameters, pagina, paginacion);
 
                 const string countSql = @"
@@ -1154,11 +1086,7 @@ namespace Galileo.DataBaseTier
                 var parameters = new DynamicParameters();
                 parameters.Add("@Institucion", Institucion, DbType.String);
 
-                if (string.IsNullOrWhiteSpace(filtro))
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
-
+                AddLikeFilter(parameters, FiltroParam, filtro);
                 AddPaginationParameters(parameters, pagina, paginacion);
 
                 const string countSql = @"
@@ -1463,10 +1391,7 @@ namespace Galileo.DataBaseTier
 
                 var parameters = new DynamicParameters();
 
-                if (string.IsNullOrWhiteSpace(filtro.filtro))
-                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
-                else
-                    parameters.Add(FiltroParam, $"%{filtro.filtro}%", DbType.String);
+                AddLikeFilter(parameters, FiltroParam, filtro.filtro);
 
                 var sortField = string.IsNullOrWhiteSpace(filtro.sortField)
                     ? "cedula"
