@@ -34,17 +34,13 @@ namespace Galileo.DataBaseTier
             parameters.Add("@PageSize", pageSize, DbType.Int32);
         }
 
+        // Wrapper for lazy loading scenarios; currently delegates to AddPaginationParameters for consistency.
         private static void AddLazyPaginationParameters(
             DynamicParameters parameters,
             int? pagina,
             int? paginacion)
         {
-            // For lazy loading, default to page 1 and page size 50 if not provided
-            var offset = pagina.HasValue ? pagina.Value : 1;
-            var pageSize = paginacion.HasValue ? paginacion.Value : 50;
-
-            parameters.Add("@Offset", offset, DbType.Int32);
-            parameters.Add("@PageSize", pageSize, DbType.Int32);
+            AddPaginationParameters(parameters, pagina, paginacion);
         }
 
         #endregion
@@ -1027,6 +1023,7 @@ namespace Galileo.DataBaseTier
                     : filtro.sortField;
 
                 parameters.Add("@SortField", sortField, DbType.String);
+                parameters.Add("@Desc", filtro.sortOrder == 0 ? 1 : 0, DbType.Int32);
 
                 AddLazyPaginationParameters(parameters, filtro.pagina, filtro.paginacion);
 
@@ -1044,9 +1041,7 @@ namespace Galileo.DataBaseTier
 
                 response.Result.total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
-                var orderDirection = filtro.sortOrder == 0 ? "DESC" : "ASC";
-
-                var dataSql = $@"
+                const string dataSql = @"
                     SELECT S.cedula, S.cedular, S.nombre, M.Membresia 
                     FROM SOCIOS S
                     LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA
@@ -1058,10 +1053,14 @@ namespace Galileo.DataBaseTier
                          OR M.Membresia LIKE @Filtro
                       )
                     ORDER BY 
-                        CASE WHEN @SortField = 'cedula'    THEN S.cedula    END {orderDirection},
-                        CASE WHEN @SortField = 'cedular'   THEN S.cedular   END {orderDirection},
-                        CASE WHEN @SortField = 'nombre'    THEN S.nombre    END {orderDirection},
-                        CASE WHEN @SortField = 'Membresia' THEN M.Membresia END {orderDirection}
+                        CASE WHEN @SortField = 'cedula'    AND @Desc = 0 THEN S.cedula    END ASC,
+                        CASE WHEN @SortField = 'cedula'    AND @Desc = 1 THEN S.cedula    END DESC,
+                        CASE WHEN @SortField = 'cedular'   AND @Desc = 0 THEN S.cedular   END ASC,
+                        CASE WHEN @SortField = 'cedular'   AND @Desc = 1 THEN S.cedular   END DESC,
+                        CASE WHEN @SortField = 'nombre'    AND @Desc = 0 THEN S.nombre    END ASC,
+                        CASE WHEN @SortField = 'nombre'    AND @Desc = 1 THEN S.nombre    END DESC,
+                        CASE WHEN @SortField = 'Membresia' AND @Desc = 0 THEN M.Membresia END ASC,
+                        CASE WHEN @SortField = 'Membresia' AND @Desc = 1 THEN M.Membresia END DESC
                     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 response.Result.lista = connection.Query<SociosData>(dataSql, parameters).ToList();
@@ -1474,12 +1473,11 @@ namespace Galileo.DataBaseTier
                     : filtro.sortField;
 
                 parameters.Add("@SortField", sortField, DbType.String);
+                parameters.Add("@Desc", filtro.sortOrder == 0 ? 1 : 0, DbType.Int32);
 
                 AddLazyPaginationParameters(parameters, filtro.pagina, filtro.paginacion);
 
-                var orderDirection = filtro.sortOrder == 0 ? "DESC" : "ASC";
-
-                var dataSql = $@"
+                const string dataSql = @"
                     SELECT cedula, cedulaR, nombre 
                     FROM socios
                     WHERE (
@@ -1489,9 +1487,12 @@ namespace Galileo.DataBaseTier
                          OR nombre  LIKE @Filtro
                       )
                     ORDER BY 
-                        CASE WHEN @SortField = 'cedula'  THEN cedula  END {orderDirection},
-                        CASE WHEN @SortField = 'cedulaR' THEN cedulaR END {orderDirection},
-                        CASE WHEN @SortField = 'nombre'  THEN nombre  END {orderDirection}
+                        CASE WHEN @SortField = 'cedula'  AND @Desc = 0 THEN cedula  END ASC,
+                        CASE WHEN @SortField = 'cedula'  AND @Desc = 1 THEN cedula  END DESC,
+                        CASE WHEN @SortField = 'cedulaR' AND @Desc = 0 THEN cedulaR END ASC,
+                        CASE WHEN @SortField = 'cedulaR' AND @Desc = 1 THEN cedulaR END DESC,
+                        CASE WHEN @SortField = 'nombre'  AND @Desc = 0 THEN nombre  END ASC,
+                        CASE WHEN @SortField = 'nombre'  AND @Desc = 1 THEN nombre  END DESC
                     OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 response.Result.lista = connection.Query<AFCedulaDto>(dataSql, parameters).ToList();
