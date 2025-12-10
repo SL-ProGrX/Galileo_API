@@ -56,37 +56,39 @@ namespace Galileo.DataBaseTier
 
         public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar(string? usuario, bool contabiliza, bool adminView, int codEmpresa)
         {
-            List<UsuariosVinculadosConsultaDto> resp;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+
+                var sql = @"
+                    SELECT U.Usuario, U.Nombre, U.UserID, A.registro_Fecha, A.Registro_Usuario
+                    FROM US_Usuarios U
+                    INNER JOIN PGX_Clientes_USERS A 
+                        ON U.Usuario = A.usuario AND A.cod_Empresa = @codEmpresa
+                    WHERE (U.Usuario LIKE @usuarioPattern OR U.Nombre LIKE @usuarioPattern)
+                    AND U.Contabiliza = @contabiliza
+                ";
+
+                if (!adminView)
+                    sql += " AND ISNULL(key_admin,0) = 0";
+
+                sql += " ORDER BY U.Nombre";
+
+                var parameters = new
                 {
+                    codEmpresa,
+                    usuarioPattern = "%" + (usuario ?? "") + "%",
+                    contabiliza = Convert.ToInt16(contabiliza)
+                };
 
-                    var strSQL = "select U.Usuario, U.Nombre, U.UserID, A.registro_Fecha, A.Registro_Usuario"
-                                   + " from US_Usuarios U inner join PGX_Clientes_USERS A on U.Usuario = A.usuario and A.cod_Empresa = @codEmpresa"
-                                   + " where (U.Usuario like @usuarioPattern or U.Nombre like @usuarioPattern) and U.Contabiliza = @contabiliza";
-                    if (!adminView)
-                    {
-                        strSQL = strSQL + " AND isnull(key_admin,0) = 0";
-                    }
-                    strSQL = strSQL + " order by U.Nombre";
-
-                    var parameters = new
-                    {
-                        codEmpresa = codEmpresa,
-                        usuarioPattern = usuario != null ? $"%{usuario}%" : "%",
-                        contabiliza = Convert.ToInt16(contabiliza)
-                    };
-
-                    resp = connection.Query<UsuariosVinculadosConsultaDto>(strSQL, parameters).ToList();
-                }
+                return connection.Query<UsuariosVinculadosConsultaDto>(sql, parameters).ToList();
             }
-            catch (Exception)
+            catch
             {
-                resp = new List<UsuariosVinculadosConsultaDto>();
+                return new List<UsuariosVinculadosConsultaDto>();
             }
-            return resp;
         }
+
 
         public Limites Limites_Obtener(string usuario, int codEmpresa)
         {
