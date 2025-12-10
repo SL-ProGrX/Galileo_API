@@ -1,7 +1,7 @@
-﻿using Dapper;
+﻿using System.Data;
+using Dapper;
 using Newtonsoft.Json;
 using Galileo.Models;
-using System.Data;
 using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier
@@ -15,9 +15,28 @@ namespace Galileo.DataBaseTier
             _portalDB = new PortalDB(config);
         }
 
-        // --------------------------------------------------------------------
-        // Cargos
-        // --------------------------------------------------------------------
+        #region Helpers privados
+
+        private static void AddFiltroYPaginacionParameters(MComprasFiltros vfiltro, DynamicParameters parameters)
+        {
+            // Filtro
+            var tieneFiltro = !string.IsNullOrWhiteSpace(vfiltro.filtro);
+            parameters.Add("@HasFiltro", tieneFiltro ? 1 : 0, DbType.Int32);
+            parameters.Add("@Filtro",
+                tieneFiltro ? $"%{vfiltro.filtro}%" : (object)DBNull.Value,
+                DbType.String);
+
+            // Paginación
+            var paginar = vfiltro.pagina.HasValue && vfiltro.paginacion.HasValue;
+            parameters.Add("@Paginar", paginar ? 1 : 0, DbType.Int32);
+            parameters.Add("@Offset", paginar ? vfiltro.pagina!.Value : 0, DbType.Int32);
+            parameters.Add("@PageSize", paginar ? vfiltro.paginacion!.Value : int.MaxValue, DbType.Int32);
+        }
+
+        #endregion
+
+        #region Cargos / Tipos Orden
+
         public List<CargoPeriodicoDto> sbCprCboCargosPer(int codEmpresa)
         {
             var result = DbHelper.ExecuteListQuery<CargoPeriodicoDto>(
@@ -28,9 +47,20 @@ namespace Galileo.DataBaseTier
             return result.Result ?? new List<CargoPeriodicoDto>();
         }
 
-        // --------------------------------------------------------------------
-        // Cambia Fecha
-        // --------------------------------------------------------------------
+        public List<TipoOrdenDto> sbCprCboTiposOrden(int codEmpresa)
+        {
+            var result = DbHelper.ExecuteListQuery<TipoOrdenDto>(
+                _portalDB,
+                codEmpresa,
+                "SELECT tipo_orden, descripcion FROM cpr_tipo_orden");
+
+            return result.Result ?? new List<TipoOrdenDto>();
+        }
+
+        #endregion
+
+        #region Cambia Fecha
+
         public bool fxCprCambiaFecha(int codEmpresa, string usuario)
         {
             const string sql = @"
@@ -45,14 +75,14 @@ namespace Galileo.DataBaseTier
                 defaultValue: 0,
                 parameters: new { Usuario = usuario });
 
-            // Si hubo error, devolvemos false
-            var count = result.Result; // int, no referencia, no CS8602 aquí
+            var count = result.Result;
             return result.Code == 0 && count == 1;
         }
 
-        // --------------------------------------------------------------------
-        // Ordenes Despacho
-        // --------------------------------------------------------------------
+        #endregion
+
+        #region Ordenes Despacho
+
         public ErrorDto sbCprOrdenesDespacho(int codEmpresa, string codOrden)
         {
             var resp = DbHelper.CreateOkResponse();
@@ -98,22 +128,10 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        // --------------------------------------------------------------------
-        // Tipos Orden
-        // --------------------------------------------------------------------
-        public List<TipoOrdenDto> sbCprCboTiposOrden(int codEmpresa)
-        {
-            var result = DbHelper.ExecuteListQuery<TipoOrdenDto>(
-                _portalDB,
-                codEmpresa,
-                "SELECT tipo_orden, descripcion FROM cpr_tipo_orden");
+        #endregion
 
-            return result.Result ?? new List<TipoOrdenDto>();
-        }
+        #region Unidades
 
-        // --------------------------------------------------------------------
-        // Unidades
-        // --------------------------------------------------------------------
         public ErrorDto<UnidadesDtoList> UnidadesObtener(int codEmpresa, string? filtros)
         {
             var vfiltro = filtros != null
@@ -126,38 +144,28 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(codEmpresa);
 
-                var where = "WHERE COD_CONTABILIDAD = @CodConta";
                 var parameters = new DynamicParameters();
                 parameters.Add("@CodConta", vfiltro.CodConta, DbType.Int32);
+                AddFiltroYPaginacionParameters(vfiltro, parameters);
 
-                if (!string.IsNullOrWhiteSpace(vfiltro.filtro))
-                {
-                    where += " AND (COD_UNIDAD LIKE @Filtro OR descripcion LIKE @Filtro)";
-                    parameters.Add("@Filtro", $"%{vfiltro.filtro}%", DbType.String);
-                }
+                const string sqlCount = @"
+                    SELECT COUNT(*) 
+                    FROM CntX_Unidades
+                    WHERE COD_CONTABILIDAD = @CodConta
+                      AND (@HasFiltro = 0 OR (COD_UNIDAD LIKE @Filtro OR descripcion LIKE @Filtro));";
 
-                string paginaActual = string.Empty;
-                string paginacionActual = string.Empty;
-
-                if (vfiltro.pagina.HasValue && vfiltro.paginacion.HasValue)
-                {
-                    paginaActual     = $" OFFSET {vfiltro.pagina.Value} ROWS ";
-                    paginacionActual = $" FETCH NEXT {vfiltro.paginacion.Value} ROWS ONLY ";
-                }
-
-                // Evitar CS8602: aseguramos que Result no es null y usamos una variable local
-                var data = response.Result ??= new UnidadesDtoList();
-
-                var sqlCount = $"SELECT COUNT(*) FROM CntX_Unidades {where}";
-                data.Total = connection.QueryFirstOrDefault<int>(sqlCount, parameters);
-
-                var sqlData = $@"
+                const string sqlData = @"
                     SELECT cod_unidad AS unidad, descripcion 
                     FROM CntX_Unidades
-                    {where}
+                    WHERE COD_CONTABILIDAD = @CodConta
+                      AND (@HasFiltro = 0 OR (COD_UNIDAD LIKE @Filtro OR descripcion LIKE @Filtro))
                     ORDER BY COD_UNIDAD DESC
-                    {paginaActual} {paginacionActual}";
+                    OFFSET CASE WHEN @Paginar = 1 THEN @Offset ELSE 0 END ROWS
+                    FETCH NEXT CASE WHEN @Paginar = 1 THEN @PageSize ELSE 2147483647 END ROWS ONLY;";
 
+                var data = response.Result ??= new UnidadesDtoList();
+
+                data.Total = connection.QueryFirstOrDefault<int>(sqlCount, parameters);
                 data.Unidades = connection.Query<UnidadesDto>(sqlData, parameters).ToList();
             }
             catch (Exception ex)
@@ -165,7 +173,6 @@ namespace Galileo.DataBaseTier
                 response.Code = -1;
                 response.Description = ex.Message;
 
-                // De nuevo, asegurar que Result no es null antes de usarlo
                 var data = response.Result ??= new UnidadesDtoList();
                 data.Unidades = new List<UnidadesDto>();
                 data.Total = 0;
@@ -174,9 +181,10 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
-        // --------------------------------------------------------------------
-        // Centro de Costos
-        // --------------------------------------------------------------------
+        #endregion
+
+        #region Centros de Costo
+
         public ErrorDto<CentroCostoDtoList> CentroCostosObtener(int codEmpresa, string? filtros)
         {
             var vfiltro = filtros != null
@@ -189,38 +197,28 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(codEmpresa);
 
-                var where = "WHERE COD_CONTABILIDAD = @CodConta";
                 var parameters = new DynamicParameters();
                 parameters.Add("@CodConta", vfiltro.CodConta, DbType.Int32);
+                AddFiltroYPaginacionParameters(vfiltro, parameters);
 
-                if (!string.IsNullOrWhiteSpace(vfiltro.filtro))
-                {
-                    where += " AND (cod_centro_costo LIKE @Filtro OR descripcion LIKE @Filtro)";
-                    parameters.Add("@Filtro", $"%{vfiltro.filtro}%", DbType.String);
-                }
+                const string sqlCount = @"
+                    SELECT COUNT(*) 
+                    FROM CNTX_CENTRO_COSTOS
+                    WHERE COD_CONTABILIDAD = @CodConta
+                      AND (@HasFiltro = 0 OR (cod_centro_costo LIKE @Filtro OR descripcion LIKE @Filtro));";
 
-                string paginaActual = string.Empty;
-                string paginacionActual = string.Empty;
-
-                if (vfiltro.pagina.HasValue && vfiltro.paginacion.HasValue)
-                {
-                    paginaActual     = $" OFFSET {vfiltro.pagina.Value} ROWS ";
-                    paginacionActual = $" FETCH NEXT {vfiltro.paginacion.Value} ROWS ONLY ";
-                }
-
-                // Evitar CS8602 con variable local
-                var data = response.Result ??= new CentroCostoDtoList();
-
-                var sqlCount = $"SELECT COUNT(*) FROM CNTX_CENTRO_COSTOS {where}";
-                data.Total = connection.QueryFirstOrDefault<int>(sqlCount, parameters);
-
-                var sqlData = $@"
+                const string sqlData = @"
                     SELECT cod_centro_costo AS centrocosto, descripcion 
                     FROM CNTX_CENTRO_COSTOS
-                    {where}
+                    WHERE COD_CONTABILIDAD = @CodConta
+                      AND (@HasFiltro = 0 OR (cod_centro_costo LIKE @Filtro OR descripcion LIKE @Filtro))
                     ORDER BY cod_centro_costo DESC
-                    {paginaActual} {paginacionActual}";
+                    OFFSET CASE WHEN @Paginar = 1 THEN @Offset ELSE 0 END ROWS
+                    FETCH NEXT CASE WHEN @Paginar = 1 THEN @PageSize ELSE 2147483647 END ROWS ONLY;";
 
+                var data = response.Result ??= new CentroCostoDtoList();
+
+                data.Total = connection.QueryFirstOrDefault<int>(sqlCount, parameters);
                 data.CentroCostos = connection
                     .Query<CentroCostoDto>(sqlData, parameters)
                     .ToList();
@@ -238,9 +236,10 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
-        // --------------------------------------------------------------------
-        // Catálogo Compras
-        // --------------------------------------------------------------------
+        #endregion
+
+        #region Catálogo Compras
+
         public ErrorDto<List<CatalogoDto>> CatalogoCompras_Obtener(int codEmpresa, string tipo)
         {
             var response = DbHelper.CreateOkResponse(new List<CatalogoDto>());
@@ -270,9 +269,10 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
-        // --------------------------------------------------------------------
-        // Factura / Órdenes
-        // --------------------------------------------------------------------
+        #endregion
+
+        #region Facturas / Órdenes
+
         public ErrorDto FacturaOrdenes_Actualizar(int codEmpresa, string codFactura, int codProveedor)
         {
             var response = DbHelper.CreateOkResponse();
@@ -286,7 +286,11 @@ namespace Galileo.DataBaseTier
                     FROM CXP_PROVEEDORES 
                     WHERE COD_PROVEEDOR = @CodProveedor;";
 
-                var cedJur = connection.QueryFirstOrDefault<string>(sqlProv, new { CodProveedor = codProveedor }) ?? string.Empty;
+                var cedJur = connection.QueryFirstOrDefault<string>(
+                                 sqlProv,
+                                 new { CodProveedor = codProveedor }
+                             ) ?? string.Empty;
+
                 cedJur = cedJur.Replace("-", "").Replace(" ", "");
 
                 const string sqlUpdate = @"
@@ -311,5 +315,7 @@ namespace Galileo.DataBaseTier
 
             return response;
         }
+
+        #endregion
     }
 }
