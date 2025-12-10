@@ -257,8 +257,8 @@ namespace Galileo.DataBaseTier
             {
                 using (var connection = new SqlConnection(_config.GetConnectionString(_connStrg)))
                 {
-                    var query = $"SELECT MENU_NODO AS 'key', [FRAME_WEB] AS FRAME FROM [dbo].[US_MANUALES]  WHERE MENU_NODO = {key}";
-                    response.Result = connection.Query<UsMenuManual>(query).FirstOrDefault();
+                    var query = "SELECT MENU_NODO AS 'key', [FRAME_WEB] AS FRAME FROM [dbo].[US_MANUALES] WHERE MENU_NODO = @key";
+                    response.Result = connection.Query<UsMenuManual>(query, new { key = key }).FirstOrDefault();
                 }
             }
             catch (Exception ex)
