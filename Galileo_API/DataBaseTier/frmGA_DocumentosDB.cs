@@ -64,8 +64,13 @@ namespace Galileo.DataBaseTier
 
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-                    string queryExist = $@"SELECT COUNT(*) FROM GA_Files WHERE Llave_01 = '{data.llave_01}' AND Llave_02 = '{data.llave_02}' AND Llave_03 = '{data.llave_03}'";
-                    int count = connection.QuerySingle<int>(queryExist);
+                    string queryExist = @"SELECT COUNT(*) FROM GA_Files WHERE Llave_01 = @Llave_01 AND Llave_02 = @Llave_02 AND Llave_03 = @Llave_03";
+                    int count = connection.QuerySingle<int>(queryExist, new
+                    {
+                        Llave_01 = data.llave_01,
+                        Llave_02 = data.llave_02,
+                        Llave_03 = data.llave_03
+                    });
                     if (count > 0)
                     {
                         resp.Code = -1;
