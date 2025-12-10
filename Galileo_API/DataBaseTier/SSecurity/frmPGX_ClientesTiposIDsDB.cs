@@ -46,13 +46,13 @@ namespace Galileo.DataBaseTier
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
                     //Pregunto si existe
-                    var query = $"SELECT COUNT(*) FROM PGX_TIPOS_ID WHERE TIPO_ID = '{request.tipo}'";
-                    var existe = connection.Query<int>(query).FirstOrDefault();
+                    var query = "SELECT COUNT(*) FROM PGX_TIPOS_ID WHERE TIPO_ID = @TipoId";
+                    var existe = connection.Query<int>(query, new { TipoId = request.tipo }).FirstOrDefault();
                     if (existe > 0)
                     {
                         //Actualizo activa a 1
-                        var queryUpdate = $"UPDATE PGX_TIPOS_ID SET ACTIVA = 1 WHERE TIPO_ID = '{request.tipo}'";
-                        connection.Query<int>(queryUpdate);
+                        var queryUpdate = "UPDATE PGX_TIPOS_ID SET ACTIVA = 1 WHERE TIPO_ID = @TipoId";
+                        connection.Query<int>(queryUpdate, new { TipoId = request.tipo });
                         resp.Description = "Ok";
                         return resp;
                     }
