@@ -29,54 +29,53 @@ namespace Galileo.DataBaseTier
 
         public ClientesDataLista Clientes_Obtener(int? pagina, int? paginacion, string? filtro)
         {
+            var info = new ClientesDataLista
+            {
+                Total = 0
+            };
 
-            ClientesDataLista info = new ClientesDataLista();
-            info.Total = 0;
             try
             {
-                var query = "";
-                string paginaActual = " ", paginacionActual = " ";
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var parameters = new DynamicParameters();
+
+                // WHERE
+                var whereClause = string.Empty;
+                if (!string.IsNullOrWhiteSpace(filtro))
                 {
-                     var parameters = new DynamicParameters();
-                    //Busco Total
-                    var countQuery = "SELECT COUNT(*) FROM PGX_CLIENTES";
-                    if (!string.IsNullOrEmpty(filtro))
-                    {
-                        countQuery += " WHERE COD_EMPRESA LIKE @Filtro OR NOMBRE_LARGO LIKE @Filtro OR NOMBRE_CORTO LIKE @Filtro ";
-                    }
-                    info.Total = connection.Query<int>(countQuery, parameters).FirstOrDefault();
+                    whereClause = @" WHERE COD_EMPRESA     LIKE @Filtro
+                                 OR    NOMBRE_LARGO   LIKE @Filtro
+                                 OR    NOMBRE_CORTO   LIKE @Filtro";
 
-                    var whereClause = "";
-                   
-                    if (!string.IsNullOrEmpty(filtro))
-                    {
-                        whereClause = " WHERE COD_EMPRESA LIKE @Filtro OR NOMBRE_LARGO LIKE @Filtro OR NOMBRE_CORTO LIKE @Filtro ";
-                        parameters.Add("Filtro", "%" + filtro + "%");
-                    }
-
-                    if (pagina != null)
-                    {
-                        paginaActual = " OFFSET " + pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + paginacion + " ROWS ONLY ";
-                    }
-
-                    query = $@"SELECT * FROM PGX_CLIENTES
-                                        {whereClause}
-                                        ORDER BY COD_EMPRESA
-                                        {paginaActual}
-                                        {paginacionActual}";
-                    info.Lista = connection.Query<ClienteDto>(query, parameters).ToList();
-
-
+                    parameters.Add("@Filtro", "%" + filtro + "%");
                 }
+
+                // COUNT
+                var countQuery = "SELECT COUNT(*) FROM PGX_CLIENTES" + whereClause;
+                info.Total = connection.QuerySingle<int>(countQuery, parameters);
+
+                // SELECT principal
+                var query = "SELECT * FROM PGX_CLIENTES" + whereClause + " ORDER BY COD_EMPRESA";
+
+                // Paginación (también parametrizada)
+                if (pagina.HasValue && paginacion.HasValue)
+                {
+                    query += " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY";
+                    parameters.Add("@Offset", pagina.Value);
+                    parameters.Add("@Fetch", paginacion.Value);
+                }
+
+                info.Lista = connection.Query<ClienteDto>(query, parameters).ToList();
+
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+              _ = ex.Message;
             }
+
             return info;
         }
+
 
         public ClienteDto Cliente_Obtener(int CodEmpresa)
         {
