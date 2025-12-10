@@ -26,8 +26,8 @@ namespace Galileo.DataBaseTier
                 {
 
                     var strSQL = "select Usuario,Nombre,UserID"
-                               + " from US_Usuarios"
-                               + " where Estado = 'A' and (Usuario like '%" + usuario + "%' or Nombre like '%" + usuario + "%')";
+                                + " from US_Usuarios"
+                                + " where Estado = 'A' and (Usuario like @usuarioPattern or Nombre like @usuarioPattern)";
                     if (!adminView)
                     {
                         strSQL = strSQL + " AND isnull(key_admin,0) = 0";
@@ -35,11 +35,16 @@ namespace Galileo.DataBaseTier
                     else if (!dirGlobal)
                     {
                         //Solo Usuarios que han formado parte de este cliente anteriormente, si por error fue desvinculado
-                        strSQL = strSQL + " AND usuario in(select usuario from PGX_CLIENTES_USERS_H"
-                                + " Where cod_Empresa = " + codEmpresa + ")";
+                        strSQL = strSQL + " AND usuario in (select usuario from PGX_CLIENTES_USERS_H Where cod_Empresa = @codEmpresa)";
                     }
 
-                    resp = connection.Query<UsuariosConsultaDto>(strSQL).ToList();
+                    var parameters = new
+                    {
+                        usuarioPattern = usuario != null ? $"%{usuario}%" : "%",
+                        codEmpresa = codEmpresa
+                    };
+
+                    resp = connection.Query<UsuariosConsultaDto>(strSQL, parameters).ToList();
                 }
             }
             catch (Exception)
