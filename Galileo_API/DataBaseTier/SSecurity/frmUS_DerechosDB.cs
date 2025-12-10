@@ -80,26 +80,24 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                { 
-                    string sqlValidar = $@"SELECT ESTADO FROM US_ROL_PERMISOS WHERE COD_OPCION = '{info.COD_OPCION}' AND COD_ROL = '{info.COD_ROL}'";
-                    var existe = connection.Query<string>(sqlValidar).FirstOrDefault();
 
-                    if (existe != null)
+                string sqlValidar = $@"SELECT ESTADO FROM US_ROL_PERMISOS WHERE COD_OPCION = '{info.COD_OPCION}' AND COD_ROL = '{info.COD_ROL}'";
+                var existe = connection.Query<string>(sqlValidar).FirstOrDefault();
+
+                if (existe != null)
+                {
+                    if (existe != info.ESTADO)
                     {
-                        if (existe != info.ESTADO)
-                        {
-                            return 2;
-                        }
-
-                        EliminarUsDerechosNewDTO(info.COD_OPCION ?? 0, info.ESTADO, info.COD_ROL);
+                        return 2;
                     }
-                    else
-                    {
-                        string sql = $@"INSERT US_ROL_PERMISOS(COD_OPCION, COD_ROL, ESTADO, REGISTRO_FECHA, REGISTRO_USUARIO) 
+
+                    EliminarUsDerechosNewDTO(info.COD_OPCION ?? 0, info.ESTADO, info.COD_ROL);
+                }
+                else
+                {
+                    string sql = $@"INSERT US_ROL_PERMISOS(COD_OPCION, COD_ROL, ESTADO, REGISTRO_FECHA, REGISTRO_USUARIO) 
                                         VALUES('{info.COD_OPCION}', '{info.COD_ROL}', '{info.ESTADO}', '{info.REGISTRO_FECHA}', '{info.REGISTRO_USUARIO}')";
-                        connection.Execute(sql);
-                    }
-
+                    connection.Execute(sql);
                 }
             }
             catch (Exception)
@@ -120,10 +118,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    string sql = @"DELETE US_ROL_PERMISOS WHERE COD_OPCION = @COD_OPCION AND ESTADO = @ESTADO AND COD_ROL = @COD_ROL";
-                    Result = connection.Execute(sql, new { COD_OPCION, ESTADO, COD_ROL });
-                }
+                string sql = @"DELETE US_ROL_PERMISOS WHERE COD_OPCION = @COD_OPCION AND ESTADO = @ESTADO AND COD_ROL = @COD_ROL";
+                Result = connection.Execute(sql, new { COD_OPCION, ESTADO, COD_ROL });
             }
             catch (Exception ex)
             {
