@@ -1,10 +1,8 @@
 ﻿using System.Data;
 using Dapper;
-using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.AF;
-using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 
@@ -13,7 +11,9 @@ namespace Galileo.DataBaseTier
     public class DataDB
     {
         private readonly PortalDB _portalDB;
-        private const string _filtroParam = "@Filtro";
+        private const string FiltroParam = "@Filtro";
+        private const string _familiaParam = "@Familia";
+        private const string _proveedorParam = "@Proveedor";
 
         public DataDB(IConfiguration config)
         {
@@ -22,19 +22,29 @@ namespace Galileo.DataBaseTier
 
         #region Helpers comunes
 
-        private static string BuildPaginationClause(
+        private static void AddPaginationParameters(
             DynamicParameters parameters,
             int? pagina,
             int? paginacion)
         {
-            if (pagina.HasValue && paginacion.HasValue)
-            {
-                parameters.Add("@Offset", pagina.Value, DbType.Int32);
-                parameters.Add("@PageSize", paginacion.Value, DbType.Int32);
-                return " OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
-            }
+            var offset = pagina ?? 0;
+            var pageSize = paginacion ?? int.MaxValue;
 
-            return string.Empty;
+            parameters.Add("@Offset", offset, DbType.Int32);
+            parameters.Add("@PageSize", pageSize, DbType.Int32);
+        }
+
+        private static void AddLazyPaginationParameters(
+            DynamicParameters parameters,
+            int? pagina,
+            int? paginacion)
+        {
+            // For lazy loading, default to page 1 and page size 50 if not provided
+            var offset = pagina.HasValue ? pagina.Value : 1;
+            var pageSize = paginacion.HasValue ? paginacion.Value : 50;
+
+            parameters.Add("@Offset", offset, DbType.Int32);
+            parameters.Add("@PageSize", pageSize, DbType.Int32);
         }
 
         #endregion
@@ -52,44 +62,55 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                // WHERE base sin texto del usuario
-                var baseWhere = "(ESTADO = 'A' OR ESTADO = 'T')";
-
-                if (jFiltros.autoGestion == true && jFiltros.ventas == true)
-                {
-                    baseWhere += " AND (WEB_AUTO_GESTION = 1 OR WEB_FERIAS = 1)";
-                }
-                else if (jFiltros.autoGestion == true)
-                {
-                    baseWhere += " AND WEB_AUTO_GESTION = 1";
-                }
-                else if (jFiltros.ventas == true)
-                {
-                    baseWhere += " AND WEB_FERIAS = 1";
-                }
-
-                // Total
-                var countSql = $"SELECT COUNT(*) FROM CXP_PROVEEDORES WHERE {baseWhere}";
-                response.Result.Total = connection.QueryFirstOrDefault<int>(countSql);
-
-                // Data
-                var where = baseWhere;
                 var parameters = new DynamicParameters();
 
-                if (!string.IsNullOrWhiteSpace(jFiltros.filtro))
+                parameters.Add("@AutoGestion", (jFiltros.autoGestion ?? false) ? 1 : 0, DbType.Int32);
+                parameters.Add("@Ventas", (jFiltros.ventas ?? false) ? 1 : 0, DbType.Int32);
+
+                if (string.IsNullOrWhiteSpace(jFiltros.filtro))
                 {
-                    where += " AND (COD_PROVEEDOR LIKE @Filtro OR DESCRIPCION LIKE @Filtro)";
-                    parameters.Add(_filtroParam, $"%{jFiltros.filtro}%", DbType.String);
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                }
+                else
+                {
+                    parameters.Add(FiltroParam, $"%{jFiltros.filtro}%", DbType.String);
                 }
 
-                var pagination = BuildPaginationClause(parameters, jFiltros.pagina, jFiltros.paginacion);
+                AddPaginationParameters(parameters, jFiltros.pagina, jFiltros.paginacion);
 
-                var dataSql = $@"
+                const string countSql = @"
+                    SELECT COUNT(*)
+                    FROM CXP_PROVEEDORES
+                    WHERE (ESTADO = 'A' OR ESTADO = 'T')
+                      AND (
+                            (@AutoGestion = 0 AND @Ventas = 0)
+                         OR (@AutoGestion = 1 AND WEB_AUTO_GESTION = 1)
+                         OR (@Ventas      = 1 AND WEB_FERIAS       = 1)
+                      )
+                      AND (
+                            @Filtro IS NULL
+                         OR COD_PROVEEDOR LIKE @Filtro
+                         OR DESCRIPCION   LIKE @Filtro
+                      );";
+
+                response.Result.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
+
+                const string dataSql = @"
                     SELECT COD_PROVEEDOR, DESCRIPCION, CEDJUR 
                     FROM CXP_PROVEEDORES
-                    WHERE {where}
+                    WHERE (ESTADO = 'A' OR ESTADO = 'T')
+                      AND (
+                            (@AutoGestion = 0 AND @Ventas = 0)
+                         OR (@AutoGestion = 1 AND WEB_AUTO_GESTION = 1)
+                         OR (@Ventas      = 1 AND WEB_FERIAS       = 1)
+                      )
+                      AND (
+                            @Filtro IS NULL
+                         OR COD_PROVEEDOR LIKE @Filtro
+                         OR DESCRIPCION   LIKE @Filtro
+                      )
                     ORDER BY COD_PROVEEDOR
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 response.Result.Proveedores = connection.Query<ProveedorData>(dataSql, parameters).ToList();
             }
@@ -116,26 +137,42 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                const string countSql = "SELECT COUNT(COD_CARGO) FROM CXP_CARGOS WHERE ACTIVO = 1";
-                info.Total = connection.QueryFirstOrDefault<int>(countSql);
-
-                var where = "ACTIVO = 1";
                 var parameters = new DynamicParameters();
 
-                if (!string.IsNullOrWhiteSpace(filtro))
+                if (string.IsNullOrWhiteSpace(filtro))
                 {
-                    where += " AND (COD_CARGO LIKE @Filtro OR DESCRIPCION LIKE @Filtro)";
-                    parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                }
+                else
+                {
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
                 }
 
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
+                AddPaginationParameters(parameters, pagina, paginacion);
 
-                var dataSql = $@"
+                const string countSql = @"
+                    SELECT COUNT(COD_CARGO) 
+                    FROM CXP_CARGOS 
+                    WHERE ACTIVO = 1
+                      AND (
+                            @Filtro IS NULL
+                         OR COD_CARGO   LIKE @Filtro
+                         OR DESCRIPCION LIKE @Filtro
+                      );";
+
+                info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
+
+                const string dataSql = @"
                     SELECT COD_CARGO, DESCRIPCION, 0 AS MONTO 
                     FROM CXP_CARGOS 
-                    WHERE {where}
+                    WHERE ACTIVO = 1
+                      AND (
+                            @Filtro IS NULL
+                         OR COD_CARGO   LIKE @Filtro
+                         OR DESCRIPCION LIKE @Filtro
+                      )
                     ORDER BY COD_CARGO
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.Cargos = connection.Query<CargoData>(dataSql, parameters).ToList();
             }
@@ -160,26 +197,42 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                const string countSql = "SELECT COUNT(cod_bodega) FROM pv_bodegas WHERE permite_salidas = 1";
-                info.Total = connection.QueryFirstOrDefault<int>(countSql);
-
-                var where = "permite_salidas = 1";
                 var parameters = new DynamicParameters();
 
-                if (!string.IsNullOrWhiteSpace(filtro))
+                if (string.IsNullOrWhiteSpace(filtro))
                 {
-                    where += " AND (cod_bodega LIKE @Filtro OR descripcion LIKE @Filtro)";
-                    parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                }
+                else
+                {
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
                 }
 
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
+                AddPaginationParameters(parameters, pagina, paginacion);
 
-                var dataSql = $@"
+                const string countSql = @"
+                    SELECT COUNT(cod_bodega) 
+                    FROM pv_bodegas 
+                    WHERE permite_salidas = 1
+                      AND (
+                            @Filtro IS NULL
+                         OR cod_bodega  LIKE @Filtro
+                         OR descripcion LIKE @Filtro
+                      );";
+
+                info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
+
+                const string dataSql = @"
                     SELECT cod_bodega, descripcion 
                     FROM pv_bodegas 
-                    WHERE {where}
+                    WHERE permite_salidas = 1
+                      AND (
+                            @Filtro IS NULL
+                         OR cod_bodega  LIKE @Filtro
+                         OR descripcion LIKE @Filtro
+                      )
                     ORDER BY cod_bodega
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.bodegas = connection.Query<BodegaData>(dataSql, parameters).ToList();
             }
@@ -207,23 +260,76 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                var joinProdUen = string.Empty;
                 var parameters = new DynamicParameters();
-                var where = BuildArticulosWhereClause(filtro, ref joinProdUen, parameters);
 
-                var countSql = $@"
+                parameters.Add("@Catalogo", filtro.catalogo, DbType.Int32);
+
+                if (string.IsNullOrWhiteSpace(filtro.cod_unidad) || filtro.cod_unidad == "T")
+                {
+                    parameters.Add("@CodUnidad", dbType: DbType.String, value: null);
+                }
+                else
+                {
+                    parameters.Add("@CodUnidad", filtro.cod_unidad, DbType.String);
+                }
+
+                if (string.IsNullOrWhiteSpace(filtro.filtro))
+                {
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                }
+                else
+                {
+                    parameters.Add(FiltroParam, $"%{filtro.filtro}%", DbType.String);
+                }
+
+                if (filtro.familia > 0)
+                {
+                    parameters.Add(_familiaParam, filtro.familia, DbType.Int32);
+                }
+                else
+                {
+                    parameters.Add(_familiaParam, dbType: DbType.Int32, value: null);
+                }
+
+                if (string.IsNullOrWhiteSpace(filtro.sublinea))
+                {
+                    parameters.Add("@Sublinea", dbType: DbType.String, value: null);
+                }
+                else
+                {
+                    parameters.Add("@Sublinea", filtro.sublinea, DbType.String);
+                }
+
+                AddPaginationParameters(parameters, filtro.pagina, filtro.paginacion);
+
+                const string countSql = @"
                     SELECT COUNT(P.COD_PRODUCTO) 
                     FROM pv_productos P
                     LEFT JOIN PV_PROD_CLASIFICA_SUB Cs 
                         ON Cs.COD_PRODCLAS = P.COD_PRODCLAS 
                        AND Cs.COD_LINEA_SUB = P.COD_LINEA_SUB
-                    {joinProdUen}
-                    {where}";
+                    LEFT JOIN CPR_PRODUCTOS_UENS PU 
+                        ON PU.COD_PRODUCTO = P.COD_PRODUCTO
+                    WHERE (@Catalogo = 0 OR P.ESTADO = 'A')
+                      AND (@CodUnidad IS NULL OR PU.COD_UNIDAD = @CodUnidad)
+                      AND (
+                            @Filtro IS NULL
+                         OR P.DESCRIPCION LIKE @Filtro
+                         OR CONCAT(
+                                FORMAT(Cs.COD_PRODCLAS, ' 0'),
+                                FORMAT(ISNULL(Cs.NIVEL,' 00'), ' 0'),
+                                FORMAT(ISNULL(Cs.COD_LINEA_SUB_MADRE,1), ' 0'),
+                                FORMAT(ISNULL(Cs.COD_LINEA_SUB,1), ' '),
+                                P.COD_PRODUCTO
+                            ) LIKE @Filtro
+                         OR P.COD_BARRAS LIKE @Filtro
+                      )
+                      AND (@Familia  IS NULL OR P.COD_PRODCLAS = @Familia)
+                      AND (@Sublinea IS NULL OR P.COD_LINEA_SUB = @Sublinea);";
+
                 response.Result.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
-                var pagination = BuildPaginationClause(parameters, filtro.pagina, filtro.paginacion);
-
-                var dataSql = $@"
+                const string dataSql = @"
                     SELECT 
                         CONCAT(
                             FORMAT(Cs.COD_PRODCLAS, ' 0'), 
@@ -239,10 +345,26 @@ namespace Galileo.DataBaseTier
                     LEFT JOIN PV_PROD_CLASIFICA_SUB Cs 
                         ON Cs.COD_PRODCLAS = P.COD_PRODCLAS 
                        AND Cs.COD_LINEA_SUB = P.COD_LINEA_SUB
-                    {joinProdUen}
-                    {where}
+                    LEFT JOIN CPR_PRODUCTOS_UENS PU 
+                        ON PU.COD_PRODUCTO = P.COD_PRODUCTO
+                    WHERE (@Catalogo = 0 OR P.ESTADO = 'A')
+                      AND (@CodUnidad IS NULL OR PU.COD_UNIDAD = @CodUnidad)
+                      AND (
+                            @Filtro IS NULL
+                         OR P.DESCRIPCION LIKE @Filtro
+                         OR CONCAT(
+                                FORMAT(Cs.COD_PRODCLAS, ' 0'),
+                                FORMAT(ISNULL(Cs.NIVEL,' 00'), ' 0'),
+                                FORMAT(ISNULL(Cs.COD_LINEA_SUB_MADRE,1), ' 0'),
+                                FORMAT(ISNULL(Cs.COD_LINEA_SUB,1), ' '),
+                                P.COD_PRODUCTO
+                            ) LIKE @Filtro
+                         OR P.COD_BARRAS LIKE @Filtro
+                      )
+                      AND (@Familia  IS NULL OR P.COD_PRODCLAS = @Familia)
+                      AND (@Sublinea IS NULL OR P.COD_LINEA_SUB = @Sublinea)
                     ORDER BY P.COD_PRODUCTO
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 response.Result.Articulos = connection.Query<ArticuloData>(dataSql, parameters).ToList();
             }
@@ -255,59 +377,6 @@ namespace Galileo.DataBaseTier
             }
 
             return response;
-        }
-
-        private static string BuildArticulosWhereClause(
-            ArticuloDataFiltros filtro,
-            ref string joinProdUen,
-            DynamicParameters parameters)
-        {
-            var clauses = new List<string>();
-
-            if (filtro.catalogo != 0)
-            {
-                clauses.Add("P.ESTADO = 'A'");
-            }
-
-            if (!string.IsNullOrEmpty(filtro.cod_unidad) && filtro.cod_unidad != "T")
-            {
-                joinProdUen = " LEFT JOIN CPR_PRODUCTOS_UENS PU ON PU.COD_PRODUCTO = P.COD_PRODUCTO ";
-                clauses.Add("PU.COD_UNIDAD = @CodUnidad");
-                parameters.Add("@CodUnidad", filtro.cod_unidad, DbType.String);
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtro.filtro))
-            {
-                clauses.Add(@"
-                (
-                    P.DESCRIPCION LIKE @Filtro
-                    OR CONCAT(
-                        FORMAT(Cs.COD_PRODCLAS, ' 0'),
-                        FORMAT(ISNULL(Cs.NIVEL,' 00'), ' 0'),
-                        FORMAT(ISNULL(Cs.COD_LINEA_SUB_MADRE,1), ' 0'),
-                        FORMAT(ISNULL(Cs.COD_LINEA_SUB,1), ' '),
-                        P.COD_PRODUCTO
-                    ) LIKE @Filtro
-                    OR P.COD_BARRAS LIKE @Filtro
-                )");
-                parameters.Add(_filtroParam, $"%{filtro.filtro}%", DbType.String);
-            }
-
-            if (filtro.familia > 0)
-            {
-                clauses.Add("P.COD_PRODCLAS = @Familia");
-                parameters.Add("@Familia", filtro.familia, DbType.Int32);
-            }
-
-            if (!string.IsNullOrEmpty(filtro.sublinea))
-            {
-                clauses.Add("P.COD_LINEA_SUB = @Sublinea");
-                parameters.Add("@Sublinea", filtro.sublinea, DbType.String);
-            }
-
-            return clauses.Count > 0
-                ? " WHERE " + string.Join(" AND ", clauses)
-                : string.Empty;
         }
 
         #endregion
@@ -328,15 +397,36 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                const string countSql = "SELECT COUNT(cod_orden) FROM cpr_ordenes";
+                const string countSql = "SELECT COUNT(cod_orden) FROM cpr_ordenes;";
                 info.Total = connection.QueryFirstOrDefault<int>(countSql);
 
                 var parameters = new DynamicParameters();
-                var where = BuildOrdenesFiltroWhereClause(filtro, proveedor, familia, null, parameters);
 
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
+                if (string.IsNullOrWhiteSpace(filtro))
+                {
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                }
+                else
+                {
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
+                }
 
-                var dataSql = $@"
+                proveedor = proveedor?.Replace("null", string.Empty).Trim();
+                familia = familia?.Replace("null", string.Empty).Trim();
+
+                if (string.IsNullOrWhiteSpace(proveedor))
+                    parameters.Add(_proveedorParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(_proveedorParam, $"%{proveedor}%", DbType.String);
+
+                if (string.IsNullOrWhiteSpace(familia))
+                    parameters.Add(_familiaParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(_familiaParam, $"%{familia}%", DbType.String);
+
+                AddPaginationParameters(parameters, pagina, paginacion);
+
+                const string dataSql = @"
                     SELECT * FROM (
                         SELECT 
                             RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS cod_solicitud, 
@@ -361,9 +451,25 @@ namespace Galileo.DataBaseTier
                         GROUP BY 
                             sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION
                     ) T
-                    {where}
+                    WHERE (
+                            @Filtro IS NULL
+                         OR cod_orden    LIKE @Filtro
+                         OR genera_user  LIKE @Filtro
+                         OR cod_solicitud LIKE @Filtro
+                         OR nota         LIKE @Filtro
+                         OR familia      LIKE @Filtro
+                         OR proveedor    LIKE @Filtro
+                    )
+                      AND (
+                            @Proveedor IS NULL
+                         OR proveedor LIKE @Proveedor
+                      )
+                      AND (
+                            @Familia IS NULL
+                         OR familia LIKE @Familia
+                      )
                     ORDER BY cod_orden
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.Ordenes = connection.Query<OrdenData>(dataSql, parameters).ToList();
             }
@@ -397,14 +503,38 @@ namespace Galileo.DataBaseTier
                     LEFT JOIN CPR_SOLICITUD_PROV sp 
                         ON sp.ADJUDICA_ORDEN = O.COD_ORDEN 
                        AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-                    WHERE O.Estado IN ('A') AND O.Proceso IN ('A','X')";
+                    WHERE O.Estado IN ('A') AND O.Proceso IN ('A','X');";
                 info.Total = connection.QueryFirstOrDefault<int>(totalSql);
 
                 var parameters = new DynamicParameters();
-                var where = BuildOrdenesFiltroWhereClause(filtro, proveedor, familia, subfamilia, parameters);
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
 
-                var dataSql = $@"
+                if (string.IsNullOrWhiteSpace(filtro))
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
+
+                proveedor = proveedor?.Replace("null", string.Empty).Trim();
+                familia = familia?.Replace("null", string.Empty).Trim();
+                subfamilia = subfamilia?.Replace("null", string.Empty).Trim();
+
+                if (string.IsNullOrWhiteSpace(proveedor))
+                    parameters.Add(_proveedorParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(_proveedorParam, $"%{proveedor}%", DbType.String);
+
+                if (string.IsNullOrWhiteSpace(familia))
+                    parameters.Add(_familiaParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(_familiaParam, $"%{familia}%", DbType.String);
+
+                if (string.IsNullOrWhiteSpace(subfamilia) || subfamilia == "5")
+                    parameters.Add("@Subfamilia", dbType: DbType.String, value: null);
+                else
+                    parameters.Add("@Subfamilia", $"%{subfamilia}%", DbType.String);
+
+                AddPaginationParameters(parameters, pagina, paginacion);
+
+                const string dataSql = @"
                     SELECT * FROM (  
                         SELECT 
                             RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS cod_solicitud, 
@@ -439,9 +569,29 @@ namespace Galileo.DataBaseTier
                         GROUP BY 
                             sp.CPR_ID, O.cod_orden, O.genera_user, O.nota, O.COD_PROVEEDOR, cp.DESCRIPCION
                     ) T 
-                    {where}
+                    WHERE (
+                            @Filtro IS NULL
+                         OR cod_orden    LIKE @Filtro
+                         OR genera_user  LIKE @Filtro
+                         OR cod_solicitud LIKE @Filtro
+                         OR nota         LIKE @Filtro
+                         OR familia      LIKE @Filtro
+                         OR proveedor    LIKE @Filtro
+                    )
+                      AND (
+                            @Proveedor IS NULL
+                         OR proveedor LIKE @Proveedor
+                      )
+                      AND (
+                            @Familia IS NULL
+                         OR familia LIKE @Familia
+                      )
+                      AND (
+                            @Subfamilia IS NULL
+                         OR subfamilia LIKE @Subfamilia
+                      )
                     ORDER BY cod_orden
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.Ordenes = connection.Query<OrdenData>(dataSql, parameters).ToList();
             }
@@ -452,56 +602,6 @@ namespace Galileo.DataBaseTier
             }
 
             return info;
-        }
-
-        private static string BuildOrdenesFiltroWhereClause(
-            string? filtro,
-            string? proveedor,
-            string? familia,
-            string? subfamilia,
-            DynamicParameters parameters)
-        {
-            var clauses = new List<string>();
-
-            if (!string.IsNullOrWhiteSpace(filtro))
-            {
-                clauses.Add(@"
-                (
-                    cod_orden   LIKE @Filtro
-                    OR genera_user LIKE @Filtro
-                    OR cod_solicitud LIKE @Filtro
-                    OR nota LIKE @Filtro
-                    OR familia LIKE @Filtro
-                    OR proveedor LIKE @Filtro
-                )");
-                parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
-            }
-
-            proveedor = proveedor?.Replace("null", string.Empty).Trim();
-            familia = familia?.Replace("null", string.Empty).Trim();
-            subfamilia = subfamilia?.Replace("null", string.Empty).Trim();
-
-            if (!string.IsNullOrWhiteSpace(proveedor))
-            {
-                clauses.Add("proveedor LIKE @Proveedor");
-                parameters.Add("@Proveedor", $"%{proveedor}%", DbType.String);
-            }
-
-            if (!string.IsNullOrWhiteSpace(familia))
-            {
-                clauses.Add("familia LIKE @Familia");
-                parameters.Add("@Familia", $"%{familia}%", DbType.String);
-            }
-
-            if (!string.IsNullOrWhiteSpace(subfamilia) && subfamilia != "5")
-            {
-                clauses.Add("subfamilia LIKE @Subfamilia");
-                parameters.Add("@Subfamilia", $"%{subfamilia}%", DbType.String);
-            }
-
-            return clauses.Count > 0
-                ? "WHERE " + string.Join(" AND ", clauses)
-                : string.Empty;
         }
 
         #endregion
@@ -521,34 +621,43 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                var baseWhere = "E.cod_proveedor = @CodProveedor";
                 var parameters = new DynamicParameters();
                 parameters.Add("@CodProveedor", CodProveedor, DbType.Int32);
 
-                var countSql = $@"
+                if (string.IsNullOrWhiteSpace(filtro))
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
+
+                AddPaginationParameters(parameters, pagina, paginacion);
+
+                const string countSql = @"
                     SELECT COUNT(cod_factura)  
                     FROM cpr_compras E 
                     INNER JOIN cxp_Proveedores P ON E.cod_proveedor = P.cod_proveedor 
-                    WHERE {baseWhere}";
+                    WHERE E.cod_proveedor = @CodProveedor
+                      AND (
+                            @Filtro IS NULL
+                         OR E.cod_factura LIKE @Filtro
+                         OR P.descripcion LIKE @Filtro
+                      );";
+
                 info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    baseWhere += " AND (E.cod_factura LIKE @Filtro OR P.descripcion LIKE @Filtro)";
-                    parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
-                }
-
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
-
-                var dataSql = $@"
+                const string dataSql = @"
                     SELECT E.cod_factura,
                            P.descripcion AS Proveedor,
                            E.total
                     FROM cpr_compras E 
                     INNER JOIN cxp_Proveedores P ON E.cod_proveedor = P.cod_proveedor
-                    WHERE {baseWhere}
+                    WHERE E.cod_proveedor = @CodProveedor
+                      AND (
+                            @Filtro IS NULL
+                         OR E.cod_factura LIKE @Filtro
+                         OR P.descripcion LIKE @Filtro
+                      )
                     ORDER BY E.cod_factura
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.Facturas = connection.Query<FacturasData>(dataSql, parameters).ToList();
             }
@@ -573,30 +682,42 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                const string countSql = "SELECT COUNT(*) FROM usuarios";
-                info.Total = connection.QueryFirstOrDefault<int>(countSql);
-
-                string where;
                 var parameters = new DynamicParameters();
 
-                if (!string.IsNullOrWhiteSpace(filtro))
+                if (string.IsNullOrWhiteSpace(filtro))
                 {
-                    where = "(nombre LIKE @Filtro OR descripcion LIKE @Filtro) AND ESTADO = 'A'";
-                    parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
                 }
                 else
                 {
-                    where = "ESTADO = 'A'";
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
                 }
 
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
+                AddPaginationParameters(parameters, pagina, paginacion);
 
-                var dataSql = $@"
+                const string countSql = @"
+                    SELECT COUNT(*) 
+                    FROM usuarios
+                    WHERE ESTADO = 'A'
+                      AND (
+                            @Filtro IS NULL
+                         OR nombre      LIKE @Filtro
+                         OR descripcion LIKE @Filtro
+                      );";
+
+                info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
+
+                const string dataSql = @"
                     SELECT nombre, descripcion 
                     FROM usuarios
-                    WHERE {where}
+                    WHERE ESTADO = 'A'
+                      AND (
+                            @Filtro IS NULL
+                         OR nombre      LIKE @Filtro
+                         OR descripcion LIKE @Filtro
+                      )
                     ORDER BY nombre
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.Usuarios = connection.Query<UsuarioData>(dataSql, parameters).ToList();
             }
@@ -624,52 +745,63 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
+                var parameters = new DynamicParameters();
+
+                if (string.IsNullOrWhiteSpace(filtrosModel.filtro))
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(FiltroParam, $"%{filtrosModel.filtro}%", DbType.String);
+
+                if (filtrosModel.cod_proveedor > 0)
+                    parameters.Add("@CodProveedor", filtrosModel.cod_proveedor, DbType.Int32);
+                else
+                    parameters.Add("@CodProveedor", dbType: DbType.Int32, value: null);
+
+                AddPaginationParameters(parameters, filtrosModel.pagina, filtrosModel.paginacion);
+
                 const string countSql = @"
                     SELECT COUNT(E.cod_compra) 
                     FROM cpr_Compras E 
-                    INNER JOIN cxp_proveedores P ON E.cod_proveedor = P.cod_proveedor";
-                info.Total = connection.QueryFirstOrDefault<int>(countSql);
-
-                var clauses = new List<string>();
-                var parameters = new DynamicParameters();
-
-                if (!string.IsNullOrWhiteSpace(filtrosModel.filtro))
-                {
-                    clauses.Add(@"
-                        (E.cod_compra LIKE @Filtro
-                         OR E.cod_orden LIKE @Filtro
+                    INNER JOIN cxp_proveedores P ON E.cod_proveedor = P.cod_proveedor
+                    WHERE (
+                            @Filtro IS NULL
+                         OR E.cod_compra LIKE @Filtro
+                         OR E.cod_orden  LIKE @Filtro
                          OR E.cod_factura LIKE @Filtro
-                         OR P.descripcion LIKE @Filtro)");
-                    parameters.Add(_filtroParam, $"%{filtrosModel.filtro}%", DbType.String);
-                }
+                         OR P.descripcion LIKE @Filtro
+                      )
+                      AND (
+                            @CodProveedor IS NULL
+                         OR P.cod_proveedor = @CodProveedor
+                      );";
 
-                if (filtrosModel.cod_proveedor > 0)
-                {
-                    clauses.Add("P.cod_proveedor = @CodProveedor");
-                    parameters.Add("@CodProveedor", filtrosModel.cod_proveedor, DbType.Int32);
-                }
+                info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
-                var where = clauses.Count > 0
-                    ? "WHERE " + string.Join(" AND ", clauses)
-                    : string.Empty;
-
-                var pagination = BuildPaginationClause(parameters, filtrosModel.pagina, filtrosModel.paginacion);
-
-                var dataSql = $@"
+                const string dataSql = @"
                     SELECT E.cod_compra,
                            E.cod_orden,
-                           E.cod_factura,
+                           E.cod_factura, 
                            P.descripcion AS Proveedor, 
-                           P.cod_proveedor,
+                           P.cod_proveedor, 
                            RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10) AS no_solicitud
                     FROM cpr_Compras E 
                     INNER JOIN cxp_proveedores P ON E.cod_proveedor = P.cod_proveedor
                     LEFT JOIN CPR_SOLICITUD_PROV s 
-                        ON s.ADJUDICA_ORDEN = E.COD_ORDEN 
+                        ON s.ADJUDICA_ORDEN  = E.COD_ORDEN 
                        AND s.PROVEEDOR_CODIGO = E.cod_proveedor
-                    {where}
+                    WHERE (
+                            @Filtro IS NULL
+                         OR E.cod_compra LIKE @Filtro
+                         OR E.cod_orden  LIKE @Filtro
+                         OR E.cod_factura LIKE @Filtro
+                         OR P.descripcion LIKE @Filtro
+                      )
+                      AND (
+                            @CodProveedor IS NULL
+                         OR P.cod_proveedor = @CodProveedor
+                      )
                     ORDER BY E.cod_compra
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.Facturas = connection.Query<FacturasProveedorData>(dataSql, parameters).ToList();
             }
@@ -694,27 +826,29 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
+                var parameters = new DynamicParameters();
+
+                if (string.IsNullOrWhiteSpace(filtro))
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
+
+                AddPaginationParameters(parameters, pagina, paginacion);
+
                 const string countSql = @"
                     SELECT COUNT(*) 
                     FROM cpr_compras_dev D 
-                    INNER JOIN cxp_proveedores P ON D.cod_proveedor = P.cod_proveedor";
-                info.Total = connection.QueryFirstOrDefault<int>(countSql);
+                    INNER JOIN cxp_proveedores P ON D.cod_proveedor = P.cod_proveedor
+                    WHERE (
+                            @Filtro IS NULL
+                         OR D.cod_compra_dev LIKE @Filtro
+                         OR D.cod_factura    LIKE @Filtro
+                         OR P.descripcion    LIKE @Filtro
+                      );";
 
-                var parameters = new DynamicParameters();
-                var where = string.Empty;
+                info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    where = @"
-                        WHERE  D.cod_compra_dev LIKE @Filtro
-                               OR D.cod_factura LIKE @Filtro
-                               OR P.descripcion LIKE @Filtro";
-                    parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
-                }
-
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
-
-                var dataSql = $@"
+                const string dataSql = @"
                     SELECT D.cod_compra_dev,
                            P.descripcion AS Proveedor,
                            D.cod_factura,
@@ -722,9 +856,14 @@ namespace Galileo.DataBaseTier
                            D.fecha
                     FROM cpr_compras_dev D 
                     INNER JOIN cxp_proveedores P ON D.cod_proveedor = P.cod_proveedor
-                    {where}
+                    WHERE (
+                            @Filtro IS NULL
+                         OR D.cod_compra_dev LIKE @Filtro
+                         OR D.cod_factura    LIKE @Filtro
+                         OR P.descripcion    LIKE @Filtro
+                      )
                     ORDER BY D.cod_compra_dev
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.devoluciones = connection.Query<CompraDevData>(dataSql, parameters).ToList();
             }
@@ -749,28 +888,36 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                const string countSql = "SELECT COUNT(cod_beneficio) FROM afi_beneficios";
-                info.Total = connection.QueryFirstOrDefault<int>(countSql);
-
                 var parameters = new DynamicParameters();
-                var where = string.Empty;
 
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    where = @"
-                        WHERE cod_beneficio LIKE @Filtro
-                           OR descripcion LIKE @Filtro";
-                    parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
-                }
+                if (string.IsNullOrWhiteSpace(filtro))
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
 
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
+                AddPaginationParameters(parameters, pagina, paginacion);
 
-                var dataSql = $@"
+                const string countSql = @"
+                    SELECT COUNT(cod_beneficio) 
+                    FROM afi_beneficios
+                    WHERE (
+                            @Filtro IS NULL
+                         OR cod_beneficio LIKE @Filtro
+                         OR descripcion   LIKE @Filtro
+                      );";
+
+                info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
+
+                const string dataSql = @"
                     SELECT cod_beneficio, descripcion 
                     FROM afi_beneficios
-                    {where}
+                    WHERE (
+                            @Filtro IS NULL
+                         OR cod_beneficio LIKE @Filtro
+                         OR descripcion   LIKE @Filtro
+                      )
                     ORDER BY cod_beneficio
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.Beneficios = connection.Query<BeneficioData>(dataSql, parameters).ToList();
             }
@@ -799,34 +946,41 @@ namespace Galileo.DataBaseTier
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
                 var parameters = new DynamicParameters();
-                var where = string.Empty;
 
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    where = @"
-                        WHERE  S.cedula   LIKE @Filtro
-                            OR S.cedular  LIKE @Filtro
-                            OR S.nombre   LIKE @Filtro
-                            OR M.Membresia LIKE @Filtro";
-                    parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
-                }
+                if (string.IsNullOrWhiteSpace(filtro))
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
 
-                var countSql = $@"
+                AddPaginationParameters(parameters, pagina, paginacion);
+
+                const string countSql = @"
                     SELECT COUNT(*) 
                     FROM SOCIOS S 
-                    LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA 
-                    {where}";
+                    LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA
+                    WHERE (
+                            @Filtro IS NULL
+                         OR S.cedula   LIKE @Filtro
+                         OR S.cedular  LIKE @Filtro
+                         OR S.nombre   LIKE @Filtro
+                         OR M.Membresia LIKE @Filtro
+                      );";
+
                 response.Result.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
-
-                var dataSql = $@"
+                const string dataSql = @"
                     SELECT S.cedula, S.cedular, S.nombre, M.Membresia 
                     FROM SOCIOS S
                     LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA
-                    {where}
+                    WHERE (
+                            @Filtro IS NULL
+                         OR S.cedula   LIKE @Filtro
+                         OR S.cedular  LIKE @Filtro
+                         OR S.nombre   LIKE @Filtro
+                         OR M.Membresia LIKE @Filtro
+                      )
                     ORDER BY S.cedula
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 response.Result.socios = connection.Query<SociosData>(dataSql, parameters).ToList();
             }
@@ -843,7 +997,7 @@ namespace Galileo.DataBaseTier
 
         #endregion
 
-        #region Socios (lazy load genérico con ordenamiento seguro)
+        #region Socios (lazy load)
 
         public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string jfiltro)
         {
@@ -862,35 +1016,33 @@ namespace Galileo.DataBaseTier
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var parameters = new DynamicParameters();
-                var where = string.Empty;
 
-                if (!string.IsNullOrWhiteSpace(filtro.filtro))
-                {
-                    where = @"
-                        WHERE ( 
-                            S.cedula   LIKE @Filtro
-                         OR S.cedular  LIKE @Filtro
-                         OR S.nombre   LIKE @Filtro
-                         OR M.membresia LIKE @Filtro
-                        )";
-                    parameters.Add(_filtroParam, $"%{filtro.filtro}%", DbType.String);
-                }
+                if (string.IsNullOrWhiteSpace(filtro.filtro))
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(FiltroParam, $"%{filtro.filtro}%", DbType.String);
 
-                // sortField como parámetro seguro
                 var sortField = string.IsNullOrWhiteSpace(filtro.sortField)
                     ? "cedula"
                     : filtro.sortField;
 
                 parameters.Add("@SortField", sortField, DbType.String);
 
-                var countSql = $@"
+                AddLazyPaginationParameters(parameters, filtro.pagina, filtro.paginacion);
+
+                const string countSql = @"
                     SELECT COUNT(*) 
                     FROM SOCIOS S 
-                    LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA 
-                    {where}";
-                response.Result.total = connection.QueryFirstOrDefault<int>(countSql, parameters);
+                    LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA
+                    WHERE (
+                            @Filtro IS NULL
+                         OR S.cedula    LIKE @Filtro
+                         OR S.cedular   LIKE @Filtro
+                         OR S.nombre    LIKE @Filtro
+                         OR M.Membresia LIKE @Filtro
+                      );";
 
-                var pagination = BuildPaginationClause(parameters, filtro.pagina, filtro.paginacion);
+                response.Result.total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
                 var orderDirection = filtro.sortOrder == 0 ? "DESC" : "ASC";
 
@@ -898,13 +1050,19 @@ namespace Galileo.DataBaseTier
                     SELECT S.cedula, S.cedular, S.nombre, M.Membresia 
                     FROM SOCIOS S
                     LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA
-                    {where}
+                    WHERE (
+                            @Filtro IS NULL
+                         OR S.cedula    LIKE @Filtro
+                         OR S.cedular   LIKE @Filtro
+                         OR S.nombre    LIKE @Filtro
+                         OR M.Membresia LIKE @Filtro
+                      )
                     ORDER BY 
                         CASE WHEN @SortField = 'cedula'    THEN S.cedula    END {orderDirection},
                         CASE WHEN @SortField = 'cedular'   THEN S.cedular   END {orderDirection},
                         CASE WHEN @SortField = 'nombre'    THEN S.nombre    END {orderDirection},
                         CASE WHEN @SortField = 'Membresia' THEN M.Membresia END {orderDirection}
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 response.Result.lista = connection.Query<SociosData>(dataSql, parameters).ToList();
             }
@@ -935,28 +1093,36 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                const string countSql = "SELECT COUNT(cod_producto) FROM afi_bene_productos";
-                info.Total = connection.QueryFirstOrDefault<int>(countSql);
-
                 var parameters = new DynamicParameters();
-                var where = string.Empty;
 
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    where = @"
-                        WHERE cod_producto LIKE @Filtro
-                           OR descripcion LIKE @Filtro";
-                    parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
-                }
+                if (string.IsNullOrWhiteSpace(filtro))
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
 
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
+                AddPaginationParameters(parameters, pagina, paginacion);
 
-                var dataSql = $@"
+                const string countSql = @"
+                    SELECT COUNT(cod_producto) 
+                    FROM afi_bene_productos
+                    WHERE (
+                            @Filtro IS NULL
+                         OR cod_producto LIKE @Filtro
+                         OR descripcion  LIKE @Filtro
+                      );";
+
+                info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
+
+                const string dataSql = @"
                     SELECT cod_producto, descripcion, COSTO_UNIDAD 
                     FROM afi_bene_productos
-                    {where}
+                    WHERE (
+                            @Filtro IS NULL
+                         OR cod_producto LIKE @Filtro
+                         OR descripcion  LIKE @Filtro
+                      )
                     ORDER BY cod_producto
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.productos = connection.Query<BeneficioProductoData>(dataSql, parameters).ToList();
             }
@@ -989,31 +1155,36 @@ namespace Galileo.DataBaseTier
                 var parameters = new DynamicParameters();
                 parameters.Add("@Institucion", Institucion, DbType.String);
 
+                if (string.IsNullOrWhiteSpace(filtro))
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(FiltroParam, $"%{filtro}%", DbType.String);
+
+                AddPaginationParameters(parameters, pagina, paginacion);
+
                 const string countSql = @"
                     SELECT COUNT(cod_departamento) 
                     FROM AFDepartamentos 
-                    WHERE cod_institucion = @Institucion";
+                    WHERE cod_institucion = @Institucion
+                      AND (
+                            @Filtro IS NULL
+                         OR cod_departamento LIKE @Filtro
+                         OR descripcion      LIKE @Filtro
+                      );";
+
                 info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
-                var whereExtra = string.Empty;
-
-                if (!string.IsNullOrWhiteSpace(filtro))
-                {
-                    whereExtra = @"
-                        AND (cod_departamento LIKE @Filtro
-                             OR descripcion LIKE @Filtro)";
-                    parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
-                }
-
-                var pagination = BuildPaginationClause(parameters, pagina, paginacion);
-
-                var dataSql = $@"
+                const string dataSql = @"
                     SELECT cod_departamento, descripcion 
                     FROM AFDepartamentos 
                     WHERE cod_institucion = @Institucion
-                    {whereExtra}
+                      AND (
+                            @Filtro IS NULL
+                         OR cod_departamento LIKE @Filtro
+                         OR descripcion      LIKE @Filtro
+                      )
                     ORDER BY cod_departamento
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 info.departamentos = connection.Query<DepartamentoData>(dataSql, parameters).ToList();
             }
@@ -1288,22 +1459,15 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                const string countSql = "SELECT COUNT(*) FROM socios";
+                const string countSql = "SELECT COUNT(*) FROM socios;";
                 response.Result.total = connection.QueryFirstOrDefault<int>(countSql);
 
                 var parameters = new DynamicParameters();
-                var where = string.Empty;
 
-                if (!string.IsNullOrWhiteSpace(filtro.filtro))
-                {
-                    where = @"
-                        WHERE ( 
-                            cedula  LIKE @Filtro
-                         OR cedulaR LIKE @Filtro
-                         OR nombre LIKE @Filtro
-                        )";
-                    parameters.Add(_filtroParam, $"%{filtro.filtro}%", DbType.String);
-                }
+                if (string.IsNullOrWhiteSpace(filtro.filtro))
+                    parameters.Add(FiltroParam, dbType: DbType.String, value: null);
+                else
+                    parameters.Add(FiltroParam, $"%{filtro.filtro}%", DbType.String);
 
                 var sortField = string.IsNullOrWhiteSpace(filtro.sortField)
                     ? "cedula"
@@ -1311,18 +1475,24 @@ namespace Galileo.DataBaseTier
 
                 parameters.Add("@SortField", sortField, DbType.String);
 
-                var pagination = BuildPaginationClause(parameters, filtro.pagina, filtro.paginacion);
+                AddLazyPaginationParameters(parameters, filtro.pagina, filtro.paginacion);
+
                 var orderDirection = filtro.sortOrder == 0 ? "DESC" : "ASC";
 
                 var dataSql = $@"
                     SELECT cedula, cedulaR, nombre 
                     FROM socios
-                    {where}
+                    WHERE (
+                            @Filtro IS NULL
+                         OR cedula  LIKE @Filtro
+                         OR cedulaR LIKE @Filtro
+                         OR nombre  LIKE @Filtro
+                      )
                     ORDER BY 
                         CASE WHEN @SortField = 'cedula'  THEN cedula  END {orderDirection},
                         CASE WHEN @SortField = 'cedulaR' THEN cedulaR END {orderDirection},
                         CASE WHEN @SortField = 'nombre'  THEN nombre  END {orderDirection}
-                    {pagination}";
+                    OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY;";
 
                 response.Result.lista = connection.Query<AFCedulaDto>(dataSql, parameters).ToList();
             }
