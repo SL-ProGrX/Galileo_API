@@ -45,7 +45,6 @@ namespace Galileo.DataBaseTier
                     parameters.Add("@HasFiltro", hasFiltro ? 1 : 0);
                     parameters.Add("@Filtro", hasFiltro ? "%" + filtro + "%" : (object)DBNull.Value);
 
-                    // Paginación (si no viene, devolvemos todo)
                     int offset = 0;
                     int fetch = int.MaxValue;
 
