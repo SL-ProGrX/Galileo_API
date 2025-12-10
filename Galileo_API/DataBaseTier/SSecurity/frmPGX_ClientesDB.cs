@@ -38,7 +38,7 @@ namespace Galileo.DataBaseTier
                 string paginaActual = " ", paginacionActual = " ";
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-
+                     var parameters = new DynamicParameters();
                     //Busco Total
                     var countQuery = "SELECT COUNT(*) FROM PGX_CLIENTES";
                     if (!string.IsNullOrEmpty(filtro))
@@ -48,7 +48,7 @@ namespace Galileo.DataBaseTier
                     info.Total = connection.Query<int>(countQuery, parameters).FirstOrDefault();
 
                     var whereClause = "";
-                    var parameters = new DynamicParameters();
+                   
                     if (!string.IsNullOrEmpty(filtro))
                     {
                         whereClause = " WHERE COD_EMPRESA LIKE @Filtro OR NOMBRE_LARGO LIKE @Filtro OR NOMBRE_CORTO LIKE @Filtro ";
