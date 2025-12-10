@@ -62,17 +62,23 @@ namespace Galileo.DataBaseTier
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
 
-                    var strSQL = "select U.Usuario,U.Nombre,U.UserID,A.registro_Fecha,A.Registro_Usuario"
-                                   + " from US_Usuarios U inner join PGX_Clientes_USERS A on U.Usuario = A.usuario and A.cod_Empresa = " + codEmpresa
-                                   + " where (U.Usuario like '%" + usuario + "%' or U.Nombre like '%" + usuario + "%') and U.Contabiliza = " + Convert.ToInt16(contabiliza);
+                    var strSQL = "select U.Usuario, U.Nombre, U.UserID, A.registro_Fecha, A.Registro_Usuario"
+                                   + " from US_Usuarios U inner join PGX_Clientes_USERS A on U.Usuario = A.usuario and A.cod_Empresa = @codEmpresa"
+                                   + " where (U.Usuario like @usuarioPattern or U.Nombre like @usuarioPattern) and U.Contabiliza = @contabiliza";
                     if (!adminView)
                     {
                         strSQL = strSQL + " AND isnull(key_admin,0) = 0";
                     }
                     strSQL = strSQL + " order by U.Nombre";
 
+                    var parameters = new
+                    {
+                        codEmpresa = codEmpresa,
+                        usuarioPattern = usuario != null ? $"%{usuario}%" : "%",
+                        contabiliza = Convert.ToInt16(contabiliza)
+                    };
 
-                    resp = connection.Query<UsuariosVinculadosConsultaDto>(strSQL).ToList();
+                    resp = connection.Query<UsuariosVinculadosConsultaDto>(strSQL, parameters).ToList();
                 }
             }
             catch (Exception)
