@@ -238,12 +238,13 @@ namespace Galileo.DataBaseTier
                 var reportName = sr.Element(ns + "ReportName")?.Value;
                 if (string.IsNullOrWhiteSpace(reportName)) continue;
 
-                var list = sr.Element(ns + "Parameters")?
-                            .Elements(ns + "Parameter")
-                            .Select(p => p.Attribute("Name")?.Value)
-                            .Where(name => !string.IsNullOrWhiteSpace(name))
-                            .Cast<string>()
-                            .ToList() ?? new List<string>();
+               var list = sr.Element(ns + "Parameters")?
+                    .Elements(ns + "Parameter")
+                    .Select(p => p.Attribute("Name")?.Value)
+                    .Where(name => !string.IsNullOrWhiteSpace(name))
+                    .Select(name => name!)     // afirmas que ya no es null
+                    .ToList() ?? new List<string>();
+
 
                 map[reportName] = list;
             }

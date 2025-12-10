@@ -39,8 +39,8 @@ namespace Galileo.DataBaseTier
             var subreports = xdoc.Descendants(ns + "Subreport")
                 .Select(s => s.Element(ns + "ReportName")?.Value)
                 .Where(s => !string.IsNullOrWhiteSpace(s))
-                .Distinct(System.StringComparer.OrdinalIgnoreCase)
-                .Cast<string>() // Cast to non-nullable string
+                .Select(s => s!)  // ← Esto reemplaza la necesidad del .Cast<string>()
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
             return (dataSets, subreports);
