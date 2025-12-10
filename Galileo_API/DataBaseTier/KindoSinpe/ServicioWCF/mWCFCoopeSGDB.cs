@@ -1,7 +1,6 @@
 ﻿using Galileo.Models.ERROR;
 using Galileo_API.Controllers.WFCSinpe;
 
-
 namespace Galileo_API.DataBaseTier
 {
     public class MSrvWfcCoopeSg : IWfcSinpe
@@ -13,73 +12,56 @@ namespace Galileo_API.DataBaseTier
             _cliente = new CoopeSanGabrielValidator(config);
         }
 
+        #region Métodos comunes
+
+        private ErrorDto EjecutarOperacion(Func<dynamic> operacion, string mensajeError)
+        {
+            try
+            {
+                var result = operacion();
+                return new ErrorDto
+                {
+                    Code = result.Code,
+                    Description = result.Description
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = $"{mensajeError}: {ex.Message}"
+                };
+            }
+        }
+
+        #endregion
+
         #region Validaciones Galileo -> Kindo
 
         /// <summary>
-        /// Servicio para Validacion SINPE ASECCSS
+        /// Servicio para Validación SINPE CSG.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="solicitud"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario)
         {
-            try
-            {
-                var request = _cliente.fxValidacionSinpe(CodEmpresa, solicitud, usuario);
-                return new ErrorDto
-                {
-                    Code = request.Code,
-                    Description = request.Description
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = $"Error al validar Sinpe: {ex.Message}"
-                };
-            }
+            return EjecutarOperacion(
+                () => _cliente.fxValidacionSinpe(CodEmpresa, solicitud, usuario),
+                "Error al validar Sinpe"
+            );
         }
-
-        #endregion
-
-
-        #region Validaciones Kindo -> Galilo
-
-        #endregion
 
         /// <summary>
-        /// Servicio para Validacion SINPE ASECCSS
+        /// Servicio para emisión de crédito directo SINPE CSG.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Nsolicitud"></param>
-        /// <param name="vfecha"></param>
-        /// <param name="vUsuario"></param>
-        /// <param name="doc_base"></param>
-        /// <param name="contador"></param>
-        /// <returns></returns>
-        public ErrorDto fxTesEmisionSinpeCreditoDirecto(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
+        public ErrorDto fxTesEmisionSinpeCreditoDirecto(
+            int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
         {
-            try
-            {
-                var request = _cliente.fxTesEmisionSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador);
-                return new ErrorDto
-                {
-                    Code = request.Code,
-                    Description = request.Description
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto
-                {
-                    Code = -1,
-                    Description = $"Error al TesEmisionSinpeCreditoDirecto: {ex.Message}"
-                };
-            }
+            return EjecutarOperacion(
+                () => _cliente.fxTesEmisionSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador),
+                "Error al TesEmisionSinpeCreditoDirecto"
+            );
         }
 
+        #endregion
     }
 }
