@@ -62,10 +62,10 @@ namespace Galileo.DataBaseTier
                         "R.registro_Fecha, R.registro_Usuario " +
                         "FROM US_Roles R " +
                         "LEFT JOIN PGX_Clientes C ON R.cod_empresa = C.cod_Empresa " +
-                        $"WHERE R.descripcion LIKE '%{filtro}%' " +
+                        "WHERE R.descripcion LIKE @Filtro " +
                         "ORDER BY R.descripcion";
 
-                    return connection.Query<RolesObtenerDto>(strSQL).ToList();
+                    return connection.Query<RolesObtenerDto>(strSQL, new { Filtro = "%" + filtro + "%" }).ToList();
                 }
             }
             catch (Exception)
