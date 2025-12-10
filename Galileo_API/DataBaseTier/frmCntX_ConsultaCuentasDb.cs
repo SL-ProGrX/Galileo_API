@@ -56,38 +56,32 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
+                var parameters = new
                 {
-                    var parameters = new
-                    {
-                        Contabilidad = cuenta.Contabilidad,
-                        TipoCuenta = cuenta.Cuenta
-                    };
-                    info = connection.Query<CtnxCuentasDto>(Query, parameters).ToList();
-                }
+                    Contabilidad = cuenta.Contabilidad,
+                    TipoCuenta = cuenta.Cuenta
+                };
+                info = connection.Query<CtnxCuentasDto>(Query, parameters).ToList();
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
             }
             return info;
-
         }
 
         public List<CtnxCuentasArbolModel> ObtenerCuentasArbol(int CodEmpresa, CuentaVarModel cuenta)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CtnxCuentasDto> info ;
+            List<CtnxCuentasDto> info;
             List<CtnxCuentasArbolModel> resp = new List<CtnxCuentasArbolModel>();
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = $@"select cod_cuenta,cuenta_madre,cod_cuenta_Mask,descripcion,acepta_movimientos 
+                var query = $@"select cod_cuenta,cuenta_madre,cod_cuenta_Mask,descripcion,acepta_movimientos 
                                     from CntX_Cuentas where
                                     cod_contabilidad = '{cuenta.Contabilidad}' order by cod_cuenta";
-                    info = connection.Query<CtnxCuentasDto>(query).ToList();
-                }
-
+                info = connection.Query<CtnxCuentasDto>(query).ToList();
                 foreach (CtnxCuentasDto item in info)
                 {
                     if (item.cuenta_madre == "")
@@ -120,11 +114,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = $@"select rtrim(cod_divisa) as 'item', rtrim(descripcion) as 'descripcion' 
+                var query = $@"select rtrim(cod_divisa) as 'item', rtrim(descripcion) as 'descripcion' 
                                     from CntX_Divisas where cod_contabilidad = '{Contavilidad}' order by divisa_local desc";
-                    info = connection.Query<DropDownListaGenericaModel>(query).ToList();
-                }
+                info = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
             {
@@ -132,6 +124,7 @@ namespace Galileo.DataBaseTier
             }
             return info;
         }
+
         public List<DropDownListaGenericaModel> ObtenerTiposCuentas(int CodEmpresa, int Contavilidad)
         {
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
@@ -139,11 +132,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = $@"select TIPO_CUENTA as 'item',Descripcion from CntX_Tipos_Cuentas 
+                var query = $@"select TIPO_CUENTA as 'item',Descripcion from CntX_Tipos_Cuentas 
                                       where cod_contabilidad = '{Contavilidad}' order by Prioridad,Tipo_cuenta";
-                    info = connection.Query<DropDownListaGenericaModel>(query).ToList();
-                }
+                info = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
             {

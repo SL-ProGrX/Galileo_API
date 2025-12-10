@@ -99,7 +99,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
+                
                     var query = $@"SELECT 
                                [DESCRIPCION] as Providers
                               ,[USUARIO] as 'User'
@@ -112,8 +112,6 @@ namespace Galileo.DataBaseTier
                         WHERE [ESTADO] = 1 AND COD_SMTP = '{cod_smtp}' ";
 
                     correo = connection.Query<EnvioCorreoModels>(query).FirstOrDefault() ?? new EnvioCorreoModels();
-
-                }
             }
             catch (Exception)
             {
@@ -171,7 +169,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
+                
                     //Busco el correo del socio
                     var query = $@"SELECT
                                    [NOMBREV2] + ' ' + [APELLIDO1] + ' ' + [APELLIDO2] AS nombre
@@ -186,7 +184,7 @@ namespace Galileo.DataBaseTier
                               FROM SOCIOS
                               WHERE  CEDULA = '{cedula}'";
                     correo = connection.Query<AfiBeneDatosCorreo>(query).FirstOrDefault() ?? new AfiBeneDatosCorreo();
-                }
+                
             }
             catch (Exception)
             {
@@ -207,7 +205,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
-                {
+                
                     var toEmail = email.To.ToString().Replace("Destinatario", "").Replace("<", "").Replace(">","").Trim().Replace("\"\" ", "");
 
                     var query = $@"INSERT INTO [dbo].[SYS_MAIL_SERVICE]
@@ -232,8 +230,6 @@ namespace Galileo.DataBaseTier
                                        ,getDate())";
 
                     connection.Execute(query);
-
-                }
             }
             catch (Exception ex)
             {

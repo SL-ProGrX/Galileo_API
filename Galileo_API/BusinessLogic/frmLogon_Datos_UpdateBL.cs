@@ -6,11 +6,11 @@ namespace Galileo.BusinessLogic
 {
     public class FrmLogonDatosUpdateBl
     {
-        readonly FrmLogon_DatosUpdateDb Datos_UpdateDB;
+        readonly FrmLogonDatosUpdateDb Datos_UpdateDB;
 
         public FrmLogonDatosUpdateBl(IConfiguration config)
         {
-            Datos_UpdateDB = new FrmLogon_DatosUpdateDb(config);
+            Datos_UpdateDB = new FrmLogonDatosUpdateDb(config);
         }
 
         public LogonUpdateData LogonObtenerDatosUsuario(string usuario)
