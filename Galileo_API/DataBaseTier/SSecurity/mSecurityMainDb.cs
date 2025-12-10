@@ -56,12 +56,21 @@ namespace Galileo.DataBaseTier
                 {
                     connection.Open();
 
-                    var strSQL = $@"INSERT INTO US_Bitacora (Cod_Empresa, Usuario, Fecha_Hora, Modulo, Movimiento, Detalle, APP_NOMBRE)
-                                 VALUES ({req.EmpresaId}, '{req.Usuario}', '{DateTime.Now}' ,{req.Modulo},'{req.Movimiento.ToUpper()}',
-                                 '{req.DetalleMovimiento.Substring(0, Math.Min(500, req.DetalleMovimiento.Length))}', 
-                                 'ProGrX_WEB')";
+                    var strSQL = @"INSERT INTO US_Bitacora (Cod_Empresa, Usuario, Fecha_Hora, Modulo, Movimiento, Detalle, APP_NOMBRE)
+                                 VALUES (@Cod_Empresa, @Usuario, @Fecha_Hora, @Modulo, @Movimiento, @Detalle, @APP_NOMBRE)";
 
-                    resp.Code = connection.Query<int>(strSQL).FirstOrDefault();
+                    var parameters = new
+                    {
+                        Cod_Empresa = req.EmpresaId,
+                        Usuario = req.Usuario,
+                        Fecha_Hora = DateTime.Now,
+                        Modulo = req.Modulo,
+                        Movimiento = req.Movimiento.ToUpper(),
+                        Detalle = req.DetalleMovimiento.Substring(0, Math.Min(500, req.DetalleMovimiento.Length)),
+                        APP_NOMBRE = "ProGrX_WEB"
+                    };
+
+                    resp.Code = connection.Query<int>(strSQL, parameters).FirstOrDefault();
                     resp.Description = "Ok";
                 }
             }
