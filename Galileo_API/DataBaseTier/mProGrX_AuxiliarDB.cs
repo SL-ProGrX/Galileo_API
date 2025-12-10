@@ -1179,16 +1179,19 @@ VALUES (
                         Usuario: request.usuario
                     );
 
-                    var payload = new ControlCambioPayload(
-                        TipoCambio: request.tipoCambio,
-                        Tabla: table,
-                        Llave: whereClause,
-                        EventoQuery: "DELETE",
-                        InsertSql: "",
-                        Diferencias: new DataTable()
-                    );
+                    using (var diferenciasTable = new DataTable())
+                    {
+                        var payload = new ControlCambioPayload(
+                            TipoCambio: request.tipoCambio,
+                            Tabla: table,
+                            Llave: whereClause,
+                            EventoQuery: "DELETE",
+                            InsertSql: "",
+                            Diferencias: diferenciasTable
+                        );
 
-                    result = InsertarTablaControl(ctx, payload);
+                        result = InsertarTablaControl(ctx, payload);
+                    }
                 }
                 catch (Exception ex)
                 {
