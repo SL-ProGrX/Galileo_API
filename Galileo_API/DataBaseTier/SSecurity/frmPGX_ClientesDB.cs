@@ -36,45 +36,62 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                var parameters = new DynamicParameters();
-
-                // WHERE
-                var whereClause = string.Empty;
-                if (!string.IsNullOrWhiteSpace(filtro))
+                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-                    whereClause = @" WHERE COD_EMPRESA     LIKE @Filtro
-                                 OR    NOMBRE_LARGO   LIKE @Filtro
-                                 OR    NOMBRE_CORTO   LIKE @Filtro";
+                    var parameters = new DynamicParameters();
 
-                    parameters.Add("@Filtro", "%" + filtro + "%");
+                    // Indicador de si hay filtro
+                    bool hasFiltro = !string.IsNullOrWhiteSpace(filtro);
+                    parameters.Add("@HasFiltro", hasFiltro ? 1 : 0);
+                    parameters.Add("@Filtro", hasFiltro ? "%" + filtro + "%" : (object)DBNull.Value);
+
+                    // Paginación (si no viene, devolvemos todo)
+                    int offset = 0;
+                    int fetch = int.MaxValue;
+
+                    if (pagina.HasValue && paginacion.HasValue)
+                    {
+                        offset = pagina.Value;
+                        fetch = paginacion.Value;
+                    }
+
+                    parameters.Add("@Offset", offset);
+                    parameters.Add("@Fetch", fetch);
+
+                    // COUNT (consulta constante, sin concatenación)
+                    const string countQuery = @"
+                SELECT COUNT(*)
+                FROM PGX_CLIENTES
+                WHERE (@HasFiltro = 0
+                       OR COD_EMPRESA    LIKE @Filtro
+                       OR NOMBRE_LARGO   LIKE @Filtro
+                       OR NOMBRE_CORTO   LIKE @Filtro);";
+
+                    info.Total = connection.QuerySingle<int>(countQuery, parameters);
+
+                    // SELECT principal (también constante)
+                    const string query = @"
+                SELECT *
+                FROM PGX_CLIENTES
+                WHERE (@HasFiltro = 0
+                       OR COD_EMPRESA    LIKE @Filtro
+                       OR NOMBRE_LARGO   LIKE @Filtro
+                       OR NOMBRE_CORTO   LIKE @Filtro)
+                ORDER BY COD_EMPRESA
+                OFFSET @Offset ROWS
+                FETCH NEXT @Fetch ROWS ONLY;";
+
+                    info.Lista = connection.Query<ClienteDto>(query, parameters).ToList();
                 }
-
-                // COUNT
-                var countQuery = "SELECT COUNT(*) FROM PGX_CLIENTES" + whereClause;
-                info.Total = connection.QuerySingle<int>(countQuery, parameters);
-
-                // SELECT principal
-                var query = "SELECT * FROM PGX_CLIENTES" + whereClause + " ORDER BY COD_EMPRESA";
-
-                // Paginación (también parametrizada)
-                if (pagina.HasValue && paginacion.HasValue)
-                {
-                    query += " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY";
-                    parameters.Add("@Offset", pagina.Value);
-                    parameters.Add("@Fetch", paginacion.Value);
-                }
-
-                info.Lista = connection.Query<ClienteDto>(query, parameters).ToList();
-
             }
             catch (Exception ex)
             {
-              _ = ex.Message;
+               _ = ex.Message;
             }
 
             return info;
         }
+
 
 
         public ClienteDto Cliente_Obtener(int CodEmpresa)
