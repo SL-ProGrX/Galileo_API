@@ -31,10 +31,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "select nombre from socios where cedula = @cedula";
-                    info.Description = connection.Query<string>(query, new { cedula = cedula.Trim() }).FirstOrDefault();
-                }
+                var query = "select nombre from socios where cedula = @cedula";
+                info.Description = connection.Query<string>(query, new { cedula = cedula.Trim() }).FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -53,11 +51,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-
-                    var query = $"select descripcion from Tes_Bancos where id_banco =  '{codBanco}'";
-                    info.Description = connection.Query<string>(query).FirstOrDefault();
-                }
+                var query = $"select descripcion from Tes_Bancos where id_banco =  '{codBanco}'";
+                info.Description = connection.Query<string>(query).FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -117,11 +112,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-
-                    var query = $"Select valor from SIF_parametros where cod_parametro = '{cod_parametro}'";
-                    resp = connection.Query<string>(query).FirstOrDefault() ?? string.Empty;
-                }
+                var query = $"Select valor from SIF_parametros where cod_parametro = '{cod_parametro}'";
+                resp = connection.Query<string>(query).FirstOrDefault() ?? string.Empty;
             }
             catch (Exception ex)
             {
@@ -138,11 +130,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-
-                    var query = $"select valor from fsl_parametros where cod_parametro = '{cod_parametro}' ";
-                    resp = connection.Query<string>(query).FirstOrDefault() ?? string.Empty;
-                }
+                var query = $"select valor from fsl_parametros where cod_parametro = '{cod_parametro}' ";
+                resp = connection.Query<string>(query).FirstOrDefault() ?? string.Empty;
             }
             catch (Exception ex)
             {
@@ -166,8 +155,7 @@ namespace Galileo.DataBaseTier
             {
 
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var strSQL = $@"INSERT INTO [dbo].[AFI_BENE_REGISTRO_BITACORA]
+                var strSQL = $@"INSERT INTO [dbo].[AFI_BENE_REGISTRO_BITACORA]
                                            ([COD_BENEFICIO]
                                            ,[CONSEC]
                                            ,[MOVIMIENTO]
@@ -182,9 +170,9 @@ namespace Galileo.DataBaseTier
                                            , getdate()
                                            , '{req.registro_usuario}' )";
 
-                    resp.Code = connection.Execute(strSQL);
-                    resp.Description = "Ok";
-                }
+                resp.Code = connection.Execute(strSQL);
+                resp.Description = "Ok";
+
             }
             catch (Exception ex)
             {
@@ -208,10 +196,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var query = $@"Select isnull(Max(consec),0) as consecutivo from afi_bene_otorga where cod_beneficio = '{cod_beneficio}'";
-                    vBeneConsec = connection.Query<long>(query).FirstOrDefault() + 1;
-                }
+                var query = $@"Select isnull(Max(consec),0) as consecutivo from afi_bene_otorga where cod_beneficio = '{cod_beneficio}'";
+                vBeneConsec = connection.Query<long>(query).FirstOrDefault() + 1;
             }
             catch (Exception ex)
             {
@@ -235,17 +221,13 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
+                var query = $@"SELECT ESTADOACTUAL FROM SOCIOS WHERE CEDULA = '{cedula}'";
+                string? estado = connection.Query<string>(query).FirstOrDefault();
+
+                if (estado != "S")
                 {
-
-                    var query = $@"SELECT ESTADOACTUAL FROM SOCIOS WHERE CEDULA = '{cedula}'";
-                    string? estado = connection.Query<string>(query).FirstOrDefault();
-
-                    if (estado != "S")
-                    {
-                        response.Code = -1;
-                        response.Description = "El asociado se encuentra inactivo";
-                    }
-
+                    response.Code = -1;
+                    response.Description = "El asociado se encuentra inactivo";
                 }
             }
             catch (Exception ex)
@@ -259,52 +241,48 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto ValidarPersona(int CodCliente, string cedula, string? cod_beneficio)
         {
-
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
             ErrorDto info = new ErrorDto();
             info.Code = 0;
 
             try
             {
-                using (var connection = new SqlConnection(clienteConnString))
+                using var connection = new SqlConnection(clienteConnString);
+                var query = "";
+                if (cod_beneficio == null)
                 {
-                    var query = "";
-                    if (cod_beneficio == null)
-                    {
-                        query = "SELECT * FROM AFI_BENE_VALIDACIONES WHERE ESTADO = 1 AND TIPO = 'P' AND REGISTRO = 1 ORDER BY PRIORIDAD ASC";
-                    }
-                    else
-                    {
-                        query = @$"select abv.* FROM AFI_BENE_VALIDA_CATEGORIA c left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
+                    query = "SELECT * FROM AFI_BENE_VALIDACIONES WHERE ESTADO = 1 AND TIPO = 'P' AND REGISTRO = 1 ORDER BY PRIORIDAD ASC";
+                }
+                else
+                {
+                    query = @$"select abv.* FROM AFI_BENE_VALIDA_CATEGORIA c left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
                                         WHERE COD_CATEGORIA = 
                                         (
 	                                        SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab WHERE ab.COD_BENEFICIO = '{cod_beneficio}'
                                         ) AND c.ESTADO = 1 AND TIPO = 'P' AND REGISTRO = 1 order by abv.PRIORIDAD asc";
-                    }
+                }
 
 
-                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
+                var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
-                    foreach (var validacion in validaciones)
+                foreach (var validacion in validaciones)
+                {
+                    query = validacion.query_val
+                        .Replace("CedulaPlaceholder", cedula)
+                        //  .Replace("UsuarioPlaceholder", beneficio.registra_user)
+                        //  .Replace("CodBeneficioPlaceholder", beneficio.id_beneficio.ToString())
+                        .Replace("CodBeneficioPlaceholder", cod_beneficio)
+                        //  .Replace("CodCategoriaPlaceholder", beneficio.cod_categoria)
+                        //  .Replace("@monto_usuario", beneficio.monto_aplicado.ToString())
+                        //  .Replace("SepelioIdentificacionPlaceholder", beneficio.sepelio_identificacion)
+                        ;
+                    var result = connection.Query<int>(query).FirstOrDefault();
+
+                    if (result == validacion.resultado_val)
                     {
-                        query = validacion.query_val
-                            .Replace("CedulaPlaceholder", cedula)
-                            //  .Replace("UsuarioPlaceholder", beneficio.registra_user)
-                            //  .Replace("CodBeneficioPlaceholder", beneficio.id_beneficio.ToString())
-                            .Replace("CodBeneficioPlaceholder", cod_beneficio)
-                            //  .Replace("CodCategoriaPlaceholder", beneficio.cod_categoria)
-                            //  .Replace("@monto_usuario", beneficio.monto_aplicado.ToString())
-                            //  .Replace("SepelioIdentificacionPlaceholder", beneficio.sepelio_identificacion)
-                            ;
-                        var result = connection.Query<int>(query).FirstOrDefault();
-
-                        if (result == validacion.resultado_val)
-                        {
-                            info.Code = 0;
-                            info.Description += validacion.msj_val + "...\n";
-                        }
+                        info.Code = 0;
+                        info.Description += validacion.msj_val + "...\n";
                     }
-
                 }
             }
             catch (Exception ex)
@@ -326,45 +304,42 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(clienteConnString))
+                using var connection = new SqlConnection(clienteConnString);
+                var query = "";
+                if (cod_beneficio == null)
                 {
-                    var query = "";
-                    if (cod_beneficio == null)
-                    {
-                        query = "SELECT * FROM AFI_BENE_VALIDACIONES WHERE ESTADO = 1 AND PAGO = 1 AND TIPO = 'P' ORDER BY PRIORIDAD ASC";
-                    }
-                    else
-                    {
-                        query = @$"select abv.* FROM AFI_BENE_VALIDA_CATEGORIA c left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
+                    query = "SELECT * FROM AFI_BENE_VALIDACIONES WHERE ESTADO = 1 AND PAGO = 1 AND TIPO = 'P' ORDER BY PRIORIDAD ASC";
+                }
+                else
+                {
+                    query = @$"select abv.* FROM AFI_BENE_VALIDA_CATEGORIA c left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
                                         WHERE COD_CATEGORIA = 
                                         (
 	                                        SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab WHERE ab.COD_BENEFICIO = '{cod_beneficio}'
                                         ) AND c.ESTADO = 1 AND TIPO = 'P' AND PAGO = 1 order by abv.PRIORIDAD asc";
-                    }
+                }
 
 
-                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
+                var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
-                    foreach (var validacion in validaciones)
+                foreach (var validacion in validaciones)
+                {
+                    query = validacion.query_val
+                        .Replace(CedulaPlaceholder, cedula)
+                        //  .Replace("UsuarioPlaceholder", beneficio.registra_user)
+                        //  .Replace("CodBeneficioPlaceholder", beneficio.id_beneficio.ToString())
+                        .Replace(CodBeneficioPlaceholder, cod_beneficio)
+                        //  .Replace("CodCategoriaPlaceholder", beneficio.cod_categoria)
+                        //  .Replace("MontoUsuarioPlaceholder", beneficio.monto_aplicado.ToString())
+                        //  .Replace("SepelioIdentificacionPlaceholder", beneficio.sepelio_identificacion)
+                        ;
+                    var result = connection.Query<int>(query).FirstOrDefault();
+
+                    if (result == validacion.resultado_val)
                     {
-                        query = validacion.query_val
-                            .Replace(CedulaPlaceholder, cedula)
-                            //  .Replace("UsuarioPlaceholder", beneficio.registra_user)
-                            //  .Replace("CodBeneficioPlaceholder", beneficio.id_beneficio.ToString())
-                            .Replace(CodBeneficioPlaceholder, cod_beneficio)
-                            //  .Replace("CodCategoriaPlaceholder", beneficio.cod_categoria)
-                            //  .Replace("MontoUsuarioPlaceholder", beneficio.monto_aplicado.ToString())
-                            //  .Replace("SepelioIdentificacionPlaceholder", beneficio.sepelio_identificacion)
-                            ;
-                        var result = connection.Query<int>(query).FirstOrDefault();
-
-                        if (result == validacion.resultado_val)
-                        {
-                            info.Code = 0;
-                            info.Description += validacion.msj_val + "...\n";
-                        }
+                        info.Code = 0;
+                        info.Description += validacion.msj_val + "...\n";
                     }
-
                 }
             }
             catch (Exception ex)
@@ -385,19 +360,18 @@ namespace Galileo.DataBaseTier
             {
 
                 string result = "";
-                using (var connection = new SqlConnection(clienteConnString))
-                {
+                using var connection = new SqlConnection(clienteConnString);
 
-                    var dtEstado = $@"SELECT COD_ESTADO
+                var dtEstado = $@"SELECT COD_ESTADO
                                       FROM [dbo].[AFI_BENE_ESTADOS]
                                       WHERE COD_ESTADO = '{estado}' AND P_FINALIZA = 1 AND PROCESO = 'A' ";
-                    string? finaliza = connection.Query<string>(dtEstado).FirstOrDefault();
+                string? finaliza = connection.Query<string>(dtEstado).FirstOrDefault();
 
 
-                    if (finaliza != null)
-                    {
-                        //Valida requisitos para beneficio integral
-                        var query = $@"SELECT 
+                if (finaliza != null)
+                {
+                    //Valida requisitos para beneficio integral
+                    var query = $@"SELECT 
                                         CASE 
                                             WHEN COUNT(CASE WHEN R.REQUERIDO = 1 AND RR.COD_BENEFICIO IS NOT NULL THEN 1 END) = COUNT(CASE WHEN R.REQUERIDO = 1 THEN 1 END)
                                             THEN 0
@@ -410,27 +384,26 @@ namespace Galileo.DataBaseTier
                                         AND RR.CONSEC = {consec}
                                     WHERE GR.COD_GRUPO = 
                                           (SELECT COD_GRUPO FROM AFI_BENEFICIOS WHERE COD_BENEFICIO = '{cod_beneficio}')";
-                        var cumpleRequisito = connection.Query<int>(query).FirstOrDefault();
-                        if (cumpleRequisito == 1)
-                        {
-                            response.Code = -1;
-                            response.Description = "No cumple con los requisitos del beneficio";
-                            return response;
-                        }
-                    }
-
-
-                    // Verifica el resultado
-                    if (result == "1")
-                    {
-                        return response;
-                    }
-
-                    if (result != "")
+                    var cumpleRequisito = connection.Query<int>(query).FirstOrDefault();
+                    if (cumpleRequisito == 1)
                     {
                         response.Code = -1;
-                        response.Description = result;
+                        response.Description = "No cumple con los requisitos del beneficio";
+                        return response;
                     }
+                }
+
+
+                // Verifica el resultado
+                if (result == "1")
+                {
+                    return response;
+                }
+
+                if (result != "")
+                {
+                    response.Code = -1;
+                    response.Description = result;
                 }
             }
             catch (Exception ex)
@@ -448,23 +421,21 @@ namespace Galileo.DataBaseTier
             response.Code = 0;
             try
             {
-                using (var connection = new SqlConnection(clienteConnString))
-                {
-                    var query = $@"SELECT CONCAT(O.ID_BENEFICIO, TRIM(O.COD_BENEFICIO), FORMAT(O.CONSEC,'00000'), '- cédula: ', O.CEDULA) 
+                using var connection = new SqlConnection(clienteConnString);
+                var query = $@"SELECT CONCAT(O.ID_BENEFICIO, TRIM(O.COD_BENEFICIO), FORMAT(O.CONSEC,'00000'), '- cédula: ', O.CEDULA) 
                                          FROM AFI_BENE_OTORGA O WHERE SEPELIO_IDENTIFICACION = '{cedulafallecido}' ";
-                    var fallecido = connection.Query(query).ToList();
+                var fallecido = connection.Query(query).ToList();
 
-                    if (fallecido.Count > 0)
+                if (fallecido.Count > 0)
+                {
+                    var otrosRegostros = new System.Text.StringBuilder();
+                    foreach (var item in fallecido)
                     {
-                        var otrosRegostros = new System.Text.StringBuilder();
-                        foreach (var item in fallecido)
-                        {
-                            otrosRegostros.Append(item + " - ");
-                        }
-
-                        response.Code = -1;
-                        response.Description = "La cédula del fallecido se encuentra en los siguientes expedientes: " + otrosRegostros.ToString().Replace("DapperRow,  = ", "");
+                        otrosRegostros.Append(item + " - ");
                     }
+
+                    response.Code = -1;
+                    response.Description = "La cédula del fallecido se encuentra en los siguientes expedientes: " + otrosRegostros.ToString().Replace("DapperRow,  = ", "");
                 }
             }
             catch (Exception ex)
@@ -484,36 +455,33 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(clienteConnString))
-                {
-                    var query = @$"select abv.* FROM AFI_BENE_VALIDA_CATEGORIA c left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
+                using var connection = new SqlConnection(clienteConnString);
+                var query = @$"select abv.* FROM AFI_BENE_VALIDA_CATEGORIA c left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
                                 WHERE COD_CATEGORIA = 
                                 (
 	                                SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab 
                                     WHERE ab.COD_BENEFICIO = '{beneficio.cod_beneficio.item}'
                                 ) AND c.ESTADO = 1 AND TIPO = 'G' AND REGISTRO = 1 order by abv.PRIORIDAD asc";
-                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
+                var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
-                    foreach (var validacion in validaciones)
+                foreach (var validacion in validaciones)
+                {
+                    query = validacion.query_val
+                        .Replace(CedulaPlaceholder, beneficio.cedula)
+                        .Replace(UsuarioPlaceholder, beneficio.registra_user)
+                        .Replace(CodBeneficioPlaceholder, beneficio.id_beneficio.ToString())
+                        .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
+                        .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
+                        .Replace(MontoUsuarioPlaceholder, beneficio.monto_aplicado.ToString())
+                        .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
+
+                    var result = connection.Query<int>(query).FirstOrDefault();
+
+                    if (result == validacion.resultado_val)
                     {
-                        query = validacion.query_val
-                            .Replace(CedulaPlaceholder, beneficio.cedula)
-                            .Replace(UsuarioPlaceholder, beneficio.registra_user)
-                            .Replace(CodBeneficioPlaceholder, beneficio.id_beneficio.ToString())
-                            .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
-                            .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
-                            .Replace(MontoUsuarioPlaceholder, beneficio.monto_aplicado.ToString())
-                            .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
-
-                        var result = connection.Query<int>(query).FirstOrDefault();
-
-                        if (result == validacion.resultado_val)
-                        {
-                            info.Code = -1;
-                            info.Description += validacion.msj_val + "...\n";
-                        }
+                        info.Code = -1;
+                        info.Description += validacion.msj_val + "...\n";
                     }
-
                 }
             }
             catch (Exception ex)
@@ -534,36 +502,33 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using (var connection = new SqlConnection(clienteConnString))
-                {
-                    var query = @$"select abv.* FROM AFI_BENE_VALIDA_CATEGORIA c left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
+                using var connection = new SqlConnection(clienteConnString);
+                var query = @$"select abv.* FROM AFI_BENE_VALIDA_CATEGORIA c left join AFI_BENE_VALIDACIONES abv ON abv.COD_VAL = c.COD_VAL
                                 WHERE COD_CATEGORIA = 
                                 (
 	                                SELECT ab.COD_CATEGORIA FROM AFI_BENEFICIOS ab 
                                     WHERE ab.COD_BENEFICIO = '{beneficio.cod_beneficio.item}'
                                 ) AND c.ESTADO = 1 AND TIPO = 'G' AND PAGO = 1 order by abv.PRIORIDAD asc";
-                    var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
+                var validaciones = connection.Query<AfiBeneCalidaciones>(query).ToList();
 
-                    foreach (var validacion in validaciones)
+                foreach (var validacion in validaciones)
+                {
+                    query = validacion.query_val
+                        .Replace(CedulaPlaceholder, beneficio.cedula)
+                        .Replace(UsuarioPlaceholder, beneficio.registra_user)
+                        .Replace(CodBeneficioPlaceholder, beneficio.id_beneficio.ToString())
+                        .Replace(CodBeneficioPlaceholder, beneficio.cod_beneficio.item.ToString())
+                        .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
+                        .Replace(MontoUsuarioPlaceholder, beneficio.monto_aplicado.ToString())
+                        .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
+
+                    var result = connection.Query<int>(query).FirstOrDefault();
+
+                    if (result == validacion.resultado_val)
                     {
-                        query = validacion.query_val
-                            .Replace(CedulaPlaceholder, beneficio.cedula)
-                            .Replace(UsuarioPlaceholder, beneficio.registra_user)
-                            .Replace(CodBeneficioPlaceholder, beneficio.id_beneficio.ToString())
-                            .Replace(CodBeneficioPlaceholder, beneficio.cod_beneficio.item.ToString())
-                            .Replace(CodCategoriaPlaceholder, beneficio.cod_categoria)
-                            .Replace(MontoUsuarioPlaceholder, beneficio.monto_aplicado.ToString())
-                            .Replace(SepelioIdentificacionPlaceholder, beneficio.sepelio_identificacion);
-
-                        var result = connection.Query<int>(query).FirstOrDefault();
-
-                        if (result == validacion.resultado_val)
-                        {
-                            info.Code = -1;
-                            info.Description += validacion.msj_val + "...\n";
-                        }
+                        info.Code = -1;
+                        info.Description += validacion.msj_val + "...\n";
                     }
-
                 }
             }
             catch (Exception ex)
