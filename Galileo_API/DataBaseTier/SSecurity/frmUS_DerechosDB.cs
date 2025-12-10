@@ -121,8 +121,8 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    string sql = $@"DELETE US_ROL_PERMISOS WHERE COD_OPCION = '{COD_OPCION}' AND ESTADO = '{ESTADO}' AND COD_ROL = '{COD_ROL}'";
-                    Result = connection.Execute(sql);
+                    string sql = @"DELETE US_ROL_PERMISOS WHERE COD_OPCION = @COD_OPCION AND ESTADO = @ESTADO AND COD_ROL = @COD_ROL";
+                    Result = connection.Execute(sql, new { COD_OPCION, ESTADO, COD_ROL });
                 }
             }
             catch (Exception ex)
