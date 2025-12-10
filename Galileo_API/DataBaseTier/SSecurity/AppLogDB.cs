@@ -20,19 +20,18 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("BaseConnString"));
+
+                var procedure = "[spAPP_Estadistica]";
+                var values = new
                 {
-                    var procedure = "[spAPP_Estadistica]";
-                    var values = new
-                    {
-                        EmpresaId = empresa,
-                        Inicio = ini,
-                        Corte = fin,
+                    EmpresaId = empresa,
+                    Inicio = ini,
+                    Corte = fin,
 
-                    };
+                };
 
-                    types = connection.Query<AppLog>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                types = connection.Query<AppLog>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
 
-                }
             }
             catch (Exception ex)
             {
