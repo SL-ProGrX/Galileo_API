@@ -3,7 +3,7 @@ namespace Galileo.Models.TES
     public class TesTransaccionDto
     {
         public int nsolicitud { get; set; } = 0;
-        public int id_banco { get; set; }
+        public int? id_banco { get; set; }
         public string? tipo { get; set; }
         public string? codigo { get; set; }
         public string? beneficiario { get; set; }

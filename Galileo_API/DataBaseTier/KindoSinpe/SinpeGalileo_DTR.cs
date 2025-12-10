@@ -5,7 +5,7 @@ using System.Net.Http;
 using System.Text;
 
 namespace Galileo_API.DataBaseTier
-{
+{ 
     /// <summary>
     /// Cliente para consumir los métodos del Servicio DTR de KINDO (Sección 6 del documento).
     /// Refactorizado para evitar duplicación Sonar.

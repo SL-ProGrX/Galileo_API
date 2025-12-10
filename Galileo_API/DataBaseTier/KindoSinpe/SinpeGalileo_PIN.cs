@@ -121,327 +121,327 @@ namespace Galileo_API.DataBaseTier
         }
         #endregion
 
-        //#region 6.x SendPIN
-        ///// <summary>
-        ///// ResPINSending SendPIN (ReqPINSending PINData)
-        ///// Envía una transacción PIN a una Entidad Financiera participante.
-        ///// Endpoint: /SendPIN
-        ///// </summary>
-        //public ResPINSending SendPIN( ErrorDto<(Models.KindoSinpe.ParametrosSinpe, HttpClient)> parametros, ReqPINSending pinData)
-        //{
-        //    try
-        //    {
-        //        var json = JsonConvert.SerializeObject(pinData);
-        //        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        #region 6.x SendPIN
+        /// <summary>
+        /// ResPINSending SendPIN (ReqPINSending PINData)
+        /// Envía una transacción PIN a una Entidad Financiera participante.
+        /// Endpoint: /SendPIN
+        /// </summary>
+        public ResPINSending SendPIN(string UrlCGP_PIN, ReqPINSending pinData)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(pinData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        //        var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_PIN + "/SendPIN", content).Result;
+                var response = _client.PostAsync(UrlCGP_PIN + "/SendPIN", content).Result;
 
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            var jsonResponse = response.Content.ReadAsStringAsync().Result;
-        //            var result = JsonConvert.DeserializeObject<ResPINSending>(jsonResponse);
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
+                    var result = JsonConvert.DeserializeObject<ResPINSending>(jsonResponse);
 
-        //            return new ResPINSending
-        //            {
-        //                IsSuccessful = true,
-        //                OperationId = result.OperationId,
-        //                PINSendingResult = result.PINSendingResult
-        //            };
-        //        }
+                    return new ResPINSending
+                    {
+                        IsSuccessful = true,
+                        OperationId = result.OperationId,
+                        PINSendingResult = result.PINSendingResult
+                    };
+                }
 
-        //        return new ResPINSending
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[]{ new Error { Code = (int)response.StatusCode, Message = "No se pudo enviar la transacción PIN." } }
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ResPINSending
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = -1, Message = $"Error en SendPIN: {ex.Message}" } }
-        //        };
-        //    }
-        //}
-        //#endregion
+                return new ResPINSending
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo enviar la transacción PIN." } }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResPINSending
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en SendPIN: {ex.Message}" } }
+                };
+            }
+        }
+        #endregion
 
-        //#region 6.x GetPINResult
-        ///// <summary>
-        ///// ResPINSending GetPINResult (ReqTransferInfoChannelRef PINData)
-        ///// Consulta el resultado de envío de una transacción PIN usando la referencia del canal.
-        ///// Endpoint: /GetPINResult
-        ///// </summary>
-        //public ResPINSending GetPINResult( ErrorDto<(Models.KindoSinpe.ParametrosSinpe, HttpClient)> parametros, ReqTransferInfoChannelRef pinData)
-        //{
-        //    try
-        //    {
-        //        var json = JsonConvert.SerializeObject(pinData);
-        //        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        #region 6.x GetPINResult
+        /// <summary>
+        /// ResPINSending GetPINResult (ReqTransferInfoChannelRef PINData)
+        /// Consulta el resultado de envío de una transacción PIN usando la referencia del canal.
+        /// Endpoint: /GetPINResult
+        /// </summary>
+        public ResPINSending GetPINResult(string UrlCGP_PIN, ReqTransferInfoChannelRef pinData)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(pinData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        //        var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_PIN + "/GetPINResult", content).Result;
+                var response = _client.PostAsync(UrlCGP_PIN + "/GetPINResult", content).Result;
 
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            var jsonResponse = response.Content.ReadAsStringAsync().Result;
-        //            return JsonConvert.DeserializeObject<ResPINSending>(jsonResponse);
-        //        }
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
+                    return JsonConvert.DeserializeObject<ResPINSending>(jsonResponse);
+                }
 
-        //        return new ResPINSending
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener el resultado de la transacción PIN." } }
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ResPINSending
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetPINResult: {ex.Message}" } }
-        //        };
-        //    }
-        //}
-        //#endregion
+                return new ResPINSending
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener el resultado de la transacción PIN." } }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResPINSending
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetPINResult: {ex.Message}" } }
+                };
+            }
+        }
+        #endregion
 
-        //#region 6.x GetPINDataByChannelRef
-        ///// <summary>
-        ///// ResTransferInfo GetPINDataByChannelRef (ReqTransferInfoChannelRef PINData)
-        ///// Consulta datos y resultado de una transacción PIN usando la referencia interna del canal.
-        ///// Endpoint: /GetPINDataByChannelRef
-        ///// </summary>
-        //public ResTransferInfo GetPINDataByChannelRef( ErrorDto<(Models.KindoSinpe.ParametrosSinpe, HttpClient)> parametros, ReqTransferInfoChannelRef pinData)
-        //{
-        //    try
-        //    {
-        //        var json = JsonConvert.SerializeObject(pinData);
-        //        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        #region 6.x GetPINDataByChannelRef
+        /// <summary>
+        /// ResTransferInfo GetPINDataByChannelRef (ReqTransferInfoChannelRef PINData)
+        /// Consulta datos y resultado de una transacción PIN usando la referencia interna del canal.
+        /// Endpoint: /GetPINDataByChannelRef
+        /// </summary>
+        public ResTransferInfo GetPINDataByChannelRef(string UrlCGP_PIN, ReqTransferInfoChannelRef pinData)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(pinData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        //        var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_PIN + "/GetPINDataByChannelRef", content).Result;
+                var response = _client.PostAsync(UrlCGP_PIN + "/GetPINDataByChannelRef", content).Result;
 
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            var jsonResponse = response.Content.ReadAsStringAsync().Result;
-        //            return JsonConvert.DeserializeObject<ResTransferInfo>(jsonResponse);
-        //        }
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
+                    return JsonConvert.DeserializeObject<ResTransferInfo>(jsonResponse);
+                }
 
-        //        return new ResTransferInfo
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo consultar la transacción PIN por referencia de canal." } }
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ResTransferInfo
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetPINDataByChannelRef: {ex.Message}" } }
-        //        };
-        //    }
-        //}
-        //#endregion
+                return new ResTransferInfo
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo consultar la transacción PIN por referencia de canal." } }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResTransferInfo
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetPINDataByChannelRef: {ex.Message}" } }
+                };
+            }
+        }
+        #endregion
 
-        //#region 6.x GetPINDataBySINPERef
-        ///// <summary>
-        ///// ResTransferInfo GetPINDataBySINPERef (ReqTransferInfoSINPERef PINData)
-        ///// Consulta datos y resultado de una transacción PIN usando el número de referencia SINPE.
-        ///// Endpoint: /GetPINDataBySINPERef
-        ///// </summary>
-        //public ResTransferInfo GetPINDataBySINPERef( ErrorDto<(Models.KindoSinpe.ParametrosSinpe, HttpClient)> parametros, ReqTransferInfoSINPERef pinData)
-        //{
-        //    try
-        //    {
-        //        var json = JsonConvert.SerializeObject(pinData);
-        //        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        #region 6.x GetPINDataBySINPERef
+        /// <summary>
+        /// ResTransferInfo GetPINDataBySINPERef (ReqTransferInfoSINPERef PINData)
+        /// Consulta datos y resultado de una transacción PIN usando el número de referencia SINPE.
+        /// Endpoint: /GetPINDataBySINPERef
+        /// </summary>
+        public ResTransferInfo GetPINDataBySINPERef(string UrlCGP_PIN, ReqTransferInfoSINPERef pinData)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(pinData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        //        var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_PIN + "/GetPINDataBySINPERef", content).Result;
+                var response = _client.PostAsync(UrlCGP_PIN + "/GetPINDataBySINPERef", content).Result;
 
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            var jsonResponse = response.Content.ReadAsStringAsync().Result;
-        //            return JsonConvert.DeserializeObject<ResTransferInfo>(jsonResponse);
-        //        }
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
+                    return JsonConvert.DeserializeObject<ResTransferInfo>(jsonResponse);
+                }
 
-        //        return new ResTransferInfo
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo consultar la transacción PIN por referencia SINPE." } }
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ResTransferInfo
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetPINDataBySINPERef: {ex.Message}" } }
-        //        };
-        //    }
-        //}
-        //#endregion
+                return new ResTransferInfo
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo consultar la transacción PIN por referencia SINPE." } }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResTransferInfo
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetPINDataBySINPERef: {ex.Message}" } }
+                };
+            }
+        }
+        #endregion
 
-        //#region 6.x SendBatch
-        ///// <summary>
-        ///// ResBatchSending SendBatch (ReqBatchSending BatchData)
-        ///// Solicita el envío de un lote de transacciones PIN. El procesamiento puede ser asincrónico.
-        ///// Endpoint: /SendBatch
-        ///// </summary>
-        //public ResBatchSending SendBatch( ErrorDto<(Models.KindoSinpe.ParametrosSinpe, HttpClient)> parametros, ReqBatchSending batchData)
-        //{
-        //    try
-        //    {
-        //        var json = JsonConvert.SerializeObject(batchData);
-        //        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        #region 6.x SendBatch
+        /// <summary>
+        /// ResBatchSending SendBatch (ReqBatchSending BatchData)
+        /// Solicita el envío de un lote de transacciones PIN. El procesamiento puede ser asincrónico.
+        /// Endpoint: /SendBatch
+        /// </summary>
+        public ResBatchSending SendBatch(string UrlCGP_PIN, ReqBatchSending batchData)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(batchData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        //        var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_PIN + "/SendBatch", content).Result;
+                var response = _client.PostAsync(UrlCGP_PIN + "/SendBatch", content).Result;
 
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            var jsonResponse = response.Content.ReadAsStringAsync().Result;
-        //            return JsonConvert.DeserializeObject<ResBatchSending>(jsonResponse);
-        //        }
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
+                    return JsonConvert.DeserializeObject<ResBatchSending>(jsonResponse);
+                }
 
-        //        return new ResBatchSending
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "Error al enviar el lote de transacciones PIN." } }
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ResBatchSending
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = -1, Message = $"Error en SendBatch: {ex.Message}" } }
-        //        };
-        //    }
-        //}
-        //#endregion
+                return new ResBatchSending
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "Error al enviar el lote de transacciones PIN." } }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResBatchSending
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en SendBatch: {ex.Message}" } }
+                };
+            }
+        }
+        #endregion
 
-        //#region 6.x GetBatchState
-        ///// <summary>
-        ///// ResBatchState GetBatchState (ReqBatchState BatchData)
-        ///// Consulta el estado actual de procesamiento de un lote de transacciones PIN.
-        ///// Endpoint: /GetBatchState
-        ///// </summary>
-        //public ResBatchState GetBatchState(ErrorDto<(Models.KindoSinpe.ParametrosSinpe, HttpClient)> parametros, ReqBatchState batchData)
-        //{
-        //    try
-        //    {
-        //        var json = JsonConvert.SerializeObject(batchData);
-        //        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        #region 6.x GetBatchState
+        /// <summary>
+        /// ResBatchState GetBatchState (ReqBatchState BatchData)
+        /// Consulta el estado actual de procesamiento de un lote de transacciones PIN.
+        /// Endpoint: /GetBatchState
+        /// </summary>
+        public ResBatchState GetBatchState(string UrlCGP_PIN, ReqBatchState batchData)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(batchData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        //        var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_PIN + "/GetBatchState", content).Result;
+                var response = _client.PostAsync(UrlCGP_PIN + "/GetBatchState", content).Result;
 
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            var jsonResponse = response.Content.ReadAsStringAsync().Result;
-        //            return JsonConvert.DeserializeObject<ResBatchState>(jsonResponse);
-        //        }
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
+                    return JsonConvert.DeserializeObject<ResBatchState>(jsonResponse);
+                }
 
-        //        return new ResBatchState
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener el estado del lote." } }
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ResBatchState
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetBatchState: {ex.Message}" } }
-        //        };
-        //    }
-        //}
-        //#endregion
+                return new ResBatchState
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener el estado del lote." } }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResBatchState
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetBatchState: {ex.Message}" } }
+                };
+            }
+        }
+        #endregion
 
-        //#region 6.x GetCustomerTransfers
-        ///// <summary>
-        ///// ResCustomerTransfers GetCustomerTransfers (ReqCustomerTransfers ConsultData)
-        ///// Obtiene todas las transferencias PIN que ha enviado o recibido un cliente en un rango de fechas.
-        ///// Endpoint: /GetCustomerTransfers
-        ///// </summary>
-        //public ResCustomerTransfers GetCustomerTransfers(ErrorDto<(Models.KindoSinpe.ParametrosSinpe, HttpClient)> parametros, ReqCustomerTransfers consultData)
-        //{
-        //    try
-        //    {
-        //        var json = JsonConvert.SerializeObject(consultData);
-        //        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        #region 6.x GetCustomerTransfers
+        /// <summary>
+        /// ResCustomerTransfers GetCustomerTransfers (ReqCustomerTransfers ConsultData)
+        /// Obtiene todas las transferencias PIN que ha enviado o recibido un cliente en un rango de fechas.
+        /// Endpoint: /GetCustomerTransfers
+        /// </summary>
+        public ResCustomerTransfers GetCustomerTransfers(string UrlCGP_PIN, ReqCustomerTransfers consultData)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(consultData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        //        var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_PIN + "/GetCustomerTransfers", content).Result;
+                var response = _client.PostAsync(UrlCGP_PIN + "/GetCustomerTransfers", content).Result;
 
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            var jsonResponse = response.Content.ReadAsStringAsync().Result;
-        //            return JsonConvert.DeserializeObject<ResCustomerTransfers>(jsonResponse);
-        //        }
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
+                    return JsonConvert.DeserializeObject<ResCustomerTransfers>(jsonResponse);
+                }
 
-        //        return new ResCustomerTransfers
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[]
-        //            {
-        //                new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener la lista de transferencias del cliente." }
-        //            }
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ResCustomerTransfers
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[]
-        //            {
-        //                new Error { Code = -1, Message = $"Error en GetCustomerTransfers: {ex.Message}" }
-        //            }
-        //        };
-        //    }
-        //}
-        //#endregion
+                return new ResCustomerTransfers
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[]
+                    {
+                        new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener la lista de transferencias del cliente." }
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResCustomerTransfers
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[]
+                    {
+                        new Error { Code = -1, Message = $"Error en GetCustomerTransfers: {ex.Message}" }
+                    }
+                };
+            }
+        }
+        #endregion
 
-        //#region 6.x GetAllTransfers
-        ///// <summary>
-        ///// ResAllTransfers GetAllTransfers (ReqAllTransfers FilterData)
-        ///// Obtiene todas las transferencias PIN registradas en un rango de fechas determinado (con paginación).
-        ///// Endpoint: /GetAllTransfers
-        ///// </summary>
-        //public ResAllTransfers GetAllTransfers(ErrorDto<(Models.KindoSinpe.ParametrosSinpe, HttpClient)> parametros, ReqAllTransfers filterData)
-        //{
-        //    try
-        //    {
-        //        var json = JsonConvert.SerializeObject(filterData);
-        //        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        #region 6.x GetAllTransfers
+        /// <summary>
+        /// ResAllTransfers GetAllTransfers (ReqAllTransfers FilterData)
+        /// Obtiene todas las transferencias PIN registradas en un rango de fechas determinado (con paginación).
+        /// Endpoint: /GetAllTransfers
+        /// </summary>
+        public ResAllTransfers GetAllTransfers(string UrlCGP_PIN, ReqAllTransfers filterData)
+        {
+            try
+            {
+                var json = JsonConvert.SerializeObject(filterData);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        //        var response = _client.PostAsync(parametros.Result.Item1.UrlCGP_PIN + "/GetAllTransfers", content).Result;
+                var response = _client.PostAsync(UrlCGP_PIN + "/GetAllTransfers", content).Result;
 
-        //        if (response.IsSuccessStatusCode)
-        //        {
-        //            var jsonResponse = response.Content.ReadAsStringAsync().Result;
-        //            return JsonConvert.DeserializeObject<ResAllTransfers>(jsonResponse);
-        //        }
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
+                    return JsonConvert.DeserializeObject<ResAllTransfers>(jsonResponse);
+                }
 
-        //        return new ResAllTransfers
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[]
-        //            {
-        //                new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener la lista de todas las transferencias." }
-        //            }
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ResAllTransfers
-        //        {
-        //            IsSuccessful = false,
-        //            Errors = new Error[]
-        //            {
-        //                new Error { Code = -1, Message = $"Error en GetAllTransfers: {ex.Message}" }
-        //            }
-        //        };
-        //    }
-        //}
-        //#endregion
+                return new ResAllTransfers
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[]
+                    {
+                        new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener la lista de todas las transferencias." }
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ResAllTransfers
+                {
+                    IsSuccessful = false,
+                    Errors = new Error[]
+                    {
+                        new Error { Code = -1, Message = $"Error en GetAllTransfers: {ex.Message}" }
+                    }
+                };
+            }
+        }
+        #endregion
     }
 }

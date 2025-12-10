@@ -144,7 +144,6 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
 
         private CoreInterno.CL_RespuestaTransaccion[] AplicaCongelados(
     int codEmpresa,
-    CoreInterno.SI_Rastro rastro,
     CoreInterno.CL_Transaccion[] transacciones,
     string storedProcedure)
         {
@@ -673,7 +672,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
         {
             try
             {
-                return AplicaCongelados(CodEmpresa, Rastro, Debitos, "sp_Sinpe_AplicaDebitosCongelados");
+                return AplicaCongelados(CodEmpresa, Debitos, "sp_Sinpe_AplicaDebitosCongelados");
             }
             catch
             {
@@ -693,7 +692,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
         {
             try
             {
-                return AplicaCongelados(CodEmpresa, Rastro, Creditos, "sp_Sinpe_AplicaCreditosCongelados");
+                return AplicaCongelados(CodEmpresa, Creditos, "sp_Sinpe_AplicaCreditosCongelados");
             }
             catch
             {
@@ -1455,7 +1454,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
             catch
             {
                 response.Code = -1;
-                response.Description = "Error al consultar el motivo de rechazo.";
+                response.Description = "Error al consultar solicitud.";
                 response.Result = null;
             }
             return response;
@@ -1536,6 +1535,137 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
             return "";
         }
 
+        /// <summary>
+        /// Consulta el motivo de rechazo de una transacción SINPE.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="idRechazo"></param>
+        /// <returns></returns>
+        public ErrorDto<string> fxTesConsultaMotivo(int CodEmpresa, int idRechazo)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto<string>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = ""
+            };
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                var query = $@"SELECT DESCRIPCION FROM SINPE_MOTIVOS where COD_MOTIVO = @rechazo ";
+                response.Result = connection.Query<string>(query, new { rechazo = idRechazo }).FirstOrDefault();
+            }
+            catch (Exception)
+            {
+                response.Code = -1;
+                response.Description = "Error al consultar el motivo de rechazo.";
+                response.Result = "Motivo desconocido.";
+            }
+            return response;
+        }
+
+        public ErrorDto<bool> RegistraDibitoCuenta(int CodEmpresa, int Nsolicitud, ResPINSending resPIN)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto<bool>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = true
+            };
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                var query = $@"UPDATE TES_TRANSACCIONES SET 
+                                    REFERENCIA_SINPE = @refSinpe ,
+                                    ID_RECHAZO = @idRechazo ,
+                                    ESTADO_SINPE = @estadoSinpe
+                                    WHERE Nsolicitud = @solicitud ";
+                response.Result = connection.Execute(query, new
+                {
+                    refSinpe = resPIN.PINSendingResult.SINPEReference,
+                    idRechazo = (resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
+                    estadoSinpe = resPIN.PINSendingResult.IsApproved,
+                    solicitud = Nsolicitud
+                }) > 0;
+            }
+            catch (Exception)
+            {
+                response.Code = -1;
+                response.Description = "Error al Actualizar Solicitud.";
+                response.Result = false;
+            }
+            return response;
+        }
+
+
+
+        /// <summary>
+        /// Actualiza el estado de una transacción SINPE a "Sinpe" o "Rechazada".
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="datos"></param>
+        /// <returns></returns>
+        public ErrorDto<bool> fxTesRespuestaSinpe(int CodEmpresa, TesTransaccion datos)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto<bool>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = false
+            };
+
+            string nDocumento = "";
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                if (datos.IdMotivoRechazo != 201)
+                {
+                    nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
+                                 .Substring(0, Math.Min(30, (datos.DocumentoBase + "-" + datos.contador.ToString()).Length));
+
+
+                    var query = $@"Update Tes_Transacciones Set Estado='I',Fecha_Emision= @FECHAEMITE, 
+                                    Ubicacion_Actual='T',FECHA_TRASLADO= @FECHATRASLADO, User_Genera = @USUARIO, 
+                                    Estado_Sinpe= @ESTADOSINPE, Id_Rechazo= @RECHAZO, Referencia_Sinpe= @REFERENCIA, 
+                                    Documento_Base = @DOCBASE, NDocumento = CASE WHEN USUARIO_AUTORIZA_ESPECIAL IS 
+                                    NULL THEN @NDOC ELSE @REFERENCIA END where NSolicitud= @SOLICITUD";
+                    var result = connection.Execute(query, new
+                    {
+                        FECHAEMITE = datos.FechaEmision,
+                        FECHATRASLADO = datos.FechaTraslado,
+                        USUARIO = datos.UsuarioGenera,
+                        ESTADOSINPE = datos.estadoSinpe,
+                        RECHAZO = datos.IdMotivoRechazo,
+                        REFERENCIA = datos.CodigoReferencia,
+                        DOCBASE = datos.DocumentoBase,
+                        NDOC = nDocumento,
+                        SOLICITUD = datos.NumeroSolicitud
+                    });
+                    if (result > 0)
+                    {
+                        response.Result = true;
+                    }
+                }
+                else
+                {
+                    response.Result = false;
+                }
+            }
+            catch (Exception)
+            {
+                response.Code = -1;
+                response.Description = "Error al consultar el motivo de rechazo.";
+                response.Result = false;
+            }
+            return response;
+        
+        }
         #endregion
     }
 }

@@ -1,5 +1,9 @@
-﻿using Galileo.Models.ERROR;
+﻿using Galileo.DataBaseTier;
+using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
+using Galileo.Models.Security;
+using Sinpe_PIN;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -9,14 +13,17 @@ namespace Galileo_API.DataBaseTier
     {
 
         private readonly InfoSinpeRequest _infoSinpe = new InfoSinpeRequest();
-        private readonly SinpeGalileoDtr _sinpeDTR;
+        private readonly SinpeGalileoPin _sinpePIN;
 
         private readonly MKindoServiceDb _mKindo;
+        private readonly MTesoreria _mTesoreria;
+
 
         public CoopeSanGabrielValidator(IConfiguration config)
         {
             _mKindo = new MKindoServiceDb(config);
-            _sinpeDTR = new SinpeGalileoDtr(config);
+            _sinpePIN = new SinpeGalileoPin(config);
+            _mTesoreria = new MTesoreria(config);
         }
 
         #region Validación de Solicitud SINPE
@@ -42,7 +49,7 @@ namespace Galileo_API.DataBaseTier
 
                 var context = CrearContexto(parametrosSinpe);
 
-                var servicio = _sinpeDTR.IsServiceAvailable(parametrosSinpe.Result.UrlCGP_DTR, context);
+                var servicio = _sinpePIN.IsServiceAvailable(parametrosSinpe.Result.UrlCGP_PIN, context);
                 if (!servicio.IsSuccessful)
                     return ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
 
@@ -90,12 +97,12 @@ namespace Galileo_API.DataBaseTier
                 UserCode = parametrosSinpe.Result.vUsuarioLog,
             };
 
-        private ResAccountInfo ConsultarCuenta(
+        private Galileo.Models.KindoSinpe.ResAccountInfo ConsultarCuenta(
             ErrorDto<ParametrosSinpe> parametrosSinpe,
             ReqBase context,
             string cuentaIban)
         {
-            var accountData = new ReqAccountInfo
+            var accountData = new Galileo.Models.KindoSinpe.ReqAccountInfo
             {
                 HostId = context.HostId,
                 OperationId = context.OperationId,
@@ -106,159 +113,213 @@ namespace Galileo_API.DataBaseTier
                 AccountNumber = cuentaIban
             };
 
-            return _sinpeDTR.GetAccountInfo(parametrosSinpe.Result.UrlCGP_DTR, accountData);
+            return _sinpePIN.GetAccountInfo(parametrosSinpe.Result.UrlCGP_PIN, accountData);
         }
 
 
-        //public ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario)
-        //{
-        //    var response = new ErrorDto()
-        //    {
-        //        Code = 0,
-        //        Description = "Ok"
-        //    };
-        //    var _parametrosSinpe = new ErrorDto<ParametrosSinpe>();
-        //    _parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, usuario);
+        /// <summary>
+        /// Realiza el proceso de emisión de una transferencia SINPE Crédito Directo
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Nsolicitud"></param>
+        /// <param name="vfecha"></param>
+        /// <param name="vUsuario"></param>
+        /// <param name="doc_base"></param>
+        /// <param name="contador"></param>
+        /// <returns></returns>
+        public ErrorDto fxTesEmisionSinpeCreditoDirecto(int CodEmpresa,
+            int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
+        {
+            //(Realiza el proceso de envio y recibido de SINPE)
+            var response = new ErrorDto
+            {
+                Code = 0,
+                Description = "Ok"
+            };
+            var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
 
-        //    try
-        //    {
-        //        _infoSinpe.vInfo = new vInfoSinpe();
-        //        var cntInfoSinpe = _mKindo.fxTesConsultaInfoSinpe(CodEmpresa, solicitud);
-        //        if (cntInfoSinpe.Code == -1)
-        //        {
-        //            response.Code = cntInfoSinpe.Code;
-        //            response.Description = cntInfoSinpe.Description;
-        //            return response;
-        //        }
-        //        _infoSinpe.vInfo = cntInfoSinpe.Result;
 
-        //        if (!System.String.IsNullOrEmpty(_infoSinpe.vInfo.Cedula) && !System.String.IsNullOrEmpty(_infoSinpe.vInfo.CuentaIBAN))
-        //        {
-        //            //Valido cuenta IBAN
-        //            if (MKindoServiceDb.IsValidCostaRicaIBAN(_infoSinpe.vInfo.CuentaIBAN))
-        //            {
-        //                //Valido si el servicio esta disponible
-        //                ReqBase context = new ReqBase
-        //                {
-        //                    HostId = _parametrosSinpe.Result.vHostPin,
-        //                    OperationId = OperationId.ToString(),
-        //                    ClientIPAddress = _parametrosSinpe.Result.vIpHost,
-        //                    CultureCode = "ES-CR",
-        //                    UserCode = _parametrosSinpe.Result.vUsuarioLog,
-        //                };
+            var respuesta = new RespuestaRegistro();
+            var datos = new TesTransaccion();
+            bool estadoSinpe = true;
+            int idRechazo = 0;
+            string rechazo = "";
+            try
+            {
+                if (Nsolicitud > 0)
+                {
+                    var servicioDisponible = fxValidacionSinpe(CodEmpresa, Nsolicitud.ToString(), vUsuario);
+                    if (servicioDisponible.Code == -1)
+                    {
+                        estadoSinpe = false;
+                        idRechazo = 83;
+                        rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
+                    }
+                    else
+                    {
+                        respuesta = fxTesEnvioSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vUsuario).Result;
 
-        //                var servicio = _sinpeDTR.IsServiceAvailable(_parametrosSinpe.Result.UrlCGP_DTR, context);
-        //                if (servicio.IsSuccessful)
-        //                {
-        //                    //Valido informacion de la cuenta
-        //                    ReqAccountInfo accountData = new ReqAccountInfo
-        //                    {
-        //                        HostId = context.HostId,
-        //                        OperationId = context.OperationId,
-        //                        ClientIPAddress = context.ClientIPAddress,
-        //                        CultureCode = context.CultureCode,
-        //                        UserCode = context.UserCode,
-        //                        Id = null,
-        //                        AccountNumber = _infoSinpe.vInfo.CuentaIBAN
-        //                    };
-        //                    var cuenta = _sinpeDTR.GetAccountInfo(_parametrosSinpe.Result.UrlCGP_DTR, accountData);
-        //                    if (!cuenta.IsSuccessful)
-        //                    {
-        //                        //if (cuenta.Errors.Count > 0)
-        //                        //{
-        //                        //    response.Description = "";
-        //                        //    foreach (var err in cuenta.Errors)
-        //                        //    {
-        //                        //        response.Description += err.Message + ", ";
-        //                        //    }
+                        if (respuesta.MotivoError != 0)
+                        {
+                            estadoSinpe = false;
+                            idRechazo = 83;
+                            rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
+                        }
+                        else
+                        {
+                            estadoSinpe = true;
+                        }
 
-        //                        //    if (string.IsNullOrEmpty(response.Description))
-        //                        //    {
-        //                        //        response.Description = solicitud.ToString() + " - " + "Error al obtener información de la cuenta.";
-        //                        //    }
-        //                        //    //elimino la ultima coma
-        //                        //    response.Description = response.Description.TrimEnd(',', ' ');
+                    }
 
-        //                        //    response.Code = -1;
-        //                        //}
-        //                    }
-        //                    else
-        //                    {
+                    //Guardar la respuesta en la transacción
+                    datos.NumeroSolicitud = Nsolicitud;
+                    datos.FechaEmision = vfecha;
+                    datos.FechaTraslado = vfecha;
+                    datos.UsuarioGenera = vUsuario;
+                    datos.estadoSinpe = estadoSinpe;
+                    datos.IdMotivoRechazo = idRechazo;
+                    datos.CodigoReferencia = respuesta.CodigoReferencia;
+                    datos.DocumentoBase = doc_base.ToString();
+                    datos.contador = contador.ToString();
 
-        //                        //response.Description = $@"La cuenta IBAN {_infoSinpe.vInfo.CuentaIBAN} registrada a 
-        //                        //        nombre de {cuenta.Account.Holder} cédula: {cuenta.Account.HolderId} Tipo Id: {_infoSinpe.vInfo.tipoID} 
-        //                        //        Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCode}-{cuenta.Account.EntityName}";
+                    if (_mKindo.fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
+                    {
+                        _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Se produjo un error al actualizar la transacción", vUsuario);
+                    }
 
-        //                        ////Valido tipo de cuenta
-        //                        //var divisa = _mKindo.GetCurrencyIsoCode(_infoSinpe.vInfo.cod_divisa);
-        //                        //if (divisa != cuenta.Account.CurrencyCode)
-        //                        //{
-        //                        //    return new ErrorDto
-        //                        //    {
-        //                        //        Code = -1,
-        //                        //        Description = response.Description + " - No. " + solicitud.ToString() + " - " + "La divisa de la cuenta no es válida."
-        //                        //    };
-        //                        //}
+                    if (estadoSinpe == true)
+                    {
+                        _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Emisión Transferencia Sinpe: Exitosa", vUsuario);
+                    }
+                    else
+                    {
+                        _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Transferencia Sinpe rechazada: {rechazo} ", vUsuario);
+                    }
+                }
+                else
+                {
+                    response.Code = -1;
+                    response.Description = "No se ha indicado una solicitud válida.";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
 
-        //                        ////Valida cedula
-        //                        //var cedula = _mKindo.IsValidCostaRicaId(_infoSinpe.vInfo.Cedula, cuenta.Account.HolderIdType);
-        //                        //if (!cedula)
-        //                        //{
-        //                        //    return new ErrorDto
-        //                        //    {
-        //                        //        Code = -1,
-        //                        //        Description = response.Description + " - No. " + solicitud.ToString() + " - " + "La cédula no es válida."
-        //                        //    };
-        //                        //}
-        //                        //Valido si la cedula perteneca a la cuenta, IMPLEMENTAR DESPUES
-        //                        //if(_infoSinpe.vInfo.Cedula.ToString().Trim() != cuenta.Account.HolderId)
-        //                        //{
-        //                        //    return new ErrorDto
-        //                        //    {
-        //                        //        Code = -1,
-        //                        //        Description = solicitud.ToString() + " - " + "La cédula no es válida."
-        //                        //    };  
-        //                        //}
-        //                    }
-        //                }
-        //                else
-        //                {
-        //                    //if (servicio.Errors.Count > 0)
-        //                    //{
-        //                    //    foreach (var err in servicio.Errors)
-        //                    //    {
-        //                    //        response.Description += err.Message;
-        //                    //    }
+            return response;
+        }
 
-        //                    //    if (string.IsNullOrEmpty(response.Description))
-        //                    //    {
-        //                    //        response.Description = solicitud.ToString() + " - " + "Error al obtener información de la cuenta.";
-        //                    //    }
 
-        //                    //    response.Code = -1;
-        //                    //}
+        private ErrorDto<RespuestaRegistro> fxTesEnvioSinpeCreditoDirecto(int CodEmpresa, int Nsolicitud, string vUsuario)
+        {
 
-        //                    response.Code = -1;
-        //                    response.Description = servicio.Errors[0].Message;
+            var resp = new ErrorDto<RespuestaRegistro>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = null
+            };
 
-        //                }
-        //            }
-        //            else
-        //            {
-        //                response.Code = -1;
-        //                response.Description = "Cuenta IBAN no Valida";
-        //            }
-        //        }
+            var solicitud = new TesTransaccion();
 
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        response.Code = -1;
-        //        response.Description = "Ocurrió un problema con la validación. - " + ex.Message;
-        //    }
-        //    return response;
 
-        //}
+            var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
+            // var response = new ResPINSending();
+            var pinData = new Galileo.Models.KindoSinpe.ReqPINSending();
+
+            string detalle = "";
+
+            try
+            {
+                solicitud = _mKindo.fxTesConsultaSolicitud(CodEmpresa, Nsolicitud).Result;
+
+                var context = CrearContexto(parametrosSinpe);
+
+                pinData.HostId = context.HostId;
+                pinData.OperationId = context.OperationId;
+                pinData.ClientIPAddress = context.ClientIPAddress;
+                pinData.CultureCode = context.CultureCode;
+                pinData.UserCode = context.UserCode;
+                pinData.PINData = new Galileo.Models.KindoSinpe.PINTransfer()
+                {
+                    ChannelReference = solicitud.NDocumento.PadLeft(10, '0'),
+                    Amount = solicitud.Monto,
+                    TransactionDate = DateTime.Now,
+                    Origin = new Galileo.Models.KindoSinpe.OriginCustomer()
+                    {
+                        Id = solicitud.CedulaOrigen.Replace("-", ""),
+                        Name = solicitud.NombreOrigen,
+                        IBAN1 = solicitud.CuentaOrigen,
+                        CreditIBAN = false,
+                        Email = solicitud.CorreoNotifica?.Trim()
+                    },
+                    Destination = new Galileo.Models.KindoSinpe.DestinationCustomer()
+                    {
+                        Id = solicitud.Codigo.Replace("-", ""),
+                        Name = solicitud.Beneficiario,
+                        IBAN = solicitud.Cuenta
+                    },
+                    CustomFields = new List<Galileo.Models.KindoSinpe.CustomField>()
+                    {
+                        new Galileo.Models.KindoSinpe.CustomField()
+                        {
+                            Name = "Email",
+                            Value = solicitud.CorreoNotifica?.Trim()
+                        },
+                        new Galileo.Models.KindoSinpe.CustomField()
+                        {
+                            Name = "Servicio",
+                            Value = "CCD"
+                        }
+                    }
+                };
+
+                var response = _sinpePIN.SendPIN(parametrosSinpe.Result.UrlCGP_PIN, pinData);
+                if (response.IsSuccessful)
+                {
+                    var updateNSolicitud = _mKindo.RegistraDibitoCuenta(CodEmpresa, Nsolicitud, response).Result;
+
+
+                    return new ErrorDto<RespuestaRegistro>
+                    {
+                        Code = 0,
+                        Description = "Ok",
+                        Result = new RespuestaRegistro
+                        {
+                            MotivoError = 0,
+                            CodigoReferencia = response.PINSendingResult.SINPEReference
+                        }
+                    };
+                }
+                else
+                {
+                    return new ErrorDto<RespuestaRegistro>
+                    {
+                        Code = -1,
+                        Description = "Error al enviar PIN",
+                        Result = new RespuestaRegistro
+                        {
+                            MotivoError = response.Errors[0].Code,
+                            CodigoReferencia = "",
+                            MotivoErrorInterno = response.Errors[0].Message
+                        }
+                    };
+                }
+            }
+            catch (Exception)
+            {
+                resp.Code = -1;
+                resp.Description = "Error al enviar la solicitud de crédito directo a SINPE.";
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+
+
 
 
         #endregion

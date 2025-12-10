@@ -578,7 +578,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 divisa = t.cod_divisa,
                 estado = t.estado,
                 monto = t.monto.Value,
-                id_banco = t.id_banco,
+                id_banco = (int)t.id_banco,
                 cod_unidad = t.cod_unidad,
                 cod_concepto = t.cod_concepto,
                 tipo = t.tipo
@@ -605,7 +605,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private void ProcesarRegAutorizacion(int CodEmpresa, string usuario, TesTransaccionDto t)
         {
-            var banco = mTesoreria.fxTesBancoDocsValor(CodEmpresa, t.id_banco, t.tipo, "REG_AUTORIZACION");
+            var banco = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (int)t.id_banco, t.tipo, "REG_AUTORIZACION");
             if (banco.Code == -1) return;
 
             t.entregado = "N";
@@ -634,7 +634,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private ErrorDto EmitirSiAplica(int CodEmpresa, string usuario, TesTransaccionDto t, ErrorDto res)
         {
-            var emitir = mTesoreria.fxTesBancoDocsValor(CodEmpresa, t.id_banco, t.tipo, "REG_EMISION").Result;
+            var emitir = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (int)t.id_banco, t.tipo, "REG_EMISION").Result;
             if (emitir != "0") return res;
 
             if (t.nsolicitud == 0)
@@ -1574,7 +1574,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (t.tipo_ced_origen is null)
                 errores.Add(" - Tipo Beneficiario no es válido ...\n");
 
-            if (mTesoreria.fxTesCuentaObligatoriaVerifica(CodEmpresa, t.id_banco).Result &&
+            if (mTesoreria.fxTesCuentaObligatoriaVerifica(CodEmpresa, (int)t.id_banco).Result &&
                 string.IsNullOrWhiteSpace(t.cta_ahorros))
             {
                 errores.Add(" - La cuenta destino es requerida para este banco...\n");
@@ -1592,25 +1592,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private void ValidarAutorizaciones(int CodEmpresa, string usuario, TesTransaccionDto t, List<string> errores)
         {
-            if (!mTesoreria.fxTesBancoValida(CodEmpresa, t.id_banco, usuario).Result)
+            if (!mTesoreria.fxTesBancoValida(CodEmpresa, (int)t.id_banco, usuario).Result)
                 errores.Add("- El Usuario Actual no esta Autorizado a utilizar este Banco...\n");
 
             if (!mTesoreria.fxTesTipoAccesoValida(CodEmpresa, t.id_banco.ToString(), usuario, t.tipo, "S").Result)
                 errores.Add("- El Usuario Actual no esta Autorizado a utilizar este Tipo de Transacción...\n");
 
-            if (!mTesoreria.fxTesConceptoValida(CodEmpresa, t.id_banco, usuario, t.cod_concepto).Result)
+            if (!mTesoreria.fxTesConceptoValida(CodEmpresa, (int)t.id_banco, usuario, t.cod_concepto).Result)
                 errores.Add(" - El Usuario Actual no esta Autorizado a utilizar este Concepto...\n");
 
-            if (!mTesoreria.fxTesUnidadValida(CodEmpresa, t.id_banco, usuario, t.cod_unidad).Result)
+            if (!mTesoreria.fxTesUnidadValida(CodEmpresa, (int)t.id_banco, usuario, t.cod_unidad).Result)
                 errores.Add("- El Usuario Actual no esta Autorizado a utilizar esta unidad...\n");
         }
 
         private void ValidarDocumentoSiAplica(int CodEmpresa, TesTransaccionDto t, List<string> errores)
         {
-            bool regEmision = mTesoreria.fxTesBancoDocsValor(CodEmpresa, t.id_banco, t.tipo, "REG_EMISION").Result == "0";
+            bool regEmision = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (int)t.id_banco, t.tipo, "REG_EMISION").Result == "0";
             if (!regEmision) return;
 
-            bool docAuto = mTesoreria.fxTesBancoDocsValor(CodEmpresa, t.id_banco, t.tipo, "DOC_AUTO").Result == "0";
+            bool docAuto = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (int)t.id_banco, t.tipo, "DOC_AUTO").Result == "0";
             if (!docAuto) return;
 
             var vDocumento = t.ndocumento ?? "";
@@ -1621,7 +1621,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 return;
             }
 
-            if (!mTesoreria.fxTesDocumentoVerifica(CodEmpresa, t.id_banco, t.tipo, t.ndocumento).Result)
+            if (!mTesoreria.fxTesDocumentoVerifica(CodEmpresa, (int)t.id_banco, t.tipo, t.ndocumento).Result)
                 errores.Add(" - Esta Solicitud se AutoEmite / El #Documento para su Emisión ya se encuentra registrado...\n");
         }
 

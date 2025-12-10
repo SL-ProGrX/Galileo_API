@@ -50,67 +50,36 @@ namespace Galileo_API.DataBaseTier
 
         #endregion
 
-        ///// <summary>
-        ///// Servicio para Validacion SINPE ASECCSS
-        ///// </summary>
-        ///// <param name="CodEmpresa"></param>
-        ///// <param name="Nsolicitud"></param>
-        ///// <param name="vfecha"></param>
-        ///// <param name="vUsuario"></param>
-        ///// <param name="doc_base"></param>
-        ///// <param name="contador"></param>
-        ///// <returns></returns>
-        //public ErrorDto fxTesEmisionSinpeCreditoDirecto(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
-        //{
-        //    try
-        //    {
-        //        var request = _cliente.fxTesEmisionSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador);
-        //        return new ErrorDto
-        //        {
-        //            Code = request.Code,
-        //            Description = request.Description
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ErrorDto
-        //        {
-        //            Code = -1,
-        //            Description = $"Error al TesEmisionSinpeCreditoDirecto: {ex.Message}"
-        //        };
-        //    }
-        //}
-
-        ///// <summary>
-        ///// 
-        ///// </summary>
-        ///// <param name="CodEmpresa"></param>
-        ///// <param name="Nsolicitud"></param>
-        ///// <param name="vfecha"></param>
-        ///// <param name="vUsuario"></param>
-        ///// <param name="doc_base"></param>
-        ///// <param name="contador"></param>
-        ///// <returns></returns>
-        //public ErrorDto fxTesEmisionSinpeTiempoReal(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
-        //{
-        //    try
-        //    {
-        //        var request = _cliente.fxTesEmisionSinpeTiempoReal(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador);
-        //        return new ErrorDto
-        //        {
-        //            Code = request.Code,
-        //            Description = request.Description
-        //        };
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return new ErrorDto
-        //        {
-        //            Code = -1,
-        //            Description = $"Error al fxTesEmisionSinpeTiempoReal: {ex.Message}"
-        //        };
-        //    }
-        //}
+        /// <summary>
+        /// Servicio para Validacion SINPE ASECCSS
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Nsolicitud"></param>
+        /// <param name="vfecha"></param>
+        /// <param name="vUsuario"></param>
+        /// <param name="doc_base"></param>
+        /// <param name="contador"></param>
+        /// <returns></returns>
+        public ErrorDto fxTesEmisionSinpeCreditoDirecto(int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
+        {
+            try
+            {
+                var request = _cliente.fxTesEmisionSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador);
+                return new ErrorDto
+                {
+                    Code = request.Code,
+                    Description = request.Description
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = $"Error al TesEmisionSinpeCreditoDirecto: {ex.Message}"
+                };
+            }
+        }
 
     }
 }
