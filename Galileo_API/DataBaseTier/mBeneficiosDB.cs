@@ -32,8 +32,8 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 {
-                    var query = $"select nombre from socios where cedula = '{cedula.Trim()}'";
-                    info.Description = connection.Query<string>(query).FirstOrDefault();
+                    var query = "select nombre from socios where cedula = @cedula";
+                    info.Description = connection.Query<string>(query, new { cedula = cedula.Trim() }).FirstOrDefault();
                 }
             }
             catch (Exception ex)

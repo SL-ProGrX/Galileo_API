@@ -149,9 +149,9 @@ namespace Galileo.DataBaseTier
                     sif = sifResult;
 
 
-                    query = $@"select isnull(count(*),0) as Existe from CntX_cuentas where cod_cuenta = '{vCuenta}' and acepta_movimientos = 1 and cod_contabilidad = {sif.Cod_Empresa_Enlace}";
+                    query = @"select isnull(count(*),0) as Existe from CntX_cuentas where cod_cuenta = @codCuenta and acepta_movimientos = 1 and cod_contabilidad = @codContabilidad";
 
-                    var validaResult = connection.Query<CntValidaDto>(query).FirstOrDefault();
+                    var validaResult = connection.Query<CntValidaDto>(query, new { codCuenta = vCuenta, codContabilidad = sif.Cod_Empresa_Enlace }).FirstOrDefault();
                     if (validaResult != null)
                     {
                         info = validaResult;

@@ -20,7 +20,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<ActivosParametrosData> Activos_Parametros_Consultar(int CodEmpresa)
+        public ErrorDto<ActivosParametrosData?> Activos_Parametros_Consultar(int CodEmpresa)
         {
             const string sql = @"
                 SELECT cod_empresa,
@@ -46,10 +46,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// Método para guardar los parámetros generales de activos fijos.
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto Activos_Parametros_Guardar(int CodEmpresa, string usuario, ActivosParametrosData datos)
+        public ErrorDto Activos_Parametros_Guardar(int CodEmpresa, ActivosParametrosData datos)
         {
             var result = DbHelper.CreateOkResponse();
 
@@ -61,8 +60,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 var existe = connection.QueryFirstOrDefault<int>(sqlExiste);
 
                 result = existe > 0
-                    ? Activos_Parametros_Actualizar(CodEmpresa, usuario, datos)
-                    : Activos_Parametros_Insertar(CodEmpresa, usuario, datos);
+                    ? Activos_Parametros_Actualizar(CodEmpresa, datos)
+                    : Activos_Parametros_Insertar(CodEmpresa, datos);
             }
             catch (Exception ex)
             {
@@ -81,7 +80,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDto Activos_Parametros_Actualizar(int CodEmpresa, string usuario, ActivosParametrosData datos)
+        private ErrorDto Activos_Parametros_Actualizar(int CodEmpresa,ActivosParametrosData datos)
         {
             const string sql = @"
                 UPDATE Activos_parametros
@@ -116,7 +115,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDto Activos_Parametros_Insertar(int CodEmpresa, string usuario, ActivosParametrosData datos)
+        private ErrorDto Activos_Parametros_Insertar(int CodEmpresa, ActivosParametrosData datos)
         {
             const string sql = @"
                 INSERT INTO Activos_parametros

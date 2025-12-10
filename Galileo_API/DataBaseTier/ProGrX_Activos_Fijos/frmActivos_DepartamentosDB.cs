@@ -71,7 +71,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Construye parámetros comunes para listas paginadas (departamentos y secciones)
         /// </summary>
-        private DynamicParameters BuildPagedListParameters(
+        private  static DynamicParameters BuildPagedListParameters(
             FiltrosLazyLoadData? filtros,
             string defaultSortField,
             string? codDepartamento = null)

@@ -25,10 +25,10 @@ namespace Galileo.DataBaseTier
             switch (cuenta.Cuenta)
             {
                 case "T": //Tipo de Cuenta
-                    Query = $@" select cod_cuenta,cod_cuenta_Mask, descripcion,acepta_movimientos, COD_DIVISA  
-                                            from CntX_Cuentas where cuenta_madre = ''
-                                      and cod_contabilidad = '{cuenta.Contabilidad}'  
-                                      and TIPO_CUENTA = '{cuenta.Cuenta}' order by cod_cuenta";
+                    Query = @"select cod_cuenta, cod_cuenta_Mask, descripcion, acepta_movimientos, COD_DIVISA
+                                from CntX_Cuentas where cuenta_madre = ''
+                                and cod_contabilidad = @Contabilidad
+                                and TIPO_CUENTA = @TipoCuenta order by cod_cuenta";
                     break;
                 default:
                     string procedure = "spCntX_Consulta_Cuentas";
@@ -57,7 +57,12 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(clienteConnString);
                 {
-                    info = connection.Query<CtnxCuentasDto>(Query).ToList();
+                    var parameters = new
+                    {
+                        Contabilidad = cuenta.Contabilidad,
+                        TipoCuenta = cuenta.Cuenta
+                    };
+                    info = connection.Query<CtnxCuentasDto>(Query, parameters).ToList();
                 }
             }
             catch (Exception ex)

@@ -99,7 +99,6 @@ ORDER BY
 OFFSET @offset ROWS
 FETCH NEXT @fetch ROWS ONLY;";
 
-        // SQL usados en el traslado (todo constante)
         private const string SqlSelectFechaAsiento = @"
 SELECT Fecha_Asiento 
 FROM Activos_Asientos

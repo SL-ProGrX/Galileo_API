@@ -64,8 +64,13 @@ namespace Galileo.DataBaseTier
 
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-                    string queryExist = $@"SELECT COUNT(*) FROM GA_Files WHERE Llave_01 = '{data.llave_01}' AND Llave_02 = '{data.llave_02}' AND Llave_03 = '{data.llave_03}'";
-                    int count = connection.QuerySingle<int>(queryExist);
+                    string queryExist = @"SELECT COUNT(*) FROM GA_Files WHERE Llave_01 = @Llave_01 AND Llave_02 = @Llave_02 AND Llave_03 = @Llave_03";
+                    int count = connection.QuerySingle<int>(queryExist, new
+                    {
+                        Llave_01 = data.llave_01,
+                        Llave_02 = data.llave_02,
+                        Llave_03 = data.llave_03
+                    });
                     if (count > 0)
                     {
                         resp.Code = -1;
@@ -132,19 +137,24 @@ namespace Galileo.DataBaseTier
 
                 using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                 {
-                    string where = " ";
+                    // Build parameterized query
+                    string query = "SELECT * FROM GA_Files WHERE Llave_01 = @llave1";
+                    var parameters = new DynamicParameters();
+                    parameters.Add("@llave1", filtros.llave1, DbType.String);
+
                     if (filtros.llave2 != null)
                     {
-                        where += $"AND Llave_02 = '{filtros.llave2}'";
+                        query += " AND Llave_02 = @llave2";
+                        parameters.Add("@llave2", filtros.llave2, DbType.String);
                     }
 
                     if (filtros.llave3 != null)
                     {
-                        where += $"AND Llave_03 = '{filtros.llave3}'";
+                        query += " AND Llave_03 = @llave3";
+                        parameters.Add("@llave3", filtros.llave3, DbType.String);
                     }
 
-                    string query = $@"select * from GA_Files WHERE Llave_01 = '{filtros.llave1}'" + where;
-                    respGen = connection.Query<DocumentosArchivoDto>(query).ToList();
+                    respGen = connection.Query<DocumentosArchivoDto>(query, parameters).ToList();
                     resp = respGen;
 
                 }

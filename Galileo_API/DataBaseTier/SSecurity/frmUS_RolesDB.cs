@@ -62,10 +62,10 @@ namespace Galileo.DataBaseTier
                         "R.registro_Fecha, R.registro_Usuario " +
                         "FROM US_Roles R " +
                         "LEFT JOIN PGX_Clientes C ON R.cod_empresa = C.cod_Empresa " +
-                        $"WHERE R.descripcion LIKE '%{filtro}%' " +
+                        "WHERE R.descripcion LIKE @Filtro " +
                         "ORDER BY R.descripcion";
 
-                    return connection.Query<RolesObtenerDto>(strSQL).ToList();
+                    return connection.Query<RolesObtenerDto>(strSQL, new { Filtro = "%" + filtro + "%" }).ToList();
                 }
             }
             catch (Exception)
@@ -88,24 +88,27 @@ namespace Galileo.DataBaseTier
                 {
                     connection.Open();
 
-                    var existe = connection.QueryFirstOrDefault<int>($@"SELECT ISNULL(COUNT(*), 0) FROM US_Roles WHERE Cod_Rol = '{rol.Cod_Rol}'");
+                    var existe = connection.QueryFirstOrDefault<int>(
+                        @"SELECT ISNULL(COUNT(*), 0) FROM US_Roles WHERE Cod_Rol = @CodRol",
+                        new { CodRol = rol.Cod_Rol }
+                    );
 
                     if (existe == 0) // Insertar
                     {
-                        var strSQL = $@"INSERT INTO US_Roles (Cod_Rol, Descripcion, Activo, Registro_Fecha, Registro_Usuario) 
-                                        VALUES ('{rol.Cod_Rol.ToUpper()}', '{rol.Descripcion}', 1, GETDATE(), '{rol.Registro_Usuario}')";
+                        var strSQL = @"INSERT INTO US_Roles (Cod_Rol, Descripcion, Activo, Registro_Fecha, Registro_Usuario) 
+                                        VALUES (@CodRol, @Descripcion, 1, GETDATE(), @RegistroUsuario)";
 
-                        connection.Execute(strSQL);
+                        connection.Execute(strSQL, new { CodRol = rol.Cod_Rol.ToUpper(), Descripcion = rol.Descripcion, RegistroUsuario = rol.Registro_Usuario });
 
                         resp.Description = "Insercion Exitosa!";
                     }
                     else // Actualizar
                     {
 
-                        var strSQL = $@"UPDATE US_Roles SET Descripcion = '{rol.Descripcion}', 
-                                       Activo = {activo} WHERE Cod_Rol = '{rol.Cod_Rol}'";
+                        var strSQL = @"UPDATE US_Roles SET Descripcion = @Descripcion, 
+                                       Activo = @Activo WHERE Cod_Rol = @CodRol";
 
-                        connection.Execute(strSQL);
+                        connection.Execute(strSQL, new { Descripcion = rol.Descripcion, Activo = activo, CodRol = rol.Cod_Rol });
 
                         resp.Description = "Actualizacion Exitosa!";
                     }
