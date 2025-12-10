@@ -22,13 +22,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select descripcion from CntX_Unidades where cod_unidad = {pCodigo} and cod_contabilidad = {CodEmpresa}";
-
-                    info = connection.Query<CntUnidadDto>(query).FirstOrDefault();
-                    result = info?.Descripcion ?? "";
-
-                }
+                var query = $@"select descripcion from CntX_Unidades where cod_unidad = {pCodigo} and cod_contabilidad = {CodEmpresa}";
+                info = connection.Query<CntUnidadDto>(query).FirstOrDefault();
+                result = info?.Descripcion ?? "";
             }
             catch (Exception ex)
             {
@@ -48,13 +44,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select descripcion from CntX_Centro_Costos where cod_centro_Costo = {pCodigo} and cod_contabilidad = {CodEmpresa}";
-
-                    info = connection.Query<CntCentroCostosDto>(query).FirstOrDefault();
-                    result = info != null ? info.Descripcion : "";
-
-                }
+                var query = $@"select descripcion from CntX_Centro_Costos where cod_centro_Costo = {pCodigo} and cod_contabilidad = {CodEmpresa}";
+                info = connection.Query<CntCentroCostosDto>(query).FirstOrDefault();
+                result = info != null ? info.Descripcion : "";
             }
             catch (Exception ex)
             {
@@ -75,19 +67,15 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+                var query = $@"select * from CntX_Periodos where anio = Year({vFecha}) and mes = Month({vFecha}) and estado = 'P' and cod_contabilidad = {CodEmpresa}";
+                info = connection.Query<CntPeriodosDto>(query).ToList();
+                if (info.Count > 0)
                 {
-                    var query = $@"select * from CntX_Periodos where anio = Year({vFecha}) and mes = Month({vFecha}) and estado = 'P' and cod_contabilidad = {CodEmpresa}";
-
-                    info = connection.Query<CntPeriodosDto>(query).ToList();
-
-                    if (info.Count > 0)
-                    {
-                        result = true;
-                    }
-                    else
-                    {
-                        result = false;
-                    }
+                    result = true;
+                }
+                else
+                {
+                    result = false;
                 }
             }
             catch (Exception ex)
@@ -108,13 +96,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select ltrim(rtrim(Descripcion)) as 'Descripcion' from CntX_Cuentas where cod_cuenta = {pCuenta} and cod_contabilidad = {CodEmpresa}";
-
-                    info = connection.Query<CntDescripCuentaDto>(query).FirstOrDefault();
-                    result = info != null ? info.Descripcion : "";
-
-                }
+                var query = $@"select ltrim(rtrim(Descripcion)) as 'Descripcion' from CntX_Cuentas where cod_cuenta = {pCuenta} and cod_contabilidad = {CodEmpresa}";
+                info = connection.Query<CntDescripCuentaDto>(query).FirstOrDefault();
+                result = info != null ? info.Descripcion : "";
             }
             catch (Exception ex)
             {
@@ -134,40 +118,34 @@ namespace Galileo.DataBaseTier
 
             try
             {
-
-
                 vCuenta = fxgCntCuentaFormato(CodEmpresa, false, vCuenta, 0);
-
                 using var connection = new SqlConnection(stringConn);
+                var query = $@"select * from sif_empresa";
+                var sifResult = connection.Query<SifEmpresaDto>(query).FirstOrDefault();
+                if (sifResult == null)
                 {
-                    var query = $@"select * from sif_empresa";
-                    var sifResult = connection.Query<SifEmpresaDto>(query).FirstOrDefault();
-                    if (sifResult == null)
+                    return false;
+                }
+                sif = sifResult;
+
+                query = @"select isnull(count(*),0) as Existe from CntX_cuentas where cod_cuenta = @codCuenta and acepta_movimientos = 1 and cod_contabilidad = @codContabilidad";
+
+                var validaResult = connection.Query<CntValidaDto>(query, new { codCuenta = vCuenta, codContabilidad = sif.Cod_Empresa_Enlace }).FirstOrDefault();
+                if (validaResult != null)
+                {
+                    info = validaResult;
+                    if (info.Existe > 0)
                     {
-                        return false;
-                    }
-                    sif = sifResult;
-
-
-                    query = @"select isnull(count(*),0) as Existe from CntX_cuentas where cod_cuenta = @codCuenta and acepta_movimientos = 1 and cod_contabilidad = @codContabilidad";
-
-                    var validaResult = connection.Query<CntValidaDto>(query, new { codCuenta = vCuenta, codContabilidad = sif.Cod_Empresa_Enlace }).FirstOrDefault();
-                    if (validaResult != null)
-                    {
-                        info = validaResult;
-                        if (info.Existe > 0)
-                        {
-                            result = true;
-                        }
-                        else
-                        {
-                            result = false;
-                        }
+                        result = true;
                     }
                     else
                     {
                         result = false;
                     }
+                }
+                else
+                {
+                    result = false;
                 }
             }
             catch (Exception ex)
@@ -188,21 +166,15 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select descripcion from CntX_tipos_asientos where tipo_asiento = {vTipo} and cod_contabilidad = {CodEmpresa}";
-
-                    info = connection.Query<CntDescripTipoAsientoDto>(query).FirstOrDefault();
-                    result = info != null ? info.Descripcion : "";
-
-                }
+                var query = $@"select descripcion from CntX_tipos_asientos where tipo_asiento = {vTipo} and cod_contabilidad = {CodEmpresa}";
+                info = connection.Query<CntDescripTipoAsientoDto>(query).FirstOrDefault();
+                result = info != null ? info.Descripcion : "";
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
             }
-
             return result;
-
         }
 
         public string fxgCntAjustaCuentaContable(int CodEmpresa, string strCuenta)
@@ -215,43 +187,39 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+                var query = $@"select * from CntX_Contabilidades where cod_contabilidad = {CodEmpresa}";
+                info = connection.Query<CntContabilidadesDto>(query).FirstOrDefault();
+                if (info != null)
                 {
-                    var query = $@"select * from CntX_Contabilidades where cod_contabilidad = {CodEmpresa}";
+                    intCaracteres = info.Nivel1;
+                    intCaracteres = intCaracteres + info.Nivel2;
+                    intCaracteres = intCaracteres + info.Nivel3;
+                    intCaracteres = intCaracteres + info.Nivel4;
+                    intCaracteres = intCaracteres + info.Nivel5;
+                    intCaracteres = intCaracteres + info.Nivel6;
+                    intCaracteres = intCaracteres + info.Nivel7;
+                    intCaracteres = intCaracteres + info.Nivel8;
 
-                    info = connection.Query<CntContabilidadesDto>(query).FirstOrDefault();
-                    if (info != null)
+                    result = strCuenta.Trim();
+
+                    var sb = new System.Text.StringBuilder(result);
+                    for (int i = result.Length; i < intCaracteres; i++)
                     {
-                        intCaracteres = info.Nivel1;
-                        intCaracteres = intCaracteres + info.Nivel2;
-                        intCaracteres = intCaracteres + info.Nivel3;
-                        intCaracteres = intCaracteres + info.Nivel4;
-                        intCaracteres = intCaracteres + info.Nivel5;
-                        intCaracteres = intCaracteres + info.Nivel6;
-                        intCaracteres = intCaracteres + info.Nivel7;
-                        intCaracteres = intCaracteres + info.Nivel8;
-
-                        result = strCuenta.Trim();
-
-                        var sb = new System.Text.StringBuilder(result);
-                        for (int i = result.Length; i < intCaracteres; i++)
-                        {
-                            sb.Append('0');
-                        }
-                        result = sb.ToString();
+                        sb.Append('0');
                     }
-                    else
-                    {
-                        result = strCuenta.Trim();
-                    }
+                    result = sb.ToString();
                 }
+                else
+                {
+                    result = strCuenta.Trim();
+                }
+
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
             }
-
             return result;
-
         }
 
         public string fxgCntCuentaFormato(int CodEmpresa, bool blnMascara, string pCuenta, int optMensaje = 1)
@@ -262,9 +230,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 var param = sbgCntParametros(CodEmpresa);
-
                 result = RemoveHyphens(pCuenta);
-
                 pCuenta = result;
 
                 if (!double.TryParse(pCuenta, out _))
@@ -349,50 +315,49 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+                var query = $@"select * from sif_empresa";
+                var sifResult = connection.Query<SifEmpresaDto>(query).FirstOrDefault();
+
+                if (sifResult == null)
                 {
-                    var query = $@"select * from sif_empresa";
-                    var sifResult = connection.Query<SifEmpresaDto>(query).FirstOrDefault();
+                    info.Code = -1;
+                    info.Description = "No SifEmpresaDto found.";
+                    return info;
+                }
+                sif = sifResult;
 
-                    if (sifResult == null)
-                    {
-                        info.Code = -1;
-                        info.Description = "No SifEmpresaDto found.";
-                        return info;
-                    }
-                    sif = sifResult;
+                query = $@"select * from CntX_Contabilidades where cod_contabilidad = {sif.Cod_Empresa_Enlace}";
+                var contaResult = connection.Query<CntContabilidadesDto>(query).FirstOrDefault();
 
-                    query = $@"select * from CntX_Contabilidades where cod_contabilidad = {sif.Cod_Empresa_Enlace}";
-                    var contaResult = connection.Query<CntContabilidadesDto>(query).FirstOrDefault();
+                if (contaResult == null)
+                {
+                    info.Code = -1;
+                    info.Description = "No CntContabilidadesDto found.";
+                    return info;
+                }
+                conta = contaResult;
 
-                    if (contaResult == null)
-                    {
-                        info.Code = -1;
-                        info.Description = "No CntContabilidadesDto found.";
-                        return info;
-                    }
-                    conta = contaResult;
+                info.Result.gEnlace = sif.Cod_Empresa_Enlace;
 
-                    info.Result.gEnlace = sif.Cod_Empresa_Enlace;
-
-                    int[] niveles = new int[]
-                    {
+                int[] niveles = new int[]
+                {
                         conta.Nivel1, conta.Nivel2, conta.Nivel3, conta.Nivel4,
                         conta.Nivel5, conta.Nivel6, conta.Nivel7, conta.Nivel8
-                    };
+                };
 
-                    for (int idx = 0; idx < niveles.Length; idx++)
+                for (int idx = 0; idx < niveles.Length; idx++)
+                {
+                    int nivel = niveles[idx];
+                    if (nivel > 0)
                     {
-                        int nivel = niveles[idx];
-                        if (nivel > 0)
-                        {
-                            if (idx > 0)
-                                info.Result.gstrMascara += "-";
-                            info.Result.gstrNiveles += nivel;
-                            info.Result.gMascaraTChar += nivel;
-                            info.Result.gstrMascara += new string('#', nivel);
-                        }
+                        if (idx > 0)
+                            info.Result.gstrMascara += "-";
+                        info.Result.gstrNiveles += nivel;
+                        info.Result.gMascaraTChar += nivel;
+                        info.Result.gstrMascara += new string('#', nivel);
                     }
                 }
+
             }
             catch (Exception ex)
             {
@@ -402,6 +367,5 @@ namespace Galileo.DataBaseTier
 
             return info;
         }
-
     }
 }
