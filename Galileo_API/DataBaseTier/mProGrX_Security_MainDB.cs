@@ -21,28 +21,27 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+                //aseguro que strDetalleMovimiento sea de maximo 500
+                if (bitacora.strDetalleMovimiento.Length > 500)
                 {
-                    //aseguro que strDetalleMovimiento sea de maximo 500
-                    if (bitacora.strDetalleMovimiento.Length > 500)
-                    {
-                        bitacora.strDetalleMovimiento = bitacora.strDetalleMovimiento.Substring(0, 500);
-                    }
+                    bitacora.strDetalleMovimiento = bitacora.strDetalleMovimiento.Substring(0, 500);
+                }
 
-                    string nombreMaquina = Environment.MachineName;
+                string nombreMaquina = Environment.MachineName;
 
-                    if (nombreMaquina.Length > 500)
-                    {
-                        nombreMaquina = nombreMaquina.Substring(0, 100);
-                    }
+                if (nombreMaquina.Length > 500)
+                {
+                    nombreMaquina = nombreMaquina.Substring(0, 100);
+                }
 
-                    string macAddress = NetworkInterface
-                                        .GetAllNetworkInterfaces()
-                                        .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
-                                                      nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                                        .Select(nic => nic.GetPhysicalAddress().ToString())
-                                        .FirstOrDefault() ?? string.Empty;
+                string macAddress = NetworkInterface
+                                    .GetAllNetworkInterfaces()
+                                    .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
+                                                  nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                                    .Select(nic => nic.GetPhysicalAddress().ToString())
+                                    .FirstOrDefault() ?? string.Empty;
 
-                    string query = $@"exec spSEG_Bitacora_Add  
+                string query = $@"exec spSEG_Bitacora_Add  
                                                 {bitacora.pCliente} ,
                                                 '{bitacora.usuario}',
                                                 {bitacora.vModulo},
@@ -54,10 +53,9 @@ namespace Galileo.DataBaseTier
                                                 '',
                                                 '{macAddress}'";
 
-                    using var command = new SqlCommand(query, connection);
-                    command.ExecuteNonQuery();
-                    
-                }
+                using var command = new SqlCommand(query, connection);
+                command.ExecuteNonQuery();
+
                 response.Code = 0;
                 response.Description = "Bitácora registrada correctamente.";
             }

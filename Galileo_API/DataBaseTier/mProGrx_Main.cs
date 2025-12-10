@@ -569,16 +569,15 @@ namespace Galileo.DataBaseTier
             {
 
                 using var connection = new SqlConnection(stringConn);
+
+                var query = $@"exec spSYS_RA_Consulta_Status @cedula , @usuario";
+                var result = connection.Query<ConsultaStatusResultDto>(query, new { cedula = pCedula, usuario = pUsuario }).FirstOrDefault();
+
+                if (result != null && result.PERSONA_ID > 0 && result.AUTORIZACION_ID == 0)
                 {
-                    var query = $@"exec spSYS_RA_Consulta_Status @cedula , @usuario";
-                    var result = connection.Query<ConsultaStatusResultDto>(query, new { cedula = pCedula, usuario = pUsuario }).FirstOrDefault();
-
-                    if (result != null && result.PERSONA_ID > 0 && result.AUTORIZACION_ID == 0)
-                    {
-                        response.Result = false;
-                    }
-
+                    response.Result = false;
                 }
+
             }
             catch (Exception ex)
             {
@@ -614,28 +613,25 @@ namespace Galileo.DataBaseTier
                 }
 
                 using var connection = new SqlConnection(stringConn);
+                string? vFechaCorteNullable = _AuxiliarDB.validaFechaGlobal(vCorte);
+                string vFechaCorte = vFechaCorteNullable ?? string.Empty;
+
+                var query = $@"exec spSys_Estado_Cuenta_Corte @cedula , @corte, @email,@usuario ";
+                response.Code = connection.Query(query, new { cedula = vCedula, corte = vFechaCorte, email = vEmail, usuario = pUsuario }).FirstOrDefault();
+
+
+                // You can use queryResult here if needed
+
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
-                    string? vFechaCorteNullable = _AuxiliarDB.validaFechaGlobal(vCorte);
-                    string vFechaCorte = vFechaCorteNullable ?? string.Empty;
+                    EmpresaId = CodEmpresa,
+                    Usuario = pUsuario,
+                    DetalleMovimiento = $"Estado de Cuenta {vCedula}, email: {vEmail}, Corte: {vCorte} ",
+                    Movimiento = "Aplica - WEB",
+                    Modulo = 10
+                });
 
-                    var query = $@"exec spSys_Estado_Cuenta_Corte @cedula , @corte, @email,@usuario ";
-                    response.Code = connection.Query(query, new { cedula = vCedula, corte = vFechaCorte, email = vEmail, usuario = pUsuario }).FirstOrDefault();
-
-
-                    // You can use queryResult here if needed
-
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = pUsuario,
-                        DetalleMovimiento = $"Estado de Cuenta {vCedula}, email: {vEmail}, Corte: {vCorte} ",
-                        Movimiento = "Aplica - WEB",
-                        Modulo = 10
-                    });
-
-                    response.Description = "Estado de Cuenta enviado al Correo Electrónico registrado de la persona!";
-
-                }
+                response.Description = "Estado de Cuenta enviado al Correo Electrónico registrado de la persona!";
             }
             catch (Exception ex)
             {
