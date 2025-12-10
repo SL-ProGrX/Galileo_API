@@ -1,8 +1,10 @@
 ﻿using System.Data;
 using Dapper;
+using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.AF;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
 
@@ -35,18 +37,6 @@ namespace Galileo.DataBaseTier
             return string.Empty;
         }
 
-        private static string NormalizeSortField(string? sortField, params string[] allowed)
-        {
-            if (string.IsNullOrWhiteSpace(sortField))
-            {
-                return allowed[0];
-            }
-
-            return allowed.Contains(sortField, StringComparer.OrdinalIgnoreCase)
-                ? sortField
-                : allowed[0];
-        }
-
         #endregion
 
         #region Proveedores
@@ -62,10 +52,10 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = _portalDB.CreateConnection(CodCliente);
 
-                // Base WHERE (para total y datos)
+                // WHERE base sin texto del usuario
                 var baseWhere = "(ESTADO = 'A' OR ESTADO = 'T')";
 
-                if ((jFiltros.autoGestion ?? false) && (jFiltros.ventas ?? false))
+                if (jFiltros.autoGestion == true && jFiltros.ventas == true)
                 {
                     baseWhere += " AND (WEB_AUTO_GESTION = 1 OR WEB_FERIAS = 1)";
                 }
@@ -78,7 +68,7 @@ namespace Galileo.DataBaseTier
                     baseWhere += " AND WEB_FERIAS = 1";
                 }
 
-                // Total (como en código original: sin texto de filtro)
+                // Total
                 var countSql = $"SELECT COUNT(*) FROM CXP_PROVEEDORES WHERE {baseWhere}";
                 response.Result.Total = connection.QueryFirstOrDefault<int>(countSql);
 
@@ -221,14 +211,14 @@ namespace Galileo.DataBaseTier
                 var parameters = new DynamicParameters();
                 var where = BuildArticulosWhereClause(filtro, ref joinProdUen, parameters);
 
-                // Total
-                var countSql = $@"SELECT COUNT(P.COD_PRODUCTO) 
-                                  FROM pv_productos P
-                                  LEFT JOIN PV_PROD_CLASIFICA_SUB Cs 
-                                    ON Cs.COD_PRODCLAS = P.COD_PRODCLAS 
-                                   AND Cs.COD_LINEA_SUB = P.COD_LINEA_SUB
-                                  {joinProdUen}
-                                  {where}";
+                var countSql = $@"
+                    SELECT COUNT(P.COD_PRODUCTO) 
+                    FROM pv_productos P
+                    LEFT JOIN PV_PROD_CLASIFICA_SUB Cs 
+                        ON Cs.COD_PRODCLAS = P.COD_PRODCLAS 
+                       AND Cs.COD_LINEA_SUB = P.COD_LINEA_SUB
+                    {joinProdUen}
+                    {where}";
                 response.Result.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
                 var pagination = BuildPaginationClause(parameters, filtro.pagina, filtro.paginacion);
@@ -475,8 +465,9 @@ namespace Galileo.DataBaseTier
 
             if (!string.IsNullOrWhiteSpace(filtro))
             {
-                clauses.Add(@"(
-                    cod_orden LIKE @Filtro
+                clauses.Add(@"
+                (
+                    cod_orden   LIKE @Filtro
                     OR genera_user LIKE @Filtro
                     OR cod_solicitud LIKE @Filtro
                     OR nota LIKE @Filtro
@@ -515,7 +506,7 @@ namespace Galileo.DataBaseTier
 
         #endregion
 
-        #region Facturas proveedor (lista facturas de un proveedor)
+        #region Facturas por proveedor
 
         public FacturasDataLista ObtenerListaFacturas(
             int CodCliente,
@@ -537,8 +528,7 @@ namespace Galileo.DataBaseTier
                 var countSql = $@"
                     SELECT COUNT(cod_factura)  
                     FROM cpr_compras E 
-                    INNER JOIN cxp_Proveedores P 
-                        ON E.cod_proveedor = P.cod_proveedor 
+                    INNER JOIN cxp_Proveedores P ON E.cod_proveedor = P.cod_proveedor 
                     WHERE {baseWhere}";
                 info.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
@@ -555,8 +545,7 @@ namespace Galileo.DataBaseTier
                            P.descripcion AS Proveedor,
                            E.total
                     FROM cpr_compras E 
-                    INNER JOIN cxp_Proveedores P 
-                        ON E.cod_proveedor = P.cod_proveedor
+                    INNER JOIN cxp_Proveedores P ON E.cod_proveedor = P.cod_proveedor
                     WHERE {baseWhere}
                     ORDER BY E.cod_factura
                     {pagination}";
@@ -587,13 +576,17 @@ namespace Galileo.DataBaseTier
                 const string countSql = "SELECT COUNT(*) FROM usuarios";
                 info.Total = connection.QueryFirstOrDefault<int>(countSql);
 
-                var where = "ESTADO = 'A'";
+                string where;
                 var parameters = new DynamicParameters();
 
                 if (!string.IsNullOrWhiteSpace(filtro))
                 {
                     where = "(nombre LIKE @Filtro OR descripcion LIKE @Filtro) AND ESTADO = 'A'";
                     parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
+                }
+                else
+                {
+                    where = "ESTADO = 'A'";
                 }
 
                 var pagination = BuildPaginationClause(parameters, pagina, paginacion);
@@ -618,7 +611,7 @@ namespace Galileo.DataBaseTier
 
         #endregion
 
-        #region Facturas por proveedor (filtros complejos)
+        #region Facturas proveedor (filtros avanzados)
 
         public FacturasProveedorLista FacturaProveedor_Obtener(int CodCliente, string filtros)
         {
@@ -634,8 +627,7 @@ namespace Galileo.DataBaseTier
                 const string countSql = @"
                     SELECT COUNT(E.cod_compra) 
                     FROM cpr_Compras E 
-                    INNER JOIN cxp_proveedores P 
-                        ON E.cod_proveedor = P.cod_proveedor";
+                    INNER JOIN cxp_proveedores P ON E.cod_proveedor = P.cod_proveedor";
                 info.Total = connection.QueryFirstOrDefault<int>(countSql);
 
                 var clauses = new List<string>();
@@ -671,8 +663,7 @@ namespace Galileo.DataBaseTier
                            P.cod_proveedor,
                            RIGHT(REPLICATE('0', 10) + CAST(s.CPR_ID AS VARCHAR), 10) AS no_solicitud
                     FROM cpr_Compras E 
-                    INNER JOIN cxp_proveedores P 
-                        ON E.cod_proveedor = P.cod_proveedor
+                    INNER JOIN cxp_proveedores P ON E.cod_proveedor = P.cod_proveedor
                     LEFT JOIN CPR_SOLICITUD_PROV s 
                         ON s.ADJUDICA_ORDEN = E.COD_ORDEN 
                        AND s.PROVEEDOR_CODIGO = E.cod_proveedor
@@ -706,8 +697,7 @@ namespace Galileo.DataBaseTier
                 const string countSql = @"
                     SELECT COUNT(*) 
                     FROM cpr_compras_dev D 
-                    INNER JOIN cxp_proveedores P 
-                        ON D.cod_proveedor = P.cod_proveedor";
+                    INNER JOIN cxp_proveedores P ON D.cod_proveedor = P.cod_proveedor";
                 info.Total = connection.QueryFirstOrDefault<int>(countSql);
 
                 var parameters = new DynamicParameters();
@@ -731,8 +721,7 @@ namespace Galileo.DataBaseTier
                            D.notas,
                            D.fecha
                     FROM cpr_compras_dev D 
-                    INNER JOIN cxp_proveedores P 
-                        ON D.cod_proveedor = P.cod_proveedor
+                    INNER JOIN cxp_proveedores P ON D.cod_proveedor = P.cod_proveedor
                     {where}
                     ORDER BY D.cod_compra_dev
                     {pagination}";
@@ -815,9 +804,9 @@ namespace Galileo.DataBaseTier
                 if (!string.IsNullOrWhiteSpace(filtro))
                 {
                     where = @"
-                        WHERE  S.cedula LIKE @Filtro
-                            OR S.cedular LIKE @Filtro
-                            OR S.nombre LIKE @Filtro
+                        WHERE  S.cedula   LIKE @Filtro
+                            OR S.cedular  LIKE @Filtro
+                            OR S.nombre   LIKE @Filtro
                             OR M.Membresia LIKE @Filtro";
                     parameters.Add(_filtroParam, $"%{filtro}%", DbType.String);
                 }
@@ -825,8 +814,7 @@ namespace Galileo.DataBaseTier
                 var countSql = $@"
                     SELECT COUNT(*) 
                     FROM SOCIOS S 
-                    LEFT JOIN vAFI_Membresias M 
-                        ON M.Cedula = S.CEDULA 
+                    LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA 
                     {where}";
                 response.Result.Total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
@@ -835,8 +823,7 @@ namespace Galileo.DataBaseTier
                 var dataSql = $@"
                     SELECT S.cedula, S.cedular, S.nombre, M.Membresia 
                     FROM SOCIOS S
-                    LEFT JOIN vAFI_Membresias M 
-                        ON M.Cedula = S.CEDULA
+                    LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA
                     {where}
                     ORDER BY S.cedula
                     {pagination}";
@@ -856,7 +843,7 @@ namespace Galileo.DataBaseTier
 
         #endregion
 
-        #region Socios (lazy load genérico)
+        #region Socios (lazy load genérico con ordenamiento seguro)
 
         public ErrorDto<TablasListaGenericaModel> Socios_Obtener(int CodEmpresa, string jfiltro)
         {
@@ -881,38 +868,42 @@ namespace Galileo.DataBaseTier
                 {
                     where = @"
                         WHERE ( 
-                            S.cedula  LIKE @Filtro
-                         OR S.cedular LIKE @Filtro
-                         OR S.nombre LIKE @Filtro
+                            S.cedula   LIKE @Filtro
+                         OR S.cedular  LIKE @Filtro
+                         OR S.nombre   LIKE @Filtro
                          OR M.membresia LIKE @Filtro
                         )";
                     parameters.Add(_filtroParam, $"%{filtro.filtro}%", DbType.String);
                 }
 
-                var sortField = NormalizeSortField(
-                    filtro.sortField,
-                    "cedula",
-                    "cedular",
-                    "nombre",
-                    "Membresia");
+                // sortField como parámetro seguro
+                var sortField = string.IsNullOrWhiteSpace(filtro.sortField)
+                    ? "cedula"
+                    : filtro.sortField;
+
+                parameters.Add("@SortField", sortField, DbType.String);
 
                 var countSql = $@"
                     SELECT COUNT(*) 
                     FROM SOCIOS S 
-                    LEFT JOIN vAFI_Membresias M 
-                        ON M.Cedula = S.CEDULA 
+                    LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA 
                     {where}";
                 response.Result.total = connection.QueryFirstOrDefault<int>(countSql, parameters);
 
                 var pagination = BuildPaginationClause(parameters, filtro.pagina, filtro.paginacion);
 
+                var orderDirection = filtro.sortOrder == 0 ? "DESC" : "ASC";
+
                 var dataSql = $@"
                     SELECT S.cedula, S.cedular, S.nombre, M.Membresia 
                     FROM SOCIOS S
-                    LEFT JOIN vAFI_Membresias M 
-                        ON M.Cedula = S.CEDULA
+                    LEFT JOIN vAFI_Membresias M ON M.Cedula = S.CEDULA
                     {where}
-                    ORDER BY {sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}
+                    ORDER BY 
+                        CASE WHEN @SortField = 'cedula'    THEN S.cedula    END {orderDirection},
+                        CASE WHEN @SortField = 'cedular'   THEN S.cedular   END {orderDirection},
+                        CASE WHEN @SortField = 'nombre'    THEN S.nombre    END {orderDirection},
+                        CASE WHEN @SortField = 'Membresia' THEN M.Membresia END {orderDirection}
                     {pagination}";
 
                 response.Result.lista = connection.Query<SociosData>(dataSql, parameters).ToList();
@@ -998,7 +989,7 @@ namespace Galileo.DataBaseTier
                 var parameters = new DynamicParameters();
                 parameters.Add("@Institucion", Institucion, DbType.String);
 
-                var countSql = @"
+                const string countSql = @"
                     SELECT COUNT(cod_departamento) 
                     FROM AFDepartamentos 
                     WHERE cod_institucion = @Institucion";
@@ -1279,7 +1270,7 @@ namespace Galileo.DataBaseTier
 
         #endregion
 
-        #region Personas
+        #region Personas (lazy)
 
         public ErrorDto<TablasListaGenericaModel> Personas_Obtener(int CodEmpresa, string jfiltro)
         {
@@ -1314,19 +1305,23 @@ namespace Galileo.DataBaseTier
                     parameters.Add(_filtroParam, $"%{filtro.filtro}%", DbType.String);
                 }
 
-                var sortField = NormalizeSortField(
-                    filtro.sortField,
-                    "cedula",
-                    "cedulaR",
-                    "nombre");
+                var sortField = string.IsNullOrWhiteSpace(filtro.sortField)
+                    ? "cedula"
+                    : filtro.sortField;
+
+                parameters.Add("@SortField", sortField, DbType.String);
 
                 var pagination = BuildPaginationClause(parameters, filtro.pagina, filtro.paginacion);
+                var orderDirection = filtro.sortOrder == 0 ? "DESC" : "ASC";
 
                 var dataSql = $@"
                     SELECT cedula, cedulaR, nombre 
                     FROM socios
                     {where}
-                    ORDER BY {sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}
+                    ORDER BY 
+                        CASE WHEN @SortField = 'cedula'  THEN cedula  END {orderDirection},
+                        CASE WHEN @SortField = 'cedulaR' THEN cedulaR END {orderDirection},
+                        CASE WHEN @SortField = 'nombre'  THEN nombre  END {orderDirection}
                     {pagination}";
 
                 response.Result.lista = connection.Query<AFCedulaDto>(dataSql, parameters).ToList();
