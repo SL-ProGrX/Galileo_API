@@ -22,15 +22,15 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                {
-                    var procedure = "[spPGX_W_AppHits_Obtener]";
 
-                    types = connection.Query<AppHits>(procedure, commandType: CommandType.StoredProcedure).ToList();
-                    foreach (AppHits dt in types)
-                    {
-                        dt.Estado = dt.Activo == 1 ? "ACTIVO" : "INACTIVO";
-                    }
+                var procedure = "[spPGX_W_AppHits_Obtener]";
+
+                types = connection.Query<AppHits>(procedure, commandType: CommandType.StoredProcedure).ToList();
+                foreach (AppHits dt in types)
+                {
+                    dt.Estado = dt.Activo == 1 ? "ACTIVO" : "INACTIVO";
                 }
+
             }
             catch (Exception ex)
             {
@@ -46,20 +46,20 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+
+                var procedure = "[spPGX_W_AppHits_Insertar]";
+                var values = new
                 {
-                    var procedure = "[spPGX_W_AppHits_Insertar]";
-                    var values = new
-                    {
-                        request.Hit_Cod,
-                        request.Descripcion,
-                        request.Activo,
-                        request.Registro_Usuario,
+                    request.Hit_Cod,
+                    request.Descripcion,
+                    request.Activo,
+                    request.Registro_Usuario,
 
-                    };
+                };
 
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
+                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                resp.Description = "Ok";
+
             }
             catch (Exception ex)
             {
@@ -75,16 +75,16 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
-                {
-                    var procedure = "[spPGX_W_AppHits_Eliminar]";
-                    var values = new
-                    {
-                        request.Hit_Cod,
-                    };
 
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
+                var procedure = "[spPGX_W_AppHits_Eliminar]";
+                var values = new
+                {
+                    request.Hit_Cod,
+                };
+
+                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                resp.Description = "Ok";
+
             }
             catch (Exception ex)
             {
@@ -100,19 +100,19 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+
+                var procedure = "[spPGX_W_AppHits_Editar]";
+                var values = new
                 {
-                    var procedure = "[spPGX_W_AppHits_Editar]";
-                    var values = new
-                    {
-                        request.Hit_Cod,
-                        request.Descripcion,
-                        request.Activo,
+                    request.Hit_Cod,
+                    request.Descripcion,
+                    request.Activo,
 
-                    };
+                };
 
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
+                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                resp.Description = "Ok";
+
             }
             catch (Exception ex)
             {
