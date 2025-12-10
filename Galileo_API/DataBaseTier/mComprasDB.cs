@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models;
 using System.Data;
@@ -9,85 +8,82 @@ namespace Galileo.DataBaseTier
 {
     public class MComprasDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
+
         public MComprasDB(IConfiguration config)
         {
-            _config = config;
+            _portalDB = new PortalDB(config);
         }
 
-
-        public List<CargoPeriodicoDto> sbCprCboCargosPer(int CodEmpresa)
+        // --------------------------------------------------------------------
+        // Cargos
+        // --------------------------------------------------------------------
+        public List<CargoPeriodicoDto> sbCprCboCargosPer(int codEmpresa)
         {
+            var result = DbHelper.ExecuteListQuery<CargoPeriodicoDto>(
+                _portalDB,
+                codEmpresa,
+                "SELECT cod_cargo, descripcion FROM cxp_cargos ORDER BY cod_cargo");
 
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            return result.Result ?? new List<CargoPeriodicoDto>();
+        }
 
-            List<CargoPeriodicoDto> info = new List<CargoPeriodicoDto>();
+        // --------------------------------------------------------------------
+        // Cambia Fecha
+        // --------------------------------------------------------------------
+        public bool fxCprCambiaFecha(int codEmpresa, string usuario)
+        {
+            const string sql = @"
+                SELECT COUNT(1) 
+                FROM cpr_INVUSRFECHAS 
+                WHERE usuario = @Usuario;";
+
+            var result = DbHelper.ExecuteSingleQuery<int>(
+                _portalDB,
+                codEmpresa,
+                sql,
+                defaultValue: 0,
+                parameters: new { Usuario = usuario });
+
+            // Si hubo error, devolvemos false
+            var count = result.Result; // int, no referencia, no CS8602 aquí
+            return result.Code == 0 && count == 1;
+        }
+
+        // --------------------------------------------------------------------
+        // Ordenes Despacho
+        // --------------------------------------------------------------------
+        public ErrorDto sbCprOrdenesDespacho(int codEmpresa, string codOrden)
+        {
+            var resp = DbHelper.CreateOkResponse();
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                const string sqlExiste = @"
+                    SELECT ISNULL(COUNT(*), 0) 
+                    FROM cpr_ordenes_detalle 
+                    WHERE cantidad - ISNULL(cantidad_despachada, 0) > 1 
+                      AND cod_orden = @CodOrden;";
 
-                var query = "SELECT cod_cargo,descripcion  FROM cxp_cargos order by cod_cargo";
+                using var connection = _portalDB.CreateConnection(codEmpresa);
 
-                info = connection.Query<CargoPeriodicoDto>(query).ToList();
-
-
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return info;
-        }
-
-        public bool fxCprCambiaFecha(int CodEmpresa, string vUsuario)
-        {
-            bool vCambia = false;
-            int vNum = 0;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                var query = "SELECT ISNULL(COUNT(*),0) AS Existe FROM cpr_INVUSRFECHAS WHERE usuario = @usuario";
-                var parameters = new DynamicParameters();
-                parameters.Add("usuario", vUsuario, DbType.String);
-
-                vNum = connection.ExecuteAsync(query, parameters).Result;
-
-                vCambia = vNum == 1;
-
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return vCambia;
-        }
-
-        public ErrorDto sbCprOrdenesDespacho(int CodEmpresa, string vOrden)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var query = string.Empty;
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                query = "select isnull(count(*),0) as Existe from cpr_ordenes_detalle WHERE cantidad - isnull(cantidad_despachada,0) > 1 AND cod_orden = @cod_orden";
-
-                var parameters = new DynamicParameters();
-                parameters.Add("cod_orden", vOrden, DbType.String);
-
-                var existe = connection.Query(query, parameters).FirstOrDefault() as dynamic;
+                var existe = connection.QueryFirstOrDefault<int>(
+                    sqlExiste,
+                    new { CodOrden = codOrden });
 
                 if (existe > 0)
                 {
-                    query = "update cpr_ordenes set proceso = 'D' where cod_orden = cod_orden = @cod_orden";
-                    resp.Code = connection.ExecuteAsync(query, parameters).Result;
+                    const string sqlUpdate = @"
+                        UPDATE cpr_ordenes 
+                        SET proceso = 'D' 
+                        WHERE cod_orden = @CodOrden;";
+
+                    var rows = connection.Execute(sqlUpdate, new { CodOrden = codOrden });
+
+                    resp.Code = rows;
                     resp.Description = "Ok";
-                }else
+                }
+                else
                 {
                     resp.Code = -1;
                     resp.Description = "No hay cantidades pendientes por despachar";
@@ -98,122 +94,171 @@ namespace Galileo.DataBaseTier
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
 
-        public List<TipoOrdenDto> sbCprCboTiposOrden(int CodEmpresa)
+        // --------------------------------------------------------------------
+        // Tipos Orden
+        // --------------------------------------------------------------------
+        public List<TipoOrdenDto> sbCprCboTiposOrden(int codEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = DbHelper.ExecuteListQuery<TipoOrdenDto>(
+                _portalDB,
+                codEmpresa,
+                "SELECT tipo_orden, descripcion FROM cpr_tipo_orden");
 
-            List<TipoOrdenDto> info = new List<TipoOrdenDto>();
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = "SELECT tipo_orden,descripcion FROM cpr_tipo_orden";
-                info = connection.Query<TipoOrdenDto>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return info;
+            return result.Result ?? new List<TipoOrdenDto>();
         }
 
-        public ErrorDto<UnidadesDtoList> UnidadesObtener(int CodEmpresa, string? filtros)
+        // --------------------------------------------------------------------
+        // Unidades
+        // --------------------------------------------------------------------
+        public ErrorDto<UnidadesDtoList> UnidadesObtener(int codEmpresa, string? filtros)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            MComprasFiltros vfiltro = filtros != null
+            var vfiltro = filtros != null
                 ? JsonConvert.DeserializeObject<MComprasFiltros>(filtros) ?? new MComprasFiltros()
                 : new MComprasFiltros();
-            var response = new ErrorDto<UnidadesDtoList>();
-            response.Result = new UnidadesDtoList();
-            response.Code = 0;
+
+            var response = DbHelper.CreateOkResponse(new UnidadesDtoList());
+
             try
             {
-                var query = "";
-                string paginaActual = " ", paginacionActual = " ";
-                string where = $"where COD_CONTABILIDAD = {vfiltro.CodConta}";
-                using var connection = new SqlConnection(clienteConnString);
-                if (vfiltro.filtro != null && vfiltro.filtro != "")
-                {
-                    where += " and COD_UNIDAD LIKE '%" + vfiltro.filtro + "%' OR descripcion LIKE '%" + vfiltro.filtro + "%' ";
-                }
-                if (vfiltro.pagina != null)
-                {
-                    paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
-                    paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
-                }
-                query = $"select COUNT(*) from CntX_Unidades {where}";
-                response.Result.Total = connection.Query<int>(query).FirstOrDefault();
-                query = @$"select cod_unidad as unidad, descripcion from CntX_Unidades 
-                        {where} order by COD_UNIDAD desc {paginaActual} {paginacionActual}";
-                response.Result.Unidades = connection.Query<UnidadesDto>(query).ToList();
+                using var connection = _portalDB.CreateConnection(codEmpresa);
 
+                var where = "WHERE COD_CONTABILIDAD = @CodConta";
+                var parameters = new DynamicParameters();
+                parameters.Add("@CodConta", vfiltro.CodConta, DbType.Int32);
+
+                if (!string.IsNullOrWhiteSpace(vfiltro.filtro))
+                {
+                    where += " AND (COD_UNIDAD LIKE @Filtro OR descripcion LIKE @Filtro)";
+                    parameters.Add("@Filtro", $"%{vfiltro.filtro}%", DbType.String);
+                }
+
+                string paginaActual = string.Empty;
+                string paginacionActual = string.Empty;
+
+                if (vfiltro.pagina.HasValue && vfiltro.paginacion.HasValue)
+                {
+                    paginaActual     = $" OFFSET {vfiltro.pagina.Value} ROWS ";
+                    paginacionActual = $" FETCH NEXT {vfiltro.paginacion.Value} ROWS ONLY ";
+                }
+
+                // Evitar CS8602: aseguramos que Result no es null y usamos una variable local
+                var data = response.Result ??= new UnidadesDtoList();
+
+                var sqlCount = $"SELECT COUNT(*) FROM CntX_Unidades {where}";
+                data.Total = connection.QueryFirstOrDefault<int>(sqlCount, parameters);
+
+                var sqlData = $@"
+                    SELECT cod_unidad AS unidad, descripcion 
+                    FROM CntX_Unidades
+                    {where}
+                    ORDER BY COD_UNIDAD DESC
+                    {paginaActual} {paginacionActual}";
+
+                data.Unidades = connection.Query<UnidadesDto>(sqlData, parameters).ToList();
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result.Unidades = new List<UnidadesDto>();
-                response.Result.Total = 0;
+
+                // De nuevo, asegurar que Result no es null antes de usarlo
+                var data = response.Result ??= new UnidadesDtoList();
+                data.Unidades = new List<UnidadesDto>();
+                data.Total = 0;
             }
+
             return response;
         }
 
-        public ErrorDto<CentroCostoDtoList> CentroCostosObtener(int CodEmpresa, string? filtros)
+        // --------------------------------------------------------------------
+        // Centro de Costos
+        // --------------------------------------------------------------------
+        public ErrorDto<CentroCostoDtoList> CentroCostosObtener(int codEmpresa, string? filtros)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            MComprasFiltros vfiltro = filtros != null
+            var vfiltro = filtros != null
                 ? JsonConvert.DeserializeObject<MComprasFiltros>(filtros) ?? new MComprasFiltros()
                 : new MComprasFiltros();
-            var response = new ErrorDto<CentroCostoDtoList>();
-            response.Result = new CentroCostoDtoList();
-            response.Code = 0;
+
+            var response = DbHelper.CreateOkResponse(new CentroCostoDtoList());
+
             try
             {
-                var query = "";
-                string paginaActual = " ", paginacionActual = " ";
-                string where = $"where COD_CONTABILIDAD = {vfiltro.CodConta}";
-                using var connection = new SqlConnection(clienteConnString);
+                using var connection = _portalDB.CreateConnection(codEmpresa);
 
-                if (vfiltro.filtro != null && vfiltro.filtro != "")
-                {
-                    where += " and cod_centro_costo LIKE '%" + vfiltro.filtro + "%' OR descripcion LIKE '%" + vfiltro.filtro + "%' ";
-                }
-                if (vfiltro.pagina != null)
-                {
-                    paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
-                    paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
-                }
-                query = $"select COUNT(*) from CNTX_CENTRO_COSTOS {where}";
-                response.Result.Total = connection.Query<int>(query).FirstOrDefault();
-                query = @$"select cod_centro_costo as centrocosto, descripcion from CNTX_CENTRO_COSTOS
-                        {where} order by cod_centro_costo desc {paginaActual} {paginacionActual}";
-                response.Result.CentroCostos = connection.Query<CentroCostoDto>(query).ToList();
+                var where = "WHERE COD_CONTABILIDAD = @CodConta";
+                var parameters = new DynamicParameters();
+                parameters.Add("@CodConta", vfiltro.CodConta, DbType.Int32);
 
+                if (!string.IsNullOrWhiteSpace(vfiltro.filtro))
+                {
+                    where += " AND (cod_centro_costo LIKE @Filtro OR descripcion LIKE @Filtro)";
+                    parameters.Add("@Filtro", $"%{vfiltro.filtro}%", DbType.String);
+                }
+
+                string paginaActual = string.Empty;
+                string paginacionActual = string.Empty;
+
+                if (vfiltro.pagina.HasValue && vfiltro.paginacion.HasValue)
+                {
+                    paginaActual     = $" OFFSET {vfiltro.pagina.Value} ROWS ";
+                    paginacionActual = $" FETCH NEXT {vfiltro.paginacion.Value} ROWS ONLY ";
+                }
+
+                // Evitar CS8602 con variable local
+                var data = response.Result ??= new CentroCostoDtoList();
+
+                var sqlCount = $"SELECT COUNT(*) FROM CNTX_CENTRO_COSTOS {where}";
+                data.Total = connection.QueryFirstOrDefault<int>(sqlCount, parameters);
+
+                var sqlData = $@"
+                    SELECT cod_centro_costo AS centrocosto, descripcion 
+                    FROM CNTX_CENTRO_COSTOS
+                    {where}
+                    ORDER BY cod_centro_costo DESC
+                    {paginaActual} {paginacionActual}";
+
+                data.CentroCostos = connection
+                    .Query<CentroCostoDto>(sqlData, parameters)
+                    .ToList();
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result.CentroCostos = new List<CentroCostoDto>();
-                response.Result.Total = 0;
+
+                var data = response.Result ??= new CentroCostoDtoList();
+                data.CentroCostos = new List<CentroCostoDto>();
+                data.Total = 0;
             }
+
             return response;
         }
 
-        public ErrorDto<List<CatalogoDto>> CatalogoCompras_Obtener(int CodEmpresa, string tipo)
+        // --------------------------------------------------------------------
+        // Catálogo Compras
+        // --------------------------------------------------------------------
+        public ErrorDto<List<CatalogoDto>> CatalogoCompras_Obtener(int codEmpresa, string tipo)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<CatalogoDto>>();
-            response.Code = 0;
+            var response = DbHelper.CreateOkResponse(new List<CatalogoDto>());
+
             try
             {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = @"select CATALOGO_ID AS ITEM, DESCRIPCION from CPR_CATALOGOS 
-                        where Tipo_Id = (select TIPO_ID from CPR_CATALOGOS_TIPOS where DESCRIPCION = @tipo) and Activo = 1";
-                response.Result = connection.Query<CatalogoDto>(query, new { tipo }).ToList();
+                const string sql = @"
+                    SELECT CATALOGO_ID AS ITEM, DESCRIPCION 
+                    FROM CPR_CATALOGOS 
+                    WHERE Tipo_Id = (
+                        SELECT TIPO_ID 
+                        FROM CPR_CATALOGOS_TIPOS 
+                        WHERE DESCRIPCION = @Tipo
+                    ) 
+                      AND Activo = 1;";
+
+                using var connection = _portalDB.CreateConnection(codEmpresa);
+                response.Result = connection.Query<CatalogoDto>(sql, new { Tipo = tipo }).ToList();
             }
             catch (Exception ex)
             {
@@ -221,31 +266,50 @@ namespace Galileo.DataBaseTier
                 response.Description = ex.Message;
                 response.Result = new List<CatalogoDto>();
             }
+
             return response;
         }
 
-        public ErrorDto FacturaOrdenes_Actualizar(int CodEmpresa, string cod_factura, int cod_proveedor)
+        // --------------------------------------------------------------------
+        // Factura / Órdenes
+        // --------------------------------------------------------------------
+        public ErrorDto FacturaOrdenes_Actualizar(int codEmpresa, string codFactura, int codProveedor)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto();
-            response.Code = 0;
+            var response = DbHelper.CreateOkResponse();
+
             try
             {
-                using var connection = new SqlConnection(clienteConnString);
-                //busco cedula juridica del proveedor
-                string qProv = $@"SELECT CEDJUR FROM CXP_PROVEEDORES WHERE COD_PROVEEDOR = '{cod_proveedor}' ";
-                string cedJur = connection.Query<string>(qProv).FirstOrDefault() ?? string.Empty;
-                string query = $@"UPDATE CPR_FACTURAS_XML SET ESTADO = 'R' 
-                                        WHERE COD_DOCUMENTO = '{cod_factura}' AND CED_JUR_PROV = '{cedJur.Replace("-", "").Replace(" ", "")}'";
-                response.Code = connection.Execute(query);
+                using var connection = _portalDB.CreateConnection(codEmpresa);
+
+                const string sqlProv = @"
+                    SELECT CEDJUR 
+                    FROM CXP_PROVEEDORES 
+                    WHERE COD_PROVEEDOR = @CodProveedor;";
+
+                var cedJur = connection.QueryFirstOrDefault<string>(sqlProv, new { CodProveedor = codProveedor }) ?? string.Empty;
+                cedJur = cedJur.Replace("-", "").Replace(" ", "");
+
+                const string sqlUpdate = @"
+                    UPDATE CPR_FACTURAS_XML 
+                    SET ESTADO = 'R' 
+                    WHERE COD_DOCUMENTO = @CodFactura 
+                      AND CED_JUR_PROV = @CedJurProv;";
+
+                var rows = connection.Execute(sqlUpdate, new
+                {
+                    CodFactura = codFactura,
+                    CedJurProv = cedJur
+                });
+
+                response.Code = rows;
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
             }
+
             return response;
         }
-
     }
 }
