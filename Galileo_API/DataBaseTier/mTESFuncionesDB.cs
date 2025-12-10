@@ -285,7 +285,7 @@ namespace Galileo.DataBaseTier
                 query = $@"select  isnull(COUNT(id_token),0)+ 1 as 'consec'  from tes_tokens where id_token like('{strToken}')";
                 var resp = connection.Query<int>(query).FirstOrDefault();
 
-                strToken = strToken + resp.ToString();
+                strToken = strToken + resp;
 
                 query = $@"insert tes_tokens(id_token,registro_fecha,registro_usuario,estado)
                                     values('{strToken}',Getdate(),'{usuario}','A') ";
