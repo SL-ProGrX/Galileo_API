@@ -133,15 +133,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     case 0:
                         if (codigo == "") codigo = "0";
-                        query += $@" where C.nsolicitud > {codigo} AND U.cod_contabilidad = {contabilidad} order by C.nsolicitud asc";
+                        query += $@" where C.nsolicitud > @codigo} AND U.cod_contabilidad = @contabilidad order by C.nsolicitud asc";
                         break;
                     case 1:
                         if (codigo == "0") codigo = "999999999";
-                        query += $@" where C.nsolicitud < {codigo} AND U.cod_contabilidad = {contabilidad} order by C.nsolicitud desc";
+                        query += $@" where C.nsolicitud <@codigo AND U.cod_contabilidad = @contabilidad order by C.nsolicitud desc";
                         break;
                 }
 
-                var result = conn.Query<int>(query).FirstOrDefault();
+                var result = conn.Query<int>(query, new { codigo, contabilidad }).FirstOrDefault();
                 if (result == 0)
                     return TES_Transaccion_Scroll(CodEmpresa, scrollCode, result.ToString(), contabilidad);
 
@@ -387,13 +387,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return WithConn(CodEmpresa, conn =>
             {
                 const string qTotal = @"
-                    select count(C.NSOLICITUD)
-                    from Tes_Transacciones C
-                    inner join CntX_Unidades U on C.cod_unidad = U.cod_unidad
-                    where U.cod_contabilidad = @Contabilidad;";
+        select count(C.NSOLICITUD)
+        from Tes_Transacciones C
+        inner join CntX_Unidades U on C.cod_unidad = U.cod_unidad
+        where U.cod_contabilidad = @Contabilidad;";
 
                 var total = conn.Query<int>(qTotal, new { Contabilidad = contabilidad }).FirstOrDefault();
 
+                // WHITELIST de columnas permitidas para ORDER BY
                 var sortMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
                     ["NSOLICITUD"] = "NSOLICITUD",
@@ -405,28 +406,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     ["COD_UNIDAD"] = "COD_UNIDAD"
                 };
 
+                // Si el campo no está en el mapa, usamos una por defecto (segura)
                 if (!sortMap.TryGetValue(sortField, out string safeSortField))
-                    safeSortField = sortField;
+                    safeSortField = "NSOLICITUD";
 
-                string safeSortDir = (sortOrder == -1) ? "DESC" : "ASC";
+                // La dirección sólo la derivamos de un entero, no del usuario directamente
+                string safeSortDir = sortOrder == -1 ? "DESC" : "ASC";
 
                 var sql = @"
-                    select NSOLICITUD, TIPO, CODIGO, BENEFICIARIO, MONTO, ESTADO, COD_UNIDAD
-                    from (
-                        select
-                            C.NSOLICITUD,
-                            rtrim(T.descripcion) as TIPO,
-                            C.CODIGO,
-                            C.BENEFICIARIO,
-                            C.monto as MONTO,
-                            C.estado as ESTADO,
-                            C.COD_UNIDAD
-                        from Tes_Transacciones C
-                        inner join CntX_Unidades U on C.cod_unidad = U.cod_unidad
-                        inner join Tes_Tipos_doc T on C.tipo = T.tipo
-                        where U.cod_contabilidad = @Contabilidad
-                    ) X
-                ";
+        select NSOLICITUD, TIPO, CODIGO, BENEFICIARIO, MONTO, ESTADO, COD_UNIDAD
+        from (
+            select
+                C.NSOLICITUD,
+                rtrim(T.descripcion) as TIPO,
+                C.CODIGO,
+                C.BENEFICIARIO,
+                C.monto as MONTO,
+                C.estado as ESTADO,
+                C.COD_UNIDAD
+            from Tes_Transacciones C
+            inner join CntX_Unidades U on C.cod_unidad = U.cod_unidad
+            inner join Tes_Tipos_doc T on C.tipo = T.tipo
+            where U.cod_contabilidad = @Contabilidad
+        ) X
+    ";
 
                 var parameters = new DynamicParameters();
                 parameters.Add("@Contabilidad", contabilidad);
@@ -436,22 +439,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 if (!string.IsNullOrWhiteSpace(search))
                 {
                     sql += @"
-                        where (
-                            NSOLICITUD like @Search
-                            or TIPO like @Search
-                            or BENEFICIARIO like @Search
-                            or CODIGO like @Search
-                        )
-                    ";
+            where (
+                NSOLICITUD like @Search
+                or TIPO like @Search
+                or BENEFICIARIO like @Search
+                or CODIGO like @Search
+            )
+        ";
                     parameters.Add("@Search", $"%{search}%");
                 }
 
+                // Sólo usamos valores previamente validados (whitelist)
                 sql += $@"
-                    order by {safeSortField} {safeSortDir}
-                    offset @Offset rows fetch next @PageSize rows only;
-                ";
+        order by {safeSortField} {safeSortDir}
+        offset @Offset rows fetch next @PageSize rows only;
+    ";
 
-                var lista = conn.Query<Galileo.Models.ProGrX.Bancos.TesSolicitudesData>(sql, parameters).ToList();
+                var lista = conn
+                    .Query<Galileo.Models.ProGrX.Bancos.TesSolicitudesData>(sql, parameters)
+                    .ToList();
 
                 return new TablasListaGenericaModel { total = total, lista = lista };
             });
@@ -467,26 +473,64 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 using var conn = OpenConnection(CodEmpresa);
 
-                var query = @"select Top 1 ndocumento from Tes_Transacciones 
-                              where id_banco = @idBanco and Tipo = @Tipo";
+                if (string.IsNullOrWhiteSpace(parametros.documento))
+                    parametros.documento = "0";
+
+                // Convertimos documento a número real para evitar CASTs inseguros
+                if (!int.TryParse(parametros.documento, out int docValue))
+                    docValue = 0;
+
+                string query = @"
+            select TOP 1 ndocumento
+            from Tes_Transacciones
+            where id_banco = @idBanco
+              and Tipo = @Tipo
+        ";
+
+                string orderBy = "";
+                string compareOperator = "";
 
                 switch (scrollCode)
                 {
-                    case 0:
-                        if (parametros.documento == "") parametros.documento = "0";
-                        query += $@" and TRY_CAST(ndocumento AS INT) > '{parametros.documento}' 
-                                    order by TRY_CAST(ndocumento AS INT) asc";
+                    case 0: // siguiente
+                        compareOperator = ">";
+                        orderBy = "asc";
                         break;
-                    case 1:
-                        if (parametros.documento == "") parametros.documento = "999999999";
-                        query += $@" and TRY_CAST(ndocumento AS INT) < '{parametros.documento}' 
-                                    order by TRY_CAST(ndocumento AS INT) desc";
+
+                    case 1: // anterior
+                        compareOperator = "<";
+                        orderBy = "desc";
+                        break;
+
+                    default:
+                        compareOperator = ">";
+                        orderBy = "asc";
                         break;
                 }
 
-                var documento = conn.Query<string>(query, new { idBanco = parametros.id_banco, Tipo = parametros.tipo }).FirstOrDefault();
+                // Agregamos el filtro con parámetros, SIN concatenar strings de usuario
+                query += $@"
+            and TRY_CAST(ndocumento AS INT) {compareOperator} @NumDoc
+            order by TRY_CAST(ndocumento AS INT) {orderBy};
+        ";
 
-                return TES_TransaccionDoc_Obtener(CodEmpresa, documento, parametros.id_banco, parametros.tipo, parametros.contabilidad);
+                var documento = conn.Query<string>(
+                    query,
+                    new
+                    {
+                        idBanco = parametros.id_banco,
+                        Tipo = parametros.tipo,
+                        NumDoc = docValue
+                    }
+                ).FirstOrDefault();
+
+                return TES_TransaccionDoc_Obtener(
+                    CodEmpresa,
+                    documento,
+                    parametros.id_banco,
+                    parametros.tipo,
+                    parametros.contabilidad
+                );
             }
             catch (Exception ex)
             {
@@ -1692,51 +1736,72 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 using var connection = OpenConnection(CodEmpresa);
 
-                var infoSql = @"SELECT COD_GRUPO, CTA, COD_DIVISA, INT_GRUPOS_ASOCIADOS FROM TES_BANCOS WHERE ID_BANCO = @banco";
+                var infoSql = @"SELECT COD_GRUPO, CTA, COD_DIVISA, INT_GRUPOS_ASOCIADOS 
+                        FROM TES_BANCOS 
+                        WHERE ID_BANCO = @banco";
+
                 var bancoInfo = connection.QueryFirstOrDefault<BancoValidaCuenta>(infoSql, new { banco });
 
-                string query = "";
+                if (bancoInfo == null)
+                    return Error<List<TesCuentasBancarias>>("Banco no encontrado.");
 
-                switch (tipoOrigen)
+                string query;
+
+                if (tipoOrigen == "1")
                 {
-                    case "1":
-                        if (!bancoInfo.int_grupos_asociados)
-                        {
-                            query = $@"
-                                SELECT C.CUENTA_INTERNA,
-                                       rtrim(C.cod_Banco) + ' - ' + C.CUENTA_INTERNA as cuenta_desc,
-                                       C.CUENTA_INTERNA as itmx,
-                                       '{bancoInfo.cta}' as idx
-                                FROM SYS_CUENTAS_BANCARIAS C
-                                INNER JOIN TES_BANCOS_GRUPOS B ON C.cod_banco = B.cod_grupo
-                                WHERE C.Identificacion = @cedula
-                                  AND B.COD_GRUPO = @grupo
-                                  AND C.COD_DIVISA = @divisa
-                                  AND C.ACTIVA = 1";
-                        }
-                        else
-                        {
-                            query = $@"
-                                SELECT C.CUENTA_INTERNA,
-                                       rtrim(C.cod_Banco) + ' - ' + C.CUENTA_INTERNA as cuenta_desc,
-                                       C.CUENTA_INTERNA as itmx,
-                                       '{bancoInfo.cta}' as idx
-                                FROM SYS_CUENTAS_BANCARIAS C
-                                INNER JOIN TES_BANCOS_GRUPOS B ON C.cod_banco = B.cod_grupo
-                                WHERE C.Identificacion = @cedula
-                                  AND B.COD_GRUPO IN (SELECT COD_GRUPO FROM TES_BANCOS_GRUPOS_ASG tbga WHERE ID_BANCO = {banco})
-                                  AND C.COD_DIVISA = @divisa
-                                  AND C.ACTIVA = 1";
-                        }
-                        break;
+                    if (!bancoInfo.int_grupos_asociados)
+                    {
+                        query = @"
+                    SELECT 
+                        C.CUENTA_INTERNA,
+                        rtrim(C.cod_Banco) + ' - ' + C.CUENTA_INTERNA as cuenta_desc,
+                        C.CUENTA_INTERNA as itmx,
+                        @Idx as idx
+                    FROM SYS_CUENTAS_BANCARIAS C
+                    INNER JOIN TES_BANCOS_GRUPOS B ON C.cod_banco = B.cod_grupo
+                    WHERE C.Identificacion = @Cedula
+                      AND B.COD_GRUPO = @Grupo
+                      AND C.COD_DIVISA = @Divisa
+                      AND C.ACTIVA = 1
+                ";
+                    }
+                    else
+                    {
+                        query = @"
+                    SELECT 
+                        C.CUENTA_INTERNA,
+                        rtrim(C.cod_Banco) + ' - ' + C.CUENTA_INTERNA as cuenta_desc,
+                        C.CUENTA_INTERNA as itmx,
+                        @Idx as idx
+                    FROM SYS_CUENTAS_BANCARIAS C
+                    INNER JOIN TES_BANCOS_GRUPOS B ON C.cod_banco = B.cod_grupo
+                    WHERE C.Identificacion = @Cedula
+                      AND B.COD_GRUPO IN (
+                            SELECT COD_GRUPO 
+                            FROM TES_BANCOS_GRUPOS_ASG 
+                            WHERE ID_BANCO = @BancoId
+                      )
+                      AND C.COD_DIVISA = @Divisa
+                      AND C.ACTIVA = 1
+                ";
+                    }
+                }
+                else
+                {
+                    return Error<List<TesCuentasBancarias>>("TipoOrigen no soportado.");
                 }
 
-                var lista = connection.Query<TesCuentasBancarias>(query, new
-                {
-                    cedula = identificacion,
-                    grupo = bancoInfo.cod_grupo,
-                    divisa = bancoInfo.cod_divisa
-                }).ToList();
+                var lista = connection.Query<TesCuentasBancarias>(
+                    query,
+                    new
+                    {
+                        Cedula = identificacion,
+                        Grupo = bancoInfo.cod_grupo,
+                        Divisa = bancoInfo.cod_divisa,
+                        BancoId = banco,
+                        Idx = bancoInfo.cta
+                    }
+                ).ToList();
 
                 return Ok(lista);
             }

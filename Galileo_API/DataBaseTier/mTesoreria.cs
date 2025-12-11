@@ -194,18 +194,44 @@ namespace Galileo.DataBaseTier
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
-            resp.Code = 0;
-            resp.Result = new List<DropDownListaGenericaModel>();
+
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
             try
             {
-                string query = "";
                 using var connection = new SqlConnection(stringConn);
 
-                query = $@"select id_banco as item,descripcion from Tes_Bancos where Estado = 'A' and id_Banco 
-                                    in(select id_banco from tes_documentos_ASG Where nombre = @usuario and {gestion} = 1 
-                                    group by id_banco)";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { usuario = usuario }).ToList();
+                // WHITELIST de columnas permitidas
+                var columnasPermitidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "carga", "genera", "autoriza", "anula", "aprueba", "consulta", "gestion1", "gestion2"
+            // <-- agregar aquí SOLO columnas válidas del schema tes_documentos_ASG
+        };
+
+                // Validamos la columna
+                if (!columnasPermitidas.Contains(gestion))
+                    return Error<List<DropDownListaGenericaModel>>($"Columna inválida: {gestion}");
+
+                // Armamos el SQL SEGURO
+                string query = $@"
+            select id_banco as item, descripcion
+            from Tes_Bancos
+            where Estado = 'A'
+              and id_banco in (
+                    select id_banco
+                    from tes_documentos_ASG
+                    where nombre = @usuario and {gestion} = 1
+                    group by id_banco
+              )";
+
+                resp.Result = connection.Query<DropDownListaGenericaModel>(
+                    query,
+                    new { usuario }
+                ).ToList();
             }
             catch (Exception ex)
             {
@@ -213,6 +239,7 @@ namespace Galileo.DataBaseTier
                 resp.Description = ex.Message;
                 resp.Result = null;
             }
+
             return resp;
         }
 
