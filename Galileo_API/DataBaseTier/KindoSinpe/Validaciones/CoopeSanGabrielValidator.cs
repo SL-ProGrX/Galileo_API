@@ -136,9 +136,7 @@ namespace Galileo_API.DataBaseTier
                 Code = 0,
                 Description = "Ok"
             };
-            var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
-
-
+           
             var respuesta = new RespuestaRegistro();
             var datos = new TesTransaccion();
             bool estadoSinpe = true;
@@ -183,12 +181,12 @@ namespace Galileo_API.DataBaseTier
                     datos.DocumentoBase = doc_base.ToString();
                     datos.contador = contador.ToString();
 
-                    if (_mKindo.fxTesRespuestaSinpe(CodEmpresa, datos).Result == false)
+                    if (!_mKindo.fxTesRespuestaSinpe(CodEmpresa, datos).Result)
                     {
                         _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Se produjo un error al actualizar la transacción", vUsuario);
                     }
 
-                    if (estadoSinpe == true)
+                    if (estadoSinpe)
                     {
                         _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Emisión Transferencia Sinpe: Exitosa", vUsuario);
                     }
@@ -223,18 +221,15 @@ namespace Galileo_API.DataBaseTier
                 Result = null
             };
 
-            var solicitud = new TesTransaccion();
 
-
-            var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
-            // var response = new ResPINSending();
+            
             var pinData = new Galileo.Models.KindoSinpe.ReqPINSending();
-
-            string detalle = "";
 
             try
             {
-                solicitud = _mKindo.fxTesConsultaSolicitud(CodEmpresa, Nsolicitud).Result;
+                var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
+                // var response = new ResPINSending();
+                var solicitud = _mKindo.fxTesConsultaSolicitud(CodEmpresa, Nsolicitud).Result;
 
                 var context = CrearContexto(parametrosSinpe);
 
@@ -282,17 +277,32 @@ namespace Galileo_API.DataBaseTier
                 {
                     var updateNSolicitud = _mKindo.RegistraDibitoCuenta(CodEmpresa, Nsolicitud, response).Result;
 
-
-                    return new ErrorDto<RespuestaRegistro>
+                    if (updateNSolicitud)
                     {
-                        Code = 0,
-                        Description = "Ok",
-                        Result = new RespuestaRegistro
+                        return new ErrorDto<RespuestaRegistro>
                         {
-                            MotivoError = 0,
-                            CodigoReferencia = response.PINSendingResult.SINPEReference
-                        }
-                    };
+                            Code = 0,
+                            Description = "Ok",
+                            Result = new RespuestaRegistro
+                            {
+                                MotivoError = 0,
+                                CodigoReferencia = response.PINSendingResult.SINPEReference
+                            }
+                        };
+                    }
+                    else
+                    {
+                        return new ErrorDto<RespuestaRegistro>
+                        {
+                            Code = -1,
+                            Description = "Error al actualizar el número de solicitud con la respuesta de SINPE.",
+                            Result = new RespuestaRegistro
+                            {
+                                MotivoError = -1,
+                                CodigoReferencia = ""
+                            }
+                        };
+                    } 
                 }
                 else
                 {
@@ -318,8 +328,6 @@ namespace Galileo_API.DataBaseTier
 
             return resp;
         }
-
-
 
 
         #endregion
