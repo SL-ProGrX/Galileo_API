@@ -27,6 +27,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             ["descripcion"] = "descripcion",
             ["correo"] = "correo"
         };
+ 
         public FrmTesTransaccionesDb(IConfiguration config)
         {
             _config = config;
@@ -336,7 +337,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     Where D.nsolicitud = @solicitud And D.estado = 1
                     Order by D.fecha_rec desc";
 
-                return conn.Query<TesLocalizacionDto>(query, new { solicitud }).ToList();
+                return conn.Query<TesLocalizacionDto>(query, new {Solicitud = solicitud}).ToList();
             });
         }
 
@@ -350,7 +351,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     where nsolicitud = @solicitud
                     order by fecha desc";
 
-                return conn.Query<TesReimpresionesDto>(query, new { solicitud }).ToList();
+                return conn.Query<TesReimpresionesDto>(query, new {solicitud}).ToList();
             });
         }
 
@@ -365,7 +366,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                       and cod_movimiento = '08'
                     order by fecha desc";
 
-                return conn.Query<TesCambioFechasDto>(query, new { solicitud }).ToList();
+                return conn.Query<TesCambioFechasDto>(query, new {solicitud}).ToList();
             });
         }
 
@@ -1100,14 +1101,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             );
         }
 
-        private static BeneficiarioSpec AcreedoresSpec()
+        private BeneficiarioSpec AcreedoresSpec()
         {
-            var whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["item"] = "item",
-                ["descripcion"] = "descripcion"
-            };
-
             return new BeneficiarioSpec(
                 CountSql: "select count(cod_acreedor) from crd_apa_acreedores where estado='A'",
                 CountParams: _ => new { },

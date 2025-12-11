@@ -132,7 +132,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(pinData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_PIN + "/SendPIN", content).Result;
 
@@ -177,7 +177,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(pinData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_PIN + "/GetPINResult", content).Result;
 
@@ -215,7 +215,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(pinData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_PIN + "/GetPINDataByChannelRef", content).Result;
 
@@ -253,7 +253,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(pinData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_PIN + "/GetPINDataBySINPERef", content).Result;
 
@@ -291,7 +291,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(batchData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_PIN + "/SendBatch", content).Result;
 
@@ -329,7 +329,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(batchData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_PIN + "/GetBatchState", content).Result;
 
@@ -367,7 +367,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(consultData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_PIN + "/GetCustomerTransfers", content).Result;
 
@@ -411,7 +411,7 @@ namespace Galileo_API.DataBaseTier
             try
             {
                 var json = JsonConvert.SerializeObject(filterData);
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
                 var response = _client.PostAsync(UrlCGP_PIN + "/GetAllTransfers", content).Result;
 
