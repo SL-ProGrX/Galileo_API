@@ -506,18 +506,8 @@ namespace Galileo.DataBaseTier
 
         public static bool fxCorreoValido(string correo)
         {
-            if (string.IsNullOrWhiteSpace(correo))
-                return false;
-
-            try
-            {
-                return CorreoRegex.IsMatch(correo);
-            }
-            catch (RegexMatchTimeoutException)
-            {
-                // Si excede el timeout, lo tratamos como inválido por seguridad
-                return false;
-            }
+            string patron = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+            return Regex.IsMatch(correo, patron);
         }
 
         /// <summary>
@@ -819,19 +809,9 @@ namespace Galileo.DataBaseTier
 
         private static Match? ParseUpdateSql(string sql)
         {
-            if (string.IsNullOrWhiteSpace(sql))
-                return null;
-
-            try
-            {
-                var match = UpdateSqlRegex.Match(sql);
-                return match.Success ? match : null;
-            }
-            catch (RegexMatchTimeoutException)
-            {
-                // Si la regex tarda demasiado, lo tratamos como no parseable
-                return null;
-            }
+            string pattern = @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$";
+            var match = Regex.Match(sql, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            return match.Success ? match : null;
         }
 
         private static int SetErrorResult(ErrorDto result, string description, int code = -1)

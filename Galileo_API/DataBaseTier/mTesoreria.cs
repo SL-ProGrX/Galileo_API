@@ -225,6 +225,7 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<string> fxTesBancoDocsValor(int CodEmpresa, int vBanco, string vTipo, string vCampo = "Comprobante")
         {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<string>();
             resp.Code = 0;
             resp.Result = "";
