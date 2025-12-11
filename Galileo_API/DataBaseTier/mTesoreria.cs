@@ -1,9 +1,11 @@
-﻿using System.Text;
-using Dapper;
-using Microsoft.Data.SqlClient;
+﻿using Dapper;
 using Galileo.Models;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
+using Microsoft.Data.SqlClient;
+using System.Data;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
@@ -192,19 +194,79 @@ namespace Galileo.DataBaseTier
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
-            resp.Code = 0;
-            resp.Result = new List<DropDownListaGenericaModel>();
+
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
             try
             {
-                string query = "";
                 using var connection = new SqlConnection(stringConn);
 
-                query = $@"select id_banco as item,descripcion from Tes_Bancos where Estado = 'A' and id_Banco 
-                                    in(select id_banco from tes_documentos_ASG Where nombre = @usuario and {gestion} = 1 
-                                    group by id_banco)";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { usuario = usuario }).ToList();
+                // WHITELIST de columnas permitidas
+                var columnasPermitidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    "carga", "genera", "autoriza", "anula", "aprueba", "consulta", "gestion1", "gestion2"
+                    // <-- agregar aquí SOLO columnas válidas del schema tes_documentos_ASG
+                };
 
+                // Validamos la columna
+                if (!columnasPermitidas.Contains(gestion))
+                {
+                    resp.Code = -1;
+                    resp.Description = "Columna de gestión no permitida.";
+                    resp.Result = null;
+                    return resp;
+                }
+
+                // Armamos el SQL SEGURO
+                string query = $@"
+                        select id_banco as item, descripcion
+                        from Tes_Bancos
+                        where Estado = 'A'
+                          and id_banco in (
+                                select id_banco
+                                from tes_documentos_ASG
+                                where nombre = @usuario 
+                            ";
+
+                switch (gestion)
+                {
+                    case "carga":
+                        query += "carga = 1";
+                        break;
+                    case "genera":
+                        query += "genera = 1";
+                        break;
+                    case "autoriza":
+                        query += "autoriza = 1";
+                        break;
+                    case "anula":
+                        query += "anula = 1";
+                        break;      
+                    case "aprueba":
+                        query += "aprueba = 1";
+                        break;
+                    case "consulta":
+                        query += "consulta = 1";
+                        break;
+                    default:
+                        resp.Code = -1;
+                        resp.Description = "Columna de gestión no permitida.";
+                        resp.Result = null;
+                        return resp;
+                }
+
+                query+= " group by id_banco)";
+
+
+
+                resp.Result = connection.Query<DropDownListaGenericaModel>(
+                    query,
+                    new { usuario }
+                ).ToList();
             }
             catch (Exception ex)
             {
@@ -212,6 +274,7 @@ namespace Galileo.DataBaseTier
                 resp.Description = ex.Message;
                 resp.Result = null;
             }
+
             return resp;
         }
 
@@ -553,17 +616,38 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
 
-                var query = $"select {Campo} as item from tes_banco_docs where tipo = @tipoDoc and id_banco = @banco";
+                string query = Campo?.Trim().ToLowerInvariant() switch
+                {
+                    "mod_consec" => @"
+                select mod_consec as item
+                from tes_banco_docs
+                where tipo = @tipoDoc and id_banco = @banco",
 
-                resp.Result = connection
-                    .QueryFirstOrDefault<string>(query,
-                    new { banco = Banco, tipoDoc = TipoDoc });
+                    "comprobante" => @"
+                select Comprobante as item
+                from tes_banco_docs
+                where tipo = @tipoDoc and id_banco = @banco",
+
+                    _ => null
+                };
+
+                if (query == null)
+                {
+                    resp.Code = -1;
+                    resp.Description = "Campo no permitido para consulta.";
+                    resp.Result = null;
+                    return resp;
+                }
+
+                resp.Result = connection.QueryFirstOrDefault<string>(
+                    query,
+                    new { banco = Banco, tipoDoc = TipoDoc }
+                );
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
-
                 resp.Result = "";
             }
 
