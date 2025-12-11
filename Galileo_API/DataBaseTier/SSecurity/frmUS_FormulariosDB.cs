@@ -16,134 +16,120 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public List<FormularioModel> ObtenerFormulariosPorModulo(int moduloId)
+        // ========== Helpers comunes ==========
+
+        private SqlConnection CreateConnection()
         {
-            List<FormularioModel> result = new List<FormularioModel>();
+            var connString = _config.GetConnectionString(connectionStringName);
+            if (string.IsNullOrEmpty(connString))
+                throw new InvalidOperationException($"Connection string '{connectionStringName}' is not configured.");
+
+            return new SqlConnection(connString);
+        }
+
+        private List<T> QuerySpList<T>(string storedProcedure, object? parameters = null)
+        {
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_Formularios_PorModulo_Obtener]";
-                    var values = new
-                    {
-                        ModuloId = moduloId,
-                    };
-                    result = connection.Query<FormularioModel>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
-                }
+                using var connection = CreateConnection();
+                return connection.Query<T>(storedProcedure, parameters, commandType: CommandType.StoredProcedure).ToList();
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new List<T>();
             }
-            return result!;
+        }
+
+        private ErrorDto EjecutarFormularioSp(string storedProcedure, object parameters)
+        {
+            var resp = new ErrorDto();
+
+            try
+            {
+                using var connection = CreateConnection();
+                resp.Code = connection
+                    .Query<int>(storedProcedure, parameters, commandType: CommandType.StoredProcedure)
+                    .FirstOrDefault();
+
+                resp.Description = "Ok";
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
+        private object BuildFormularioParams(FormularioDto request) => new
+        {
+            ModuloId = request.ModuloId,
+            Formulario = request.Nombre,
+            Descripcion = request.Descripcion,
+            Usuario = request.Usuario
+        };
+
+        // ========== Métodos públicos/privados ==========
+
+        public List<FormularioModel> ObtenerFormulariosPorModulo(int moduloId)
+        {
+            const string procedure = "[spPGX_Formularios_PorModulo_Obtener]";
+            var values = new { ModuloId = moduloId };
+
+            return QuerySpList<FormularioModel>(procedure, values);
         }
 
         private ErrorDto Formulario_Insertar(FormularioDto request)
         {
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_Formulario_Insertar]";
-                    var values = new
-                    {
-                        ModuloId = request.ModuloId,
-                        Formulario = request.Nombre,
-                        Descripcion = request.Descripcion,
-                        Usuario = request.Usuario
-                    };
-
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            const string procedure = "[spPGX_Formulario_Insertar]";
+            return EjecutarFormularioSp(procedure, BuildFormularioParams(request));
         }
 
         public ErrorDto Formulario_Eliminar(int modulo, string formulario)
         {
-            ErrorDto resp = new ErrorDto();
-            try
+            const string procedure = "[spPGX_Formulario_Eliminar]";
+            var values = new
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_Formulario_Eliminar]";
-                    var values = new
-                    {
-                        ModuloId = modulo,
-                        Formulario = formulario
-                    };
+                ModuloId = modulo,
+                Formulario = formulario
+            };
 
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            return EjecutarFormularioSp(procedure, values);
         }
 
         private ErrorDto Formulario_Actualizar(FormularioDto request)
         {
-            ErrorDto resp = new ErrorDto();
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_Formulario_Editar]";
-                    var values = new
-                    {
-                        ModuloId = request.ModuloId,
-                        Formulario = request.Nombre,
-                        Descripcion = request.Descripcion,
-                        Usuario = request.Usuario
-                    };
-
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            const string procedure = "[spPGX_Formulario_Editar]";
+            return EjecutarFormularioSp(procedure, BuildFormularioParams(request));
         }
 
         public ErrorDto Formulario_Guardar(FormularioDto request)
         {
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
+            var resp = new ErrorDto { Code = 0 };
 
-            using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+            using (var connection = CreateConnection())
             {
-                //Valido si el formulario ya existe
-                var query = "SELECT COUNT(*) FROM [US_FORMULARIOS] WHERE Modulo = @ModuloId AND UPPER(Formulario) = @Formulario";
+                const string query = @"
+                    SELECT COUNT(*) 
+                    FROM [US_FORMULARIOS] 
+                    WHERE Modulo = @ModuloId 
+                      AND UPPER(Formulario) = @Formulario";
+
                 var values = new
                 {
                     ModuloId = request.ModuloId,
                     Formulario = request.Nombre.ToUpper()
                 };
+
                 var count = connection.Query<int>(query, values).FirstOrDefault();
-                if (count == 0)
-                {
-                    resp = Formulario_Insertar(request);
-                }
-                else
-                {
-                    resp = Formulario_Actualizar(request);
-                }
+
+                resp = count == 0
+                    ? Formulario_Insertar(request)
+                    : Formulario_Actualizar(request);
             }
+
             return resp;
         }
     }

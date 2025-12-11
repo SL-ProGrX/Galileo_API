@@ -8,236 +8,224 @@ namespace Galileo.DataBaseTier
     public class MFndFuncionesDb
     {
         private readonly IConfiguration _config;
+
         public MFndFuncionesDb(IConfiguration config)
         {
             _config = config;
         }
 
-        public string fxgFNDTipoPago(int CodEmpresa, string vModo, string vTipo)
+        // ========= Helpers comunes =========
+
+        private SqlConnection CreateEmpresaConnection(int codEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            string result = "";
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+            if (string.IsNullOrWhiteSpace(stringConn))
+                throw new InvalidOperationException("Cadena de conexión de empresa no configurada.");
+
+            return new SqlConnection(stringConn);
+        }
+
+        private T ExecuteScalarOrDefault<T>(int codEmpresa, string sql, object? parameters, T defaultValue)
+        {
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                if (vModo == "D")
-                {
-                    switch (vTipo.Trim().ToUpper())
-                    {
-                        case "TRANSFERENCIA":
-                            result = "TE";
-                            break;
-                        case "CHEQUE":
-                            result = "CK";
-                            break;
-                    }
-                }
-                else if (vModo == "C")
-                {
-                    switch (vTipo.Trim().ToUpper())
-                    {
-                        case "TE":
-                            result = "Transferencia";
-                            break;
-                        case "CK":
-                            result = "Cheque";
-                            break;
-                    }
-                }
-
-
+                using var connection = CreateEmpresaConnection(codEmpresa);
+                return connection.QueryFirstOrDefault<T>(sql, parameters) ?? defaultValue;
             }
             catch (Exception)
             {
-                return "";
+                return defaultValue;
             }
-            return result;
+        }
+
+        private ErrorDto<List<T>> QueryListWithError<T>(
+            int codEmpresa,
+            string sql,
+            object? parameters = null)
+        {
+            var response = new ErrorDto<List<T>>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new List<T>()
+            };
+
+            try
+            {
+                using var connection = CreateEmpresaConnection(codEmpresa);
+                response.Result = connection.Query<T>(sql, parameters).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = null;
+            }
+
+            return response;
+        }
+
+        // ========= Funciones de negocio =========
+
+        public static string fxgFNDTipoPago(string vModo, string vTipo)
+        {
+            if (string.IsNullOrWhiteSpace(vTipo))
+                return string.Empty;
+
+            var tipo = vTipo.Trim().ToUpper();
+
+            if (vModo == "D")
+            {
+                return tipo switch
+                {
+                    "TRANSFERENCIA" => "TE",
+                    "CHEQUE"        => "CK",
+                    _               => string.Empty
+                };
+            }
+
+            if (vModo == "C")
+            {
+                return tipo switch
+                {
+                    "TE" => "Transferencia",
+                    "CK" => "Cheque",
+                    _    => string.Empty
+                };
+            }
+
+            return string.Empty;
         }
 
         public decimal fxgFNDCodigoMulta(int CodEmpresa, int vOperadora, string vPlan, int vContrato, decimal vMonto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            decimal result = 0;
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            const string query = "select dbo.fxFNDMulta(@vOperadora, @vPlan, @vContrato, @vMonto) as Multa";
 
-                var query = "select dbo.fxFNDMulta(@vOperadora, @vPlan, @vContrato, @vMonto) as 'Multa'";
-                result = connection.QueryFirstOrDefault<decimal>(query, new { vOperadora, vPlan, vContrato, vMonto });
-
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
-            return result;
+            return ExecuteScalarOrDefault(
+                CodEmpresa,
+                query,
+                new { vOperadora, vPlan, vContrato, vMonto },
+                0m
+            );
         }
 
         public static string fxTipoDocumento(string vTipo)
         {
-            switch (vTipo)
+            return vTipo switch
             {
-                case "CK":
-                    return "Cheque";
-                case "TE":
-                    return "Transferencia";
-                case "EF":
-                case "RE":
-                    return "Efectivo";
-                case "ND":
-                    return "Nota Debito";
-                case "NC":
-                    return "Nota Credito";
-                case "OT":
-                    return "Otro...";
-                case "CD":
-                    return "Ctrl Desembolsos";
-                case "CP":
-                    return "Proveedor";
-                case "RC":
-                    return "Retiro en Caja";
-                case "FD":
-                    return "Fondo Transitorio";
-                case "TS":
-                    return "Transferencia SINPE";
+                // códigos -> descripción
+                "CK" => "Cheque",
+                "TE" => "Transferencia",
+                "EF" => "Efectivo",
+                "RE" => "Efectivo",
+                "ND" => "Nota Debito",
+                "NC" => "Nota Credito",
+                "OT" => "Otro...",
+                "CD" => "Ctrl Desembolsos",
+                "CP" => "Proveedor",
+                "RC" => "Retiro en Caja",
+                "FD" => "Fondo Transitorio",
+                "TS" => "Transferencia SINPE",
 
-                // --- Inverso ---
-                case "Cheque":
-                    return "CK";
-                case "Transferencia":
-                    return "TE";
-                case "Efectivo":
-                    return "EF";
-                case "Nota Debito":
-                    return "ND";
-                case "Nota Credito":
-                    return "NC";
-                case "Otro...":
-                    return "OT";
-                case "Ctrl Desembolsos":
-                    return "CD";
-                case "Proveedor":
-                    return "CP";
-                case "Retiro en Caja":
-                    return "RC";
-                case "Fondo Transitorio":
-                    return "FD";
-                case "Transferencia SINPE":
-                    return "TS";
+                // descripción -> códigos
+                "Cheque"                => "CK",
+                "Transferencia"         => "TE",
+                "Efectivo"              => "EF",
+                "Nota Debito"           => "ND",
+                "Nota Credito"          => "NC",
+                "Otro..."               => "OT",
+                "Ctrl Desembolsos"      => "CD",
+                "Proveedor"             => "CP",
+                "Retiro en Caja"        => "RC",
+                "Fondo Transitorio"     => "FD",
+                "Transferencia SINPE"   => "TS",
 
-                default:
-                    return "";
-            }
+                _ => string.Empty
+            };
         }
 
         public string fxFndParametro(int CodEmpresa, string pParametro)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            string? result = "";
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            const string query = "select valor from Fnd_parametros where cod_parametro = @pParametro";
 
-                var query = "select valor from Fnd_parametros where cod_parametro = @pParametro";
-                var queryResult = connection.QueryFirstOrDefault<string>(query, new { pParametro });
-                result = queryResult ?? "";
-
-            }
-            catch (Exception)
-            {
-                return "";
-            }
-            return result;
+            return ExecuteScalarOrDefault(
+                CodEmpresa,
+                query,
+                new { pParametro },
+                string.Empty
+            );
         }
 
         /// <summary>
         /// Metodo para obtener los cupones de un contrato
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="pOperadora"></param>
-        /// <param name="pPlan"></param>
-        /// <param name="pContrato"></param>
-        /// <returns></returns>
-        public ErrorDto<List<FndContratosCuponesData>> sbFnd_Contratos_Cupones(int CodEmpresa, int pOperadora, string pPlan, long pContrato)
+        public ErrorDto<List<FndContratosCuponesData>> sbFnd_Contratos_Cupones(
+            int CodEmpresa,
+            int pOperadora,
+            string pPlan,
+            long pContrato)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<FndContratosCuponesData>>
-            {
-                Code = 0,
-                Description = "OK",
-                Result = new List<FndContratosCuponesData>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            const string query = @"
+                select *
+                from vFnd_Contratos_Cupones
+                where cod_operadora = @operadora
+                  and cod_plan      = @plan 
+                  and cod_contrato  = @contrato
+                order by Fecha_Vence";
 
-                var query = $@"select * from vFnd_Contratos_Cupones
-                                    where cod_operadora = @operadora
-                                    and cod_plan = @plan and cod_contrato = @contrato order by Fecha_Vence";
-                response.Result = connection.Query<FndContratosCuponesData>(query, new
+            return QueryListWithError<FndContratosCuponesData>(
+                CodEmpresa,
+                query,
+                new
                 {
                     operadora = pOperadora,
                     plan = pPlan,
                     contrato = pContrato
-                }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+                }
+            );
         }
 
         /// <summary>
         /// Metodo para obtener la bitacora de cambios de un contrato
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="pOperadora"></param>
-        /// <param name="pPlan"></param>
-        /// <param name="pContrato"></param>
-        /// <returns></returns>
-        public ErrorDto<List<FndContratoBitacoraData>> sbFnd_Contratos_Bitacora(int CodEmpresa, int pOperadora, string pPlan, long pContrato)
+        public ErrorDto<List<FndContratoBitacoraData>> sbFnd_Contratos_Bitacora(
+            int CodEmpresa,
+            int pOperadora,
+            string pPlan,
+            long pContrato)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<FndContratoBitacoraData>>
-            {
-                Code = 0,
-                Description = "OK",
-                Result = new List<FndContratoBitacoraData>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            const string query = @"
+                select 
+                    C.*,
+                    S.cedula,
+                    S.nombre,
+                    M.Descripcion as MovimientoDesc,
+                    case when C.revisado_fecha is null then 0 else 1 end as Revisado
+                from fnd_contratos_cambios C 
+                inner join fnd_contratos X 
+                    on C.cod_operadora = X.cod_operadora
+                   and C.cod_plan      = X.cod_plan 
+                   and C.cod_contrato  = X.cod_contrato
+                inner join Socios S 
+                    on X.cedula = S.cedula
+                inner join US_MOVIMIENTOS_BE M 
+                    on C.Movimiento = M.Movimiento 
+                   and M.modulo     = 18
+                where C.cod_operadora = @operadora
+                  and C.cod_plan      = @plan 
+                  and C.cod_contrato  = @contrato
+                order by C.fecha desc";
 
-                var query = $@"select C.*,S.cedula,S.nombre,M.Descripcion as MovimientoDesc,case when C.revisado_fecha is null then 0 else 1 end as 'Revisado'
-                                        from fnd_contratos_cambios C inner join fnd_contratos X on C.cod_operadora = X.cod_operadora
-                                        and C.cod_plan = X.cod_plan and C.cod_contrato = X.cod_contrato
-                                        inner join Socios S on X.cedula = S.cedula
-                                        inner join US_MOVIMIENTOS_BE M on C.Movimiento = M.Movimiento and M.modulo = 18
-                                        where C.cod_operadora = @operadora
-                                        and C.cod_plan = @plan and C.cod_contrato = @contrato
-                                        order by C.fecha desc";
-                response.Result = connection.Query<FndContratoBitacoraData>(query, new
+            return QueryListWithError<FndContratoBitacoraData>(
+                CodEmpresa,
+                query,
+                new
                 {
                     operadora = pOperadora,
                     plan = pPlan,
                     contrato = pContrato
-                }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+                }
+            );
         }
-
-
     }
 }
