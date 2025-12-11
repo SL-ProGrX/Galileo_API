@@ -25,11 +25,7 @@ namespace Galileo.DataBaseTier
             };
         }
 
-        public static ErrorDto<List<T>> ExecuteListQuery<T>(
-            PortalDB portalDb,
-            int codEmpresa,
-            string sql,
-            object? parameters = null)
+        public static ErrorDto<List<T>> ExecuteListQuery<T>(PortalDB portalDb,int codEmpresa,string sql,object? parameters = null)
         {
             var result = CreateOkResponse(new List<T>());
 
@@ -48,12 +44,7 @@ namespace Galileo.DataBaseTier
             return result;
         }
 
-        public static ErrorDto<T?> ExecuteSingleQuery<T>(
-            PortalDB portalDb,
-            int codEmpresa,
-            string sql,
-            T? defaultValue = default,
-            object? parameters = null)
+        public static ErrorDto<T?> ExecuteSingleQuery<T>(PortalDB portalDb,int codEmpresa,string sql,T? defaultValue = default,object? parameters = null)
         {
             var result = CreateOkResponse(defaultValue);
 
@@ -73,11 +64,7 @@ namespace Galileo.DataBaseTier
         }
 
 
-        public static ErrorDto ExecuteNonQuery(
-            PortalDB portalDb,
-            int codEmpresa,
-            string sql,
-            object? parameters = null)
+        public static ErrorDto ExecuteNonQuery(PortalDB portalDb,int codEmpresa,string sql,object? parameters = null)
         {
             var result = CreateOkResponse();
 
@@ -94,5 +81,25 @@ namespace Galileo.DataBaseTier
 
             return result;
         }
+
+        public static ErrorDto<int> ExecuteNonQueryWithResult(PortalDB portalDb,int codEmpresa,string sql,object? parameters = null)
+        {
+            var result = CreateOkResponse(0);
+
+            try
+            {
+                using var connection = portalDb.CreateConnection(codEmpresa);
+                result.Result = connection.Execute(sql, parameters);
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = 0;
+            }
+
+            return result;
+        }
+
     }
 }
