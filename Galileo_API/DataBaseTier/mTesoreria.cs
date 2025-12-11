@@ -220,19 +220,48 @@ namespace Galileo.DataBaseTier
                     resp.Result = null;
                     return resp;
                 }
-                    
 
                 // Armamos el SQL SEGURO
                 string query = $@"
-            select id_banco as item, descripcion
-            from Tes_Bancos
-            where Estado = 'A'
-              and id_banco in (
-                    select id_banco
-                    from tes_documentos_ASG
-                    where nombre = @usuario and {gestion} = 1
-                    group by id_banco
-              )";
+                        select id_banco as item, descripcion
+                        from Tes_Bancos
+                        where Estado = 'A'
+                          and id_banco in (
+                                select id_banco
+                                from tes_documentos_ASG
+                                where nombre = @usuario 
+                            ";
+
+                switch (gestion)
+                {
+                    case "carga":
+                        query += "carga = 1";
+                        break;
+                    case "genera":
+                        query += "genera = 1";
+                        break;
+                    case "autoriza":
+                        query += "autoriza = 1";
+                        break;
+                    case "anula":
+                        query += "anula = 1";
+                        break;      
+                    case "aprueba":
+                        query += "aprueba = 1";
+                        break;
+                    case "consulta":
+                        query += "consulta = 1";
+                        break;
+                    default:
+                        resp.Code = -1;
+                        resp.Description = "Columna de gestión no permitida.";
+                        resp.Result = null;
+                        return resp;
+                }
+
+                query+= " group by id_banco)";
+
+
 
                 resp.Result = connection.Query<DropDownListaGenericaModel>(
                     query,
