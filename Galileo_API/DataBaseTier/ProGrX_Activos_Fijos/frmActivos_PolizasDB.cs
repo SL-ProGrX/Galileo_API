@@ -16,9 +16,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly PortalDB _portalDB;
 
-        private const string _numplaca       = "A.NUM_PLACA";
-        private const string TipoActivoParam = "@tipo_activo";
-        private const string _filtro         = "@filtro";
+        private const string ColNumPlaca      = "A.NUM_PLACA";
+        private const string TipoActivoParam  = "@tipo_activo";
+        private const string FiltroParam      = "@filtro";
+
+        private const string MsgOk                   = "Ok";
+        private const string MsgPolizaLibre          = "POLIZA: Libre";
+        private const string MsgPolizaOcupada        = "POLIZA: Ocupado";
+        private const string MsgDebeIndicarPoliza    = "Debe indicar la póliza.";
+        private const string MsgDatosInsuficientes   = "Datos insuficientes para la operación.";
+        private const string MsgPolizaNoEncontrada   = "Póliza no encontrada.";
+        private const string MsgDatosNoProporcionados = "Datos de póliza no proporcionados.";
+        private const string MsgPolizaInsertOk       = "Póliza Ingresada Satisfactoriamente!";
+        private const string MsgPolizaUpdateOk       = "Póliza Actualizada Satisfactoriamente!";
 
         // Formatos de fecha permitidos
         private static readonly string[] DateFormats = { "yyyy-MM-dd", "dd/MM/yyyy" };
@@ -52,10 +62,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         public FrmActivosPolizasDb(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
-            _portalDB = new PortalDB(config);
+            _portalDB        = new PortalDB(config);
         }
 
         #region Helpers comunes
+
+        private static string NormalizeCodPoliza(string? cod)
+            => (cod ?? string.Empty).Trim().ToUpperInvariant();
 
         private static void AddFiltroTexto(DynamicParameters p, string paramName, string? valor)
         {
@@ -70,14 +83,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         private static int ObtenerSortIndex(string? sortFieldRaw)
         {
-            var sortFieldNorm = (sortFieldRaw ?? _numplaca).Trim().ToUpperInvariant();
+            var sortFieldNorm = (sortFieldRaw ?? ColNumPlaca).Trim().ToUpperInvariant();
 
             return sortFieldNorm switch
             {
-                _numplaca or "NUM_PLACA" => 1,
-                "A.NOMBRE" or "NOMBRE"   => 2,
-                "A.ESTADO" or "ESTADO"   => 3,
-                _                        => 1
+                ColNumPlaca or "NUM_PLACA" => 1,
+                "A.NOMBRE" or "NOMBRE"     => 2,
+                "A.ESTADO" or "ESTADO"     => 3,
+                _                          => 1
             };
         }
 
@@ -185,9 +198,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FETCH NEXT @rows ROWS ONLY;");
 
                 p.Add("@offset", offset);
-                p.Add("@rows", rows);
+                p.Add("@rows",   rows);
                 p.Add("@sortIndex", sortIndex ?? 1);
-                p.Add("@sortDir", sortDir ?? 0);
+                p.Add("@sortDir",   sortDir   ?? 0);
             }
             else
             {
@@ -206,20 +219,22 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             string movimientoBitacora,
             string detalleAccion)
         {
-            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+            var resp = new ErrorDto { Code = 0, Description = MsgOk };
 
             try
             {
                 if (string.IsNullOrWhiteSpace(cod_poliza) || placas == null || placas.Count == 0)
-                    return new ErrorDto { Code = -1, Description = "Datos insuficientes para la operación." };
+                    return new ErrorDto { Code = -1, Description = MsgDatosInsuficientes };
 
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
                 connection.Open();
                 using var tx = connection.BeginTransaction();
 
+                var cod = NormalizeCodPoliza(cod_poliza);
+
                 foreach (var pl in placas)
                 {
-                    connection.Execute(sql, new { p = cod_poliza.ToUpper(), pl, u = usuario }, tx);
+                    connection.Execute(sql, new { p = cod, pl, u = usuario }, tx);
                 }
 
                 tx.Commit();
@@ -227,7 +242,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 RegistrarBitacoraPoliza(
                     CodEmpresa,
                     usuario,
-                    cod_poliza,
+                    cod,
                     descripcion: null,
                     movimiento: movimientoBitacora,
                     detalleExtra: $"{detalleAccion} {placas.Count} activo(s)"
@@ -235,7 +250,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -273,7 +288,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             return new ErrorDto<T>
             {
                 Code        = -1,
-                Description = "Debe indicar la póliza.",
+                Description = MsgDebeIndicarPoliza,
                 Result      = default!
             };
         }
@@ -292,7 +307,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             var response = new ErrorDto<ActivosPolizasLista>
             {
                 Code        = 0,
-                Description = "Ok",
+                Description = MsgOk,
                 Result      = new ActivosPolizasLista()
             };
 
@@ -301,16 +316,15 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 var p = new DynamicParameters();
-                AddFiltroTexto(p, _filtro, vfiltro?.filtro);
+                AddFiltroTexto(p, FiltroParam, vfiltro?.filtro);
 
                 int pagina     = vfiltro?.pagina     ?? 0;
                 int paginacion = vfiltro?.paginacion ?? 50;
 
                 p.Add("@offset", pagina);
-                p.Add("@rows", paginacion);
+                p.Add("@rows",   paginacion);
 
                 var sqlCount = $"SELECT COUNT(*) FROM ACTIVOS_POLIZAS {FiltroPolizasWhere};";
-
                 response.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
 
                 var sqlPage = $@"
@@ -327,8 +341,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                response.Code         = -1;
+                response.Description  = ex.Message;
                 response.Result.total = 0;
                 response.Result.lista = new List<ActivosPolizasData>();
             }
@@ -345,7 +359,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// </summary>
         public ErrorDto Activos_PolizasExiste_Obtener(int CodEmpresa, string cod_poliza)
         {
-            var resp = new ErrorDto { Code = 0 };
+            var resp = new ErrorDto { Code = 0, Description = MsgOk };
 
             try
             {
@@ -356,14 +370,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FROM dbo.ACTIVOS_POLIZAS 
                     WHERE UPPER(COD_POLIZA) = @cod;";
 
-                int result = connection.QueryFirstOrDefault<int>(query, new { cod = (cod_poliza ?? string.Empty).ToUpper() });
+                int result = connection.QueryFirstOrDefault<int>(
+                    query,
+                    new { cod = NormalizeCodPoliza(cod_poliza) });
 
                 (resp.Code, resp.Description) =
-                    (result == 0) ? (0, "POLIZA: Libre") : (-2, "POLIZA: Ocupado");
+                    result == 0
+                        ? (0,  MsgPolizaLibre)
+                        : (-2, MsgPolizaOcupada);
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -402,17 +420,17 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 CodEmpresa,
                 query,
                 defaultValue: null,
-                parameters: new { cod = (cod_poliza ?? string.Empty).ToUpper() }
+                parameters: new { cod = NormalizeCodPoliza(cod_poliza) }
             );
 
             if (result.Code == 0 && result.Result == null)
             {
-                result.Code = -2;
-                result.Description = "Póliza no encontrada.";
+                result.Code        = -2;
+                result.Description = MsgPolizaNoEncontrada;
             }
             else if (result.Code == 0)
             {
-                result.Description = "Ok";
+                result.Description = MsgOk;
             }
 
             return result;
@@ -438,26 +456,37 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     FROM dbo.ACTIVOS_POLIZAS
                     WHERE COD_POLIZA = @cod;";
 
-                int existe = connection.QueryFirstOrDefault<int>(qExiste, new { cod = data.cod_poliza.ToUpper() });
+                var cod = NormalizeCodPoliza(data.cod_poliza);
+                int existe = connection.QueryFirstOrDefault<int>(qExiste, new { cod });
 
                 if (data.isNew)
                 {
                     if (existe > 0)
-                        resp = new ErrorDto { Code = -2, Description = $"La póliza {data.cod_poliza.ToUpper()} ya existe." };
+                    {
+                        resp.Code        = -2;
+                        resp.Description = $"La póliza {cod} ya existe.";
+                    }
                     else
+                    {
                         resp = Activos_Polizas_Insertar(CodEmpresa, data);
+                    }
                 }
                 else
                 {
                     if (existe == 0)
-                        resp = new ErrorDto { Code = -2, Description = $"La póliza {data.cod_poliza.ToUpper()} no existe." };
+                    {
+                        resp.Code        = -2;
+                        resp.Description = $"La póliza {cod} no existe.";
+                    }
                     else
+                    {
                         resp = Activos_Polizas_Actualizar(CodEmpresa, data);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
+                resp.Code        = -1;
                 resp.Description = ex.Message;
             }
 
@@ -470,7 +499,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private ErrorDto ValidarDatosPoliza(ActivosPolizasData data)
         {
             if (data == null)
-                return new ErrorDto { Code = -1, Description = "Datos de póliza no proporcionados." };
+                return new ErrorDto { Code = -1, Description = MsgDatosNoProporcionados };
 
             var errores = new List<string>();
 
@@ -489,7 +518,41 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             if (errores.Count > 0)
                 return new ErrorDto { Code = -1, Description = string.Join(" | ", errores) };
 
-            return new ErrorDto { Code = 0, Description = "Ok" };
+            return new ErrorDto { Code = 0, Description = MsgOk };
+        }
+
+        private object BuildPolizaDbParamsForInsert(ActivosPolizasData data, DateTime? fi, DateTime? fv)
+        {
+            return new
+            {
+                cod          = NormalizeCodPoliza(data.cod_poliza),
+                tipo         = data.tipo_poliza.ToUpperInvariant(),
+                descripcion  = data.descripcion?.ToUpperInvariant(),
+                observacion  = string.IsNullOrWhiteSpace(data.observacion) ? null : data.observacion,
+                fi,
+                fv,
+                monto        = data.monto,
+                num_poliza   = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
+                documento    = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
+                reg_usuario  = string.IsNullOrWhiteSpace(data.registro_usuario) ? null : data.registro_usuario
+            };
+        }
+
+        private object BuildPolizaDbParamsForUpdate(ActivosPolizasData data, DateTime? fi, DateTime? fv)
+        {
+            return new
+            {
+                cod          = NormalizeCodPoliza(data.cod_poliza),
+                tipo         = data.tipo_poliza.ToUpperInvariant(),
+                descripcion  = data.descripcion?.ToUpperInvariant(),
+                observacion  = string.IsNullOrWhiteSpace(data.observacion) ? null : data.observacion,
+                fi,
+                fv,
+                monto        = data.monto,
+                num_poliza   = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
+                documento    = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
+                mod_usuario  = string.IsNullOrWhiteSpace(data.modifica_usuario) ? null : data.modifica_usuario
+            };
         }
 
         private ErrorDto Activos_Polizas_Insertar(int CodEmpresa, ActivosPolizasData data)
@@ -510,19 +573,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 _portalDB,
                 CodEmpresa,
                 query,
-                new
-                {
-                    cod = data.cod_poliza.ToUpper(),
-                    tipo = data.tipo_poliza.ToUpper(),
-                    descripcion = data.descripcion?.ToUpper(),
-                    observacion = string.IsNullOrWhiteSpace(data.observacion) ? null : data.observacion,
-                    fi,
-                    fv,
-                    monto = data.monto,
-                    num_poliza = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
-                    documento = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
-                    reg_usuario = string.IsNullOrWhiteSpace(data.registro_usuario) ? null : data.registro_usuario
-                }
+                BuildPolizaDbParamsForInsert(data, fi, fv)
             );
 
             if (result.Code == 0)
@@ -530,12 +581,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 RegistrarBitacoraPoliza(
                     CodEmpresa,
                     data.registro_usuario,
-                    data.cod_poliza,
+                    NormalizeCodPoliza(data.cod_poliza),
                     data.descripcion,
                     movimiento: "Registra - WEB"
                 );
 
-                result.Description = "Póliza Ingresada Satisfactoriamente!";
+                result.Description = MsgPolizaInsertOk;
             }
 
             return result;
@@ -563,19 +614,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 _portalDB,
                 CodEmpresa,
                 query,
-                new
-                {
-                    cod = data.cod_poliza.ToUpper(),
-                    tipo = data.tipo_poliza.ToUpper(),
-                    descripcion = data.descripcion?.ToUpper(),
-                    observacion = string.IsNullOrWhiteSpace(data.observacion) ? null : data.observacion,
-                    fi,
-                    fv,
-                    monto = data.monto,
-                    num_poliza = string.IsNullOrWhiteSpace(data.num_poliza) ? null : data.num_poliza,
-                    documento = string.IsNullOrWhiteSpace(data.documento) ? null : data.documento,
-                    mod_usuario = string.IsNullOrWhiteSpace(data.modifica_usuario) ? null : data.modifica_usuario
-                }
+                BuildPolizaDbParamsForUpdate(data, fi, fv)
             );
 
             if (result.Code == 0)
@@ -583,12 +622,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 RegistrarBitacoraPoliza(
                     CodEmpresa,
                     data.modifica_usuario,
-                    data.cod_poliza,
+                    NormalizeCodPoliza(data.cod_poliza),
                     data.descripcion,
                     movimiento: "Modifica - WEB"
                 );
 
-                result.Description = "Póliza Actualizada Satisfactoriamente!";
+                result.Description = MsgPolizaUpdateOk;
             }
 
             return result;
@@ -613,7 +652,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             var resp = new ErrorDto<ActivosPolizasLista>
             {
                 Code        = 0,
-                Description = "Ok",
+                Description = MsgOk,
                 Result      = new ActivosPolizasLista()
             };
 
@@ -622,12 +661,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
                 var p = new DynamicParameters();
-                p.Add("@p", cod_poliza.ToUpper());
+                p.Add("@p", NormalizeCodPoliza(cod_poliza));
 
                 AddTipoActivo(p, tipo_activo);
-                AddFiltroTexto(p, _filtro, filtros?.filtro);
+                AddFiltroTexto(p, FiltroParam, filtros?.filtro);
 
-                // Usamos la misma base de query que en el listado para evitar duplicación
                 var queryTotal = "SELECT COUNT(1) " + QueryActivosAsignacionBase + ";";
                 resp.Result.total = cn.QueryFirstOrDefault<int>(queryTotal, p);
 
@@ -647,17 +685,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     sortDir: sortDir
                 ).ToList();
 
+                // Se mantiene la lógica original de colocar el JSON en Description
                 resp.Description = JsonConvert.SerializeObject(filas);
                 resp.Result.lista = filas.Select(f => new ActivosPolizasData
                 {
-                    cod_poliza  = cod_poliza.ToUpper(),
+                    cod_poliza  = NormalizeCodPoliza(cod_poliza),
                     descripcion = f.nombre
                 }).ToList();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Code         = -1;
+                resp.Description  = ex.Message;
                 resp.Result.total = 0;
                 resp.Result.lista = new List<ActivosPolizasData>();
             }
@@ -678,10 +717,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 return CrearErrorDebeIndicarPoliza<List<ActivosPolizasAsignacionItem>>();
 
             var p = new DynamicParameters();
-            p.Add("@p", cod_poliza.ToUpper());
+            p.Add("@p", NormalizeCodPoliza(cod_poliza));
 
             AddTipoActivo(p, tipo_activo);
-            AddFiltroTexto(p, _filtro, filtros?.filtro);
+            AddFiltroTexto(p, FiltroParam, filtros?.filtro);
 
             var query = @"
                 SELECT 
@@ -703,7 +742,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Asigna placas a la póliza.
         /// </summary>
-        public ErrorDto Activos_Polizas_Asignar(int CodEmpresa, string usuario, string cod_poliza, List<string> placas)
+        public ErrorDto Activos_Polizas_Asignar(
+            int CodEmpresa,
+            string usuario,
+            string cod_poliza,
+            List<string> placas)
         {
             const string insert = @"
                 IF NOT EXISTS(SELECT 1 FROM dbo.ACTIVOS_POLIZAS_ASG WHERE COD_POLIZA=@p AND NUM_PLACA=@pl)
@@ -724,7 +767,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Desasigna placas de la póliza.
         /// </summary>
-        public ErrorDto Activos_Polizas_Desasignar(int CodEmpresa, string usuario, string cod_poliza, List<string> placas)
+        public ErrorDto Activos_Polizas_Desasignar(
+            int CodEmpresa,
+            string usuario,
+            string cod_poliza,
+            List<string> placas)
         {
             const string delete = @"
                 DELETE FROM dbo.ACTIVOS_POLIZAS_ASG

@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Globalization;
 using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
@@ -16,30 +17,30 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MReportingServicesDB _mReporting;
         private readonly PortalDB _portalDB;
 
-        private const string FormatoFecha          = "yyyy-MM-dd";
+        private const string FormatoFecha        = "yyyy-MM-dd";
 
-        private const string ColA_NumPlaca         = "A.num_placa";
-        private const string ColA_Nombre           = "A.Nombre";
-        private const string ColA_PlacaAlterna     = "A.Placa_Alterna";
-        private const string ColCodTraslado        = "cod_traslado";
+        private const string ColA_NumPlaca       = "A.num_placa";
+        private const string ColA_Nombre         = "A.Nombre";
+        private const string ColA_PlacaAlterna   = "A.Placa_Alterna";
+        private const string ColCodTraslado      = "cod_traslado";
 
         // columnas para boletas
-        private const string ColNumPlaca           = "num_placa";
-        private const string ColPlacaAlterna       = "PLACA_ALTERNA";
-        private const string ColDescripcion        = "Descripcion";
-        private const string ColRegistroFecha      = "Registro_fecha";
-        private const string ColRegistroUsuario    = "Registro_Usuario";
-        private const string ColPersona            = "Persona";
-        private const string ColPersonaDestino     = "Persona_Destino";
-        private const string ColMotivo             = "Motivo";
-        private const string ColEstadoDesc         = "Estado_Desc";
+        private const string ColNumPlaca         = "num_placa";
+        private const string ColPlacaAlterna     = "PLACA_ALTERNA";
+        private const string ColDescripcion      = "Descripcion";
+        private const string ColRegistroFecha    = "Registro_fecha";
+        private const string ColRegistroUsuario  = "Registro_Usuario";
+        private const string ColPersona          = "Persona";
+        private const string ColPersonaDestino   = "Persona_Destino";
+        private const string ColMotivo           = "Motivo";
+        private const string ColEstadoDesc       = "Estado_Desc";
 
-        private const string MensajeOk             = "Ok";
-        private const string MensajeNoEncontrado   = "No encontrado";
-        private const string MensajeDatosNoProv    = "Datos no proporcionados.";
-        private const string MensajeActivoNoEnc    = "Activo no encontrado.";
-        private const string MensajeBoletaNoGen    = "No se pudo generar la boleta de reasignación.";
-        private const string MensajeTrasladoOk     = "Traslado realizado satisfactoriamente.";
+        private const string MensajeOk           = "Ok";
+        private const string MensajeNoEncontrado = "No encontrado";
+        private const string MensajeDatosNoProv  = "Datos no proporcionados.";
+        private const string MensajeActivoNoEnc  = "Activo no encontrado.";
+        private const string MensajeBoletaNoGen  = "No se pudo generar la boleta de reasignación.";
+        private const string MensajeTrasladoOk   = "Traslado realizado satisfactoriamente.";
 
         // Lista blanca de campos para ORDER BY en Activos_Principal
         private static readonly Dictionary<string, string> SortFieldActivosMap =
@@ -85,14 +86,83 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 { "estado_desc",        ColEstadoDesc }
             };
 
+        // WHERE común para consultas de boletas
+        private const string BoletasWhereBase = @"
+            FROM vActivos_TrasladosHistorico
+            WHERE 1 = 1
+              AND (@NumPlacaLike     IS NULL OR num_placa         LIKE @NumPlacaLike)
+              AND (@FechaInicioDesde IS NULL OR Fecha_Aplicacion  >= @FechaInicioDesde)
+              AND (@FechaCorteHasta  IS NULL OR Fecha_Aplicacion  <= @FechaCorteHasta)
+              AND (@BoletaInicio     IS NULL OR cod_traslado      >= @BoletaInicio)
+              AND (@BoletaCorte      IS NULL OR cod_traslado      <= @BoletaCorte)";
+
+        // ORDER BY común para consultas de boletas
+        private const string BoletasOrderBase = @"
+            ORDER BY
+                -- ASC
+                CASE @sortDir WHEN 1 THEN
+                    CASE @sortIndex
+                        WHEN 1  THEN cod_traslado
+                        WHEN 2  THEN num_placa
+                        WHEN 3  THEN PLACA_ALTERNA
+                        WHEN 4  THEN Descripcion
+                        WHEN 5  THEN Registro_fecha
+                        WHEN 6  THEN Registro_Usuario
+                        WHEN 7  THEN Persona
+                        WHEN 8  THEN Persona_Destino
+                        WHEN 9  THEN Motivo
+                        WHEN 10 THEN Estado_Desc
+                    END
+                END ASC,
+                -- DESC
+                CASE @sortDir WHEN 0 THEN
+                    CASE @sortIndex
+                        WHEN 1  THEN cod_traslado
+                        WHEN 2  THEN num_placa
+                        WHEN 3  THEN PLACA_ALTERNA
+                        WHEN 4  THEN Descripcion
+                        WHEN 5  THEN Registro_fecha
+                        WHEN 6  THEN Registro_Usuario
+                        WHEN 7  THEN Persona
+                        WHEN 8  THEN Persona_Destino
+                        WHEN 9  THEN Motivo
+                        WHEN 10 THEN Estado_Desc
+                    END
+                END DESC";
+
+        // Estructura interna para compartir lógica de filtros de boletas
+        private sealed record BoletasFiltroInterno(
+            string? NumPlacaLike,
+            DateTime? FechaInicioDesde,
+            DateTime? FechaCorteHasta,
+            string? BoletaInicio,
+            string? BoletaCorte,
+            int SortIndex,
+            int SortDir
+        );
+
         public FrmActivosReasignacionesDB(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
-            _mReporting = new MReportingServicesDB(config);
-            _portalDB = new PortalDB(config);
+            _mReporting      = new MReportingServicesDB(config);
+            _portalDB        = new PortalDB(config);
         }
 
         #region Helpers comunes
+
+        private static DateTime? ParseFecha(string? valor, bool endOfDay = false)
+        {
+            if (string.IsNullOrWhiteSpace(valor)) return null;
+
+            var fecha = DateTime.ParseExact(
+                valor,
+                FormatoFecha,
+                CultureInfo.InvariantCulture).Date;
+
+            return endOfDay
+                ? fecha.AddDays(1).AddSeconds(-1)
+                : fecha;
+        }
 
         private static int GetBoletaSortIndex(string sortFieldCanonical)
         {
@@ -109,6 +179,46 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 ColEstadoDesc      => 10,
                 _                  => 1 // cod_traslado
             };
+        }
+
+        /// <summary>
+        /// Construye parámetros comunes para consultas de boletas (lista y export).
+        /// </summary>
+        private static BoletasFiltroInterno BuildBoletasParametros(ActivosReasignacionesBoletasFiltros filtros)
+        {
+            string? numPlacaLike = null;
+            if (filtros.todosActivos == 0 && !string.IsNullOrWhiteSpace(filtros.numPlaca))
+                numPlacaLike = "%" + filtros.numPlaca.Trim() + "%";
+
+            var fechaInicioDesde = ParseFecha(filtros.fechaInicio, endOfDay: false);
+            var fechaCorteHasta  = ParseFecha(filtros.fechaCorte, endOfDay: true);
+
+            string? boletaInicio = string.IsNullOrWhiteSpace(filtros.boletaInicio)
+                ? null
+                : filtros.boletaInicio.Trim();
+
+            string? boletaCorte = string.IsNullOrWhiteSpace(filtros.boletaCorte)
+                ? null
+                : filtros.boletaCorte.Trim();
+
+            var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
+                ? ColCodTraslado
+                : filtros.sortField!;
+
+            if (!SortFieldBoletasMap.TryGetValue(sortFieldKey, out var sortFieldCanonical))
+                sortFieldCanonical = ColCodTraslado;
+
+            var sortIndex = GetBoletaSortIndex(sortFieldCanonical);
+            var sortDir   = filtros.sortOrder == 0 ? 0 : 1;
+
+            return new BoletasFiltroInterno(
+                numPlacaLike,
+                fechaInicioDesde,
+                fechaCorteHasta,
+                boletaInicio,
+                boletaCorte,
+                sortIndex,
+                sortDir);
         }
 
         #endregion
@@ -241,10 +351,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code              = -1;
-                resp.Description       = ex.Message;
-                resp.Result.total      = 0;
-                resp.Result.lista      = [];
+                resp.Code         = -1;
+                resp.Description  = ex.Message;
+                resp.Result.total = 0;
+                resp.Result.lista = [];
             }
 
             return resp;
@@ -533,7 +643,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 p.Add("@FechaAplicacion", DateTime.ParseExact(
                     data.fecha_aplicacion,
                     FormatoFecha,
-                    System.Globalization.CultureInfo.InvariantCulture));
+                    CultureInfo.InvariantCulture));
 
                 var rs = connection.QueryFirstOrDefault<dynamic>(
                     "spActivos_ResponsableCambio",
@@ -598,48 +708,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                // Normalizar filtros a parámetros opcionales
-                string? numPlacaLike = null;
-                if (filtros.todosActivos == 0 && !string.IsNullOrWhiteSpace(filtros.numPlaca))
-                    numPlacaLike = "%" + filtros.numPlaca.Trim() + "%";
-
-                DateTime? fechaInicioDesde = null;
-                if (!string.IsNullOrWhiteSpace(filtros.fechaInicio))
-                {
-                    fechaInicioDesde = DateTime.ParseExact(
-                        filtros.fechaInicio,
-                        FormatoFecha,
-                        System.Globalization.CultureInfo.InvariantCulture
-                    ).Date;
-                }
-
-                DateTime? fechaCorteHasta = null;
-                if (!string.IsNullOrWhiteSpace(filtros.fechaCorte))
-                {
-                    fechaCorteHasta = DateTime.ParseExact(
-                        filtros.fechaCorte,
-                        FormatoFecha,
-                        System.Globalization.CultureInfo.InvariantCulture
-                    ).Date.AddDays(1).AddSeconds(-1);
-                }
-
-                string? boletaInicio = string.IsNullOrWhiteSpace(filtros.boletaInicio)
-                    ? null
-                    : filtros.boletaInicio.Trim();
-
-                string? boletaCorte = string.IsNullOrWhiteSpace(filtros.boletaCorte)
-                    ? null
-                    : filtros.boletaCorte.Trim();
-
-                var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
-                    ? ColCodTraslado
-                    : filtros.sortField!;
-
-                if (!SortFieldBoletasMap.TryGetValue(sortFieldKey, out var sortFieldCanonical))
-                    sortFieldCanonical = ColCodTraslado;
-
-                var sortIndex = GetBoletaSortIndex(sortFieldCanonical);
-                var sortDir   = filtros.sortOrder == 0 ? 0 : 1;
+                var f = BuildBoletasParametros(filtros);
 
                 var offset = filtros.pagina <= 1
                     ? 0
@@ -647,30 +716,22 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 var parametros = new
                 {
-                    NumPlacaLike     = numPlacaLike,
-                    FechaInicioDesde = fechaInicioDesde,
-                    FechaCorteHasta  = fechaCorteHasta,
-                    BoletaInicio     = boletaInicio,
-                    BoletaCorte      = boletaCorte,
-                    sortIndex,
-                    sortDir,
+                    f.NumPlacaLike,
+                    f.FechaInicioDesde,
+                    f.FechaCorteHasta,
+                    f.BoletaInicio,
+                    f.BoletaCorte,
+                    sortIndex = f.SortIndex,
+                    sortDir   = f.SortDir,
                     offset,
-                    fetch            = filtros.paginacion
+                    fetch     = filtros.paginacion
                 };
 
-                const string qTotal = @"
-                    SELECT COUNT(1)
-                    FROM vActivos_TrasladosHistorico
-                    WHERE 1 = 1
-                      AND (@NumPlacaLike     IS NULL OR num_placa LIKE @NumPlacaLike)
-                      AND (@FechaInicioDesde IS NULL OR Fecha_Aplicacion >= @FechaInicioDesde)
-                      AND (@FechaCorteHasta  IS NULL OR Fecha_Aplicacion <= @FechaCorteHasta)
-                      AND (@BoletaInicio     IS NULL OR cod_traslado >= @BoletaInicio)
-                      AND (@BoletaCorte      IS NULL OR cod_traslado <= @BoletaCorte);";
+                string qTotal = "SELECT COUNT(1) " + BoletasWhereBase + ";";
 
                 resp.Result.total = connection.ExecuteScalar<int>(qTotal, parametros);
 
-                const string qDatos = @"
+                string qDatos = @"
                     SELECT
                         cod_traslado,
                         num_placa,
@@ -682,44 +743,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         Persona_Destino   AS persona_destino,
                         Motivo,
                         Estado_Desc       AS estado_desc
-                    FROM vActivos_TrasladosHistorico
-                    WHERE 1 = 1
-                      AND (@NumPlacaLike     IS NULL OR num_placa LIKE @NumPlacaLike)
-                      AND (@FechaInicioDesde IS NULL OR Fecha_Aplicacion >= @FechaInicioDesde)
-                      AND (@FechaCorteHasta  IS NULL OR Fecha_Aplicacion <= @FechaCorteHasta)
-                      AND (@BoletaInicio     IS NULL OR cod_traslado >= @BoletaInicio)
-                      AND (@BoletaCorte      IS NULL OR cod_traslado <= @BoletaCorte)
-                    ORDER BY
-                        -- ASC
-                        CASE @sortDir WHEN 1 THEN
-                            CASE @sortIndex
-                                WHEN 1  THEN cod_traslado
-                                WHEN 2  THEN num_placa
-                                WHEN 3  THEN PLACA_ALTERNA
-                                WHEN 4  THEN Descripcion
-                                WHEN 5  THEN Registro_fecha
-                                WHEN 6  THEN Registro_Usuario
-                                WHEN 7  THEN Persona
-                                WHEN 8  THEN Persona_Destino
-                                WHEN 9  THEN Motivo
-                                WHEN 10 THEN Estado_Desc
-                            END
-                        END ASC,
-                        -- DESC
-                        CASE @sortDir WHEN 0 THEN
-                            CASE @sortIndex
-                                WHEN 1  THEN cod_traslado
-                                WHEN 2  THEN num_placa
-                                WHEN 3  THEN PLACA_ALTERNA
-                                WHEN 4  THEN Descripcion
-                                WHEN 5  THEN Registro_fecha
-                                WHEN 6  THEN Registro_Usuario
-                                WHEN 7  THEN Persona
-                                WHEN 8  THEN Persona_Destino
-                                WHEN 9  THEN Motivo
-                                WHEN 10 THEN Estado_Desc
-                            END
-                        END DESC
+                    " + BoletasWhereBase + @"
+                    " + BoletasOrderBase + @"
                     OFFSET @offset ROWS
                     FETCH NEXT @fetch ROWS ONLY;";
 
@@ -729,10 +754,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                resp.Code              = -1;
-                resp.Description       = ex.Message;
-                resp.Result.total      = 0;
-                resp.Result.lista      = [];
+                resp.Code         = -1;
+                resp.Description  = ex.Message;
+                resp.Result.total = 0;
+                resp.Result.lista = [];
             }
 
             return resp;
@@ -825,61 +850,20 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                // Normalizar filtros a parámetros opcionales
-                string? numPlacaLike = null;
-                if (filtros.todosActivos == 0 && !string.IsNullOrWhiteSpace(filtros.numPlaca))
-                    numPlacaLike = "%" + filtros.numPlaca.Trim() + "%";
-
-                DateTime? fechaInicioDesde = null;
-                if (!string.IsNullOrWhiteSpace(filtros.fechaInicio))
-                {
-                    fechaInicioDesde = DateTime.ParseExact(
-                        filtros.fechaInicio,
-                        FormatoFecha,
-                        System.Globalization.CultureInfo.InvariantCulture
-                    ).Date;
-                }
-
-                DateTime? fechaCorteHasta = null;
-                if (!string.IsNullOrWhiteSpace(filtros.fechaCorte))
-                {
-                    fechaCorteHasta = DateTime.ParseExact(
-                        filtros.fechaCorte,
-                        FormatoFecha,
-                        System.Globalization.CultureInfo.InvariantCulture
-                    ).Date.AddDays(1).AddSeconds(-1);
-                }
-
-                string? boletaInicio = string.IsNullOrWhiteSpace(filtros.boletaInicio)
-                    ? null
-                    : filtros.boletaInicio.Trim();
-
-                string? boletaCorte = string.IsNullOrWhiteSpace(filtros.boletaCorte)
-                    ? null
-                    : filtros.boletaCorte.Trim();
-
-                var sortFieldKey = string.IsNullOrWhiteSpace(filtros.sortField)
-                    ? ColCodTraslado
-                    : filtros.sortField!;
-
-                if (!SortFieldBoletasMap.TryGetValue(sortFieldKey, out var sortFieldCanonical))
-                    sortFieldCanonical = ColCodTraslado;
-
-                var sortIndex = GetBoletaSortIndex(sortFieldCanonical);
-                var sortDir   = filtros.sortOrder == 0 ? 0 : 1;
+                var f = BuildBoletasParametros(filtros);
 
                 var parametros = new
                 {
-                    NumPlacaLike     = numPlacaLike,
-                    FechaInicioDesde = fechaInicioDesde,
-                    FechaCorteHasta  = fechaCorteHasta,
-                    BoletaInicio     = boletaInicio,
-                    BoletaCorte      = boletaCorte,
-                    sortIndex,
-                    sortDir
+                    f.NumPlacaLike,
+                    f.FechaInicioDesde,
+                    f.FechaCorteHasta,
+                    f.BoletaInicio,
+                    f.BoletaCorte,
+                    sortIndex = f.SortIndex,
+                    sortDir   = f.SortDir
                 };
 
-                const string qDatos = @"
+                string qDatos = @"
                     SELECT
                         cod_traslado,
                         num_placa,
@@ -891,44 +875,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                         Persona_Destino   AS persona_destino,
                         Motivo,
                         Estado_Desc       AS estado_desc
-                    FROM vActivos_TrasladosHistorico
-                    WHERE 1 = 1
-                      AND (@NumPlacaLike     IS NULL OR num_placa LIKE @NumPlacaLike)
-                      AND (@FechaInicioDesde IS NULL OR Fecha_Aplicacion >= @FechaInicioDesde)
-                      AND (@FechaCorteHasta  IS NULL OR Fecha_Aplicacion <= @FechaCorteHasta)
-                      AND (@BoletaInicio     IS NULL OR cod_traslado >= @BoletaInicio)
-                      AND (@BoletaCorte      IS NULL OR cod_traslado <= @BoletaCorte)
-                    ORDER BY
-                        -- ASC
-                        CASE @sortDir WHEN 1 THEN
-                            CASE @sortIndex
-                                WHEN 1  THEN cod_traslado
-                                WHEN 2  THEN num_placa
-                                WHEN 3  THEN PLACA_ALTERNA
-                                WHEN 4  THEN Descripcion
-                                WHEN 5  THEN Registro_fecha
-                                WHEN 6  THEN Registro_Usuario
-                                WHEN 7  THEN Persona
-                                WHEN 8  THEN Persona_Destino
-                                WHEN 9  THEN Motivo
-                                WHEN 10 THEN Estado_Desc
-                            END
-                        END ASC,
-                        -- DESC
-                        CASE @sortDir WHEN 0 THEN
-                            CASE @sortIndex
-                                WHEN 1  THEN cod_traslado
-                                WHEN 2  THEN num_placa
-                                WHEN 3  THEN PLACA_ALTERNA
-                                WHEN 4  THEN Descripcion
-                                WHEN 5  THEN Registro_fecha
-                                WHEN 6  THEN Registro_Usuario
-                                WHEN 7  THEN Persona
-                                WHEN 8  THEN Persona_Destino
-                                WHEN 9  THEN Motivo
-                                WHEN 10 THEN Estado_Desc
-                            END
-                        END DESC;";
+                    " + BoletasWhereBase + @"
+                    " + BoletasOrderBase + ";";
 
                 resp.Result = connection
                     .Query<ActivosReasignacionesBoletaHistorialItem>(qDatos, parametros)
@@ -946,104 +894,96 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
         /// <summary>
         /// Generar emisión de boletas de reasignación en lote (PDF combinado).
-        /// <param name="codEmpresa"></param>
-        /// <param name="request"></param>
         /// </summary>
-        /// <returns></returns>
-        public ErrorDto<object> Activos_Reasignacion_Boletas_Lote(int codEmpresa,ActivosReasignacionesBoletasLoteRequest request)
+        public ErrorDto<object> Activos_Reasignacion_Boletas_Lote(int codEmpresa, ActivosReasignacionesBoletasLoteRequest request)
         {
             var response = new ErrorDto<object> { Code = 0 };
-        
+
             if (request.Boletas == null || request.Boletas.Count == 0)
             {
-                response.Code = -1;
+                response.Code        = -1;
                 response.Description = "No se recibieron boletas para generar el reporte.";
                 return response;
             }
-        
+
             try
             {
                 var pdfs = new List<byte[]>();
-        
+
                 foreach (var boleta in request.Boletas.Distinct())
                 {
                     if (string.IsNullOrWhiteSpace(boleta))
                         continue;
-        
+
                     var parametros = new
                     {
-                        filtros =
-                            $" WHERE ACTIVOS_TRASLADOS.COD_TRASLADO = '{boleta}'",
-                        Empresa = (string?)null,
-                        fxUsuario = request.Usuario,
+                        filtros     = $" WHERE ACTIVOS_TRASLADOS.COD_TRASLADO = '{boleta}'",
+                        Empresa     = (string?)null,
+                        fxUsuario   = request.Usuario,
                         fxSubTitulo = "TRASLADO DE ACTIVOS Y CAMBIO DE RESPONSABLES"
                     };
-        
+
                     var reporteData = new FrmReporteGlobal
                     {
-                        codEmpresa = codEmpresa,
-                        parametros = JsonConvert.SerializeObject(parametros),
+                        codEmpresa   = codEmpresa,
+                        parametros   = JsonConvert.SerializeObject(parametros),
                         nombreReporte = "Activos_BoletaTraslado",
-                        usuario = request.Usuario,
-                        cod_reporte = "P",
-                        folder = "Activos"
+                        usuario      = request.Usuario,
+                        cod_reporte  = "P",
+                        folder       = "Activos"
                     };
-        
+
                     var actionResult = _mReporting.ReporteRDLC_v2(reporteData);
-        
-                    // Si viene un ObjectResult, interpretamos que hay ErrorDto adentro
+
                     if (actionResult is ObjectResult objectResult)
                     {
-                        var res = objectResult.Value;
+                        var res  = objectResult.Value;
                         var jres = System.Text.Json.JsonSerializer.Serialize(res);
-                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
-        
-                        response.Code = -1;
+                        var err  = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
+
+                        response.Code        = -1;
                         response.Description =
                             err?.Description ?? $"Error al generar boleta {boleta}.";
                         return response;
                     }
-        
+
                     var fileResult = actionResult as FileContentResult;
-        
+
                     if (fileResult?.FileContents == null || fileResult.FileContents.Length == 0)
                     {
-                        response.Code = -1;
+                        response.Code        = -1;
                         response.Description =
                             $"Ocurrió un error al generar la boleta, contenido nulo/vacío para boleta {boleta}.";
                         return response;
                     }
-        
+
                     pdfs.Add(fileResult.FileContents);
                 }
-        
+
                 if (!pdfs.Any())
                 {
-                    response.Code = -1;
+                    response.Code        = -1;
                     response.Description = "No se generaron boletas para los códigos indicados.";
                     return response;
                 }
-        
-                // Combinar los bytes de todos los PDFs en uno solo
+
                 var combinadoBytes = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfs.ToArray());
-        
+
                 var fileCombinado = new FileContentResult(combinadoBytes, "application/pdf")
                 {
                     FileDownloadName = "Activos_Reasignacion_Boletas.pdf"
                 };
-        
-                // Devolver el FileContentResult serializado (igual que en Personas/Tesorería)
+
                 response.Result = JsonConvert.SerializeObject(fileCombinado, Formatting.Indented);
                 return response;
             }
             catch (Exception ex)
             {
-                response.Code = -1;
+                response.Code        = -1;
                 response.Description = ex.Message;
-                response.Result = null;
+                response.Result      = null;
                 return response;
             }
         }
-
     }
 }
