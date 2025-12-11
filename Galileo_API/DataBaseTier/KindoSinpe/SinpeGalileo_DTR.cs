@@ -5,26 +5,54 @@ using System.Net.Http;
 using System.Text;
 
 namespace Galileo_API.DataBaseTier
-{ 
-    /// <summary>
-    /// Cliente para consumir los métodos del Servicio DTR de KINDO (Sección 6 del documento).
-    /// Refactorizado para evitar duplicación Sonar.
-    /// </summary>
+{
     public class SinpeGalileoDtr
     {
         private readonly HttpClient _client;
         private const string MediaTypeJson = "application/json";
         private const string MsjError = "Respuesta inválida del servicio.";
 
-        // Ideal: HttpClient por DI (IHttpClientFactory). Mantengo firma simple.
         public SinpeGalileoDtr(IConfiguration config, HttpClient? client = null)
         {
             _client = client ?? new HttpClient();
         }
 
-        // -----------------------------
-        // Helper genérico central
-        // -----------------------------
+        // --------------------------------------------------------------------
+        // Helpers de creación de errores (elimina 70% de duplicación)
+        // --------------------------------------------------------------------
+        private static TRes BuildHttpError<TRes>(int code, string msg)
+            where TRes : ResBase, new()
+        {
+            return new TRes
+            {
+                IsSuccessful = false,
+                Errors = new[] { new Error { Code = code, Message = msg } }
+            };
+        }
+
+        private static TRes BuildDeserializeError<TRes>(string msg)
+            where TRes : ResBase, new()
+        {
+            return new TRes
+            {
+                IsSuccessful = false,
+                Errors = new[] { new Error { Code = -1, Message = msg } }
+            };
+        }
+
+        private static TRes BuildExceptionError<TRes>(string operation, Exception ex)
+            where TRes : ResBase, new()
+        {
+            return new TRes
+            {
+                IsSuccessful = false,
+                Errors = new[] { new Error { Code = -1, Message = $"Error en {operation}: {ex.Message}" } }
+            };
+        }
+
+        // --------------------------------------------------------------------
+        // Helper genérico para llamadas JSON (ya existía)
+        // --------------------------------------------------------------------
         private async Task<TRes> PostJsonAsync<TReq, TRes>(
             string baseUrl,
             string endpoint,
@@ -60,578 +88,271 @@ namespace Galileo_API.DataBaseTier
         private static string CombineUrl(string baseUrl, string endpoint)
             => $"{baseUrl?.TrimEnd('/')}/{endpoint?.TrimStart('/')}";
 
-        // -----------------------------
-        // 6.x IsServiceAvailable
-        // -----------------------------
-        public Task<ResServiceAvailable> IsServiceAvailableAsync(string urlCGP_DTR, ReqBase context)
+        // --------------------------------------------------------------------
+        // MÉTODOS DTR REFACTORIZADOS
+        // --------------------------------------------------------------------
+
+        public Task<ResServiceAvailable> IsServiceAvailableAsync(string url, ReqBase ctx)
         {
             return PostJsonAsync<ReqBase, ResServiceAvailable>(
-                urlCGP_DTR,
+                url,
                 "/IsServiceAvailable",
-                context,
-                onHttpError: (code, _) => new ResServiceAvailable
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "El servicio no está disponible." }
-                    }
-                },
-                onDeserializeNull: _ => new ResServiceAvailable
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResServiceAvailable
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en IsServiceAvailable: {ex.Message}" }
-                    }
-                }
+                ctx,
+                (code, _) => BuildHttpError<ResServiceAvailable>(code, "El servicio no está disponible."),
+                _ => BuildDeserializeError<ResServiceAvailable>(MsjError),
+                ex => BuildExceptionError<ResServiceAvailable>("IsServiceAvailable", ex)
             );
         }
 
-        // Backward compatible sync wrapper si lo necesitás:
-        public ResServiceAvailable IsServiceAvailable(string urlCGP_DTR, ReqBase context)
-            => IsServiceAvailableAsync(urlCGP_DTR, context).GetAwaiter().GetResult();
+        public ResServiceAvailable IsServiceAvailable(string url, ReqBase ctx)
+            => IsServiceAvailableAsync(url, ctx).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x GetAccountInfo
-        // -----------------------------
-        public Task<ResAccountInfo> GetAccountInfoAsync(string urlCGP_DTR, ReqAccountInfo accountData)
+        // --------------------------------------------------------------
+
+        public Task<ResAccountInfo> GetAccountInfoAsync(string url, ReqAccountInfo data)
         {
             return PostJsonAsync<ReqAccountInfo, ResAccountInfo>(
-                urlCGP_DTR,
+                url,
                 "/GetAccountInfo",
-                accountData,
-                onHttpError: (code, _) => new ResAccountInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo obtener la información de la cuenta." }
-                    }
-                },
-                onDeserializeNull: _ => new ResAccountInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResAccountInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetAccountInfo: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResAccountInfo>(code, "No se pudo obtener la información de la cuenta."),
+                _ => BuildDeserializeError<ResAccountInfo>(MsjError),
+                ex => BuildExceptionError<ResAccountInfo>("GetAccountInfo", ex)
             );
         }
 
-        public ResAccountInfo GetAccountInfo(string urlCGP_DTR, ReqAccountInfo accountData)
-            => GetAccountInfoAsync(urlCGP_DTR, accountData).GetAwaiter().GetResult();
+        public ResAccountInfo GetAccountInfo(string url, ReqAccountInfo data)
+            => GetAccountInfoAsync(url, data).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x SendDebit
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResDTRSending> SendDebitAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRSending debitData)
+            ReqDTRSending data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqDTRSending, ResDTRSending>(
-                baseUrl,
+                url,
                 "/SendDebit",
-                debitData,
-                onHttpError: (code, _) => new ResDTRSending
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo enviar el débito." }
-                    }
-                },
-                onDeserializeNull: _ => new ResDTRSending
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResDTRSending
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en SendDebit: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResDTRSending>(code, "No se pudo enviar el débito."),
+                _ => BuildDeserializeError<ResDTRSending>(MsjError),
+                ex => BuildExceptionError<ResDTRSending>("SendDebit", ex)
             );
         }
 
-        public ResDTRSending SendDebit(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRSending debitData)
-            => SendDebitAsync(parametros, debitData).GetAwaiter().GetResult();
+        public ResDTRSending SendDebit(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqDTRSending d)
+            => SendDebitAsync(p, d).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x GetDebitResult
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResDTRSending> GetDebitResultAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRInfoChannelRef debitData)
+            ReqDTRInfoChannelRef data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqDTRInfoChannelRef, ResDTRSending>(
-                baseUrl,
+                url,
                 "/GetDebitResult",
-                debitData,
-                onHttpError: (code, _) => new ResDTRSending
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo obtener el resultado del DTR." }
-                    }
-                },
-                onDeserializeNull: _ => new ResDTRSending
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message =MsjError }
-                    }
-                },
-                onException: ex => new ResDTRSending
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetDebitResult: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResDTRSending>(code, "No se pudo obtener el resultado del DTR."),
+                _ => BuildDeserializeError<ResDTRSending>(MsjError),
+                ex => BuildExceptionError<ResDTRSending>("GetDebitResult", ex)
             );
         }
 
-        public ResDTRSending GetDebitResult(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRInfoChannelRef debitData)
-            => GetDebitResultAsync(parametros, debitData).GetAwaiter().GetResult();
+        public ResDTRSending GetDebitResult(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqDTRInfoChannelRef d)
+            => GetDebitResultAsync(p, d).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x GetDebitDataByChannelRef
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResDTRInfo> GetDebitDataByChannelRefAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRInfoChannelRef debitData)
+            ReqDTRInfoChannelRef data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqDTRInfoChannelRef, ResDTRInfo>(
-                baseUrl,
+                url,
                 "/GetDebitDataByChannelRef",
-                debitData,
-                onHttpError: (code, _) => new ResDTRInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo consultar el DTR por referencia de canal." }
-                    }
-                },
-                onDeserializeNull: _ => new ResDTRInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResDTRInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetDebitDataByChannelRef: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResDTRInfo>(code, "No se pudo consultar el DTR por referencia de canal."),
+                _ => BuildDeserializeError<ResDTRInfo>(MsjError),
+                ex => BuildExceptionError<ResDTRInfo>("GetDebitDataByChannelRef", ex)
             );
         }
 
-        public ResDTRInfo GetDebitDataByChannelRef(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRInfoChannelRef debitData)
-            => GetDebitDataByChannelRefAsync(parametros, debitData).GetAwaiter().GetResult();
+        public ResDTRInfo GetDebitDataByChannelRef(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqDTRInfoChannelRef d)
+            => GetDebitDataByChannelRefAsync(p, d).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x GetDebitDataBySINPERef
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResDTRInfo> GetDebitDataBySINPERefAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRInfoSINPERef debitData)
+            ReqDTRInfoSINPERef data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqDTRInfoSINPERef, ResDTRInfo>(
-                baseUrl,
+                url,
                 "/GetDebitDataBySINPERef",
-                debitData,
-                onHttpError: (code, _) => new ResDTRInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo consultar el DTR por referencia SINPE." }
-                    }
-                },
-                onDeserializeNull: _ => new ResDTRInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResDTRInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetDebitDataBySINPERef: {ex.Message}" }
-                    }
-                }
+                data,
+            (code, _) => BuildHttpError<ResDTRInfo>(code, "No se pudo consultar el DTR por referencia SINPE."),
+                _ => BuildDeserializeError<ResDTRInfo>(MsjError),
+                ex => BuildExceptionError<ResDTRInfo>("GetDebitDataBySINPERef", ex)
             );
         }
 
-        public ResDTRInfo GetDebitDataBySINPERef(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRInfoSINPERef debitData)
-            => GetDebitDataBySINPERefAsync(parametros, debitData).GetAwaiter().GetResult();
+        public ResDTRInfo GetDebitDataBySINPERef(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqDTRInfoSINPERef d)
+            => GetDebitDataBySINPERefAsync(p, d).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x SendBatch
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResBatchSending> SendBatchAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqBatchSending batchData)
+            ReqBatchSending data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqBatchSending, ResBatchSending>(
-                baseUrl,
+                url,
                 "/SendBatch",
-                batchData,
-                onHttpError: (code, _) => new ResBatchSending
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "Error al enviar el lote de DTRs." }
-                    }
-                },
-                onDeserializeNull: _ => new ResBatchSending
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResBatchSending
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en SendBatch: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResBatchSending>(code, "Error al enviar el lote de DTRs."),
+                _ => BuildDeserializeError<ResBatchSending>(MsjError),
+                ex => BuildExceptionError<ResBatchSending>("SendBatch", ex)
             );
         }
 
-        public ResBatchSending SendBatch(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqBatchSending batchData)
-            => SendBatchAsync(parametros, batchData).GetAwaiter().GetResult();
+        public ResBatchSending SendBatch(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqBatchSending d)
+            => SendBatchAsync(p, d).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x GetBatchState
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResBatchState> GetBatchStateAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqBatchState batchData)
+            ReqBatchState data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqBatchState, ResBatchState>(
-                baseUrl,
+                url,
                 "/GetBatchState",
-                batchData,
-                onHttpError: (code, _) => new ResBatchState
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo obtener el estado del lote." }
-                    }
-                },
-                onDeserializeNull: _ => new ResBatchState
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResBatchState
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetBatchState: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResBatchState>(code, "No se pudo obtener el estado del lote."),
+                _ => BuildDeserializeError<ResBatchState>(MsjError),
+                ex => BuildExceptionError<ResBatchState>("GetBatchState", ex)
             );
         }
 
-        public ResBatchState GetBatchState(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqBatchState batchData)
-            => GetBatchStateAsync(parametros, batchData).GetAwaiter().GetResult();
+        public ResBatchState GetBatchState(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqBatchState d)
+            => GetBatchStateAsync(p, d).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x GetCustomerDebits
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResCustomerDebits> GetCustomerDebitsAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerDebits consultData)
+            ReqCustomerDebits data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqCustomerDebits, ResCustomerDebits>(
-                baseUrl,
+                url,
                 "/GetCustomerDebits",
-                consultData,
-                onHttpError: (code, _) => new ResCustomerDebits
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo obtener la lista de débitos del cliente." }
-                    }
-                },
-                onDeserializeNull: _ => new ResCustomerDebits
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message =MsjError }
-                    }
-                },
-                onException: ex => new ResCustomerDebits
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetCustomerDebits: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResCustomerDebits>(code, "No se pudo obtener la lista de débitos del cliente."),
+                _ => BuildDeserializeError<ResCustomerDebits>(MsjError),
+                ex => BuildExceptionError<ResCustomerDebits>("GetCustomerDebits", ex)
             );
         }
 
-        public ResCustomerDebits GetCustomerDebits(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerDebits consultData)
-            => GetCustomerDebitsAsync(parametros, consultData).GetAwaiter().GetResult();
+        public ResCustomerDebits GetCustomerDebits(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqCustomerDebits d)
+            => GetCustomerDebitsAsync(p, d).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x GetAllDebits
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResAllDebits> GetAllDebitsAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqAllDebits filterData)
+            ReqAllDebits data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqAllDebits, ResAllDebits>(
-                baseUrl,
+                url,
                 "/GetAllDebits",
-                filterData,
-                onHttpError: (code, _) => new ResAllDebits
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo obtener la lista de todos los débitos." }
-                    }
-                },
-                onDeserializeNull: _ => new ResAllDebits
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResAllDebits
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetAllDebits: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResAllDebits>(code, "No se pudo obtener la lista de todos los débitos."),
+                _ => BuildDeserializeError<ResAllDebits>(MsjError),
+                ex => BuildExceptionError<ResAllDebits>("GetAllDebits", ex)
             );
         }
 
-        public ResAllDebits GetAllDebits(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqAllDebits filterData)
-            => GetAllDebitsAsync(parametros, filterData).GetAwaiter().GetResult();
+        public ResAllDebits GetAllDebits(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqAllDebits d)
+            => GetAllDebitsAsync(p, d).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x RegisterAuthorization
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResBase> RegisterAuthorizationAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerServiceAuthorization authorizationData)
+            ReqCustomerServiceAuthorization data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqCustomerServiceAuthorization, ResBase>(
-                baseUrl,
+                url,
                 "/RegisterAuthorization",
-                authorizationData,
-                onHttpError: (code, _) => new ResBase
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo registrar la autorización del cliente." }
-                    }
-                },
-                onDeserializeNull: _ => new ResBase
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResBase
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en RegisterAuthorization: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResBase>(code, "No se pudo registrar la autorización del cliente."),
+                _ => BuildDeserializeError<ResBase>(MsjError),
+                ex => BuildExceptionError<ResBase>("RegisterAuthorization", ex)
             );
         }
 
-        public ResBase RegisterAuthorization(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerServiceAuthorization authorizationData)
-            => RegisterAuthorizationAsync(parametros, authorizationData).GetAwaiter().GetResult();
+        public ResBase RegisterAuthorization(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqCustomerServiceAuthorization d)
+            => RegisterAuthorizationAsync(p, d).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x InactivateAuthorization
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResBase> InactivateAuthorizationAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerServiceAuthorization authorizationData)
+            ReqCustomerServiceAuthorization data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqCustomerServiceAuthorization, ResBase>(
-                baseUrl,
+                url,
                 "/InactivateAuthorization",
-                authorizationData,
-                onHttpError: (code, _) => new ResBase
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo inactivar la autorización del cliente." }
-                    }
-                },
-                onDeserializeNull: _ => new ResBase
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResBase
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en InactivateAuthorization: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResBase>(code, "No se pudo inactivar la autorización del cliente."),
+                _ => BuildDeserializeError<ResBase>(MsjError),
+                ex => BuildExceptionError<ResBase>("InactivateAuthorization", ex)
             );
         }
 
-        public ResBase InactivateAuthorization(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerServiceAuthorization authorizationData)
-            => InactivateAuthorizationAsync(parametros, authorizationData).GetAwaiter().GetResult();
+        public ResBase InactivateAuthorization(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqCustomerServiceAuthorization d)
+            => InactivateAuthorizationAsync(p, d).GetAwaiter().GetResult();
 
-        // -----------------------------
-        // 6.x GetStateAuthorization
-        // -----------------------------
+        // --------------------------------------------------------------
+
         public Task<ResCustomerServiceAuthorization> GetStateAuthorizationAsync(
             ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerServiceAuthorization authorizationData)
+            ReqCustomerServiceAuthorization data)
         {
-            var baseUrl = parametros.Result.Item1.UrlCGP_DTR;
+            var url = parametros.Result.Item1.UrlCGP_DTR;
 
             return PostJsonAsync<ReqCustomerServiceAuthorization, ResCustomerServiceAuthorization>(
-                baseUrl,
+                url,
                 "/GetStateAuthorization",
-                authorizationData,
-                onHttpError: (code, _) => new ResCustomerServiceAuthorization
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = code, Message = "No se pudo obtener el estado de autorización del cliente." }
-                    }
-                },
-                onDeserializeNull: _ => new ResCustomerServiceAuthorization
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = MsjError }
-                    }
-                },
-                onException: ex => new ResCustomerServiceAuthorization
-                {
-                    IsSuccessful = false,
-                    Errors = new[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetStateAuthorization: {ex.Message}" }
-                    }
-                }
+                data,
+                (code, _) => BuildHttpError<ResCustomerServiceAuthorization>(code, "No se pudo obtener el estado de autorización del cliente."),
+                _ => BuildDeserializeError<ResCustomerServiceAuthorization>(MsjError),
+                ex => BuildExceptionError<ResCustomerServiceAuthorization>("GetStateAuthorization", ex)
             );
         }
 
-        public ResCustomerServiceAuthorization GetStateAuthorization(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerServiceAuthorization authorizationData)
-            => GetStateAuthorizationAsync(parametros, authorizationData).GetAwaiter().GetResult();
+        public ResCustomerServiceAuthorization GetStateAuthorization(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqCustomerServiceAuthorization d)
+            => GetStateAuthorizationAsync(p, d).GetAwaiter().GetResult();
     }
 }

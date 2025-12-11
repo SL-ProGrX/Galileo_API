@@ -21,6 +21,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly FrmCntXConsultaCuentasDb _ConsultaCuentasDB;
         private readonly VerificadorCoreFactory _factory;
 
+        private readonly string descripcion = "descripcion";
+
         private readonly Dictionary<string, string> whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["item"] = "item",
@@ -1052,7 +1054,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     var whereFiltro = string.IsNullOrWhiteSpace(f.filtro)
                         ? " where estado='A'"
-                        : BuildWhereLike(f, "ID_BANCO", "descripcion") + " AND estado='A'";
+                        : BuildWhereLike(f, "ID_BANCO", descripcion) + " AND estado='A'";
 
                     var (orderBy, dir) = BuildOrderBy(f, whitelist);
 
@@ -1082,7 +1084,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     var whereFiltro = string.IsNullOrWhiteSpace(f.filtro)
                         ? " where estado='A'"
-                        : BuildWhereLike(f, "CEDJUR", "descripcion") + " AND estado='A'";
+                        : BuildWhereLike(f, "CEDJUR", descripcion) + " AND estado='A'";
 
                     var (orderBy, dir) = BuildOrderBy(f, whitelist);
 
@@ -1110,7 +1112,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     var whereFiltro = string.IsNullOrWhiteSpace(f.filtro)
                         ? " where estado='A'"
-                        : BuildWhereLike(f, "cod_acreedor", "descripcion") + " AND estado='A'";
+                        : BuildWhereLike(f, "cod_acreedor", descripcion) + " AND estado='A'";
 
                     var (orderBy, dir) = BuildOrderBy(f, whitelist);
 
