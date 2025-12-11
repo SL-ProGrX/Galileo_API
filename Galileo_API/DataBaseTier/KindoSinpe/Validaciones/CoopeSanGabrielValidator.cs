@@ -136,7 +136,6 @@ namespace Galileo_API.DataBaseTier
                 Code = 0,
                 Description = "Ok"
             };
-           
             var respuesta = new RespuestaRegistro();
             var datos = new TesTransaccion();
             bool estadoSinpe = true;
