@@ -21,6 +21,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly FrmCntXConsultaCuentasDb _ConsultaCuentasDB;
         private readonly VerificadorCoreFactory _factory;
 
+        private readonly Dictionary<string, string> whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["item"] = "item",
+            ["descripcion"] = "descripcion",
+            ["correo"] = "correo"
+        };
         public FrmTesTransaccionesDb(IConfiguration config)
         {
             _config = config;
@@ -968,7 +974,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             IReadOnlyDictionary<string, string> SortWhitelist
         );
 
-        private static BeneficiarioSpec? ObtenerSpecPorTipo(string tipo)
+        private BeneficiarioSpec? ObtenerSpecPorTipo(string tipo)
         {
             return tipo switch
             {
@@ -1009,15 +1015,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             search = $"%{f.filtro?.Trim()}%"
         };
 
-        private static BeneficiarioSpec PersonasSpec()
+        private BeneficiarioSpec PersonasSpec()
         {
-            var whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["item"] = "item",
-                ["descripcion"] = "descripcion",
-                ["correo"] = "correo"
-            };
-
+           
             return new BeneficiarioSpec(
                 CountSql: "select count(cedula) from socios",
                 CountParams: _ => new { },
@@ -1041,13 +1041,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             );
         }
 
-        private static BeneficiarioSpec BancosSpec()
+        private BeneficiarioSpec BancosSpec()
         {
-            var whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["item"] = "item",
-                ["descripcion"] = "descripcion"
-            };
 
             return new BeneficiarioSpec(
                 CountSql: "select count(id_banco) from tes_bancos where estado='A'",
@@ -1075,14 +1070,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             );
         }
 
-        private static BeneficiarioSpec ProveedoresSpec()
+        private BeneficiarioSpec ProveedoresSpec()
         {
-            var whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["item"] = "item",
-                ["descripcion"] = "descripcion",
-                ["correo"] = "correo"
-            };
+           
 
             return new BeneficiarioSpec(
                 CountSql: "select count(cod_proveedor) from cxp_proveedores",
@@ -1144,14 +1134,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             );
         }
 
-        private static BeneficiarioSpec CxcSpec()
+        private BeneficiarioSpec CxcSpec()
         {
-            var whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["item"] = "item",
-                ["descripcion"] = "descripcion"
-            };
-
+          
             return new BeneficiarioSpec(
                 CountSql: "select count(cedula) from CXC_PERSONAS",
                 CountParams: _ => new { },
@@ -1175,14 +1160,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             );
         }
 
-        private static BeneficiarioSpec EmpleadosSpec()
+        private BeneficiarioSpec EmpleadosSpec()
         {
-            var whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["item"] = "item",
-                ["descripcion"] = "descripcion"
-            };
-
             return new BeneficiarioSpec(
                 CountSql: "select count(Identificacion) from RH_PERSONAS",
                 CountParams: _ => new { },
@@ -1206,13 +1185,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             );
         }
 
-        private static BeneficiarioSpec DirectosSpec()
+        private BeneficiarioSpec DirectosSpec()
         {
-            var whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["item"] = "item",
-                ["descripcion"] = "descripcion"
-            };
 
             return new BeneficiarioSpec(
                 CountSql: "select count(Codigo) from vTes_Beneficiarios",
@@ -1237,13 +1211,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             );
         }
 
-        private static BeneficiarioSpec DesembolsosSpec()
+        private  BeneficiarioSpec DesembolsosSpec()
         {
-            var whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["item"] = "item",
-                ["descripcion"] = "descripcion"
-            };
 
             return new BeneficiarioSpec(
                 CountSql: "select count(cedula) from vCxC_Cuentas_Desembolsos_Pendientes",
