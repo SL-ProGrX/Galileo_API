@@ -13,11 +13,60 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MSecurityMainDb _Security_MainDB;
         private const string _codproveedor = "COD_PROVEEDOR";
 
+        // Bloque común de columnas y WHERE para proveedores
+        private const string BaseSelectProveedoresSelect = @"
+            SELECT
+                COD_PROVEEDOR                                           AS cod_proveedor,
+                ISNULL(DESCRIPCION,'')                                  AS descripcion,
+                CAST(CASE WHEN ISNULL(ACTIVO,1)=1 THEN 1 ELSE 0 END AS bit) AS activo,
+                ISNULL(REGISTRO_USUARIO,'')                             AS usuario";
+
+        private const string BaseSelectProveedoresFromWhere = @"
+            FROM dbo.ACTIVOS_PROVEEDORES
+            WHERE (@tieneFiltro = 0
+                   OR COD_PROVEEDOR LIKE @filtro
+                   OR DESCRIPCION  LIKE @filtro)";
+
         public FrmActivosProveedoresDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
         }
+
+        #region Helpers privados
+
+        private static void AddFiltroParametros(DynamicParameters parameters, FiltrosLazyLoadData? filtros)
+        {
+            string? filtroTexto = filtros?.filtro;
+            bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
+            parameters.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
+            parameters.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
+        }
+
+        private static string NormalizeCodigoProveedor(string? cod)
+            => (cod ?? string.Empty).Trim().ToUpperInvariant();
+
+        private object BuildProveedorDbParams(string usuario, ActivosProveedoresData proveedor) => new
+        {
+            cod = NormalizeCodigoProveedor(proveedor.cod_proveedor),
+            desc = proveedor.descripcion?.ToUpper(),
+            act = proveedor.activo ? 1 : 0,
+            usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+        };
+
+        private void RegistrarBitacoraProveedor(int CodEmpresa, string usuario, string detalle, string movimiento)
+        {
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario ?? "",
+                DetalleMovimiento = detalle,
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
+        }
+
+        #endregion
 
         /// <summary>
         /// Obtiene una lista de proveedores con paginación y filtros.
@@ -37,33 +86,30 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 var parameters = new DynamicParameters();
 
-                // Filtro seguro (sin WHERE dinámico)
-                string? filtroTexto = filtros?.filtro;
-                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
-                parameters.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
-                parameters.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
+                // Filtro
+                AddFiltroParametros(parameters, filtros);
 
                 // Total de registros
-                const string queryTotal = @"
+                const string queryTotalFixed = @"
                     SELECT COUNT(*)
                     FROM dbo.ACTIVOS_PROVEEDORES
                     WHERE (@tieneFiltro = 0
                            OR COD_PROVEEDOR LIKE @filtro
                            OR DESCRIPCION  LIKE @filtro);";
 
-                resp.Result.total = cn.QueryFirstOrDefault<int>(queryTotal, parameters);
+                resp.Result.total = cn.QueryFirstOrDefault<int>(queryTotalFixed, parameters);
 
-                // Order by seguro: usamos índice + CASE
+                // Ordenamiento
                 var sortFieldRaw = filtros?.sortField ?? _codproveedor;
                 var sortFieldNorm = sortFieldRaw.Trim().ToUpperInvariant();
 
                 int sortIndex = sortFieldNorm switch
                 {
-                    "COD_PROVEEDOR"                => 1,
-                    "DESCRIPCION"                  => 2,
-                    "ACTIVO"                       => 3,
-                    "REGISTRO_USUARIO" or "USUARIO"=> 4,
-                    _                              => 1
+                    "COD_PROVEEDOR"                  => 1,
+                    "DESCRIPCION"                    => 2,
+                    "ACTIVO"                         => 3,
+                    "REGISTRO_USUARIO" or "USUARIO"  => 4,
+                    _                                => 1
                 };
                 parameters.Add("@sortIndex", sortIndex);
 
@@ -73,20 +119,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 // Paginación
                 int pagina = filtros?.pagina ?? 0;
                 int paginacion = filtros?.paginacion ?? 50;
-
                 parameters.Add("@offset", pagina);
                 parameters.Add("@fetch", paginacion);
 
-                const string query = @"
-                    SELECT
-                        COD_PROVEEDOR                                           AS cod_proveedor,
-                        ISNULL(DESCRIPCION,'')                                  AS descripcion,
-                        CAST(CASE WHEN ISNULL(ACTIVO,1)=1 THEN 1 ELSE 0 END AS bit) AS activo,
-                        ISNULL(REGISTRO_USUARIO,'')                             AS usuario
-                    FROM dbo.ACTIVOS_PROVEEDORES
-                    WHERE (@tieneFiltro = 0
-                           OR COD_PROVEEDOR LIKE @filtro
-                           OR DESCRIPCION  LIKE @filtro)
+                string query = BaseSelectProveedoresSelect + BaseSelectProveedoresFromWhere + @"
                     ORDER BY
                         -- ASC
                         CASE @sortDir WHEN 1 THEN
@@ -138,22 +174,9 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
                 var parameters = new DynamicParameters();
+                AddFiltroParametros(parameters, filtros);
 
-                string? filtroTexto = filtros?.filtro;
-                bool tieneFiltro = !string.IsNullOrWhiteSpace(filtroTexto);
-                parameters.Add("@tieneFiltro", tieneFiltro ? 1 : 0);
-                parameters.Add("@filtro", tieneFiltro ? $"%{filtroTexto!.Trim()}%" : null);
-
-                const string query = @"
-                    SELECT
-                        COD_PROVEEDOR                                           AS cod_proveedor,
-                        ISNULL(DESCRIPCION,'')                                  AS descripcion,
-                        CAST(CASE WHEN ISNULL(ACTIVO,1)=1 THEN 1 ELSE 0 END AS bit) AS activo,
-                        ISNULL(REGISTRO_USUARIO,'')                             AS usuario
-                    FROM dbo.ACTIVOS_PROVEEDORES
-                    WHERE (@tieneFiltro = 0
-                           OR COD_PROVEEDOR LIKE @filtro
-                           OR DESCRIPCION  LIKE @filtro)
+                string query = BaseSelectProveedoresSelect + BaseSelectProveedoresFromWhere + @"
                     ORDER BY COD_PROVEEDOR;";
 
                 resp.Result = cn.Query<ActivosProveedoresData>(query, parameters).ToList();
@@ -188,13 +211,22 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                const string query = @"SELECT COUNT(1) FROM dbo.ACTIVOS_PROVEEDORES WHERE COD_PROVEEDOR = @cod";
-                int existe = cn.QueryFirstOrDefault<int>(query, new { cod = proveedor.cod_proveedor.ToUpper() });
+                const string query = @"SELECT COUNT(1) 
+                                       FROM dbo.ACTIVOS_PROVEEDORES 
+                                       WHERE COD_PROVEEDOR = @cod";
+
+                int existe = cn.QueryFirstOrDefault<int>(
+                    query,
+                    new { cod = NormalizeCodigoProveedor(proveedor.cod_proveedor) });
 
                 if (proveedor.isNew)
                 {
                     if (existe > 0)
-                        return new ErrorDto { Code = -2, Description = $"El proveedor {proveedor.cod_proveedor.ToUpper()} ya existe." };
+                        return new ErrorDto
+                        {
+                            Code = -2,
+                            Description = $"El proveedor {NormalizeCodigoProveedor(proveedor.cod_proveedor)} ya existe."
+                        };
 
                     // Insertar
                     return Activos_Proveedores_Insertar(CodEmpresa, usuario, proveedor);
@@ -202,7 +234,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 else
                 {
                     if (existe == 0)
-                        return new ErrorDto { Code = -2, Description = $"El proveedor {proveedor.cod_proveedor.ToUpper()} no existe." };
+                        return new ErrorDto
+                        {
+                            Code = -2,
+                            Description = $"El proveedor {NormalizeCodigoProveedor(proveedor.cod_proveedor)} no existe."
+                        };
 
                     // Actualizar
                     return Activos_Proveedores_Actualizar(CodEmpresa, usuario, proveedor);
@@ -226,28 +262,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                var query = @"
-            INSERT INTO dbo.ACTIVOS_PROVEEDORES
-                (COD_PROVEEDOR, DESCRIPCION, ACTIVO, REGISTRO_FECHA, REGISTRO_USUARIO, MODIFICA_USUARIO, MODIFICA_FECHA)
-            VALUES
-                (@cod, @desc, @act, SYSDATETIME(), @usr, NULL, NULL);";
+                const string query = @"
+                    INSERT INTO dbo.ACTIVOS_PROVEEDORES
+                        (COD_PROVEEDOR, DESCRIPCION, ACTIVO, REGISTRO_FECHA, REGISTRO_USUARIO, MODIFICA_USUARIO, MODIFICA_FECHA)
+                    VALUES
+                        (@cod, @desc, @act, SYSDATETIME(), @usr, NULL, NULL);";
 
-                cn.Execute(query, new
-                {
-                    cod = proveedor.cod_proveedor.ToUpper(),
-                    desc = proveedor.descripcion?.ToUpper(),
-                    act = proveedor.activo ? 1 : 0,
-                    usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-                });
+                cn.Execute(query, BuildProveedorDbParams(usuario, proveedor));
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Proveedor: {proveedor.cod_proveedor} - {proveedor.descripcion}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
+                RegistrarBitacoraProveedor(
+                    CodEmpresa,
+                    usuario,
+                    $"Proveedor: {proveedor.cod_proveedor} - {proveedor.descripcion}",
+                    "Registra - WEB");
 
                 resp.Description = "Proveedor ingresado satisfactoriamente.";
             }
@@ -269,30 +296,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                var query = @"
-            UPDATE dbo.ACTIVOS_PROVEEDORES
-               SET DESCRIPCION      = @desc,
-                   ACTIVO           = @act,
-                   MODIFICA_USUARIO = @usr,
-                   MODIFICA_FECHA   = SYSDATETIME()
-             WHERE COD_PROVEEDOR    = @cod;";
+                const string query = @"
+                    UPDATE dbo.ACTIVOS_PROVEEDORES
+                       SET DESCRIPCION      = @desc,
+                           ACTIVO           = @act,
+                           MODIFICA_USUARIO = @usr,
+                           MODIFICA_FECHA   = SYSDATETIME()
+                     WHERE COD_PROVEEDOR    = @cod;";
 
-                cn.Execute(query, new
-                {
-                    cod = proveedor.cod_proveedor.ToUpper(),
-                    desc = proveedor.descripcion?.ToUpper(),
-                    act = proveedor.activo ? 1 : 0,
-                    usr = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-                });
+                cn.Execute(query, BuildProveedorDbParams(usuario, proveedor));
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Proveedor: {proveedor.cod_proveedor} - {proveedor.descripcion}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
-                });
+                RegistrarBitacoraProveedor(
+                    CodEmpresa,
+                    usuario,
+                    $"Proveedor: {proveedor.cod_proveedor} - {proveedor.descripcion}",
+                    "Modifica - WEB");
 
                 resp.Description = "Proveedor actualizado satisfactoriamente.";
             }
@@ -316,22 +334,21 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 if (string.IsNullOrWhiteSpace(cod_proveedor))
                     return new ErrorDto { Code = -1, Description = "Debe indicar el código de proveedor." };
 
+                string codNorm = NormalizeCodigoProveedor(cod_proveedor);
+
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = @"DELETE FROM dbo.ACTIVOS_PROVEEDORES WHERE COD_PROVEEDOR = @cod";
-                int rows = cn.Execute(query, new { cod = cod_proveedor.ToUpper() });
+                const string query = @"DELETE FROM dbo.ACTIVOS_PROVEEDORES WHERE COD_PROVEEDOR = @cod";
+                int rows = cn.Execute(query, new { cod = codNorm });
 
                 if (rows == 0)
-                    return new ErrorDto { Code = -2, Description = $"El proveedor {cod_proveedor.ToUpper()} no existe." };
+                    return new ErrorDto { Code = -2, Description = $"El proveedor {codNorm} no existe." };
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Proveedor: {cod_proveedor}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
-                });
+                RegistrarBitacoraProveedor(
+                    CodEmpresa,
+                    usuario,
+                    $"Proveedor: {codNorm}",
+                    "Elimina - WEB");
             }
             catch (Exception ex)
             {
@@ -352,7 +369,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = @"
+                const string query = @"
                     INSERT INTO dbo.ACTIVOS_PROVEEDORES
                         (COD_PROVEEDOR, DESCRIPCION, ACTIVO, REGISTRO_FECHA, REGISTRO_USUARIO)
                     SELECT
@@ -368,14 +385,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 int rows = cn.Execute(query, new { usr = usuario });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario ?? "",
-                    DetalleMovimiento = $"Importa Proveedores desde CXP_PROVEEDORES ({rows} nuevos).",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
+                RegistrarBitacoraProveedor(
+                    CodEmpresa,
+                    usuario,
+                    $"Importa Proveedores desde CXP_PROVEEDORES ({rows} nuevos).",
+                    "Registra - WEB");
 
                 resp.Description = rows == 0
                     ? "No había proveedores nuevos para importar."
@@ -403,11 +417,13 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
-                const string query = @"SELECT COUNT(1) 
-                           FROM dbo.ACTIVOS_PROVEEDORES 
-                           WHERE UPPER(COD_PROVEEDOR) = @cod";
+                const string query = @"
+                    SELECT COUNT(1) 
+                    FROM dbo.ACTIVOS_PROVEEDORES 
+                    WHERE UPPER(COD_PROVEEDOR) = @cod";
 
-                int existe = cn.QueryFirstOrDefault<int>(query, new { cod = (cod_proveedor ?? string.Empty).ToUpper() });
+                string codNorm = NormalizeCodigoProveedor(cod_proveedor);
+                int existe = cn.QueryFirstOrDefault<int>(query, new { cod = codNorm });
 
                 if (existe > 0)
                 {

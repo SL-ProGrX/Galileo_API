@@ -13,6 +13,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private readonly MActivosFijos _mActivos;
         private readonly PortalDB _portalDB;
 
+        // Mensajes
+        private const string MsgActivoNoExiste              = "El Activo no existe, o ya fue retirado ...";
+        private const string MsgFechaMenorQueAdquisicion    = "La fecha del Movimiento no es válida, ya que es menor a la del activo ...";
+        private const string MsgPeriodoCerrado              = "El Periodo del Movimiento ya fue cerrado ... ";
+        private const string MsgFechaNoCorrespondePeriodo   = "La fecha de aplicación del movimiento no corresponde al periodo abierto!";
+
         public FrmActivosDeteriorosDb(IConfiguration config)
         {
             _Security_MainDB = new MSecurityMainDb(config);
@@ -120,15 +126,18 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 if (fechaAdqStr == null)
                 {
                     result.Code        = -2;
-                    result.Description = "El Activo no existe, o ya fue retirado ...";
+                    result.Description = MsgActivoNoExiste;
                     return result;
                 }
 
-                var fechaAdquisicion = DateTime.Parse(fechaAdqStr, System.Globalization.CultureInfo.InvariantCulture);
+                var fechaAdquisicion = DateTime.Parse(
+                    fechaAdqStr,
+                    System.Globalization.CultureInfo.InvariantCulture);
+
                 if ((fecha - fechaAdquisicion).Days < 1)
                 {
                     result.Code        = -2;
-                    result.Description = "La fecha del Movimiento no es válida, ya que es menor a la del activo ...";
+                    result.Description = MsgFechaMenorQueAdquisicion;
                 }
 
                 // Validación de periodo
@@ -150,14 +159,14 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     if (periodo.estado.Trim() != "P")
                     {
                         result.Code        = -2;
-                        result.Description = $"{result.Description} - El Periodo del Movimiento ya fue cerrado ... ";
+                        result.Description = $"{result.Description} - {MsgPeriodoCerrado}";
                     }
 
                     if (fecha.Year != periodo.periodoactual.Year ||
                         fecha.Month != periodo.periodoactual.Month)
                     {
                         result.Code        = -2;
-                        result.Description = $"{result.Description} - La fecha de aplicación del movimiento no corresponde al periodo abierto!";
+                        result.Description = $"{result.Description} - {MsgFechaNoCorrespondePeriodo}";
                     }
                 }
             }
