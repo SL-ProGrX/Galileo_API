@@ -136,9 +136,6 @@ namespace Galileo_API.DataBaseTier
                 Code = 0,
                 Description = "Ok"
             };
-            var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
-
-
             var respuesta = new RespuestaRegistro();
             var datos = new TesTransaccion();
             bool estadoSinpe = true;
