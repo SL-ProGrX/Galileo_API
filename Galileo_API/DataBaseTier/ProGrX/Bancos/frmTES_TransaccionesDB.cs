@@ -133,7 +133,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     case 0:
                         if (codigo == "") codigo = "0";
-                        query += $@" where C.nsolicitud > @codigo} AND U.cod_contabilidad = @contabilidad order by C.nsolicitud asc";
+                        query += $@" where C.nsolicitud > @codigo AND U.cod_contabilidad = @contabilidad order by C.nsolicitud asc";
                         break;
                     case 1:
                         if (codigo == "0") codigo = "999999999";

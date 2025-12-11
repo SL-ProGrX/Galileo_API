@@ -207,14 +207,20 @@ namespace Galileo.DataBaseTier
 
                 // WHITELIST de columnas permitidas
                 var columnasPermitidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "carga", "genera", "autoriza", "anula", "aprueba", "consulta", "gestion1", "gestion2"
-            // <-- agregar aquí SOLO columnas válidas del schema tes_documentos_ASG
-        };
+                {
+                    "carga", "genera", "autoriza", "anula", "aprueba", "consulta", "gestion1", "gestion2"
+                    // <-- agregar aquí SOLO columnas válidas del schema tes_documentos_ASG
+                };
 
                 // Validamos la columna
                 if (!columnasPermitidas.Contains(gestion))
-                    return Error<List<DropDownListaGenericaModel>>($"Columna inválida: {gestion}");
+                {
+                    resp.Code = -1;
+                    resp.Description = "Columna de gestión no permitida.";
+                    resp.Result = null;
+                    return resp;
+                }
+                    
 
                 // Armamos el SQL SEGURO
                 string query = $@"
