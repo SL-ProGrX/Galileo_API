@@ -71,7 +71,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <summary>
         /// Construye parámetros comunes para listas paginadas (departamentos y secciones)
         /// </summary>
-        private  static DynamicParameters BuildPagedListParameters(
+        private static DynamicParameters BuildPagedListParameters(
             FiltrosLazyLoadData? filtros,
             string defaultSortField,
             string? codDepartamento = null)
@@ -171,6 +171,33 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 parameters: parameters);
         }
 
+        // ------- Helpers específicos de entidades (para reducir duplicación) -------
+
+        private static object BuildDepartamentoParams(ActivosDepartamentosData dpto, string usuario) => new
+        {
+            cod    = Normalize(dpto.cod_departamento),
+            desc   = dpto.descripcion?.ToUpper(),
+            unidad = Normalize(dpto.cod_unidad),
+            usr    = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+        };
+
+        private static string BuildDepartamentoDetalle(ActivosDepartamentosData dpto) =>
+            $"Departamento: {dpto.cod_departamento} - {dpto.descripcion} / Unidad: {dpto.cod_unidad}";
+
+        private static object BuildSeccionParams(ActivosSeccionesData seccion, string usuario) => new
+        {
+            dept = Normalize(seccion.cod_departamento),
+            sec  = Normalize(seccion.cod_seccion),
+            desc = seccion.descripcion?.ToUpper(),
+            cc   = string.IsNullOrWhiteSpace(seccion.cod_centro_costo)
+                        ? null
+                        : Normalize(seccion.cod_centro_costo),
+            usr  = string.IsNullOrWhiteSpace(usuario) ? null : usuario
+        };
+
+        private static string BuildSeccionDetalle(ActivosSeccionesData seccion) =>
+            $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}";
+
         #endregion
 
         /// <summary>
@@ -191,11 +218,10 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 var p = BuildPagedListParameters(filtros, defaultSortField: "cod_departamento");
 
-               const string sqlCount = @$"
+                const string sqlCount = @"
                 SELECT COUNT(DISTINCT d.COD_DEPARTAMENTO)
-                {DeptSelectBaseSql}
-                {DeptWhereFilterSql};
-                ";
+                " + DeptSelectBaseSql + @"
+                " + DeptWhereFilterSql + @";";
 
                 const string sqlData = @"
                     SELECT DISTINCT
@@ -356,15 +382,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                    (@cod, @desc, @unidad,
                     SYSDATETIME(), @usr, NULL, NULL);";
 
-            var parameters = new
-            {
-                cod    = Normalize(departamento.cod_departamento),
-                desc   = departamento.descripcion?.ToUpper(),
-                unidad = Normalize(departamento.cod_unidad),
-                usr    = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-            };
-
-            string detalle = $"Departamento: {departamento.cod_departamento} - {departamento.descripcion} / Unidad: {departamento.cod_unidad}";
+            var parameters = BuildDepartamentoParams(departamento, usuario);
+            string detalle = BuildDepartamentoDetalle(departamento);
 
             return ExecuteNonQueryWithBitacora(
                 CodEmpresa,
@@ -389,15 +408,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                        MODIFICA_FECHA   = SYSDATETIME()
                  WHERE COD_DEPARTAMENTO = @cod;";
 
-            var parameters = new
-            {
-                cod    = Normalize(departamento.cod_departamento),
-                desc   = departamento.descripcion?.ToUpper(),
-                unidad = Normalize(departamento.cod_unidad),
-                usr    = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-            };
-
-            string detalle = $"Departamento: {departamento.cod_departamento} - {departamento.descripcion} / Unidad: {departamento.cod_unidad}";
+            var parameters = BuildDepartamentoParams(departamento, usuario);
+            string detalle = BuildDepartamentoDetalle(departamento);
 
             return ExecuteNonQueryWithBitacora(
                 CodEmpresa,
@@ -678,18 +690,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 VALUES
                     (@dept, @sec, @desc, @cc, @usr, SYSDATETIME(), NULL, NULL);";
 
-            var parameters = new
-            {
-                dept = Normalize(seccion.cod_departamento),
-                sec  = Normalize(seccion.cod_seccion),
-                desc = seccion.descripcion?.ToUpper(),
-                cc   = string.IsNullOrWhiteSpace(seccion.cod_centro_costo)
-                        ? null
-                        : Normalize(seccion.cod_centro_costo),
-                usr  = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-            };
-
-            string detalle = $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}";
+            var parameters = BuildSeccionParams(seccion, usuario);
+            string detalle = BuildSeccionDetalle(seccion);
 
             return ExecuteNonQueryWithBitacora(
                 CodEmpresa,
@@ -715,18 +717,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                  WHERE COD_DEPARTAMENTO = @dept
                    AND COD_SECCION      = @sec;";
 
-            var parameters = new
-            {
-                dept = Normalize(seccion.cod_departamento),
-                sec  = Normalize(seccion.cod_seccion),
-                desc = seccion.descripcion?.ToUpper(),
-                cc   = string.IsNullOrWhiteSpace(seccion.cod_centro_costo)
-                        ? null
-                        : Normalize(seccion.cod_centro_costo),
-                usr  = string.IsNullOrWhiteSpace(usuario) ? null : usuario
-            };
-
-            string detalle = $"Sección: {seccion.cod_seccion} - Departamento: {seccion.cod_departamento} - {seccion.descripcion}";
+            var parameters = BuildSeccionParams(seccion, usuario);
+            string detalle = BuildSeccionDetalle(seccion);
 
             return ExecuteNonQueryWithBitacora(
                 CodEmpresa,
