@@ -23,7 +23,6 @@ namespace Galileo.BusinessLogic.ProGrX_Activos_Fijos
             return _db.Activos_Parametros_EstablecerMes(CodEmpresa, periodo);
         }
 
-
         public ErrorDto<ActivosParametrosData?> Activos_Parametros_Consultar(int CodEmpresa)
         {
             return _db.Activos_Parametros_Consultar(CodEmpresa);
