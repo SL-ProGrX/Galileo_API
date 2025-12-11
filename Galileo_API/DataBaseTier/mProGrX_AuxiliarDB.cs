@@ -1,189 +1,157 @@
-﻿using Dapper;
+﻿using System.Data;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using System.Xml.Serialization;
+using Dapper;
 using Humanizer;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
 using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using Galileo.Models.INV;
-using System.Data;
-using System.Globalization;
-using System.Text.RegularExpressions;
-using System.Xml.Serialization;
-using PdfSharp.Pdf;
-using PdfSharp.Pdf.IO;
 
 namespace Galileo.DataBaseTier
 {
     public class MProGrXAuxiliarDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
 
         public string dateFormat { get; set; }
         public string controlAuth { get; set; }
 
-        private const string DescripcionColumn = "@descripcion";
-        private static readonly Regex CorreoRegex = new Regex(
-               @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
-               RegexOptions.CultureInvariant | RegexOptions.Compiled,
-               matchTimeout: TimeSpan.FromMilliseconds(200)
-           );
-
-        private static readonly Regex UpdateSqlRegex = new Regex(
-            @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline |
-            RegexOptions.CultureInvariant | RegexOptions.Compiled,
-            matchTimeout: TimeSpan.FromMilliseconds(200)
-        );
-
-        private static readonly Regex DeleteSqlRegex = new Regex(
-            @"DELETE\s+(FROM\s+)?(?<table>\w+)\s+WHERE\s+(?<whereClause>.+)$",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline |
-            RegexOptions.CultureInvariant | RegexOptions.Compiled,
-            matchTimeout: TimeSpan.FromMilliseconds(200)
-        );
-
-        // Regex precompilada + timeout para evitar ReDoS (S6444)
-        private static readonly Regex InsertSqlRegex = new Regex(
-            @"insert\s+(?:into\s+)?(?<table>\w+)\s*\((?<columns>[^)]+)\)\s*values\s*\((?<values>.+?)\)",
-            RegexOptions.IgnoreCase | RegexOptions.Singleline |
-            RegexOptions.CultureInvariant | RegexOptions.Compiled,
-            matchTimeout: TimeSpan.FromMilliseconds(200)
-        );
+        private const string _descripcion = "descripcion";
 
         public MProGrXAuxiliarDB(IConfiguration config)
         {
-            _config = config;
-            var dateFormatValue = _config.GetSection("AppSettings").GetSection("DateTimeFormat").Value;
-            dateFormat = dateFormatValue != null ? dateFormatValue.ToString() : string.Empty;
-            var controlAuthValue = _config.GetSection("AppSettings").GetSection("ControlAutorizacion").Value;
-            controlAuth = controlAuthValue != null ? controlAuthValue.ToString() : string.Empty;
+            _portalDB = new PortalDB(config);
+
+            var dateFormatValue = config.GetSection("AppSettings").GetSection("DateTimeFormat").Value;
+            dateFormat = dateFormatValue ?? string.Empty;
+
+            var controlAuthValue = config.GetSection("AppSettings").GetSection("ControlAutorizacion").Value;
+            controlAuth = controlAuthValue ?? string.Empty;
         }
+
+        #region Periodos / Inventario básicos
 
         /// <summary>
         /// Busca en la tabla de periodos si existe un periodo cerrado posterior al periodo que se desea cerrar
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="vfecha"></param>
-        /// <returns></returns>
         public bool fxInvPeriodos(int CodEmpresa, string vfecha)
         {
             bool vPasa = false;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            //Verificar si existen posteriores Cerrados
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = $@"SELECT ISNULL(COUNT(*),0) AS Existe FROM pv_periodos WHERE mes > MONTH(@vfecha)  AND anio = YEAR(@vfecha) AND estado = 'C'";
-                var resp = connection.Query<int>(query, new { vfecha }).FirstOrDefault();
-                if (resp > 0)
-                {
-                    vPasa = false;
-                }
-                else
-                {
-                    vPasa = true;
-                }
+                const string sqlExiste = @"
+                    SELECT ISNULL(COUNT(*),0) AS Existe 
+                    FROM pv_periodos 
+                    WHERE mes > MONTH(@Fecha) 
+                      AND anio = YEAR(@Fecha) 
+                      AND estado = 'C';";
+
+                var resp = connection.QueryFirstOrDefault<int>(sqlExiste, new { Fecha = vfecha });
+
+                vPasa = resp == 0;
 
                 if (vPasa)
                 {
-                    query = $@"Select estado from pv_periodos where anio = YEAR(@vfecha) AND mes = MONTH(@vfecha) ";
-                    var estado = connection.Query<string>(query, new { vfecha }).FirstOrDefault();
+                    const string sqlEstado = @"
+                        SELECT estado 
+                        FROM pv_periodos 
+                        WHERE anio = YEAR(@Fecha) 
+                          AND mes  = MONTH(@Fecha);";
+
+                    var estado = connection.QueryFirstOrDefault<string>(sqlEstado, new { Fecha = vfecha });
                     if (estado == "C")
                     {
                         vPasa = false;
                     }
                 }
-
-
             }
-            catch (Exception ex)
+            catch
             {
                 vPasa = false;
-                _ = ex.Message;
             }
+
             return vPasa;
         }
 
         /// <summary>
         /// Registra un movimiento de inventario en la tabla de afectaciones
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="req"></param>
-        /// <returns></returns>
         public ErrorDto sbInvInventario(int CodEmpresa, CompraInventarioDto req)
         {
-            ErrorDto result = new ErrorDto();
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = new ErrorDto();
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var procedure = "spINVAfectacion";
+                const string procedure = "spINVAfectacion";
                 var parameters = new
                 {
-                    @CodProd = req.CodProducto,
-                    @Cantidad = req.Cantidad,
-                    @Bodega = req.CodBodega,
-                    @CodTipo = req.CodTipo,
-                    @Origen = req.Origen,
-                    @Fecha = req.Fecha,
-                    @Precio = req.Precio,
-                    @ImpCon = req.ImpConsumo,
-                    @ImpVenta = req.ImpVentas,
-                    @TipoMov = req.TipoMov,
-                    @Usuario = req.Usuario
+                    CodProd = req.CodProducto,
+                    Cantidad = req.Cantidad,
+                    Bodega = req.CodBodega,
+                    CodTipo = req.CodTipo,
+                    Origen = req.Origen,
+                    Fecha = req.Fecha,
+                    Precio = req.Precio,
+                    ImpCon = req.ImpConsumo,
+                    ImpVenta = req.ImpVentas,
+                    TipoMov = req.TipoMov,
+                    Usuario = req.Usuario
                 };
 
                 connection.Execute(procedure, parameters, commandType: CommandType.StoredProcedure);
                 result.Code = 0;
                 result.Description = "ok";
-
             }
             catch (Exception ex)
             {
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
+
+        #endregion
+
+        #region Verificación de líneas / productos / bodegas
 
         /// <summary>
         /// Verifica la existencia de productos y bodegas en la tabla de inventario
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="ColCantidad"></param>
-        /// <param name="vMov"></param>
-        /// <param name="ColProd"></param>
-        /// <param name="ColBod1"></param>
-        /// <param name="ColBod2"></param>
-        /// <param name="vGrid"></param>
-        /// <returns></returns>
         public ErrorDto fxInvVerificaLineaDetalle(int CodEmpresa, int ColCantidad, string vMov, int ColProd, int ColBod1, int ColBod2, List<FacturaDetalleDto> vGrid)
         {
-            ErrorDto result = new ErrorDto();
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            result.Code = 1;
+            var result = new ErrorDto { Code = 1 };
 
             if (ColProd > 0 && vGrid.Count > 0)
             {
                 int count = 0;
-                foreach (FacturaDetalleDto item in vGrid)
+                foreach (var item in vGrid)
                 {
                     count++;
                     if (item.cantidad > 0)
                     {
-                        VerificaProducto(item, stringConn, ref result, count);
+                        VerificaProducto(CodEmpresa, item, ref result, count);
+
                         if (ColBod1 > 0)
                         {
-                            VerificaBodega(item, stringConn, vMov, ref result, count, true);
+                            VerificaBodega(CodEmpresa, item, vMov, ref result, count, true);
                         }
+
                         if (ColBod2 > 0)
                         {
-                            VerificaBodega(item, stringConn, vMov, ref result, count, false);
+                            VerificaBodega(CodEmpresa, item, vMov, ref result, count, false);
                         }
                     }
                 }
@@ -191,22 +159,18 @@ namespace Galileo.DataBaseTier
             return result;
         }
 
-        private static void VerificaProducto(FacturaDetalleDto item, string stringConn, ref ErrorDto result, int count)
+        private void VerificaProducto(int codEmpresa, FacturaDetalleDto item, ref ErrorDto result, int count)
         {
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = _portalDB.CreateConnection(codEmpresa);
 
-                var query = @"
-                        SELECT estado
-                        FROM pv_productos
-                        WHERE cod_producto = @CodProducto;
-                    ";
+                const string sql = @"
+                    SELECT estado 
+                    FROM pv_productos 
+                    WHERE cod_producto = @CodProducto;";
 
-                List<ProductoDto> exist = connection.Query<ProductoDto>(
-                    query,
-                    new { CodProducto = item.cod_producto }
-                ).ToList();
+                var exist = connection.Query<ProductoDto>(sql, new { CodProducto = item.cod_producto }).ToList();
 
                 if (exist.Count == 0)
                 {
@@ -226,13 +190,18 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private static void VerificaBodega(FacturaDetalleDto item, string stringConn, string vMov, ref ErrorDto result, int count, bool isEntrada)
+        private void VerificaBodega(int codEmpresa, FacturaDetalleDto item, string vMov, ref ErrorDto result, int count, bool isEntrada)
         {
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"select permite_entradas,permite_salidas,estado from pv_bodegas where cod_bodega = @cod_bodega ";
-                var bodega = connection.Query<Models.BodegaDto>(query, new { cod_bodega = item.cod_bodega }).FirstOrDefault();
+                using var connection = _portalDB.CreateConnection(codEmpresa);
+
+                const string sql = @"
+                    SELECT permite_entradas, permite_salidas, estado 
+                    FROM pv_bodegas 
+                    WHERE cod_bodega = @CodBodega;";
+
+                var bodega = connection.Query<Models.BodegaDto>(sql, new { CodBodega = item.cod_bodega }).FirstOrDefault();
 
                 if (bodega == null)
                 {
@@ -247,14 +216,7 @@ namespace Galileo.DataBaseTier
                     return;
                 }
 
-                if (isEntrada)
-                {
-                    VerificaPermisosEntradaSalida(bodega, vMov, ref result, count, item.cod_bodega, true);
-                }
-                else
-                {
-                    VerificaPermisosEntradaSalida(bodega, vMov, ref result, count, item.cod_bodega, false);
-                }
+                VerificaPermisosEntradaSalida(bodega, vMov, ref result, count, item.cod_bodega, isEntrada);
             }
             catch (Exception ex)
             {
@@ -296,68 +258,55 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Verifica si el periodo de inventario está cerrado o no
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="vfecha"></param>
-        /// <returns></returns>
         public bool fxInvPeriodoEstado(int CodEmpresa, string vfecha)
         {
             bool vPasa = false;
-            string? vNum = "";
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            //Verificar si existen posteriores Cerrados
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = $@"select estado from pv_periodos where anio = YEAR(@vfecha)  and mes = MONTH(@vfecha) ";
-                vNum = connection.Query<string>(query , new { vfecha }).FirstOrDefault();
-                if (vNum == "C")
-                {
-                    vPasa = false;
-                }
-                else
-                {
-                    vPasa = true;
-                }
+                const string sql = @"
+                    SELECT estado 
+                    FROM pv_periodos 
+                    WHERE anio = YEAR(@Fecha) 
+                      AND mes  = MONTH(@Fecha);";
 
+                var estado = connection.QueryFirstOrDefault<string>(sql, new { Fecha = vfecha });
+
+                vPasa = estado != "C";
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                // si hay error, se deja vPasa en false por seguridad
             }
+
             return vPasa;
         }
+
+        #endregion
+
+        #region Parámetros / Autorizaciones
 
         /// <summary>
         /// Consulta los parámetros de la tabla cxp_parametros
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Cod_Parametro"></param>
-        /// <returns></returns>
         public ErrorDto<ParametroValor> fxCxPParametro(int CodEmpresa, string Cod_Parametro)
         {
-
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            var response = new ErrorDto<ParametroValor>
-            {
-                Code = 0
-            };
+            var response = new ErrorDto<ParametroValor> { Code = 0 };
 
             try
             {
-                using var connection = new SqlConnection(clienteConnString);
-                var query = @"
-                    SELECT cod_parametro AS Cod_Parametro,
-                           valor        AS Valor
-                    FROM cxp_parametros
-                    WHERE cod_parametro = @CodParametro;
-                ";
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                const string sql = @"
+                    SELECT cod_parametro, valor 
+                    FROM cxp_parametros 
+                    WHERE cod_parametro = @CodParametro;";
 
                 response.Result = connection.QueryFirstOrDefault<ParametroValor>(
-                    query,
-                    new { CodParametro = Cod_Parametro }
-                );
+                    sql,
+                    new { CodParametro = Cod_Parametro });
 
                 if (response.Result == null || response.Result.Valor == null)
                 {
@@ -374,33 +323,28 @@ namespace Galileo.DataBaseTier
                 response.Description = ex.Message;
                 response.Result = null;
             }
+
             return response;
         }
 
         /// <summary>
         /// Valida si el usuario que genera la transacción tiene autorización para autorizarla
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Boleta"></param>
-        /// <param name="TipoTran"></param>
-        /// <param name="AutorizaUser"></param>
-        /// <returns></returns>
         public ErrorDto fxInvTransaccionesAutoriza(int CodEmpresa, string Boleta, string TipoTran, string AutorizaUser)
         {
-
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            ErrorDto info = new()
-            {
-                Code = 0
-            };
+            var info = new ErrorDto { Code = 0 };
 
             try
             {
-                using var connection = new SqlConnection(clienteConnString);
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var query1 = @"select genera_user from pv_invTransac where Tipo = @TipoTran and Boleta = @Boleta";
-                var generaUser = connection.ExecuteScalar<string>(query1, new { TipoTran, Boleta });
+                const string sqlUser = @"
+                    SELECT genera_user 
+                    FROM pv_invTransac 
+                    WHERE Tipo = @TipoTran 
+                      AND Boleta = @Boleta;";
+
+                var generaUser = connection.ExecuteScalar<string>(sqlUser, new { TipoTran, Boleta });
 
                 if (string.IsNullOrEmpty(generaUser))
                 {
@@ -409,135 +353,156 @@ namespace Galileo.DataBaseTier
                     return info;
                 }
 
-                var query2 = @"select isnull(count(*),0) as Existe from pv_orden_autousers where Usuario = @AutorizaUser and Usuario_Asignado = @GUser and ENTRADAS = 1";
-                int valideAutorizacion = connection.ExecuteScalar<int>(query2, new { AutorizaUser, GUser = generaUser });
+                const string sqlValida = @"
+                    SELECT ISNULL(COUNT(*),0) 
+                    FROM pv_orden_autousers 
+                    WHERE Usuario = @AutorizaUser 
+                      AND Usuario_Asignado = @GUser 
+                      AND ENTRADAS = 1;";
 
-                if (valideAutorizacion == 1)
-                {
-                    info.Code = valideAutorizacion;
-                    info.Description = generaUser;
-                    return info;
-                }
-                else
-                {
-                    info.Code = valideAutorizacion;
-                    info.Description = "Usted no se encuentra Registrado como Autorizado del Usuario " + generaUser + " que Generó la Transacción...(Verifique)";
-                    return info;
-                }
+                int valideAutorizacion = connection.ExecuteScalar<int>(
+                    sqlValida,
+                    new { AutorizaUser, GUser = generaUser });
+
+                info.Code = valideAutorizacion;
+                info.Description = valideAutorizacion == 1
+                    ? generaUser
+                    : "Usted no se encuentra Registrado como Autorizado del Usuario " + generaUser + " que Generó la Transacción...(Verifique)";
+
+                return info;
             }
             catch (Exception ex)
             {
                 info.Code = -1;
                 info.Description = ex.Message;
             }
+
             return info;
         }
+
+        #endregion
+
+        #region fxSIFCCodigos (consulta códigos genéricos)
 
         /// <summary>
         /// Consulta la descripción de un código en una tabla específica
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="vTipoDC"></param>
-        /// <param name="vCodDesX"></param>
-        /// <param name="vTabla"></param>
-        /// <param name="Cod_Conta"></param>
-        /// <returns></returns>
-        public ConsultaDescripcion fxSIFCCodigos(int CodEmpresa, string vTipoDC, string vCodDesX, string vTabla, int Cod_Conta)
+        public ConsultaDescripcion fxSIFCCodigos(
+            int CodEmpresa,
+            string vTipoDC,
+            string vCodDesX,
+            string vTabla,
+            int Cod_Conta)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ConsultaDescripcion info = new ConsultaDescripcion();
+            // Definición de la tabla / columnas según el nombre
+            var def = GetCodigoTablaDef(vTabla);
+            if (def is null)
+            {
+                return new ConsultaDescripcion();
+            }
 
-            string tableName = vTabla.ToUpper();
-            string strSQL = GetSqlForTable(tableName, vTipoDC, vCodDesX, Cod_Conta);
+            // Construcción de SQL + parámetros según si es búsqueda por código o descripción
+            var sqlInfo = BuildCodigoSql(def, vTipoDC, vCodDesX, Cod_Conta);
+            if (sqlInfo is null)
+            {
+                return new ConsultaDescripcion();
+            }
+
+            var (sql, parameters) = sqlInfo.Value;
 
             try
             {
-                using var connection = new SqlConnection(clienteConnString);
-
-                info = connection.Query<ConsultaDescripcion>(strSQL).FirstOrDefault() ?? new ConsultaDescripcion();
-
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                return connection.QueryFirstOrDefault<ConsultaDescripcion>(sql, parameters)
+                       ?? new ConsultaDescripcion();
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
-            }
-            return info;
-        }
-
-
-        private static string GetSqlForTable(string tableName, string vTipoDC, string vCodDesX, int Cod_Conta)
-        {
-            string codeFilter = vCodDesX.ToString();
-            string descFilter = vCodDesX.ToString();
-
-            switch (tableName)
-            {
-                case "PROVEEDORES":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "Cod_proveedor", DescColumn = DescripcionColumn, Table = "cxp_proveedores", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = false, CodConta = null });
-                case "PRODUCTOS":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_Producto", DescColumn = DescripcionColumn, Table = "pv_Productos", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
-                case "CARGOSPROV":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "Cod_cargo", DescColumn = DescripcionColumn, Table = "cxp_cargos", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
-                case "UNIDADES":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "Cod_Unidad", DescColumn = DescripcionColumn, Table = "pv_unidades", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
-                case "MARCAS":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "Cod_Marca", DescColumn = DescripcionColumn, Table = "pv_marcas", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
-                case "LINEAPRODUCTO":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_prodclas", DescColumn = DescripcionColumn, Table = "pv_prod_clasifica", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = false, CodConta = null });
-                case "BANCOS":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "id_banco", DescColumn = DescripcionColumn, Table = "Tes_Bancos", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = false, CodConta = null });
-                case "CLIENTES":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "cedula", DescColumn = "nombre", Table = "pv_clientes", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
-                case "BODEGAS":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_bodega", DescColumn = DescripcionColumn, Table = "pv_bodegas", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
-                case "PRECIOS":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_precio", DescColumn = DescripcionColumn, Table = "pv_tipos_precios", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
-                case "AGENTES":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_agente", DescColumn = "Nombre", Table = "pv_agentes", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
-                case "CAJAS":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_caja", DescColumn = "Nombre", Table = "pv_cajas", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = null });
-                case "CUENTAS":
-                    return BuildSql(new BuildSqlParams { CodeColumn = "cod_Cuenta", DescColumn = DescripcionColumn, Table = "CntX_cuentas", VTipoDC = vTipoDC, CodeFilter = codeFilter, DescFilter = descFilter, QuoteCode = true, CodConta = Cod_Conta });
-                default:
-                    return string.Empty;
+                return new ConsultaDescripcion();
             }
         }
 
-        private sealed class BuildSqlParams
+        private sealed record CodigoTablaDef(
+            string Table,
+            string CodeColumn,
+            string DescColumn,
+            bool UsaCodConta
+        );
+
+        private static CodigoTablaDef? GetCodigoTablaDef(string vTabla)
         {
-            public string? CodeColumn { get; set; }
-            public string? DescColumn { get; set; }
-            public string? Table { get; set; }
-            public string? VTipoDC { get; set; }
-            public string? CodeFilter { get; set; }
-            public string? DescFilter { get; set; }
-            public bool QuoteCode { get; set; }
-            public int? CodConta { get; set; }
+            var table = vTabla.ToUpperInvariant();
+
+            return table switch
+            {
+                "PROVEEDORES" => new CodigoTablaDef("cxp_proveedores", "Cod_proveedor", "Descripcion", false),
+                "PRODUCTOS" => new CodigoTablaDef("pv_Productos", "cod_Producto", _descripcion, false),
+                "CARGOSPROV" => new CodigoTablaDef("cxp_cargos", "Cod_cargo", _descripcion, false),
+                "UNIDADES" => new CodigoTablaDef("pv_unidades", "Cod_Unidad", _descripcion, false),
+                "MARCAS" => new CodigoTablaDef("pv_marcas", "Cod_Marca", _descripcion, false),
+                "LINEAPRODUCTO" => new CodigoTablaDef("pv_prod_clasifica", "cod_prodclas", _descripcion, false),
+                "BANCOS" => new CodigoTablaDef("Tes_Bancos", "id_banco", _descripcion, false),
+                "CLIENTES" => new CodigoTablaDef("pv_clientes", "cedula", "nombre", false),
+                "BODEGAS" => new CodigoTablaDef("pv_bodegas", "cod_bodega", _descripcion, false),
+                "PRECIOS" => new CodigoTablaDef("pv_tipos_precios", "cod_precio", _descripcion, false),
+                "AGENTES" => new CodigoTablaDef("pv_agentes", "cod_agente", "Nombre", false),
+                "CAJAS" => new CodigoTablaDef("pv_cajas", "cod_caja", "Nombre", false),
+                "CUENTAS" => new CodigoTablaDef("CntX_cuentas", "cod_Cuenta", _descripcion, true),
+                _ => null
+            };
         }
 
-        private static string BuildSql(BuildSqlParams p)
+        private static (string sql, object parameters)? BuildCodigoSql(
+            CodigoTablaDef def,
+            string vTipoDC,
+            string vCodDesX,
+            int codConta)
         {
-            string sql = $"select {p.CodeColumn} as CodX, {p.DescColumn} as DescX from {p.Table}";
-            string where = "";
+            bool porCodigo = vTipoDC == "D";
 
-            if (p.VTipoDC == "D")
+            string where;
+            object parameters;
+
+            if (porCodigo)
             {
-                where = p.QuoteCode ? $" where {p.CodeColumn} = '{p.CodeFilter}'" : $" where {p.CodeColumn} = {p.CodeFilter}";
+                if (def.UsaCodConta)
+                {
+                    where = $"WHERE {def.CodeColumn} = @Code AND cod_contabilidad = @CodConta";
+                    parameters = new { Code = vCodDesX, CodConta = codConta };
+                }
+                else
+                {
+                    where = $"WHERE {def.CodeColumn} = @Code";
+                    parameters = new { Code = vCodDesX };
+                }
             }
             else
             {
-                where = $" where {p.DescColumn} = '{p.DescFilter}'";
+                if (def.UsaCodConta)
+                {
+                    where = $"WHERE {def.DescColumn} = @Desc AND cod_contabilidad = @CodConta";
+                    parameters = new { Desc = vCodDesX, CodConta = codConta };
+                }
+                else
+                {
+                    where = $"WHERE {def.DescColumn} = @Desc";
+                    parameters = new { Desc = vCodDesX };
+                }
             }
 
-            sql += where;
+            var sql = $@"
+        SELECT {def.CodeColumn} AS CodX, {def.DescColumn} AS DescX
+        FROM {def.Table}
+        {where};";
 
-            if (p.CodConta.HasValue)
-            {
-                sql += $" and cod_contabilidad = {p.CodConta.Value}";
-            }
-
-            return sql;
+            return (sql, parameters);
         }
+
+
+
+        #endregion
+
+        #region Utilidades simples
 
         public static bool fxCorreoValido(string correo)
         {
@@ -558,17 +523,14 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Convierte un modelo a XML para enviarlo a SP de BD
         /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="model"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentNullException"></exception>
         public static string fxConvertModelToXml<T>(T model)
         {
-            if (EqualityComparer<T>.Default.Equals(model, default(T))) throw new ArgumentNullException(nameof(model));
+            if (EqualityComparer<T>.Default.Equals(model, default(T)))
+                throw new ArgumentNullException(nameof(model));
 
             string xmlOutput;
-            XmlSerializer serializer = new XmlSerializer(typeof(T));
-            using (StringWriter writer = new StringWriter())
+            var serializer = new XmlSerializer(typeof(T));
+            using (var writer = new StringWriter())
             {
                 serializer.Serialize(writer, model);
                 xmlOutput = writer.ToString();
@@ -584,26 +546,25 @@ namespace Galileo.DataBaseTier
             return xmlOutput;
         }
 
-
         /// <summary>
         /// Consulta la cantidad de activos sin asignar a un usuario
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto<int> ActivosSinAsignar_Obtener(int CodEmpresa, string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto<int> result = new ErrorDto<int>();
+            var result = new ErrorDto<int> { Code = 0, Result = 0 };
+
             try
             {
-                using (var connection = new SqlConnection(stringConn))
-                {
-                    var query = $@"select COUNT(*)  FROM PV_CONTROL_ACTIVOS
-                                    WHERE ENTREGA_USUARIO = ''
-                                    AND ESTADO IN ('P', 'R') AND REGISTRO_USUARIO = @usuario";
-                    result.Result = connection.QueryFirstOrDefault<int>(query, new { usuario });
-                }
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                const string sql = @"
+                    SELECT COUNT(*)  
+                    FROM PV_CONTROL_ACTIVOS
+                    WHERE ENTREGA_USUARIO = ''
+                      AND ESTADO IN ('P', 'R') 
+                      AND REGISTRO_USUARIO = @Usuario;";
+
+                result.Result = connection.QueryFirstOrDefault<int>(sql, new { Usuario = usuario });
             }
             catch (Exception ex)
             {
@@ -611,153 +572,131 @@ namespace Galileo.DataBaseTier
                 result.Description = ex.Message;
                 result.Result = 0;
             }
+
             return result;
         }
 
         /// <summary>
         /// Valida la fecha de un campo DateTime, si es nulo devuelve null de lo contrario devuelve la fecha en el formato definido en el appsettings
         /// </summary>
-        /// <param name="fecha"></param>
-        /// <returns></returns>
         public string? validaFechaGlobal(DateTime? fecha)
         {
-            string? fechaValdiada = "";
             try
             {
-                if (fecha != null)
+                if (fecha.HasValue)
                 {
-                    DateTime fechaActual = (DateTime)fecha;
-                    fechaValdiada = fechaActual.ToString(dateFormat);
-                }
-                else
-                {
-                    fechaValdiada = null;
+                    return fecha.Value.ToString(dateFormat);
                 }
             }
-            catch (Exception)
+            catch
             {
-                fechaValdiada = null;
+                // ignorar y devolver null
             }
-            return fechaValdiada;
+            return null;
         }
+
+        #endregion
+
+        #region Bitácoras
 
         /// <summary>
         /// Inserta un registro en la tabla de bitácora de productos
         /// </summary>
-        /// <param name="req"></param>
-        /// <returns></returns>
         public ErrorDto BitacoraProducto(BitacoraProductoInsertarDto req)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
+            var resp = new ErrorDto { Code = 0 };
+
             try
             {
+                using var connection = _portalDB.CreateConnection(req.EmpresaId);
 
-                using var connection = new SqlConnection(stringConn);
+                const string sql = @"
+                    INSERT INTO [dbo].[BITACORA_PRODUCTOS]
+                        ([COD_PRODUCTO], [CONSEC], [MOVIMIENTO], [DETALLE], [REGISTRO_FECHA], [REGISTRO_USUARIO])
+                    VALUES
+                        (@CodProducto, @Consec, @Movimiento, @Detalle, GETDATE(), @RegistroUsuario);";
 
-
-                var strSQL = @"
-                        INSERT INTO [dbo].[BITACORA_PRODUCTOS]
-                            ([COD_PRODUCTO],
-                             [CONSEC],
-                             [MOVIMIENTO],
-                             [DETALLE],
-                             [REGISTRO_FECHA],
-                             [REGISTRO_USUARIO])
-                        VALUES
-                            (@CodProducto,
-                             @Consec,
-                             @Movimiento,
-                             @Detalle,
-                             GETDATE(),
-                             @RegistroUsuario);
-                    ";
-
-                resp.Code = connection.Execute(strSQL, new
+                var parameters = new
                 {
                     CodProducto = req.cod_producto,
                     Consec = req.consec,
                     Movimiento = req.movimiento,
                     Detalle = req.detalle,
                     RegistroUsuario = req.registro_usuario
-                });
-                resp.Description = "Ok";
+                };
 
+                resp.Code = connection.Execute(sql, parameters);
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
 
         /// <summary>
         /// Inserta un registro en la tabla de bitácora de proveedores
         /// </summary>
-        /// <param name="req"></param>
-        /// <returns></returns>
         public ErrorDto BitacoraProveedor(BitacoraProveedorInsertarDto req)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(req.EmpresaId);
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
+            var resp = new ErrorDto { Code = 0 };
+
             try
             {
+                using var connection = _portalDB.CreateConnection(req.EmpresaId);
 
-                using var connection = new SqlConnection(stringConn);
+                const string sql = @"
+                    INSERT INTO [dbo].[BITACORA_PROVEEDOR]
+                        ([COD_PROVEEDOR], [CONSEC], [MOVIMIENTO], [DETALLE], [REGISTRO_FECHA], [REGISTRO_USUARIO])
+                    VALUES
+                        (@CodProveedor, @Consec, @Movimiento, @Detalle, GETDATE(), @RegistroUsuario);";
 
-
-
-                var strSQL = @"
-                        INSERT INTO [dbo].[BITACORA_PROVEEDOR]
-                            ([COD_PROVEEDOR],
-                             [CONSEC],
-                             [MOVIMIENTO],
-                             [DETALLE],
-                             [REGISTRO_FECHA],
-                             [REGISTRO_USUARIO])
-                        VALUES
-                            (@CodProveedor,
-                             @Consec,
-                             @Movimiento,
-                             @Detalle,
-                             GETDATE(),
-                             @RegistroUsuario);
-                    ";
-
-                resp.Code = connection.Execute(strSQL, new
+                var parameters = new
                 {
                     CodProveedor = req.cod_proveedor,
                     Consec = req.consec,
                     Movimiento = req.movimiento,
                     Detalle = req.detalle,
                     RegistroUsuario = req.registro_usuario
-                });
-                resp.Description = "Ok";
+                };
 
+                resp.Code = connection.Execute(sql, parameters);
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
+
             return resp;
         }
 
+        #endregion
+
+        #region Otros helpers
+
         public ErrorDto<List<DropDownListaGenericaModel>> TiposIdentificacion_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
-            resp.Code = 0;
-            resp.Result = new List<DropDownListaGenericaModel>();
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                var query = "select CODIGO_SINPE as item, rtrim(Descripcion) as descripcion from AFI_TIPOS_IDS " +
-                    " order by Tipo_Id ";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
+                const string sql = @"
+                    SELECT CODIGO_SINPE AS item, RTRIM(Descripcion) AS descripcion 
+                    FROM AFI_TIPOS_IDS 
+                    ORDER BY Tipo_Id;";
+
+                resp.Result = connection.Query<DropDownListaGenericaModel>(sql).ToList();
             }
             catch (Exception ex)
             {
@@ -765,25 +704,27 @@ namespace Galileo.DataBaseTier
                 resp.Description = ex.Message;
                 resp.Result = null;
             }
+
             return resp;
         }
 
         public static ErrorDto<string> NumeroALetras(decimal numero)
         {
-            var resp = new ErrorDto<string>();
-            resp.Code = 0;
+            var resp = new ErrorDto<string> { Code = 0 };
+
             long parteEntera = (long)Math.Floor(numero);
             int parteDecimal = (int)((numero - parteEntera) * 100);
 
-            string letrasEntera = parteEntera.ToWords(new System.Globalization.CultureInfo("es"));
+            string letrasEntera = parteEntera.ToWords(new CultureInfo("es"));
             if (letrasEntera.Equals("uno", StringComparison.CurrentCultureIgnoreCase))
             {
                 letrasEntera = "Un";
             }
-            // Asegurarse de que la primera letra esté en mayúscula
-            letrasEntera = char.ToUpper(letrasEntera[0]) + letrasEntera.Substring(1);
+            letrasEntera = char.ToUpper(letrasEntera[0]) + letrasEntera[1..];
 
-            string letrasDecimal = parteDecimal > 0 ? $" con {parteDecimal.ToWords(new System.Globalization.CultureInfo("es"))} " : "";
+            string letrasDecimal = parteDecimal > 0
+                ? $" con {parteDecimal.ToWords(new CultureInfo("es"))} "
+                : "";
 
             resp.Result = letrasEntera + letrasDecimal;
             return resp;
@@ -793,38 +734,37 @@ namespace Galileo.DataBaseTier
         /// Combina información de varios pdf en uno solo
         /// El parametro que se debe pasar es el array de bytes 
         /// </summary>
-        /// <param name="pdfs"></param>
-        /// <returns></returns>
         public static byte[] CombinarBytesPdfSharp(params byte[][] pdfs)
         {
             using var outDoc = new PdfDocument();
             foreach (var pdf in pdfs)
             {
                 if (pdf == null || pdf.Length == 0) continue;
+
                 using var msIn = new MemoryStream(pdf);
                 using var src = PdfReader.Open(msIn, PdfDocumentOpenMode.Import);
                 for (int i = 0; i < src.PageCount; i++)
                     outDoc.AddPage(src.Pages[i]);
             }
+
             using var msOut = new MemoryStream();
             outDoc.Save(msOut, false);
             return msOut.ToArray();
         }
 
-        #region Metodo FONDOS v6 para migrar
+        #endregion
+
+        #region FONDOS v6 - Control de Cambios
 
         /// <summary>
         /// Valida string de control de autorizacion para guardar cambios en la tabla de control
         /// </summary>
-        /// <param name="request"></param>
-        /// <returns></returns>
         public int FndControlAutoriza_Guardar(FndControlAutorizaData request)
         {
             if (controlAuth != "Y")
                 return 3;
 
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(request.CodEmpresa);
-            ErrorDto result = new ErrorDto { Code = 0 };
+            var result = new ErrorDto { Code = 0 };
 
             try
             {
@@ -836,7 +776,10 @@ namespace Galileo.DataBaseTier
                 string setClause = match.Groups["setClause"].Value.Trim();
                 string whereClause = match.Groups["whereClause"].Value.Trim();
 
-                using var connection = new SqlConnection(stringConn);
+                using var connection = _portalDB.CreateConnection(request.CodEmpresa);
+
+                // OJO: aquí sigue habiendo SQL dinámico por diseño (metaprogramación),
+                // se asume que request.strSQL viene de código interno.
                 var dtTable = connection.Query($"SELECT * FROM {table} WHERE {whereClause}").FirstOrDefault();
                 if (dtTable == null)
                     return SetErrorResult(result, $"❌ No se encontró información en {table} con la condición: {whereClause}");
@@ -849,25 +792,21 @@ namespace Galileo.DataBaseTier
                 if (dtDiferencias.Rows.Count == 0)
                     return SetErrorResult(result, "No se encontraron diferencias entre los valores originales y los nuevos.", 2);
 
-                // Crear el contexto general
                 var ctx = new ControlCambioContext(
                     CodEmpresa: request.CodEmpresa,
                     Usuario: request.usuario
                 );
 
-                // Crear el payload con la información específica del cambio
                 var payload = new ControlCambioPayload(
                     TipoCambio: request.tipoCambio,
                     Tabla: table,
-                    Llave: whereClause,      // la llave o condición
-                    EventoQuery: "UPDATE",   // tipo de operación
-                    InsertSql: "",           // en este caso no hay un INSERT literal
+                    Llave: whereClause,
+                    EventoQuery: "UPDATE",
+                    InsertSql: "",
                     Diferencias: dtDiferencias
                 );
 
-                // Llamada al método refactorizado
                 result = InsertarTablaControl(ctx, payload);
-
             }
             catch (Exception ex)
             {
@@ -875,7 +814,7 @@ namespace Galileo.DataBaseTier
                 result.Description = ex.Message;
             }
 
-            return result.Code.HasValue ? result.Code.Value : -1;
+            return result.Code ?? -1;
         }
 
         private static Match? ParseUpdateSql(string sql)
@@ -910,8 +849,8 @@ namespace Galileo.DataBaseTier
                 var splitIndex = assignment.IndexOf('=');
                 if (splitIndex > 0)
                 {
-                    var column = assignment.Substring(0, splitIndex).Trim();
-                    var expression = assignment.Substring(splitIndex + 1).Trim();
+                    var column = assignment[..splitIndex].Trim();
+                    var expression = assignment[(splitIndex + 1)..].Trim();
                     selectParts.Add($"{expression} AS {column.ToUpper()}");
                 }
             }
@@ -919,8 +858,8 @@ namespace Galileo.DataBaseTier
             string selectStatement = $"SELECT {string.Join(", ", selectParts)} FROM {table} WHERE {whereClause};";
             var dtTableNew = connection.Query(selectStatement).FirstOrDefault();
 
-            var dicOriginal = ((IDictionary<string, object>)dtTable);
-            IDictionary<string, object>? dicNuevo = dtTableNew as IDictionary<string, object>;
+            var dicOriginal = (IDictionary<string, object>)dtTable;
+            var dicNuevo = dtTableNew as IDictionary<string, object>;
             if (dicNuevo == null)
                 return new List<(string Campo, object ValorOriginal, object ValorNuevo)>();
 
@@ -963,7 +902,7 @@ namespace Galileo.DataBaseTier
                 char c = input[i];
 
                 if (c == '\'' && (i == 0 || input[i - 1] != '\\'))
-                    quotes ^= 1; // Alterna entre dentro/fuera de comillas
+                    quotes ^= 1;
 
                 if (quotes == 0)
                 {
@@ -971,14 +910,14 @@ namespace Galileo.DataBaseTier
                     else if (c == ')') parentheses--;
                     else if (c == ',' && parentheses == 0)
                     {
-                        parts.Add(input.Substring(start, i - start).Trim());
+                        parts.Add(input[start..i].Trim());
                         start = i + 1;
                     }
                 }
             }
 
             if (start < input.Length)
-                parts.Add(input.Substring(start).Trim());
+                parts.Add(input[start..].Trim());
 
             return parts;
         }
@@ -988,26 +927,22 @@ namespace Galileo.DataBaseTier
             if (valorOriginal == null && valorNuevo == null) return true;
             if (valorOriginal == null || valorNuevo == null) return false;
 
-            // Convertir booleanos a 0/1
             valorOriginal = ConvertirBoolANumero(valorOriginal);
             valorNuevo = ConvertirBoolANumero(valorNuevo);
 
-            // Si el original es fecha, intentar interpretar el nuevo como fecha
             if (valorOriginal is DateTime dtOriginal)
             {
-                if (TryConvertToDateTime(valorNuevo, out DateTime dtNuevo))
-                    return dtOriginal.Date == dtNuevo.Date; // comparar solo fecha (sin hora)
+                if (TryConvertToDateTime(valorNuevo, out var dtNuevo))
+                    return dtOriginal.Date == dtNuevo.Date;
                 return false;
             }
 
-            // Comparar como números
             if (decimal.TryParse(valorOriginal.ToString(), out var num1) &&
                 decimal.TryParse(valorNuevo.ToString(), out var num2))
                 return num1 == num2;
 
-            // Comparar como string ignorando espacios y mayúsculas
             var strOriginal = valorOriginal.ToString()?.Trim() ?? string.Empty;
-            var strNuevo = valorNuevo?.ToString()?.Trim() ?? string.Empty;
+            var strNuevo = valorNuevo.ToString()?.Trim() ?? string.Empty;
             return strOriginal.Equals(strNuevo, StringComparison.OrdinalIgnoreCase);
         }
 
@@ -1035,13 +970,11 @@ namespace Galileo.DataBaseTier
             var str = valor?.ToString()?.Trim();
             if (string.IsNullOrEmpty(str)) return false;
 
-            // Formatos conocidos (puedes agregar más si ocupás)
             string[] formatos = { "yyyyMMdd", "dd/MM/yyyy", "yyyy-MM-dd", "MM/dd/yyyy" };
 
             return DateTime.TryParseExact(str, formatos, CultureInfo.InvariantCulture,
                                           DateTimeStyles.None, out fecha);
         }
-
 
         public record ControlCambioContext(
             int CodEmpresa,
@@ -1051,33 +984,29 @@ namespace Galileo.DataBaseTier
         public record ControlCambioPayload(
             int TipoCambio,
             string Tabla,
-            object Llave,              // mejor que string si luego lo serializas a JSON
+            object Llave,
             string EventoQuery,
-            string? InsertSql,         // nullable: solo aplica cuando no hay diferencias
-            DataTable? Diferencias     // nullable: si viene null usamos InsertSql
+            string? InsertSql,
+            DataTable? Diferencias
         );
 
         private ErrorDto InsertarTablaControl(ControlCambioContext ctx, ControlCambioPayload payload)
         {
             var result = new ErrorDto { Code = 0 };
-            string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(ctx.CodEmpresa);
 
             try
             {
-                using var connection = new SqlConnection(connStr);
+                using var connection = _portalDB.CreateConnection(ctx.CodEmpresa);
 
-                // --- Preparación de JSON ---
                 var jsonLlave = JsonConvert.SerializeObject(payload.Llave);
                 string valoresJsonAct;
                 string? valoresJsonDif = null;
 
                 if (payload.Diferencias != null)
                 {
-                    // snapshot original
                     var original = payload.Diferencias.Copy();
                     valoresJsonAct = JsonConvert.SerializeObject(original, Formatting.Indented);
 
-                    // diferencias sin "ValorOriginal"
                     var dif = payload.Diferencias.Copy();
                     if (dif.Columns.Contains("ValorOriginal"))
                     {
@@ -1091,7 +1020,6 @@ namespace Galileo.DataBaseTier
                     valoresJsonAct = JsonConvert.SerializeObject(payload.InsertSql, Formatting.Indented);
                 }
 
-                // --- SQL parametrizado (Dapper) ---
                 const string sql = @"
 INSERT INTO FND_CONTROL_CAMBIOS_APROB (
     COD_TIPO_CAMBIO,
@@ -1134,36 +1062,27 @@ VALUES (
                 result.Code = -1;
                 result.Description = ex.Message;
             }
+
             return result;
         }
 
         /// <summary>
         /// Ejecuta el update en la tabla de control de cambios y actualiza el estado
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="idCambio"></param>
-        /// <returns></returns>
         public int FndControlCambios_Autoriza(int CodEmpresa, int idCambio, string usuario)
         {
-            ErrorDto result = new ErrorDto();
-            result.Code = 0;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var result = new ErrorDto { Code = 0 };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                // busco el registro en la tabla de control
-                var query = @"
-                    SELECT *
-                    FROM FND_CONTROL_CAMBIOS_APROB
-                    WHERE ID_CAMBIO = @IdCambio;
-                ";
+                const string sqlCambio = @"
+                    SELECT * 
+                    FROM FND_CONTROL_CAMBIOS_APROB 
+                    WHERE ID_CAMBIO = @IdCambio;";
 
-                var dtCambio = connection.QueryFirstOrDefault<FndControlCambioAprobDto>(
-                    query,
-                    new { IdCambio = idCambio }
-                );
+                var dtCambio = connection.Query<FndControlCambioAprobDto>(sqlCambio, new { IdCambio = idCambio }).FirstOrDefault();
                 if (dtCambio == null)
                 {
                     result.Code = -1;
@@ -1171,29 +1090,31 @@ VALUES (
                     return result.Code ?? -1;
                 }
 
+                string query;
+
                 switch (dtCambio.cod_evento)
                 {
                     case "UPDATE":
-                        // Parsear el JSON
                         var cambios = JsonConvert.DeserializeObject<List<CampoCambio>>(dtCambio.valoresjsondif ?? string.Empty);
+                        var setParts = (cambios ?? new List<CampoCambio>())
+                            .Select(c => $"{c.Campo} = {FormatearValorSql(c.ValorNuevo ?? string.Empty)}");
 
-                        //Armo el query de update 
-                        var setParts = (cambios ?? new List<CampoCambio>()).Select(c => $"{c.Campo} = {FormatearValorSql(c.ValorNuevo ?? string.Empty)}");
-
-                        var llaves = dtCambio.llaves != null ? dtCambio.llaves.Trim('"') : string.Empty;
+                        var llaves = dtCambio.llaves?.Trim('"') ?? string.Empty;
                         query = $"UPDATE {dtCambio.nom_tabla} SET {string.Join(", ", setParts)} WHERE {llaves};";
                         result.Code = connection.Execute(query);
-
                         break;
+
                     case "INSERT":
-                        query = dtCambio.valoresjsonact != null ? dtCambio.valoresjsonact.Trim('"') : string.Empty;
+                        query = dtCambio.valoresjsonact?.Trim('"') ?? string.Empty;
                         result.Code = connection.Execute(query);
                         break;
+
                     case "DELETE":
-                        var llavesDelete = dtCambio.llaves != null ? dtCambio.llaves.Trim('"') : string.Empty;
+                        var llavesDelete = dtCambio.llaves?.Trim('"') ?? string.Empty;
                         query = $"DELETE {dtCambio.nom_tabla} WHERE {llavesDelete};";
                         result.Code = connection.Execute(query);
                         break;
+
                     default:
                         result.Code = -1;
                         result.Description = "Tipo de evento no soportado.";
@@ -1202,10 +1123,14 @@ VALUES (
 
                 if (result.Code != -1)
                 {
-                    //Actualizo el estado de la tabla de control
-                    query = $@"UPDATE FND_CONTROL_CAMBIOS_APROB SET COD_ESTADO = 'V', USUARIO_APRUEBA = @usuario , FECHA_APRUEBA = getDate()
-                                    WHERE ID_CAMBIO = @idCambio";
-                    connection.Execute(query, new { idCambio = idCambio, usuario = usuario });
+                    const string sqlUpdateEstado = @"
+                        UPDATE FND_CONTROL_CAMBIOS_APROB 
+                        SET COD_ESTADO = 'V', 
+                            USUARIO_APRUEBA = @Usuario, 
+                            FECHA_APRUEBA = GETDATE()
+                        WHERE ID_CAMBIO = @IdCambio;";
+
+                    connection.Execute(sqlUpdateEstado, new { Usuario = usuario, IdCambio = idCambio });
                     result.Description = "ok";
                 }
                 else
@@ -1230,22 +1155,19 @@ VALUES (
 
             if (valor is JValue jv)
             {
-                switch (jv.Type)
+                return jv.Type switch
                 {
-                    case JTokenType.Boolean:
-                        return (bool)jv ? "1" : "0";
-                    case JTokenType.String:
-                        return $"'{jv.ToString().Replace("'", "''")}'";
-                    case JTokenType.Integer:
-                    case JTokenType.Float:
-                        return jv.ToString();
-                    default:
-                        return $"'{jv.ToString().Replace("'", "''")}'";
-                }
+                    JTokenType.Boolean => (bool)jv ? "1" : "0",
+                    JTokenType.String => $"'{jv.ToString().Replace("'", "''")}'",
+                    JTokenType.Integer => jv.ToString(),
+                    JTokenType.Float => jv.ToString(),
+                    _ => $"'{jv.ToString().Replace("'", "''")}'"
+                };
             }
 
             if (valor is bool b)
                 return b ? "1" : "0";
+
             if (valor is string s)
                 return $"'{s.Replace("'", "''")}'";
 
@@ -1254,28 +1176,14 @@ VALUES (
 
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)
         {
-            ErrorDto result = new ErrorDto();
-            result.Code = 0;
-
+            var result = new ErrorDto { Code = 0 };
 
             if (controlAuth == "Y")
             {
-
-
                 try
                 {
-                    Match matchDelete;
-                    try
-                    {
-                        matchDelete = DeleteSqlRegex.Match(request.strSQL ?? string.Empty);
-                    }
-                    catch (RegexMatchTimeoutException)
-                    {
-                        result.Code = -1;
-                        result.Description = "La sentencia SQL no es válida o excede el tiempo de análisis.";
-                        return result.Code ?? -1;
-                    }
-
+                    string patternDelete = @"DELETE\s+(FROM\s+)?(?<table>\w+)\s+WHERE\s+(?<whereClause>.+)$";
+                    var matchDelete = Regex.Match(request.strSQL, patternDelete, RegexOptions.IgnoreCase | RegexOptions.Singleline);
                     if (!matchDelete.Success)
                     {
                         result.Code = -1;
@@ -1286,25 +1194,24 @@ VALUES (
                     var table = matchDelete.Groups["table"].Value;
                     var whereClause = matchDelete.Groups["whereClause"].Value;
 
-                    // Crear el contexto (empresa + usuario)
                     var ctx = new ControlCambioContext(
                         CodEmpresa: request.CodEmpresa,
                         Usuario: request.usuario
                     );
 
-                    // Crear el payload (datos del cambio)
-                    var payload = new ControlCambioPayload(
-                        TipoCambio: request.tipoCambio,
-                        Tabla: table,
-                        Llave: whereClause,     // condición o llave del registro
-                        EventoQuery: "DELETE",  // tipo de operación
-                        InsertSql: "",          // sin SQL de inserción
-                        Diferencias: new DataTable() // tabla vacía
-                    );
+                    using (var diferenciasTable = new DataTable())
+                    {
+                        var payload = new ControlCambioPayload(
+                            TipoCambio: request.tipoCambio,
+                            Tabla: table,
+                            Llave: whereClause,
+                            EventoQuery: "DELETE",
+                            InsertSql: "",
+                            Diferencias: diferenciasTable
+                        );
 
-                    // Ejecutar
-                    result = InsertarTablaControl(ctx, payload);
-
+                        result = InsertarTablaControl(ctx, payload);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -1322,28 +1229,14 @@ VALUES (
 
         public int FndControlAutoriza_Insertar(FndControlAutorizaData request)
         {
-            ErrorDto result = new ErrorDto();
-            result.Code = 0;
-
+            var result = new ErrorDto { Code = 0 };
 
             if (controlAuth == "Y")
             {
-
                 try
                 {
-                    //Obtengo el where de la consulta
-                    Match matchInsert;
-                    try
-                    {
-                        matchInsert = InsertSqlRegex.Match(request.strSQL ?? string.Empty);
-                    }
-                    catch (RegexMatchTimeoutException)
-                    {
-                        result.Code = -1;
-                        result.Description = "La sentencia SQL no es válida o excede el tiempo de análisis.";
-                        return result.Code ?? -1;
-                    }
-
+                    string patternInsert = @"insert\s+(?:into\s+)?(?<table>\w+)\s*\((?<columns>[^)]+)\)\s*values\s*\((?<values>.+?)\)";
+                    var matchInsert = Regex.Match(request.strSQL, patternInsert, RegexOptions.IgnoreCase | RegexOptions.Singleline);
                     if (!matchInsert.Success)
                     {
                         result.Code = -1;
@@ -1353,26 +1246,21 @@ VALUES (
 
                     var table = matchInsert.Groups["table"].Value;
 
-
-                    // Crear el contexto
                     var ctx = new ControlCambioContext(
                         CodEmpresa: request.CodEmpresa,
                         Usuario: request.usuario
                     );
 
-                    // Crear el payload
                     var payload = new ControlCambioPayload(
                         TipoCambio: request.tipoCambio,
                         Tabla: table,
-                        Llave: "",               // no hay llave previa (nuevo registro)
-                        EventoQuery: "INSERT",   // tipo de operación
-                        InsertSql: request.strSQL, // los valores o SQL que se insertan
-                        Diferencias: null        // sin diferencias, ya que es un alta
+                        Llave: "",
+                        EventoQuery: "INSERT",
+                        InsertSql: request.strSQL,
+                        Diferencias: null
                     );
 
-                    // Llamada al método
                     result = InsertarTablaControl(ctx, payload);
-
                 }
                 catch (Exception ex)
                 {
@@ -1387,6 +1275,7 @@ VALUES (
 
             return result.Code ?? -1;
         }
+
         #endregion
     }
 }

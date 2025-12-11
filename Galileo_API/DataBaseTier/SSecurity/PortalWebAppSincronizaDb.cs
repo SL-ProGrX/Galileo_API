@@ -9,6 +9,7 @@ namespace Galileo.DataBaseTier
     public class PortalWebAppSincronizaDb
     {
         private readonly IConfiguration _config;
+        private const string connectionStringName = "DefaultConnString";
 
         public PortalWebAppSincronizaDb(IConfiguration config)
         {
@@ -20,12 +21,10 @@ namespace Galileo.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
-                {
-                    connection.QueryFirst<int>("spPersona_Portal_Sincroniza", commandType: CommandType.StoredProcedure);
-                    resp.Code = 1;
-                    resp.Description = "Ok";
-                }
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                connection.QueryFirst<int>("spPersona_Portal_Sincroniza", commandType: CommandType.StoredProcedure);
+                resp.Code = 1;
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
@@ -42,7 +41,7 @@ namespace Galileo.DataBaseTier
             {
                 if (paso == 1)
                 {
-                    using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                    using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                     {
                         var values = new
                         {
@@ -107,7 +106,7 @@ namespace Galileo.DataBaseTier
 
                 else if (paso == 3)
                 {
-                    using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                    using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
                     {
                         var values = new
                         {
@@ -140,7 +139,7 @@ namespace Galileo.DataBaseTier
         private static readonly Dictionary<string, string> ServidoresPermitidos =
             new(StringComparer.OrdinalIgnoreCase)
         {
-            { "default", "DefaultConnString" },
+            { "default", connectionStringName },
             { "base", "BaseConnString" },
             { "ga", "GAConnString" }
         };

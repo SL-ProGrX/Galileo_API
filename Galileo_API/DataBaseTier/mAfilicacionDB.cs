@@ -19,10 +19,10 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {   
+                 
                     var query = $@"select valor from AFI_COMISIONES_PARAMETROS where cod_parametro = @codigo";
                     result = connection.QueryFirstOrDefault<string>(query, new { codigo = pCodigo }) ?? "";
-                }
+                
             }
             catch (Exception ex)
             {
@@ -38,10 +38,10 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
+                
                     var query = $@"select nombre from socios where cedula = @cedula";
                     result = connection.QueryFirstOrDefault<string>(query, new { cedula = strCedula }) ?? "";
-                }
+                
             }
             catch (Exception ex)
             {

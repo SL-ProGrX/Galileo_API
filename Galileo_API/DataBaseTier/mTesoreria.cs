@@ -34,10 +34,10 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select TIPO AS ITEM, DESCRIPCION from tes_tipos_doc";
-                    resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-                }
+
+                query = $@"select TIPO AS ITEM, DESCRIPCION from tes_tipos_doc";
+                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+
             }
             catch (Exception ex)
             {
@@ -65,13 +65,13 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select rtrim(C.cod_unidad) as 'item', rtrim(C.descripcion) as 'descripcion' 
+
+                query = $@"select rtrim(C.cod_unidad) as 'item', rtrim(C.descripcion) as 'descripcion' 
                                 from tes_unidad_ASG A inner join CntX_Unidades C on A.cod_unidad = C.cod_unidad and C.cod_contabilidad = @contabilidad
                                 Where A.id_Banco = @banco and A.nombre = @usuario and activa = 1
                                 order by C.Descripcion ";
-                    resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { contabilidad = contabilidad, banco = banco, usuario = usuario }).ToList();
-                }
+                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { contabilidad = contabilidad, banco = banco, usuario = usuario }).ToList();
+
             }
             catch (Exception ex)
             {
@@ -100,13 +100,13 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select rtrim(C.cod_Concepto) as 'item', rtrim(C.Descripcion) as 'descripcion'
+
+                query = $@"select rtrim(C.cod_Concepto) as 'item', rtrim(C.Descripcion) as 'descripcion'
                                 from tes_conceptos_ASG A inner join Tes_Conceptos C on A.cod_concepto = C.cod_concepto
                                 Where A.id_Banco = @banco and A.nombre = @usuario and estado = 'A'
                                 order by C.Descripcion";
-                    resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { banco = banco, usuario = usuario }).ToList();
-                }
+                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { banco = banco, usuario = usuario }).ToList();
+
             }
             catch (Exception ex)
             {
@@ -136,44 +136,44 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select isnull(Count(*),0) as Existe
+
+                query = $@"select isnull(Count(*),0) as Existe
                                 from tes_documentos_ASG A inner join Tes_Tipos_Doc T on A.tipo = T.tipo
                                 Where A.id_Banco = @banco and A.nombre = @usuario
                                 and A.tipo = @tipo ";
 
-                    switch (vGestion)
-                    {
-                        case "S":
-                            query += " and A.SOLICITA = 1";
-                            break;
-                        case "A":
-                            query += " and A.AUTORIZA = 1";
-                            break;
-                        case "G":
-                            query += " and A.GENERA = 1";
-                            break;
-                        case "X":
-                            query += " and A.ASIENTOS = 1";
-                            break;
-                        case "N":
-                            query += " and A.ANULA = 1";
-                            break;
-                        default:
-                            break;
-                    }
-
-                    var result = connection.QueryFirstOrDefault<int>(query, new { banco = vBanco, usuario = vUsuario, tipo = vTipo });
-
-                    if (result > 0)
-                    {
-                        resp.Result = true;
-                    }
-                    else
-                    {
-                        resp.Result = false;
-                    }
+                switch (vGestion)
+                {
+                    case "S":
+                        query += " and A.SOLICITA = 1";
+                        break;
+                    case "A":
+                        query += " and A.AUTORIZA = 1";
+                        break;
+                    case "G":
+                        query += " and A.GENERA = 1";
+                        break;
+                    case "X":
+                        query += " and A.ASIENTOS = 1";
+                        break;
+                    case "N":
+                        query += " and A.ANULA = 1";
+                        break;
+                    default:
+                        break;
                 }
+
+                var result = connection.QueryFirstOrDefault<int>(query, new { banco = vBanco, usuario = vUsuario, tipo = vTipo });
+
+                if (result > 0)
+                {
+                    resp.Result = true;
+                }
+                else
+                {
+                    resp.Result = false;
+                }
+
             }
             catch (Exception ex)
             {
@@ -201,14 +201,6 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-
-                // 1) Lista blanca: SOLO columnas reales permitidas para "gestión"
-                var gestionesPermitidas = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "Autoriza",
-                    "Genera",
-                    "Asientos"
-                };
 
                 query = $@"select id_banco as item,descripcion from Tes_Bancos where Estado = 'A' and id_Banco 
                                     in(select id_banco from tes_documentos_ASG Where nombre = @usuario and {gestion} = 1 
@@ -238,7 +230,12 @@ namespace Galileo.DataBaseTier
             resp.Result = "";
             try
             {
-                resp.Result = fxTesTipoDocExtraeDato(CodEmpresa, vBanco, vTipo, "Comprobante").Result ?? "";
+                string query = "";
+                using var connection = new SqlConnection(stringConn);
+
+                query = $@"select {vCampo} as Campo from tes_Banco_docs where id_Banco = @banco and tipo = @tipo";
+                resp.Result = connection.QueryFirstOrDefault<string>(query, new { banco = vBanco, tipo = vTipo });
+
             }
             catch (Exception ex)
             {
@@ -270,38 +267,38 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"SELECT RTRIM(T.Tipo) + ' - ' + T.descripcion AS ItmY, 
+
+                query = $@"SELECT RTRIM(T.Tipo) + ' - ' + T.descripcion AS ItmY, 
                         RTRIM(T.Tipo) AS item, RTRIM(T.descripcion) AS descripcion 
                         FROM tes_documentos_ASG A INNER JOIN Tes_Tipos_Doc T ON A.tipo = T.tipo 
                         WHERE A.id_Banco = @banco AND A.nombre = @usuario";
 
-                    switch (Tipo)
-                    {
-                        case "S":
-                            query += " and A.SOLICITA = 1";
-                            break;
-                        case "A":
-                            query += " and A.AUTORIZA = 1";
-                            break;
-                        case "G":
-                            query += " and A.GENERA = 1";
-                            break;
-                        case "X":
-                            query += " and A.ASIENTOS = 1";
-                            break;
-                        case "N":
-                            query += " and A.ANULA = 1";
-                            break;
-                        default:
-                            break;
-                    }
-                    query += " order by T.Descripcion";
-
-                    resp.Result = connection
-                        .Query<DropDownListaGenericaModel>(query, new { banco = Banco, usuario = Usuario })
-                        .ToList();
+                switch (Tipo)
+                {
+                    case "S":
+                        query += " and A.SOLICITA = 1";
+                        break;
+                    case "A":
+                        query += " and A.AUTORIZA = 1";
+                        break;
+                    case "G":
+                        query += " and A.GENERA = 1";
+                        break;
+                    case "X":
+                        query += " and A.ASIENTOS = 1";
+                        break;
+                    case "N":
+                        query += " and A.ANULA = 1";
+                        break;
+                    default:
+                        break;
                 }
+                query += " order by T.Descripcion";
+
+                resp.Result = connection
+                    .Query<DropDownListaGenericaModel>(query, new { banco = Banco, usuario = Usuario })
+                    .ToList();
+
             }
             catch (Exception ex)
             {
@@ -393,60 +390,60 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
+
+                long consecutivo = 0;
+                string strSQL;
+
+                if (tipo != "TE" && plan != "-sp-")
                 {
-                    long consecutivo = 0;
-                    string strSQL;
+                    plan = "-sp-";
+                }
 
-                    if (tipo != "TE" && plan != "-sp-")
-                    {
-                        plan = "-sp-";
-                    }
+                if (plan == "-sp-")
+                {
+                    strSQL = $"SELECT Consecutivo FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco";
+                }
+                else
+                {
+                    strSQL = $"SELECT ISNULL(NUMERO_TE, 0) AS Consecutivo FROM TES_BANCO_PLANES_TE WHERE id_banco = @Banco AND COD_PLAN = @Plan";
+                }
 
+                var result = connection.QueryFirstOrDefault<long>(strSQL,
+                    new { Tipo = tipo, Banco = id_banco, Plan = plan });
+
+                switch (avance)
+                {
+                    case "+":
+                        consecutivo = result + 1;
+                        break;
+                    case "-":
+                        consecutivo = result - 1;
+                        break;
+                    case "/":
+                        consecutivo = result;
+                        break;
+                    default:
+                        consecutivo = result;
+                        break;
+                }
+
+                resp.Result = consecutivo;
+
+                if (avance != "/")
+                {
                     if (plan == "-sp-")
                     {
-                        strSQL = $"SELECT Consecutivo FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco";
+                        query = $"UPDATE tes_banco_docs SET consecutivo = consecutivo {avance} 1 WHERE Tipo = @Tipo AND id_banco = @Banco";
                     }
                     else
                     {
-                        strSQL = $"SELECT ISNULL(NUMERO_TE, 0) AS Consecutivo FROM TES_BANCO_PLANES_TE WHERE id_banco = @Banco AND COD_PLAN = @Plan";
+                        query = $"UPDATE TES_BANCO_PLANES_TE SET NUMERO_TE = ISNULL(NUMERO_TE,0) {avance} 1 WHERE COD_PLAN = @Plan AND id_banco = @Banco";
                     }
-
-                    var result = connection.QueryFirstOrDefault<long>(strSQL,
-                        new { Tipo = tipo, Banco = id_banco, Plan = plan });
-
-                    switch (avance)
-                    {
-                        case "+":
-                            consecutivo = result + 1;
-                            break;
-                        case "-":
-                            consecutivo = result - 1;
-                            break;
-                        case "/":
-                            consecutivo = result;
-                            break;
-                        default:
-                            consecutivo = result;
-                            break;
-                    }
-
-                    resp.Result = consecutivo;
-
-                    if (avance != "/")
-                    {
-                        if (plan == "-sp-")
-                        {
-                            query = $"UPDATE tes_banco_docs SET consecutivo = consecutivo {avance} 1 WHERE Tipo = @Tipo AND id_banco = @Banco";
-                        }
-                        else
-                        {
-                            query = $"UPDATE TES_BANCO_PLANES_TE SET NUMERO_TE = ISNULL(NUMERO_TE,0) {avance} 1 WHERE COD_PLAN = @Plan AND id_banco = @Banco";
-                        }
-                        connection.Execute(query, new { Consecutivo = consecutivo, Tipo = tipo, Banco = id_banco, Plan = plan });
-
-                    }
+                    connection.Execute(query, new { Consecutivo = consecutivo, Tipo = tipo, Banco = id_banco, Plan = plan });
 
                 }
+
+
             }
             catch (Exception ex)
             {
@@ -477,62 +474,62 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
+
+                long consecutivo = 0;
+                string strSQL;
+
+                if (tipo != "TE" && plan != "-sp-")
                 {
-                    long consecutivo = 0;
-                    string strSQL;
+                    plan = "-sp-";
+                }
 
-                    if (tipo != "TE" && plan != "-sp-")
-                    {
-                        plan = "-sp-";
-                    }
+                if (plan == "-sp-" || plan == "")
+                {
+                    strSQL = $@"select isnull(CONSECUTIVO_DET,0) as 'Consecutivo' from tes_banco_docs where tipo = @Tipo and id_banco = @Banco ";
+                }
+                else
+                {
+                    strSQL = $@"select isnull(NUMERO_INTERNO,0) as 'Consecutivo' 
+                                   from TES_BANCO_PLANES_TE 
+                                    where id_banco = @Banco and COD_PLAN = @Plan ";
+                }
 
-                    if (plan == "-sp-" || plan == "")
+                var result = connection.QueryFirstOrDefault<long>(strSQL,
+                    new { Tipo = tipo, Banco = id_banco, Plan = plan });
+
+                switch (avance)
+                {
+                    case "+":
+                        consecutivo = result + 1;
+                        break;
+                    case "-":
+                        consecutivo = result - 1;
+                        break;
+                    case "/":
+                        consecutivo = result;
+                        break;
+                    default:
+                        consecutivo = result;
+                        break;
+                }
+
+                resp.Result = consecutivo;
+
+                if (avance != "/")
+                {
+                    if (plan == "-sp-")
                     {
-                        strSQL = $@"select isnull(CONSECUTIVO_DET,0) as 'Consecutivo' from tes_banco_docs where tipo = @Tipo and id_banco = @Banco ";
+                        query = $@"update tes_banco_docs set CONSECUTIVO_DET = isnull(CONSECUTIVO_DET,0) {avance} 1 where Tipo = @Tipo and id_banco = @Banco";
                     }
                     else
                     {
-                        strSQL = $@"select isnull(NUMERO_INTERNO,0) as 'Consecutivo' 
-                                   from TES_BANCO_PLANES_TE 
-                                    where id_banco = @Banco and COD_PLAN = @Plan ";
+                        query = $"update TES_BANCO_PLANES_TE set NUMERO_INTERNO = isnull(NUMERO_INTERNO,0) {avance} 1 where cod_plan = @Tipo and id_banco = @Banco";
                     }
-
-                    var result = connection.QueryFirstOrDefault<long>(strSQL,
-                        new { Tipo = tipo, Banco = id_banco, Plan = plan });
-
-                    switch (avance)
-                    {
-                        case "+":
-                            consecutivo = result + 1;
-                            break;
-                        case "-":
-                            consecutivo = result - 1;
-                            break;
-                        case "/":
-                            consecutivo = result;
-                            break;
-                        default:
-                            consecutivo = result;
-                            break;
-                    }
-
-                    resp.Result = consecutivo;
-
-                    if (avance != "/")
-                    {
-                        if (plan == "-sp-")
-                        {
-                            query = $@"update tes_banco_docs set CONSECUTIVO_DET = isnull(CONSECUTIVO_DET,0) {avance} 1 where Tipo = @Tipo and id_banco = @Banco";
-                        }
-                        else
-                        {
-                            query = $"update TES_BANCO_PLANES_TE set NUMERO_INTERNO = isnull(NUMERO_INTERNO,0) {avance} 1 where cod_plan = @Tipo and id_banco = @Banco";
-                        }
-                        connection.Execute(query, new { Consecutivo = consecutivo, Tipo = tipo, Banco = id_banco, Plan = plan });
-
-                    }
+                    connection.Execute(query, new { Consecutivo = consecutivo, Tipo = tipo, Banco = id_banco, Plan = plan });
 
                 }
+
+
             }
             catch (Exception ex)
             {
@@ -605,34 +602,34 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+
+                var query = "Select UTILIZA_FORMATO_ESPECIAL,ARCHIVO_CHEQUES_FIRMAS,ARCHIVO_CHEQUES_SIN_FIRMAS from TES_BANCOS where ID_BANCO = @banco";
+                var archivosData = connection.QueryFirstOrDefault<TesBancosArchivosData>(query, new { banco = banco });
+
+                if (archivosData != null)
                 {
-                    var query = "Select UTILIZA_FORMATO_ESPECIAL,ARCHIVO_CHEQUES_FIRMAS,ARCHIVO_CHEQUES_SIN_FIRMAS from TES_BANCOS where ID_BANCO = @banco";
-                    var archivosData = connection.QueryFirstOrDefault<TesBancosArchivosData>(query, new { banco = banco });
+                    string archivoFirmas = Path.Combine(dirRDLC, CodEmpresa.ToString(), archivosData.archivo_cheques_firmas) ?? "";
+                    string archivoSinFirmas = Path.Combine(dirRDLC, CodEmpresa.ToString(), archivosData.archivo_cheques_sin_firmas) ?? "";
 
-                    if (archivosData != null)
+                    if (archivosData.utiliza_formato_especial == 1)
                     {
-                        string archivoFirmas = Path.Combine(dirRDLC, CodEmpresa.ToString(), archivosData.archivo_cheques_firmas) ?? "";
-                        string archivoSinFirmas = Path.Combine(dirRDLC, CodEmpresa.ToString(), archivosData.archivo_cheques_sin_firmas) ?? "";
-
-                        if (archivosData.utiliza_formato_especial == 1)
-                        {
-                            if (File.Exists(archivoFirmas))
-                                response.Result.chequesFirmas = archivosData.archivo_cheques_firmas;
-                            else
-                                response.Result.chequesFirmas = "Banking_DocFormat01"; //Reporte con Firmas
-
-                            if (File.Exists(archivoSinFirmas))
-                                response.Result.chequesSinFirmas = archivosData.archivo_cheques_sin_firmas;
-                            else
-                                response.Result.chequesSinFirmas = "Banking_DocFormat02"; //Reporte sin Firmas
-                        }
+                        if (File.Exists(archivoFirmas))
+                            response.Result.chequesFirmas = archivosData.archivo_cheques_firmas;
                         else
-                        {
                             response.Result.chequesFirmas = "Banking_DocFormat01"; //Reporte con Firmas
+
+                        if (File.Exists(archivoSinFirmas))
+                            response.Result.chequesSinFirmas = archivosData.archivo_cheques_sin_firmas;
+                        else
                             response.Result.chequesSinFirmas = "Banking_DocFormat02"; //Reporte sin Firmas
-                        }
+                    }
+                    else
+                    {
+                        response.Result.chequesFirmas = "Banking_DocFormat01"; //Reporte con Firmas
+                        response.Result.chequesSinFirmas = "Banking_DocFormat02"; //Reporte sin Firmas
                     }
                 }
+
             }
             catch (Exception ex)
             {
@@ -654,11 +651,11 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "exec spTESAfectaBancos @solicitud, @tipo";
 
-                    connection.Execute(query, new { solicitud = vSolicitud, tipo = vTipo });
-                }
+                var query = "exec spTESAfectaBancos @solicitud, @tipo";
+
+                connection.Execute(query, new { solicitud = vSolicitud, tipo = vTipo });
+
             }
             catch (Exception ex)
             {
@@ -681,11 +678,11 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select id_banco as item,descripcion from Tes_Bancos where Estado = 'A' 
+
+                query = $@"select id_banco as item,descripcion from Tes_Bancos where Estado = 'A' 
                                 order by descripcion";
-                    resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-                }
+                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+
             }
             catch (Exception ex)
             {
@@ -709,18 +706,18 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "exec spTesBitacora @solicitud, @movimiento, @detalle, @usuario";
 
-                    connection.Execute(query,
-                        new
-                        {
-                            solicitud = pSolicitud,
-                            movimiento = pMovimiento,
-                            detalle = pDetalle.Length > 150 ? pDetalle.Substring(0, 150) : pDetalle,
-                            usuario = Usuario
-                        });
-                }
+                var query = "exec spTesBitacora @solicitud, @movimiento, @detalle, @usuario";
+
+                connection.Execute(query,
+                    new
+                    {
+                        solicitud = pSolicitud,
+                        movimiento = pMovimiento,
+                        detalle = pDetalle.Length > 150 ? pDetalle.Substring(0, 150) : pDetalle,
+                        usuario = Usuario
+                    });
+
             }
             catch (Exception ex)
             {
@@ -799,11 +796,11 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select rtrim(cod_unidad) as 'item',rtrim(descripcion) as 'descripcion'
+
+                query = $@"select rtrim(cod_unidad) as 'item',rtrim(descripcion) as 'descripcion'
                                  from CntX_Unidades where cod_contabilidad = @contabilidad ";
-                    resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { contabilidad = contabilidad }).ToList();
-                }
+                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { contabilidad = contabilidad }).ToList();
+
             }
             catch (Exception ex)
             {
@@ -834,18 +831,18 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select T.Tipo as 'item', rtrim(T.Descripcion) as 'descripcion'
+
+                query = $@"select T.Tipo as 'item', rtrim(T.Descripcion) as 'descripcion'
                                 from tes_banco_docs A inner join Tes_Tipos_Doc T on A.tipo = T.tipo
                                 Where A.id_Banco = @banco";
 
 
-                    query += " order by T.Descripcion";
+                query += " order by T.Descripcion";
 
-                    resp.Result = connection
-                        .Query<DropDownListaGenericaModel>(query, new { banco = Banco })
-                        .ToList();
-                }
+                resp.Result = connection
+                    .Query<DropDownListaGenericaModel>(query, new { banco = Banco })
+                    .ToList();
+
             }
             catch (Exception ex)
             {
@@ -867,11 +864,11 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select rtrim(cod_Concepto) as 'item', rtrim(Descripcion) as 'descripcion'
+
+                query = $@"select rtrim(cod_Concepto) as 'item', rtrim(Descripcion) as 'descripcion'
                                 from Tes_Conceptos ";
-                    resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-                }
+                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+
             }
             catch (Exception ex)
             {
@@ -912,29 +909,29 @@ namespace Galileo.DataBaseTier
                 }
 
                 using var connection = new SqlConnection(stringConn);
+
+                string? query;
+                if (parametros.Referencia > 0)
                 {
-                    string? query;
-                    if (parametros.Referencia > 0)
-                    {
-                        // TIENE REFERENCIA
-                        query = @"UPDATE DesemBolsos 
+                    // TIENE REFERENCIA
+                    query = @"UPDATE DesemBolsos 
                            SET Cod_Banco = @lngBanco,
                                TDocumento = @strTipo,
                                NDocumento = @strDoc
                            WHERE ID_Desembolso = @strCodigo";
-                        connection.Execute(query, new { Banco = parametros.Banco, Tipo = parametros.Tipo, Documento = parametros.Documento, Codigo = parametros.Codigo });
-                    }
-                    else
-                    {
-                        // NO TIENE REFERENCIA
-                        query = @"UPDATE Reg_Creditos 
+                    connection.Execute(query, new { Banco = parametros.Banco, Tipo = parametros.Tipo, Documento = parametros.Documento, Codigo = parametros.Codigo });
+                }
+                else
+                {
+                    // NO TIENE REFERENCIA
+                    query = @"UPDATE Reg_Creditos 
                            SET Cod_Banco = @lngBanco,
                                Documento_Referido = @documentoReferido
                            WHERE ID_Solicitud = @lngOP";
-                        string documentoReferido = $"{parametros.Tipo}-{parametros.Documento}";
-                        connection.Execute(query, new { Banco = parametros.Banco, documentoReferido, OP = parametros.OP });
-                    }
+                    string documentoReferido = $"{parametros.Tipo}-{parametros.Documento}";
+                    connection.Execute(query, new { Banco = parametros.Banco, documentoReferido, OP = parametros.OP });
                 }
+
             }
             catch (Exception ex)
             {
@@ -953,10 +950,10 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = "select valor from tes_parametros where cod_parametro = @codigo";
-                    result = connection.QueryFirst<string>(query, new { codigo = xCodigo });
-                }
+
+                query = "select valor from tes_parametros where cod_parametro = @codigo";
+                result = connection.QueryFirst<string>(query, new { codigo = xCodigo });
+
             }
             catch (Exception)
             {
@@ -979,10 +976,10 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = "select sinpe_activo from SIF_EMPRESA WHERE PORTAL_ID = @empresa";
-                    result.Result = connection.QueryFirst<bool>(query, new { empresa = CodEmpresa });
-                }
+
+                query = "select sinpe_activo from SIF_EMPRESA WHERE PORTAL_ID = @empresa";
+                result.Result = connection.QueryFirst<bool>(query, new { empresa = CodEmpresa });
+
             }
             catch (Exception ex)
             {
@@ -1006,28 +1003,28 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select isnull(Count(*),0) as Existe
+
+                query = $@"select isnull(Count(*),0) as Existe
                         from Tes_Bancos B inner join tes_Banco_ASG A on B.id_Banco = A.id_Banco
                         and A.nombre = @usuario Where B.estado = 'A' and B.id_Banco = @banco";
 
-                    var resp = connection.QueryFirstOrDefault<int>(query, new
-                    {
-                        usuario = vUsuario,
-                        banco = vBanco
-                    });
+                var resp = connection.QueryFirstOrDefault<int>(query, new
+                {
+                    usuario = vUsuario,
+                    banco = vBanco
+                });
 
-                    if (resp > 0)
-                    {
-                        result.Result = true;
-                    }
-                    else
-                    {
-                        result.Code = -1;
-                        result.Result = false;
-                    }
-
+                if (resp > 0)
+                {
+                    result.Result = true;
                 }
+                else
+                {
+                    result.Code = -1;
+                    result.Result = false;
+                }
+
+
             }
             catch (Exception)
             {
@@ -1050,29 +1047,29 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select isnull(Count(*),0) as Existe
+
+                query = $@"select isnull(Count(*),0) as Existe
                         from tes_conceptos_ASG A inner join Tes_Conceptos C on A.cod_concepto = C.cod_concepto
                         Where A.id_Banco = @banco and A.nombre = @usuario and A.cod_concepto = @concepto";
 
-                    var resp = connection.QueryFirstOrDefault<int>(query, new
-                    {
-                        banco = vBanco,
-                        usuario = vUsuario,
-                        concepto = vConcepto
-                    });
+                var resp = connection.QueryFirstOrDefault<int>(query, new
+                {
+                    banco = vBanco,
+                    usuario = vUsuario,
+                    concepto = vConcepto
+                });
 
-                    if (resp > 0)
-                    {
-                        result.Result = true;
-                    }
-                    else
-                    {
-                        result.Code = -1;
-                        result.Result = false;
-                    }
-
+                if (resp > 0)
+                {
+                    result.Result = true;
                 }
+                else
+                {
+                    result.Code = -1;
+                    result.Result = false;
+                }
+
+
             }
             catch (Exception)
             {
@@ -1095,29 +1092,29 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@" select isnull(Count(*),0) as Existe
+
+                query = $@" select isnull(Count(*),0) as Existe
         from tes_unidad_ASG A inner join CntX_Unidades C on A.cod_unidad = C.cod_unidad
         Where A.id_Banco = @banco and A.nombre = @usuario and A.cod_unidad = @unidad";
 
-                    var resp = connection.QueryFirstOrDefault<int>(query, new
-                    {
-                        banco = vBanco,
-                        usuario = vUsuario,
-                        unidad = vUnidad
-                    });
+                var resp = connection.QueryFirstOrDefault<int>(query, new
+                {
+                    banco = vBanco,
+                    usuario = vUsuario,
+                    unidad = vUnidad
+                });
 
-                    if (resp > 0)
-                    {
-                        result.Result = true;
-                    }
-                    else
-                    {
-                        result.Code = -1;
-                        result.Result = false;
-                    }
-
+                if (resp > 0)
+                {
+                    result.Result = true;
                 }
+                else
+                {
+                    result.Code = -1;
+                    result.Result = false;
+                }
+
+
             }
             catch (Exception)
             {
@@ -1140,29 +1137,29 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select isnull(count(*),0) as Existe from Tes_Transacciones 
+
+                query = $@"select isnull(count(*),0) as Existe from Tes_Transacciones 
 where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado <> 'P'";
 
-                    var resp = connection.QueryFirstOrDefault<int>(query, new
-                    {
-                        banco = vBanco,
-                        tipo = vtipo,
-                        documento = vDocumento
-                    });
+                var resp = connection.QueryFirstOrDefault<int>(query, new
+                {
+                    banco = vBanco,
+                    tipo = vtipo,
+                    documento = vDocumento
+                });
 
-                    if (resp > 0)
-                    {
-                        result.Code = -1;
-                        result.Result = false;
-
-                    }
-                    else
-                    {
-                        result.Result = true;
-                    }
+                if (resp > 0)
+                {
+                    result.Code = -1;
+                    result.Result = false;
 
                 }
+                else
+                {
+                    result.Result = true;
+                }
+
+
             }
             catch (Exception)
             {
@@ -1208,7 +1205,7 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             {
                 int len = Math.Min(3, vRes.Length - i);
                 if (!int.TryParse(vRes.AsSpan(i, len), out int num))
-                    continue; 
+                    continue;
 
                 int transformed = num + deltas[vSec];
                 vResXBuilder.Append(transformed);
@@ -1255,28 +1252,28 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select count(T.Tipo) from tes_tipos_doc T left join tes_documentos_asg A on T.tipo = A.tipo
+
+                query = $@"select count(T.Tipo) from tes_tipos_doc T left join tes_documentos_asg A on T.tipo = A.tipo
                                     and A.id_banco = @banco and A.nombre = @usuario
                                     Where T.tipo in(select Tipo from tes_banco_docs where id_banco = @banco)
                                     AND T.Tipo = @tipo AND isnull(A.{vPermiso},0) = 1";
 
-                    var resp = connection.QueryFirstOrDefault<int>(query, new
-                    {
-                        tipo = vtipo,
-                        banco = vBanco,
-                        usuario = vUsuario
-                    });
+                var resp = connection.QueryFirstOrDefault<int>(query, new
+                {
+                    tipo = vtipo,
+                    banco = vBanco,
+                    usuario = vUsuario
+                });
 
-                    if (resp > 0)
-                    {
-                        result = true;
-                    }
-                    else
-                    {
-                        result = false;
-                    }
+                if (resp > 0)
+                {
+                    result = true;
                 }
+                else
+                {
+                    result = false;
+                }
+
             }
             catch (Exception)
             {
@@ -1298,8 +1295,8 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = @"SELECT C.monto, C.nsolicitud, T.doc_auto, T.comprobante,
+
+                query = @"SELECT C.monto, C.nsolicitud, T.doc_auto, T.comprobante,
                           ISNULL(B.firmas_desde,0) AS Firmas_Desde, B.Lugar_Emision,
                           X.descripcion AS TipoX, ISNULL(B.firmas_hasta,0) AS Firmas_Hasta,
                           dbo.MyGetdate() AS FechaX, C.id_Banco, C.tipo, C.modulo, 
@@ -1310,74 +1307,74 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                            INNER JOIN tes_tipos_doc X ON T.tipo = X.tipo
                            WHERE C.nsolicitud = @solicitud";
 
-                    var data = connection.QueryFirstOrDefault<MTesTransaccionDto>(query, new { solicitud = vSolicitud });
+                var data = connection.QueryFirstOrDefault<MTesTransaccionDto>(query, new { solicitud = vSolicitud });
 
-                    if (data == null)
-                    {
-                        response.Code = -3;
-                        response.Description = "No se encontró la solicitud especificada.";
-                        return response;
-                    }
+                if (data == null)
+                {
+                    response.Code = -3;
+                    response.Description = "No se encontró la solicitud especificada.";
+                    return response;
+                }
 
-                    string vTipo = data.tipo;
-                    string vComprobante = data.comprobante;
-                    bool vAutoConsec = data.doc_auto;
-                    DateTime fechaEmision = vFecha ?? data.fechaX;
-                    string vConsecutivo = string.Empty;
+                string vTipo = data.tipo;
+                string vComprobante = data.comprobante;
+                bool vAutoConsec = data.doc_auto;
+                DateTime fechaEmision = vFecha ?? data.fechaX;
+                string vConsecutivo = string.Empty;
 
-                    switch (vComprobante)
-                    {
-                        case "01":
-                        case "02":
-                        case "03":
-                            if (vAutoConsec)
-                                vConsecutivo = fxTesTipoDocConsec(CodEmpresa, data.id_banco, vTipo, "+").Result.ToString();
+                switch (vComprobante)
+                {
+                    case "01":
+                    case "02":
+                    case "03":
+                        if (vAutoConsec)
+                            vConsecutivo = fxTesTipoDocConsec(CodEmpresa, data.id_banco, vTipo, "+").Result.ToString();
 
-                            string nDocumentoClause = "";
-                            if (vAutoConsec)
-                                nDocumentoClause = ", NDocumento = @documento";
-                            else if (!string.IsNullOrWhiteSpace(vDocumento))
-                                nDocumentoClause = ", NDocumento = @documento";
+                        string nDocumentoClause = "";
+                        if (vAutoConsec)
+                            nDocumentoClause = ", NDocumento = @documento";
+                        else if (!string.IsNullOrWhiteSpace(vDocumento))
+                            nDocumentoClause = ", NDocumento = @documento";
 
-                            var updateSql = @"
+                        var updateSql = @"
                                 UPDATE Tes_Transacciones
                                 SET Estado = 'I',
                                     Fecha_Emision = @fecha,
                                     Ubicacion_Actual = 'T',
                                     Fecha_Traslado = @fecha,
                                     User_Genera = @usuario"
-                                    + nDocumentoClause +
-                                    " WHERE nsolicitud = @solicitud";
-                            connection.Execute(updateSql, new
-                            {
-                                fecha = fechaEmision.ToString("yyyy-MM-dd"),
-                                usuario = vUsuario,
-                                documento = vAutoConsec ? vConsecutivo : vDocumento,
-                                solicitud = vSolicitud
-                            });
+                                + nDocumentoClause +
+                                " WHERE nsolicitud = @solicitud";
+                        connection.Execute(updateSql, new
+                        {
+                            fecha = fechaEmision.ToString("yyyy-MM-dd"),
+                            usuario = vUsuario,
+                            documento = vAutoConsec ? vConsecutivo : vDocumento,
+                            solicitud = vSolicitud
+                        });
 
-                            sbTESActualizaCC(
-                                    CodEmpresa,
-                                    new ActualizaCCParams
-                                    {
-                                        Codigo = data.codigo,
-                                        Tipo = vTipo,
-                                        Documento = vConsecutivo,
-                                        Banco = data.id_banco,
-                                        OP = data.op != null ? (int)data.op : 0,
-                                        Modulo = data.modulo,
-                                        SubModulo = data.subModulo,
-                                        Referencia = data.referencia != null ? (int)data.referencia : 0
-                                    }
-                                );
-                            //Envió a impresión
-                            break;
-                        case "04":
-                            response.Code = -1;
-                            response.Description = "Las Transferencias Electrónicas no se pueden procesar directamente...";
-                            break;
-                    }
+                        sbTESActualizaCC(
+                                CodEmpresa,
+                                new ActualizaCCParams
+                                {
+                                    Codigo = data.codigo,
+                                    Tipo = vTipo,
+                                    Documento = vConsecutivo,
+                                    Banco = data.id_banco,
+                                    OP = data.op != null ? (int)data.op : 0,
+                                    Modulo = data.modulo,
+                                    SubModulo = data.subModulo,
+                                    Referencia = data.referencia != null ? (int)data.referencia : 0
+                                }
+                            );
+                        //Envió a impresión
+                        break;
+                    case "04":
+                        response.Code = -1;
+                        response.Description = "Las Transferencias Electrónicas no se pueden procesar directamente...";
+                        break;
                 }
+
             }
             catch (Exception ex)
             {
@@ -1397,15 +1394,15 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select Movimiento from tes_tipos_doc Where tipo = @tipo ";
 
-                    var resp = connection.QueryFirstOrDefault<string>(query, new
-                    {
-                        tipo = vTipo
-                    });
-                    response = resp ?? "";
-                }
+                query = $@"select Movimiento from tes_tipos_doc Where tipo = @tipo ";
+
+                var resp = connection.QueryFirstOrDefault<string>(query, new
+                {
+                    tipo = vTipo
+                });
+                response = resp ?? "";
+
             }
             catch (Exception)
             {
@@ -1428,26 +1425,24 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    query = $@"select isnull(count(*),0) as Existe from Tes_Bancos
+
+                query = $@"select isnull(count(*),0) as Existe from Tes_Bancos
                             where id_banco = @banco and INT_REQUIERE_CUENTA_DESTINO = 1 ";
 
-                    var resp = connection.QueryFirstOrDefault<int>(query, new
-                    {
-                        banco = vBanco
-                    });
+                var resp = connection.QueryFirstOrDefault<int>(query, new
+                {
+                    banco = vBanco
+                });
 
-                    if (resp > 0)
-                    {
-                        result.Code = -1;
-                        result.Result = true;
+                if (resp > 0)
+                {
+                    result.Code = -1;
+                    result.Result = true;
 
-                    }
-                    else
-                    {
-                        result.Result = false;
-                    }
-
+                }
+                else
+                {
+                    result.Result = false;
                 }
             }
             catch (Exception)
@@ -1513,47 +1508,47 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
+
+                query = @"select cta as item, descripcion from Tes_Bancos where id_banco = @vBanco";
+                var banco = connection.QueryFirstOrDefault(query, new { vBanco });
+
+                if (banco != null)
                 {
-                    query = @"select cta as item, descripcion from Tes_Bancos where id_banco = @vBanco";
-                    var banco = connection.QueryFirstOrDefault(query, new { vBanco });
+                    vLetra = "Sirva la Presente para saludarlo y a la vez solicitarle debitar de nuestra cuenta corriente"
+                           + " # " + banco.item + " la suma de ¢ ";
+                }
 
-                    if (banco != null)
-                    {
-                        vLetra = "Sirva la Presente para saludarlo y a la vez solicitarle debitar de nuestra cuenta corriente"
-                               + " # " + banco.item + " la suma de ¢ ";
-                    }
-
-                    if (vTipo == "C")
-                    {
-                        string strSQL = @"select sum(Monto) as Monto, Count(*) as Casos, cod_divisa
+                if (vTipo == "C")
+                {
+                    string strSQL = @"select sum(Monto) as Monto, Count(*) as Casos, cod_divisa
                                   from Tes_Transacciones
                                   where tipo = @vDocumento and id_banco = @vBanco and documento_Base = @vTransac";
-                        if (vPlan != "-sp-")
-                        {
-                            strSQL += " and Cod_Plan = @vPlan";
-                        }
-                        strSQL += " group by cod_divisa";
-
-                        var rs = connection.QueryFirstOrDefault(strSQL, new { vDocumento, vBanco, vTransac, vPlan });
-                        if (rs != null)
-                        {
-                            curMonto = rs.Monto;
-                            lngCasos = rs.Casos;
-                            strDivisa = rs.cod_divisa;
-                        }
-
-                        string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result
-                                              + fxDescDivisa(CodEmpresa, strDivisa).Result;
-
-                        resp.Result.registros = lngCasos;
-                        resp.Result.montoLetras = vMontoLetras;
-                        resp.Result.totalMonto = curMonto;
-                        resp.Result.fxNombre = fxTesParametro(CodEmpresa, "01");
-                        resp.Result.fxPuesto = fxTesParametro(CodEmpresa, "02");
-                        resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
-                        resp.Result.letras1 = vLetra;
+                    if (vPlan != "-sp-")
+                    {
+                        strSQL += " and Cod_Plan = @vPlan";
                     }
+                    strSQL += " group by cod_divisa";
+
+                    var rs = connection.QueryFirstOrDefault(strSQL, new { vDocumento, vBanco, vTransac, vPlan });
+                    if (rs != null)
+                    {
+                        curMonto = rs.Monto;
+                        lngCasos = rs.Casos;
+                        strDivisa = rs.cod_divisa;
+                    }
+
+                    string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result
+                                          + fxDescDivisa(CodEmpresa, strDivisa).Result;
+
+                    resp.Result.registros = lngCasos;
+                    resp.Result.montoLetras = vMontoLetras;
+                    resp.Result.totalMonto = curMonto;
+                    resp.Result.fxNombre = fxTesParametro(CodEmpresa, "01");
+                    resp.Result.fxPuesto = fxTesParametro(CodEmpresa, "02");
+                    resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
+                    resp.Result.letras1 = vLetra;
                 }
+
             }
             catch (Exception ex)
             {
@@ -1579,47 +1574,45 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
+
+                query = $@"select top 1 descripcion from CNTX_DIVISAS where cod_divisa = @vDivisa";
+                string descripcion = connection.QueryFirstOrDefault<string>(query, new { vDivisa }) ?? "";
+
+                if (!string.IsNullOrEmpty(descripcion))
                 {
-                    query = $@"select top 1 descripcion from CNTX_DIVISAS where cod_divisa = @vDivisa";
-                    string descripcion = connection.QueryFirstOrDefault<string>(query, new { vDivisa }) ?? "";
+                    string strDescripcion = descripcion.Trim().ToLower();
 
-                    if (!string.IsNullOrEmpty(descripcion))
+                    // Tomar la primera palabra
+                    string fxCodText = strDescripcion.Split(' ')[0].Trim();
+
+                    if (string.IsNullOrEmpty(fxCodText))
                     {
-                        string strDescripcion = descripcion.Trim().ToLower();
+                        fxCodText = strDescripcion;
+                    }
 
-                        // Tomar la primera palabra
-                        string fxCodText = strDescripcion.Split(' ')[0].Trim();
+                    // Normalizar capitalización
+                    fxCodText = char.ToUpper(fxCodText[0]) + fxCodText.Substring(1);
 
-                        if (string.IsNullOrEmpty(fxCodText))
-                        {
-                            fxCodText = strDescripcion;
-                        }
+                    // Normalizar capitalización
+                    fxCodText = char.ToUpper(fxCodText[0]) + fxCodText.Substring(1);
+                    fxCodText = fxCodText.Trim();
 
-                        // Normalizar capitalización
-                        fxCodText = char.ToUpper(fxCodText[0]) + fxCodText.Substring(1);
-
-                        // Normalizar capitalización
-                        fxCodText = char.ToUpper(fxCodText[0]) + fxCodText.Substring(1);
-                        fxCodText = fxCodText.Trim();
-
-                        char ultima = fxCodText[fxCodText.Length - 1];
-                        // Regla básica: vocal → "s", consonante → "es" (pluralización)
-                        if ("aeiouáéíóú".Contains(char.ToLower(ultima)))
-                        {
-                            fxCodText += "s";
-                        }
-                        else
-                        {
-                            fxCodText += "es";
-                        }
-
-                        resp.Result = string.IsNullOrEmpty(fxCodText) ? strDescripcion : fxCodText;
+                    char ultima = fxCodText[fxCodText.Length - 1];
+                    // Regla básica: vocal → "s", consonante → "es" (pluralización)
+                    if ("aeiouáéíóú".Contains(char.ToLower(ultima)))
+                    {
+                        fxCodText += "s";
                     }
                     else
                     {
-                        resp.Result = " Colones";
+                        fxCodText += "es";
                     }
 
+                    resp.Result = string.IsNullOrEmpty(fxCodText) ? strDescripcion : fxCodText;
+                }
+                else
+                {
+                    resp.Result = " Colones";
                 }
             }
             catch (Exception ex)
@@ -1664,20 +1657,17 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var insert = connection.Execute(
-                            "spTes_Token_New",
-                            new { Usuario = usuario.ToUpper() },
-                            commandType: CommandType.StoredProcedure
-                        );
+                // Verificar si el token está activo
+                var procedure = $@"EXEC spTes_Token_New '{usuario.ToUpper()}'";
 
-                    if (insert != -1)
-                    {
-                        //busco el ultimo token generado
-                        var query = $@"select top 1 ID_TOKEN from Tes_Tokens where REGISTRO_USUARIO = @usuario order by REGISTRO_FECHA desc";
-                        var token = connection.QueryFirstOrDefault<string>(query, new { usuario = usuario.ToUpper() });
-                        response.Description = token;
-                    }
+                var insert = connection.Execute(procedure);
+
+                if (insert != -1)
+                {
+                    //busco el ultimo token generado
+                    var query = $@"select top 1 ID_TOKEN from Tes_Tokens where REGISTRO_USUARIO = @usuario order by REGISTRO_FECHA desc";
+                    var token = connection.QueryFirstOrDefault<string>(query, new { usuario = usuario.ToUpper() });
+                    response.Description = token;
                 }
             }
             catch (Exception ex)
@@ -1703,22 +1693,20 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             try
             {
                 using var connection = new SqlConnection(stringConn);
+
+                // Verificar si el token está activo
+                var procedure = $@"[spCrdOperacionTagRegistra]";
+                var values = new
                 {
-                    // Verificar si el token está activo
-                    var procedure = $@"[spCrdOperacionTagRegistra]";
-                    var values = new
-                    {
-                        Operacion = pOperacion,
-                        CrdLinea = pLinea,
-                        Tag = pTag,
-                        Usuario = pUsuario,
-                        Asignado = pAsignado,
-                        Notas = pNotas
-                    };
+                    Operacion = pOperacion,
+                    CrdLinea = pLinea,
+                    Tag = pTag,
+                    Usuario = pUsuario,
+                    Asignado = pAsignado,
+                    Notas = pNotas
+                };
 
-                    connection.ExecuteAsync(procedure, values, commandType: System.Data.CommandType.StoredProcedure);
-
-                }
+                connection.ExecuteAsync(procedure, values, commandType: System.Data.CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {

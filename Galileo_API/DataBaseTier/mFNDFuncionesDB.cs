@@ -1,8 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.FSL;
 using Galileo.Models.ProGrX.Fondos;
 
 namespace Galileo.DataBaseTier
@@ -22,33 +20,33 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    if (vModo == "D")
-                    {
-                        switch (vTipo.Trim().ToUpper())
-                        {
-                            case "TRANSFERENCIA":
-                                result = "TE";
-                                break;
-                            case "CHEQUE":
-                                result = "CK";
-                                break;
-                        }
-                    }
-                    else if (vModo == "C")
-                    {
-                        switch (vTipo.Trim().ToUpper())
-                        {
-                            case "TE":
-                                result = "Transferencia";
-                                break;
-                            case "CK":
-                                result = "Cheque";
-                                break;
-                        }
-                    }
 
+                if (vModo == "D")
+                {
+                    switch (vTipo.Trim().ToUpper())
+                    {
+                        case "TRANSFERENCIA":
+                            result = "TE";
+                            break;
+                        case "CHEQUE":
+                            result = "CK";
+                            break;
+                    }
                 }
+                else if (vModo == "C")
+                {
+                    switch (vTipo.Trim().ToUpper())
+                    {
+                        case "TE":
+                            result = "Transferencia";
+                            break;
+                        case "CK":
+                            result = "Cheque";
+                            break;
+                    }
+                }
+
+
             }
             catch (Exception)
             {
@@ -64,10 +62,10 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "select dbo.fxFNDMulta(@vOperadora, @vPlan, @vContrato, @vMonto) as 'Multa'";
-                    result = connection.QueryFirstOrDefault<decimal>(query, new { vOperadora, vPlan, vContrato, vMonto });
-                }
+
+                var query = "select dbo.fxFNDMulta(@vOperadora, @vPlan, @vContrato, @vMonto) as 'Multa'";
+                result = connection.QueryFirstOrDefault<decimal>(query, new { vOperadora, vPlan, vContrato, vMonto });
+
             }
             catch (Exception)
             {
@@ -140,11 +138,11 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = "select valor from Fnd_parametros where cod_parametro = @pParametro";
-                    var queryResult = connection.QueryFirstOrDefault<string>(query, new { pParametro });
-                    result = queryResult ?? "";
-                }
+
+                var query = "select valor from Fnd_parametros where cod_parametro = @pParametro";
+                var queryResult = connection.QueryFirstOrDefault<string>(query, new { pParametro });
+                result = queryResult ?? "";
+
             }
             catch (Exception)
             {
@@ -161,11 +159,11 @@ namespace Galileo.DataBaseTier
         /// <param name="pPlan"></param>
         /// <param name="pContrato"></param>
         /// <returns></returns>
-        public ErrorDto<List<FndContratosCuponesData>> sbFnd_Contratos_Cupones(int CodEmpresa, int pOperadora,string pPlan, long pContrato)
+        public ErrorDto<List<FndContratosCuponesData>> sbFnd_Contratos_Cupones(int CodEmpresa, int pOperadora, string pPlan, long pContrato)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<FndContratosCuponesData>> 
-            { 
+            var response = new ErrorDto<List<FndContratosCuponesData>>
+            {
                 Code = 0,
                 Description = "OK",
                 Result = new List<FndContratosCuponesData>()
@@ -173,17 +171,17 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select * from vFnd_Contratos_Cupones
+
+                var query = $@"select * from vFnd_Contratos_Cupones
                                     where cod_operadora = @operadora
                                     and cod_plan = @plan and cod_contrato = @contrato order by Fecha_Vence";
-                    response.Result = connection.Query<FndContratosCuponesData>(query, new
-                    {
-                        operadora = pOperadora,
-                        plan = pPlan,
-                        contrato = pContrato    
-                    }).ToList();
-                }
+                response.Result = connection.Query<FndContratosCuponesData>(query, new
+                {
+                    operadora = pOperadora,
+                    plan = pPlan,
+                    contrato = pContrato
+                }).ToList();
+
             }
             catch (Exception ex)
             {
@@ -214,8 +212,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    var query = $@"select C.*,S.cedula,S.nombre,M.Descripcion as MovimientoDesc,case when C.revisado_fecha is null then 0 else 1 end as 'Revisado'
+
+                var query = $@"select C.*,S.cedula,S.nombre,M.Descripcion as MovimientoDesc,case when C.revisado_fecha is null then 0 else 1 end as 'Revisado'
                                         from fnd_contratos_cambios C inner join fnd_contratos X on C.cod_operadora = X.cod_operadora
                                         and C.cod_plan = X.cod_plan and C.cod_contrato = X.cod_contrato
                                         inner join Socios S on X.cedula = S.cedula
@@ -223,13 +221,13 @@ namespace Galileo.DataBaseTier
                                         where C.cod_operadora = @operadora
                                         and C.cod_plan = @plan and C.cod_contrato = @contrato
                                         order by C.fecha desc";
-                    response.Result = connection.Query<FndContratoBitacoraData>(query, new
-                    {
-                        operadora = pOperadora,
-                        plan = pPlan,
-                        contrato = pContrato
-                    }).ToList();
-                }
+                response.Result = connection.Query<FndContratoBitacoraData>(query, new
+                {
+                    operadora = pOperadora,
+                    plan = pPlan,
+                    contrato = pContrato
+                }).ToList();
+
             }
             catch (Exception ex)
             {

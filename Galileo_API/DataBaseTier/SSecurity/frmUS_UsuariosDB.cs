@@ -414,18 +414,16 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                {
-                    var procedure = "[spSEG_SincronizaUsuarios]";
+                var procedure = "[spSEG_SincronizaUsuarios]";
 
-                    var sincroUsuarioCore = new
-                    {
-                        Usuario = pUsuario,
-                        Nombre = pNombre,
-                        Estado = pEstado,
-                        RegUser = pUsrLogon
-                    };
-                    res = connection.Execute(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure);
-                }
+                var sincroUsuarioCore = new
+                {
+                    Usuario = pUsuario,
+                    Nombre = pNombre,
+                    Estado = pEstado,
+                    RegUser = pUsrLogon
+                };
+                res = connection.Execute(procedure, sincroUsuarioCore, commandType: CommandType.StoredProcedure);
             }
             catch (Exception ex)
             {

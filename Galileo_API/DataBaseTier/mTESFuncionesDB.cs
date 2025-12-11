@@ -23,14 +23,12 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
+                detalle1 = (tesoreria.vDetalle1.Length > 26) ? tesoreria.vDetalle1.Substring(0, 26) : tesoreria.vDetalle1;
+                detalle2 = (tesoreria.vDetalle2.Length > 26) ? tesoreria.vDetalle2.Substring(0, 26) : tesoreria.vDetalle2;
+
+                if (tesoreria.vTipoDocumento.Equals("CK", StringComparison.CurrentCultureIgnoreCase))
                 {
-
-                    detalle1 = (tesoreria.vDetalle1.Length > 26) ? tesoreria.vDetalle1.Substring(0, 26) : tesoreria.vDetalle1;
-                    detalle2 = (tesoreria.vDetalle2.Length > 26) ? tesoreria.vDetalle2.Substring(0, 26) : tesoreria.vDetalle2;
-
-                    if (tesoreria.vTipoDocumento.Equals("CK", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        query = $@"INSERT INTO Tes_Transacciones (
+                    query = $@"INSERT INTO Tes_Transacciones (
                                         id_banco,
                                         tipo,
                                         codigo,
@@ -93,12 +91,12 @@ namespace Galileo.DataBaseTier
                                         '{tesoreria.vRemesaTipo}',
                                         {tesoreria.vRemesa}
                                     )";
-                        connection.Execute(query);
+                    connection.Execute(query);
 
-                    }
-                    else
-                    {
-                        query = $@"INSERT INTO Tes_Transacciones (
+                }
+                else
+                {
+                    query = $@"INSERT INTO Tes_Transacciones (
                                         id_banco,
                                         tipo,
                                         codigo,
@@ -155,26 +153,25 @@ namespace Galileo.DataBaseTier
                                         {tesoreria.vRemesa},
                                         '{usuario}'
                                     )";
-                        connection.Execute(query);
-                    }
+                    connection.Execute(query);
+                }
 
-                    query = $@"select max(nsolicitud) as Solicitud from Tes_Transacciones";
-                    resp1 = connection.Query<long>(query).FirstOrDefault();
+                query = $@"select max(nsolicitud) as Solicitud from Tes_Transacciones";
+                resp1 = connection.Query<long>(query).FirstOrDefault();
 
-                    query = $@"select * from Tes_Transacciones where nsolicitud = {resp1} ";
-                    var resp2 = connection.Query<TesTransaccionesDto>(query).FirstOrDefault();
+                query = $@"select * from Tes_Transacciones where nsolicitud = {resp1} ";
+                var resp2 = connection.Query<TesTransaccionesDto>(query).FirstOrDefault();
 
-                    if (resp2 != null && resp2.CODIGO.Trim() == tesoreria.vCodigo.Trim())
-                    {
-                        lngSol = resp1;
-                    }
+                if (resp2 != null && resp2.CODIGO.Trim() == tesoreria.vCodigo.Trim())
+                {
+                    lngSol = resp1;
+                }
 
-                    if (lngSol == 0)
-                    {
-                        query = $@"select max(nsolicitud) as Solicitud from Tes_Transacciones where codigo = '{tesoreria.vCodigo}' 
+                if (lngSol == 0)
+                {
+                    query = $@"select max(nsolicitud) as Solicitud from Tes_Transacciones where codigo = '{tesoreria.vCodigo}' 
                                     and op = {tesoreria.vOP} ";
-                        lngSol = connection.Query<long>(query).FirstOrDefault();
-                    }
+                    lngSol = connection.Query<long>(query).FirstOrDefault();
                 }
             }
             catch (Exception ex)
@@ -191,8 +188,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
-                    string query = $@"INSERT INTO Tes_Trans_Asiento  (
+
+                string query = $@"INSERT INTO Tes_Trans_Asiento  (
                                          nsolicitud,
                                         cuenta_contable,
                                         monto,
@@ -209,8 +206,7 @@ namespace Galileo.DataBaseTier
                                         '{detalle.vUnidad}',
                                         '{detalle.vCC}'
                                     )";
-                    connection.Execute(query);
-                }
+                connection.Execute(query);
             }
             catch (Exception ex)
             {
@@ -282,19 +278,18 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    DateTime fxFechaServidor = DateTime.Now;
-                    strToken = fxFechaServidor.ToString("yyyy.MM.dd");
 
-                    query = $@"select  isnull(COUNT(id_token),0)+ 1 as 'consec'  from tes_tokens where id_token like('{strToken}')";
-                    var resp = connection.Query<int>(query).FirstOrDefault();
+                DateTime fxFechaServidor = DateTime.Now;
+                strToken = fxFechaServidor.ToString("yyyy.MM.dd");
 
-                    strToken = strToken + resp.ToString();
+                query = $@"select  isnull(COUNT(id_token),0)+ 1 as 'consec'  from tes_tokens where id_token like('{strToken}')";
+                var resp = connection.Query<int>(query).FirstOrDefault();
 
-                    query = $@"insert tes_tokens(id_token,registro_fecha,registro_usuario,estado)
+                strToken = strToken + resp;
+
+                query = $@"insert tes_tokens(id_token,registro_fecha,registro_usuario,estado)
                                     values('{strToken}',Getdate(),'{usuario}','A') ";
-                    connection.Execute(query);
-                }
+                connection.Execute(query);
             }
             catch (Exception)
             {
@@ -311,43 +306,43 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
-                {
-                    switch (vTipo.ToUpper())
-                    {
-                        case "CONCEPTO":
-                            query = @"select isnull(count(*),0) as Existe from tes_conceptos 
-                                where cod_concepto = @codigo and Estado = 'A'";
-                            break;
-                        case "UNIDAD":
-                            query = @"select isnull(count(*),0) as Existe from CntX_unidades 
-                                where cod_unidad = @codigo and Activa = 1 and cod_Contabilidad = @contabilidad";
-                            break;
-                        case "CC":
-                            query = @"select isnull(count(*),0) as Existe from CNTX_CENTRO_COSTOS 
-                                where COD_CENTRO_COSTO = @codigo and Activo = 1 and cod_contabilidad = @contabilidad";
-                            if (vFiltro != "")
-                            {
-                                query += @" and COD_CENTRO_COSTO in(select COD_CENTRO_COSTO from CNTX_UNIDADES_CC 
-                                    where cod_unidad = @filtro and cod_contabilidad = @contabilidad)";
-                            }
-                            break;
-                    }
-                    int existe = connection.QueryFirstOrDefault<int>(query, new 
-                        {
-                            codigo = vCodigo,
-                            contabilidad = Contabilidad,
-                            filtro = vFiltro
-                        });
 
-                    if (existe == 0)
-                    {
-                        result = false;
-                    }
-                    else 
-                    {
-                        result = true;
-                    }
+                switch (vTipo.ToUpper())
+                {
+                    case "CONCEPTO":
+                        query = @"select isnull(count(*),0) as Existe from tes_conceptos 
+                                where cod_concepto = @codigo and Estado = 'A'";
+                        break;
+                    case "UNIDAD":
+                        query = @"select isnull(count(*),0) as Existe from CntX_unidades 
+                                where cod_unidad = @codigo and Activa = 1 and cod_Contabilidad = @contabilidad";
+                        break;
+                    case "CC":
+                        query = @"select isnull(count(*),0) as Existe from CNTX_CENTRO_COSTOS 
+                                where COD_CENTRO_COSTO = @codigo and Activo = 1 and cod_contabilidad = @contabilidad";
+                        if (vFiltro != "")
+                        {
+                            query += @" and COD_CENTRO_COSTO in(select COD_CENTRO_COSTO from CNTX_UNIDADES_CC 
+                                    where cod_unidad = @filtro and cod_contabilidad = @contabilidad)";
+                        }
+                        break;
                 }
+                int existe = connection.QueryFirstOrDefault<int>(query, new
+                {
+                    codigo = vCodigo,
+                    contabilidad = Contabilidad,
+                    filtro = vFiltro
+                });
+
+                if (existe == 0)
+                {
+                    result = false;
+                }
+                else
+                {
+                    result = true;
+                }
+
             }
             catch (Exception ex)
             {
@@ -369,34 +364,34 @@ namespace Galileo.DataBaseTier
             {
                 string query = "";
                 using var connection = new SqlConnection(stringConn);
+
+                switch (vTipo.ToUpper())
                 {
-                    switch (vTipo.ToUpper())
-                    {
-                        case "CONCEPTO":
-                            query = @"select cod_concepto as item,descripcion from tes_conceptos 
+                    case "CONCEPTO":
+                        query = @"select cod_concepto as item,descripcion from tes_conceptos 
                                 where Estado = 'A' order by cod_concepto";
-                            break;
-                        case "UNIDAD":
-                            query = @"select cod_unidad as item,descripcion from CntX_unidades
+                        break;
+                    case "UNIDAD":
+                        query = @"select cod_unidad as item,descripcion from CntX_unidades
                                 where Activa = 1 and cod_Contabilidad = @contabilidad order by cod_unidad";
-                            break;
-                        case "CC":
-                            query = @"select COD_CENTRO_COSTO as item,descripcion from CNTX_CENTRO_COSTOS
+                        break;
+                    case "CC":
+                        query = @"select COD_CENTRO_COSTO as item,descripcion from CNTX_CENTRO_COSTOS
                                 where Activo = 1 and cod_contabilidad = @contabilidad";
-                            if (vFiltro != "")
-                            {
-                                query += @" and COD_CENTRO_COSTO in(select COD_CENTRO_COSTO from CNTX_UNIDADES_CC 
+                        if (vFiltro != "")
+                        {
+                            query += @" and COD_CENTRO_COSTO in(select COD_CENTRO_COSTO from CNTX_UNIDADES_CC 
                                     where cod_unidad = @filtro and cod_contabilidad = @contabilidad)";
-                            }
-                            query += " order by COD_CENTRO_COSTO";
-                            break;
-                    }
-                    response.Result = connection.Query<DropDownListaGenericaModel>(query, new
-                    {
-                        contabilidad = Contabilidad,
-                        filtro = vFiltro
-                    }).ToList();
+                        }
+                        query += " order by COD_CENTRO_COSTO";
+                        break;
                 }
+                response.Result = connection.Query<DropDownListaGenericaModel>(query, new
+                {
+                    contabilidad = Contabilidad,
+                    filtro = vFiltro
+                }).ToList();
+
             }
             catch (Exception ex)
             {

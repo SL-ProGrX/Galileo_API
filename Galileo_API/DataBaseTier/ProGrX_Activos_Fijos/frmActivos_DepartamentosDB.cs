@@ -191,10 +191,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 var p = BuildPagedListParameters(filtros, defaultSortField: "cod_departamento");
 
-                const string sqlCount = @"
-                    SELECT COUNT(DISTINCT d.COD_DEPARTAMENTO)
-                    " + DeptSelectBaseSql + @"
-                    " + DeptWhereFilterSql + ";";
+               const string sqlCount = @$"
+                SELECT COUNT(DISTINCT d.COD_DEPARTAMENTO)
+                {DeptSelectBaseSql}
+                {DeptWhereFilterSql};
+                ";
 
                 const string sqlData = @"
                     SELECT DISTINCT

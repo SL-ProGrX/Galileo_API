@@ -30,12 +30,12 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
+                
                     var query = $@"exec spRH_Boleta_Pago_Email '{request.Nomina}', {request.NominaId}, '{request.EmpleadoId}'";
 
                     resp.Code = connection.ExecuteAsync(query).Result;
                     resp.Description = "Ok";
-                }
+                
 
                 if (request.EmpleadoId == "")
                 {
@@ -67,12 +67,12 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                {
+                
                     var query = $@"exec spRH_Boleta_Aguinaldo_Email '{request.Nomina}', {request.PeriodoId}, '{request.EmpleadoId}'";
 
                     resp.Code = connection.ExecuteAsync(query).Result;
                     resp.Description = "Ok";
-                }
+                
 
                 if (request.EmpleadoId == "")
                 {
