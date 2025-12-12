@@ -280,7 +280,17 @@ namespace Galileo.DataBaseTier
         private async Task TfaCodigoEmail_Enviar(TfaDatosCorreo datos)
         {
             ErrorDto response = new ErrorDto();
-            EnvioCorreoModels eConfig = _envioCorreoDB.CorreoConfigCuenta(Notificaciones);
+            var eConfigResult = _envioCorreoDB.CorreoConfigCuenta(Notificaciones);
+            EnvioCorreoModels? eConfig = null;
+            if (eConfigResult != null && eConfigResult.Code == 0)
+            {
+                eConfig = eConfigResult.Result;
+            }
+            else
+            {
+                // Handle error or throw exception as needed
+                return;
+            }
 
             string body = @$"<!DOCTYPE html>
                             <html>
@@ -339,6 +349,12 @@ namespace Galileo.DataBaseTier
 
             if (sendEmail == "Y")
             {
+                if (eConfig == null)
+                {
+                    // Handle the null case appropriately, e.g., log or throw
+                    return;
+                }
+
                 EmailRequest emailRequest = new EmailRequest();
 
                 emailRequest.To = datos.email;
@@ -348,7 +364,6 @@ namespace Galileo.DataBaseTier
                 emailRequest.Attachments = Attachments;
 
                 await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, response);
-
             }
         }
     }
