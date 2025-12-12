@@ -60,7 +60,7 @@
     public class CambioVidaUtilAplicarRequest
     {
         public string? numPlaca { get; set; }
-        public int nuevaVidaUtil { get; set; }
+        public int? nuevaVidaUtil { get; set; }
         public string unidad { get; set; } = "A";
         public string? notas { get; set; }
         public string? usuario { get; set; }

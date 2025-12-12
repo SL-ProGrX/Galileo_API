@@ -15,30 +15,29 @@
 
     public class ActivosRetiroAdicionData
     {
-        public int  id_addret { get; set; } 
+        public int?  id_addret { get; set; } 
         public string num_placa { get; set; } = string.Empty;
         public string cod_justificacion { get; set; } = string.Empty;
         public string justificacion { get; set; } = string.Empty;
         public string tipo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public DateTime fecha { get; set; }
-        public decimal monto { get; set; }
+        public DateTime? fecha { get; set; }
+        public decimal? monto { get; set; }
         public string tipoDescripcion { get; set; } = string.Empty;
         public string compra_documento { get; set; } = string.Empty;
         public string tipo_vidautil { get; set; } = string.Empty;
-        public int meses_calculo { get; set; }
-        public decimal depreciacion_acum { get; set; }
-        public decimal depreciacion_mes { get; set; }
+        public int? meses_calculo { get; set; }
+        public decimal? depreciacion_acum { get; set; }
+        public decimal? depreciacion_mes { get; set; }
         public DateTime? depreciacion_periodo { get; set; }
         public string venta_cliente { get; set; } = string.Empty;
         public string venta_documento { get; set; } = string.Empty;
         public string creacion_user { get; set; } = string.Empty;
-        public DateTime creacion_fecha { get; set; }        
+        public DateTime? creacion_fecha { get; set; }        
         public string nombre { get; set; } = string.Empty;
         public string cod_proveedor { get; set; } = string.Empty;
         public string proveedor { get; set; } = string.Empty;
-        public decimal valor_libros { get; set; }
-
+        public decimal? valor_libros { get; set; }
     }
 
     public class ActivosPeriodosData
