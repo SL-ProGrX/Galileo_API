@@ -754,7 +754,7 @@ ORDER BY REGISTRO_FECHA DESC;";
 
         // ------------------ EMITIR DOCUMENTO (refactor completo) ------------------
 
-        public ErrorDto sbTesEmitirDocumento(int codEmpresa,string vUsuario,int vModulo,int vSolicitud,string vDocumento = "",DateTime? vFecha = null)
+        public ErrorDto sbTesEmitirDocumento(int codEmpresa, string vUsuario, int vModulo, int vSolicitud, string vDocumento = "", DateTime? vFecha = null)
         {
             var resp = DbHelper.CreateOkResponse();
 
@@ -809,7 +809,7 @@ ORDER BY REGISTRO_FECHA DESC;";
             return connection.QueryFirstOrDefault<MTesTransaccionDto>(sql, new { solicitud });
         }
 
-        private ErrorDto ProcesarEmisionSegunComprobante(int codEmpresa,SqlConnection connection,MTesTransaccionDto data,string usuario,string documentoInput,DateTime fechaEmision)
+        private ErrorDto ProcesarEmisionSegunComprobante(int codEmpresa, SqlConnection connection, MTesTransaccionDto data, string usuario, string documentoInput, DateTime fechaEmision)
         {
             return data.comprobante switch
             {
@@ -822,7 +822,7 @@ ORDER BY REGISTRO_FECHA DESC;";
             };
         }
 
-        private ErrorDto EmitirComprobanteImprimible(int codEmpresa,SqlConnection connection,MTesTransaccionDto data,string usuario,string documentoInput,DateTime fechaEmision)
+        private ErrorDto EmitirComprobanteImprimible(int codEmpresa, SqlConnection connection, MTesTransaccionDto data, string usuario, string documentoInput, DateTime fechaEmision)
         {
             // 1) Consecutivo si aplica
             var consecutivoDto = ObtenerConsecutivoSiAplica(codEmpresa, data);
@@ -857,31 +857,41 @@ ORDER BY REGISTRO_FECHA DESC;";
             return DbHelper.CreateOkResponse<string?>(consec.Result.ToString());
         }
 
-        private static void ActualizarTransaccionEmitida(SqlConnection connection,int solicitud,string usuario,DateTime fechaEmision,string documentoFinal)
+        private static void ActualizarTransaccionEmitida(SqlConnection connection, int solicitud, string usuario, DateTime fechaEmision, string documentoFinal)
         {
-            var setDocumento = string.IsNullOrWhiteSpace(documentoFinal)
-                ? ""
-                : ", NDocumento = @documento";
-
-            var sql = @"
+            const string sqlSinDocumento = @"
                     UPDATE Tes_Transacciones
                     SET Estado = 'I',
                         Fecha_Emision = @fecha,
                         Ubicacion_Actual = 'T',
                         Fecha_Traslado = @fecha,
-                        User_Genera = @usuario"
-                                + setDocumento +
-                            @"
+                        User_Genera = @usuario
                     WHERE nsolicitud = @solicitud;";
 
-            connection.Execute(sql, new
+            const string sqlConDocumento = @"
+                    UPDATE Tes_Transacciones
+                    SET Estado = 'I',
+                        Fecha_Emision = @fecha,
+                        Ubicacion_Actual = 'T',
+                        Fecha_Traslado = @fecha,
+                        User_Genera = @usuario,
+                        NDocumento = @documento
+                    WHERE nsolicitud = @solicitud;";
+
+            var parameters = new
             {
                 fecha = fechaEmision.ToString("yyyy-MM-dd"),
                 usuario,
-                documento = documentoFinal,
-                solicitud
-            });
+                solicitud,
+                documento = documentoFinal
+            };
+
+            if (string.IsNullOrWhiteSpace(documentoFinal))
+                connection.Execute(sqlSinDocumento, parameters);
+            else
+                connection.Execute(sqlConDocumento, parameters);
         }
+
 
         private ErrorDto ActualizarCCDesdeTransaccion(int codEmpresa, MTesTransaccionDto data, string consecutivo)
         {
