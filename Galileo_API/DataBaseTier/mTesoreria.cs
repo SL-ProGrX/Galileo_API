@@ -1,177 +1,127 @@
-﻿using System.Text;
+﻿using System.Data;
+using System.Text;
 using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier
 {
     public class MTesoreria
     {
-        private readonly IConfiguration _config;
-        private readonly string dirRDLC;
+        private readonly PortalDB _portalDb;
+        private readonly string _dirRDLC;
+
         public MTesoreria(IConfiguration config)
         {
-            _config = config;
-            dirRDLC = _config.GetSection("AppSettings").GetSection("RutaRDLC").Value ?? string.Empty;
+            _portalDb = new PortalDB(config);
+            _dirRDLC = config.GetSection("AppSettings").GetSection("RutaRDLC").Value ?? string.Empty;
         }
 
-        /// <summary>
-        /// Obtengo lista de tipos de documentos para modulo contable. 
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> tes_TiposDocumentos_Obtener(int CodEmpresa)
+        // ------------------ LISTAS / QUERIES SIMPLES ------------------
+
+        public ErrorDto<List<DropDownListaGenericaModel>> tes_TiposDocumentos_Obtener(int codEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
-            resp.Code = 0;
-            resp.Result = new List<DropDownListaGenericaModel>();
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"select TIPO AS ITEM, DESCRIPCION from tes_tipos_doc";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            const string sql = @"SELECT TIPO AS ITEM, DESCRIPCION FROM tes_tipos_doc;";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql);
         }
 
-        /// <summary>
-        /// Obtengo lista de Unidades disponibles para el usuario
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="banco"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCbo(int CodEmpresa, string usuario, int banco, int contabilidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCbo(int codEmpresa, string usuario, int banco, int contabilidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
-            resp.Code = 0;
-            resp.Result = new List<DropDownListaGenericaModel>();
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+            const string sql = @"
+SELECT RTRIM(C.cod_unidad) AS item, RTRIM(C.descripcion) AS descripcion
+FROM tes_unidad_ASG A
+INNER JOIN CntX_Unidades C ON A.cod_unidad = C.cod_unidad AND C.cod_contabilidad = @Contabilidad
+WHERE A.id_Banco = @Banco AND A.nombre = @Usuario AND activa = 1
+ORDER BY C.Descripcion;";
 
-                query = $@"select rtrim(C.cod_unidad) as 'item', rtrim(C.descripcion) as 'descripcion' 
-                                from tes_unidad_ASG A inner join CntX_Unidades C on A.cod_unidad = C.cod_unidad and C.cod_contabilidad = @contabilidad
-                                Where A.id_Banco = @banco and A.nombre = @usuario and activa = 1
-                                order by C.Descripcion ";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { contabilidad = contabilidad, banco = banco, usuario = usuario }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDb, codEmpresa, sql,
+                new { Contabilidad = contabilidad, Banco = banco, Usuario = usuario }
+            );
         }
 
-        /// <summary>
-        /// Obtengo lista de conceptos disponibles para el usuario
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="banco"></param>
-        /// <param name="contabilidad"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> sbTesConceptosCargaCbo(int CodEmpresa, string usuario, int banco)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesConceptosCargaCbo(int codEmpresa, string usuario, int banco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
-            resp.Code = 0;
-            resp.Result = new List<DropDownListaGenericaModel>();
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+            const string sql = @"
+SELECT RTRIM(C.cod_Concepto) AS item, RTRIM(C.Descripcion) AS descripcion
+FROM tes_conceptos_ASG A
+INNER JOIN Tes_Conceptos C ON A.cod_concepto = C.cod_concepto
+WHERE A.id_Banco = @Banco AND A.nombre = @Usuario AND estado = 'A'
+ORDER BY C.Descripcion;";
 
-                query = $@"select rtrim(C.cod_Concepto) as 'item', rtrim(C.Descripcion) as 'descripcion'
-                                from tes_conceptos_ASG A inner join Tes_Conceptos C on A.cod_concepto = C.cod_concepto
-                                Where A.id_Banco = @banco and A.nombre = @usuario and estado = 'A'
-                                order by C.Descripcion";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { banco = banco, usuario = usuario }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-            return resp;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDb, codEmpresa, sql,
+                new { Banco = banco, Usuario = usuario }
+            );
         }
 
-        /// <summary>
-        /// Obtengo validación de permisos para el usuario
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="vBanco"></param>
-        /// <param name="vUsuario"></param>
-        /// <param name="vTipo"></param>
-        /// <param name="vGestion"></param>
-        /// <returns></returns>
-        public ErrorDto<bool> fxTesTipoAccesoValida(int CodEmpresa, string vBanco, string vUsuario, string vTipo, string vGestion = "S")
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGeneral(int codEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<bool>();
-            resp.Code = 0;
-            resp.Result = false;
+            const string sql = @"
+SELECT id_banco AS item, descripcion
+FROM Tes_Bancos
+WHERE Estado = 'A'
+ORDER BY descripcion;";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCboGeneral(int codEmpresa, int contabilidad)
+        {
+            const string sql = @"
+SELECT RTRIM(cod_unidad) AS item, RTRIM(descripcion) AS descripcion
+FROM CntX_Unidades
+WHERE cod_contabilidad = @Contabilidad;";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql, new { Contabilidad = contabilidad });
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCbo(int codEmpresa, int banco)
+        {
+            const string sql = @"
+SELECT T.Tipo AS item, RTRIM(T.Descripcion) AS descripcion
+FROM tes_banco_docs A
+INNER JOIN Tes_Tipos_Doc T ON A.tipo = T.tipo
+WHERE A.id_Banco = @Banco
+ORDER BY T.Descripcion;";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql, new { Banco = banco });
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesConceptosCargaCboGeneral(int codEmpresa)
+        {
+            const string sql = @"SELECT RTRIM(cod_Concepto) AS item, RTRIM(Descripcion) AS descripcion FROM Tes_Conceptos;";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql);
+        }
+
+        // ------------------ ACCESO / VALIDACIONES ------------------
+
+        public ErrorDto<bool> fxTesTipoAccesoValida(int codEmpresa, string vBanco, string vUsuario, string vTipo, string vGestion = "S")
+        {
+            var resp = DbHelper.CreateOkResponse(false);
+
             try
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+                var extra = GestionClause(vGestion);
+                const string baseSql = @"
+SELECT ISNULL(COUNT(*),0)
+FROM tes_documentos_ASG A
+INNER JOIN Tes_Tipos_Doc T ON A.tipo = T.tipo
+WHERE A.id_Banco = @Banco AND A.nombre = @Usuario AND A.tipo = @Tipo";
 
-                query = $@"select isnull(Count(*),0) as Existe
-                                from tes_documentos_ASG A inner join Tes_Tipos_Doc T on A.tipo = T.tipo
-                                Where A.id_Banco = @banco and A.nombre = @usuario
-                                and A.tipo = @tipo ";
+                var sql = baseSql + extra;
 
-                switch (vGestion)
-                {
-                    case "S":
-                        query += " and A.SOLICITA = 1";
-                        break;
-                    case "A":
-                        query += " and A.AUTORIZA = 1";
-                        break;
-                    case "G":
-                        query += " and A.GENERA = 1";
-                        break;
-                    case "X":
-                        query += " and A.ASIENTOS = 1";
-                        break;
-                    case "N":
-                        query += " and A.ANULA = 1";
-                        break;
-                    default:
-                        break;
-                }
+                var countDto = DbHelper.ExecuteSingleQuery<int>(
+                    _portalDb, codEmpresa, sql, 0,
+                    new { Banco = vBanco, Usuario = vUsuario, Tipo = vTipo }
+                );
 
-                var result = connection.QueryFirstOrDefault<int>(query, new { banco = vBanco, usuario = vUsuario, tipo = vTipo });
+                if (countDto.Code != 0)
+                    return new ErrorDto<bool> { Code = countDto.Code, Description = countDto.Description, Result = false };
 
-                if (result > 0)
-                {
-                    resp.Result = true;
-                }
-                else
-                {
-                    resp.Result = false;
-                }
-
+                resp.Result = countDto.Result > 0;
             }
             catch (Exception ex)
             {
@@ -179,581 +129,178 @@ namespace Galileo.DataBaseTier
                 resp.Description = ex.Message;
                 resp.Result = false;
             }
-            return resp;
-        }
-
-        /// <summary>
-        /// Obtener lista de bancos para carga de documentos
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="gestion"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
-            resp.Code = 0;
-            resp.Result = new List<DropDownListaGenericaModel>();
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"select id_banco as item,descripcion from Tes_Bancos where Estado = 'A' and id_Banco 
-                                    in(select id_banco from tes_documentos_ASG Where nombre = @usuario and {gestion} = 1 
-                                    group by id_banco)";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { usuario = usuario }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-            return resp;
-        }
-
-        /// <summary>
-        /// Obtengo el valor del campo de comprobante para la carga de documentos
-        /// </summary>
-        /// <param name="vBanco"></param>
-        /// <param name="vTipo"></param>
-        /// <param name="vCampo"></param>
-        /// <returns></returns>
-        public ErrorDto<string> fxTesBancoDocsValor(int CodEmpresa, int vBanco, string vTipo, string vCampo = "Comprobante")
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<string>();
-            resp.Code = 0;
-            resp.Result = "";
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"select {vCampo} as Campo from tes_Banco_docs where id_Banco = @banco and tipo = @tipo";
-                resp.Result = connection.QueryFirstOrDefault<string>(query, new { banco = vBanco, tipo = vTipo });
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = "";
-            }
-            return resp;
-        }
-
-
-        /// <summary>
-        /// Obtener los tipos de documentos para carga de emisión de documentos
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Usuario"></param>
-        /// <param name="Banco"></param>
-        /// <param name="Tipo"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCboAcceso(int CodEmpresa, string Usuario, int Banco, string? Tipo = "S")
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"SELECT RTRIM(T.Tipo) + ' - ' + T.descripcion AS ItmY, 
-                        RTRIM(T.Tipo) AS item, RTRIM(T.descripcion) AS descripcion 
-                        FROM tes_documentos_ASG A INNER JOIN Tes_Tipos_Doc T ON A.tipo = T.tipo 
-                        WHERE A.id_Banco = @banco AND A.nombre = @usuario";
-
-                switch (Tipo)
-                {
-                    case "S":
-                        query += " and A.SOLICITA = 1";
-                        break;
-                    case "A":
-                        query += " and A.AUTORIZA = 1";
-                        break;
-                    case "G":
-                        query += " and A.GENERA = 1";
-                        break;
-                    case "X":
-                        query += " and A.ASIENTOS = 1";
-                        break;
-                    case "N":
-                        query += " and A.ANULA = 1";
-                        break;
-                    default:
-                        break;
-                }
-                query += " order by T.Descripcion";
-
-                resp.Result = connection
-                    .Query<DropDownListaGenericaModel>(query, new { banco = Banco, usuario = Usuario })
-                    .ToList();
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-            return resp;
-        }
-
-        /// <summary>
-        /// Obtener los tipos de documentos para carga de firma electrónica
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Usuario"></param>
-        /// <param name="Banco"></param>
-        /// <param name="Tipo"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCboAccesoFirmas(int CodEmpresa, string Usuario, int Banco, string? Tipo = "S")
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Result = new List<DropDownListaGenericaModel>()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                string query = $@" SELECT RTRIM(T.Tipo) + ' - ' + T.descripcion AS ItmY, 
-                    RTRIM(T.Tipo) AS item, RTRIM(T.descripcion) AS descripcion 
-                    FROM tes_documentos_ASG A INNER JOIN Tes_Tipos_Doc T ON A.tipo = T.tipo 
-                    INNER JOIN TES_BANCO_DOCS D ON T.tipo = D.tipo AND A.id_banco = D.id_Banco 
-                    WHERE A.id_Banco = @banco AND A.nombre = @usuario AND D.comprobante = '01'";
-
-                switch (Tipo)
-                {
-                    case "S":
-                        query += " and A.SOLICITA = 1";
-                        break;
-                    case "A":
-                        query += " and A.AUTORIZA = 1";
-                        break;
-                    case "G":
-                        query += " and A.GENERA = 1";
-                        break;
-                    case "X":
-                        query += " and A.ASIENTOS = 1";
-                        break;
-                    case "N":
-                        query += " and A.ANULA = 1";
-                        break;
-                    default:
-                        break;
-                }
-
-                resp.Result = connection
-                    .Query<DropDownListaGenericaModel>(query, new { banco = Banco, usuario = Usuario })
-                    .ToList();
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
 
             return resp;
         }
 
-        /// <summary>
-        /// Obtiene el consecutivo de un tipo de documento para un banco específico.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_banco"></param>
-        /// <param name="tipo"></param>
-        /// <param name="avance"></param>
-        /// <param name="plan"></param>
-        /// <returns></returns>
-        public ErrorDto<long> fxTesTipoDocConsec(int CodEmpresa, int id_banco, string tipo, string avance = "+", string plan = "-sp-")
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int codEmpresa, string usuario, string gestion)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<long>();
-            resp.Code = 0;
-            resp.Result = 0;
             try
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+                var gestionCol = GestionColSeguro(gestion);
 
-                long consecutivo = 0;
-                string strSQL;
+                var sql = $@"
+SELECT id_banco AS item, descripcion
+FROM Tes_Bancos
+WHERE Estado = 'A'
+  AND id_Banco IN (
+      SELECT id_banco
+      FROM tes_documentos_ASG
+      WHERE nombre = @Usuario AND {gestionCol} = 1
+      GROUP BY id_banco
+  );";
 
-                if (tipo != "TE" && plan != "-sp-")
-                {
-                    plan = "-sp-";
-                }
-
-                if (plan == "-sp-")
-                {
-                    strSQL = $"SELECT Consecutivo FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco";
-                }
-                else
-                {
-                    strSQL = $"SELECT ISNULL(NUMERO_TE, 0) AS Consecutivo FROM TES_BANCO_PLANES_TE WHERE id_banco = @Banco AND COD_PLAN = @Plan";
-                }
-
-                var result = connection.QueryFirstOrDefault<long>(strSQL,
-                    new { Tipo = tipo, Banco = id_banco, Plan = plan });
-
-                switch (avance)
-                {
-                    case "+":
-                        consecutivo = result + 1;
-                        break;
-                    case "-":
-                        consecutivo = result - 1;
-                        break;
-                    case "/":
-                        consecutivo = result;
-                        break;
-                    default:
-                        consecutivo = result;
-                        break;
-                }
-
-                resp.Result = consecutivo;
-
-                if (avance != "/")
-                {
-                    if (plan == "-sp-")
-                    {
-                        query = $"UPDATE tes_banco_docs SET consecutivo = consecutivo {avance} 1 WHERE Tipo = @Tipo AND id_banco = @Banco";
-                    }
-                    else
-                    {
-                        query = $"UPDATE TES_BANCO_PLANES_TE SET NUMERO_TE = ISNULL(NUMERO_TE,0) {avance} 1 WHERE COD_PLAN = @Plan AND id_banco = @Banco";
-                    }
-                    connection.Execute(query, new { Consecutivo = consecutivo, Tipo = tipo, Banco = id_banco, Plan = plan });
-
-                }
-
-
+                return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql, new { Usuario = usuario });
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = 0;
+                return new ErrorDto<List<DropDownListaGenericaModel>>
+                {
+                    Code = -1,
+                    Description = ex.Message,
+                    Result = null
+                };
             }
-            return resp;
         }
 
-        /// <summary>
-        /// Obtiene el consecutivo interno de un tipo de documento para un banco específico.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_banco"></param>
-        /// <param name="tipo"></param>
-        /// <param name="avance"></param>
-        /// <param name="plan"></param>
-        /// <returns></returns>
-        public ErrorDto<long> fxTesTipoDocConsecInterno(int CodEmpresa, int id_banco, string tipo, string avance = "+", string plan = "-sp-")
+        public ErrorDto<string> fxTesBancoDocsValor(int codEmpresa, int vBanco, string vTipo, string vCampo = "Comprobante")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<long>();
-            resp.Code = 0;
-            resp.Result = 0;
-
             try
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+                var campo = BancoDocsCampoSeguro(vCampo);
+                var sql = $@"SELECT {campo} AS Campo FROM tes_Banco_docs WHERE id_Banco = @Banco AND tipo = @Tipo;";
 
-                long consecutivo = 0;
-                string strSQL;
-
-                if (tipo != "TE" && plan != "-sp-")
+                var result = DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, sql, defaultValue: "", parameters: new { Banco = vBanco, Tipo = vTipo });
+                return new ErrorDto<string>
                 {
-                    plan = "-sp-";
-                }
-
-                if (plan == "-sp-" || plan == "")
-                {
-                    strSQL = $@"select isnull(CONSECUTIVO_DET,0) as 'Consecutivo' from tes_banco_docs where tipo = @Tipo and id_banco = @Banco ";
-                }
-                else
-                {
-                    strSQL = $@"select isnull(NUMERO_INTERNO,0) as 'Consecutivo' 
-                                   from TES_BANCO_PLANES_TE 
-                                    where id_banco = @Banco and COD_PLAN = @Plan ";
-                }
-
-                var result = connection.QueryFirstOrDefault<long>(strSQL,
-                    new { Tipo = tipo, Banco = id_banco, Plan = plan });
-
-                switch (avance)
-                {
-                    case "+":
-                        consecutivo = result + 1;
-                        break;
-                    case "-":
-                        consecutivo = result - 1;
-                        break;
-                    case "/":
-                        consecutivo = result;
-                        break;
-                    default:
-                        consecutivo = result;
-                        break;
-                }
-
-                resp.Result = consecutivo;
-
-                if (avance != "/")
-                {
-                    if (plan == "-sp-")
-                    {
-                        query = $@"update tes_banco_docs set CONSECUTIVO_DET = isnull(CONSECUTIVO_DET,0) {avance} 1 where Tipo = @Tipo and id_banco = @Banco";
-                    }
-                    else
-                    {
-                        query = $"update TES_BANCO_PLANES_TE set NUMERO_INTERNO = isnull(NUMERO_INTERNO,0) {avance} 1 where cod_plan = @Tipo and id_banco = @Banco";
-                    }
-                    connection.Execute(query, new { Consecutivo = consecutivo, Tipo = tipo, Banco = id_banco, Plan = plan });
-
-                }
-
-
+                    Code = result.Code,
+                    Description = result.Description,
+                    Result = result.Result ?? ""
+                };
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = 0;
+                return new ErrorDto<string> { Code = -1, Description = ex.Message, Result = "" };
             }
-            return resp;
         }
 
-        public ErrorDto<string> fxTesTipoDocExtraeDato(int CodEmpresa, int Banco, string TipoDoc, string Campo)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCboAcceso(int codEmpresa, string usuario, int banco, string? tipo = "S")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<string>
-            {
-                Code = 0,
-                Description = ""
-            };
+            var extra = GestionClause(tipo);
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            var sql = @"
+SELECT RTRIM(T.Tipo) + ' - ' + T.descripcion AS ItmY,
+       RTRIM(T.Tipo) AS item,
+       RTRIM(T.descripcion) AS descripcion
+FROM tes_documentos_ASG A
+INNER JOIN Tes_Tipos_Doc T ON A.tipo = T.tipo
+WHERE A.id_Banco = @Banco AND A.nombre = @Usuario"
++ extra +
+@" ORDER BY T.Descripcion;";
 
-                var query = $"select {Campo} as item from tes_banco_docs where tipo = @tipoDoc and id_banco = @banco";
-
-                resp.Result = connection
-                    .QueryFirstOrDefault<string>(query,
-                    new { banco = Banco, tipoDoc = TipoDoc });
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-
-                resp.Result = "";
-            }
-
-            return resp;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql, new { Banco = banco, Usuario = usuario });
         }
 
-        public ErrorDto<TesArchivosEspecialesData> sbCargaArchivosEspeciales(int CodEmpresa, int banco)
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCboAccesoFirmas(int codEmpresa, string usuario, int banco, string? tipo = "S")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<TesArchivosEspecialesData>
-            {
-                Code = 0,
-                Result = new TesArchivosEspecialesData()
-            };
+            var extra = GestionClause(tipo);
+
+            var sql = @"
+SELECT RTRIM(T.Tipo) + ' - ' + T.descripcion AS ItmY,
+       RTRIM(T.Tipo) AS item,
+       RTRIM(T.descripcion) AS descripcion
+FROM tes_documentos_ASG A
+INNER JOIN Tes_Tipos_Doc T ON A.tipo = T.tipo
+INNER JOIN TES_BANCO_DOCS D ON T.tipo = D.tipo AND A.id_banco = D.id_Banco
+WHERE A.id_Banco = @Banco AND A.nombre = @Usuario AND D.comprobante = '01'"
++ extra;
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, sql, new { Banco = banco, Usuario = usuario });
+        }
+
+        public ErrorDto<string> fxTesTipoDocExtraeDato(int codEmpresa, int banco, string tipoDoc, string campo)
+        {
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                var campoSeguro = BancoDocsCampoSeguro(campo);
+                var sql = $@"SELECT {campoSeguro} AS item FROM tes_banco_docs WHERE tipo = @TipoDoc AND id_banco = @Banco;";
 
-                var query = "Select UTILIZA_FORMATO_ESPECIAL,ARCHIVO_CHEQUES_FIRMAS,ARCHIVO_CHEQUES_SIN_FIRMAS from TES_BANCOS where ID_BANCO = @banco";
-                var archivosData = connection.QueryFirstOrDefault<TesBancosArchivosData>(query, new { banco = banco });
-
-                if (archivosData != null)
+                var result = DbHelper.ExecuteSingleQuery<string>(
+                    _portalDb, codEmpresa, sql, defaultValue: "",
+                    parameters: new { Banco = banco, TipoDoc = tipoDoc }
+                );
+                return new ErrorDto<string>
                 {
-                    string archivoFirmas = Path.Combine(dirRDLC, CodEmpresa.ToString(), archivosData.archivo_cheques_firmas) ?? "";
-                    string archivoSinFirmas = Path.Combine(dirRDLC, CodEmpresa.ToString(), archivosData.archivo_cheques_sin_firmas) ?? "";
-
-                    if (archivosData.utiliza_formato_especial == 1)
-                    {
-                        if (File.Exists(archivoFirmas))
-                            response.Result.chequesFirmas = archivosData.archivo_cheques_firmas;
-                        else
-                            response.Result.chequesFirmas = "Banking_DocFormat01"; //Reporte con Firmas
-
-                        if (File.Exists(archivoSinFirmas))
-                            response.Result.chequesSinFirmas = archivosData.archivo_cheques_sin_firmas;
-                        else
-                            response.Result.chequesSinFirmas = "Banking_DocFormat02"; //Reporte sin Firmas
-                    }
-                    else
-                    {
-                        response.Result.chequesFirmas = "Banking_DocFormat01"; //Reporte con Firmas
-                        response.Result.chequesSinFirmas = "Banking_DocFormat02"; //Reporte sin Firmas
-                    }
-                }
-
+                    Code = result.Code,
+                    Description = result.Description,
+                    Result = result.Result ?? ""
+                };
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return new ErrorDto<string> { Code = -1, Description = ex.Message, Result = "" };
             }
-            return response;
         }
 
-        public ErrorDto sbTesBancosAfectacion(int CodEmpresa, int vSolicitud, string vTipo = "E")
+        public ErrorDto sbTesBancosAfectacion(int codEmpresa, int vSolicitud, string vTipo = "E")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = ""
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                var query = "exec spTESAfectaBancos @solicitud, @tipo";
-
-                connection.Execute(query, new { solicitud = vSolicitud, tipo = vTipo });
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-
-            return resp;
+            const string sql = @"EXEC spTESAfectaBancos @solicitud, @tipo;";
+            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, new { solicitud = vSolicitud, tipo = vTipo });
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGeneral(int CodEmpresa)
+        public ErrorDto sbTesBitacoraEspecial(int codEmpresa, int pSolicitud, string pMovimiento, string pDetalle, string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+            const string sql = @"EXEC spTesBitacora @solicitud, @movimiento, @detalle, @usuario;";
 
-                query = $@"select id_banco as item,descripcion from Tes_Bancos where Estado = 'A' 
-                                order by descripcion";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-
-            return resp;
-        }
-
-        public ErrorDto sbTesBitacoraEspecial(int CodEmpresa, int pSolicitud, string pMovimiento, string pDetalle, string Usuario)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = ""
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                var query = "exec spTesBitacora @solicitud, @movimiento, @detalle, @usuario";
-
-                connection.Execute(query,
-                    new
-                    {
-                        solicitud = pSolicitud,
-                        movimiento = pMovimiento,
-                        detalle = pDetalle.Length > 150 ? pDetalle.Substring(0, 150) : pDetalle,
-                        usuario = Usuario
-                    });
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-
-            return resp;
+            return DbHelper.ExecuteNonQuery(
+                _portalDb, codEmpresa, sql,
+                new
+                {
+                    solicitud = pSolicitud,
+                    movimiento = pMovimiento,
+                    detalle = pDetalle.Length > 150 ? pDetalle[..150] : pDetalle,
+                    usuario
+                });
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbTESCombos(string tipo)
         {
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Result = new List<DropDownListaGenericaModel>()
-            };
+            var resp = DbHelper.CreateOkResponse(new List<DropDownListaGenericaModel>());
 
             try
             {
-                switch (tipo)
+                resp.Result = tipo switch
                 {
-                    case "estado":
-                        resp.Result = new List<DropDownListaGenericaModel>
-                        {
-                            new DropDownListaGenericaModel { item = "T", descripcion = "Todos" },
-                            new DropDownListaGenericaModel { item = "S", descripcion = "Solicitados" },
-                            new DropDownListaGenericaModel { item = "E", descripcion = "Emitidos" },
-                            new DropDownListaGenericaModel { item = "A", descripcion = "Anulados" }
-                        };
-                        break;
-                    case "busqueda":
-                        resp.Result = new List<DropDownListaGenericaModel>
-                        {
-                            new DropDownListaGenericaModel { item = "T", descripcion = "Todos" },
-                            new DropDownListaGenericaModel { item = "1", descripcion = "Por Número de Caso / Solicitud" },
-                            new DropDownListaGenericaModel { item = "2", descripcion = "Por Nombre Beneficiario" },
-                            new DropDownListaGenericaModel { item = "3", descripcion = "Por Número de Documento" },
-                            new DropDownListaGenericaModel { item = "4", descripcion = "Por Número de Referencia (OP)" }
-                        };
-                        break;
-                    case "documento":
-                        resp.Result = new List<DropDownListaGenericaModel>
-                        {
-                            new DropDownListaGenericaModel { item = "C", descripcion = "Cheques" },
-                            new DropDownListaGenericaModel { item = "T", descripcion = "Transferencias" },
-                            new DropDownListaGenericaModel { item = "R", descripcion = "Reporte" }
-                        };
-                        break;
-                    default:
-                        resp.Result = new List<DropDownListaGenericaModel>
-                        {
-                            new DropDownListaGenericaModel { item = "T", descripcion = "Todos" }
-                        };
-                        resp.Code = 0;
-                        resp.Description = "No se encontró el pTipo de Combo que se desea llenar.";
-                        break;
+                    "estado" => new()
+                    {
+                        new() { item = "T", descripcion = "Todos" },
+                        new() { item = "S", descripcion = "Solicitados" },
+                        new() { item = "E", descripcion = "Emitidos" },
+                        new() { item = "A", descripcion = "Anulados" }
+                    },
+                    "busqueda" => new()
+                    {
+                        new() { item = "T", descripcion = "Todos" },
+                        new() { item = "1", descripcion = "Por Número de Caso / Solicitud" },
+                        new() { item = "2", descripcion = "Por Nombre Beneficiario" },
+                        new() { item = "3", descripcion = "Por Número de Documento" },
+                        new() { item = "4", descripcion = "Por Número de Referencia (OP)" }
+                    },
+                    "documento" => new()
+                    {
+                        new() { item = "C", descripcion = "Cheques" },
+                        new() { item = "T", descripcion = "Transferencias" },
+                        new() { item = "R", descripcion = "Reporte" }
+                    },
+                    _ => new()
+                    {
+                        new() { item = "T", descripcion = "Todos" }
+                    }
+                };
+
+                if (tipo is not ("estado" or "busqueda" or "documento"))
+                {
+                    resp.Description = "No se encontró el pTipo de Combo que se desea llenar.";
                 }
             }
             catch (Exception ex)
@@ -762,101 +309,199 @@ namespace Galileo.DataBaseTier
                 resp.Description = ex.Message;
                 resp.Result = null;
             }
-            return resp;
-        }
-
-        public ErrorDto<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCboGeneral(int CodEmpresa, int contabilidad)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
-            resp.Code = 0;
-            resp.Result = new List<DropDownListaGenericaModel>();
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"select rtrim(cod_unidad) as 'item',rtrim(descripcion) as 'descripcion'
-                                 from CntX_Unidades where cod_contabilidad = @contabilidad ";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { contabilidad = contabilidad }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
 
             return resp;
         }
 
-        /// <summary>
-        /// Obtener los tipos de documentos para carga de emisión de documentos
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="Usuario"></param>
-        /// <param name="Banco"></param>
-        /// <param name="Tipo"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCbo(int CodEmpresa, int Banco)
+        public ErrorDto<string> fxTesParametro(int codEmpresa, string codigo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>
+            const string sql = @"SELECT valor FROM tes_parametros WHERE cod_parametro = @Codigo;";
+            var result = DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, sql, defaultValue: "", parameters: new { Codigo = codigo });
+            return new ErrorDto<string>
             {
-                Code = 0,
-                Result = new List<DropDownListaGenericaModel>()
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result ?? ""
             };
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"select T.Tipo as 'item', rtrim(T.Descripcion) as 'descripcion'
-                                from tes_banco_docs A inner join Tes_Tipos_Doc T on A.tipo = T.tipo
-                                Where A.id_Banco = @banco";
-
-
-                query += " order by T.Descripcion";
-
-                resp.Result = connection
-                    .Query<DropDownListaGenericaModel>(query, new { banco = Banco })
-                    .ToList();
-
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = null;
-            }
-
-            return resp;
         }
 
-        public ErrorDto<List<DropDownListaGenericaModel>> sbTesConceptosCargaCboGeneral(int CodEmpresa)
+        public ErrorDto<bool> fxValidaEmpresaSinpe(int codEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
-            resp.Code = 0;
-            resp.Result = new List<DropDownListaGenericaModel>();
+            const string sql = @"SELECT sinpe_activo FROM SIF_EMPRESA WHERE PORTAL_ID = @Empresa;";
+            return DbHelper.ExecuteSingleQuery<bool>(_portalDb, codEmpresa, sql, defaultValue: false, parameters: new { Empresa = codEmpresa });
+        }
+
+        public ErrorDto<bool> fxTesBancoValida(int codEmpresa, int vBanco, string vUsuario)
+        {
+            const string sql = @"
+SELECT ISNULL(COUNT(*),0)
+FROM Tes_Bancos B
+INNER JOIN tes_Banco_ASG A ON B.id_Banco = A.id_Banco AND A.nombre = @Usuario
+WHERE B.estado = 'A' AND B.id_Banco = @Banco;";
+
+            var countDto = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, sql, 0, new { Usuario = vUsuario, Banco = vBanco });
+            if (countDto.Code != 0)
+                return new ErrorDto<bool> { Code = -1, Description = countDto.Description, Result = false };
+
+            return DbHelper.CreateOkResponse(countDto.Result > 0);
+        }
+
+        public ErrorDto<bool> fxTesConceptoValida(int codEmpresa, int vBanco, string vUsuario, string vConcepto)
+        {
+            const string sql = @"
+SELECT ISNULL(COUNT(*),0)
+FROM tes_conceptos_ASG A
+INNER JOIN Tes_Conceptos C ON A.cod_concepto = C.cod_concepto
+WHERE A.id_Banco = @Banco AND A.nombre = @Usuario AND A.cod_concepto = @Concepto;";
+
+            var countDto = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, sql, 0, new { Banco = vBanco, Usuario = vUsuario, Concepto = vConcepto });
+            if (countDto.Code != 0)
+                return new ErrorDto<bool> { Code = -1, Description = countDto.Description, Result = false };
+
+            return DbHelper.CreateOkResponse(countDto.Result > 0);
+        }
+
+        public ErrorDto<bool> fxTesUnidadValida(int codEmpresa, int vBanco, string vUsuario, string vUnidad)
+        {
+            const string sql = @"
+SELECT ISNULL(COUNT(*),0)
+FROM tes_unidad_ASG A
+INNER JOIN CntX_Unidades C ON A.cod_unidad = C.cod_unidad
+WHERE A.id_Banco = @Banco AND A.nombre = @Usuario AND A.cod_unidad = @Unidad;";
+
+            var countDto = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, sql, 0, new { Banco = vBanco, Usuario = vUsuario, Unidad = vUnidad });
+            if (countDto.Code != 0)
+                return new ErrorDto<bool> { Code = -1, Description = countDto.Description, Result = false };
+
+            return DbHelper.CreateOkResponse(countDto.Result > 0);
+        }
+
+        public ErrorDto<bool> fxTesDocumentoVerifica(int codEmpresa, int vBanco, string vTipo, string vDocumento)
+        {
+            const string sql = @"
+SELECT ISNULL(COUNT(*),0)
+FROM Tes_Transacciones
+WHERE id_banco = @Banco AND tipo = @Tipo AND Ndocumento = @Documento AND estado <> 'P';";
+
+            var countDto = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, sql, 0, new { Banco = vBanco, Tipo = vTipo, Documento = vDocumento });
+            if (countDto.Code != 0)
+                return new ErrorDto<bool> { Code = -1, Description = countDto.Description, Result = false };
+
+            // Si existe => inválido
+            return DbHelper.CreateOkResponse(countDto.Result == 0);
+        }
+
+        public ErrorDto<bool> fxTesCuentaObligatoriaVerifica(int codEmpresa, int vBanco)
+        {
+            const string sql = @"
+SELECT ISNULL(COUNT(*),0)
+FROM Tes_Bancos
+WHERE id_banco = @Banco AND INT_REQUIERE_CUENTA_DESTINO = 1;";
+
+            var countDto = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, sql, 0, new { Banco = vBanco });
+            if (countDto.Code != 0)
+                return new ErrorDto<bool> { Code = -1, Description = countDto.Description, Result = false };
+
+            // Mantengo semántica original: si existe => Code=-1 y Result=true
+            if (countDto.Result > 0)
+                return new ErrorDto<bool> { Code = -1, Description = "Ok", Result = true };
+
+            return DbHelper.CreateOkResponse(false);
+        }
+
+        // ------------------ CONSECUTIVOS (multi-step) ------------------
+
+        public ErrorDto<long> fxTesTipoDocConsec(int codEmpresa, int idBanco, string tipo, string avance = "+", string plan = "-sp-")
+        {
+            var resp = DbHelper.CreateOkResponse(0L);
+
             try
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+                using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                query = $@"select rtrim(cod_Concepto) as 'item', rtrim(Descripcion) as 'descripcion'
-                                from Tes_Conceptos ";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                if (tipo != "TE" && plan != "-sp-") plan = "-sp-";
 
+                var selectSql = (plan == "-sp-")
+                    ? @"SELECT Consecutivo FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco;"
+                    : @"SELECT ISNULL(NUMERO_TE, 0) AS Consecutivo FROM TES_BANCO_PLANES_TE WHERE id_banco = @Banco AND COD_PLAN = @Plan;";
+
+                var current = connection.QueryFirstOrDefault<long>(selectSql, new { Tipo = tipo, Banco = idBanco, Plan = plan });
+
+                var next = avance switch
+                {
+                    "+" => current + 1,
+                    "-" => current - 1,
+                    "/" => current,
+                    _ => current
+                };
+
+                resp.Result = next;
+
+                if (avance != "/")
+                {
+                    var updateSql = (plan == "-sp-")
+                        ? $"UPDATE tes_banco_docs SET consecutivo = consecutivo {avance} 1 WHERE Tipo = @Tipo AND id_banco = @Banco;"
+                        : $"UPDATE TES_BANCO_PLANES_TE SET NUMERO_TE = ISNULL(NUMERO_TE,0) {avance} 1 WHERE COD_PLAN = @Plan AND id_banco = @Banco;";
+
+                    connection.Execute(updateSql, new { Tipo = tipo, Banco = idBanco, Plan = plan });
+                }
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
-                resp.Result = null;
+                resp.Result = 0;
             }
+
             return resp;
         }
+
+        public ErrorDto<long> fxTesTipoDocConsecInterno(int codEmpresa, int idBanco, string tipo, string avance = "+", string plan = "-sp-")
+        {
+            var resp = DbHelper.CreateOkResponse(0L);
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                if (tipo != "TE" && plan != "-sp-") plan = "-sp-";
+
+                var selectSql = (plan == "-sp-" || string.IsNullOrEmpty(plan))
+                    ? @"SELECT ISNULL(CONSECUTIVO_DET,0) AS Consecutivo FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco;"
+                    : @"SELECT ISNULL(NUMERO_INTERNO,0) AS Consecutivo FROM TES_BANCO_PLANES_TE WHERE id_banco = @Banco AND COD_PLAN = @Plan;";
+
+                var current = connection.QueryFirstOrDefault<long>(selectSql, new { Tipo = tipo, Banco = idBanco, Plan = plan });
+
+                var next = avance switch
+                {
+                    "+" => current + 1,
+                    "-" => current - 1,
+                    "/" => current,
+                    _ => current
+                };
+
+                resp.Result = next;
+
+                if (avance != "/")
+                {
+                    var updateSql = (plan == "-sp-")
+                        ? $"UPDATE tes_banco_docs SET CONSECUTIVO_DET = ISNULL(CONSECUTIVO_DET,0) {avance} 1 WHERE Tipo = @Tipo AND id_banco = @Banco;"
+                        : $"UPDATE TES_BANCO_PLANES_TE SET NUMERO_INTERNO = ISNULL(NUMERO_INTERNO,0) {avance} 1 WHERE COD_PLAN = @Plan AND id_banco = @Banco;";
+
+                    connection.Execute(updateSql, new { Tipo = tipo, Banco = idBanco, Plan = plan });
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = 0;
+            }
+
+            return resp;
+        }
+
+        // ------------------ ACTUALIZA CC (consistente) ------------------
 
         public class ActualizaCCParams
         {
@@ -870,14 +515,10 @@ namespace Galileo.DataBaseTier
             public int Referencia { get; set; }
         }
 
-        public ErrorDto sbTESActualizaCC(int CodEmpresa, ActualizaCCParams parametros)
+        public ErrorDto sbTESActualizaCC(int codEmpresa, ActualizaCCParams parametros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto
-            {
-                Code = 0,
-                Description = ""
-            };
+            var resp = DbHelper.CreateOkResponse();
+
             try
             {
                 if (parametros.Modulo?.Trim() != "CC" || parametros.SubModulo?.Trim() != "C")
@@ -887,30 +528,41 @@ namespace Galileo.DataBaseTier
                     return resp;
                 }
 
-                using var connection = new SqlConnection(stringConn);
+                using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                string? query;
                 if (parametros.Referencia > 0)
                 {
-                    // TIENE REFERENCIA
-                    query = @"UPDATE DesemBolsos 
-                           SET Cod_Banco = @lngBanco,
-                               TDocumento = @strTipo,
-                               NDocumento = @strDoc
-                           WHERE ID_Desembolso = @strCodigo";
-                    connection.Execute(query, new { Banco = parametros.Banco, Tipo = parametros.Tipo, Documento = parametros.Documento, Codigo = parametros.Codigo });
+                    const string sql = @"
+UPDATE DesemBolsos
+SET Cod_Banco = @Banco,
+    TDocumento = @Tipo,
+    NDocumento = @Documento
+WHERE ID_Desembolso = @Codigo;";
+
+                    connection.Execute(sql, new
+                    {
+                        Banco = parametros.Banco,
+                        Tipo = parametros.Tipo,
+                        Documento = parametros.Documento,
+                        Codigo = parametros.Codigo
+                    });
                 }
                 else
                 {
-                    // NO TIENE REFERENCIA
-                    query = @"UPDATE Reg_Creditos 
-                           SET Cod_Banco = @lngBanco,
-                               Documento_Referido = @documentoReferido
-                           WHERE ID_Solicitud = @lngOP";
-                    string documentoReferido = $"{parametros.Tipo}-{parametros.Documento}";
-                    connection.Execute(query, new { Banco = parametros.Banco, documentoReferido, OP = parametros.OP });
-                }
+                    const string sql = @"
+UPDATE Reg_Creditos
+SET Cod_Banco = @Banco,
+    Documento_Referido = @DocumentoReferido
+WHERE ID_Solicitud = @OP;";
 
+                    var documentoReferido = $"{parametros.Tipo}-{parametros.Documento}";
+                    connection.Execute(sql, new
+                    {
+                        Banco = parametros.Banco,
+                        DocumentoReferido = documentoReferido,
+                        OP = parametros.OP
+                    });
+                }
             }
             catch (Exception ex)
             {
@@ -921,594 +573,374 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        public string fxTesParametro(int CodEmpresa, string xCodigo)
+        // ------------------ TIPOS DOC ASIENTO / DIVISA ------------------
+
+        public ErrorDto<string> fxTesTiposDocAsiento(int codEmpresa, string vTipo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            string result = "";
-            try
+            const string sql = @"SELECT Movimiento FROM tes_tipos_doc WHERE tipo = @Tipo;";
+            var result = DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, sql, defaultValue: "", parameters: new { Tipo = vTipo });
+            return new ErrorDto<string>
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = "select valor from tes_parametros where cod_parametro = @codigo";
-                result = connection.QueryFirst<string>(query, new { codigo = xCodigo });
-
-            }
-            catch (Exception)
-            {
-                result = "";
-            }
-            return result;
+                Code = result.Code,
+                Description = result.Description,
+                Result = result.Result ?? ""
+            };
         }
 
-        public ErrorDto<bool> fxValidaEmpresaSinpe(int CodEmpresa)
+        public ErrorDto<string> fxDescDivisa(int codEmpresa, string vDivisa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<bool>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = false
-            };
+            var resp = DbHelper.CreateOkResponse("");
 
             try
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+                const string sql = @"SELECT TOP 1 descripcion FROM CNTX_DIVISAS WHERE cod_divisa = @Divisa;";
+                var dto = DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, sql, defaultValue: "", parameters: new { Divisa = vDivisa });
 
-                query = "select sinpe_activo from SIF_EMPRESA WHERE PORTAL_ID = @empresa";
-                result.Result = connection.QueryFirst<bool>(query, new { empresa = CodEmpresa });
+                if (dto.Code != 0)
+                    return new ErrorDto<string> { Code = dto.Code, Description = dto.Description, Result = "" };
 
+                var descripcion = (dto.Result ?? "").Trim();
+                if (string.IsNullOrEmpty(descripcion))
+                    return DbHelper.CreateOkResponse(" Colones");
+
+                var lower = descripcion.ToLowerInvariant();
+                var primera = lower.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? lower;
+                primera = char.ToUpper(primera[0]) + primera[1..];
+
+                var ultima = primera[^1];
+                primera += "aeiouáéíóú".Contains(char.ToLowerInvariant(ultima)) ? "s" : "es";
+
+                resp.Result = primera;
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = false;
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = "";
             }
-            return result;
+
+            return resp;
         }
 
-        public ErrorDto<bool> fxTesBancoValida(int CodEmpresa, int vBanco, string vUsuario)
+        // ------------------ ARCHIVOS ESPECIALES (consistente) ------------------
+
+        public ErrorDto<TesArchivosEspecialesData> sbCargaArchivosEspeciales(int codEmpresa, int banco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<bool>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = true
-            };
+            var response = DbHelper.CreateOkResponse(new TesArchivosEspecialesData());
+
             try
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+                const string sql = @"
+SELECT UTILIZA_FORMATO_ESPECIAL, ARCHIVO_CHEQUES_FIRMAS, ARCHIVO_CHEQUES_SIN_FIRMAS
+FROM TES_BANCOS
+WHERE ID_BANCO = @Banco;";
 
-                query = $@"select isnull(Count(*),0) as Existe
-                        from Tes_Bancos B inner join tes_Banco_ASG A on B.id_Banco = A.id_Banco
-                        and A.nombre = @usuario Where B.estado = 'A' and B.id_Banco = @banco";
+                var dataDto = DbHelper.ExecuteSingleQuery<TesBancosArchivosData>(
+                    _portalDb, codEmpresa, sql, defaultValue: null, parameters: new { Banco = banco }
+                );
 
-                var resp = connection.QueryFirstOrDefault<int>(query, new
+                if (dataDto.Code != 0)
+                    return new ErrorDto<TesArchivosEspecialesData> { Code = dataDto.Code, Description = dataDto.Description, Result = new TesArchivosEspecialesData() };
+
+                var archivosData = dataDto.Result;
+                if (archivosData is null) return response;
+
+                var archivoFirmas = Path.Combine(_dirRDLC, codEmpresa.ToString(), archivosData.archivo_cheques_firmas ?? "");
+                var archivoSinFirmas = Path.Combine(_dirRDLC, codEmpresa.ToString(), archivosData.archivo_cheques_sin_firmas ?? "");
+
+                if (response.Result != null)
                 {
-                    usuario = vUsuario,
-                    banco = vBanco
-                });
-
-                if (resp > 0)
-                {
-                    result.Result = true;
+                    if (archivosData.utiliza_formato_especial == 1)
+                    {
+                        response.Result.chequesFirmas = File.Exists(archivoFirmas) ? (archivosData.archivo_cheques_firmas ?? "Banking_DocFormat01") : "Banking_DocFormat01";
+                        response.Result.chequesSinFirmas = File.Exists(archivoSinFirmas) ? (archivosData.archivo_cheques_sin_firmas ?? "Banking_DocFormat02") : "Banking_DocFormat02";
+                    }
+                    else
+                    {
+                        response.Result.chequesFirmas = "Banking_DocFormat01";
+                        response.Result.chequesSinFirmas = "Banking_DocFormat02";
+                    }
                 }
-                else
-                {
-                    result.Code = -1;
-                    result.Result = false;
-                }
-
-
-            }
-            catch (Exception)
-            {
-                result.Code = -1;
-                result.Result = false;
-            }
-            return result;
-        }
-
-        public ErrorDto<bool> fxTesConceptoValida(int CodEmpresa, int vBanco, string vUsuario, string vConcepto)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<bool>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = true
-            };
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"select isnull(Count(*),0) as Existe
-                        from tes_conceptos_ASG A inner join Tes_Conceptos C on A.cod_concepto = C.cod_concepto
-                        Where A.id_Banco = @banco and A.nombre = @usuario and A.cod_concepto = @concepto";
-
-                var resp = connection.QueryFirstOrDefault<int>(query, new
-                {
-                    banco = vBanco,
-                    usuario = vUsuario,
-                    concepto = vConcepto
-                });
-
-                if (resp > 0)
-                {
-                    result.Result = true;
-                }
-                else
-                {
-                    result.Code = -1;
-                    result.Result = false;
-                }
-
-
-            }
-            catch (Exception)
-            {
-                result.Code = -1;
-                result.Result = false;
-            }
-            return result;
-        }
-
-        public ErrorDto<bool> fxTesUnidadValida(int CodEmpresa, int vBanco, string vUsuario, string vUnidad)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<bool>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = true
-            };
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@" select isnull(Count(*),0) as Existe
-        from tes_unidad_ASG A inner join CntX_Unidades C on A.cod_unidad = C.cod_unidad
-        Where A.id_Banco = @banco and A.nombre = @usuario and A.cod_unidad = @unidad";
-
-                var resp = connection.QueryFirstOrDefault<int>(query, new
-                {
-                    banco = vBanco,
-                    usuario = vUsuario,
-                    unidad = vUnidad
-                });
-
-                if (resp > 0)
-                {
-                    result.Result = true;
-                }
-                else
-                {
-                    result.Code = -1;
-                    result.Result = false;
-                }
-
-
-            }
-            catch (Exception)
-            {
-                result.Code = -1;
-                result.Result = false;
-            }
-            return result;
-        }
-
-        public ErrorDto<bool> fxTesDocumentoVerifica(int CodEmpresa, int vBanco, string vtipo, string vDocumento)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<bool>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = true
-            };
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"select isnull(count(*),0) as Existe from Tes_Transacciones 
-where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado <> 'P'";
-
-                var resp = connection.QueryFirstOrDefault<int>(query, new
-                {
-                    banco = vBanco,
-                    tipo = vtipo,
-                    documento = vDocumento
-                });
-
-                if (resp > 0)
-                {
-                    result.Code = -1;
-                    result.Result = false;
-
-                }
-                else
-                {
-                    result.Result = true;
-                }
-
-
-            }
-            catch (Exception)
-            {
-                result.Code = -1;
-                result.Result = false;
-            }
-            return result;
-        }
-
-        public static string fxTESCifrado(string vClave)
-        {
-            var strPass = new System.Text.StringBuilder();
-
-            for (int i = 0; i < vClave.Length; i++)
-            {
-                char c = vClave[i];
-                char cifrado = (char)(c + 7);
-                strPass.Append(cifrado);
-            }
-
-            return strPass.ToString();
-        }
-
-        public static string fxStringCifrado(string pCadena)
-        {
-            if (string.IsNullOrEmpty(pCadena))
-                return string.Empty;
-
-            var vResBuilder = new StringBuilder(pCadena.Length * 3);
-            for (int i = pCadena.Length - 1; i >= 0; i--)
-            {
-                int xChar = (int)pCadena[i];
-                vResBuilder.Append(xChar.ToString("D3"));
-            }
-            string vRes = vResBuilder.ToString();
-
-            var deltas = new int[] { +1, -5, +7, -13, -2, +3 }; // ciclo de 6 pasos
-            int vSec = 0;
-
-            var vResXBuilder = new StringBuilder(vRes.Length + vRes.Length / 3);
-
-            for (int i = 0; i < vRes.Length; i += 3)
-            {
-                int len = Math.Min(3, vRes.Length - i);
-                if (!int.TryParse(vRes.AsSpan(i, len), out int num))
-                    continue;
-
-                int transformed = num + deltas[vSec];
-                vResXBuilder.Append(transformed);
-
-                vSec++;
-                if (vSec == deltas.Length) vSec = 0;
-            }
-
-            return FxDepuraCadena(vResXBuilder.ToString());
-        }
-
-        public static string FxDepuraCadena(string xCadena)
-        {
-            var vResBuilder = new System.Text.StringBuilder();
-
-            for (int i = 0; i < xCadena.Length; i += 2)
-            {
-                string chunk = xCadena.Substring(i, Math.Min(2, xCadena.Length - i));
-                if (int.TryParse(chunk, out int num) && num > 31 && num != 39 && num != 34)
-                {
-                    vResBuilder.Insert(0, (char)num);
-                }
-            }
-
-            return vResBuilder.ToString();
-        }
-
-        /// <summary>
-        /// Metodo para validar si un usuario tiene permiso para un banco y tipo de documento específico.
-        /// Campo Permiso:
-        /// "Solicita", "Autoriza", "Genera", "Asientos", "Anula"
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="vBanco"></param>
-        /// <param name="vtipo"></param>
-        /// <param name="vUsuario"></param>
-        /// <param name="vPermiso"></param>
-        /// <returns></returns>
-        public bool fxValidaPermisoUserBancosTipo(int CodEmpresa, int vBanco, string vtipo, string vUsuario, string vPermiso)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            bool result = false;
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"select count(T.Tipo) from tes_tipos_doc T left join tes_documentos_asg A on T.tipo = A.tipo
-                                    and A.id_banco = @banco and A.nombre = @usuario
-                                    Where T.tipo in(select Tipo from tes_banco_docs where id_banco = @banco)
-                                    AND T.Tipo = @tipo AND isnull(A.{vPermiso},0) = 1";
-
-                var resp = connection.QueryFirstOrDefault<int>(query, new
-                {
-                    tipo = vtipo,
-                    banco = vBanco,
-                    usuario = vUsuario
-                });
-
-                if (resp > 0)
-                {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
-
-            }
-            catch (Exception)
-            {
-                result = false;
-            }
-            return result;
-        }
-
-        public ErrorDto sbTesEmitirDocumento(
-            int CodEmpresa, string vUsuario, int vModulo, int vSolicitud, string vDocumento = "", DateTime? vFecha = null)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = ""
-            };
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = @"SELECT C.monto, C.nsolicitud, T.doc_auto, T.comprobante,
-                          ISNULL(B.firmas_desde,0) AS Firmas_Desde, B.Lugar_Emision,
-                          X.descripcion AS TipoX, ISNULL(B.firmas_hasta,0) AS Firmas_Hasta,
-                          dbo.MyGetdate() AS FechaX, C.id_Banco, C.tipo, C.modulo, 
-                          C.op, C.referencia, C.codigo, C.subModulo, C.cod_divisa
-                           FROM Tes_Transacciones C
-                           INNER JOIN Tes_Bancos B ON C.id_Banco = B.id_banco
-                           INNER JOIN tes_banco_docs T ON B.id_Banco = T.id_Banco AND C.tipo = T.tipo
-                           INNER JOIN tes_tipos_doc X ON T.tipo = X.tipo
-                           WHERE C.nsolicitud = @solicitud";
-
-                var data = connection.QueryFirstOrDefault<MTesTransaccionDto>(query, new { solicitud = vSolicitud });
-
-                if (data == null)
-                {
-                    response.Code = -3;
-                    response.Description = "No se encontró la solicitud especificada.";
-                    return response;
-                }
-
-                string vTipo = data.tipo;
-                string vComprobante = data.comprobante;
-                bool vAutoConsec = data.doc_auto;
-                DateTime fechaEmision = vFecha ?? data.fechaX;
-                string vConsecutivo = string.Empty;
-
-                switch (vComprobante)
-                {
-                    case "01":
-                    case "02":
-                    case "03":
-                        if (vAutoConsec)
-                            vConsecutivo = fxTesTipoDocConsec(CodEmpresa, data.id_banco, vTipo, "+").Result.ToString();
-
-                        string nDocumentoClause = "";
-                        if (vAutoConsec)
-                            nDocumentoClause = ", NDocumento = @documento";
-                        else if (!string.IsNullOrWhiteSpace(vDocumento))
-                            nDocumentoClause = ", NDocumento = @documento";
-
-                        var updateSql = @"
-                                UPDATE Tes_Transacciones
-                                SET Estado = 'I',
-                                    Fecha_Emision = @fecha,
-                                    Ubicacion_Actual = 'T',
-                                    Fecha_Traslado = @fecha,
-                                    User_Genera = @usuario"
-                                + nDocumentoClause +
-                                " WHERE nsolicitud = @solicitud";
-                        connection.Execute(updateSql, new
-                        {
-                            fecha = fechaEmision.ToString("yyyy-MM-dd"),
-                            usuario = vUsuario,
-                            documento = vAutoConsec ? vConsecutivo : vDocumento,
-                            solicitud = vSolicitud
-                        });
-
-                        sbTESActualizaCC(
-                                CodEmpresa,
-                                new ActualizaCCParams
-                                {
-                                    Codigo = data.codigo,
-                                    Tipo = vTipo,
-                                    Documento = vConsecutivo,
-                                    Banco = data.id_banco,
-                                    OP = data.op != null ? (int)data.op : 0,
-                                    Modulo = data.modulo,
-                                    SubModulo = data.subModulo,
-                                    Referencia = data.referencia != null ? (int)data.referencia : 0
-                                }
-                            );
-                        //Envió a impresión
-                        break;
-                    case "04":
-                        response.Code = -1;
-                        response.Description = "Las Transferencias Electrónicas no se pueden procesar directamente...";
-                        break;
-                }
-
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
             }
+
             return response;
         }
 
+        // ------------------ TOKENS (consistente) ------------------
 
-        public string fxTesTiposDocAsiento(int CodEmpresa, string vTipo)
+        public ErrorDto<List<TokenConsultaModel>> spTes_Token_Consulta(int codEmpresa, string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = "";
+            const string sql = @"EXEC spTes_Token_Consulta '', 'A', @usuario;";
+            return DbHelper.ExecuteListQuery<TokenConsultaModel>(_portalDb, codEmpresa, sql, new { usuario });
+        }
+
+        public ErrorDto<string?> spTes_Token_New(int codEmpresa, string usuario)
+        {
+            var resp = DbHelper.CreateOkResponse<string?>(null);
 
             try
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+                const string genSql = @"EXEC spTes_Token_New @usuario;";
+                var gen = DbHelper.ExecuteNonQueryWithResult(_portalDb, codEmpresa, genSql, new { usuario = usuario.ToUpper() });
+                if (gen.Code != 0)
+                    return new ErrorDto<string?> { Code = gen.Code, Description = gen.Description, Result = null };
 
-                query = $@"select Movimiento from tes_tipos_doc Where tipo = @tipo ";
+                const string readSql = @"
+SELECT TOP 1 ID_TOKEN
+FROM Tes_Tokens
+WHERE REGISTRO_USUARIO = @usuario
+ORDER BY REGISTRO_FECHA DESC;";
 
-                var resp = connection.QueryFirstOrDefault<string>(query, new
-                {
-                    tipo = vTipo
-                });
-                response = resp ?? "";
+                var token = DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, readSql, defaultValue: "", parameters: new { usuario = usuario.ToUpper() });
+                if (token.Code != 0)
+                    return new ErrorDto<string?> { Code = token.Code, Description = token.Description, Result = null };
 
+                resp.Result = token.Result;
+                resp.Description = token.Result ?? "Ok";
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                response = "";
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
             }
 
-            return response;
+            return resp;
         }
 
-        public ErrorDto<bool> fxTesCuentaObligatoriaVerifica(int CodEmpresa, int vBanco)
+        // ------------------ TAGS (consistente y realmente await) ------------------
+
+        public async Task<ErrorDto> sbCrdOperacionTags(
+            int codEmpresa,
+            long pOperacion,
+            string pLinea,
+            string pTag,
+            string pUsuario,
+            string? pAsignado = "",
+            string? pNotas = "")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<bool>()
+            var resp = DbHelper.CreateOkResponse();
+
+            try
             {
-                Code = 0,
-                Description = "Ok",
-                Result = true
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                const string proc = @"spCrdOperacionTagRegistra";
+                var values = new
+                {
+                    Operacion = pOperacion,
+                    CrdLinea = pLinea,
+                    Tag = pTag,
+                    Usuario = pUsuario,
+                    Asignado = pAsignado,
+                    Notas = pNotas
+                };
+
+                await connection.ExecuteAsync(proc, values, commandType: CommandType.StoredProcedure).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
+        // ------------------ EMITIR DOCUMENTO (refactor completo) ------------------
+
+        public ErrorDto sbTesEmitirDocumento(int codEmpresa,string vUsuario,int vModulo,int vSolicitud,string vDocumento = "",DateTime? vFecha = null)
+        {
+            var resp = DbHelper.CreateOkResponse();
+
+            try
+            {
+                using var connection = _portalDb.CreateConnection(codEmpresa);
+
+                var data = ObtenerTransaccionParaEmision(connection, vSolicitud);
+                if (data is null)
+                    return ErrorNoSolicitud();
+
+                var fechaEmision = vFecha ?? data.fechaX;
+                data.nSolicitud = vSolicitud;
+
+                return ProcesarEmisionSegunComprobante(
+                    codEmpresa,
+                    connection,
+                    data,
+                    vUsuario,
+                    vDocumento,
+                    fechaEmision
+                );
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                return resp;
+            }
+        }
+
+        private static ErrorDto ErrorNoSolicitud()
+            => new ErrorDto { Code = -3, Description = "No se encontró la solicitud especificada." };
+
+        private static ErrorDto ErrorTransferenciaNoProcesable()
+            => new ErrorDto { Code = -1, Description = "Las Transferencias Electrónicas no se pueden procesar directamente..." };
+
+        private static MTesTransaccionDto? ObtenerTransaccionParaEmision(SqlConnection connection, int solicitud)
+        {
+            const string sql = @"
+            SELECT C.monto, C.nsolicitud, T.doc_auto, T.comprobante,
+                ISNULL(B.firmas_desde,0) AS Firmas_Desde, B.Lugar_Emision,
+                X.descripcion AS TipoX, ISNULL(B.firmas_hasta,0) AS Firmas_Hasta,
+                dbo.MyGetdate() AS FechaX, C.id_Banco, C.tipo, C.modulo,
+                C.op, C.referencia, C.codigo, C.subModulo, C.cod_divisa
+            FROM Tes_Transacciones C
+            INNER JOIN Tes_Bancos B ON C.id_Banco = B.id_banco
+            INNER JOIN tes_banco_docs T ON B.id_Banco = T.id_Banco AND C.tipo = T.tipo
+            INNER JOIN tes_tipos_doc X ON T.tipo = X.tipo
+            WHERE C.nsolicitud = @solicitud;";
+
+            return connection.QueryFirstOrDefault<MTesTransaccionDto>(sql, new { solicitud });
+        }
+
+        private ErrorDto ProcesarEmisionSegunComprobante(int codEmpresa,SqlConnection connection,MTesTransaccionDto data,string usuario,string documentoInput,DateTime fechaEmision)
+        {
+            return data.comprobante switch
+            {
+                "01" or "02" or "03" => EmitirComprobanteImprimible(
+                    codEmpresa, connection, data, usuario, documentoInput, fechaEmision),
+
+                "04" => ErrorTransferenciaNoProcesable(),
+
+                _ => DbHelper.CreateOkResponse()
             };
-            try
-            {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"select isnull(count(*),0) as Existe from Tes_Bancos
-                            where id_banco = @banco and INT_REQUIERE_CUENTA_DESTINO = 1 ";
-
-                var resp = connection.QueryFirstOrDefault<int>(query, new
-                {
-                    banco = vBanco
-                });
-
-                if (resp > 0)
-                {
-                    result.Code = -1;
-                    result.Result = true;
-
-                }
-                else
-                {
-                    result.Result = false;
-                }
-            }
-            catch (Exception)
-            {
-                result.Code = -1;
-                result.Result = false;
-            }
-            return result;
         }
 
-        public static string fxTesMesDescripcion(int vMes)
+        private ErrorDto EmitirComprobanteImprimible(int codEmpresa,SqlConnection connection,MTesTransaccionDto data,string usuario,string documentoInput,DateTime fechaEmision)
         {
-            switch (vMes)
-            {
-                case 1:
-                    return "ENERO";
-                case 2:
-                    return "FEBRERO";
-                case 3:
-                    return "MARZO";
-                case 4:
-                    return "ABRIL";
-                case 5:
-                    return "MAYO";
-                case 6:
-                    return "JUNIO";
-                case 7:
-                    return "JULIO";
-                case 8:
-                    return "AGOSTO";
-                case 9:
-                    return "SETIEMBRE";
-                case 10:
-                    return "OCTUBRE";
-                case 11:
-                    return "NOVIEMBRE";
-                case 12:
-                    return "DICIEMBRE";
+            // 1) Consecutivo si aplica
+            var consecutivoDto = ObtenerConsecutivoSiAplica(codEmpresa, data);
+            if (consecutivoDto.Code != 0)
+                return new ErrorDto { Code = consecutivoDto.Code, Description = consecutivoDto.Description };
 
-            }
+            var consecutivo = consecutivoDto.Result ?? string.Empty;
 
-            return "";
+            // 2) Documento final (autoconsec -> consecutivo, sino input)
+            var documentoFinal = data.doc_auto ? consecutivo : documentoInput;
+
+            // 3) Update transacción (solo setea NDocumento si hay valor)
+            ActualizarTransaccionEmitida(connection, (int)data.nSolicitud, usuario, fechaEmision, documentoFinal);
+
+            // 4) Actualiza CC (manteniendo tu semántica)
+            var actCc = ActualizarCCDesdeTransaccion(codEmpresa, data, consecutivo);
+            if (actCc.Code != 0)
+                return actCc;
+
+            return DbHelper.CreateOkResponse();
         }
+
+        private ErrorDto<string?> ObtenerConsecutivoSiAplica(int codEmpresa, MTesTransaccionDto data)
+        {
+            if (!data.doc_auto)
+                return DbHelper.CreateOkResponse<string?>(string.Empty);
+
+            var consec = fxTesTipoDocConsec(codEmpresa, data.id_banco, data.tipo, "+");
+            if (consec.Code != 0)
+                return new ErrorDto<string?> { Code = consec.Code, Description = consec.Description, Result = null };
+
+            return DbHelper.CreateOkResponse<string?>(consec.Result.ToString());
+        }
+
+        private static void ActualizarTransaccionEmitida(SqlConnection connection,int solicitud,string usuario,DateTime fechaEmision,string documentoFinal)
+        {
+            var setDocumento = string.IsNullOrWhiteSpace(documentoFinal)
+                ? ""
+                : ", NDocumento = @documento";
+
+            var sql = @"
+                    UPDATE Tes_Transacciones
+                    SET Estado = 'I',
+                        Fecha_Emision = @fecha,
+                        Ubicacion_Actual = 'T',
+                        Fecha_Traslado = @fecha,
+                        User_Genera = @usuario"
+                                + setDocumento +
+                            @"
+                    WHERE nsolicitud = @solicitud;";
+
+            connection.Execute(sql, new
+            {
+                fecha = fechaEmision.ToString("yyyy-MM-dd"),
+                usuario,
+                documento = documentoFinal,
+                solicitud
+            });
+        }
+
+        private ErrorDto ActualizarCCDesdeTransaccion(int codEmpresa, MTesTransaccionDto data, string consecutivo)
+        {
+            return sbTESActualizaCC(
+                codEmpresa,
+                new ActualizaCCParams
+                {
+                    Codigo = data.codigo,
+                    Tipo = data.tipo,
+                    Documento = consecutivo,
+                    Banco = data.id_banco,
+                    OP = data.op != null ? (int)data.op : 0,
+                    Modulo = data.modulo,
+                    SubModulo = data.subModulo,
+                    Referencia = data.referencia != null ? (int)data.referencia : 0
+                });
+        }
+
+        // ------------------ REPORTE TRANSFERENCIA (refactor completo) ------------------
 
         public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(
-        int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C",
-        string? vDocumento = "TE", string? vPlan = "-sp-")
+            int codEmpresa, int vBanco, long vTransac, string? vTipo = "C",
+            string? vDocumento = "TE", string? vPlan = "-sp-")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            var resp = new ErrorDto<TesReporteTransferenciaDto>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new TesReporteTransferenciaDto()
-            };
-
-            decimal curMonto = 0;
-            long lngCasos = 0;
-            string strDivisa = "", vLetra = "";
+            var resp = DbHelper.CreateOkResponse(new TesReporteTransferenciaDto());
 
             try
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
+                using var connection = _portalDb.CreateConnection(codEmpresa);
 
-                query = @"select cta as item, descripcion from Tes_Bancos where id_banco = @vBanco";
-                var banco = connection.QueryFirstOrDefault(query, new { vBanco });
+                // Banco / letras1
+                const string bancoSql = @"SELECT cta AS item, descripcion FROM Tes_Bancos WHERE id_banco = @Banco;";
+                var banco = connection.QueryFirstOrDefault(bancoSql, new { Banco = vBanco });
 
+                var letraBase = "";
                 if (banco != null)
                 {
-                    vLetra = "Sirva la Presente para saludarlo y a la vez solicitarle debitar de nuestra cuenta corriente"
-                           + " # " + banco.item + " la suma de ¢ ";
+                    letraBase = "Sirva la Presente para saludarlo y a la vez solicitarle debitar de nuestra cuenta corriente"
+                              + " # " + banco.item + " la suma de ¢ ";
                 }
 
                 if (vTipo == "C")
                 {
-                    string strSQL = @"select sum(Monto) as Monto, Count(*) as Casos, cod_divisa
-                                  from Tes_Transacciones
-                                  where tipo = @vDocumento and id_banco = @vBanco and documento_Base = @vTransac";
-                    if (vPlan != "-sp-")
-                    {
-                        strSQL += " and Cod_Plan = @vPlan";
-                    }
-                    strSQL += " group by cod_divisa";
+                    var strSQL = @"
+SELECT SUM(Monto) AS Monto, COUNT(*) AS Casos, cod_divisa
+FROM Tes_Transacciones
+WHERE tipo = @Documento AND id_banco = @Banco AND documento_Base = @Transac";
 
-                    var rs = connection.QueryFirstOrDefault(strSQL, new { vDocumento, vBanco, vTransac, vPlan });
+                    if (vPlan != "-sp-")
+                        strSQL += " AND Cod_Plan = @Plan";
+
+                    strSQL += " GROUP BY cod_divisa;";
+
+                    var rs = connection.QueryFirstOrDefault(strSQL, new { Documento = vDocumento, Banco = vBanco, Transac = vTransac, Plan = vPlan });
+
+                    decimal curMonto = 0;
+                    long lngCasos = 0;
+                    string strDivisa = "";
+
                     if (rs != null)
                     {
                         curMonto = rs.Monto;
@@ -1516,18 +948,28 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
                         strDivisa = rs.cod_divisa;
                     }
 
-                    string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result
-                                          + fxDescDivisa(CodEmpresa, strDivisa).Result;
+                    var letrasDivisa = fxDescDivisa(codEmpresa, strDivisa);
+                    if (letrasDivisa.Code != 0)
+                        return new ErrorDto<TesReporteTransferenciaDto> { Code = letrasDivisa.Code, Description = letrasDivisa.Description, Result = new TesReporteTransferenciaDto() };
+
+                    var montoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result + letrasDivisa.Result;
+
+                    // Parametros (ahora consistentes)
+                    var p1 = fxTesParametro(codEmpresa, "01");
+                    var p2 = fxTesParametro(codEmpresa, "02");
+                    var p3 = fxTesParametro(codEmpresa, "03");
+
+                    if (resp.Result == null)
+                        resp.Result = new TesReporteTransferenciaDto();
 
                     resp.Result.registros = lngCasos;
-                    resp.Result.montoLetras = vMontoLetras;
+                    resp.Result.montoLetras = montoLetras;
                     resp.Result.totalMonto = curMonto;
-                    resp.Result.fxNombre = fxTesParametro(CodEmpresa, "01");
-                    resp.Result.fxPuesto = fxTesParametro(CodEmpresa, "02");
-                    resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
-                    resp.Result.letras1 = vLetra;
+                    resp.Result.fxNombre = p1.Result ?? string.Empty;
+                    resp.Result.fxPuesto = p2.Result ?? string.Empty;
+                    resp.Result.fxDepartamento = p3.Result ?? string.Empty;
+                    resp.Result.letras1 = letraBase;
                 }
-
             }
             catch (Exception ex)
             {
@@ -1539,160 +981,146 @@ where id_banco = @banco and tipo = @tipo and Ndocumento = @documento and estado 
             return resp;
         }
 
+        // ------------------ CIFRADOS (igual) ------------------
 
-        public ErrorDto<string> fxDescDivisa(int CodEmpresa, string vDivisa)
+        public static string fxTESCifrado(string vClave)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<string>()
+            var sb = new StringBuilder(vClave.Length);
+            foreach (var c in vClave)
+                sb.Append((char)(c + 7));
+            return sb.ToString();
+        }
+
+        public static string fxStringCifrado(string pCadena)
+        {
+            if (string.IsNullOrEmpty(pCadena))
+                return string.Empty;
+
+            var vResBuilder = new StringBuilder(pCadena.Length * 3);
+            for (int i = pCadena.Length - 1; i >= 0; i--)
+                vResBuilder.Append(((int)pCadena[i]).ToString("D3"));
+
+            var vRes = vResBuilder.ToString();
+            var deltas = new[] { +1, -5, +7, -13, -2, +3 };
+            int vSec = 0;
+
+            var outBuilder = new StringBuilder(vRes.Length + vRes.Length / 3);
+
+            for (int i = 0; i < vRes.Length; i += 3)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = ""
+                int len = Math.Min(3, vRes.Length - i);
+                if (!int.TryParse(vRes.AsSpan(i, len), out int num)) continue;
+
+                outBuilder.Append(num + deltas[vSec]);
+                vSec = (vSec + 1) % deltas.Length;
+            }
+
+            return FxDepuraCadena(outBuilder.ToString());
+        }
+
+        public static string FxDepuraCadena(string xCadena)
+        {
+            var sb = new StringBuilder();
+
+            for (int i = 0; i < xCadena.Length; i += 2)
+            {
+                var chunk = xCadena.Substring(i, Math.Min(2, xCadena.Length - i));
+                if (int.TryParse(chunk, out int num) && num > 31 && num != 39 && num != 34)
+                    sb.Insert(0, (char)num);
+            }
+
+            return sb.ToString();
+        }
+
+        // ------------------ PERMISOS USER/BANCOS/TIPO (whitelist) ------------------
+
+        public bool fxValidaPermisoUserBancosTipo(int codEmpresa, int vBanco, string vTipo, string vUsuario, string vPermiso)
+        {
+            try
+            {
+                var permisoCol = PermisoColSeguro(vPermiso);
+
+                var sql = $@"
+SELECT COUNT(T.Tipo)
+FROM tes_tipos_doc T
+LEFT JOIN tes_documentos_asg A ON T.tipo = A.tipo AND A.id_banco = @Banco AND A.nombre = @Usuario
+WHERE T.tipo IN (SELECT Tipo FROM tes_banco_docs WHERE id_banco = @Banco)
+  AND T.Tipo = @Tipo
+  AND ISNULL(A.{permisoCol},0) = 1;";
+
+                var countDto = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, sql, 0, new { Tipo = vTipo, Banco = vBanco, Usuario = vUsuario });
+                return countDto.Code == 0 && countDto.Result > 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // ------------------ MESES ------------------
+
+        public static string fxTesMesDescripcion(int vMes) => vMes switch
+        {
+            1 => "ENERO",
+            2 => "FEBRERO",
+            3 => "MARZO",
+            4 => "ABRIL",
+            5 => "MAYO",
+            6 => "JUNIO",
+            7 => "JULIO",
+            8 => "AGOSTO",
+            9 => "SETIEMBRE",
+            10 => "OCTUBRE",
+            11 => "NOVIEMBRE",
+            12 => "DICIEMBRE",
+            _ => ""
+        };
+
+        // ------------------ HELPERS (whitelist) ------------------
+
+        private static string GestionClause(string? tipo)
+            => tipo switch
+            {
+                "S" => " AND A.SOLICITA = 1",
+                "A" => " AND A.AUTORIZA = 1",
+                "G" => " AND A.GENERA = 1",
+                "X" => " AND A.ASIENTOS = 1",
+                "N" => " AND A.ANULA = 1",
+                _ => ""
             };
-            try
+
+        private static string GestionColSeguro(string gestion)
+            => gestion switch
             {
-                string query = "";
-                using var connection = new SqlConnection(stringConn);
-
-                query = $@"select top 1 descripcion from CNTX_DIVISAS where cod_divisa = @vDivisa";
-                string descripcion = connection.QueryFirstOrDefault<string>(query, new { vDivisa }) ?? "";
-
-                if (!string.IsNullOrEmpty(descripcion))
-                {
-                    string strDescripcion = descripcion.Trim().ToLower();
-
-                    // Tomar la primera palabra
-                    string fxCodText = strDescripcion.Split(' ')[0].Trim();
-
-                    if (string.IsNullOrEmpty(fxCodText))
-                    {
-                        fxCodText = strDescripcion;
-                    }
-
-                    // Normalizar capitalización
-                    fxCodText = char.ToUpper(fxCodText[0]) + fxCodText.Substring(1);
-
-                    // Normalizar capitalización
-                    fxCodText = char.ToUpper(fxCodText[0]) + fxCodText.Substring(1);
-                    fxCodText = fxCodText.Trim();
-
-                    char ultima = fxCodText[fxCodText.Length - 1];
-                    // Regla básica: vocal → "s", consonante → "es" (pluralización)
-                    if ("aeiouáéíóú".Contains(char.ToLower(ultima)))
-                    {
-                        fxCodText += "s";
-                    }
-                    else
-                    {
-                        fxCodText += "es";
-                    }
-
-                    resp.Result = string.IsNullOrEmpty(fxCodText) ? strDescripcion : fxCodText;
-                }
-                else
-                {
-                    resp.Result = " Colones";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = "";
-            }
-            return resp;
-        }
-
-
-        public ErrorDto<List<TokenConsultaModel>> spTes_Token_Consulta(int CodEmpresa, string usuario)
-        {
-            var response = new ErrorDto<List<TokenConsultaModel>> { Code = 0, Result = new() };
-            try
-            {
-                string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using (var connection = new SqlConnection(conn))
-                {
-                    var query = $@"exec spTes_Token_Consulta '', 'A' , @usuario";
-                    response.Result = connection.Query<TokenConsultaModel>(query, new { usuario = usuario }).ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
-        }
-
-        public ErrorDto spTes_Token_New(int CodEmpresa, string usuario)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok",
+                "SOLICITA" => "SOLICITA",
+                "AUTORIZA" => "AUTORIZA",
+                "GENERA" => "GENERA",
+                "ASIENTOS" => "ASIENTOS",
+                "ANULA" => "ANULA",
+                _ => throw new ArgumentException("Gestión inválida", nameof(gestion))
             };
-            try
+
+        private static string PermisoColSeguro(string permiso)
+            => permiso switch
             {
-                using var connection = new SqlConnection(stringConn);
-                // Verificar si el token está activo
-                var procedure = $@"EXEC spTes_Token_New '{usuario.ToUpper()}'";
+                "Solicita" => "SOLICITA",
+                "Autoriza" => "AUTORIZA",
+                "Genera" => "GENERA",
+                "Asientos" => "ASIENTOS",
+                "Anula" => "ANULA",
+                _ => throw new ArgumentException("Permiso inválido", nameof(permiso))
+            };
 
-                var insert = connection.Execute(procedure);
-
-                if (insert != -1)
-                {
-                    //busco el ultimo token generado
-                    var query = $@"select top 1 ID_TOKEN from Tes_Tokens where REGISTRO_USUARIO = @usuario order by REGISTRO_FECHA desc";
-                    var token = connection.QueryFirstOrDefault<string>(query, new { usuario = usuario.ToUpper() });
-                    response.Description = token;
-                }
-            }
-            catch (Exception ex)
+        private static string BancoDocsCampoSeguro(string campo)
+            => campo switch
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
-
-        public void sbCrdOperacionTags(
-            int CodEmpresa,
-            long pOperacion,
-            string pLinea,
-            string pTag,
-            string pUsuario,
-            string? pAsignado = "",
-            string? pNotas = "")
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                // Verificar si el token está activo
-                var procedure = $@"[spCrdOperacionTagRegistra]";
-                var values = new
-                {
-                    Operacion = pOperacion,
-                    CrdLinea = pLinea,
-                    Tag = pTag,
-                    Usuario = pUsuario,
-                    Asignado = pAsignado,
-                    Notas = pNotas
-                };
-
-                connection.ExecuteAsync(procedure, values, commandType: System.Data.CommandType.StoredProcedure);
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-
-        }
-
+                // agrega SOLO los campos reales de tes_banco_docs que uses dinámicamente
+                "Comprobante" => "Comprobante",
+                "Consecutivo" => "Consecutivo",
+                "CONSECUTIVO_DET" => "CONSECUTIVO_DET",
+                "doc_auto" => "doc_auto",
+                "documento_Base" => "documento_Base",
+                _ => throw new ArgumentException("Campo inválido", nameof(campo))
+            };
     }
 }
