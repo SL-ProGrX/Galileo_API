@@ -7,17 +7,10 @@ using Galileo.Models.ProGrX.Clientes;
 
 namespace Galileo.DataBaseTier
 {
-    public class MTesoreria
+    public partial class MTesoreria
     {
         private readonly IConfiguration _config;
         private readonly string dirRDLC;
-
-        private const string PERM_SOLICITA = "SOLICITA";
-        private const string PERM_AUTORIZA = "AUTORIZA";
-        private const string PERM_GENERA = "GENERA";
-        private const string PERM_ASIENTOS = "ASIENTOS";
-        private const string PERM_ANULA = "ANULA";
-
 
         public MTesoreria(IConfiguration config)
         {
@@ -25,73 +18,15 @@ namespace Galileo.DataBaseTier
             dirRDLC = _config.GetSection("AppSettings").GetSection("RutaRDLC").Value ?? string.Empty;
         }
 
-        // -----------------------------
-        // Helpers anti-inyección (S2077)
-        // -----------------------------
-
-        private static string MapGestionColumn(string gestion) => (gestion ?? "").Trim().ToUpperInvariant() switch
-        {
-            PERM_SOLICITA => PERM_SOLICITA,
-            PERM_AUTORIZA => PERM_AUTORIZA,
-            PERM_GENERA => PERM_GENERA,
-            PERM_ASIENTOS => PERM_ASIENTOS,
-            PERM_ANULA => PERM_ANULA,
-            _ => throw new ArgumentException("Gestión inválida", nameof(gestion))
-        };
-
-        private static string MapGestionFromCodigo(string vGestion) => (vGestion ?? "S").Trim().ToUpperInvariant() switch
-        {
-            "S" => PERM_SOLICITA,
-            "A" => PERM_AUTORIZA,
-            "G" => PERM_GENERA,
-            "X" => PERM_ASIENTOS,
-            "N" => PERM_ANULA,
-            _ => PERM_SOLICITA
-        };
-
-        private static string MapPermisoColumn(string permiso) => (permiso ?? "").Trim().ToUpperInvariant() switch
-        {
-            PERM_SOLICITA => PERM_SOLICITA,
-            PERM_AUTORIZA => PERM_AUTORIZA,
-            PERM_GENERA => PERM_GENERA,
-            PERM_ASIENTOS => PERM_ASIENTOS,
-            PERM_ANULA => PERM_ANULA,
-            _ => throw new ArgumentException("Permiso inválido", nameof(permiso))
-        };
-
-        private static string MapTesBancoDocsField(string campo) => (campo ?? "").Trim() switch
-        {
-            // SOLO permití las columnas reales que vas a consultar.
-            "Comprobante" => "Comprobante",
-            "Consecutivo" => "Consecutivo",
-            "CONSECUTIVO_DET" => "CONSECUTIVO_DET",
-            "DOC_AUTO" => "DOC_AUTO",
-            "Movimiento" => "Movimiento",
-            _ => throw new ArgumentException("Campo inválido", nameof(campo))
-        };
-
-        private static string NormalizePlan(string tipo, string plan)
-        {
-            // Mantengo tu regla original: solo TE permite planes distintos a "-sp-"
-            if (!string.Equals(tipo, "TE", StringComparison.OrdinalIgnoreCase) && plan != "-sp-")
-                return "-sp-";
-            return string.IsNullOrWhiteSpace(plan) ? "-sp-" : plan;
-        }
-
-        // -----------------------------
-        // Métodos
-        // -----------------------------
-
         public ErrorDto<List<DropDownListaGenericaModel>> tes_TiposDocumentos_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                const string query = @"select TIPO AS ITEM, DESCRIPCION from tes_tipos_doc";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                using var connection = new SqlConnection(conn);
+                resp.Result = connection.Query<DropDownListaGenericaModel>(Sql.TesTiposDocumentosObtener).ToList();
             }
             catch (Exception ex)
             {
@@ -105,21 +40,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCbo(int CodEmpresa, string usuario, int banco, int contabilidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"
-                    select rtrim(C.cod_unidad) as item, rtrim(C.descripcion) as descripcion
-                    from tes_unidad_ASG A
-                    inner join CntX_Unidades C on A.cod_unidad = C.cod_unidad and C.cod_contabilidad = @contabilidad
-                    where A.id_Banco = @banco and A.nombre = @usuario and activa = 1
-                    order by C.Descripcion";
-
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new
+                using var connection = new SqlConnection(conn);
+                resp.Result = connection.Query<DropDownListaGenericaModel>(Sql.TesUnidadesCargaUsuario, new
                 {
                     contabilidad,
                     banco,
@@ -138,21 +65,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesConceptosCargaCbo(int CodEmpresa, string usuario, int banco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"
-                    select rtrim(C.cod_Concepto) as item, rtrim(C.Descripcion) as descripcion
-                    from tes_conceptos_ASG A
-                    inner join Tes_Conceptos C on A.cod_concepto = C.cod_concepto
-                    where A.id_Banco = @banco and A.nombre = @usuario and estado = 'A'
-                    order by C.Descripcion";
-
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { banco, usuario }).ToList();
+                using var connection = new SqlConnection(conn);
+                resp.Result = connection.Query<DropDownListaGenericaModel>(Sql.TesConceptosCargaUsuario, new { banco, usuario }).ToList();
             }
             catch (Exception ex)
             {
@@ -166,27 +85,18 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<bool> fxTesTipoAccesoValida(int CodEmpresa, string vBanco, string vUsuario, string vTipo, string vGestion = "S")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<bool> { Code = 0, Result = false };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                // En vez de concatenar "and A.X = 1", metemos columna validada.
-                var col = MapGestionColumn(MapGestionFromCodigo(vGestion));
+                string permiso = Mappers.GestionFromCodigo(vGestion);
+                string query = Sql.GetTesTipoAccesoValidaByPermiso(permiso);
 
-                var query = $@"
-                    select isnull(Count(*),0) as Existe
-                    from tes_documentos_ASG A
-                    inner join Tes_Tipos_Doc T on A.tipo = T.tipo
-                    where A.id_Banco = @banco
-                      and A.nombre = @usuario
-                      and A.tipo = @tipo
-                      and isnull(A.[{col}],0) = 1";
-
-                var result = connection.QueryFirstOrDefault<int>(query, new { banco = vBanco, usuario = vUsuario, tipo = vTipo });
-                resp.Result = result > 0;
+                int count = connection.QueryFirstOrDefault<int>(query, new { banco = vBanco, usuario = vUsuario, tipo = vTipo });
+                resp.Result = count > 0;
             }
             catch (Exception ex)
             {
@@ -200,26 +110,15 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                var col = MapGestionColumn(gestion);
-
-                var query = $@"
-                    select id_banco as item, descripcion
-                    from Tes_Bancos
-                    where Estado = 'A'
-                      and id_Banco in (
-                          select id_banco
-                          from tes_documentos_ASG
-                          where nombre = @usuario
-                            and isnull([{col}],0) = 1
-                          group by id_banco
-                      )";
+                string permiso = Mappers.NormalizePermiso(gestion);
+                string query = Sql.GetTesBancoCargaCboAccesoGestionByPermiso(permiso);
 
                 resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { usuario }).ToList();
             }
@@ -235,17 +134,19 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<string> fxTesBancoDocsValor(int CodEmpresa, int vBanco, string vTipo, string vCampo = "Comprobante")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<string> { Code = 0, Result = "" };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                var col = MapTesBancoDocsField(vCampo);
-                var query = $@"select [{col}] as Campo from tes_Banco_docs where id_Banco = @banco and tipo = @tipo";
+                string campo = Mappers.NormalizeBancoDocsCampo(vCampo);
 
-                resp.Result = connection.QueryFirstOrDefault<string>(query, new { banco = vBanco, tipo = vTipo }) ?? "";
+                resp.Result = connection.QueryFirstOrDefault<string>(
+                    Sql.TesBancoDocsCampoPorTipoBanco,
+                    new { campo, banco = vBanco, tipo = vTipo }
+                ) ?? "";
             }
             catch (Exception ex)
             {
@@ -259,24 +160,15 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCboAcceso(int CodEmpresa, string Usuario, int Banco, string? Tipo = "S")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                var col = MapGestionColumn(MapGestionFromCodigo(Tipo ?? "S"));
-
-                var query = $@"
-                    SELECT RTRIM(T.Tipo) + ' - ' + T.descripcion AS ItmY,
-                           RTRIM(T.Tipo) AS item, RTRIM(T.descripcion) AS descripcion
-                    FROM tes_documentos_ASG A
-                    INNER JOIN Tes_Tipos_Doc T ON A.tipo = T.tipo
-                    WHERE A.id_Banco = @banco
-                      AND A.nombre = @usuario
-                      AND isnull(A.[{col}],0) = 1
-                    ORDER BY T.Descripcion";
+                string permiso = Mappers.GestionFromCodigo(Tipo ?? "S");
+                string query = Sql.GetTesTiposDocsCargaCboAccesoByPermiso(permiso);
 
                 resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { banco = Banco, usuario = Usuario }).ToList();
             }
@@ -292,25 +184,15 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCboAccesoFirmas(int CodEmpresa, string Usuario, int Banco, string? Tipo = "S")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                var col = MapGestionColumn(MapGestionFromCodigo(Tipo ?? "S"));
-
-                var query = $@"
-                    SELECT RTRIM(T.Tipo) + ' - ' + T.descripcion AS ItmY,
-                           RTRIM(T.Tipo) AS item, RTRIM(T.descripcion) AS descripcion
-                    FROM tes_documentos_ASG A
-                    INNER JOIN Tes_Tipos_Doc T ON A.tipo = T.tipo
-                    INNER JOIN TES_BANCO_DOCS D ON T.tipo = D.tipo AND A.id_banco = D.id_Banco
-                    WHERE A.id_Banco = @banco
-                      AND A.nombre = @usuario
-                      AND D.comprobante = '01'
-                      AND isnull(A.[{col}],0) = 1";
+                string permiso = Mappers.GestionFromCodigo(Tipo ?? "S");
+                string query = Sql.GetTesTiposDocsCargaCboAccesoFirmasByPermiso(permiso);
 
                 resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { banco = Banco, usuario = Usuario }).ToList();
             }
@@ -326,20 +208,17 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<long> fxTesTipoDocConsec(int CodEmpresa, int id_banco, string tipo, string avance = "+", string plan = "-sp-")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<long> { Code = 0, Result = 0 };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                plan = NormalizePlan(tipo, plan);
+                plan = Mappers.NormalizePlan(tipo, plan);
 
-                string selectSql = plan == "-sp-"
-                    ? @"SELECT ISNULL(Consecutivo,0) FROM tes_banco_docs WHERE tipo = @Tipo AND id_banco = @Banco"
-                    : @"SELECT ISNULL(NUMERO_TE,0) FROM TES_BANCO_PLANES_TE WHERE id_banco = @Banco AND COD_PLAN = @Plan";
-
-                var current = connection.QueryFirstOrDefault<long>(selectSql, new { Tipo = tipo, Banco = id_banco, Plan = plan });
+                string selectSql = plan == "-sp-" ? Sql.TesBancoDocsConsecutivo : Sql.TesBancoPlanesTeConsecutivo;
+                long current = connection.QueryFirstOrDefault<long>(selectSql, new { Tipo = tipo, Banco = id_banco, Plan = plan });
 
                 long consecutivo = avance switch
                 {
@@ -353,16 +232,7 @@ namespace Galileo.DataBaseTier
 
                 if (avance != "/")
                 {
-                    string updateSql = plan == "-sp-"
-                        ? @"
-                            UPDATE tes_banco_docs
-                            SET consecutivo = ISNULL(consecutivo,0) + CASE @avance WHEN '+' THEN 1 WHEN '-' THEN -1 ELSE 0 END
-                            WHERE Tipo = @Tipo AND id_banco = @Banco"
-                        : @"
-                            UPDATE TES_BANCO_PLANES_TE
-                            SET NUMERO_TE = ISNULL(NUMERO_TE,0) + CASE @avance WHEN '+' THEN 1 WHEN '-' THEN -1 ELSE 0 END
-                            WHERE COD_PLAN = @Plan AND id_banco = @Banco";
-
+                    string updateSql = plan == "-sp-" ? Sql.UpdateTesBancoDocsConsecutivoByAvance : Sql.UpdateTesBancoPlanesTeNumeroTeByAvance;
                     connection.Execute(updateSql, new { avance, Tipo = tipo, Banco = id_banco, Plan = plan });
                 }
             }
@@ -378,20 +248,17 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<long> fxTesTipoDocConsecInterno(int CodEmpresa, int id_banco, string tipo, string avance = "+", string plan = "-sp-")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<long> { Code = 0, Result = 0 };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                plan = NormalizePlan(tipo, plan);
+                plan = Mappers.NormalizePlan(tipo, plan);
 
-                string selectSql = plan == "-sp-"
-                    ? @"select isnull(CONSECUTIVO_DET,0) from tes_banco_docs where tipo = @Tipo and id_banco = @Banco"
-                    : @"select isnull(NUMERO_INTERNO,0) from TES_BANCO_PLANES_TE where id_banco = @Banco and COD_PLAN = @Plan";
-
-                var current = connection.QueryFirstOrDefault<long>(selectSql, new { Tipo = tipo, Banco = id_banco, Plan = plan });
+                string selectSql = plan == "-sp-" ? Sql.TesBancoDocsConsecutivoDet : Sql.TesBancoPlanesTeNumeroInterno;
+                long current = connection.QueryFirstOrDefault<long>(selectSql, new { Tipo = tipo, Banco = id_banco, Plan = plan });
 
                 long consecutivo = avance switch
                 {
@@ -405,16 +272,7 @@ namespace Galileo.DataBaseTier
 
                 if (avance != "/")
                 {
-                    string updateSql = plan == "-sp-"
-                        ? @"
-                            update tes_banco_docs
-                            set CONSECUTIVO_DET = isnull(CONSECUTIVO_DET,0) + CASE @avance WHEN '+' THEN 1 WHEN '-' THEN -1 ELSE 0 END
-                            where Tipo = @Tipo and id_banco = @Banco"
-                        : @"
-                            update TES_BANCO_PLANES_TE
-                            set NUMERO_INTERNO = isnull(NUMERO_INTERNO,0) + CASE @avance WHEN '+' THEN 1 WHEN '-' THEN -1 ELSE 0 END
-                            where COD_PLAN = @Plan and id_banco = @Banco";
-
+                    string updateSql = plan == "-sp-" ? Sql.UpdateTesBancoDocsConsecutivoDetByAvance : Sql.UpdateTesBancoPlanesTeNumeroInternoByAvance;
                     connection.Execute(updateSql, new { avance, Tipo = tipo, Banco = id_banco, Plan = plan });
                 }
             }
@@ -430,17 +288,19 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<string> fxTesTipoDocExtraeDato(int CodEmpresa, int Banco, string TipoDoc, string Campo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<string> { Code = 0, Description = "" };
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var resp = new ErrorDto<string> { Code = 0, Description = "", Result = "" };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                var col = MapTesBancoDocsField(Campo);
-                var query = $@"select [{col}] as item from tes_banco_docs where tipo = @tipoDoc and id_banco = @banco";
+                string campo = Mappers.NormalizeBancoDocsCampo(Campo);
 
-                resp.Result = connection.QueryFirstOrDefault<string>(query, new { banco = Banco, tipoDoc = TipoDoc }) ?? "";
+                resp.Result = connection.QueryFirstOrDefault<string>(
+                    Sql.TesBancoDocsCampoPorTipoBanco,
+                    new { campo, banco = Banco, tipo = TipoDoc }
+                ) ?? "";
             }
             catch (Exception ex)
             {
@@ -454,15 +314,14 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<TesArchivosEspecialesData> sbCargaArchivosEspeciales(int CodEmpresa, int banco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<TesArchivosEspecialesData> { Code = 0, Result = new TesArchivosEspecialesData() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                const string query = @"Select UTILIZA_FORMATO_ESPECIAL,ARCHIVO_CHEQUES_FIRMAS,ARCHIVO_CHEQUES_SIN_FIRMAS from TES_BANCOS where ID_BANCO = @banco";
-                var archivosData = connection.QueryFirstOrDefault<TesBancosArchivosData>(query, new { banco });
+                var archivosData = connection.QueryFirstOrDefault<TesBancosArchivosData>(Sql.TesBancosArchivosEspeciales, new { banco });
 
                 if (archivosData != null)
                 {
@@ -492,14 +351,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto sbTesBancosAfectacion(int CodEmpresa, int vSolicitud, string vTipo = "E")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto { Code = 0, Description = "" };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                const string query = "exec spTESAfectaBancos @solicitud, @tipo";
-                connection.Execute(query, new { solicitud = vSolicitud, tipo = vTipo });
+                using var connection = new SqlConnection(conn);
+                connection.Execute(Sql.TesAfectaBancos, new { solicitud = vSolicitud, tipo = vTipo });
             }
             catch (Exception ex)
             {
@@ -512,18 +370,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGeneral(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                const string query = @"
-                    select id_banco as item, descripcion
-                    from Tes_Bancos
-                    where Estado = 'A'
-                    order by descripcion";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                using var connection = new SqlConnection(conn);
+                resp.Result = connection.Query<DropDownListaGenericaModel>(Sql.TesBancosActivos).ToList();
             }
             catch (Exception ex)
             {
@@ -537,16 +390,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto sbTesBitacoraEspecial(int CodEmpresa, int pSolicitud, string pMovimiento, string pDetalle, string Usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto { Code = 0, Description = "" };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = "exec spTesBitacora @solicitud, @movimiento, @detalle, @usuario";
-
-                connection.Execute(query, new
+                using var connection = new SqlConnection(conn);
+                connection.Execute(Sql.TesBitacora, new
                 {
                     solicitud = pSolicitud,
                     movimiento = pMovimiento,
@@ -572,7 +422,7 @@ namespace Galileo.DataBaseTier
                 switch ((tipo ?? "").Trim().ToLowerInvariant())
                 {
                     case "estado":
-                        resp.Result = new List<DropDownListaGenericaModel>
+                        resp.Result = new()
                         {
                             new() { item = "T", descripcion = "Todos" },
                             new() { item = "S", descripcion = "Solicitados" },
@@ -582,7 +432,7 @@ namespace Galileo.DataBaseTier
                         break;
 
                     case "busqueda":
-                        resp.Result = new List<DropDownListaGenericaModel>
+                        resp.Result = new()
                         {
                             new() { item = "T", descripcion = "Todos" },
                             new() { item = "1", descripcion = "Por Número de Caso / Solicitud" },
@@ -593,7 +443,7 @@ namespace Galileo.DataBaseTier
                         break;
 
                     case "documento":
-                        resp.Result = new List<DropDownListaGenericaModel>
+                        resp.Result = new()
                         {
                             new() { item = "C", descripcion = "Cheques" },
                             new() { item = "T", descripcion = "Transferencias" },
@@ -602,8 +452,7 @@ namespace Galileo.DataBaseTier
                         break;
 
                     default:
-                        resp.Result = new List<DropDownListaGenericaModel> { new() { item = "T", descripcion = "Todos" } };
-                        resp.Code = 0;
+                        resp.Result = new() { new() { item = "T", descripcion = "Todos" } };
                         resp.Description = "No se encontró el pTipo de Combo que se desea llenar.";
                         break;
                 }
@@ -620,19 +469,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesUnidadesCargaCboGeneral(int CodEmpresa, int contabilidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"
-                    select rtrim(cod_unidad) as item, rtrim(descripcion) as descripcion
-                    from CntX_Unidades
-                    where cod_contabilidad = @contabilidad";
-
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { contabilidad }).ToList();
+                using var connection = new SqlConnection(conn);
+                resp.Result = connection.Query<DropDownListaGenericaModel>(Sql.TesUnidadesCargaGeneral, new { contabilidad }).ToList();
             }
             catch (Exception ex)
             {
@@ -645,21 +488,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesTiposDocsCargaCbo(int CodEmpresa, int Banco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"
-                    select T.Tipo as item, rtrim(T.Descripcion) as descripcion
-                    from tes_banco_docs A
-                    inner join Tes_Tipos_Doc T on A.tipo = T.tipo
-                    where A.id_Banco = @banco
-                    order by T.Descripcion";
-
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new { banco = Banco }).ToList();
+                using var connection = new SqlConnection(conn);
+                resp.Result = connection.Query<DropDownListaGenericaModel>(Sql.TesTiposDocsPorBanco, new { banco = Banco }).ToList();
             }
             catch (Exception ex)
             {
@@ -673,14 +508,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbTesConceptosCargaCboGeneral(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto<List<DropDownListaGenericaModel>> { Code = 0, Result = new() };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                const string query = @"select rtrim(cod_Concepto) as item, rtrim(Descripcion) as descripcion from Tes_Conceptos";
-                resp.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                using var connection = new SqlConnection(conn);
+                resp.Result = connection.Query<DropDownListaGenericaModel>(Sql.TesConceptosGeneral).ToList();
             }
             catch (Exception ex)
             {
@@ -706,7 +540,7 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto sbTESActualizaCC(int CodEmpresa, ActualizaCCParams parametros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var resp = new ErrorDto { Code = 0, Description = "" };
 
             try
@@ -718,18 +552,11 @@ namespace Galileo.DataBaseTier
                     return resp;
                 }
 
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
                 if (parametros.Referencia > 0)
                 {
-                    const string query = @"
-                        UPDATE DesemBolsos
-                        SET Cod_Banco = @Banco,
-                            TDocumento = @Tipo,
-                            NDocumento = @Documento
-                        WHERE ID_Desembolso = @Codigo";
-
-                    connection.Execute(query, new
+                    connection.Execute(Sql.UpdateDesembolsosBancoDoc, new
                     {
                         Banco = parametros.Banco,
                         Tipo = parametros.Tipo,
@@ -739,15 +566,8 @@ namespace Galileo.DataBaseTier
                 }
                 else
                 {
-                    const string query = @"
-                        UPDATE Reg_Creditos
-                        SET Cod_Banco = @Banco,
-                            Documento_Referido = @documentoReferido
-                        WHERE ID_Solicitud = @OP";
-
                     string documentoReferido = $"{parametros.Tipo}-{parametros.Documento}";
-
-                    connection.Execute(query, new
+                    connection.Execute(Sql.UpdateRegCreditosBancoDoc, new
                     {
                         Banco = parametros.Banco,
                         documentoReferido,
@@ -766,13 +586,12 @@ namespace Galileo.DataBaseTier
 
         public string fxTesParametro(int CodEmpresa, string xCodigo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                const string query = "select valor from tes_parametros where cod_parametro = @codigo";
-                return connection.QueryFirst<string>(query, new { codigo = xCodigo });
+                using var connection = new SqlConnection(conn);
+                return connection.QueryFirst<string>(Sql.TesParametroPorCodigo, new { codigo = xCodigo });
             }
             catch
             {
@@ -782,14 +601,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<bool> fxValidaEmpresaSinpe(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto<bool> { Code = 0, Description = "Ok", Result = false };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                const string query = "select sinpe_activo from SIF_EMPRESA WHERE PORTAL_ID = @empresa";
-                result.Result = connection.QueryFirst<bool>(query, new { empresa = CodEmpresa });
+                using var connection = new SqlConnection(conn);
+                result.Result = connection.QueryFirst<bool>(Sql.EmpresaSinpeActivo, new { empresa = CodEmpresa });
             }
             catch (Exception ex)
             {
@@ -803,22 +621,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<bool> fxTesBancoValida(int CodEmpresa, int vBanco, string vUsuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto<bool> { Code = 0, Description = "Ok", Result = true };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"
-                    select isnull(Count(*),0) as Existe
-                    from Tes_Bancos B
-                    inner join tes_Banco_ASG A on B.id_Banco = A.id_Banco
-                    where A.nombre = @usuario
-                      and B.estado = 'A'
-                      and B.id_Banco = @banco";
-
-                var resp = connection.QueryFirstOrDefault<int>(query, new { usuario = vUsuario, banco = vBanco });
+                using var connection = new SqlConnection(conn);
+                int resp = connection.QueryFirstOrDefault<int>(Sql.TesBancoValida, new { usuario = vUsuario, banco = vBanco });
 
                 if (resp <= 0)
                 {
@@ -837,22 +646,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<bool> fxTesConceptoValida(int CodEmpresa, int vBanco, string vUsuario, string vConcepto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto<bool> { Code = 0, Description = "Ok", Result = true };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"
-                    select isnull(Count(*),0) as Existe
-                    from tes_conceptos_ASG A
-                    inner join Tes_Conceptos C on A.cod_concepto = C.cod_concepto
-                    where A.id_Banco = @banco
-                      and A.nombre = @usuario
-                      and A.cod_concepto = @concepto";
-
-                var resp = connection.QueryFirstOrDefault<int>(query, new { banco = vBanco, usuario = vUsuario, concepto = vConcepto });
+                using var connection = new SqlConnection(conn);
+                int resp = connection.QueryFirstOrDefault<int>(Sql.TesConceptoValida, new { banco = vBanco, usuario = vUsuario, concepto = vConcepto });
 
                 if (resp <= 0)
                 {
@@ -871,22 +671,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<bool> fxTesUnidadValida(int CodEmpresa, int vBanco, string vUsuario, string vUnidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto<bool> { Code = 0, Description = "Ok", Result = true };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"
-                    select isnull(Count(*),0) as Existe
-                    from tes_unidad_ASG A
-                    inner join CntX_Unidades C on A.cod_unidad = C.cod_unidad
-                    where A.id_Banco = @banco
-                      and A.nombre = @usuario
-                      and A.cod_unidad = @unidad";
-
-                var resp = connection.QueryFirstOrDefault<int>(query, new { banco = vBanco, usuario = vUsuario, unidad = vUnidad });
+                using var connection = new SqlConnection(conn);
+                int resp = connection.QueryFirstOrDefault<int>(Sql.TesUnidadValida, new { banco = vBanco, usuario = vUsuario, unidad = vUnidad });
 
                 if (resp <= 0)
                 {
@@ -905,22 +696,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<bool> fxTesDocumentoVerifica(int CodEmpresa, int vBanco, string vtipo, string vDocumento)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto<bool> { Code = 0, Description = "Ok", Result = true };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"
-                    select isnull(count(*),0) as Existe
-                    from Tes_Transacciones
-                    where id_banco = @banco
-                      and tipo = @tipo
-                      and Ndocumento = @documento
-                      and estado <> 'P'";
-
-                var resp = connection.QueryFirstOrDefault<int>(query, new { banco = vBanco, tipo = vtipo, documento = vDocumento });
+                using var connection = new SqlConnection(conn);
+                int resp = connection.QueryFirstOrDefault<int>(Sql.TesDocumentoExisteNoPendiente, new { banco = vBanco, tipo = vtipo, documento = vDocumento });
 
                 if (resp > 0)
                 {
@@ -939,15 +721,13 @@ namespace Galileo.DataBaseTier
 
         public static string fxTESCifrado(string vClave)
         {
-            var strPass = new StringBuilder();
+            if (string.IsNullOrEmpty(vClave))
+                return string.Empty;
 
+            var sb = new StringBuilder(vClave.Length);
             for (int i = 0; i < vClave.Length; i++)
-            {
-                char cifrado = (char)(vClave[i] + 7);
-                strPass.Append(cifrado);
-            }
-
-            return strPass.ToString();
+                sb.Append((char)(vClave[i] + 7));
+            return sb.ToString();
         }
 
         public static string fxStringCifrado(string pCadena)
@@ -963,7 +743,6 @@ namespace Galileo.DataBaseTier
             }
 
             string vRes = vResBuilder.ToString();
-
             var deltas = new[] { +1, -5, +7, -13, -2, +3 };
             int vSec = 0;
 
@@ -1003,24 +782,14 @@ namespace Galileo.DataBaseTier
 
         public bool fxValidaPermisoUserBancosTipo(int CodEmpresa, int vBanco, string vtipo, string vUsuario, string vPermiso)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                var col = MapPermisoColumn(vPermiso);
-
-                var query = $@"
-                    select count(T.Tipo)
-                    from tes_tipos_doc T
-                    left join tes_documentos_asg A
-                           on T.tipo = A.tipo
-                          and A.id_banco = @banco
-                          and A.nombre = @usuario
-                    where T.tipo in (select Tipo from tes_banco_docs where id_banco = @banco)
-                      and T.Tipo = @tipo
-                      and isnull(A.[{col}],0) = 1";
+                string permiso = Mappers.NormalizePermiso(vPermiso);
+                string query = Sql.GetValidaPermisoUserBancosTipoByPermiso(permiso);
 
                 return connection.QueryFirstOrDefault<int>(query, new { tipo = vtipo, banco = vBanco, usuario = vUsuario }) > 0;
             }
@@ -1030,110 +799,14 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        public ErrorDto sbTesEmitirDocumento(int CodEmpresa, string vUsuario, int vModulo, int vSolicitud, string vDocumento = "", DateTime? vFecha = null)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto { Code = 0, Description = "" };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"
-                    SELECT C.monto, C.nsolicitud, T.doc_auto, T.comprobante,
-                           ISNULL(B.firmas_desde,0) AS Firmas_Desde, B.Lugar_Emision,
-                           X.descripcion AS TipoX, ISNULL(B.firmas_hasta,0) AS Firmas_Hasta,
-                           dbo.MyGetdate() AS FechaX, C.id_Banco, C.tipo, C.modulo,
-                           C.op, C.referencia, C.codigo, C.subModulo, C.cod_divisa
-                    FROM Tes_Transacciones C
-                    INNER JOIN Tes_Bancos B ON C.id_Banco = B.id_banco
-                    INNER JOIN tes_banco_docs T ON B.id_Banco = T.id_Banco AND C.tipo = T.tipo
-                    INNER JOIN tes_tipos_doc X ON T.tipo = X.tipo
-                    WHERE C.nsolicitud = @solicitud";
-
-                var data = connection.QueryFirstOrDefault<MTesTransaccionDto>(query, new { solicitud = vSolicitud });
-
-                if (data == null)
-                {
-                    response.Code = -3;
-                    response.Description = "No se encontró la solicitud especificada.";
-                    return response;
-                }
-
-                string vTipo = data.tipo;
-                string vComprobante = data.comprobante;
-                bool vAutoConsec = data.doc_auto;
-                DateTime fechaEmision = vFecha ?? data.fechaX;
-                string vConsecutivo = string.Empty;
-
-                switch (vComprobante)
-                {
-                    case "01":
-                    case "02":
-                    case "03":
-                        if (vAutoConsec)
-                            vConsecutivo = fxTesTipoDocConsec(CodEmpresa, data.id_banco, vTipo, "+").Result.ToString();
-
-                        string nDocumentoClause = "";
-                        if (vAutoConsec || !string.IsNullOrWhiteSpace(vDocumento))
-                            nDocumentoClause = ", NDocumento = @documento";
-
-                        var updateSql = @"
-                            UPDATE Tes_Transacciones
-                            SET Estado = 'I',
-                                Fecha_Emision = @fecha,
-                                Ubicacion_Actual = 'T',
-                                Fecha_Traslado = @fecha,
-                                User_Genera = @usuario"
-                            + nDocumentoClause +
-                            " WHERE nsolicitud = @solicitud";
-
-                        connection.Execute(updateSql, new
-                        {
-                            fecha = fechaEmision.ToString("yyyy-MM-dd"),
-                            usuario = vUsuario,
-                            documento = vAutoConsec ? vConsecutivo : vDocumento,
-                            solicitud = vSolicitud
-                        });
-
-                        sbTESActualizaCC(CodEmpresa, new ActualizaCCParams
-                        {
-                            Codigo = data.codigo,
-                            Tipo = vTipo,
-                            Documento = vConsecutivo,
-                            Banco = data.id_banco,
-                            OP = data.op != null ? (int)data.op : 0,
-                            Modulo = data.modulo,
-                            SubModulo = data.subModulo,
-                            Referencia = data.referencia != null ? (int)data.referencia : 0
-                        });
-
-                        break;
-
-                    case "04":
-                        response.Code = -1;
-                        response.Description = "Las Transferencias Electrónicas no se pueden procesar directamente...";
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
-
         public string fxTesTiposDocAsiento(int CodEmpresa, string vTipo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                const string query = @"select Movimiento from tes_tipos_doc Where tipo = @tipo";
-                return connection.QueryFirstOrDefault<string>(query, new { tipo = vTipo }) ?? "";
+                using var connection = new SqlConnection(conn);
+                return connection.QueryFirstOrDefault<string>(Sql.TesTiposDocMovimiento, new { tipo = vTipo }) ?? "";
             }
             catch
             {
@@ -1143,20 +816,13 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<bool> fxTesCuentaObligatoriaVerifica(int CodEmpresa, int vBanco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto<bool> { Code = 0, Description = "Ok", Result = true };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"
-                    select isnull(count(*),0) as Existe
-                    from Tes_Bancos
-                    where id_banco = @banco
-                      and INT_REQUIERE_CUENTA_DESTINO = 1";
-
-                var resp = connection.QueryFirstOrDefault<int>(query, new { banco = vBanco });
+                using var connection = new SqlConnection(conn);
+                int resp = connection.QueryFirstOrDefault<int>(Sql.TesCuentaDestinoObligatoria, new { banco = vBanco });
 
                 if (resp > 0)
                 {
@@ -1194,121 +860,6 @@ namespace Galileo.DataBaseTier
             _ => ""
         };
 
-        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-")
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            var resp = new ErrorDto<TesReporteTransferenciaDto>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new TesReporteTransferenciaDto()
-            };
-
-            decimal curMonto = 0;
-            long lngCasos = 0;
-            string strDivisa = "", vLetra = "";
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                const string bancoSql = @"select cta as item, descripcion from Tes_Bancos where id_banco = @vBanco";
-                var banco = connection.QueryFirstOrDefault(bancoSql, new { vBanco });
-
-                if (banco != null)
-                {
-                    vLetra = "Sirva la Presente para saludarlo y a la vez solicitarle debitar de nuestra cuenta corriente"
-                           + " # " + banco.item + " la suma de ¢ ";
-                }
-
-                if (vTipo == "C")
-                {
-                    string strSQL = @"
-                        select sum(Monto) as Monto, Count(*) as Casos, cod_divisa
-                        from Tes_Transacciones
-                        where tipo = @vDocumento
-                          and id_banco = @vBanco
-                          and documento_Base = @vTransac";
-
-                    if (vPlan != "-sp-")
-                        strSQL += " and Cod_Plan = @vPlan";
-
-                    strSQL += " group by cod_divisa";
-
-                    var rs = connection.QueryFirstOrDefault(strSQL, new { vDocumento, vBanco, vTransac, vPlan });
-
-                    if (rs != null)
-                    {
-                        curMonto = rs.Monto;
-                        lngCasos = rs.Casos;
-                        strDivisa = rs.cod_divisa;
-                    }
-
-                    string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result + fxDescDivisa(CodEmpresa, strDivisa).Result;
-
-                    resp.Result.registros = lngCasos;
-                    resp.Result.montoLetras = vMontoLetras;
-                    resp.Result.totalMonto = curMonto;
-                    resp.Result.fxNombre = fxTesParametro(CodEmpresa, "01");
-                    resp.Result.fxPuesto = fxTesParametro(CodEmpresa, "02");
-                    resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
-                    resp.Result.letras1 = vLetra;
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = new TesReporteTransferenciaDto();
-            }
-
-            return resp;
-        }
-
-        public ErrorDto<string> fxDescDivisa(int CodEmpresa, string vDivisa)
-        {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<string> { Code = 0, Description = "Ok", Result = "" };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                const string query = @"select top 1 descripcion from CNTX_DIVISAS where cod_divisa = @vDivisa";
-                string descripcion = connection.QueryFirstOrDefault<string>(query, new { vDivisa }) ?? "";
-
-                if (!string.IsNullOrEmpty(descripcion))
-                {
-                    string strDescripcion = descripcion.Trim().ToLowerInvariant();
-                    string fxCodText = strDescripcion.Split(' ')[0].Trim();
-                    if (string.IsNullOrEmpty(fxCodText)) fxCodText = strDescripcion;
-
-                    fxCodText = char.ToUpper(fxCodText[0]) + fxCodText.Substring(1).Trim();
-
-                    char ultima = fxCodText[^1];
-                    if ("aeiouáéíóú".Contains(char.ToLowerInvariant(ultima)))
-                        fxCodText += "s";
-                    else
-                        fxCodText += "es";
-
-                    resp.Result = string.IsNullOrEmpty(fxCodText) ? strDescripcion : fxCodText;
-                }
-                else
-                {
-                    resp.Result = " Colones";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-                resp.Result = "";
-            }
-
-            return resp;
-        }
-
         public ErrorDto<List<TokenConsultaModel>> spTes_Token_Consulta(int CodEmpresa, string usuario)
         {
             var response = new ErrorDto<List<TokenConsultaModel>> { Code = 0, Result = new() };
@@ -1318,8 +869,7 @@ namespace Galileo.DataBaseTier
                 string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
                 using var connection = new SqlConnection(conn);
 
-                const string query = @"exec spTes_Token_Consulta '', 'A' , @usuario";
-                response.Result = connection.Query<TokenConsultaModel>(query, new { usuario }).ToList();
+                response.Result = connection.Query<TokenConsultaModel>(Sql.TesTokenConsulta, new { usuario }).ToList();
             }
             catch (Exception ex)
             {
@@ -1333,26 +883,20 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto spTes_Token_New(int CodEmpresa, string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto { Code = 0, Description = "Ok" };
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
-                // Stored procedure con parámetro (sin interpolación)
+                // stored procedure SIN interpolación
                 connection.Execute(
                     "spTes_Token_New",
                     new { usuario = usuario.ToUpperInvariant() },
                     commandType: System.Data.CommandType.StoredProcedure);
 
-                const string query = @"
-                    select top 1 ID_TOKEN
-                    from Tes_Tokens
-                    where REGISTRO_USUARIO = @usuario
-                    order by REGISTRO_FECHA desc";
-
-                response.Description = connection.QueryFirstOrDefault<string>(query, new { usuario = usuario.ToUpperInvariant() }) ?? "";
+                response.Description = connection.QueryFirstOrDefault<string>(Sql.TesTokenUltimoPorUsuario, new { usuario = usuario.ToUpperInvariant() }) ?? "";
             }
             catch (Exception ex)
             {
@@ -1365,11 +909,11 @@ namespace Galileo.DataBaseTier
 
         public void sbCrdOperacionTags(int CodEmpresa, long pOperacion, string pLinea, string pTag, string pUsuario, string? pAsignado = "", string? pNotas = "")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(conn);
 
                 connection.Execute(
                     "[spCrdOperacionTagRegistra]",
