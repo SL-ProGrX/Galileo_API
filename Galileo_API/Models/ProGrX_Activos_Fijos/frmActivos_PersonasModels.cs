@@ -27,7 +27,7 @@
         public string identificacion { get; set; } = string.Empty;
         public string cod_departamento { get; set; } = string.Empty;
         public string cod_seccion { get; set; } = string.Empty;
-        public DateTime fecha { get; set; }
+        public DateTime? fecha { get; set; }
     }
 
     public class CambioDeptoResponse

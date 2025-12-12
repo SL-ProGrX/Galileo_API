@@ -21,7 +21,7 @@ namespace Galileo.BusinessLogic.ProGrX_Activos_Fijos
         }
         public ErrorDto<List<ActivosDepartamentosData>> Activos_Departamentos_Obtener(int CodEmpresa, string jfiltros)
         {
-            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
+            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
             return _db.Activos_Departamentos_Obtener(CodEmpresa, filtros);
         }
         public ErrorDto Activos_Departamentos_Guardar(int CodEmpresa, string usuario, ActivosDepartamentosData departamento)
@@ -46,12 +46,12 @@ namespace Galileo.BusinessLogic.ProGrX_Activos_Fijos
         }
         public ErrorDto<ActivosSeccionesLista> Activos_SeccionesLista_Obtener(int CodEmpresa, string? cod_departamento, string jfiltros)
         {
-            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
+            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
             return _db.Activos_SeccionesLista_Obtener(CodEmpresa, cod_departamento, filtros);
         }
         public ErrorDto<List<ActivosSeccionesData>> Activos_Secciones_Obtener(int CodEmpresa, string? cod_departamento, string jfiltros)
         {
-            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros);
+            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
             return _db.Activos_Secciones_Obtener(CodEmpresa, cod_departamento, filtros);
         }
         public ErrorDto Activos_Secciones_Guardar(int CodEmpresa, string usuario, ActivosSeccionesData seccion)

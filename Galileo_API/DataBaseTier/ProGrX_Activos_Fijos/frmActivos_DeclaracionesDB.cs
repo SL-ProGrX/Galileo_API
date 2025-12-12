@@ -453,7 +453,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         {
             if (data.id_declara > 0)
             {
-                var exi = Activos_Declaraciones_Registro_Existe_Obtener(CodEmpresa, data.id_declara);
+                var exi = Activos_Declaraciones_Registro_Existe_Obtener(CodEmpresa, data.id_declara ?? 0);
                 if (exi.Code == -2)
                     return ErrorResult(-2, $"La declaración {data.id_declara} ya existe.");
             }
@@ -468,7 +468,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             if (data.id_declara <= 0)
                 return ErrorResult(-2, "No se indicó una declaración válida para modificar.");
 
-            var exi = Activos_Declaraciones_Registro_Existe_Obtener(CodEmpresa, data.id_declara);
+            var exi = Activos_Declaraciones_Registro_Existe_Obtener(CodEmpresa, data.id_declara ?? 0);
             if (exi.Code == 0)
                 return ErrorResult(-2, $"La declaración {data.id_declara} no existe.");
 
@@ -477,7 +477,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 Code        = upd.Code,
                 Description = upd.Description,
-                Result      = new ActivosDeclaracionResult { id_declara = data.id_declara }
+                Result      = new ActivosDeclaracionResult { id_declara = data.id_declara ?? 0 }
             };
         }
 
@@ -514,7 +514,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 RegistrarBitacoraDeclaracion(
                     CodEmpresa,
                     data.usuario ?? "",
-                    data.id_declara,
+                    data.id_declara ?? 0,
                     movimiento: "Registra - WEB",
                     detalleExtra: detalle);
 
@@ -522,7 +522,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 resp.Description = string.IsNullOrWhiteSpace(mensaje)
                     ? "Declaración registrada satisfactoriamente!"
                     : mensaje;
-                resp.Result = new ActivosDeclaracionResult { id_declara = data.id_declara };
+                resp.Result = new ActivosDeclaracionResult { id_declara = data.id_declara ?? 0 };
             }
             catch (Exception ex)
             {
@@ -543,7 +543,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             try
             {
                 var (pass, mensaje, _) =
-                    EjecutarSpDeclaraMainAdd(CodEmpresa, declaraId: data.id_declara, data);
+                    EjecutarSpDeclaraMainAdd(CodEmpresa, declaraId: data.id_declara ?? 0, data);
 
                 if (pass != 1)
                     return new ErrorDto { Code = -2, Description = mensaje };
@@ -551,7 +551,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 RegistrarBitacoraDeclaracion(
                     CodEmpresa,
                     data.usuario ?? "",
-                    data.id_declara,
+                    data.id_declara ?? 0,
                     movimiento: "Modifica - WEB");
 
                 resp.Description = string.IsNullOrWhiteSpace(mensaje)

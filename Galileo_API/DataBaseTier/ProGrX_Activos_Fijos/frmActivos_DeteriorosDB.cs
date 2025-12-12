@@ -257,7 +257,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     Justificacion = data.motivo_id,
                     Descripcion   = data.descripcion,
                     Fecha         = data.fecha,
-                    Monto         = Math.Abs(data.monto),
+                    Monto         = Math.Abs(data.monto ?? 0),
                     Usuario       = usuario
                 }).FirstOrDefault();
 

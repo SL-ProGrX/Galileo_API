@@ -43,7 +43,7 @@
 
     public class ActivosDeclaracionGuardarRequest
     {
-        public int id_declara { get; set; }
+        public int? id_declara { get; set; }
         public string notas { get; set; } = "";
         public string tipo { get; set; } = "";
         public string fecha_inicio { get; set; } = "";
