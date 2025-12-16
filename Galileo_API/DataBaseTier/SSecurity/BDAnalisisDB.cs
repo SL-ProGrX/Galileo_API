@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.Security;
-using System.Text.RegularExpressions;
+using System.Security;
 
 namespace Galileo.DataBaseTier
 {
@@ -9,73 +9,89 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
 
+        // 🔒 Lista blanca de tablas permitidas
+        private static readonly HashSet<string> TablasPermitidas = new()
+        {
+            "Usuarios",
+            "Roles",
+            "Permisos",
+            "Logs"
+            // 👉 agrega aquí SOLO las tablas que deban consultarse
+        };
+
         public BDAnalisisDB(IConfiguration config)
         {
             _config = config;
         }
 
+        /// <summary>
+        /// Devuelve las tablas de usuario del sistema
+        /// </summary>
         public static List<string> TablasCargar()
         {
-            List<string> resp;
             try
             {
-                using (var connection = new SqlConnection("DefaultConnString"))
-                {
+                using var connection =
+                    new SqlConnection("DefaultConnString");
 
-                    var strSQL = "select name  from sys.objects "
-                                   + " where type = 'U' "
-                                   + "'order by name";
+                const string sql = @"
+                    SELECT name
+                    FROM sys.objects
+                    WHERE type = 'U'
+                    ORDER BY name";
 
-                    resp = connection.Query<string>(strSQL).ToList();
-                }
+                return connection.Query<string>(sql).ToList();
             }
-            catch (Exception)
+            catch
             {
-                resp = new List<string>();
+                return new List<string>();
             }
-            return resp;
         }
-        
+
+        /// <summary>
+        /// Carga los primeros 50 registros de una tabla permitida
+        /// </summary>
         public ResultadoConsultaDto sbCargaResultados(string pObjeto)
         {
-            ResultadoConsultaDto resultado = new ResultadoConsultaDto();
+            if (!TablasPermitidas.Contains(pObjeto))
+                throw new SecurityException("Tabla no permitida");
+
+            ResultadoConsultaDto resultado = new();
+
+            string sql = $"SELECT TOP 50 * FROM [{pObjeto}]";
 
             try
             {
+                using var connection =
+                    new SqlConnection(_config.GetConnectionString("DefaultConnString"));
 
-                // Consulta para cargar resultados
-                string strSQL = "SELECT TOP 50 * from " + pObjeto;
+                var results = connection.Query(sql);
 
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
+                if (results != null && results.Any())
                 {
-                    var results = connection.Query(strSQL);
+                    resultado.Datos = new List<Dictionary<string, string>>();
 
-                    if (results != null && results.Any())
+                    foreach (var row in results)
                     {
-                        // Obtener nombres de columnas y tipos de datos
+                        var rowDictionary = new Dictionary<string, string>();
 
-                        // Obtener datos de las filas
-                        resultado.Datos = new List<Dictionary<string, string>>();
-
-                        foreach (var row in results)
+                        foreach (var property in (IDictionary<string, object>)row)
                         {
-                            var rowDictionary = new Dictionary<string, string>();
-                            foreach (var column in row.Dictionary)
-                            {
-                                rowDictionary[column.Key] = column.Value.ToString();
-                            }
-                            resultado.Datos.Add(rowDictionary);
+                            rowDictionary[property.Key] =
+                                property.Value?.ToString() ?? string.Empty;
                         }
+
+                        resultado.Datos.Add(rowDictionary);
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Manejar excepciones aquí si es necesario
+                // Log real aquí si aplica
+                _ = ex.Message;
             }
 
             return resultado;
         }
-
     }
 }
