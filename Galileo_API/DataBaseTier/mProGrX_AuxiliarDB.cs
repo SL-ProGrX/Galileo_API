@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using Dapper;
 using Humanizer;
-using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using PdfSharp.Pdf;
@@ -24,6 +23,7 @@ namespace Galileo.DataBaseTier
         public string dateFormat { get; set; }
         public string controlAuth { get; set; }
 
+
         private const string _descripcion = "descripcion";
 
         // Identificadores SQL (tabla/columna) permitidos: letras, números, _
@@ -31,6 +31,12 @@ namespace Galileo.DataBaseTier
 
         private static readonly Regex IdentRegex = new(
             @"^[A-Za-z_][A-Za-z0-9_]*$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            RegexTimeout
+        );
+
+        private static readonly Regex EmailRegex = new(
+            @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
             RegexTimeout
         );
@@ -471,9 +477,12 @@ FROM {table}
 
         public static bool fxCorreoValido(string correo)
         {
-            string patron = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
-            return Regex.IsMatch(correo, patron);
+            if (string.IsNullOrWhiteSpace(correo))
+                return false;
+
+            return EmailRegex.IsMatch(correo);
         }
+
 
         public static string fxConvertModelToXml<T>(T model)
         {
@@ -682,8 +691,19 @@ FROM {table}
 
         private static Match? ParseUpdateSql(string sql)
         {
-            string pattern = @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$";
-            var match = Regex.Match(sql, pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+            if (string.IsNullOrWhiteSpace(sql))
+                return null;
+
+            const string pattern =
+                @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$";
+
+            var match = Regex.Match(
+                sql,
+                pattern,
+                RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant,
+                RegexTimeout
+            );
+
             return match.Success ? match : null;
         }
 
