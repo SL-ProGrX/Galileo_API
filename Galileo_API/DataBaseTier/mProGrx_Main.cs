@@ -12,14 +12,12 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private readonly MSecurityMainDb _Security_MainDB;
-        private readonly MProGrXAuxiliarDB _AuxiliarDB;
         private const string connectionStringName = "DefaultConnString";
 
         public MProGrxMain(IConfiguration config)
         {
             _config = config;
             _Security_MainDB = new MSecurityMainDb(_config);
-            _AuxiliarDB = new MProGrXAuxiliarDB(_config);
         }
 
         /// <summary>
@@ -613,7 +611,7 @@ namespace Galileo.DataBaseTier
                 }
 
                 using var connection = new SqlConnection(stringConn);
-                string? vFechaCorteNullable = _AuxiliarDB.validaFechaGlobal(vCorte);
+                string? vFechaCorteNullable = MProGrXAuxiliarDB.validaFechaGlobal(vCorte, "yyyyMMdd");
                 string vFechaCorte = vFechaCorteNullable ?? string.Empty;
 
                 var query = $@"exec spSys_Estado_Cuenta_Corte @cedula , @corte, @email,@usuario ";
