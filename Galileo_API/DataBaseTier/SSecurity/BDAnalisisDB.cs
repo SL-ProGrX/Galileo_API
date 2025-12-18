@@ -9,15 +9,17 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
 
-        // 🔒 Lista blanca de tablas permitidas
-        private static readonly HashSet<string> TablasPermitidas = new()
-        {
-            "Usuarios",
-            "Roles",
-            "Permisos",
-            "Logs"
-            // 👉 agrega aquí SOLO las tablas que deban consultarse
-        };
+        // 🔒 Whitelist cerrada + mapeo seguro
+        // La key es lo que llega desde fuera
+        // El value es el nombre REAL de la tabla en BD
+        private static readonly IReadOnlyDictionary<string, string> TablasPermitidas =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Usuarios"]  = "Usuarios",
+                ["Roles"]     = "Roles",
+                ["Permisos"]  = "Permisos",
+                ["Logs"]      = "Logs"
+            };
 
         public BDAnalisisDB(IConfiguration config)
         {
@@ -27,12 +29,12 @@ namespace Galileo.DataBaseTier
         /// <summary>
         /// Devuelve las tablas de usuario del sistema
         /// </summary>
-        public static List<string> TablasCargar()
+        public List<string> TablasCargar()
         {
             try
             {
                 using var connection =
-                    new SqlConnection("DefaultConnString");
+                    new SqlConnection(_config.GetConnectionString("DefaultConnString"));
 
                 const string sql = @"
                     SELECT name
@@ -53,12 +55,19 @@ namespace Galileo.DataBaseTier
         /// </summary>
         public ResultadoConsultaDto sbCargaResultados(string pObjeto)
         {
-            if (!TablasPermitidas.Contains(pObjeto))
+            if (string.IsNullOrWhiteSpace(pObjeto))
+                throw new SecurityException("Tabla no indicada");
+
+            // 🔐 Validación fuerte: solo tablas de la whitelist
+            if (!TablasPermitidas.TryGetValue(pObjeto.Trim(), out var tablaSegura))
                 throw new SecurityException("Tabla no permitida");
 
-            ResultadoConsultaDto resultado = new();
+            var sql = $"SELECT TOP (50) * FROM [{tablaSegura}]";
 
-            string sql = $"SELECT TOP 50 * FROM [{pObjeto}]";
+            var resultado = new ResultadoConsultaDto
+            {
+                Datos = new List<Dictionary<string, string>>()
+            };
 
             try
             {
@@ -67,27 +76,21 @@ namespace Galileo.DataBaseTier
 
                 var results = connection.Query(sql);
 
-                if (results != null && results.Any())
+                foreach (var row in results)
                 {
-                    resultado.Datos = new List<Dictionary<string, string>>();
+                    var rowDictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-                    foreach (var row in results)
+                    foreach (var property in (IDictionary<string, object>)row)
                     {
-                        var rowDictionary = new Dictionary<string, string>();
-
-                        foreach (var property in (IDictionary<string, object>)row)
-                        {
-                            rowDictionary[property.Key] =
-                                property.Value?.ToString() ?? string.Empty;
-                        }
-
-                        resultado.Datos.Add(rowDictionary);
+                        rowDictionary[property.Key] =
+                            property.Value?.ToString() ?? string.Empty;
                     }
+
+                    resultado.Datos.Add(rowDictionary);
                 }
             }
             catch (Exception ex)
             {
-                // Log real aquí si aplica
                 _ = ex.Message;
             }
 

@@ -27,7 +27,22 @@ namespace Galileo.DataBaseTier
         private const string _descripcion = "descripcion";
 
         // Identificadores SQL (tabla/columna) permitidos: letras, números, _
-        private static readonly Regex IdentRegex = new(@"^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.Compiled);
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(250);
+
+        private static readonly Regex IdentRegex = new(
+            @"^[A-Za-z_][A-Za-z0-9_]*$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            RegexTimeout
+        );
+
+
+        private static readonly Regex WhereSafeRegex = new(
+            @"^[A-Za-z0-9_\[\]\s\=\<\>\!\(\)'\.""%,+\-]+$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            RegexTimeout
+        );
+
+
 
         public MProGrXAuxiliarDB(IConfiguration config)
         {
@@ -361,7 +376,7 @@ namespace Galileo.DataBaseTier
 
         #region fxSIFCCodigos (consulta códigos genéricos)
 
-        public ConsultaDescripcion fxSIFCCodigos(int CodEmpresa, string vTipoDC, string vCodDesX, string vTabla, int Cod_Conta)
+        public static ConsultaDescripcion fxSIFCCodigos(PortalDB portalDB, int CodEmpresa, string vTipoDC, string vCodDesX, string vTabla, int Cod_Conta)
         {
             var def = GetCodigoTablaDef(vTabla);
             if (def is null) return new ConsultaDescripcion();
@@ -373,7 +388,7 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                using var connection = portalDB.CreateConnection(CodEmpresa);
                 return connection.QueryFirstOrDefault<ConsultaDescripcion>(sql, parameters) ?? new ConsultaDescripcion();
             }
             catch
@@ -412,9 +427,11 @@ namespace Galileo.DataBaseTier
             bool porCodigo = vTipoDC == "D";
 
             // Quoting seguro de identificadores (tabla/col)
-            var table = SafeIdent(def.Table);
-            var codeCol = SafeIdent(def.CodeColumn);
-            var descCol = SafeIdent(def.DescColumn);
+            var table = SqlSafe.Ident(def.Table);
+            var codeCol = SqlSafe.Ident(def.CodeColumn);
+            var descCol = SqlSafe.Ident(def.DescColumn);
+
+
 
             string where;
             object parameters;
@@ -504,7 +521,7 @@ FROM {table}
             return result;
         }
 
-        public string? validaFechaGlobal(DateTime? fecha)
+        public static string? validaFechaGlobal(DateTime? fecha, string dateFormat)
         {
             try
             {
@@ -515,6 +532,7 @@ FROM {table}
                 return null;
             }
         }
+
 
         #endregion
 
@@ -688,8 +706,13 @@ FROM {table}
 
                 // SONAR S2077: SQL dinámico intencional (control de cambios interno).
                 // Mitigación: SQL validado (tokens), tabla validada (identificador), WHERE validado.
-                var safeTable = SafeIdent(table);
-                var dtTable = connection.Query($"SELECT * FROM {safeTable} WHERE {whereClause}").FirstOrDefault();
+                var safeTable = SqlSafe.Ident(table);
+                var (whereSql, dpWhere) = SqlSafe.Where(whereClause);
+
+                var dtTable = connection
+                    .Query($"SELECT TOP (1) * FROM {safeTable} WHERE {whereSql};", dpWhere)
+                    .FirstOrDefault();
+
 
                 if (dtTable == null)
                     return SetErrorResult(result, $"❌ No se encontró información en {table} con la condición: {whereClause}");
@@ -762,12 +785,15 @@ FROM {table}
                 selectParts.Add($"{expression} AS {SafeIdent(column)}");
             }
 
-            var safeTable = SafeIdent(table);
 
             // SONAR S2077: SQL dinámico intencional (comparación valores).
             // Mitigación: tabla/columnas validadas y WHERE validado.
-            string selectStatement = $"SELECT {string.Join(", ", selectParts)} FROM {safeTable} WHERE {whereClause};";
-            var dtTableNew = connection.Query(selectStatement).FirstOrDefault();
+            var safeTable = SqlSafe.Ident(table);
+            var (whereSql, dpWhere) = SqlSafe.Where(whereClause);
+
+            string selectStatement = $"SELECT {string.Join(", ", selectParts)} FROM {safeTable} WHERE {whereSql};";
+            var dtTableNew = connection.Query(selectStatement, dpWhere).FirstOrDefault();
+
 
             var dicOriginal = (IDictionary<string, object>)dtTable;
             var dicNuevo = dtTableNew as IDictionary<string, object>;
@@ -1169,25 +1195,31 @@ VALUES (
 
         private static bool IsWhereSeguro(string whereClause)
         {
-            if (string.IsNullOrWhiteSpace(whereClause)) return false;
+            if (string.IsNullOrWhiteSpace(whereClause))
+                return false;
 
             // Bloquea multi statement + comentarios
-            if (whereClause.Contains(";") || whereClause.Contains("--") || whereClause.Contains("/*") || whereClause.Contains("*/"))
+            if (whereClause.Contains(";") ||
+                whereClause.Contains("--") ||
+                whereClause.Contains("/*") ||
+                whereClause.Contains("*/"))
                 return false;
 
-            // Bloquea keywords peligrosas dentro del WHERE
-            var banned = new[] { " drop ", " alter ", " create ", " truncate ", " exec", " execute ", " merge ", " grant ", " revoke " };
+            // Bloquea keywords peligrosas
+            var banned = new[]
+            {
+            " drop ", " alter ", " create ", " truncate ",
+            " exec ", " execute ", " merge ", " grant ", " revoke "
+            };
+
             var lower = " " + whereClause.ToLowerInvariant() + " ";
-            if (banned.Any(b => lower.Contains(b))) return false;
-
-            // Restricción simple: permite caracteres típicos de filtros (ajusta si necesitas)
-            // letras/números/_/[]/=/</>/!/()/espacios/'/"/./,/AND/OR/IS/NULL/LIKE/IN
-            // Si esto te bloquea casos válidos, lo ajustamos.
-            if (!Regex.IsMatch(whereClause, @"^[A-Za-z0-9_\[\]\s\=\<\>\!\(\)'\."","",%+-]+$"))
+            if (banned.Any(b => lower.Contains(b)))
                 return false;
 
-            return true;
+            // ✅ Regex con timeout (evita ReDoS)
+            return WhereSafeRegex.IsMatch(whereClause);
         }
+
 
         private static bool IsSqlInternoSeguro(string sql)
         {
