@@ -1,5 +1,10 @@
-﻿using Dapper;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 
@@ -8,399 +13,331 @@ namespace Galileo.DataBaseTier
     public class MTesFuncionesDb
     {
         private readonly IConfiguration _config;
+
         public MTesFuncionesDb(IConfiguration config)
         {
             _config = config;
         }
 
+        private string GetEmpresaConn(int codEmpresa) =>
+            new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+
+        private static string Trunc(string? value, int maxLen)
+        {
+            if (string.IsNullOrEmpty(value)) return string.Empty;
+            return value.Length > maxLen ? value.Substring(0, maxLen) : value;
+        }
+
         public long fxgTesoreriaMaestro(int CodEmpresa, string usuario, TesoreriaMaestroModel tesoreria)
         {
-
-            long resp1 = 0;
-            long lngSol = 0;
-            string query = "", detalle1 = "", detalle2 = "";
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
+                var stringConn = GetEmpresaConn(CodEmpresa);
                 using var connection = new SqlConnection(stringConn);
-                detalle1 = (tesoreria.vDetalle1.Length > 26) ? tesoreria.vDetalle1.Substring(0, 26) : tesoreria.vDetalle1;
-                detalle2 = (tesoreria.vDetalle2.Length > 26) ? tesoreria.vDetalle2.Substring(0, 26) : tesoreria.vDetalle2;
 
-                if (tesoreria.vTipoDocumento.Equals("CK", StringComparison.CurrentCultureIgnoreCase))
+                var detalle1 = Trunc(tesoreria.vDetalle1, 26);
+                var detalle2 = Trunc(tesoreria.vDetalle2, 26);
+
+                // Insert + retorno del ID insertado (evita MAX(nsolicitud))
+                const string sqlInsertCk = @"
+INSERT INTO Tes_Transacciones (
+    id_banco, tipo, codigo, beneficiario, monto, fecha_solicitud,
+    estado, estadoi, modulo, submodulo, cta_ahorros, detalle1, detalle2,
+    referencia, op, genera, actualiza, cod_unidad, cod_concepto,
+    user_solicita, autoriza, fecha_autorizacion, user_autoriza,
+    ref_01, ref_02, ref_03, cod_app, ID_TOKEN, REMESA_TIPO, REMESA_ID
+) VALUES (
+    @Banco, @TipoDocumento, @Codigo, @Beneficiario, @Monto, @Fecha,
+    'P', 'P', 'CC', 'C', @Cuenta, @Detalle1, @Detalle2,
+    @Referencia, @OP, 'S', 'S', @Unidad, @Concepto,
+    @Usuario, 'S', GETDATE(), @Usuario,
+    @Ref01, @Ref02, @Ref03, @CodApp, @Token, @RemesaTipo, @RemesaId
+);
+SELECT CAST(SCOPE_IDENTITY() as bigint);";
+
+                const string sqlInsertNoCk = @"
+INSERT INTO Tes_Transacciones (
+    id_banco, tipo, codigo, beneficiario, monto, fecha_solicitud,
+    estado, estadoi, modulo, submodulo, cta_ahorros, detalle1, detalle2,
+    referencia, op, genera, actualiza, cod_unidad, cod_concepto,
+    ref_01, ref_02, ref_03, cod_app, ID_TOKEN, REMESA_TIPO, REMESA_ID,
+    user_solicita
+) VALUES (
+    @Banco, @TipoDocumento, @Codigo, @Beneficiario, @Monto, @Fecha,
+    'P', 'P', 'CC', 'C', @Cuenta, @Detalle1, @Detalle2,
+    @Referencia, @OP, 'S', 'S', @Unidad, @Concepto,
+    @Ref01, @Ref02, @Ref03, @CodApp, @Token, @RemesaTipo, @RemesaId,
+    @Usuario
+);
+SELECT CAST(SCOPE_IDENTITY() as bigint);";
+
+                var args = new
                 {
-                    query = $@"INSERT INTO Tes_Transacciones (
-                                        id_banco,
-                                        tipo,
-                                        codigo,
-                                        beneficiario,
-                                        monto,
-                                        fecha_solicitud,
-                                        estado,
-                                        estadoi,
-                                        modulo,
-                                        submodulo,
-                                        cta_ahorros,
-                                        detalle1,
-                                        detalle2,
-                                        referencia,
-                                        op,
-                                        genera,
-                                        actualiza,
-                                        cod_unidad,
-                                        cod_concepto,
-                                        user_solicita,
-                                        autoriza,
-                                        fecha_autorizacion,
-                                        user_autoriza,
-                                        ref_01,
-                                        ref_02,
-                                        ref_03,
-                                        cod_app,
-                                        ID_TOKEN,
-                                        REMESA_TIPO,
-                                        REMESA_ID
-                                    ) VALUES (
-                                        '{tesoreria.vBanco}',
-                                        '{tesoreria.vTipoDocumento}',
-                                        '{tesoreria.vCodigo}',
-                                        '{tesoreria.vBeneficiario}',
-                                        {tesoreria.vMonto},
-                                        '{tesoreria.vFecha}',
-                                        'P',
-                                        'P',
-                                        'CC',
-                                        'C',
-                                        '{tesoreria.vCuenta}',
-                                        '{detalle1}',
-                                        '{detalle2}',
-                                        {tesoreria.vReferencia},
-                                        {tesoreria.vOP},
-                                        'S',
-                                        'S',
-                                        '{tesoreria.vUnidad}',
-                                        '{tesoreria.vConcepto}',
-                                        '{usuario}',
-                                        'S',
-                                        Getdate(),
-                                        '{usuario}',
-                                        '{tesoreria.vRef_01}',
-                                        '{tesoreria.vRef_02}',
-                                        '{tesoreria.vRef_03}',
-                                        '{tesoreria.vCodApp}',
-                                        '{tesoreria.vToken}',
-                                        '{tesoreria.vRemesaTipo}',
-                                        {tesoreria.vRemesa}
-                                    )";
-                    connection.Execute(query);
+                    Banco = tesoreria.vBanco,
+                    TipoDocumento = tesoreria.vTipoDocumento,
+                    Codigo = tesoreria.vCodigo,
+                    Beneficiario = tesoreria.vBeneficiario,
+                    Monto = tesoreria.vMonto,
+                    Fecha = tesoreria.vFecha,
+                    Cuenta = tesoreria.vCuenta,
+                    Detalle1 = detalle1,
+                    Detalle2 = detalle2,
+                    Referencia = tesoreria.vReferencia,
+                    OP = tesoreria.vOP,
+                    Unidad = tesoreria.vUnidad,
+                    Concepto = tesoreria.vConcepto,
+                    Usuario = usuario,
+                    Ref01 = tesoreria.vRef_01,
+                    Ref02 = tesoreria.vRef_02,
+                    Ref03 = tesoreria.vRef_03,
+                    CodApp = tesoreria.vCodApp,
+                    Token = tesoreria.vToken,
+                    RemesaTipo = tesoreria.vRemesaTipo,
+                    RemesaId = tesoreria.vRemesa
+                };
 
-                }
-                else
-                {
-                    query = $@"INSERT INTO Tes_Transacciones (
-                                        id_banco,
-                                        tipo,
-                                        codigo,
-                                        beneficiario,
-                                        monto,
-                                        fecha_solicitud,
-                                        estado,
-                                        estadoi,
-                                        modulo,
-                                        submodulo,
-                                        cta_ahorros,
-                                        detalle1,
-                                        detalle2,
-                                        referencia,
-                                        op,
-                                        genera,
-                                        actualiza,
-                                        cod_unidad,
-                                        cod_concepto,
-                                        ref_01,
-                                        ref_02,
-                                        ref_03,
-                                        cod_app,
-                                        ID_TOKEN,
-                                        REMESA_TIPO,
-                                        REMESA_ID,
-                                        user_solicita
-                                    ) VALUES (
-                                        '{tesoreria.vBanco}',
-                                        '{tesoreria.vTipoDocumento}',
-                                        '{tesoreria.vCodigo}',
-                                        '{tesoreria.vBeneficiario}',
-                                        {tesoreria.vMonto},
-                                        '{tesoreria.vFecha}',
-                                        'P',
-                                        'P',
-                                        'CC',
-                                        'C',
-                                        '{tesoreria.vCuenta}',
-                                        '{detalle1}',
-                                        '{detalle2}',
-                                        {tesoreria.vReferencia},
-                                        {tesoreria.vOP},
-                                        'S',
-                                        'S',
-                                        '{tesoreria.vUnidad}',
-                                        '{tesoreria.vConcepto}',
-                                        '{tesoreria.vRef_01}',
-                                        '{tesoreria.vRef_02}',
-                                        '{tesoreria.vRef_03}',
-                                        '{tesoreria.vCodApp}',
-                                        '{tesoreria.vToken}',
-                                        '{tesoreria.vRemesaTipo}',
-                                        {tesoreria.vRemesa},
-                                        '{usuario}'
-                                    )";
-                    connection.Execute(query);
-                }
+                var isCk = tesoreria.vTipoDocumento.Equals("CK", StringComparison.OrdinalIgnoreCase);
+                var nsolicitud = connection.QuerySingle<long>(isCk ? sqlInsertCk : sqlInsertNoCk, args);
 
-                query = $@"select max(nsolicitud) as Solicitud from Tes_Transacciones";
-                resp1 = connection.Query<long>(query).FirstOrDefault();
+                // Validación de consistencia (opcional, pero mantiene tu lógica)
+                const string sqlCheck = @"SELECT TOP 1 * FROM Tes_Transacciones WHERE nsolicitud = @Nsolicitud;";
+                var row = connection.QueryFirstOrDefault<TesTransaccionesDto>(sqlCheck, new { Nsolicitud = nsolicitud });
 
-                query = $@"select * from Tes_Transacciones where nsolicitud = {resp1} ";
-                var resp2 = connection.Query<TesTransaccionesDto>(query).FirstOrDefault();
+                if (row != null && string.Equals(row.CODIGO?.Trim(), tesoreria.vCodigo?.Trim(), StringComparison.Ordinal))
+                    return nsolicitud;
 
-                if (resp2 != null && resp2.CODIGO.Trim() == tesoreria.vCodigo.Trim())
-                {
-                    lngSol = resp1;
-                }
+                // Fallback (si por alguna razón no coincidiera)
+                const string sqlFallback = @"
+SELECT TOP 1 CAST(nsolicitud as bigint)
+FROM Tes_Transacciones
+WHERE codigo = @Codigo AND op = @OP
+ORDER BY nsolicitud DESC;";
 
-                if (lngSol == 0)
-                {
-                    query = $@"select max(nsolicitud) as Solicitud from Tes_Transacciones where codigo = '{tesoreria.vCodigo}' 
-                                    and op = {tesoreria.vOP} ";
-                    lngSol = connection.Query<long>(query).FirstOrDefault();
-                }
+                return connection.QueryFirstOrDefault<long>(sqlFallback, new { Codigo = tesoreria.vCodigo, OP = tesoreria.vOP });
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
-                lngSol = 0;
+                return 0;
             }
-            return lngSol;
         }
 
         public void sbgTesoreriaDetalle(int CodEmpresa, TesoreriaDetalleModel detalle)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             try
             {
+                var stringConn = GetEmpresaConn(CodEmpresa);
                 using var connection = new SqlConnection(stringConn);
 
-                string query = $@"INSERT INTO Tes_Trans_Asiento  (
-                                         nsolicitud,
-                                        cuenta_contable,
-                                        monto,
-                                        debehaber,
-                                        linea,
-                                        cod_unidad,
-                                        cod_cc
-                                    ) VALUES (
-                                        {detalle.vSolicitud},
-                                        '{detalle.vCtaConta}',
-                                        {detalle.vMonto},
-                                        '{detalle.vDH}',
-                                        {detalle.vLinea},
-                                        '{detalle.vUnidad}',
-                                        '{detalle.vCC}'
-                                    )";
-                connection.Execute(query);
+                const string sql = @"
+INSERT INTO Tes_Trans_Asiento (
+    nsolicitud, cuenta_contable, monto, debehaber, linea, cod_unidad, cod_cc
+) VALUES (
+    @Solicitud, @CtaConta, @Monto, @DH, @Linea, @Unidad, @CC
+);";
+
+                connection.Execute(sql, new
+                {
+                    Solicitud = detalle.vSolicitud,
+                    CtaConta = detalle.vCtaConta,
+                    Monto = detalle.vMonto,
+                    DH = detalle.vDH,
+                    Linea = detalle.vLinea,
+                    Unidad = detalle.vUnidad,
+                    CC = detalle.vCC
+                });
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                // ideal: log
             }
         }
 
         public static string fxTipoDocumento(string tipo)
         {
-            switch (tipo)
+            return tipo switch
             {
-                case "CK":
-                    return "Cheque";
-                case "TE":
-                    return "Transferencia";
-                case "EF":
-                case "RE":
-                    return "Efectivo";
-                case "ND":
-                    return "Nota Debito";
-                case "NC":
-                    return "Nota Credito";
-                case "OT":
-                    return "Otro...";
-                case "CD":
-                    return "Ctrl Desembolsos";
-                case "CP":
-                    return "Proveedor";
-                case "RC":
-                    return "Retiro en Caja";
-                case "FD":
-                    return "Fondo Transitorio";
-                case "TS":
-                    return "Transferencia SINPE";
-                //-------------------------------------------------
+                "CK" => "Cheque",
+                "TE" => "Transferencia",
+                "EF" or "RE" => "Efectivo",
+                "ND" => "Nota Debito",
+                "NC" => "Nota Credito",
+                "OT" => "Otro...",
+                "CD" => "Ctrl Desembolsos",
+                "CP" => "Proveedor",
+                "RC" => "Retiro en Caja",
+                "FD" => "Fondo Transitorio",
+                "TS" => "Transferencia SINPE",
 
-                case "Cheque":
-                    return "CK";
-                case "Transferencia":
-                    return "TE";
-                case "Efectivo":
-                    return "EF";
-                case "Nota Debito":
-                    return "ND";
-                case "Nota Credito":
-                    return "NC";
-                case "Otro...":
-                    return "OT";
-                case "Ctrl Desembolsos":
-                    return "CD";
-                case "Proveedor":
-                    return "CP";
-                case "Retiro en Caja":
-                    return "RC";
-                case "Fondo Transitorio":
-                    return "FD";
-                case "Transferencia SINPE":
-                    return "TS";
-                default:
-                    return "";
-            }
+                "Cheque" => "CK",
+                "Transferencia" => "TE",
+                "Efectivo" => "EF",
+                "Nota Debito" => "ND",
+                "Nota Credito" => "NC",
+                "Otro..." => "OT",
+                "Ctrl Desembolsos" => "CD",
+                "Proveedor" => "CP",
+                "Retiro en Caja" => "RC",
+                "Fondo Transitorio" => "FD",
+                "Transferencia SINPE" => "TS",
+
+                _ => string.Empty
+            };
         }
 
         public string fxTesToken(int CodEmpresa, string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            string strToken = "";
             try
             {
-                string query = "";
+                var stringConn = GetEmpresaConn(CodEmpresa);
                 using var connection = new SqlConnection(stringConn);
 
-                DateTime fxFechaServidor = DateTime.Now;
-                strToken = fxFechaServidor.ToString("yyyy.MM.dd");
+                // OJO: esto sigue pudiendo colisionar en concurrencia.
+                // Ideal: manejar con constraint + reintento, o generar token con GUID.
+                var prefix = DateTime.Now.ToString("yyyy.MM.dd");
 
-                query = $@"select  isnull(COUNT(id_token),0)+ 1 as 'consec'  from tes_tokens where id_token like('{strToken}')";
-                var resp = connection.Query<int>(query).FirstOrDefault();
+                const string sqlConsec = @"
+SELECT ISNULL(COUNT(id_token),0) + 1
+FROM tes_tokens
+WHERE id_token LIKE @PrefixLike;";
 
-                strToken = strToken + resp;
+                var consec = connection.QuerySingle<int>(sqlConsec, new { PrefixLike = prefix + "%" });
+                var token = $"{prefix}{consec}";
 
-                query = $@"insert tes_tokens(id_token,registro_fecha,registro_usuario,estado)
-                                    values('{strToken}',Getdate(),'{usuario}','A') ";
-                connection.Execute(query);
+                const string sqlInsert = @"
+INSERT tes_tokens (id_token, registro_fecha, registro_usuario, estado)
+VALUES (@Token, GETDATE(), @Usuario, 'A');";
+
+                connection.Execute(sqlInsert, new { Token = token, Usuario = usuario });
+
+                return token;
             }
-            catch (Exception)
+            catch
             {
                 return string.Empty;
             }
-            return strToken;
         }
 
         public bool fxgTESValidaDatos(int CodEmpresa, int Contabilidad, string vTipo, string vCodigo, string vFiltro = "")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            bool result = false;
             try
             {
-                string query = "";
+                var stringConn = GetEmpresaConn(CodEmpresa);
                 using var connection = new SqlConnection(stringConn);
 
-                switch (vTipo.ToUpper())
+                string sql = vTipo.ToUpperInvariant() switch
                 {
-                    case "CONCEPTO":
-                        query = @"select isnull(count(*),0) as Existe from tes_conceptos 
-                                where cod_concepto = @codigo and Estado = 'A'";
-                        break;
-                    case "UNIDAD":
-                        query = @"select isnull(count(*),0) as Existe from CntX_unidades 
-                                where cod_unidad = @codigo and Activa = 1 and cod_Contabilidad = @contabilidad";
-                        break;
-                    case "CC":
-                        query = @"select isnull(count(*),0) as Existe from CNTX_CENTRO_COSTOS 
-                                where COD_CENTRO_COSTO = @codigo and Activo = 1 and cod_contabilidad = @contabilidad";
-                        if (vFiltro != "")
-                        {
-                            query += @" and COD_CENTRO_COSTO in(select COD_CENTRO_COSTO from CNTX_UNIDADES_CC 
-                                    where cod_unidad = @filtro and cod_contabilidad = @contabilidad)";
-                        }
-                        break;
-                }
-                int existe = connection.QueryFirstOrDefault<int>(query, new
+                    "CONCEPTO" => @"
+SELECT ISNULL(COUNT(*),0)
+FROM tes_conceptos
+WHERE cod_concepto = @Codigo AND Estado = 'A';",
+
+                    "UNIDAD" => @"
+SELECT ISNULL(COUNT(*),0)
+FROM CntX_unidades
+WHERE cod_unidad = @Codigo AND Activa = 1 AND cod_Contabilidad = @Contabilidad;",
+
+                    "CC" => @"
+SELECT ISNULL(COUNT(*),0)
+FROM CNTX_CENTRO_COSTOS
+WHERE COD_CENTRO_COSTO = @Codigo
+  AND Activo = 1
+  AND cod_contabilidad = @Contabilidad
+  AND (
+        @Filtro = '' OR COD_CENTRO_COSTO IN (
+            SELECT COD_CENTRO_COSTO
+            FROM CNTX_UNIDADES_CC
+            WHERE cod_unidad = @Filtro AND cod_contabilidad = @Contabilidad
+        )
+  );",
+
+                    _ => ""
+                };
+
+                if (string.IsNullOrWhiteSpace(sql)) return false;
+
+                var existe = connection.QuerySingle<int>(sql, new
                 {
-                    codigo = vCodigo,
-                    contabilidad = Contabilidad,
-                    filtro = vFiltro
+                    Codigo = vCodigo,
+                    Contabilidad,
+                    Filtro = vFiltro ?? ""
                 });
 
-                if (existe == 0)
-                {
-                    result = false;
-                }
-                else
-                {
-                    result = true;
-                }
-
+                return existe > 0;
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
+                return false;
             }
-            return result;
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> sbgTESBusqueda(int CodEmpresa, int Contabilidad, string vTipo, string vFiltro = "")
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new List<DropDownListaGenericaModel>()
             };
+
             try
             {
-                string query = "";
+                var stringConn = GetEmpresaConn(CodEmpresa);
                 using var connection = new SqlConnection(stringConn);
 
-                switch (vTipo.ToUpper())
+                string sql = vTipo.ToUpperInvariant() switch
                 {
-                    case "CONCEPTO":
-                        query = @"select cod_concepto as item,descripcion from tes_conceptos 
-                                where Estado = 'A' order by cod_concepto";
-                        break;
-                    case "UNIDAD":
-                        query = @"select cod_unidad as item,descripcion from CntX_unidades
-                                where Activa = 1 and cod_Contabilidad = @contabilidad order by cod_unidad";
-                        break;
-                    case "CC":
-                        query = @"select COD_CENTRO_COSTO as item,descripcion from CNTX_CENTRO_COSTOS
-                                where Activo = 1 and cod_contabilidad = @contabilidad";
-                        if (vFiltro != "")
-                        {
-                            query += @" and COD_CENTRO_COSTO in(select COD_CENTRO_COSTO from CNTX_UNIDADES_CC 
-                                    where cod_unidad = @filtro and cod_contabilidad = @contabilidad)";
-                        }
-                        query += " order by COD_CENTRO_COSTO";
-                        break;
+                    "CONCEPTO" => @"
+SELECT cod_concepto as item, descripcion
+FROM tes_conceptos
+WHERE Estado = 'A'
+ORDER BY cod_concepto;",
+
+                    "UNIDAD" => @"
+SELECT cod_unidad as item, descripcion
+FROM CntX_unidades
+WHERE Activa = 1 AND cod_Contabilidad = @Contabilidad
+ORDER BY cod_unidad;",
+
+                    "CC" => @"
+SELECT COD_CENTRO_COSTO as item, descripcion
+FROM CNTX_CENTRO_COSTOS
+WHERE Activo = 1
+  AND cod_contabilidad = @Contabilidad
+  AND (
+        @Filtro = '' OR COD_CENTRO_COSTO IN (
+            SELECT COD_CENTRO_COSTO
+            FROM CNTX_UNIDADES_CC
+            WHERE cod_unidad = @Filtro AND cod_contabilidad = @Contabilidad
+        )
+  )
+ORDER BY COD_CENTRO_COSTO;",
+
+                    _ => ""
+                };
+
+                if (string.IsNullOrWhiteSpace(sql))
+                {
+                    response.Code = -1;
+                    response.Description = $"Tipo no soportado: {vTipo}";
+                    response.Result = null;
+                    return response;
                 }
-                response.Result = connection.Query<DropDownListaGenericaModel>(query, new
+
+                response.Result = connection.Query<DropDownListaGenericaModel>(sql, new
                 {
-                    contabilidad = Contabilidad,
-                    filtro = vFiltro
+                    Contabilidad,
+                    Filtro = vFiltro ?? ""
                 }).ToList();
 
+                return response;
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
                 response.Result = null;
-
+                return response;
             }
-            return response;
         }
     }
 }
