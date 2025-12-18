@@ -272,7 +272,7 @@ namespace Galileo.DataBaseTier
 
         public static string Generate2FACode()
         {
-            Random random = new Random();
+            Random random = new();
             int code = random.Next(100000, 1000000); // Generates a 6-digit number
             return code.ToString("D6"); // Formats it as a 6-digit string
         }
