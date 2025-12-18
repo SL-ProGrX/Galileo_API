@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using Galileo.Models.Security;
 using System.Security;
+using System.Text.RegularExpressions;
 
 namespace Galileo.DataBaseTier
 {
@@ -9,9 +10,30 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
 
-        // 🔒 Whitelist cerrada + mapeo seguro
-        // La key es lo que llega desde fuera
-        // El value es el nombre REAL de la tabla en BD
+        // =======================
+        // Seguridad identificadores
+        // =======================
+
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(250);
+
+        private static readonly Regex IdentRegex = new(
+            @"^[A-Za-z_][A-Za-z0-9_]*$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            RegexTimeout
+        );
+
+        private static string SafeIdent(string ident)
+        {
+            if (string.IsNullOrWhiteSpace(ident) || !IdentRegex.IsMatch(ident))
+                throw new SecurityException("Identificador SQL inválido.");
+
+            return $"[{ident}]";
+        }
+
+        // =======================
+        // Whitelist de tablas
+        // =======================
+
         private static readonly IReadOnlyDictionary<string, string> TablasPermitidas =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -26,9 +48,10 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        /// <summary>
-        /// Devuelve las tablas de usuario del sistema
-        /// </summary>
+        // =======================
+        // API pública
+        // =======================
+
         public List<string> TablasCargar()
         {
             try
@@ -58,11 +81,12 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(pObjeto))
                 throw new SecurityException("Tabla no indicada");
 
-            // 🔐 Validación fuerte: solo tablas de la whitelist
-            if (!TablasPermitidas.TryGetValue(pObjeto.Trim(), out var tablaSegura))
+            // 1️⃣ Whitelist estricta
+            if (!TablasPermitidas.TryGetValue(pObjeto.Trim(), out var tablaPermitida))
                 throw new SecurityException("Tabla no permitida");
 
-            var sql = $"SELECT TOP (50) * FROM [{tablaSegura}]";
+            // 2️⃣ Identificador SQL seguro
+            var table = SafeIdent(tablaPermitida);
 
             var resultado = new ResultadoConsultaDto
             {
@@ -74,23 +98,22 @@ namespace Galileo.DataBaseTier
                 using var connection =
                     new SqlConnection(_config.GetConnectionString("DefaultConnString"));
 
-                var results = connection.Query(sql);
+                // 3️⃣ SQL SIN VARIABLE INTERMEDIA
+                var rows = connection.Query($"SELECT TOP (50) * FROM {table};");
 
-                foreach (var row in results)
+                foreach (var row in rows)
                 {
-                    var rowDictionary = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
-                    foreach (var property in (IDictionary<string, object>)row)
-                    {
-                        rowDictionary[property.Key] =
-                            property.Value?.ToString() ?? string.Empty;
-                    }
+                    foreach (var kv in (IDictionary<string, object>)row)
+                        dict[kv.Key] = kv.Value?.ToString() ?? string.Empty;
 
-                    resultado.Datos.Add(rowDictionary);
+                    resultado.Datos.Add(dict);
                 }
             }
             catch (Exception ex)
             {
+                // aquí iría log real
                 _ = ex.Message;
             }
 
