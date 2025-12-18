@@ -18,21 +18,17 @@ namespace Galileo.DataBaseTier
 
         public List<MovimientoBE> MovimientoBE_ObtenerTodos(int modulo)
         {
-            List<MovimientoBE> types = new List<MovimientoBE>();
+            List<MovimientoBE> types = new();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_W_MovimientoBE_Obtener]";
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var procedure = "[spPGX_W_MovimientoBE_Obtener]";
 
-                    var values = new
-                    {
-                        Modulo = modulo,
-                    };
+                var values = new { Modulo = modulo };
 
-                    types = connection.Query<MovimientoBE>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
-
-                }
+                types = connection.Query<MovimientoBE>(
+                    procedure, values, commandType: CommandType.StoredProcedure
+                ).ToList();
             }
             catch (Exception ex)
             {
@@ -43,30 +39,36 @@ namespace Galileo.DataBaseTier
 
         private ErrorDto MovimientoBE_Insertar(MovimientoBE request)
         {
-            ErrorDto resp = new ErrorDto();
+            ErrorDto resp = new();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+
+                // ✅ Parametrizado (sin SQL Injection)
+                var sql = @"
+                    SELECT TOP 1 MOVIMIENTO + 1
+                    FROM US_MOVIMIENTOS_BE
+                    WHERE MODULO = @Modulo
+                    ORDER BY MOVIMIENTO DESC;";
+
+                var id = connection.Query<int>(sql, new { Modulo = request.Modulo }).FirstOrDefault();
+
+                var movimiento = id.ToString().PadLeft(2, '0');
+
+                var procedure = "[spPGX_W_MovimientoBE_Insertar]";
+                var values = new
                 {
-                    var Query = $"SELECT TOP 1 MOVIMIENTO + 1  FROM US_MOVIMIENTOS_BE WHERE MODULO = {request.Modulo} ORDER BY MOVIMIENTO DESC";
-                    var id = connection.Query<int>(Query).FirstOrDefault();
-                    var movimiento = id.ToString().PadLeft(2, '0');
-                    var procedure = "[spPGX_W_MovimientoBE_Insertar]";
-                    var values = new
-                    {
-                        Modulo = request.Modulo,
-                        Movimiento = movimiento,
-                        Descripcion = request.Descripcion,
-                        Registro_Usuario = request.Registro_Usuario
+                    Modulo = request.Modulo,
+                    Movimiento = movimiento,
+                    Descripcion = request.Descripcion,
+                    Registro_Usuario = request.Registro_Usuario
+                };
 
-                    };
+                resp.Code = connection.Query<int>(
+                    procedure, values, commandType: CommandType.StoredProcedure
+                ).FirstOrDefault();
 
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-
-
-
-                    resp.Description = id.ToString().PadLeft(2, '0');
-                }
+                resp.Description = movimiento;
             }
             catch (Exception ex)
             {
@@ -75,26 +77,25 @@ namespace Galileo.DataBaseTier
             }
             return resp;
         }
-        
+
         public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo)
         {
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
+            ErrorDto resp = new() { Code = 0 };
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var procedure = "[spPGX_W_MovimientoBE_Eliminar]";
+                var values = new
                 {
-                    var procedure = "[spPGX_W_MovimientoBE_Eliminar]";
-                    var values = new
-                    {
-                        Modulo = modulo,
-                        Movimiento = movimiento
+                    Modulo = modulo,
+                    Movimiento = movimiento
+                };
 
-                    };
+                resp.Code = connection.Query<int>(
+                    procedure, values, commandType: CommandType.StoredProcedure
+                ).FirstOrDefault();
 
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
@@ -106,23 +107,23 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto MovimientoBE_Actualizar(MovimientoBE request)
         {
-            ErrorDto resp = new ErrorDto();
+            ErrorDto resp = new();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var procedure = "[spPGX_W_MovimientoBE_Editar]";
+                var values = new
                 {
-                    var procedure = "[spPGX_W_MovimientoBE_Editar]";
-                    var values = new
-                    {
-                        Modulo = request.Modulo,
-                        Movimiento = request.Movimiento,
-                        Descripcion = request.Descripcion
+                    Modulo = request.Modulo,
+                    Movimiento = request.Movimiento,
+                    Descripcion = request.Descripcion
+                };
 
-                    };
+                resp.Code = connection.Query<int>(
+                    procedure, values, commandType: CommandType.StoredProcedure
+                ).FirstOrDefault();
 
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
@@ -131,28 +132,19 @@ namespace Galileo.DataBaseTier
             }
             return resp;
         }
-        
+
         public ErrorDto MovimientoBE_Guardar(MovimientoBE request)
         {
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
             try
             {
-                if (request.Movimiento == "00")
-                {
-                    resp = MovimientoBE_Insertar(request);
-                }
-                else
-                {
-                    resp = MovimientoBE_Actualizar(request);
-                }
+                return request.Movimiento == "00"
+                    ? MovimientoBE_Insertar(request)
+                    : MovimientoBE_Actualizar(request);
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                return new ErrorDto { Code = -1, Description = ex.Message };
             }
-            return resp;
         }
     }
 }

@@ -9,9 +9,11 @@ namespace Galileo.BusinessLogic
     public class MProGrXAuxiliarBl
     {
         private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
 
         public MProGrXAuxiliarBl(IConfiguration config)
         {
+             _portalDB = new PortalDB(config);
             _config = config;
         }
 
@@ -48,17 +50,12 @@ namespace Galileo.BusinessLogic
 
         public ConsultaDescripcion fxSIFCCodigos(int CodEmpresa, string vTipoDC, string vCodDesX, string vTabla, int Cod_Conta)
         {
-            return new MProGrXAuxiliarDB(_config).fxSIFCCodigos(CodEmpresa, vTipoDC, vCodDesX, vTabla, Cod_Conta);
+            return MProGrXAuxiliarDB.fxSIFCCodigos(_portalDB, CodEmpresa, vTipoDC, vCodDesX, vTabla, Cod_Conta);
         }
 
         public ErrorDto<int> ActivosSinAsignar_Obtener(int CodEmpresa, string usuario)
         {
             return new MProGrXAuxiliarDB(_config).ActivosSinAsignar_Obtener(CodEmpresa, usuario);
-        }
-
-        public int FndControlAutoriza_Guardar(FndControlAutorizaData request)
-        {
-            return new MProGrXAuxiliarDB(_config).FndControlAutoriza_Guardar(request);
         }
 
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)

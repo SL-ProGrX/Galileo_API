@@ -1,5 +1,6 @@
 ﻿using System.Data;
 using System.Globalization;
+using System.Security;
 using System.Text.RegularExpressions;
 using System.Xml.Serialization;
 using Dapper;
@@ -25,6 +26,24 @@ namespace Galileo.DataBaseTier
 
         private const string _descripcion = "descripcion";
 
+        // Identificadores SQL (tabla/columna) permitidos: letras, números, _
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(250);
+
+        private static readonly Regex IdentRegex = new(
+            @"^[A-Za-z_][A-Za-z0-9_]*$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            RegexTimeout
+        );
+
+
+        private static readonly Regex WhereSafeRegex = new(
+            @"^[A-Za-z0-9_\[\]\s\=\<\>\!\(\)'\.""%,+\-]+$",
+            RegexOptions.Compiled | RegexOptions.CultureInvariant,
+            RegexTimeout
+        );
+
+
+
         public MProGrXAuxiliarDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -38,9 +57,6 @@ namespace Galileo.DataBaseTier
 
         #region Periodos / Inventario básicos
 
-        /// <summary>
-        /// Busca en la tabla de periodos si existe un periodo cerrado posterior al periodo que se desea cerrar
-        /// </summary>
         public bool fxInvPeriodos(int CodEmpresa, string vfecha)
         {
             bool vPasa = false;
@@ -83,9 +99,6 @@ namespace Galileo.DataBaseTier
             return vPasa;
         }
 
-        /// <summary>
-        /// Registra un movimiento de inventario en la tabla de afectaciones
-        /// </summary>
         public ErrorDto sbInvInventario(int CodEmpresa, CompraInventarioDto req)
         {
             var result = new ErrorDto();
@@ -127,9 +140,6 @@ namespace Galileo.DataBaseTier
 
         #region Verificación de líneas / productos / bodegas
 
-        /// <summary>
-        /// Verifica la existencia de productos y bodegas en la tabla de inventario
-        /// </summary>
         public ErrorDto fxInvVerificaLineaDetalle(int CodEmpresa, int ColCantidad, string vMov, int ColProd, int ColBod1, int ColBod2, List<FacturaDetalleDto> vGrid)
         {
             var result = new ErrorDto { Code = 1 };
@@ -144,15 +154,8 @@ namespace Galileo.DataBaseTier
                     {
                         VerificaProducto(CodEmpresa, item, ref result, count);
 
-                        if (ColBod1 > 0)
-                        {
-                            VerificaBodega(CodEmpresa, item, vMov, ref result, count, true);
-                        }
-
-                        if (ColBod2 > 0)
-                        {
-                            VerificaBodega(CodEmpresa, item, vMov, ref result, count, false);
-                        }
+                        if (ColBod1 > 0) VerificaBodega(CodEmpresa, item, vMov, ref result, count, true);
+                        if (ColBod2 > 0) VerificaBodega(CodEmpresa, item, vMov, ref result, count, false);
                     }
                 }
             }
@@ -225,39 +228,43 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private static void VerificaPermisosEntradaSalida(Models.BodegaDto bodega, string vMov, ref ErrorDto result, int count, string cod_bodega, bool isEntrada)
+        private static void VerificaPermisosEntradaSalida(
+      Models.BodegaDto bodega,
+      string vMov,
+      ref ErrorDto result,
+      int count,
+      string cod_bodega,
+      bool isEntrada)
         {
-            if (isEntrada)
+            if (bodega == null) return;
+
+            bool requiereEntrada = isEntrada
+                ? vMov == "E"
+                : vMov is "E" or "T";
+
+            bool requiereSalida = isEntrada
+                ? vMov is "S" or "R" or "T"
+                : vMov is "R" or "S";
+
+            if (requiereEntrada && bodega.permite_entradas == "0")
             {
-                if (vMov == "E" && bodega.permite_entradas == "0")
-                {
-                    result.Code = 0;
-                    result.Description += $"\r\nL {count} - Bodega : {cod_bodega} - No Permite Entradas";
-                }
-                else if ((vMov == "S" || vMov == "R" || vMov == "T") && bodega.permite_salidas == "0")
-                {
-                    result.Code = 0;
-                    result.Description += $"\r\nL {count} - Bodega : {cod_bodega} - No Permite Salidas";
-                }
+                AgregarError(ref result, count, cod_bodega, "No Permite Entradas");
+                return;
             }
-            else
+
+            if (requiereSalida && bodega.permite_salidas == "0")
             {
-                if ((vMov == "E" || vMov == "T") && bodega.permite_entradas == "0")
-                {
-                    result.Code = 0;
-                    result.Description += $"\r\nL {count} - Bodega : {cod_bodega} - No Permite Entradas";
-                }
-                else if ((vMov == "R" || vMov == "S") && bodega.permite_salidas == "0")
-                {
-                    result.Code = 0;
-                    result.Description += $"\r\nL {count} - Bodega : {cod_bodega} - No Permite Salidas";
-                }
+                AgregarError(ref result, count, cod_bodega, "No Permite Salidas");
             }
         }
 
-        /// <summary>
-        /// Verifica si el periodo de inventario está cerrado o no
-        /// </summary>
+        private static void AgregarError(ref ErrorDto result, int count, string codBodega, string mensaje)
+        {
+            result.Code = 0;
+            result.Description += $"\r\nL {count} - Bodega : {codBodega} - {mensaje}";
+        }
+
+
         public bool fxInvPeriodoEstado(int CodEmpresa, string vfecha)
         {
             bool vPasa = false;
@@ -278,7 +285,7 @@ namespace Galileo.DataBaseTier
             }
             catch
             {
-                // si hay error, se deja vPasa en false por seguridad
+                // por seguridad queda false
             }
 
             return vPasa;
@@ -288,9 +295,6 @@ namespace Galileo.DataBaseTier
 
         #region Parámetros / Autorizaciones
 
-        /// <summary>
-        /// Consulta los parámetros de la tabla cxp_parametros
-        /// </summary>
         public ErrorDto<ParametroValor> fxCxPParametro(int CodEmpresa, string Cod_Parametro)
         {
             var response = new ErrorDto<ParametroValor> { Code = 0 };
@@ -304,17 +308,11 @@ namespace Galileo.DataBaseTier
                     FROM cxp_parametros 
                     WHERE cod_parametro = @CodParametro;";
 
-                response.Result = connection.QueryFirstOrDefault<ParametroValor>(
-                    sql,
-                    new { CodParametro = Cod_Parametro });
+                response.Result = connection.QueryFirstOrDefault<ParametroValor>(sql, new { CodParametro = Cod_Parametro });
 
-                if (response.Result == null || response.Result.Valor == null)
+                if (response.Result?.Valor == null)
                 {
-                    response.Result = new ParametroValor
-                    {
-                        Cod_Parametro = Cod_Parametro,
-                        Valor = "GEN"
-                    };
+                    response.Result = new ParametroValor { Cod_Parametro = Cod_Parametro, Valor = "GEN" };
                 }
             }
             catch (Exception ex)
@@ -327,9 +325,6 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
-        /// <summary>
-        /// Valida si el usuario que genera la transacción tiene autorización para autorizarla
-        /// </summary>
         public ErrorDto fxInvTransaccionesAutoriza(int CodEmpresa, string Boleta, string TipoTran, string AutorizaUser)
         {
             var info = new ErrorDto { Code = 0 };
@@ -348,7 +343,6 @@ namespace Galileo.DataBaseTier
 
                 if (string.IsNullOrEmpty(generaUser))
                 {
-                    info.Code = 0;
                     info.Description = $"No se encontró el usuario que generó la boleta '{Boleta}', verifique que la boleta exista";
                     return info;
                 }
@@ -360,9 +354,7 @@ namespace Galileo.DataBaseTier
                       AND Usuario_Asignado = @GUser 
                       AND ENTRADAS = 1;";
 
-                int valideAutorizacion = connection.ExecuteScalar<int>(
-                    sqlValida,
-                    new { AutorizaUser, GUser = generaUser });
+                int valideAutorizacion = connection.ExecuteScalar<int>(sqlValida, new { AutorizaUser, GUser = generaUser });
 
                 info.Code = valideAutorizacion;
                 info.Description = valideAutorizacion == 1
@@ -384,37 +376,20 @@ namespace Galileo.DataBaseTier
 
         #region fxSIFCCodigos (consulta códigos genéricos)
 
-        /// <summary>
-        /// Consulta la descripción de un código en una tabla específica
-        /// </summary>
-        public ConsultaDescripcion fxSIFCCodigos(
-            int CodEmpresa,
-            string vTipoDC,
-            string vCodDesX,
-            string vTabla,
-            int Cod_Conta)
+        public static ConsultaDescripcion fxSIFCCodigos(PortalDB portalDB, int CodEmpresa, string vTipoDC, string vCodDesX, string vTabla, int Cod_Conta)
         {
-            // Definición de la tabla / columnas según el nombre
             var def = GetCodigoTablaDef(vTabla);
-            if (def is null)
-            {
-                return new ConsultaDescripcion();
-            }
+            if (def is null) return new ConsultaDescripcion();
 
-            // Construcción de SQL + parámetros según si es búsqueda por código o descripción
             var sqlInfo = BuildCodigoSql(def, vTipoDC, vCodDesX, Cod_Conta);
-            if (sqlInfo is null)
-            {
-                return new ConsultaDescripcion();
-            }
+            if (sqlInfo is null) return new ConsultaDescripcion();
 
             var (sql, parameters) = sqlInfo.Value;
 
             try
             {
-                using var connection = _portalDB.CreateConnection(CodEmpresa);
-                return connection.QueryFirstOrDefault<ConsultaDescripcion>(sql, parameters)
-                       ?? new ConsultaDescripcion();
+                using var connection = portalDB.CreateConnection(CodEmpresa);
+                return connection.QueryFirstOrDefault<ConsultaDescripcion>(sql, parameters) ?? new ConsultaDescripcion();
             }
             catch
             {
@@ -422,12 +397,7 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private sealed record CodigoTablaDef(
-            string Table,
-            string CodeColumn,
-            string DescColumn,
-            bool UsaCodConta
-        );
+        private sealed record CodigoTablaDef(string Table, string CodeColumn, string DescColumn, bool UsaCodConta);
 
         private static CodigoTablaDef? GetCodigoTablaDef(string vTabla)
         {
@@ -452,53 +422,48 @@ namespace Galileo.DataBaseTier
             };
         }
 
-        private static (string sql, object parameters)? BuildCodigoSql(
-            CodigoTablaDef def,
-            string vTipoDC,
-            string vCodDesX,
-            int codConta)
+        private static (string sql, object parameters)? BuildCodigoSql(CodigoTablaDef def, string vTipoDC, string vCodDesX, int codConta)
         {
             bool porCodigo = vTipoDC == "D";
+
+            // Quoting seguro de identificadores (tabla/col)
+            var table = SqlSafe.Ident(def.Table);
+            var codeCol = SqlSafe.Ident(def.CodeColumn);
+            var descCol = SqlSafe.Ident(def.DescColumn);
+
+
 
             string where;
             object parameters;
 
             if (porCodigo)
             {
-                if (def.UsaCodConta)
-                {
-                    where = $"WHERE {def.CodeColumn} = @Code AND cod_contabilidad = @CodConta";
-                    parameters = new { Code = vCodDesX, CodConta = codConta };
-                }
-                else
-                {
-                    where = $"WHERE {def.CodeColumn} = @Code";
-                    parameters = new { Code = vCodDesX };
-                }
+                where = def.UsaCodConta
+                    ? $"WHERE {codeCol} = @Code AND [cod_contabilidad] = @CodConta"
+                    : $"WHERE {codeCol} = @Code";
+
+                parameters = def.UsaCodConta
+                    ? new { Code = vCodDesX, CodConta = codConta }
+                    : new { Code = vCodDesX };
             }
             else
             {
-                if (def.UsaCodConta)
-                {
-                    where = $"WHERE {def.DescColumn} = @Desc AND cod_contabilidad = @CodConta";
-                    parameters = new { Desc = vCodDesX, CodConta = codConta };
-                }
-                else
-                {
-                    where = $"WHERE {def.DescColumn} = @Desc";
-                    parameters = new { Desc = vCodDesX };
-                }
+                where = def.UsaCodConta
+                    ? $"WHERE {descCol} = @Desc AND [cod_contabilidad] = @CodConta"
+                    : $"WHERE {descCol} = @Desc";
+
+                parameters = def.UsaCodConta
+                    ? new { Desc = vCodDesX, CodConta = codConta }
+                    : new { Desc = vCodDesX };
             }
 
             var sql = $@"
-        SELECT {def.CodeColumn} AS CodX, {def.DescColumn} AS DescX
-        FROM {def.Table}
-        {where};";
+SELECT {codeCol} AS CodX, {descCol} AS DescX
+FROM {table}
+{where};";
 
             return (sql, parameters);
         }
-
-
 
         #endregion
 
@@ -510,23 +475,16 @@ namespace Galileo.DataBaseTier
             return Regex.IsMatch(correo, patron);
         }
 
-        /// <summary>
-        /// Convierte un modelo a XML para enviarlo a SP de BD
-        /// </summary>
         public static string fxConvertModelToXml<T>(T model)
         {
             if (EqualityComparer<T>.Default.Equals(model, default(T)))
                 throw new ArgumentNullException(nameof(model));
 
-            string xmlOutput;
             var serializer = new XmlSerializer(typeof(T));
-            using (var writer = new StringWriter())
-            {
-                serializer.Serialize(writer, model);
-                xmlOutput = writer.ToString();
-            }
+            using var writer = new StringWriter();
+            serializer.Serialize(writer, model);
+            var xmlOutput = writer.ToString();
 
-            // Limpieza del XML
             xmlOutput = xmlOutput.Replace("<?xml version=\"1.0\" encoding=\"utf-16\"?>", "");
             xmlOutput = xmlOutput.Replace(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\"", "");
             xmlOutput = xmlOutput.Trim();
@@ -536,9 +494,6 @@ namespace Galileo.DataBaseTier
             return xmlOutput;
         }
 
-        /// <summary>
-        /// Consulta la cantidad de activos sin asignar a un usuario
-        /// </summary>
         public ErrorDto<int> ActivosSinAsignar_Obtener(int CodEmpresa, string usuario)
         {
             var result = new ErrorDto<int> { Code = 0, Result = 0 };
@@ -566,32 +521,23 @@ namespace Galileo.DataBaseTier
             return result;
         }
 
-        /// <summary>
-        /// Valida la fecha de un campo DateTime, si es nulo devuelve null de lo contrario devuelve la fecha en el formato definido en el appsettings
-        /// </summary>
-        public string? validaFechaGlobal(DateTime? fecha)
+        public static string? validaFechaGlobal(DateTime? fecha, string dateFormat)
         {
             try
             {
-                if (fecha.HasValue)
-                {
-                    return fecha.Value.ToString(dateFormat);
-                }
+                return fecha.HasValue ? fecha.Value.ToString(dateFormat) : null;
             }
             catch
             {
-                // ignorar y devolver null
+                return null;
             }
-            return null;
         }
+
 
         #endregion
 
         #region Bitácoras
 
-        /// <summary>
-        /// Inserta un registro en la tabla de bitácora de productos
-        /// </summary>
         public ErrorDto BitacoraProducto(BitacoraProductoInsertarDto req)
         {
             var resp = new ErrorDto { Code = 0 };
@@ -606,16 +552,15 @@ namespace Galileo.DataBaseTier
                     VALUES
                         (@CodProducto, @Consec, @Movimiento, @Detalle, GETDATE(), @RegistroUsuario);";
 
-                var parameters = new
+                resp.Code = connection.Execute(sql, new
                 {
                     CodProducto = req.cod_producto,
                     Consec = req.consec,
                     Movimiento = req.movimiento,
                     Detalle = req.detalle,
                     RegistroUsuario = req.registro_usuario
-                };
+                });
 
-                resp.Code = connection.Execute(sql, parameters);
                 resp.Description = "Ok";
             }
             catch (Exception ex)
@@ -627,9 +572,6 @@ namespace Galileo.DataBaseTier
             return resp;
         }
 
-        /// <summary>
-        /// Inserta un registro en la tabla de bitácora de proveedores
-        /// </summary>
         public ErrorDto BitacoraProveedor(BitacoraProveedorInsertarDto req)
         {
             var resp = new ErrorDto { Code = 0 };
@@ -644,16 +586,15 @@ namespace Galileo.DataBaseTier
                     VALUES
                         (@CodProveedor, @Consec, @Movimiento, @Detalle, GETDATE(), @RegistroUsuario);";
 
-                var parameters = new
+                resp.Code = connection.Execute(sql, new
                 {
                     CodProveedor = req.cod_proveedor,
                     Consec = req.consec,
                     Movimiento = req.movimiento,
                     Detalle = req.detalle,
                     RegistroUsuario = req.registro_usuario
-                };
+                });
 
-                resp.Code = connection.Execute(sql, parameters);
                 resp.Description = "Ok";
             }
             catch (Exception ex)
@@ -707,23 +648,16 @@ namespace Galileo.DataBaseTier
 
             string letrasEntera = parteEntera.ToWords(new CultureInfo("es"));
             if (letrasEntera.Equals("uno", StringComparison.CurrentCultureIgnoreCase))
-            {
                 letrasEntera = "Un";
-            }
+
             letrasEntera = char.ToUpper(letrasEntera[0]) + letrasEntera[1..];
 
-            string letrasDecimal = parteDecimal > 0
-                ? $" con {parteDecimal.ToWords(new CultureInfo("es"))} "
-                : "";
+            string letrasDecimal = parteDecimal > 0 ? $" con {parteDecimal.ToWords(new CultureInfo("es"))} " : "";
 
             resp.Result = letrasEntera + letrasDecimal;
             return resp;
         }
 
-        /// <summary>
-        /// Combina información de varios pdf en uno solo
-        /// El parametro que se debe pasar es el array de bytes 
-        /// </summary>
         public static byte[] CombinarBytesPdfSharp(params byte[][] pdfs)
         {
             using var outDoc = new PdfDocument();
@@ -746,67 +680,6 @@ namespace Galileo.DataBaseTier
 
         #region FONDOS v6 - Control de Cambios
 
-        /// <summary>
-        /// Valida string de control de autorizacion para guardar cambios en la tabla de control
-        /// </summary>
-        public int FndControlAutoriza_Guardar(FndControlAutorizaData request)
-        {
-            if (controlAuth != "Y")
-                return 3;
-
-            var result = new ErrorDto { Code = 0 };
-
-            try
-            {
-                var match = ParseUpdateSql(request.strSQL);
-                if (match == null)
-                    return SetErrorResult(result, "La sentencia SQL no es válida o no se puede analizar.");
-
-                string table = match.Groups["table"].Value.Trim();
-                string setClause = match.Groups["setClause"].Value.Trim();
-                string whereClause = match.Groups["whereClause"].Value.Trim();
-
-                using var connection = _portalDB.CreateConnection(request.CodEmpresa);
-
-                // OJO: aquí sigue habiendo SQL dinámico por diseño (metaprogramación),
-                // se asume que request.strSQL viene de código interno.
-                var dtTable = connection.Query($"SELECT * FROM {table} WHERE {whereClause}").FirstOrDefault();
-                if (dtTable == null)
-                    return SetErrorResult(result, $"❌ No se encontró información en {table} con la condición: {whereClause}");
-
-                var diferencias = ObtenerDiferencias(connection, table, setClause, whereClause, dtTable);
-                if (diferencias == null)
-                    return SetErrorResult(result, "No se pudo obtener los valores nuevos para comparar.");
-
-                var dtDiferencias = CrearDataTableDiferencias(diferencias);
-                if (dtDiferencias.Rows.Count == 0)
-                    return SetErrorResult(result, "No se encontraron diferencias entre los valores originales y los nuevos.", 2);
-
-                var ctx = new ControlCambioContext(
-                    CodEmpresa: request.CodEmpresa,
-                    Usuario: request.usuario
-                );
-
-                var payload = new ControlCambioPayload(
-                    TipoCambio: request.tipoCambio,
-                    Tabla: table,
-                    Llave: whereClause,
-                    EventoQuery: "UPDATE",
-                    InsertSql: "",
-                    Diferencias: dtDiferencias
-                );
-
-                result = InsertarTablaControl(ctx, payload);
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-
-            return result.Code ?? -1;
-        }
-
         private static Match? ParseUpdateSql(string sql)
         {
             string pattern = @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$";
@@ -821,53 +694,17 @@ namespace Galileo.DataBaseTier
             return result.Code ?? -1;
         }
 
-        private static List<(string Campo, object ValorOriginal, object ValorNuevo)> ObtenerDiferencias(SqlConnection connection, string table, string setClause, string whereClause, object dtTable)
-        {
-            var selectParts = new List<string>();
-            foreach (var assignment in SplitSetClauseSafely(setClause))
-            {
-                var splitIndex = assignment.IndexOf('=');
-                if (splitIndex > 0)
-                {
-                    var column = assignment[..splitIndex].Trim();
-                    var expression = assignment[(splitIndex + 1)..].Trim();
-                    selectParts.Add($"{expression} AS {column.ToUpper()}");
-                }
-            }
-
-            string selectStatement = $"SELECT {string.Join(", ", selectParts)} FROM {table} WHERE {whereClause};";
-            var dtTableNew = connection.Query(selectStatement).FirstOrDefault();
-
-            var dicOriginal = (IDictionary<string, object>)dtTable;
-            var dicNuevo = dtTableNew as IDictionary<string, object>;
-            if (dicNuevo == null)
-                return new List<(string Campo, object ValorOriginal, object ValorNuevo)>();
-
-            var diferencias = new List<(string Campo, object ValorOriginal, object ValorNuevo)>();
-            foreach (var kvp in dicOriginal)
-            {
-                var key = kvp.Key;
-                var valorOriginal = kvp.Value;
-                if (dicNuevo.TryGetValue(key, out var valorNuevo) && !SonIguales(valorOriginal, valorNuevo))
-                {
-                    diferencias.Add((key, valorOriginal, valorNuevo));
-                }
-            }
-            return diferencias;
-        }
-
         private static DataTable CrearDataTableDiferencias(List<(string Campo, object ValorOriginal, object ValorNuevo)> diferencias)
         {
-            var dtDiferencias = new DataTable();
-            dtDiferencias.Columns.Add("Campo", typeof(string));
-            dtDiferencias.Columns.Add("ValorOriginal", typeof(object));
-            dtDiferencias.Columns.Add("ValorNuevo", typeof(object));
+            var dt = new DataTable();
+            dt.Columns.Add("Campo", typeof(string));
+            dt.Columns.Add("ValorOriginal", typeof(object));
+            dt.Columns.Add("ValorNuevo", typeof(object));
 
             foreach (var dif in diferencias)
-            {
-                dtDiferencias.Rows.Add(dif.Campo, dif.ValorOriginal, dif.ValorNuevo);
-            }
-            return dtDiferencias;
+                dt.Rows.Add(dif.Campo, dif.ValorOriginal, dif.ValorNuevo);
+
+            return dt;
         }
 
         private static List<string> SplitSetClauseSafely(string input)
@@ -928,12 +765,8 @@ namespace Galileo.DataBaseTier
 
         private static object ConvertirBoolANumero(object valor)
         {
-            if (valor is bool b)
-                return b ? 1 : 0;
-
-            if (bool.TryParse(valor?.ToString(), out var parsedBool))
-                return parsedBool ? 1 : 0;
-
+            if (valor is bool b) return b ? 1 : 0;
+            if (bool.TryParse(valor?.ToString(), out var parsedBool)) return parsedBool ? 1 : 0;
             return valor ?? string.Empty;
         }
 
@@ -952,23 +785,12 @@ namespace Galileo.DataBaseTier
 
             string[] formatos = { "yyyyMMdd", "dd/MM/yyyy", "yyyy-MM-dd", "MM/dd/yyyy" };
 
-            return DateTime.TryParseExact(str, formatos, CultureInfo.InvariantCulture,
-                                          DateTimeStyles.None, out fecha);
+            return DateTime.TryParseExact(str, formatos, CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
         }
 
-        public record ControlCambioContext(
-            int CodEmpresa,
-            string Usuario
-        );
+        public record ControlCambioContext(int CodEmpresa, string Usuario);
 
-        public record ControlCambioPayload(
-            int TipoCambio,
-            string Tabla,
-            object Llave,
-            string EventoQuery,
-            string? InsertSql,
-            DataTable? Diferencias
-        );
+        public record ControlCambioPayload(int TipoCambio, string Tabla, object Llave, string EventoQuery, string? InsertSql, DataTable? Diferencias);
 
         private ErrorDto InsertarTablaControl(ControlCambioContext ctx, ControlCambioPayload payload)
         {
@@ -1046,9 +868,6 @@ VALUES (
             return result;
         }
 
-        /// <summary>
-        /// Ejecuta el update en la tabla de control de cambios y actualiza el estado
-        /// </summary>
         public int FndControlCambios_Autoriza(int CodEmpresa, int idCambio, string usuario)
         {
             var result = new ErrorDto { Code = 0 };
@@ -1064,41 +883,64 @@ VALUES (
 
                 var dtCambio = connection.Query<FndControlCambioAprobDto>(sqlCambio, new { IdCambio = idCambio }).FirstOrDefault();
                 if (dtCambio == null)
-                {
-                    result.Code = -1;
-                    result.Description = "No se encontró el registro en la tabla de control.";
-                    return result.Code ?? -1;
-                }
+                    return SetErrorResult(result, "No se encontró el registro en la tabla de control.");
+
+                if (!IsSqlInternoSeguro(dtCambio.valoresjsonact ?? string.Empty) && dtCambio.cod_evento == "INSERT")
+                    return SetErrorResult(result, "SQL INSERT no permitido por políticas de seguridad.");
+
+                if (!IsWhereSeguro(dtCambio.llaves?.Trim('"') ?? string.Empty))
+                    return SetErrorResult(result, "WHERE no permitido por políticas de seguridad.");
+
+                if (string.IsNullOrWhiteSpace(dtCambio.nom_tabla))
+                    return SetErrorResult(result, "El nombre de la tabla es nulo o vacío.");
 
                 string query;
+                var safeTable = SafeIdent(dtCambio.nom_tabla);
 
                 switch (dtCambio.cod_evento)
                 {
                     case "UPDATE":
-                        var cambios = JsonConvert.DeserializeObject<List<CampoCambio>>(dtCambio.valoresjsondif ?? string.Empty);
-                        var setParts = (cambios ?? new List<CampoCambio>())
-                            .Select(c => $"{c.Campo} = {FormatearValorSql(c.ValorNuevo ?? string.Empty)}");
+                        var cambios = JsonConvert.DeserializeObject<List<CampoCambio>>(dtCambio.valoresjsondif ?? string.Empty) ?? new List<CampoCambio>();
+
+                        // columnas validadas
+                        var setParts = cambios
+                            .Where(c => !string.IsNullOrWhiteSpace(c.Campo))
+                            .Select(c =>
+                        {
+                            if (!IdentRegex.IsMatch(c.Campo ?? string.Empty))
+                                throw new SecurityException("Campo inválido en cambios.");
+
+                            return $"{SafeIdent(c.Campo!)} = {FormatearValorSql(c.ValorNuevo ?? string.Empty)}";
+                        });
 
                         var llaves = dtCambio.llaves?.Trim('"') ?? string.Empty;
-                        query = $"UPDATE {dtCambio.nom_tabla} SET {string.Join(", ", setParts)} WHERE {llaves};";
+
+                        // SONAR S2077: SQL dinámico intencional (aplicación cambios aprobados).
+                        query = $"UPDATE {safeTable} SET {string.Join(", ", setParts)} WHERE {llaves};";
                         result.Code = connection.Execute(query);
                         break;
 
                     case "INSERT":
+                        // INSERT se guarda como SQL completo (histórico).
+                        // Se asume SQL interno, bloqueado por IsSqlInternoSeguro.
                         query = dtCambio.valoresjsonact?.Trim('"') ?? string.Empty;
+                        if (!IsSqlInternoSeguro(query))
+                            return SetErrorResult(result, "SQL INSERT no permitido por políticas de seguridad.");
+
+                        // SONAR S2077: ejecución controlada (insert interno validado).
                         result.Code = connection.Execute(query);
                         break;
 
                     case "DELETE":
                         var llavesDelete = dtCambio.llaves?.Trim('"') ?? string.Empty;
-                        query = $"DELETE {dtCambio.nom_tabla} WHERE {llavesDelete};";
+
+                        // SONAR S2077: SQL dinámico intencional (delete aprobado).
+                        query = $"DELETE FROM {safeTable} WHERE {llavesDelete};";
                         result.Code = connection.Execute(query);
                         break;
 
                     default:
-                        result.Code = -1;
-                        result.Description = "Tipo de evento no soportado.";
-                        return result.Code ?? -1;
+                        return SetErrorResult(result, "Tipo de evento no soportado.");
                 }
 
                 if (result.Code != -1)
@@ -1115,14 +957,12 @@ VALUES (
                 }
                 else
                 {
-                    result.Code = -1;
-                    result.Description = "Error al actualizar la tabla de control.";
+                    return SetErrorResult(result, "Error al actualizar la tabla de control.");
                 }
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return SetErrorResult(result, ex.Message);
             }
 
             return result.Code ?? -1;
@@ -1145,63 +985,45 @@ VALUES (
                 };
             }
 
-            if (valor is bool b)
-                return b ? "1" : "0";
+            if (valor is bool b) return b ? "1" : "0";
+            if (valor is string s) return $"'{s.Replace("'", "''")}'";
 
-            if (valor is string s)
-                return $"'{s.Replace("'", "''")}'";
-
-            return valor.ToString() ?? string.Empty;
+            return valor.ToString() ?? "NULL";
         }
 
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)
         {
             var result = new ErrorDto { Code = 0 };
+            if (controlAuth != "Y") return 3;
 
-            if (controlAuth == "Y")
+            try
             {
-                try
-                {
-                    string patternDelete = @"DELETE\s+(FROM\s+)?(?<table>\w+)\s+WHERE\s+(?<whereClause>.+)$";
-                    var matchDelete = Regex.Match(request.strSQL, patternDelete, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                    if (!matchDelete.Success)
-                    {
-                        result.Code = -1;
-                        result.Description = "La sentencia SQL no es válida o no se puede analizar.";
-                        return result.Code ?? -1;
-                    }
+                if (!IsSqlInternoSeguro(request.strSQL))
+                    return SetErrorResult(result, "SQL no permitido por políticas de seguridad.");
 
-                    var table = matchDelete.Groups["table"].Value;
-                    var whereClause = matchDelete.Groups["whereClause"].Value;
+                const string patternDelete = @"DELETE\s+(FROM\s+)?(?<table>\w+)\s+WHERE\s+(?<whereClause>.+)$";
+                var matchDelete = Regex.Match(request.strSQL, patternDelete, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                if (!matchDelete.Success)
+                    return SetErrorResult(result, "La sentencia SQL no es válida o no se puede analizar.");
 
-                    var ctx = new ControlCambioContext(
-                        CodEmpresa: request.CodEmpresa,
-                        Usuario: request.usuario
-                    );
+                var table = matchDelete.Groups["table"].Value;
+                var whereClause = matchDelete.Groups["whereClause"].Value;
 
-                    using (var diferenciasTable = new DataTable())
-                    {
-                        var payload = new ControlCambioPayload(
-                            TipoCambio: request.tipoCambio,
-                            Tabla: table,
-                            Llave: whereClause,
-                            EventoQuery: "DELETE",
-                            InsertSql: "",
-                            Diferencias: diferenciasTable
-                        );
+                if (!IsWhereSeguro(whereClause))
+                    return SetErrorResult(result, "WHERE no permitido por políticas de seguridad.");
 
-                        result = InsertarTablaControl(ctx, payload);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    result.Code = -1;
-                    result.Description = ex.Message;
-                }
+                _ = SafeIdent(table); // valida tabla
+
+                var ctx = new ControlCambioContext(request.CodEmpresa, request.usuario);
+
+                using var diferenciasTable = new DataTable();
+                var payload = new ControlCambioPayload(request.tipoCambio, table, whereClause, "DELETE", "", diferenciasTable);
+
+                result = InsertarTablaControl(ctx, payload);
             }
-            else
+            catch (Exception ex)
             {
-                result.Code = 3;
+                return SetErrorResult(result, ex.Message);
             }
 
             return result.Code ?? -1;
@@ -1210,52 +1032,90 @@ VALUES (
         public int FndControlAutoriza_Insertar(FndControlAutorizaData request)
         {
             var result = new ErrorDto { Code = 0 };
+            if (controlAuth != "Y") return 3;
 
-            if (controlAuth == "Y")
+            try
             {
-                try
-                {
-                    string patternInsert = @"insert\s+(?:into\s+)?(?<table>\w+)\s*\((?<columns>[^)]+)\)\s*values\s*\((?<values>.+?)\)";
-                    var matchInsert = Regex.Match(request.strSQL, patternInsert, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-                    if (!matchInsert.Success)
-                    {
-                        result.Code = -1;
-                        result.Description = "La sentencia SQL no es válida o no se puede analizar.";
-                        return result.Code ?? -1;
-                    }
+                if (!IsSqlInternoSeguro(request.strSQL))
+                    return SetErrorResult(result, "SQL no permitido por políticas de seguridad.");
 
-                    var table = matchInsert.Groups["table"].Value;
+                const string patternInsert = @"insert\s+(?:into\s+)?(?<table>\w+)\s*\((?<columns>[^)]+)\)\s*values\s*\((?<values>.+?)\)";
+                var matchInsert = Regex.Match(request.strSQL, patternInsert, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                if (!matchInsert.Success)
+                    return SetErrorResult(result, "La sentencia SQL no es válida o no se puede analizar.");
 
-                    var ctx = new ControlCambioContext(
-                        CodEmpresa: request.CodEmpresa,
-                        Usuario: request.usuario
-                    );
+                var table = matchInsert.Groups["table"].Value;
+                _ = SafeIdent(table); // valida tabla
 
-                    var payload = new ControlCambioPayload(
-                        TipoCambio: request.tipoCambio,
-                        Tabla: table,
-                        Llave: "",
-                        EventoQuery: "INSERT",
-                        InsertSql: request.strSQL,
-                        Diferencias: null
-                    );
+                var ctx = new ControlCambioContext(request.CodEmpresa, request.usuario);
+                var payload = new ControlCambioPayload(request.tipoCambio, table, "", "INSERT", request.strSQL, null);
 
-                    result = InsertarTablaControl(ctx, payload);
-                }
-                catch (Exception ex)
-                {
-                    result.Code = -1;
-                    result.Description = ex.Message;
-                }
+                result = InsertarTablaControl(ctx, payload);
             }
-            else
+            catch (Exception ex)
             {
-                result.Code = 3;
+                return SetErrorResult(result, ex.Message);
             }
 
             return result.Code ?? -1;
         }
 
         #endregion
+
+        // ========= Seguridad (hotspots) =========
+
+        private static string SafeIdent(string ident)
+        {
+            if (string.IsNullOrWhiteSpace(ident) || !IdentRegex.IsMatch(ident))
+                throw new SecurityException("Identificador SQL inválido.");
+
+            return $"[{ident}]";
+        }
+
+        private static bool IsWhereSeguro(string whereClause)
+        {
+            if (string.IsNullOrWhiteSpace(whereClause))
+                return false;
+
+            // Bloquea multi statement + comentarios
+            if (whereClause.Contains(";") ||
+                whereClause.Contains("--") ||
+                whereClause.Contains("/*") ||
+                whereClause.Contains("*/"))
+                return false;
+
+            // Bloquea keywords peligrosas
+            var banned = new[]
+            {
+            " drop ", " alter ", " create ", " truncate ",
+            " exec ", " execute ", " merge ", " grant ", " revoke "
+            };
+
+            var lower = " " + whereClause.ToLowerInvariant() + " ";
+            if (banned.Any(b => lower.Contains(b)))
+                return false;
+
+            // ✅ Regex con timeout (evita ReDoS)
+            return WhereSafeRegex.IsMatch(whereClause);
+        }
+
+
+        private static bool IsSqlInternoSeguro(string sql)
+        {
+            if (string.IsNullOrWhiteSpace(sql)) return false;
+
+            if (sql.Contains(";") || sql.Contains("--") || sql.Contains("/*") || sql.Contains("*/"))
+                return false;
+
+            string[] banned =
+            {
+                " xp_", " sp_", "exec", "execute",
+                "drop", "alter", "create", "truncate",
+                "grant", "revoke", "merge"
+            };
+
+            var lower = " " + sql.ToLowerInvariant() + " ";
+            return !banned.Any(b => lower.Contains(b));
+        }
     }
 }

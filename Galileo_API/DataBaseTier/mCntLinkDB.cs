@@ -8,356 +8,333 @@ namespace Galileo.DataBaseTier
     public class MCntLinkDB
     {
         private readonly IConfiguration _config;
+
         public MCntLinkDB(IConfiguration config)
         {
             _config = config;
         }
 
-        public string fxgCntUnidad(int CodEmpresa, string pCodigo)
+        public string fxgCntUnidad(int codEmpresa, string pCodigo)
         {
-            string result = "";
-            CntUnidadDto? info;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select descripcion from CntX_Unidades where cod_unidad = {pCodigo} and cod_contabilidad = {CodEmpresa}";
-                info = connection.Query<CntUnidadDto>(query).FirstOrDefault();
-                result = info?.Descripcion ?? "";
+
+                const string sql = @"
+                    SELECT descripcion AS Descripcion
+                    FROM CntX_Unidades
+                    WHERE cod_unidad = @Codigo AND cod_contabilidad = @Contabilidad;";
+
+                var info = connection.QueryFirstOrDefault<CntUnidadDto>(sql, new
+                {
+                    Codigo = pCodigo,
+                    Contabilidad = codEmpresa
+                });
+
+                return info?.Descripcion ?? string.Empty;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return string.Empty;
             }
-
-            return result;
-
         }
 
-        public string fxgCntCentroCostos(int CodEmpresa, string pCodigo)
+        public string fxgCntCentroCostos(int codEmpresa, string pCodigo)
         {
-            string result = "";
-            CntCentroCostosDto? info;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select descripcion from CntX_Centro_Costos where cod_centro_Costo = {pCodigo} and cod_contabilidad = {CodEmpresa}";
-                info = connection.Query<CntCentroCostosDto>(query).FirstOrDefault();
-                result = info != null ? info.Descripcion : "";
+
+                const string sql = @"
+                    SELECT descripcion AS Descripcion
+                    FROM CntX_Centro_Costos
+                    WHERE cod_centro_Costo = @Codigo AND cod_contabilidad = @Contabilidad;";
+
+                var info = connection.QueryFirstOrDefault<CntCentroCostosDto>(sql, new
+                {
+                    Codigo = pCodigo,
+                    Contabilidad = codEmpresa
+                });
+
+                return info?.Descripcion ?? string.Empty;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return string.Empty;
             }
-
-            return result;
-
         }
 
-        public bool fxgCntPeriodoValida(int CodEmpresa, DateTime vFecha)
+        public bool fxgCntPeriodoValida(int codEmpresa, DateTime vFecha)
         {
-            bool result = false;
-            List<CntPeriodosDto> info;
-
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select * from CntX_Periodos where anio = Year({vFecha}) and mes = Month({vFecha}) and estado = 'P' and cod_contabilidad = {CodEmpresa}";
-                info = connection.Query<CntPeriodosDto>(query).ToList();
-                if (info.Count > 0)
+
+                const string sql = @"
+                    SELECT TOP 1 1
+                    FROM CntX_Periodos
+                    WHERE anio = @Anio
+                      AND mes = @Mes
+                      AND estado = 'P'
+                      AND cod_contabilidad = @Contabilidad;";
+
+                var existe = connection.QueryFirstOrDefault<int?>(sql, new
                 {
-                    result = true;
-                }
-                else
-                {
-                    result = false;
-                }
+                    Anio = vFecha.Year,
+                    Mes = vFecha.Month,
+                    Contabilidad = codEmpresa
+                });
+
+                return existe.HasValue;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return false;
             }
-
-            return result;
-
         }
 
-        public string fxgCntCuentaDesc(int CodEmpresa, string pCuenta)
+        public string fxgCntCuentaDesc(int codEmpresa, string pCuenta)
         {
-            string result = "";
-            CntDescripCuentaDto? info;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select ltrim(rtrim(Descripcion)) as 'Descripcion' from CntX_Cuentas where cod_cuenta = {pCuenta} and cod_contabilidad = {CodEmpresa}";
-                info = connection.Query<CntDescripCuentaDto>(query).FirstOrDefault();
-                result = info != null ? info.Descripcion : "";
+
+                const string sql = @"
+                    SELECT LTRIM(RTRIM(Descripcion)) AS Descripcion
+                    FROM CntX_Cuentas
+                    WHERE cod_cuenta = @Cuenta AND cod_contabilidad = @Contabilidad;";
+
+                var info = connection.QueryFirstOrDefault<CntDescripCuentaDto>(sql, new
+                {
+                    Cuenta = pCuenta,
+                    Contabilidad = codEmpresa
+                });
+
+                return info?.Descripcion ?? string.Empty;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return string.Empty;
             }
-
-            return result;
-
         }
 
-        public bool fxgCntCuentaValida(int CodEmpresa, string vCuenta)
+        public bool fxgCntCuentaValida(int codEmpresa, string vCuenta)
         {
-            bool result = false;
-            CntValidaDto info;
-            SifEmpresaDto sif;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
             try
             {
-                vCuenta = fxgCntCuentaFormato(CodEmpresa, false, vCuenta, 0);
+                vCuenta = fxgCntCuentaFormato(codEmpresa, false, vCuenta, 0);
+
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select * from sif_empresa";
-                var sifResult = connection.Query<SifEmpresaDto>(query).FirstOrDefault();
-                if (sifResult == null)
-                {
-                    return false;
-                }
-                sif = sifResult;
 
-                query = @"select isnull(count(*),0) as Existe from CntX_cuentas where cod_cuenta = @codCuenta and acepta_movimientos = 1 and cod_contabilidad = @codContabilidad";
+                const string sqlSif = @"SELECT TOP 1 * FROM sif_empresa;";
+                var sif = connection.QueryFirstOrDefault<SifEmpresaDto>(sqlSif);
+                if (sif == null) return false;
 
-                var validaResult = connection.Query<CntValidaDto>(query, new { codCuenta = vCuenta, codContabilidad = sif.Cod_Empresa_Enlace }).FirstOrDefault();
-                if (validaResult != null)
+                const string sqlValida = @"
+                    SELECT ISNULL(COUNT(*),0) AS Existe
+                    FROM CntX_cuentas
+                    WHERE cod_cuenta = @Cuenta
+                      AND acepta_movimientos = 1
+                      AND cod_contabilidad = @Contabilidad;";
+
+                var info = connection.QueryFirstOrDefault<CntValidaDto>(sqlValida, new
                 {
-                    info = validaResult;
-                    if (info.Existe > 0)
-                    {
-                        result = true;
-                    }
-                    else
-                    {
-                        result = false;
-                    }
-                }
-                else
-                {
-                    result = false;
-                }
+                    Cuenta = vCuenta,
+                    Contabilidad = sif.Cod_Empresa_Enlace
+                });
+
+                return (info?.Existe ?? 0) > 0;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return false;
             }
-
-            return result;
-
         }
 
-        public string fxgCntTipoAsientoDesc(int CodEmpresa, string vTipo)
+        public string fxgCntTipoAsientoDesc(int codEmpresa, string vTipo)
         {
-            string result = "";
-            CntDescripTipoAsientoDto? info;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select descripcion from CntX_tipos_asientos where tipo_asiento = {vTipo} and cod_contabilidad = {CodEmpresa}";
-                info = connection.Query<CntDescripTipoAsientoDto>(query).FirstOrDefault();
-                result = info != null ? info.Descripcion : "";
+
+                const string sql = @"
+                    SELECT descripcion AS Descripcion
+                    FROM CntX_tipos_asientos
+                    WHERE tipo_asiento = @Tipo AND cod_contabilidad = @Contabilidad;";
+
+                var info = connection.QueryFirstOrDefault<CntDescripTipoAsientoDto>(sql, new
+                {
+                    Tipo = vTipo,
+                    Contabilidad = codEmpresa
+                });
+
+                return info?.Descripcion ?? string.Empty;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return string.Empty;
             }
-            return result;
         }
 
-        public string fxgCntAjustaCuentaContable(int CodEmpresa, string strCuenta)
+        public string fxgCntAjustaCuentaContable(int codEmpresa, string strCuenta)
         {
-            string result = "";
-            int intCaracteres = 0;
-            CntContabilidadesDto? info;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select * from CntX_Contabilidades where cod_contabilidad = {CodEmpresa}";
-                info = connection.Query<CntContabilidadesDto>(query).FirstOrDefault();
-                if (info != null)
+
+                const string sql = @"
+                    SELECT TOP 1 *
+                    FROM CntX_Contabilidades
+                    WHERE cod_contabilidad = @Contabilidad;";
+
+                var info = connection.QueryFirstOrDefault<CntContabilidadesDto>(sql, new
                 {
-                    intCaracteres = info.Nivel1;
-                    intCaracteres = intCaracteres + info.Nivel2;
-                    intCaracteres = intCaracteres + info.Nivel3;
-                    intCaracteres = intCaracteres + info.Nivel4;
-                    intCaracteres = intCaracteres + info.Nivel5;
-                    intCaracteres = intCaracteres + info.Nivel6;
-                    intCaracteres = intCaracteres + info.Nivel7;
-                    intCaracteres = intCaracteres + info.Nivel8;
+                    Contabilidad = codEmpresa
+                });
 
-                    result = strCuenta.Trim();
+                if (info == null) return strCuenta.Trim();
 
-                    var sb = new System.Text.StringBuilder(result);
-                    for (int i = result.Length; i < intCaracteres; i++)
-                    {
-                        sb.Append('0');
-                    }
-                    result = sb.ToString();
-                }
-                else
-                {
-                    result = strCuenta.Trim();
-                }
+                var total = info.Nivel1 + info.Nivel2 + info.Nivel3 + info.Nivel4
+                          + info.Nivel5 + info.Nivel6 + info.Nivel7 + info.Nivel8;
 
+                var cuenta = strCuenta.Trim();
+                return cuenta.Length >= total ? cuenta : cuenta.PadRight(total, '0');
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return strCuenta.Trim();
             }
-            return result;
         }
 
-        public string fxgCntCuentaFormato(int CodEmpresa, bool blnMascara, string pCuenta, int optMensaje = 1)
+        public string fxgCntCuentaFormato(int codEmpresa, bool blnMascara, string pCuenta, int optMensaje = 1)
         {
-            string result = "";
-            pCuenta = pCuenta.Trim();
+            pCuenta = (pCuenta ?? string.Empty).Trim();
 
             try
             {
-                var param = sbgCntParametros(CodEmpresa);
-                result = RemoveHyphens(pCuenta);
-                pCuenta = result;
+                var param = sbgCntParametros(codEmpresa);
+                var cuenta = RemoveHyphens(pCuenta);
 
-                if (!double.TryParse(pCuenta, out _))
+                if (!double.TryParse(cuenta, out _))
                 {
-                    result = pCuenta;
-                    if (optMensaje == 1)
-                    {
-                        result = "Código de cuenta inválido...";
-                        return result;
-                    }
+                    return optMensaje == 1 ? "Código de cuenta inválido..." : cuenta;
                 }
 
-                if (param.Result != null)
+                if (param.Result == null)
                 {
-                    pCuenta = PadWithZeros(pCuenta, param.Result.gMascaraTChar);
-
-                    if (blnMascara)
-                    {
-                        pCuenta = ApplyMask(pCuenta, param.Result.gstrMascara);
-                    }
-                }
-                else
-                {
-                    if (optMensaje == 1)
-                    {
-                        result = "No se pudo obtener los parámetros de la cuenta.";
-                        return result;
-                    }
+                    return optMensaje == 1 ? "No se pudo obtener los parámetros de la cuenta." : cuenta;
                 }
 
-                result = pCuenta;
+                cuenta = PadWithZeros(cuenta, param.Result.gMascaraTChar);
+
+                if (blnMascara)
+                    cuenta = ApplyMask(cuenta, param.Result.gstrMascara);
+
+                return cuenta;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return pCuenta;
             }
-
-            return result;
         }
 
-        private static string RemoveHyphens(string input)
-        {
-            return new string(input.Where(c => c != '-').ToArray());
-        }
+        private static string RemoveHyphens(string input) =>
+            new string((input ?? string.Empty).Where(c => c != '-').ToArray());
 
-        private static string PadWithZeros(string input, int totalLength)
-        {
-            if (input.Length >= totalLength)
-                return input;
-            return input.PadRight(totalLength, '0');
-        }
+        private static string PadWithZeros(string input, int totalLength) =>
+            input.Length >= totalLength ? input : input.PadRight(totalLength, '0');
 
         private static string ApplyMask(string input, string mask)
         {
-            var sbMask = new System.Text.StringBuilder();
+            var sb = new System.Text.StringBuilder();
             int j = 0;
+
             for (int i = 0; i < mask.Length; i++)
             {
                 if (mask[i] == '#' && j < input.Length)
-                {
-                    sbMask.Append(input[j]);
-                    j++;
-                }
+                    sb.Append(input[j++]);
                 else
-                {
-                    sbMask.Append(mask[i]);
-                }
+                    sb.Append(mask[i]);
             }
-            return sbMask.ToString();
+
+            return sb.ToString();
         }
 
-        public ErrorDto<DefMascarasDto> sbgCntParametros(int CodEmpresa)
+        public ErrorDto<DefMascarasDto> sbgCntParametros(int codEmpresa)
         {
-            var info = new ErrorDto<DefMascarasDto>
-            {
-                Result = new DefMascarasDto()
-            };
-            CntContabilidadesDto conta;
-            SifEmpresaDto sif;
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var info = new ErrorDto<DefMascarasDto> { Result = new DefMascarasDto() };
+            var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select * from sif_empresa";
-                var sifResult = connection.Query<SifEmpresaDto>(query).FirstOrDefault();
 
-                if (sifResult == null)
+                const string sqlSif = @"SELECT TOP 1 * FROM sif_empresa;";
+                var sif = connection.QueryFirstOrDefault<SifEmpresaDto>(sqlSif);
+                if (sif == null)
                 {
                     info.Code = -1;
                     info.Description = "No SifEmpresaDto found.";
                     return info;
                 }
-                sif = sifResult;
 
-                query = $@"select * from CntX_Contabilidades where cod_contabilidad = {sif.Cod_Empresa_Enlace}";
-                var contaResult = connection.Query<CntContabilidadesDto>(query).FirstOrDefault();
+                const string sqlConta = @"
+                    SELECT TOP 1 *
+                    FROM CntX_Contabilidades
+                    WHERE cod_contabilidad = @Contabilidad;";
 
-                if (contaResult == null)
+                var conta = connection.QueryFirstOrDefault<CntContabilidadesDto>(sqlConta, new
+                {
+                    Contabilidad = sif.Cod_Empresa_Enlace
+                });
+
+                if (conta == null)
                 {
                     info.Code = -1;
                     info.Description = "No CntContabilidadesDto found.";
                     return info;
                 }
-                conta = contaResult;
 
                 info.Result.gEnlace = sif.Cod_Empresa_Enlace;
 
-                int[] niveles = new int[]
+                int[] niveles =
                 {
-                        conta.Nivel1, conta.Nivel2, conta.Nivel3, conta.Nivel4,
-                        conta.Nivel5, conta.Nivel6, conta.Nivel7, conta.Nivel8
+                    conta.Nivel1, conta.Nivel2, conta.Nivel3, conta.Nivel4,
+                    conta.Nivel5, conta.Nivel6, conta.Nivel7, conta.Nivel8
                 };
 
                 for (int idx = 0; idx < niveles.Length; idx++)
                 {
                     int nivel = niveles[idx];
-                    if (nivel > 0)
-                    {
-                        if (idx > 0)
-                            info.Result.gstrMascara += "-";
-                        info.Result.gstrNiveles += nivel;
-                        info.Result.gMascaraTChar += nivel;
-                        info.Result.gstrMascara += new string('#', nivel);
-                    }
-                }
+                    if (nivel <= 0) continue;
 
+                    if (idx > 0) info.Result.gstrMascara += "-";
+                    info.Result.gstrNiveles += nivel;
+                    info.Result.gMascaraTChar += nivel;
+                    info.Result.gstrMascara += new string('#', nivel);
+                }
             }
             catch (Exception ex)
             {
