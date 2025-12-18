@@ -5,11 +5,11 @@ using Dapper;
 
 namespace Galileo.DataBaseTier
 {
-    internal static class SqlSafe
+    internal static partial class SqlSafe
     {
         // Identificadores SQL permitidos (tabla/columna): letras, números, _
         private static readonly Regex IdentRegex =
-            new(@"^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.Compiled);
+            MyRegex();
 
         public static string Ident(string ident)
         {
@@ -35,7 +35,7 @@ namespace Galileo.DataBaseTier
             if (ContainsUnsafeTokens(whereClause))
                 throw new SecurityException("WHERE contiene tokens no permitidos.");
 
-            var parts = Regex.Split(whereClause, @"\s+AND\s+", RegexOptions.IgnoreCase)
+            var parts = MyRegex1().Split(whereClause)
                              .Select(p => p.Trim())
                              .Where(p => p.Length > 0)
                              .ToList();
@@ -67,10 +67,7 @@ namespace Galileo.DataBaseTier
 
         private static (string col, string rawVal) ParseWherePart(string part)
         {
-            var m = Regex.Match(
-                part,
-                @"^(?<col>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?<val>(\d+(\.\d+)?)|('([^']|(''))*'))$",
-                RegexOptions.IgnoreCase);
+            var m = MyRegex2().Match(part);
 
             if (!m.Success)
                 throw new SecurityException("WHERE no permitido. Use: Col=123 o Col='ABC' (con AND).");
@@ -103,5 +100,12 @@ namespace Galileo.DataBaseTier
                 return lng;
             }
         }
+
+        [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_]*$", RegexOptions.Compiled)]
+        private static partial Regex MyRegex();
+        [GeneratedRegex(@"\s+AND\s+", RegexOptions.IgnoreCase, "es-CR")]
+        private static partial Regex MyRegex1();
+        [GeneratedRegex(@"^(?<col>[A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?<val>(\d+(\.\d+)?)|('([^']|(''))*'))$", RegexOptions.IgnoreCase, "es-CR")]
+        private static partial Regex MyRegex2();
     }
 }
