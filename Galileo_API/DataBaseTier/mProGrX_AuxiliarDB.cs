@@ -17,7 +17,7 @@ using Galileo.Models.INV;
 
 namespace Galileo.DataBaseTier
 {
-    public class MProGrXAuxiliarDB
+    public partial class MProGrXAuxiliarDB
     {
         private readonly PortalDB _portalDB;
 
@@ -1001,8 +1001,7 @@ VALUES (
                 if (!IsSqlInternoSeguro(request.strSQL))
                     return SetErrorResult(result, "SQL no permitido por políticas de seguridad.");
 
-                const string patternDelete = @"DELETE\s+(FROM\s+)?(?<table>\w+)\s+WHERE\s+(?<whereClause>.+)$";
-                var matchDelete = Regex.Match(request.strSQL, patternDelete, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                var matchDelete = MyRegex1().Match(request.strSQL);
                 if (!matchDelete.Success)
                     return SetErrorResult(result, "La sentencia SQL no es válida o no se puede analizar.");
 
@@ -1039,8 +1038,7 @@ VALUES (
                 if (!IsSqlInternoSeguro(request.strSQL))
                     return SetErrorResult(result, "SQL no permitido por políticas de seguridad.");
 
-                const string patternInsert = @"insert\s+(?:into\s+)?(?<table>\w+)\s*\((?<columns>[^)]+)\)\s*values\s*\((?<values>.+?)\)";
-                var matchInsert = Regex.Match(request.strSQL, patternInsert, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                var matchInsert = MyRegex().Match(request.strSQL);
                 if (!matchInsert.Success)
                     return SetErrorResult(result, "La sentencia SQL no es válida o no se puede analizar.");
 
@@ -1117,5 +1115,10 @@ VALUES (
             var lower = " " + sql.ToLowerInvariant() + " ";
             return !banned.Any(b => lower.Contains(b));
         }
+
+        [GeneratedRegex(@"insert\s+(?:into\s+)?(?<table>\w+)\s*\((?<columns>[^)]+)\)\s*values\s*\((?<values>.+?)\)", RegexOptions.IgnoreCase | RegexOptions.Singleline, "es-CR")]
+        private static partial Regex MyRegex();
+        [GeneratedRegex(@"DELETE\s+(FROM\s+)?(?<table>\w+)\s+WHERE\s+(?<whereClause>.+)$", RegexOptions.IgnoreCase | RegexOptions.Singleline, "es-CR")]
+        private static partial Regex MyRegex1();
     }
 }
