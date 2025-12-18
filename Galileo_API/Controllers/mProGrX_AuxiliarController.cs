@@ -73,12 +73,6 @@ namespace Galileo.Controllers
             return new MProGrXAuxiliarBl(_config).ActivosSinAsignar_Obtener(CodEmpresa, usuario);
         }
 
-        [HttpPatch("FndControlAutoriza_Guardar")]
-        public int FndControlAutoriza_Guardar(FndControlAutorizaData request)
-        {
-            return new MProGrXAuxiliarBl(_config).FndControlAutoriza_Guardar(request);
-        }
-
         [HttpDelete("FndControlAutoriza_Eliminar")]
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)
         {

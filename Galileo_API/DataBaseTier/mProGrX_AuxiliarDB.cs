@@ -680,71 +680,6 @@ FROM {table}
 
         #region FONDOS v6 - Control de Cambios
 
-        public int FndControlAutoriza_Guardar(FndControlAutorizaData request)
-        {
-            if (controlAuth != "Y") return 3;
-
-            var result = new ErrorDto { Code = 0 };
-
-            try
-            {
-                if (!IsSqlInternoSeguro(request.strSQL))
-                    return SetErrorResult(result, "SQL no permitido por políticas de seguridad.");
-
-                var match = ParseUpdateSql(request.strSQL);
-                if (match == null)
-                    return SetErrorResult(result, "La sentencia SQL no es válida o no se puede analizar.");
-
-                string table = match.Groups["table"].Value.Trim();
-                string setClause = match.Groups["setClause"].Value.Trim();
-                string whereClause = match.Groups["whereClause"].Value.Trim();
-
-                if (!IsWhereSeguro(whereClause))
-                    return SetErrorResult(result, "WHERE no permitido por políticas de seguridad.");
-
-                using var connection = _portalDB.CreateConnection(request.CodEmpresa);
-
-                // SONAR S2077: SQL dinámico intencional (control de cambios interno).
-                // Mitigación: SQL validado (tokens), tabla validada (identificador), WHERE validado.
-                var safeTable = SqlSafe.Ident(table);
-                var (whereSql, dpWhere) = SqlSafe.Where(whereClause);
-
-                var dtTable = connection
-                    .Query($"SELECT TOP (1) * FROM {safeTable} WHERE {whereSql};", dpWhere)
-                    .FirstOrDefault();
-
-
-                if (dtTable == null)
-                    return SetErrorResult(result, $"❌ No se encontró información en {table} con la condición: {whereClause}");
-
-                var diferencias = ObtenerDiferencias(connection, table, setClause, whereClause, dtTable);
-                var dtDiferencias = CrearDataTableDiferencias(diferencias);
-
-                if (dtDiferencias.Rows.Count == 0)
-                    return SetErrorResult(result, "No se encontraron diferencias entre los valores originales y los nuevos.", 2);
-
-                var ctx = new ControlCambioContext(request.CodEmpresa, request.usuario);
-
-                var payload = new ControlCambioPayload(
-                    TipoCambio: request.tipoCambio,
-                    Tabla: table,
-                    Llave: whereClause,
-                    EventoQuery: "UPDATE",
-                    InsertSql: "",
-                    Diferencias: dtDiferencias
-                );
-
-                result = InsertarTablaControl(ctx, payload);
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-
-            return result.Code ?? -1;
-        }
-
         private static Match? ParseUpdateSql(string sql)
         {
             string pattern = @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$";
@@ -757,62 +692,6 @@ FROM {table}
             result.Code = code;
             result.Description = description;
             return result.Code ?? -1;
-        }
-
-        private static List<(string Campo, object ValorOriginal, object ValorNuevo)> ObtenerDiferencias(
-            SqlConnection connection,
-            string table,
-            string setClause,
-            string whereClause,
-            object dtTable)
-        {
-            if (!IsWhereSeguro(whereClause))
-                return new List<(string Campo, object ValorOriginal, object ValorNuevo)>();
-
-            var selectParts = new List<string>();
-
-            foreach (var assignment in SplitSetClauseSafely(setClause))
-            {
-                var splitIndex = assignment.IndexOf('=');
-                if (splitIndex <= 0) continue;
-
-                var column = assignment[..splitIndex].Trim();
-                var expression = assignment[(splitIndex + 1)..].Trim();
-
-                if (!IdentRegex.IsMatch(column))
-                    throw new SecurityException("Columna inválida en SET.");
-
-                selectParts.Add($"{expression} AS {SafeIdent(column)}");
-            }
-
-
-            // SONAR S2077: SQL dinámico intencional (comparación valores).
-            // Mitigación: tabla/columnas validadas y WHERE validado.
-            var safeTable = SqlSafe.Ident(table);
-            var (whereSql, dpWhere) = SqlSafe.Where(whereClause);
-
-            string selectStatement = $"SELECT {string.Join(", ", selectParts)} FROM {safeTable} WHERE {whereSql};";
-            var dtTableNew = connection.Query(selectStatement, dpWhere).FirstOrDefault();
-
-
-            var dicOriginal = (IDictionary<string, object>)dtTable;
-            var dicNuevo = dtTableNew as IDictionary<string, object>;
-
-            if (dicNuevo == null)
-                return new List<(string Campo, object ValorOriginal, object ValorNuevo)>();
-
-            var diferencias = new List<(string Campo, object ValorOriginal, object ValorNuevo)>();
-
-            foreach (var kvp in dicOriginal)
-            {
-                var key = kvp.Key;
-                var valorOriginal = kvp.Value;
-
-                if (dicNuevo.TryGetValue(key, out var valorNuevo) && !SonIguales(valorOriginal, valorNuevo))
-                    diferencias.Add((key, valorOriginal, valorNuevo));
-            }
-
-            return diferencias;
         }
 
         private static DataTable CrearDataTableDiferencias(List<(string Campo, object ValorOriginal, object ValorNuevo)> diferencias)

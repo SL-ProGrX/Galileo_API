@@ -58,11 +58,6 @@ namespace Galileo.BusinessLogic
             return new MProGrXAuxiliarDB(_config).ActivosSinAsignar_Obtener(CodEmpresa, usuario);
         }
 
-        public int FndControlAutoriza_Guardar(FndControlAutorizaData request)
-        {
-            return new MProGrXAuxiliarDB(_config).FndControlAutoriza_Guardar(request);
-        }
-
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)
         {
             return new MProGrXAuxiliarDB(_config).FndControlAutoriza_Eliminar(request);
