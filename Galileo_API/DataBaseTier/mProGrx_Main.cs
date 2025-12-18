@@ -244,36 +244,47 @@ namespace Galileo.DataBaseTier
 
         public List<MenuUsoResultDto> SbSIFRegistraTags(MenuUsoRequestDto req)
         {
-            List<MenuUsoResultDto> result = new List<MenuUsoResultDto>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+
+                const string sql = @"
+            select  p.*,
+                    dbo.fxSEG_MenuAccess(@EmpresaId, @Usuario, @Modulo, @Formulario, @Tipo) as Acceso
+            from SIF_parametros p
+            where p.cod_parametro = @Codigo;";
+
+                var args = new
                 {
-                    string query = "select *,dbo.fxSEG_MenuAccess(" + req.Empresa_Id + "," + req.Usuario + "," + req.Modulo + "," + req.Formulario + "," + req.Tipo + ") as Acceso FROM SIF_parametros WHERE cod_parametro = @Codigo";
-                    ParametroDto? resultado = connection.QueryFirstOrDefault<ParametroDto>(query);
+                    EmpresaId = req.Empresa_Id,
+                    Usuario = req.Usuario,
+                    Modulo = req.Modulo,
+                    Formulario = req.Formulario,
+                    Tipo = req.Tipo,
+                    Codigo = 1 // <- make sure this exists on the request DTO
+                };
 
-                    if (resultado != null)
-                    {
-                        var procedure = "spSEG_MenuUsos";
-                        var parameters = new
-                        {
-                            menu_nodo = req.menu_nodo,
-                            Empresa_Id = req.Empresa_Id,
-                            Usuario = req.Usuario
-                        };
+                var resultado = connection.QueryFirstOrDefault<ParametroDto>(sql, args);
 
-                        result = connection.Query<MenuUsoResultDto>(procedure, parameters, commandType: CommandType.StoredProcedure).ToList();
-                    }
-                }
+                if (resultado == null) return new();
+
+                const string procedure = "spSEG_MenuUsos";
+                var procArgs = new
+                {
+                    menu_nodo = req.menu_nodo,
+                    Empresa_Id = req.Empresa_Id,
+                    Usuario = req.Usuario
+                };
+
+                return connection.Query<MenuUsoResultDto>(
+                    procedure, procArgs, commandType: CommandType.StoredProcedure
+                ).ToList();
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
-                result = new List<MenuUsoResultDto>();
+                return new();
             }
-            return result;
         }
-
         public List<MenuFavoritosResultDto> SbSIFRegistraTags(MenuFavoritosRequestDto req)
         {
             List<MenuFavoritosResultDto> result;
@@ -300,30 +311,33 @@ namespace Galileo.DataBaseTier
 
         public string sbMenuSeguridad(string usuario)
         {
-            string result = "";
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    string query = "select O.modulo"
-                                   + " from permisos P inner join  opciones O on P.id_opt = O.id_opt"
-                                   + " and P.tipo = 'U' and P.nombre in(select userID from usuarios where nombre = '" + usuario + "')"
-                                   + " group by O.modulo"
-                                   + " Union "
-                                   + " select O.modulo"
-                                   + " from permisos P inner join  opciones O on P.id_opt = O.id_opt"
-                                   + " and P.tipo = 'G' and P.nombre in(select id_Grupo from miembros where nombre = '" + usuario + "')"
-                                   + " group by O.modulo";
-                    result = connection.QueryFirstOrDefault<string>(query) ?? string.Empty;
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                }
+                const string sql = @"
+                    select O.modulo
+                    from permisos P
+                    inner join opciones O on P.id_opt = O.id_opt
+                    where P.tipo = 'U'
+                    and P.nombre in (select userID from usuarios where nombre = @Usuario)
+                    group by O.modulo
+
+                    union
+
+                    select O.modulo
+                    from permisos P
+                    inner join opciones O on P.id_opt = O.id_opt
+                    where P.tipo = 'G'
+                    and P.nombre in (select id_Grupo from miembros where nombre = @Usuario)
+                    group by O.modulo;";
+
+                return connection.QueryFirstOrDefault<string>(sql, new { Usuario = usuario }) ?? string.Empty;
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
-                result = "";
+                return string.Empty;
             }
-            return result;
         }
 
         public string sbCargaCbo(string vTipo, string vFiltro)
