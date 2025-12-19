@@ -140,7 +140,7 @@
     {
         public string refresh_token { get; set; } = string.Empty;
         public string client_id { get; set; } = "1000.IN873D3QJRFVKWIZQ1UQTEEWNTCVGU";
-        public string client_secret { get; set; } = "79ae19f21a6e50dc7f348fc42530ae0d1ffce5c169";
+        public string client_secret { get; set; } = string.Empty;
         public string grant_type { get; set; } = "refresh_token";
     }
 
@@ -148,7 +148,7 @@
     {
         public string code { get; set; } = "1000.7e0b2a8025b96cab4109cab004bf2f96.6db2679aa2df780fc50d1531b1b347d1";
         public string client_id { get; set; } = "1000.IN873D3QJRFVKWIZQ1UQTEEWNTCVGU";
-        public string client_secret { get; set; } = "79ae19f21a6e50dc7f348fc42530ae0d1ffce5c169";
+        public string client_secret { get; set; } = string.Empty;
         public string redirect_uri { get; set; } = "https://www.google.com/";
         public string grant_type { get; set; } = "authorization_code";
         public string scope { get; set; } = "Desk.tickets.ALL Desk.search.READ";
