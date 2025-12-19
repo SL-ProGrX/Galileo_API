@@ -85,10 +85,5 @@ namespace Galileo.Controllers
             return new MProGrXAuxiliarDB(_config).FndControlAutoriza_Insertar(request);
         }
 
-        [HttpPut("FndControlCambios_Autoriza")]
-        public int FndControlCambios_Autoriza(int CodEmpresa, int idCambio, string usuario)
-        {
-            return new MProGrXAuxiliarBl(_config).FndControlCambios_Autoriza(CodEmpresa, idCambio, usuario);
-        }
     }
 }
