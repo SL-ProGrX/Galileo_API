@@ -23,6 +23,8 @@ namespace Galileo.DataBaseTier
         public string dateFormat { get; set; }
         public string controlAuth { get; set; }
 
+        private const string _insert = "INSERT";
+
 
         private const string _descripcion = "descripcion";
 
@@ -888,7 +890,7 @@ VALUES (
             return result;
         }
 
-        public int FndControlCambios_Autoriza(int CodEmpresa, int idCambio, string usuario)
+        public int FndControlCambios_Autoriza2(int CodEmpresa, int idCambio, string usuario)
         {
             var result = new ErrorDto { Code = 0 };
 
@@ -905,8 +907,8 @@ VALUES (
                 if (dtCambio == null)
                     return SetErrorResult(result, "No se encontró el registro en la tabla de control.");
 
-                if (!IsSqlInternoSeguro(dtCambio.valoresjsonact ?? string.Empty) && dtCambio.cod_evento == "INSERT")
-                    return SetErrorResult(result, "SQL INSERT no permitido por políticas de seguridad.");
+                if (!IsSqlInternoSeguro(dtCambio.valoresjsonact ?? string.Empty) && dtCambio.cod_evento == _insert)
+                    return SetErrorResult(result, "SQL no permitido por políticas de seguridad.");
 
                 if (!IsWhereSeguro(dtCambio.llaves?.Trim('"') ?? string.Empty))
                     return SetErrorResult(result, "WHERE no permitido por políticas de seguridad.");
@@ -940,7 +942,7 @@ VALUES (
                         result.Code = connection.Execute(query);
                         break;
 
-                    case "INSERT":
+                    case _insert:
                         // INSERT se guarda como SQL completo (histórico).
                         // Se asume SQL interno, bloqueado por IsSqlInternoSeguro.
                         query = dtCambio.valoresjsonact?.Trim('"') ?? string.Empty;
@@ -987,7 +989,6 @@ VALUES (
 
             return result.Code ?? -1;
         }
-
         private static string FormatearValorSql(object valor)
         {
             if (valor == null || valor is JValue jVal && jVal.Type == JTokenType.Null)
@@ -1066,7 +1067,7 @@ VALUES (
                 _ = SafeIdent(table); // valida tabla
 
                 var ctx = new ControlCambioContext(request.CodEmpresa, request.usuario);
-                var payload = new ControlCambioPayload(request.tipoCambio, table, "", "INSERT", request.strSQL, null);
+                var payload = new ControlCambioPayload(request.tipoCambio, table, "", _insert, request.strSQL, null);
 
                 result = InsertarTablaControl(ctx, payload);
             }

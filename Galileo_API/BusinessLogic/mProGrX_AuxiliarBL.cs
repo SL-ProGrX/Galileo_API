@@ -68,10 +68,5 @@ namespace Galileo.BusinessLogic
             return new MProGrXAuxiliarDB(_config).FndControlAutoriza_Insertar(request);
         }
 
-        public int FndControlCambios_Autoriza(int CodEmpresa, int idCambio, string usuario)
-        {
-            return new MProGrXAuxiliarDB(_config).FndControlCambios_Autoriza(CodEmpresa, idCambio, usuario);
-        }
-
     }
 }
