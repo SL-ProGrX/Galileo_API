@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
+using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using System.Net.NetworkInformation;
@@ -16,45 +17,51 @@ namespace Galileo.DataBaseTier
 
         private ErrorDto Bitacora(MProGrXSecurityMainBitacora bitacora)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(bitacora.CodEmpresa);
             var response = new ErrorDto();
+
             try
             {
+                var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(bitacora.CodEmpresa);
                 using var connection = new SqlConnection(stringConn);
-                //aseguro que strDetalleMovimiento sea de maximo 500
-                if (bitacora.strDetalleMovimiento.Length > 500)
+
+                // Normalizar / truncar strings
+                var detalle = Trunc(bitacora.strDetalleMovimiento, 500);
+                var usuario = Trunc(bitacora.usuario, 100);              // ajusta si tu SP soporta más
+                var tipoMov = (bitacora.strTipoMovimiento ?? "").ToUpperInvariant();
+                tipoMov = Trunc(tipoMov, 50);
+
+                var appName = Trunc(bitacora.AppName, 100);
+                var appVersion = Trunc(bitacora.AppVersion, 50);
+
+                var nombreMaquina = Trunc(Environment.MachineName, 100); // aquí tu código tenía un if mal (500 vs 100)
+
+                var macAddress =
+                    NetworkInterface.GetAllNetworkInterfaces()
+                        .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
+                                      nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                        .Select(nic => nic.GetPhysicalAddress().ToString())
+                        .FirstOrDefault() ?? string.Empty;
+
+                macAddress = Trunc(macAddress, 50);
+
+                // Ejecutar SP con parámetros (sin SQL dinámico)
+                const string sp = "spSEG_Bitacora_Add";
+
+                var args = new
                 {
-                    bitacora.strDetalleMovimiento = bitacora.strDetalleMovimiento.Substring(0, 500);
-                }
+                    pCliente = bitacora.pCliente,
+                    usuario = usuario,
+                    vModulo = bitacora.vModulo,
+                    strTipoMovimiento = tipoMov,
+                    strDetalleMovimiento = detalle,
+                    AppName = appName,
+                    AppVersion = appVersion,
+                    nombreMaquina = nombreMaquina,
+                    ip = "",              // estabas pasando '' fijo
+                    macAddress = macAddress
+                };
 
-                string nombreMaquina = Environment.MachineName;
-
-                if (nombreMaquina.Length > 500)
-                {
-                    nombreMaquina = nombreMaquina.Substring(0, 100);
-                }
-
-                string macAddress = NetworkInterface
-                                    .GetAllNetworkInterfaces()
-                                    .Where(nic => nic.OperationalStatus == OperationalStatus.Up &&
-                                                  nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
-                                    .Select(nic => nic.GetPhysicalAddress().ToString())
-                                    .FirstOrDefault() ?? string.Empty;
-
-                string query = $@"exec spSEG_Bitacora_Add  
-                                                {bitacora.pCliente} ,
-                                                '{bitacora.usuario}',
-                                                {bitacora.vModulo},
-                                                '{bitacora.strTipoMovimiento.ToUpper()}',
-                                                '{bitacora.strDetalleMovimiento}',
-                                                '{bitacora.AppName}',
-                                                '{bitacora.AppVersion}',
-                                                '{nombreMaquina}',
-                                                '',
-                                                '{macAddress}'";
-
-                using var command = new SqlCommand(query, connection);
-                command.ExecuteNonQuery();
+                connection.Execute(sp, args, commandType: System.Data.CommandType.StoredProcedure);
 
                 response.Code = 0;
                 response.Description = "Bitácora registrada correctamente.";
@@ -64,7 +71,14 @@ namespace Galileo.DataBaseTier
                 response.Code = -1;
                 response.Description = ex.Message;
             }
+
             return response;
+
+            static string Trunc(string? value, int maxLen)
+            {
+                if (string.IsNullOrEmpty(value)) return string.Empty;
+                return value.Length > maxLen ? value.Substring(0, maxLen) : value;
+            }
         }
     }
 }
