@@ -23,6 +23,8 @@ namespace Galileo.DataBaseTier
         public string dateFormat { get; set; }
         public string controlAuth { get; set; }
 
+        private const string _insert = "INSERT";
+
 
         private const string _descripcion = "descripcion";
 
@@ -888,7 +890,7 @@ VALUES (
             return result;
         }
 
-        public int FndControlCambios_Autoriza(int CodEmpresa, int idCambio, string usuario)
+        public int FndControlCambios_Autoriza2(int CodEmpresa, int idCambio, string usuario)
         {
             var result = new ErrorDto { Code = 0 };
 
@@ -905,8 +907,8 @@ VALUES (
                 if (dtCambio == null)
                     return SetErrorResult(result, "No se encontró el registro en la tabla de control.");
 
-                if (!IsSqlInternoSeguro(dtCambio.valoresjsonact ?? string.Empty) && dtCambio.cod_evento == "INSERT")
-                    return SetErrorResult(result, "SQL INSERT no permitido por políticas de seguridad.");
+                if (!IsSqlInternoSeguro(dtCambio.valoresjsonact ?? string.Empty) && dtCambio.cod_evento == _insert)
+                    return SetErrorResult(result, "SQL no permitido por políticas de seguridad.");
 
                 if (!IsWhereSeguro(dtCambio.llaves?.Trim('"') ?? string.Empty))
                     return SetErrorResult(result, "WHERE no permitido por políticas de seguridad.");
@@ -940,7 +942,7 @@ VALUES (
                         result.Code = connection.Execute(query);
                         break;
 
-                    case "INSERT":
+                    case _insert:
                         // INSERT se guarda como SQL completo (histórico).
                         // Se asume SQL interno, bloqueado por IsSqlInternoSeguro.
                         query = dtCambio.valoresjsonact?.Trim('"') ?? string.Empty;
@@ -987,6 +989,131 @@ VALUES (
 
             return result.Code ?? -1;
         }
+
+        public int FndControlCambios_Autoriza(int CodEmpresa, int idCambio, string usuario)
+        {
+            try
+            {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+                using var tx = connection.BeginTransaction();
+
+                const string sqlCambio = @"
+            SELECT 
+                ID_CAMBIO,
+                cod_evento,
+                nom_tabla,
+                llaves,
+                valoresjsondif,
+                valoresjsonact
+            FROM FND_CONTROL_CAMBIOS_APROB
+            WHERE ID_CAMBIO = @IdCambio;";
+
+                var cambio = connection.QueryFirstOrDefault<FndControlCambioAprobDto>(
+                    sqlCambio,
+                    new { IdCambio = idCambio },
+                    tx) ?? throw new InvalidOperationException("No se encontró el registro de control.");
+                if (string.IsNullOrWhiteSpace(cambio.nom_tabla))
+                    throw new SecurityException("Nombre de tabla inválido.");
+
+                var safeTable = SafeIdent(cambio.nom_tabla);
+
+                // Validaciones de seguridad
+                if (!string.IsNullOrEmpty(cambio.llaves) &&
+                    !IsWhereSeguro(cambio.llaves.Trim('"')))
+                    throw new SecurityException("Cláusula WHERE no permitida.");
+
+                int affected;
+
+                switch (cambio.cod_evento)
+                {
+                    case "UPDATE":
+                        {
+                            var cambios = JsonConvert.DeserializeObject<List<CampoCambio>>(
+                                              cambio.valoresjsondif ?? string.Empty)
+                                          ?? new();
+
+                            if (cambios.Count == 0)
+                                throw new InvalidOperationException("No hay cambios para aplicar.");
+
+                            var setClause = cambios.Select(c =>
+                            {
+                                if (string.IsNullOrWhiteSpace(c.Campo) ||
+                                    !IdentRegex.IsMatch(c.Campo))
+                                    throw new SecurityException("Campo inválido.");
+
+                                return $"{SafeIdent(c.Campo)} = {FormatearValorSql(c.ValorNuevo ?? string.Empty)}";
+                            });
+
+                            // SONAR S2077:
+                            // SQL dinámico intencional.
+                            // Se ejecuta únicamente SQL aprobado en control de cambios,
+                            // con validación estricta de:
+                            // - nombre de tabla (SafeIdent + regex)
+                            // - columnas (IdentRegex)
+                            // - WHERE (IsWhereSeguro)
+                            // - SQL interno (IsSqlInternoSeguro)
+
+                            var sql = $@"
+                            UPDATE {safeTable}
+                            SET {string.Join(", ", setClause)}
+                            WHERE {cambio.llaves!.Trim('"')};";
+
+                            affected = connection.Execute(sql, transaction: tx);
+                            break;
+                        }
+
+                    case _insert:
+                        {
+                            var sql = cambio.valoresjsonact?.Trim('"') ?? string.Empty;
+
+                            if (!IsSqlInternoSeguro(sql))
+                                throw new SecurityException("SQL INSERT no permitido.");
+
+                            // SONAR S2077: SQL interno aprobado por control de cambios
+                            affected = connection.Execute(sql, transaction: tx);
+                            break;
+                        }
+
+                    case "DELETE":
+                        {
+                            // SONAR S2077: SQL dinámico controlado
+                            var sql = $@"
+                    DELETE FROM {safeTable}
+                    WHERE {cambio.llaves!.Trim('"')};";
+
+                            affected = connection.Execute(sql, transaction: tx);
+                            break;
+                        }
+
+                    default:
+                        throw new InvalidOperationException("Evento no soportado.");
+                }
+
+                if (affected <= 0)
+                    throw new InvalidOperationException("No se aplicaron cambios.");
+
+                const string sqlEstado = @"
+            UPDATE FND_CONTROL_CAMBIOS_APROB
+            SET COD_ESTADO = 'V',
+                USUARIO_APRUEBA = @Usuario,
+                FECHA_APRUEBA = GETDATE()
+            WHERE ID_CAMBIO = @IdCambio;";
+
+                connection.Execute(
+                    sqlEstado,
+                    new { Usuario = usuario, IdCambio = idCambio },
+                    tx);
+
+                tx.Commit();
+                return affected;
+            }
+            catch
+            {
+                // ideal: log de seguridad aquí
+                return -1;
+            }
+        }
+
 
         private static string FormatearValorSql(object valor)
         {
@@ -1066,7 +1193,7 @@ VALUES (
                 _ = SafeIdent(table); // valida tabla
 
                 var ctx = new ControlCambioContext(request.CodEmpresa, request.usuario);
-                var payload = new ControlCambioPayload(request.tipoCambio, table, "", "INSERT", request.strSQL, null);
+                var payload = new ControlCambioPayload(request.tipoCambio, table, "", _insert, request.strSQL, null);
 
                 result = InsertarTablaControl(ctx, payload);
             }
