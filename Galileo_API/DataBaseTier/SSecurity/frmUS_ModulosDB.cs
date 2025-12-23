@@ -16,129 +16,104 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public List<ModuloDto> Modulo_ObtenerTodos()
+        // Helper para crear conexión
+        private SqlConnection CreateConnection()
         {
-            List<ModuloDto> data = new List<ModuloDto>();
+            return new SqlConnection(_config.GetConnectionString(connectionStringName));
+        }
+
+        // Helper genérico para ejecutar SP que devuelven un int (código de error)
+        private ErrorDto EjecutarSpModulo(string storedProcedure, object parameters)
+        {
+            var resp = new ErrorDto { Code = 0 };
+
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_W_Opciones_Modulos_Obtener]";
-                    data = connection.Query<ModuloDto>(procedure, commandType: CommandType.StoredProcedure).ToList();
-                }
+                using var connection = CreateConnection();
+                resp.Code = connection
+                    .Query<int>(storedProcedure, parameters, commandType: CommandType.StoredProcedure)
+                    .FirstOrDefault();
+
+                resp.Description = "Ok";
             }
             catch (Exception ex)
             {
-                _ = ex.Message;
+                resp.Code = -1;
+                resp.Description = ex.Message;
             }
-            return data;
+
+            return resp;
         }
+
+        public List<ModuloDto> Modulo_ObtenerTodos()
+        {
+            try
+            {
+                using var connection = CreateConnection();
+                const string procedure = "[spPGX_W_Opciones_Modulos_Obtener]";
+
+                return connection
+                    .Query<ModuloDto>(procedure, commandType: CommandType.StoredProcedure)
+                    .ToList();
+            }
+            catch (Exception)
+            {
+                // Manejo mínimo, puedes loguear el error si quieres
+                return new List<ModuloDto>();
+            }
+        }
+
+        private object BuildModuloParams(ModuloDto request) => new
+        {
+            Modulo = request.Modulo,
+            Nombre = request.Nombre,
+            Descripcion = request.Descripcion,
+            Activo = request.Activo
+        };
 
         private ErrorDto Modulo_Insertar(ModuloDto request)
         {
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_W_Modulo_Insertar]";
-                    var values = new
-                    {
-                        Modulo = request.Modulo,
-                        Nombre = request.Nombre,
-                        Descripcion = request.Descripcion,
-                        Activo = request.Activo,
-
-                    };
-
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
-        }
-
-        public ErrorDto Modulo_Eliminar(int request)
-        {
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
-            try
-            {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_W_Modulo_Eliminar]";
-                    var values = new
-                    {
-                        Modulo = request,
-                    };
-
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+            const string procedure = "[spPGX_W_Modulo_Insertar]";
+            return EjecutarSpModulo(procedure, BuildModuloParams(request));
         }
 
         private ErrorDto Modulo_Actualizar(ModuloDto request)
         {
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
+            const string procedure = "[spPGX_W_Modulo_Editar]";
+            return EjecutarSpModulo(procedure, BuildModuloParams(request));
+        }
+
+        public ErrorDto Modulo_Eliminar(int moduloId)
+        {
+            const string procedure = "[spPGX_W_Modulo_Eliminar]";
+            var parameters = new { Modulo = moduloId };
+
+            return EjecutarSpModulo(procedure, parameters);
+        }
+
+        public ErrorDto Modulo_Guardar(ModuloDto request)
+        {
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "[spPGX_W_Modulo_Editar]";
-                    var values = new
-                    {
-                        Modulo = request.Modulo,
-                        Nombre = request.Nombre,
-                        Descripcion = request.Descripcion,
-                        Activo = request.Activo,
+                using var connection = CreateConnection();
 
-                    };
+                const string query = "SELECT COUNT(*) FROM US_MODULOS WHERE Modulo = @Modulo";
+                var exists = connection
+                    .Query<int>(query, new { Modulo = request.Modulo })
+                    .FirstOrDefault() > 0;
 
-                    resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
-                    resp.Description = "Ok";
-                }
+                resp = exists
+                    ? Modulo_Actualizar(request)
+                    : Modulo_Insertar(request);
             }
             catch (Exception ex)
             {
                 resp.Code = -1;
                 resp.Description = ex.Message;
             }
-            return resp;
-        }
 
-        public ErrorDto Modulo_Guardar(ModuloDto request)
-        {
-            ErrorDto resp = new ErrorDto();
-            resp.Code = 0;
-
-            using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-            {
-                var query = "SELECT COUNT(*) FROM US_MODULOS WHERE Modulo = @Modulo";
-                var count = connection.Query<int>(query, new { Modulo = request.Modulo }).FirstOrDefault();
-                if (count > 0)
-                {
-                    resp = Modulo_Actualizar(request);
-                }
-                else
-                {
-                    resp = Modulo_Insertar(request);
-                }
-
-            }
             return resp;
         }
     }

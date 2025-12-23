@@ -14,6 +14,102 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
+        /// <summary>
+        /// Método para obtener las contabilidades disponibles.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Activos_Parametros_Contabilidad_Obtener(int codEmpresa)
+        {
+            const string sql = @"
+            SELECT 
+                RTRIM(cod_Contabilidad) AS item,
+                RTRIM(nombre)           AS descripcion
+            FROM CntX_Contabilidades";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDB,
+                codEmpresa,
+                sql
+            );
+        }
+
+
+        /// <summary>
+        /// Método para establecer el mes/año de inicio del módulo de activos fijos.
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="periodo"></param>
+        /// <returns></returns>
+        public ErrorDto Activos_Parametros_EstablecerMes(int codEmpresa, DateTime periodo)
+        {
+
+            // 1. Verificar si existen parámetros
+            const string sqlExiste = @"SELECT COUNT(1) FROM Activos_parametros";
+
+            var existeResult = DbHelper.ExecuteSingleQuery<int>(
+                _portalDB,
+                codEmpresa,
+                sqlExiste,
+                defaultValue: 0
+            );
+
+            // Si hubo error en la consulta de existencia, lo devolvemos
+            if (existeResult.Code != 0)
+            {
+                return new ErrorDto
+                {
+                    Code = existeResult.Code,
+                    Description = existeResult.Description
+                };
+            }
+
+            if (existeResult.Result <= 0)
+            {
+                return new ErrorDto
+                {
+                    Code = -2,
+                    Description = "No se han guardado los parámetros, debe guardarlos primero y luego establecer el inicio del módulo."
+                };
+            }
+
+            // 2. Actualizar mes/año de inicio en Activos_parametros
+            const string sqlUpdate = @"
+        UPDATE Activos_parametros
+        SET inicio_anio = @anno,
+            inicio_mes  = @mes";
+
+            var updateResult = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                sqlUpdate,
+                new { anno = periodo.Year, mes = periodo.Month }
+            );
+
+            // Si falla el update, devolvemos el error
+            if (updateResult.Code != 0)
+            {
+                return updateResult;
+            }
+
+            // 3. Insertar el período anterior en Activos_periodos
+            DateTime vFecha = periodo.AddMonths(-1);
+
+            const string sqlInsert = @"
+        INSERT INTO Activos_periodos (anio, mes, estado, asientos, traslado)
+        VALUES (@anno, @mes, 'C', 'G', 'G');";
+
+            var insertResult = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codEmpresa,
+                sqlInsert,
+                new { anno = vFecha.Year, mes = vFecha.Month }
+            );
+
+            // Si el insert sale bien, insertResult vendrá con Code = 0 y Description = "Ok"
+            return insertResult;
+        }
+
 
         /// <summary>
         /// Método para consultar los parámetros generales de activos fijos.
@@ -65,7 +161,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
             catch (Exception ex)
             {
-                result.Code        = -1;
+                result.Code = -1;
                 result.Description = ex.Message;
             }
 
@@ -80,7 +176,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        private ErrorDto Activos_Parametros_Actualizar(int CodEmpresa,ActivosParametrosData datos)
+        private ErrorDto Activos_Parametros_Actualizar(int CodEmpresa, ActivosParametrosData datos)
         {
             const string sql = @"
                 UPDATE Activos_parametros

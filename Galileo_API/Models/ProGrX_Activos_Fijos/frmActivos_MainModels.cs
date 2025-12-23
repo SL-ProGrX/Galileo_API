@@ -7,18 +7,18 @@
         public string nombre { get; set; } = string.Empty;
         public string tipo_activo { get; set; } = string.Empty;
         public string met_depreciacion { get; set; } = string.Empty;
-        public int vida_util { get; set; }
-        public decimal ud_produccion { get; set; }
-        public decimal ud_anio { get; set; }
+        public int? vida_util { get; set; }
+        public decimal? ud_produccion { get; set; }
+        public decimal? ud_anio { get; set; }
         public string estado { get; set; } = string.Empty;
         public string vida_util_en { get; set; } = string.Empty;
-        public decimal valor_historico { get; set; }
-        public decimal valor_desecho { get; set; }
-        public DateTime fecha_adquisicion { get; set; }
-        public DateTime fecha_instalacion { get; set; }
+        public decimal? valor_historico { get; set; }
+        public decimal? valor_desecho { get; set; }
+        public DateTime? fecha_adquisicion { get; set; }
+        public DateTime? fecha_instalacion { get; set; }
         public string descripcion { get; set; } = string.Empty;
         public string cod_departamento { get; set; } = string.Empty;
-        public DateTime registro_fecha { get; set; }
+        public DateTime? registro_fecha { get; set; }
         public string cod_seccion { get; set; } = string.Empty;
         public string identificacion { get; set; } = string.Empty;
         public string compra_documento { get; set; } = string.Empty;
@@ -28,9 +28,9 @@
         public string marca { get; set; } = string.Empty;
         public string otras_senas { get; set; } = string.Empty;
         public string registro_usuario { get; set; } = string.Empty;
-        public DateTime depreciacion_periodo { get; set; }
-        public decimal depreciacion_acum { get; set; }
-        public decimal depreciacion_mes { get; set; }
+        public DateTime? depreciacion_periodo { get; set; }
+        public decimal? depreciacion_acum { get; set; }
+        public decimal? depreciacion_mes { get; set; }
         public string departamento_desc { get; set; } = string.Empty;
         public string seccion_desc { get; set; } = string.Empty;
         public string responsable_desc { get; set; } = string.Empty;

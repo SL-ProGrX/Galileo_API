@@ -48,7 +48,7 @@ namespace Galileo.Models.ProGrX_Activos_Fijos
         public string cod_traslado { get; set; } = "";
         public string num_placa { get; set; } = "";
         public string usuario { get; set; } = "";
-        public short primer_lote_bit { get; set; }
+        public short? primer_lote_bit { get; set; }
     }
     public class ActivosResponsablesCambioBoletaResult
     {

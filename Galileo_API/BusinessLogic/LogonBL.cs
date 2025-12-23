@@ -52,8 +52,8 @@ namespace Galileo.BusinessLogic
         static string GenerarToken(int longitud)
         {
             const string caracteres = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-            StringBuilder sb = new StringBuilder();
-            Random rnd = new Random();
+            StringBuilder sb = new();
+            Random rnd = new();
 
             for (int i = 0; i < longitud; i++)
             {

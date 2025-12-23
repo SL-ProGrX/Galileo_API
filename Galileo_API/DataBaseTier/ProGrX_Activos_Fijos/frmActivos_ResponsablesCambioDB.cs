@@ -22,11 +22,16 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string MensajeDatosNoProv     = "Datos no proporcionados.";
         private const string MensajeBoletaNoEnc     = "Boleta no encontrada.";
         private const string MensajeErrorInsertar   = "Error al insertar";
-        private const string MensajeErrorActualizar = " Error al actualizar";
+        private const string MensajeErrorActualizar = "Error al actualizar";
         private const string MensajeErrorProcesar   = "Error al procesar";
-        private const string MensajeErrorDescartar  = " Error al descartar";
+        private const string MensajeErrorDescartar  = "Error al descartar";
         private const string MensajeNoMasRes        = "No se encontraron más resultados.";
         private const string MensajeNoEncontrado    = "No encontrado";
+
+        private const string MsgBoletaLibre         = "BOLETA: Libre!";
+        private const string MsgBoletaOcupada       = "BOLETA: Ocupada!";
+        private const string MsgBoletaRegOk         = "Boleta registrada satisfactoriamente!";
+        private const string MsgBoletaActOk         = "Boleta actualizada satisfactoriamente!";
 
         private const string BitacoraPrefijoBoleta  = "Boleta de Cambio Responsable: ";
 
@@ -46,6 +51,77 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             _Security_MainDB = new MSecurityMainDb(config);
             _portalDB        = new PortalDB(config);
         }
+
+        #region Helpers privados
+
+        private static DynamicParameters BuildBoletaConsultaParams(string cod_traslado, string usuario)
+        {
+            var p = new DynamicParameters();
+            p.Add(BoletaIdParam, cod_traslado);
+            p.Add(UsuarioParam,  usuario);
+            return p;
+        }
+
+        private static DynamicParameters BuildBoletaAddParams(ActivosResponsablesCambioBoleta data)
+        {
+            var p = new DynamicParameters();
+            p.Add(BoletaIdParam,     data.cod_traslado);
+            p.Add("@MotivoId",       data.cod_motivo);
+            p.Add("@Notas",          data.notas);
+            p.Add("@A_Id",           data.identificacion);
+            p.Add("@N_Id",           data.identificacion_destino);
+            p.Add(UsuarioParam,      data.registro_usuario);
+            p.Add("@FechaAplicacion", data.fecha_aplicacion);
+            return p;
+        }
+
+        private static DynamicParameters BuildBoletaPlacasParams(
+            string cod_traslado,
+            string identificacion,
+            string usuario,
+            int modoRecepcion)
+        {
+            var p = new DynamicParameters();
+            p.Add(BoletaIdParam, cod_traslado);
+            p.Add("@Identificacion", identificacion);
+            p.Add(UsuarioParam, usuario);
+            p.Add("@ModoRecepcion", modoRecepcion);
+            return p;
+        }
+
+        private static List<string> ValidarBoletaDatos(ActivosResponsablesCambioBoleta data)
+        {
+            var errores = new List<string>();
+
+            if (string.IsNullOrWhiteSpace(data.cod_motivo))
+                errores.Add("No ha indicado el motivo.");
+
+            if (string.IsNullOrWhiteSpace(data.notas) || data.notas.Trim().Length < 3)
+                errores.Add("No ha indicado una nota válida.");
+
+            if (string.IsNullOrWhiteSpace(data.identificacion))
+                errores.Add("No ha indicado el responsable actual.");
+
+            if (string.IsNullOrWhiteSpace(data.identificacion_destino))
+                errores.Add("No ha indicado el responsable destino.");
+
+            if (string.IsNullOrWhiteSpace(data.fecha_aplicacion))
+                errores.Add("No ha indicado la fecha de aplicación (YYYY-MM-DD).");
+
+            return errores;
+        }
+
+        private static ErrorDto<T> CrearErrorDatosNoProporcionados<T>()
+        {
+            return new ErrorDto<T>
+            {
+                Code        = -1,
+                Description = MensajeDatosNoProv,
+                Result      = default!
+            };
+        }
+
+        #endregion
 
         /// <summary>
         /// Obtener lista de boletas de traslado de responsable con paginación y filtros.
@@ -87,12 +163,12 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 int sortIndex = sortFieldCanonical switch
                 {
-                    CodTrasladoCol      => 1,
-                    "identificacion"    => 2,
-                    "persona"           => 3,
-                    "estado_desc"       => 4,
-                    "registro_fecha"    => 5,
-                    _                   => 1
+                    CodTrasladoCol   => 1,
+                    "identificacion" => 2,
+                    "persona"        => 3,
+                    "estado_desc"    => 4,
+                    "registro_fecha" => 5,
+                    _                => 1
                 };
 
                 int sortDir = (filtros?.sortOrder ?? 0) == 0 ? 0 : 1;
@@ -104,11 +180,11 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 var p = new
                 {
-                    filtro    = filtroLike,
+                    filtro = filtroLike,
                     sortIndex,
                     sortDir,
                     offset,
-                    fetch     = paginacion
+                    fetch = paginacion
                 };
 
                 const string qTotal = @"
@@ -253,9 +329,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p = new DynamicParameters();
-                p.Add(BoletaIdParam, cod_traslado);
-                p.Add(UsuarioParam,  usuario);
+                var p = BuildBoletaConsultaParams(cod_traslado, usuario);
 
                 var data = connection.QueryFirstOrDefault<ActivosResponsablesCambioBoleta>(
                     "spActivos_Responsable_Cambio_Consulta",
@@ -303,11 +377,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p = new DynamicParameters();
-                p.Add(BoletaIdParam, cod_traslado ?? string.Empty);
-                p.Add("@Identificacion", identificacion);
-                p.Add(UsuarioParam,  usuario);
-                p.Add("@ModoRecepcion", 0);
+                var p = BuildBoletaPlacasParams(cod_traslado ?? string.Empty, identificacion, usuario, 0);
 
                 resp.Result = connection.Query<ActivosResponsablesCambioPlaca>(
                         "spActivos_Responsable_Cambio_Consulta_Placas",
@@ -340,9 +410,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p = new DynamicParameters();
-                p.Add(BoletaIdParam, cod_traslado);
-                p.Add(UsuarioParam,  string.Empty);
+                var p = BuildBoletaConsultaParams(cod_traslado, string.Empty);
 
                 var data = connection.QueryFirstOrDefault<ActivosResponsablesCambioBoleta>(
                     "spActivos_Responsable_Cambio_Consulta",
@@ -350,8 +418,8 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                     commandType: CommandType.StoredProcedure);
 
                 (resp.Code, resp.Description) = data == null
-                    ? (0,  "BOLETA: Libre!")
-                    : (-2, "BOLETA: Ocupada!");
+                    ? (0,  MsgBoletaLibre)
+                    : (-2, MsgBoletaOcupada);
             }
             catch (Exception ex)
             {
@@ -360,30 +428,6 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             }
 
             return resp;
-        }
-
-        // ---- Helpers de validación para bajar complejidad (S3776) ----
-
-        private static List<string> ValidarBoletaDatos(ActivosResponsablesCambioBoleta data)
-        {
-            var errores = new List<string>();
-
-            if (string.IsNullOrWhiteSpace(data.cod_motivo))
-                errores.Add("No ha indicado el motivo.");
-
-            if (string.IsNullOrWhiteSpace(data.notas) || data.notas.Trim().Length < 3)
-                errores.Add("No ha indicado una nota válida.");
-
-            if (string.IsNullOrWhiteSpace(data.identificacion))
-                errores.Add("No ha indicado el responsable actual.");
-
-            if (string.IsNullOrWhiteSpace(data.identificacion_destino))
-                errores.Add("No ha indicado el responsable destino.");
-
-            if (string.IsNullOrWhiteSpace(data.fecha_aplicacion))
-                errores.Add("No ha indicado la fecha de aplicación (YYYY-MM-DD).");
-
-            return errores;
         }
 
         /// <summary>
@@ -404,12 +448,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 if (data == null)
                 {
-                    return new ErrorDto<ActivosResponsablesCambioBoletaResult>
-                    {
-                        Code        = -1,
-                        Description = MensajeDatosNoProv,
-                        Result      = null
-                    };
+                    return CrearErrorDatosNoProporcionados<ActivosResponsablesCambioBoletaResult>();
                 }
 
                 var errores = ValidarBoletaDatos(data);
@@ -490,15 +529,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p = new DynamicParameters();
-                p.Add(BoletaIdParam, data.cod_traslado);
-                p.Add("@MotivoId",        data.cod_motivo);
-                p.Add("@Notas",           data.notas);
-                p.Add("@A_Id",            data.identificacion);
-                p.Add("@N_Id",            data.identificacion_destino);
-                p.Add(UsuarioParam,       data.registro_usuario);
-                p.Add("@FechaAplicacion", data.fecha_aplicacion);
-
+                var p  = BuildBoletaAddParams(data);
                 var rs = connection.QueryFirstOrDefault<dynamic>(
                     "spActivos_Responsable_Cambio_Boleta_Add",
                     p,
@@ -534,7 +565,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 resp.Code        = 0;
                 resp.Description = string.IsNullOrWhiteSpace(mensaje)
-                    ? "Boleta registrada satisfactoriamente!"
+                    ? MsgBoletaRegOk
                     : mensaje;
 
                 resp.Result = new ActivosResponsablesCambioBoletaResult
@@ -569,15 +600,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p = new DynamicParameters();
-                p.Add(BoletaIdParam, data.cod_traslado);
-                p.Add("@MotivoId",        data.cod_motivo);
-                p.Add("@Notas",           data.notas);
-                p.Add("@A_Id",            data.identificacion);
-                p.Add("@N_Id",            data.identificacion_destino);
-                p.Add(UsuarioParam,       data.registro_usuario);
-                p.Add("@FechaAplicacion", data.fecha_aplicacion);
-
+                var p  = BuildBoletaAddParams(data);
                 var rs = connection.QueryFirstOrDefault<dynamic>(
                     "spActivos_Responsable_Cambio_Boleta_Add",
                     p,
@@ -605,7 +628,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 });
 
                 resp.Description = string.IsNullOrWhiteSpace(mensaje)
-                    ? "Boleta actualizada satisfactoriamente!"
+                    ? MsgBoletaActOk
                     : mensaje;
             }
             catch (Exception ex)
@@ -891,10 +914,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var p = new DynamicParameters();
-                p.Add(BoletaIdParam, cod_traslado);
-                p.Add("@Identificacion", identificacion);
-                p.Add(UsuarioParam,  usuario);
+                var p = BuildBoletaPlacasParams(cod_traslado, identificacion, usuario, 1);
 
                 resp.Result = connection.Query<ActivosResponsablesCambioPlaca>(
                         "spActivos_Responsable_Cambio_Consulta_Placas",

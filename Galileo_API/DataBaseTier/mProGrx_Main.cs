@@ -13,14 +13,12 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private readonly MSecurityMainDb _Security_MainDB;
-        private readonly MProGrXAuxiliarDB _AuxiliarDB;
         private const string connectionStringName = "DefaultConnString";
 
         public MProGrxMain(IConfiguration config)
         {
             _config = config;
             _Security_MainDB = new MSecurityMainDb(_config);
-            _AuxiliarDB = new MProGrXAuxiliarDB(_config);
         }
 
         /// <summary>
@@ -247,63 +245,47 @@ namespace Galileo.DataBaseTier
 
         public List<MenuUsoResultDto> SbSIFRegistraTags(MenuUsoRequestDto req)
         {
-            List<MenuUsoResultDto> result = new List<MenuUsoResultDto>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+
+                const string sql = @"
+            select  p.*,
+                    dbo.fxSEG_MenuAccess(@EmpresaId, @Usuario, @Modulo, @Formulario, @Tipo) as Acceso
+            from SIF_parametros p
+            where p.cod_parametro = @Codigo;";
+
+                var args = new
                 {
-                    string query = @"
-                            SELECT *,
-                                   dbo.fxSEG_MenuAccess(
-                                        @Empresa_Id,
-                                        @Usuario,
-                                        @Modulo,
-                                        @Formulario,
-                                        @Tipo
-                                   ) AS Acceso
-                            FROM SIF_parametros
-                            WHERE cod_parametro = @Codigo;
-                        ";
+                    EmpresaId = req.Empresa_Id,
+                    Usuario = req.Usuario,
+                    Modulo = req.Modulo,
+                    Formulario = req.Formulario,
+                    Tipo = req.Tipo,
+                    Codigo = 1 // <- make sure this exists on the request DTO
+                };
 
-                    ParametroDto? resultado = connection.QueryFirstOrDefault<ParametroDto>(
-                        query,
-                        new
-                        {
-                            Empresa_Id = req.Empresa_Id,
-                            Usuario = req.Usuario,
-                            Modulo = req.Modulo,
-                            Formulario = req.Formulario,
-                            Tipo = req.Tipo,
-                            Codigo = 21  
-                        }
-                    );
+                var resultado = connection.QueryFirstOrDefault<ParametroDto>(sql, args);
 
-                    if (resultado != null)
-                    {
-                        var procedure = "spSEG_MenuUsos";
-                        var parameters = new
-                        {
-                            menu_nodo = req.menu_nodo,
-                            Empresa_Id = req.Empresa_Id,
-                            Usuario = req.Usuario
-                        };
+                if (resultado == null) return new();
 
-                        result = connection.Query<MenuUsoResultDto>(
-                            procedure,
-                            parameters,
-                            commandType: CommandType.StoredProcedure
-                        ).ToList();
-                    }
-                }
+                const string procedure = "spSEG_MenuUsos";
+                var procArgs = new
+                {
+                    menu_nodo = req.menu_nodo,
+                    Empresa_Id = req.Empresa_Id,
+                    Usuario = req.Usuario
+                };
+
+                return connection.Query<MenuUsoResultDto>(
+                    procedure, procArgs, commandType: CommandType.StoredProcedure
+                ).ToList();
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
-                result = new List<MenuUsoResultDto>();
+                return new();
             }
-            return result;
         }
-
         public List<MenuFavoritosResultDto> SbSIFRegistraTags(MenuFavoritosRequestDto req)
         {
             List<MenuFavoritosResultDto> result;
@@ -329,48 +311,33 @@ namespace Galileo.DataBaseTier
 
         public string sbMenuSeguridad(string usuario)
         {
-            string result = "";
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)); 
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                    string query = @"
-                        SELECT O.modulo
-                        FROM permisos P
-                        INNER JOIN opciones O ON P.id_opt = O.id_opt
-                        WHERE P.tipo = 'U'
-                          AND P.nombre IN (
-                                SELECT userID
-                                FROM usuarios
-                                WHERE nombre = @Usuario
-                          )
-                        GROUP BY O.modulo
+                const string sql = @"
+                    select O.modulo
+                    from permisos P
+                    inner join opciones O on P.id_opt = O.id_opt
+                    where P.tipo = 'U'
+                    and P.nombre in (select userID from usuarios where nombre = @Usuario)
+                    group by O.modulo
 
-                        UNION
+                    union
 
-                        SELECT O.modulo
-                        FROM permisos P
-                        INNER JOIN opciones O ON P.id_opt = O.id_opt
-                        WHERE P.tipo = 'G'
-                          AND P.nombre IN (
-                                SELECT id_Grupo
-                                FROM miembros
-                                WHERE nombre = @Usuario
-                          )
-                        GROUP BY O.modulo;
-                    ";
+                    select O.modulo
+                    from permisos P
+                    inner join opciones O on P.id_opt = O.id_opt
+                    where P.tipo = 'G'
+                    and P.nombre in (select id_Grupo from miembros where nombre = @Usuario)
+                    group by O.modulo;";
 
-                result = connection.QueryFirstOrDefault<string>(
-                             query,
-                             new { Usuario = usuario }
-                         ) ?? string.Empty;
+                return connection.QueryFirstOrDefault<string>(sql, new { Usuario = usuario }) ?? string.Empty;
             }
-            catch (Exception ex)
+            catch
             {
-                _ = ex.Message;
-                result = "";
+                return string.Empty;
             }
-            return result;
         }
 
         public string sbCargaCbo(string vTipo, string vFiltro)
@@ -658,7 +625,7 @@ namespace Galileo.DataBaseTier
                 }
 
                 using var connection = new SqlConnection(stringConn);
-                string? vFechaCorteNullable = _AuxiliarDB.validaFechaGlobal(vCorte);
+                string? vFechaCorteNullable = MProGrXAuxiliarDB.validaFechaGlobal(vCorte, "yyyyMMdd");
                 string vFechaCorte = vFechaCorteNullable ?? string.Empty;
 
                 var query = $@"exec spSys_Estado_Cuenta_Corte @cedula , @corte, @email,@usuario ";

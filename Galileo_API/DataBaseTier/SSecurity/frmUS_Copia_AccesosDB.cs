@@ -32,23 +32,24 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public List<UsuarioEmpresa> UsuariosEmpresa_Obtener(int codEmpresa)
         {
-            List<UsuarioEmpresa> info = new List<UsuarioEmpresa>();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var query = $@"SELECT usuario,nombre FROM vPGX_Usuarios_Empresa WHERE cod_Empresa = {codEmpresa}";
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                    info = connection.Query<UsuarioEmpresa>(query).ToList();
+                const string sql = @"
+            SELECT usuario, nombre
+            FROM vPGX_Usuarios_Empresa
+            WHERE cod_Empresa = @CodEmpresa;";
 
-                }
+                return connection.Query<UsuarioEmpresa>(sql, new { CodEmpresa = codEmpresa }).ToList();
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new List<UsuarioEmpresa>();
             }
-            return info!;
         }
+
 
         /// <summary>
         /// Copia accesos de un usuario a otro
@@ -199,16 +200,14 @@ namespace Galileo.DataBaseTier
             UsuarioEmpresa result = null!;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                var procedure = "[spPGX_Usuario_Empresa_Consultar]";
+                var values = new
                 {
-                    var procedure = "[spPGX_Usuario_Empresa_Consultar]";
-                    var values = new
-                    {
-                        CodEmpresa = codEmpresa,
-                        Usuario = nombreUsuario,
-                    };
-                    result = connection.QueryFirstOrDefault<UsuarioEmpresa>(procedure, values, commandType: CommandType.StoredProcedure)!;
-                }
+                    CodEmpresa = codEmpresa,
+                    Usuario = nombreUsuario,
+                };
+                result = connection.QueryFirstOrDefault<UsuarioEmpresa>(procedure, values, commandType: CommandType.StoredProcedure)!;
             }
             catch (Exception ex)
             {

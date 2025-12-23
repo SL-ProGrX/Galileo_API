@@ -8,163 +8,173 @@ namespace Galileo.DataBaseTier
     public class FrmCntXConsultaCuentasDb
     {
         private readonly IConfiguration _config;
-        private const string _icon = "pi pi-fw pi-folder";
-        private const string _expandedIcon = "pi pi-fw pi-folder-open";
-        private const string _collapsedIcon = "pi pi-fw pi-folder";
+
+        private const string Icon = "pi pi-fw pi-folder";
+        private const string ExpandedIcon = "pi pi-fw pi-folder-open";
+        private const string CollapsedIcon = "pi pi-fw pi-folder";
 
         public FrmCntXConsultaCuentasDb(IConfiguration config)
         {
             _config = config;
         }
 
-        public List<CtnxCuentasDto> ObtenerCuentas(int CodEmpresa, CuentaVarModel cuenta)
+        public List<CtnxCuentasDto> ObtenerCuentas(int codEmpresa, CuentaVarModel cuenta)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            string Query = string.Empty;
-            List<CtnxCuentasDto> info = new List<CtnxCuentasDto>();
-            switch (cuenta.Cuenta)
+            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+            try
             {
-                case "T": //Tipo de Cuenta
-                    Query = @"select cod_cuenta, cod_cuenta_Mask, descripcion, acepta_movimientos, COD_DIVISA
-                                from CntX_Cuentas where cuenta_madre = ''
-                                and cod_contabilidad = @Contabilidad
-                                and TIPO_CUENTA = @TipoCuenta order by cod_cuenta";
-                    break;
-                default:
-                    string procedure = "spCntX_Consulta_Cuentas";
-                    var values = new
+                using var connection = new SqlConnection(clienteConnString);
+                if (cuenta.Cuenta == "T") // Tipo de Cuenta
+                {
+                    const string sql = @"
+                        SELECT cod_cuenta, cod_cuenta_Mask, descripcion, acepta_movimientos, COD_DIVISA
+                        FROM CntX_Cuentas
+                        WHERE cuenta_madre = ''
+                          AND cod_contabilidad = @Contabilidad
+                          AND TIPO_CUENTA = @TipoCuenta
+                        ORDER BY cod_cuenta;";
+
+                    return connection.Query<CtnxCuentasDto>(sql, new
                     {
                         Contabilidad = cuenta.Contabilidad,
-                        Cuenta = cuenta.Cuenta,
-                        Descripcion = cuenta.Descripcion,
-                        Divisa = cuenta.Divisa,
-                        Nivel = cuenta.Nivel
-                    };
-                    try
-                    {
-                        using var connection = new SqlConnection(clienteConnString);
-                        info = connection.Query<CtnxCuentasDto>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+                        TipoCuenta = cuenta.Cuenta
+                    }).ToList();
+                }
 
-                    }
-                    catch (Exception ex)
-                    {
-                        _ = ex.Message;
-                    }
-                    return info;
-            }
-
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                var parameters = new
+                const string procedure = "spCntX_Consulta_Cuentas";
+                return connection.Query<CtnxCuentasDto>(procedure, new
                 {
                     Contabilidad = cuenta.Contabilidad,
-                    TipoCuenta = cuenta.Cuenta
-                };
-                info = connection.Query<CtnxCuentasDto>(Query, parameters).ToList();
+                    Cuenta = cuenta.Cuenta,
+                    Descripcion = cuenta.Descripcion,
+                    Divisa = cuenta.Divisa,
+                    Nivel = cuenta.Nivel
+                }, commandType: CommandType.StoredProcedure).ToList();
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new List<CtnxCuentasDto>();
             }
-            return info;
         }
-
-        public List<CtnxCuentasArbolModel> ObtenerCuentasArbol(int CodEmpresa, CuentaVarModel cuenta)
+        
+        public List<CtnxCuentasArbolModel> ObtenerCuentasArbol(int codEmpresa, CuentaVarModel cuenta)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<CtnxCuentasDto> info;
-            List<CtnxCuentasArbolModel> resp = new List<CtnxCuentasArbolModel>();
+            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"select cod_cuenta,cuenta_madre,cod_cuenta_Mask,descripcion,acepta_movimientos 
-                                    from CntX_Cuentas where
-                                    cod_contabilidad = '{cuenta.Contabilidad}' order by cod_cuenta";
-                info = connection.Query<CtnxCuentasDto>(query).ToList();
-                foreach (CtnxCuentasDto item in info)
+                const string sql = @"
+                    SELECT cod_cuenta, cuenta_madre, cod_cuenta_Mask, descripcion, acepta_movimientos
+                    FROM CntX_Cuentas
+                    WHERE cod_contabilidad = @Contabilidad
+                    ORDER BY cod_cuenta;";
+
+                var info = connection.Query<CtnxCuentasDto>(sql, new
                 {
-                    if (item.cuenta_madre == "")
+                    Contabilidad = cuenta.Contabilidad
+                }).ToList();
+
+                var resp = new List<CtnxCuentasArbolModel>();
+
+                foreach (var item in info.Where(i => string.IsNullOrWhiteSpace(i.cuenta_madre)))
+                {
+                    var children = AddCuentasArbol(info, item);
+
+                    resp.Add(new CtnxCuentasArbolModel
                     {
-                        resp.Add(new CtnxCuentasArbolModel
-                        {
-                            Key = item.cod_cuenta,
-                            Label = item.cod_cuenta_Mask + "-" + item.descripcion,
-                            Data = item.cod_cuenta_Mask,
-                            Icon = _icon,
-                            ExpandedIcon = _expandedIcon,
-                            CollapsedIcon = _collapsedIcon,
-                            Children = AddCuentasArbol(info, item),
-                            leaf = AddCuentasArbol(info, item).Count == 0
-                        });
-                    }
+                        Key = item.cod_cuenta,
+                        Label = $"{item.cod_cuenta_Mask}-{item.descripcion}",
+                        Data = item.cod_cuenta_Mask,
+                        Icon = Icon,
+                        ExpandedIcon = ExpandedIcon,
+                        CollapsedIcon = CollapsedIcon,
+                        Children = children,
+                        leaf = children.Count == 0
+                    });
                 }
+
+                return resp;
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new List<CtnxCuentasArbolModel>();
             }
-            return resp;
         }
 
-        public List<DropDownListaGenericaModel> ObtenerDivisas(int CodEmpresa, int Contavilidad)
+        public List<DropDownListaGenericaModel> ObtenerDivisas(int codEmpresa, int contabilidad)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<DropDownListaGenericaModel> info = new List<DropDownListaGenericaModel>();
+            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"select rtrim(cod_divisa) as 'item', rtrim(descripcion) as 'descripcion' 
-                                    from CntX_Divisas where cod_contabilidad = '{Contavilidad}' order by divisa_local desc";
-                info = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                const string sql = @"
+                    SELECT RTRIM(cod_divisa) AS item, RTRIM(descripcion) AS descripcion
+                    FROM CntX_Divisas
+                    WHERE cod_contabilidad = @Contabilidad
+                    ORDER BY divisa_local DESC;";
+
+                return connection.Query<DropDownListaGenericaModel>(sql, new
+                {
+                    Contabilidad = contabilidad
+                }).ToList();
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new List<DropDownListaGenericaModel>();
             }
-            return info;
         }
 
-        public List<DropDownListaGenericaModel> ObtenerTiposCuentas(int CodEmpresa, int Contavilidad)
+        public List<DropDownListaGenericaModel> ObtenerTiposCuentas(int codEmpresa, int contabilidad)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<DropDownListaGenericaModel> info = new List<DropDownListaGenericaModel>();
+            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"select TIPO_CUENTA as 'item',Descripcion from CntX_Tipos_Cuentas 
-                                      where cod_contabilidad = '{Contavilidad}' order by Prioridad,Tipo_cuenta";
-                info = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                const string sql = @"
+                    SELECT TIPO_CUENTA AS item, Descripcion AS descripcion
+                    FROM CntX_Tipos_Cuentas
+                    WHERE cod_contabilidad = @Contabilidad
+                    ORDER BY Prioridad, Tipo_cuenta;";
+
+                return connection.Query<DropDownListaGenericaModel>(sql, new
+                {
+                    Contabilidad = contabilidad
+                }).ToList();
             }
             catch (Exception ex)
             {
                 _ = ex.Message;
+                return new List<DropDownListaGenericaModel>();
             }
-            return info;
         }
 
-        public List<CtnxCuentasArbolModel> AddCuentasArbol(List<CtnxCuentasDto> cuentas, CtnxCuentasDto cuenta)
+        private static List<CtnxCuentasArbolModel> AddCuentasArbol(List<CtnxCuentasDto> cuentas, CtnxCuentasDto cuenta)
         {
-            List<CtnxCuentasArbolModel> resp = new List<CtnxCuentasArbolModel>();
+            var resp = new List<CtnxCuentasArbolModel>();
             foreach (var item in cuentas)
             {
                 if (item.cuenta_madre == cuenta.cod_cuenta)
                 {
+                    var children = AddCuentasArbol(cuentas, item);
                     resp.Add(new CtnxCuentasArbolModel
                     {
                         Key = item.cod_cuenta,
-                        Label = item.cod_cuenta_Mask + "-" + item.descripcion,
+                        Label = $"{item.cod_cuenta_Mask}-{item.descripcion}",
                         Data = item.cod_cuenta_Mask,
-                        Icon = _icon,
-                        ExpandedIcon = _expandedIcon,
-                        CollapsedIcon = _collapsedIcon,
-                        Children = AddCuentasArbol(cuentas, item),
-                        leaf = AddCuentasArbol(cuentas, item).Count == 0
+                        Icon = Icon,
+                        ExpandedIcon = ExpandedIcon,
+                        CollapsedIcon = CollapsedIcon,
+                        Children = children,
+                        leaf = children.Count == 0
                     });
                 }
             }
+
             return resp;
         }
-
     }
 }

@@ -592,7 +592,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 if (existeResult.Result == 0)
                 {
                     Activos_ObrasAdendum_Insertar(CodEmpresa, dato, contrato);
-                    Activos_ObrasAdendum_Actualizar(CodEmpresa, contrato, dato.monto);
+                    Activos_ObrasAdendum_Actualizar(CodEmpresa, contrato, dato.monto ?? 0);
                 }
                 else
                 {
@@ -687,7 +687,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
                 dato.secuencia = secResult.Result;
 
                 Activos_Desembolso_Insertar(CodEmpresa, dato, contrato);
-                Activos_ObrasDesembolso_Actualizar(CodEmpresa, contrato, dato.monto);
+                Activos_ObrasDesembolso_Actualizar(CodEmpresa, contrato, dato.monto ?? 0);
             }
             catch (Exception ex)
             {

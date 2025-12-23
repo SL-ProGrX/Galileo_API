@@ -73,12 +73,6 @@ namespace Galileo.Controllers
             return new MProGrXAuxiliarBl(_config).ActivosSinAsignar_Obtener(CodEmpresa, usuario);
         }
 
-        [HttpPatch("FndControlAutoriza_Guardar")]
-        public int FndControlAutoriza_Guardar(FndControlAutorizaData request)
-        {
-            return new MProGrXAuxiliarBl(_config).FndControlAutoriza_Guardar(request);
-        }
-
         [HttpDelete("FndControlAutoriza_Eliminar")]
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)
         {
@@ -91,10 +85,5 @@ namespace Galileo.Controllers
             return new MProGrXAuxiliarDB(_config).FndControlAutoriza_Insertar(request);
         }
 
-        [HttpPut("FndControlCambios_Autoriza")]
-        public int FndControlCambios_Autoriza(int CodEmpresa, int idCambio, string usuario)
-        {
-            return new MProGrXAuxiliarBl(_config).FndControlCambios_Autoriza(CodEmpresa, idCambio, usuario);
-        }
     }
 }

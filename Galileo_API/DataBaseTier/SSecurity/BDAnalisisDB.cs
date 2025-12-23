@@ -1,7 +1,5 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
-using Galileo.Models.Security;
-using System.Text.RegularExpressions;
 
 namespace Galileo.DataBaseTier
 {
@@ -14,68 +12,31 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
-        public static List<string> TablasCargar()
+        // =======================
+        // API pública
+        // =======================
+
+        public List<string> TablasCargar()
         {
-            List<string> resp;
             try
             {
-                using (var connection = new SqlConnection("DefaultConnString"))
-                {
+                using var connection =
+                    new SqlConnection(_config.GetConnectionString("DefaultConnString"));
 
-                    var strSQL = "select name  from sys.objects "
-                                   + " where type = 'U' "
-                                   + "'order by name";
+                const string sql = @"
+                    SELECT name
+                    FROM sys.objects
+                    WHERE type = 'U'
+                    ORDER BY name";
 
-                    resp = connection.Query<string>(strSQL).ToList();
-                }
+                return connection.Query<string>(sql).ToList();
             }
-            catch (Exception)
+            catch
             {
-                resp = new List<string>();
+                return new List<string>();
             }
-            return resp;
         }
+
         
-        public ResultadoConsultaDto sbCargaResultados(string pObjeto)
-        {
-            ResultadoConsultaDto resultado = new ResultadoConsultaDto();
-
-            try
-            {
-
-                // Consulta para cargar resultados
-                string strSQL = "SELECT TOP 50 * from " + pObjeto;
-
-                using (var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString")))
-                {
-                    var results = connection.Query(strSQL);
-
-                    if (results != null && results.Any())
-                    {
-                        // Obtener nombres de columnas y tipos de datos
-
-                        // Obtener datos de las filas
-                        resultado.Datos = new List<Dictionary<string, string>>();
-
-                        foreach (var row in results)
-                        {
-                            var rowDictionary = new Dictionary<string, string>();
-                            foreach (var column in row.Dictionary)
-                            {
-                                rowDictionary[column.Key] = column.Value.ToString();
-                            }
-                            resultado.Datos.Add(rowDictionary);
-                        }
-                    }
-                }
-            }
-            catch (Exception)
-            {
-                // Manejar excepciones aquí si es necesario
-            }
-
-            return resultado;
-        }
-
     }
 }

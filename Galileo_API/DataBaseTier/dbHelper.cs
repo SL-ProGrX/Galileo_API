@@ -1,4 +1,5 @@
 using Dapper;
+using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier
@@ -6,30 +7,12 @@ namespace Galileo.DataBaseTier
     public static class DbHelper
     {
         public static ErrorDto<T> CreateOkResponse<T>(T initialResult = default!)
-        {
-            return new ErrorDto<T>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = initialResult
-            };
-        }
-
+            => new() { Code = 0, Description = "Ok", Result = initialResult };
 
         public static ErrorDto CreateOkResponse()
-        {
-            return new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-        }
+            => new() { Code = 0, Description = "Ok" };
 
-        public static ErrorDto<List<T>> ExecuteListQuery<T>(
-            PortalDB portalDb,
-            int codEmpresa,
-            string sql,
-            object? parameters = null)
+        public static ErrorDto<List<T>> ExecuteListQuery<T>(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null)
         {
             var result = CreateOkResponse(new List<T>());
 
@@ -48,12 +31,7 @@ namespace Galileo.DataBaseTier
             return result;
         }
 
-        public static ErrorDto<T?> ExecuteSingleQuery<T>(
-            PortalDB portalDb,
-            int codEmpresa,
-            string sql,
-            T? defaultValue = default,
-            object? parameters = null)
+        public static ErrorDto<T?> ExecuteSingleQuery<T>(PortalDB portalDb, int codEmpresa, string sql, T? defaultValue = default, object? parameters = null)
         {
             var result = CreateOkResponse(defaultValue);
 
@@ -72,12 +50,26 @@ namespace Galileo.DataBaseTier
             return result;
         }
 
+        public static ErrorDto<T?> ExecuteSingleQuery<T>(string connectionString, string sql, T? defaultValue = default, object? parameters = null)
+        {
+            var result = CreateOkResponse(defaultValue);
 
-        public static ErrorDto ExecuteNonQuery(
-            PortalDB portalDb,
-            int codEmpresa,
-            string sql,
-            object? parameters = null)
+            try
+            {
+                using var connection = new SqlConnection(connectionString);
+                result.Result = connection.QueryFirstOrDefault<T>(sql, parameters);
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = defaultValue;
+            }
+
+            return result;
+        }
+
+        public static ErrorDto ExecuteNonQuery(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null)
         {
             var result = CreateOkResponse();
 
@@ -94,5 +86,43 @@ namespace Galileo.DataBaseTier
 
             return result;
         }
+
+        public static ErrorDto ExecuteNonQuery(string connectionString, string sql, object? parameters = null)
+        {
+            var result = CreateOkResponse();
+
+            try
+            {
+                using var connection = new SqlConnection(connectionString);
+                connection.Execute(sql, parameters);
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+            }
+
+            return result;
+        }
+    
+        public static ErrorDto<int> ExecuteNonQueryWithResult(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null)
+        {
+            var result = CreateOkResponse(0);
+
+            try
+            {
+                using var connection = portalDb.CreateConnection(codEmpresa);
+                result.Result = connection.Execute(sql, parameters);
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result = 0;
+            }
+
+            return result;
+        }
+
     }
 }

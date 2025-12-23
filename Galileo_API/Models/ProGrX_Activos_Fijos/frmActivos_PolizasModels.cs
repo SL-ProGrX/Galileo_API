@@ -14,7 +14,7 @@
         public string? observacion { get; set; }
         public string fecha_inicio { get; set; } = string.Empty;
         public string fecha_vence { get; set; } = string.Empty;
-        public decimal monto { get; set; }
+        public decimal? monto { get; set; }
         public string? num_poliza { get; set; }
         public string? documento { get; set; }
         public string estado { get; set; } = string.Empty;

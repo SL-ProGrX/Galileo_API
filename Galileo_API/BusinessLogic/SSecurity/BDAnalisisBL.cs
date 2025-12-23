@@ -5,13 +5,17 @@ namespace Galileo.BusinessLogic
     public class BDAnalisisBL
     {
 
-        protected BDAnalisisBL(IConfiguration config)
+        private readonly IConfiguration _config;
+
+        public BDAnalisisBL(IConfiguration config)
         {
+            _config = config;
         }
 
-        public static List<string> TablasCargar()
+        public List<string> TablasCargar()
         {
-            return BDAnalisisDB.TablasCargar();
+            var db = new BDAnalisisDB(_config);
+            return db.TablasCargar();
         }
     }
 }

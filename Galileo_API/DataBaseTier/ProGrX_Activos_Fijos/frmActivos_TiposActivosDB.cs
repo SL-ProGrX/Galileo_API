@@ -29,7 +29,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         private const string MsgTipoActivoInsertOk         = "Tipo de Activo ingresado satisfactoriamente.";
         private const string MsgTipoActivoUpdateOk         = "Tipo de Activo actualizado satisfactoriamente.";
 
-        // SELECT común (sin WHERE / ORDER) para evitar duplicar el bloque enorme
+        // SELECT común (sin WHERE / ORDER)
         private const string SelectTipoActivoBase = @"
             SELECT
                 a.TIPO_ACTIVO                                            AS tipo_activo,
@@ -69,7 +69,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
             LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL cd ON cd.COD_CUENTA   = a.COD_CUENTA_DEPACUM
             LEFT JOIN dbo.vCNTX_CUENTAS_LOCAL ct ON ct.COD_CUENTA   = a.COD_CUENTA_TRANSITORIA";
 
-        // --- CONSTANTES PARA EL SCROLL (evitan S1192) -------------------------
+        // --- CONSTANTES PARA EL SCROLL -------------------------
         private const string SqlScrollBasePrefix = @"
 SELECT TOP 1 *
 FROM (
@@ -97,6 +97,56 @@ WHERE a.TIPO_ACTIVO < @cod
             _Security_MainDB = new MSecurityMainDb(config);
             _portalDB        = new PortalDB(config);
         }
+
+        #region Helpers privados
+
+        private static string? ToUpperOrNull(string? value) =>
+            string.IsNullOrWhiteSpace(value) ? null : value.ToUpper();
+
+        private static string ToUpperOrEmpty(string? value) =>
+            (value ?? string.Empty).ToUpper();
+
+        /// <summary>
+        /// Parámetros comunes para INSERT/UPDATE de ACTIVOS_TIPO_ACTIVO
+        /// (reduce duplicación entre Insertar y Actualizar).
+        /// </summary>
+        private static object BuildSaveParameters(ActivosTiposActivosData data) => new
+        {
+            cod         = ToUpperOrEmpty(data.tipo_activo),
+            descripcion = data.descripcion?.ToUpper(),
+            met         = ToUpperOrEmpty(data.met_depreciacion),
+            tvu         = ToUpperOrNull(data.tipo_vida_util),
+            vu          = string.IsNullOrWhiteSpace(data.vida_util) ? null : data.vida_util,
+            tasiento    = ToUpperOrNull(data.asiento_genera),
+            cta_activo  = ToUpperOrNull(data.cod_cuenta_actvo),
+            cta_depacum = ToUpperOrNull(data.cod_cuenta_depacum),
+            cta_gastos  = ToUpperOrNull(data.cod_cuenta_gastos),
+            cta_trans   = ToUpperOrNull(data.cod_cuenta_transitoria),
+            reg_usuario = string.IsNullOrWhiteSpace(data.registro_usuario)
+                            ? null
+                            : data.registro_usuario,
+            mod_usuario = string.IsNullOrWhiteSpace(data.modifica_usuario)
+                            ? null
+                            : data.modifica_usuario
+        };
+
+        private void RegistrarBitacoraTipoActivo(
+            int CodEmpresa,
+            string? usuario,
+            string movimiento,
+            ActivosTiposActivosData data)
+        {
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId         = CodEmpresa,
+                Usuario           = usuario ?? string.Empty,
+                DetalleMovimiento = $"Tipo Activo: {data.tipo_activo} - {data.descripcion}",
+                Movimiento        = movimiento,
+                Modulo            = vModulo
+            });
+        }
+
+        #endregion
 
         /// <summary>
         /// Obtener lista de tipos de activo.
@@ -197,7 +247,7 @@ WHERE a.TIPO_ACTIVO < @cod
 
                 int n = cn.QueryFirstOrDefault<int>(
                     q,
-                    new { cod = (tipo_activo ?? string.Empty).ToUpper() });
+                    new { cod = ToUpperOrEmpty(tipo_activo) });
 
                 (resp.Code, resp.Description) = n == 0
                     ? (0,  MsgTipoActivoLibre)
@@ -226,7 +276,7 @@ WHERE a.TIPO_ACTIVO = @cod;";
 
                 resp.Result = cn.QueryFirstOrDefault<ActivosTiposActivosData>(
                     q,
-                    new { cod = (tipo_activo ?? string.Empty).Trim().ToUpper() });
+                    new { cod = ToUpperOrEmpty(tipo_activo).Trim() });
 
                 if (resp.Result == null)
                 {
@@ -259,7 +309,7 @@ WHERE a.TIPO_ACTIVO = @cod;";
 
             try
             {
-                var cod = (tipo_activo ?? string.Empty).Trim().ToUpper();
+                var cod = ToUpperOrEmpty(tipo_activo).Trim();
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
                 string sql;
@@ -325,7 +375,7 @@ WHERE a.TIPO_ACTIVO = @cod;";
 
                 int existe = cn.QueryFirstOrDefault<int>(
                     qExiste,
-                    new { cod = data.tipo_activo.ToUpper() });
+                    new { cod = ToUpperOrEmpty(data.tipo_activo) });
 
                 if (data.isNew)
                 {
@@ -333,7 +383,7 @@ WHERE a.TIPO_ACTIVO = @cod;";
                         return new ErrorDto
                         {
                             Code        = -2,
-                            Description = $"El Tipo de Activo {data.tipo_activo.ToUpper()} ya existe."
+                            Description = $"El Tipo de Activo {ToUpperOrEmpty(data.tipo_activo)} ya existe."
                         };
 
                     return Activos_TiposActivos_Insertar(CodEmpresa, data);
@@ -344,7 +394,7 @@ WHERE a.TIPO_ACTIVO = @cod;";
                     return new ErrorDto
                     {
                         Code        = -2,
-                        Description = $"El Tipo de Activo {data.tipo_activo.ToUpper()} no existe."
+                        Description = $"El Tipo de Activo {ToUpperOrEmpty(data.tipo_activo)} no existe."
                     };
                 }
 
@@ -409,47 +459,17 @@ WHERE a.TIPO_ACTIVO = @cod;";
                  @tasiento, @cta_activo, @cta_depacum, @cta_gastos, @cta_trans,
                  @reg_usuario, SYSDATETIME(), NULL, NULL);";
 
-                cn.Execute(q, new
-                {
-                    cod         = data.tipo_activo.ToUpper(),
-                    descripcion = data.descripcion?.ToUpper(),
-                    met         = (data.met_depreciacion ?? string.Empty).ToUpper(),
-                    tvu         = string.IsNullOrWhiteSpace(data.tipo_vida_util)
-                                     ? null
-                                     : data.tipo_vida_util.ToUpper(),
-                    vu          = string.IsNullOrWhiteSpace(data.vida_util)
-                                     ? null
-                                     : data.vida_util,
-                    tasiento    = string.IsNullOrWhiteSpace(data.asiento_genera)
-                                     ? null
-                                     : data.asiento_genera.ToUpper(),
-                    cta_activo  = string.IsNullOrWhiteSpace(data.cod_cuenta_actvo)
-                                     ? null
-                                     : data.cod_cuenta_actvo.ToUpper(),
-                    cta_depacum = string.IsNullOrWhiteSpace(data.cod_cuenta_depacum)
-                                     ? null
-                                     : data.cod_cuenta_depacum.ToUpper(),
-                    cta_gastos  = string.IsNullOrWhiteSpace(data.cod_cuenta_gastos)
-                                     ? null
-                                     : data.cod_cuenta_gastos.ToUpper(),
-                    cta_trans   = string.IsNullOrWhiteSpace(data.cod_cuenta_transitoria)
-                                     ? null
-                                     : data.cod_cuenta_transitoria.ToUpper(),
-                    reg_usuario = string.IsNullOrWhiteSpace(data.registro_usuario)
-                                     ? null
-                                     : data.registro_usuario
-                });
+                cn.Execute(q, BuildSaveParameters(data));
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId         = CodEmpresa,
-                    Usuario           = string.IsNullOrWhiteSpace(data.registro_usuario)
-                                            ? string.Empty
-                                            : data.registro_usuario,
-                    DetalleMovimiento = $"Tipo Activo: {data.tipo_activo} - {data.descripcion}",
-                    Movimiento        = "Registra - WEB",
-                    Modulo            = vModulo
-                });
+                var usuarioBitacora = string.IsNullOrWhiteSpace(data.registro_usuario)
+                    ? string.Empty
+                    : data.registro_usuario;
+
+                RegistrarBitacoraTipoActivo(
+                    CodEmpresa,
+                    usuarioBitacora,
+                    "Registra - WEB",
+                    data);
 
                 resp.Description = MsgTipoActivoInsertOk;
             }
@@ -487,47 +507,17 @@ WHERE a.TIPO_ACTIVO = @cod;";
                    MODIFICA_FECHA         = SYSDATETIME()
              WHERE TIPO_ACTIVO = @cod;";
 
-                cn.Execute(q, new
-                {
-                    cod         = data.tipo_activo.ToUpper(),
-                    descripcion = data.descripcion?.ToUpper(),
-                    met         = (data.met_depreciacion ?? string.Empty).ToUpper(),
-                    tvu         = string.IsNullOrWhiteSpace(data.tipo_vida_util)
-                                     ? null
-                                     : data.tipo_vida_util.ToUpper(),
-                    vu          = string.IsNullOrWhiteSpace(data.vida_util)
-                                     ? null
-                                     : data.vida_util,
-                    tasiento    = string.IsNullOrWhiteSpace(data.asiento_genera)
-                                     ? null
-                                     : data.asiento_genera.ToUpper(),
-                    cta_activo  = string.IsNullOrWhiteSpace(data.cod_cuenta_actvo)
-                                     ? null
-                                     : data.cod_cuenta_actvo.ToUpper(),
-                    cta_depacum = string.IsNullOrWhiteSpace(data.cod_cuenta_depacum)
-                                     ? null
-                                     : data.cod_cuenta_depacum.ToUpper(),
-                    cta_gastos  = string.IsNullOrWhiteSpace(data.cod_cuenta_gastos)
-                                     ? null
-                                     : data.cod_cuenta_gastos.ToUpper(),
-                    cta_trans   = string.IsNullOrWhiteSpace(data.cod_cuenta_transitoria)
-                                     ? null
-                                     : data.cod_cuenta_transitoria.ToUpper(),
-                    mod_usuario = string.IsNullOrWhiteSpace(data.modifica_usuario)
-                                     ? null
-                                     : data.modifica_usuario
-                });
+                cn.Execute(q, BuildSaveParameters(data));
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId         = CodEmpresa,
-                    Usuario           = string.IsNullOrWhiteSpace(data.modifica_usuario)
-                                            ? string.Empty
-                                            : data.modifica_usuario,
-                    DetalleMovimiento = $"Tipo Activo: {data.tipo_activo} - {data.descripcion}",
-                    Movimiento        = "Modifica - WEB",
-                    Modulo            = vModulo
-                });
+                var usuarioBitacora = string.IsNullOrWhiteSpace(data.modifica_usuario)
+                    ? string.Empty
+                    : data.modifica_usuario;
+
+                RegistrarBitacoraTipoActivo(
+                    CodEmpresa,
+                    usuarioBitacora,
+                    "Modifica - WEB",
+                    data);
 
                 resp.Description = MsgTipoActivoUpdateOk;
             }
@@ -553,12 +543,12 @@ WHERE a.TIPO_ACTIVO = @cod;";
                     DELETE FROM dbo.ACTIVOS_TIPO_ACTIVO
                     WHERE TIPO_ACTIVO = @cod;";
 
-                int rows = cn.Execute(q, new { cod = (tipo_activo ?? string.Empty).ToUpper() });
+                int rows = cn.Execute(q, new { cod = ToUpperOrEmpty(tipo_activo) });
 
                 if (rows == 0)
                 {
                     resp.Code        = -2;
-                    resp.Description = $"El Tipo de Activo {(tipo_activo ?? string.Empty).ToUpper()} no existe.";
+                    resp.Description = $"El Tipo de Activo {ToUpperOrEmpty(tipo_activo)} no existe.";
                     return resp;
                 }
 

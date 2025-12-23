@@ -9,7 +9,7 @@
     {
         public string cod_motivo { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public bool? activo { get; set; }
         public bool isNew { get; set; } = false;
     }
 }
