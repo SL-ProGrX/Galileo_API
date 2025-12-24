@@ -31,4 +31,13 @@
         public string fxDepartamento { get; set; } = string.Empty;
         public string letras1 { get; set; } = string.Empty;
     }
+
+    public class ProcesarComprobanteParametros
+    {
+        public int codEmpresa { get; set; }
+        public string usuario { get; set; }
+        public int modulo { get; set; }
+        public int solicitud { get; set; }
+        public string documentoManual { get; set; }
+    }
 }

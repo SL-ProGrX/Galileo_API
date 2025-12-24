@@ -1,9 +1,9 @@
 namespace Galileo.Models.TES
 {
-    public class TesTransaccionDto
+    public partial class TesTransaccionDto
     {
         public int nsolicitud { get; set; } = 0;
-        public int id_banco { get; set; }
+        public int? id_banco { get; set; }
         public string? tipo { get; set; }
         public string? codigo { get; set; }
         public string? beneficiario { get; set; }
@@ -80,7 +80,7 @@ namespace Galileo.Models.TES
         public string? reposicion_nota { get; set; }
         public string? cedula_origen { get; set; }
         public string? cta_iban_origen { get; set; }
-        public int tipo_ced_origen { get; set; } = 1;
+        public int? tipo_ced_origen { get; set; } = 1;
         public string? correo_notifica { get; set; }
         public string? estado_sinpe { get; set; }
         public string? id_rechazo { get; set; }
@@ -122,7 +122,7 @@ namespace Galileo.Models.TES
         public List<TesTransAsientoDto>? asientoDetalle { get; set; }
     }
 
-    public class TesAfectacionDto
+    public partial class TesAfectacionDto
     {
         public string identificacion { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -135,7 +135,7 @@ namespace Galileo.Models.TES
         public DateTime creacion_fecha { get; set; }
     }
 
-    public class TesTransAsientoDto
+    public partial class TesTransAsientoDto
     {
         public string cod_cuenta { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -151,7 +151,7 @@ namespace Galileo.Models.TES
         public string cod_divisa { get; set; } = string.Empty;
     }
 
-    public class TesBitacoraDto
+    public partial  class TesBitacoraDto
     {
         public int id { get; set; }
         public DateTime fecha { get; set; }
@@ -160,7 +160,7 @@ namespace Galileo.Models.TES
         public string detalle { get; set; } = string.Empty;
     }
 
-    public class TesLocalizacionDto
+    public partial class TesLocalizacionDto
     {
         public DateTime fecha_rec { get; set; }
         public string cod_remesa { get; set; } = string.Empty;
@@ -169,7 +169,7 @@ namespace Galileo.Models.TES
         public string observacion { get; set; } = string.Empty;
     }
 
-    public class TesReimpresionesDto
+    public partial class TesReimpresionesDto
     {
         public DateTime fecha { get; set; }
         public string usuario { get; set; } = string.Empty;
@@ -177,7 +177,7 @@ namespace Galileo.Models.TES
         public string notas { get; set; } = string.Empty;
     }
 
-    public class TesCambioFechasDto
+    public partial class TesCambioFechasDto
     {
         public DateTime fecha { get; set; }
         public string idx { get; set; } = string.Empty;
@@ -185,7 +185,7 @@ namespace Galileo.Models.TES
         public string detalle { get; set; } = string.Empty;
     }
 
-    public class TesTransacSolicitudesData
+    public partial class TesTransacSolicitudesData
     {
         public int nsolicitud { get; set; }
         public string? tipo { get; set; }
@@ -196,7 +196,7 @@ namespace Galileo.Models.TES
         public string? cod_unidad { get; set; }
     }
 
-    public class TesSolicitudDocParametro
+    public partial class TesSolicitudDocParametro
     {
         public string? tipo { get; set; }
         public int id_banco { get; set; }
@@ -204,7 +204,7 @@ namespace Galileo.Models.TES
         public int contabilidad { get; set; }
     }
 
-    public class TesConsultaAsientos
+    public partial class TesConsultaAsientos
     {
         public int CodEmpresa { get; set; }
         public int? solicitud { get; set; }
@@ -219,7 +219,7 @@ namespace Galileo.Models.TES
         public string? tipo { get; set; } = "";
     }
 
-    public class TesControlDivisas
+    public partial class TesControlDivisas
     {
         public float? gTipoCambio { get; set; } //tc_compra
         public float? gVariacion { get; set; } //rs!variacion
@@ -229,7 +229,7 @@ namespace Galileo.Models.TES
         public float? pDivisaLocal { get; set; }//rs!divisa_local
     }
 
-    public class TesControlDivisasData
+    public partial class TesControlDivisasData
     {
         public float? tc_compra { get; set; } //tc_compra
         public float? variacion { get; set; } //rs!variacion
@@ -240,7 +240,7 @@ namespace Galileo.Models.TES
         public string? Descripcion { get; set; }
     }
 
-    public class TesBitacoraTransaccion
+    public partial class TesBitacoraTransaccion
     {
         public int cod_bitacora { get; set; }
         public string? usuario { get; set; }
@@ -250,7 +250,7 @@ namespace Galileo.Models.TES
         public string? app_nombre { get; set; }
     }
 
-    public class TesCuentasBancarias
+    public partial class TesCuentasBancarias
     {
         public string? cuenta_interna { get; set; }
         public string? cuenta_desc { get; set; }

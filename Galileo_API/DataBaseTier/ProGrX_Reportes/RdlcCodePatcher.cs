@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Galileo.DataBaseTier
 {
-    public sealed class RdlcCodePatcher : IRdlcCodePatcher
+    public sealed class RdlcCodePatcher  : IRdlcCodePatcher
     {
         // Timeout común para todas las expresiones regulares
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(1);

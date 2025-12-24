@@ -1,9 +1,13 @@
-﻿using System.Text;
-using Dapper;
-using Microsoft.Data.SqlClient;
+﻿using Dapper;
 using Galileo.Models;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Clientes;
+using Galileo.Models.Security;
+using Galileo.Models.TES;
+using Microsoft.Data.SqlClient;
+using System.Data;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
@@ -11,11 +15,13 @@ namespace Galileo.DataBaseTier
     {
         private readonly IConfiguration _config;
         private readonly string dirRDLC;
+        private readonly MSecurityMainDb DBBitacora;
 
         public MTesoreria(IConfiguration config)
         {
             _config = config;
             dirRDLC = _config.GetSection("AppSettings").GetSection("RutaRDLC").Value ?? string.Empty;
+            DBBitacora = new MSecurityMainDb(config);
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> tes_TiposDocumentos_Obtener(int CodEmpresa)
@@ -933,5 +939,184 @@ namespace Galileo.DataBaseTier
                 _ = ex.Message;
             }
         }
+
+        public ErrorDto sbTesEmitirDocumento(
+           int CodEmpresa, string vUsuario, int vModulo, int vSolicitud, string vDocumento = "", DateTime? vFecha = null)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto
+            {
+                Code = 0,
+                Description = ""
+            };
+            try
+            {
+                string query = "";
+                using var connection = new SqlConnection(stringConn);
+                query = @"SELECT C.monto, C.nsolicitud, T.doc_auto, T.comprobante,
+                          ISNULL(B.firmas_desde,0) AS Firmas_Desde, B.Lugar_Emision,
+                          X.descripcion AS TipoX, ISNULL(B.firmas_hasta,0) AS Firmas_Hasta,
+                          dbo.MyGetdate() AS FechaX, C.id_Banco, C.tipo, C.modulo, 
+                          C.op, C.referencia, C.codigo, C.subModulo, C.cod_divisa
+                           FROM Tes_Transacciones C
+                           INNER JOIN Tes_Bancos B ON C.id_Banco = B.id_banco
+                           INNER JOIN tes_banco_docs T ON B.id_Banco = T.id_Banco AND C.tipo = T.tipo
+                           INNER JOIN tes_tipos_doc X ON T.tipo = X.tipo
+                           WHERE C.nsolicitud = @solicitud";
+
+                var data = connection.QueryFirstOrDefault<MTesTransaccionDto>(query, new { solicitud = vSolicitud });
+
+                if (data == null)
+                {
+                    response.Code = -3;
+                    response.Description = "No se encontró la solicitud especificada.";
+                }
+                else
+                {
+                    DateTime fechaEmision = vFecha ?? data.fechaX;
+                  
+                    return ProcesarComprobante(
+                           connection,
+                           new ProcesarComprobanteParametros
+                           {
+                                 codEmpresa = CodEmpresa,
+                                 usuario = vUsuario,
+                                 modulo = vModulo,
+                                 solicitud = vSolicitud,
+                                 documentoManual = vDocumento
+                           },
+                           data,
+                           fechaEmision);
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            return response;
+        }
+
+        private ErrorDto ProcesarComprobante(
+                SqlConnection connection,
+                ProcesarComprobanteParametros parametros,
+                MTesTransaccionDto data,
+                DateTime fechaEmision)
+                    {
+                        return data.comprobante switch
+                        {
+                            "01" or "02" or "03" => ProcesarDocumento010203(
+                                connection, parametros, data, fechaEmision),
+
+                            "04" => Error(-1, "Las Transferencias Electrónicas no se pueden procesar directamente..."),
+
+                            _ => Error(-1, $"Comprobante no soportado: {data.comprobante}")
+                        };
+        }
+
+        private ErrorDto ProcesarDocumento010203(
+            SqlConnection connection,
+            ProcesarComprobanteParametros parametros,
+            MTesTransaccionDto data,
+            DateTime fechaEmision)
+        {
+            var tipo = data.tipo;
+
+            string consecutivo = data.doc_auto
+                ? fxTesTipoDocConsec(parametros.codEmpresa, data.id_banco, tipo, "+").Result.ToString()
+                : string.Empty;
+
+            string documentoFinal = data.doc_auto ? consecutivo : parametros.documentoManual;
+
+            ActualizarTransaccionEmitida(
+                connection,
+                parametros.solicitud,
+                parametros.usuario,
+                fechaEmision,
+                documentoFinal,
+                debeActualizarDocumento: data.doc_auto || !string.IsNullOrWhiteSpace(parametros.documentoManual));
+
+            PostActualizarTransaccion(parametros.codEmpresa, parametros.usuario, parametros.modulo, parametros.solicitud, data, tipo, consecutivo);
+
+            return Ok();
+        }
+
+        private void ActualizarTransaccionEmitida(
+            SqlConnection connection,
+            int solicitud,
+            string usuario,
+            DateTime fechaEmision,
+            string documento,
+            bool debeActualizarDocumento)
+        {
+            const string sqlConDocumento = @"
+                    UPDATE Tes_Transacciones
+                    SET Estado = 'I',
+                        Fecha_Emision = @fecha,
+                        Ubicacion_Actual = 'T',
+                        Fecha_Traslado = @fecha,
+                        User_Genera = @usuario,
+                        NDocumento = @documento
+                    WHERE nsolicitud = @solicitud";
+
+                        const string sqlSinDocumento = @"
+                    UPDATE Tes_Transacciones
+                    SET Estado = 'I',
+                        Fecha_Emision = @fecha,
+                        Ubicacion_Actual = 'T',
+                        Fecha_Traslado = @fecha,
+                        User_Genera = @usuario
+                    WHERE nsolicitud = @solicitud";
+
+            var sql = debeActualizarDocumento ? sqlConDocumento : sqlSinDocumento;
+
+            connection.Execute(sql, new
+            {
+                fecha = fechaEmision.ToString("yyyy-MM-dd"),
+                usuario,
+                documento,
+                solicitud
+            });
+        }
+
+        private void PostActualizarTransaccion(
+            int codEmpresa,
+            string usuario,
+            int modulo,
+            int solicitud,
+            MTesTransaccionDto data,
+            string tipo,
+            string consecutivo)
+        {
+            sbTesBancosAfectacion(codEmpresa, solicitud, "E");
+
+            DBBitacora.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = $"Genero Solicitud {solicitud}",
+                Movimiento = "Genera - WEB",
+                Modulo = modulo
+            });
+
+            sbTESActualizaCC(codEmpresa, new ActualizaCCParams
+            {
+                Codigo = data.codigo,
+                Tipo = tipo,
+                Documento = consecutivo,
+                Banco = data.id_banco,
+                OP = data.op != null ? (int)data.op : 0,
+                Modulo = data.modulo,
+                SubModulo = data.subModulo,
+                Referencia = data.referencia != null ? (int)data.referencia : 0
+            });
+        }
+
+        private static ErrorDto Ok() => new ErrorDto { Code = 0, Description = "" };
+        private static ErrorDto Error(int code, string description) =>
+    new ErrorDto { Code = code, Description = description };
+
     }
 }

@@ -1,8 +1,9 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
+using Microsoft.ReportingServices.Diagnostics.Internal;
 using System.Data;
 using System.Text.RegularExpressions;
 
@@ -290,17 +291,16 @@ namespace Galileo.DataBaseTier
             List<MenuFavoritosResultDto> result;
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    var procedure = "spSEG_MenuFavoritos";
-                    var parameters = new
-                    {
-                        Empresa_Id = req.Empresa_Id,
-                        Usuario = req.Usuario
-                    };
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
 
-                    result = connection.Query<MenuFavoritosResultDto>(procedure, parameters, commandType: CommandType.StoredProcedure).ToList();
-                }
+                var procedure = "spSEG_MenuFavoritos";
+                var parameters = new
+                {
+                    Empresa_Id = req.Empresa_Id,
+                    Usuario = req.Usuario
+                };
+
+                result = connection.Query<MenuFavoritosResultDto>(procedure, parameters, commandType: CommandType.StoredProcedure).ToList();
             }
             catch (Exception)
             {
