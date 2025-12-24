@@ -22,6 +22,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly VerificadorCoreFactory _factory;
 
         private readonly string descripcion = "descripcion";
+        private readonly string nSolicitud = "NSOLICITUD";
 
         private readonly Dictionary<string, string> whitelist = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
@@ -379,7 +380,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto<TablasListaGenericaModel> TES_Solicitudes_Obtener(int CodEmpresa, int contabilidad, FiltrosLazyLoadData filtro)
         {
             string search = filtro.filtro?.Trim();
-            string sortField = string.IsNullOrWhiteSpace(filtro.sortField) ? "NSOLICITUD" : filtro.sortField;
+            string sortField = string.IsNullOrWhiteSpace(filtro.sortField) ? nSolicitud : filtro.sortField;
             int sortOrder = (filtro.sortOrder == 0) ? 1 : filtro.sortOrder;
             int pagina = filtro.pagina;
             int paginacion = filtro.paginacion;
@@ -397,7 +398,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 // WHITELIST de columnas permitidas para ORDER BY
                 var sortMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    ["NSOLICITUD"] = "NSOLICITUD",
+                    ["NSOLICITUD"] = nSolicitud,
                     ["TIPO"] = "TIPO",
                     ["CODIGO"] = "CODIGO",
                     ["BENEFICIARIO"] = "BENEFICIARIO",
@@ -408,7 +409,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 // Si el campo no está en el mapa, usamos una por defecto (segura)
                 if (!sortMap.TryGetValue(sortField, out string safeSortField))
-                    safeSortField = "NSOLICITUD";
+                    safeSortField = nSolicitud;
 
                 // La dirección sólo la derivamos de un entero, no del usuario directamente
                 string safeSortDir = sortOrder == -1 ? "DESC" : "ASC";
@@ -500,11 +501,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     case 1: // anterior
                         compareOperator = "<";
                         orderBy = "desc";
-                        break;
-
-                    default:
-                        compareOperator = ">";
-                        orderBy = "asc";
                         break;
                 }
 
@@ -707,7 +703,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-                string fechaAutoriza = _AuxiliarDB.validaFechaGlobal(transaccion.fecha_autorizacion);
+                string fechaAutoriza = MProGrXAuxiliarDB.validaFechaGlobal(transaccion.fecha_autorizacion, "yyyy-MM-dd HH:mm:ss"); 
                 if (transaccion.user_autoriza == null) fechaAutoriza = null;
 
                 using var connection = OpenConnection(CodEmpresa);
