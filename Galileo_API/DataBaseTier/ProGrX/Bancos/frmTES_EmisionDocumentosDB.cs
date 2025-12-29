@@ -217,7 +217,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 var query = "exec spTes_Cuentas_Revisa @banco";
                 conn.Execute(query, new { banco = banco });
-                return  DbHelper.CreateOkResponse("Cuentas verificadas correctamente!");
+                return  DbHelper.CreateOkResponse("Cuentas verificadas correctamente!", 0);
 
             }
             catch (Exception ex)
@@ -290,7 +290,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     });
                 }
 
-                return DbHelper.CreateOkResponse("Solicitudes movidas correctamente");
+                return DbHelper.CreateOkResponse("Solicitudes movidas correctamente", 0);
             }
             catch (Exception ex)
             {

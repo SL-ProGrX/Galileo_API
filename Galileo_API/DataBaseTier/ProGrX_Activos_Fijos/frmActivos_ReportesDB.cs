@@ -95,7 +95,7 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
         /// <returns></returns>
         public ErrorDto<string> Activos_Reportes_PeriodoEstado(int CodEmpresa, DateTime fecha)
         {
-            var result = DbHelper.CreateOkResponse(string.Empty);
+            var result = string.Empty;
 
             try
             {
@@ -113,20 +113,19 @@ namespace Galileo.DataBaseTier.ProGrX_Activos_Fijos
 
                 if (estado is null)
                 {
-                    result.Result = "Periodo No Registrado!";
+                    result = "Periodo No Registrado!";
                 }
                 else
                 {
-                    result.Result = estado == "C" ? "CERRADO" : "PENDIENTE";
+                    result = estado == "C" ? "CERRADO" : "PENDIENTE";
                 }
             }
             catch (Exception ex)
             {
-                result.Code        = -1;
-                result.Description = ex.Message;
+                DbHelper.CreateErrorResponse<string>(ex.Message);
             }
 
-            return result;
+            return DbHelper.CreateOkResponse(result);
         }
 
 
