@@ -18,7 +18,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         }
         [Authorize]
         [HttpGet("Cajas_Usuario_Obtener")]
-        public ErrorDto<List<CajasUsuarioDTO>> Cajas_Usuario_Obtener(int codEmpresa, string usuario)
+        public ErrorDto<List<CajasUsuarioDto>> Cajas_Usuario_Obtener(int codEmpresa, string usuario)
         {
             return BL_Cajas_Clave.Cajas_Usuario_Obtener(codEmpresa, usuario);
         }

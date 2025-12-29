@@ -13,7 +13,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         {
         }
 
-        public ErrorDto<List<CajasUsuarioDTO>> Cajas_Usuario_Obtener(int codEmpresa, string usuario)
+        public ErrorDto<List<CajasUsuarioDto>> Cajas_Usuario_Obtener(int codEmpresa, string usuario)
         {
             return DbfrmCajas_Clave.Cajas_Usuario_Obtener(codEmpresa, usuario
             );

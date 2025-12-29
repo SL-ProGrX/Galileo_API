@@ -3,7 +3,7 @@
 namespace PgxAPI.Models.ProGrX.Cajas
 {
 
-    public class CajasUsuarioDTO
+    public class CajasUsuarioDto
     {
         public string codigo { get; set; }
         public string descripcion { get; set; }

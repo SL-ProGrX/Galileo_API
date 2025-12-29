@@ -16,16 +16,16 @@ namespace PgxAPI.DataBaseTier
             _config = config;
         }
 
-        public ErrorDto<List<CajasUsuarioDTO>> Cajas_Usuario_Obtener(int CodEmpresa,string usuario)
+        public ErrorDto<List<CajasUsuarioDto>> Cajas_Usuario_Obtener(int CodEmpresa,string usuario)
         {
             string connString = new PortalDB(_config)
                 .ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<List<CajasUsuarioDTO>>
+            var response = new ErrorDto<List<CajasUsuarioDto>>
             {
                 Code = 0,
                 Description = "Operación realizada correctamente",
-                Result = new List<CajasUsuarioDTO>()
+                Result = new List<CajasUsuarioDto>()
             };
 
             try
@@ -45,14 +45,14 @@ namespace PgxAPI.DataBaseTier
             ORDER BY C.cod_caja";
 
                 response.Result = cn
-                    .Query<CajasUsuarioDTO>(sql, new { usuario })
+                    .Query<CajasUsuarioDto>(sql, new { usuario })
                     .ToList();
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
-                response.Result = new List<CajasUsuarioDTO>();
+                response.Result = new List<CajasUsuarioDto>();
             }
 
             return response;
