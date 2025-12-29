@@ -10,7 +10,7 @@ namespace Galileo.DataBaseTier
             => new() { Code = 0, Description = "Ok", Result = initialResult };
 
         public static ErrorDto CreateOkResponse()
-            => new() { Code = 0, Description = "Ok" };
+            => new() { Code = 0, Description = "OK" };
 
         public static ErrorDto<List<T>> ExecuteListQuery<T>(PortalDB portalDb, int codEmpresa, string sql, object? parameters = null)
         {
@@ -122,6 +122,35 @@ namespace Galileo.DataBaseTier
             }
 
             return result;
+        }
+
+        public static ErrorDto<T> WithConn<T>(PortalDB portalDb,int codEmpresa, Func<SqlConnection, T> action)
+        {
+            try
+            {
+                using var conn = portalDb.CreateConnection(codEmpresa);
+                var result = action(conn);
+                return new ErrorDto<T> { Code = 0, Description = "Ok", Result = result };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto<T> { Code = -1, Description = ex.Message, Result = default };
+            }
+        }
+        
+        public static ErrorDto<T> CreateErrorResponse<T>(string msg, int code = -1, T result = default!) =>
+            new ErrorDto<T> { Code = code, Description = msg, Result = result };
+
+        public static ErrorDto CreateOkResponse(string msg, int code = 0) =>
+           new ErrorDto { Code = code, Description = msg };
+
+        public static ErrorDto CreateErrorResponse(string msg, int code = -1) =>
+            new ErrorDto { Code = code, Description = msg };
+
+        public static SqlConnection OpenConnection(PortalDB portalDb,int codEmpresa)
+        {
+            var cs = portalDb.ObtenerDbConnStringEmpresa(codEmpresa);
+            return new SqlConnection(cs);
         }
 
     }
