@@ -63,8 +63,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
         }
 
-      
-
         private static ErrorDto<T> Ok<T>(T result, string desc = "Ok") =>
             new ErrorDto<T> { Code = 0, Description = desc, Result = result };
 
