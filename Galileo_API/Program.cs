@@ -45,6 +45,14 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// ✅ HSTS (para que se envíe Strict-Transport-Security en HTTPS)
+builder.Services.AddHsts(options =>
+{
+    options.Preload = true;
+    options.IncludeSubDomains = true;
+    options.MaxAge = TimeSpan.FromDays(365);
+});
+
 // === JWT Auth (SIN clave en appsettings) ===
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var keyString = builder.Configuration["Jwt:Secret"]; // user-secrets (dev) o env var Jwt__Secret (prod)
@@ -136,6 +144,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    // ✅ HSTS solo fuera de Development
+    app.UseHsts();
+}
 
 app.UseCors(MyAllowSpecificOrigins);
 
@@ -183,8 +196,8 @@ app.MapPost("/login", (LoginRequestTest req, IConfiguration cfg) =>
 app.MapGet("/whoami", (ClaimsPrincipal user) =>
 {
     var name = user.Identity?.Name;
-    var sub  = user.FindFirstValue(ClaimTypes.NameIdentifier) 
-               ?? user.FindFirstValue(JwtRegisteredClaimNames.Sub);
+    var sub = user.FindFirstValue(ClaimTypes.NameIdentifier)
+              ?? user.FindFirstValue(JwtRegisteredClaimNames.Sub);
 
     var claims = user.Claims.Select(c => new { c.Type, c.Value });
     return Results.Ok(new
@@ -213,18 +226,18 @@ namespace Galileo_API
     {
         // Usa HashSet para O(1) y comparación OrdinalIgnoreCase
         public static readonly HashSet<string> Dev = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "http://localhost:4200",
-        "http://localhost:4201",
-        "http://localhost:4202",
-        "http://localhost:61968",
-        "http://localhost:61969"
-    };
+        {
+            "http://localhost:4200",
+            "http://localhost:4201",
+            "http://localhost:4202",
+            "http://localhost:61968",
+            "http://localhost:61969"
+        };
 
         public static readonly HashSet<string> Prod = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "https://progrxpruebas.aseccss.com",
-        "https://progrxweb.com"
-    };
+        {
+            "https://progrxpruebas.aseccss.com",
+            "https://progrxweb.com"
+        };
     }
 }
