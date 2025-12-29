@@ -3,6 +3,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Fondos;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Http;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
@@ -136,7 +137,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                string sql = @"exec spFnd_CDP_Tasa_Config_Add @Codigo, @Descripcion, @Divisa, @Activo, @Usuario";
+                const string sql = @"exec spFnd_CDP_Tasa_Config_Add @Codigo, @Descripcion, @Divisa, @Activo, @Usuario";
 
                 var spResp = connection.QueryFirstOrDefault<SpCdpTasaConfigResultDto>(sql, new
                 {
@@ -191,7 +192,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         {
             Filtro ??= string.Empty;
 
-            var query = @"
+            const string query = @"
                 select
                     Pl.cod_Operadora,
                     Pl.cod_Plan,
@@ -266,7 +267,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns></returns>
         public ErrorDto<List<FndCdpTasasVencimientoDto>> Fnd_CdpsTasas_Vencimiento_Obtener(int CodEmpresa, string CodTasaRef, int IdPlazo)
         {
-            var query = @"select T.*, C.CUPON , V.PLAZO 
+            const string query = @"select T.*, C.CUPON , V.PLAZO 
                     from FND_CDP_TASACUPONES T
                     inner join FND_CDP_FRECUENCIACUPONES C
                         on T.ID_FRECUENCIACUPON = C.ID_FRECUENCIACUPON
@@ -368,7 +369,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns></returns>
         public ErrorDto<List<FndCdpsTasaBitacoraDto>> Fnd_CdpsTasas_Bitacora_Obtener(int CodEmpresa, string CodTasaRef)
         {
-            var query = @"exec spFnd_CDP_Tasa_Bitacora_Consulta @CodTasaRef";
+            const string query = @"exec spFnd_CDP_Tasa_Bitacora_Consulta @CodTasaRef";
 
             return DbHelper.ExecuteListQuery<FndCdpsTasaBitacoraDto>(
                 _portalDB,

@@ -170,7 +170,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             var fechaInicioStr = fechaInicioDt.ToString("yyyy/MM/dd");
             var fechaCorteStr = fechaCorteDt.ToString("yyyy/MM/dd");
 
-            string query = "exec spFndMovAnalisisCubo @fechaInicioStr, @fechaCorteStr";
+            const string query = "exec spFndMovAnalisisCubo @fechaInicioStr, @fechaCorteStr";
             return DbHelper.ExecuteNonQuery(
                 _portalDB,
                 CodEmpresa,

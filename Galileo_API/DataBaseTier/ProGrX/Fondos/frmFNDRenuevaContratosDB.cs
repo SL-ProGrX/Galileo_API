@@ -66,7 +66,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns></returns>
         public ErrorDto<List<FndRenuevaContratosDto>> Fnd_ContratoRenueva_Obtener(int CodEmpresa, FndContratosBuscarParams filtros)
         {
-            var sql = @"
+            string sql = @"
                     SELECT
                         @aplicar_todos AS aplicar,
                         F.cedula       AS cedula,
