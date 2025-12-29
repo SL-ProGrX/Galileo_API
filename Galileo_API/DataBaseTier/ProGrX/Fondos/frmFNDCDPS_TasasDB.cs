@@ -81,8 +81,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                string query = "select COUNT(*) from FND_CDPS_TASA_REF";
-                response.Result.total = connection.Query<int>(query).FirstOrDefault();
+                string queryCount = "select COUNT(*) from FND_CDPS_TASA_REF";
+                response.Result.total = connection.Query<int>(queryCount).FirstOrDefault();
 
                 if (!string.IsNullOrEmpty(filtros.filtro))
                 {
@@ -97,14 +97,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     filtros.sortField = "cod_tasa_ref";
                 }
 
-                query = $@"select * from FND_CDPS_TASA_REF
-                    {filtros.filtro}
+                string query = $@"select * from FND_CDPS_TASA_REF {filtros.filtro}
                     order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}";
 
                 if (!Exporta)
                 {
-                    query += $@" OFFSET {filtros.pagina} ROWS 
-                         FETCH NEXT {filtros.paginacion} ROWS ONLY";
+                    query += " OFFSET " + filtros.pagina +" ROWS FETCH NEXT " + filtros.paginacion + " ROWS ONLY";
                 }
 
                 response.Result.lista = connection.Query<FndCdpsTasaRefData>(query).ToList();
