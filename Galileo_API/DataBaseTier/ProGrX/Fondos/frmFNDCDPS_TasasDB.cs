@@ -45,6 +45,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 var response = new ErrorDto<List<DropDownListaGenericaModel>>();
                 response.Code = -1;
                 response.Description = "Opción inválida.";
+                response.Result = null;
                 return response;
             }
 
