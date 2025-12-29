@@ -141,10 +141,10 @@ namespace Galileo.DataBaseTier
         public static ErrorDto<T> CreateErrorResponse<T>(string msg, int code = -1, T result = default!) =>
             new ErrorDto<T> { Code = code, Description = msg, Result = result };
 
-        public static ErrorDto CreateOkResponse(string msg, int code = 0) =>
-           new ErrorDto { Code = code, Description = msg };
+        public static ErrorDto OkResponse(string msg) =>
+           new ErrorDto { Code = 0, Description = msg };
 
-        public static ErrorDto CreateErrorResponse(string msg, int code = -1) =>
+        public static ErrorDto ErrorResponse(string msg, int code = -1) =>
             new ErrorDto { Code = code, Description = msg };
 
         public static SqlConnection OpenConnection(PortalDB portalDb,int codEmpresa)
