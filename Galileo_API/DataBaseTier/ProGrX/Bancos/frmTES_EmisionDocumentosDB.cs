@@ -192,14 +192,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var docExistente = lista.FirstOrDefault(nDoc => nDoc >= docInicial && nDoc <= docFinal);
                 if (docExistente != 0)
                 {
-                    return DbHelper.CreateErrorResponse($"\nYa existe un Documento asignado [{docExistente}] dentro del rango suministrado", -2);
+                    return DbHelper.ErrorResponse($"\nYa existe un Documento asignado [{docExistente}] dentro del rango suministrado", -2);
                 }
 
                 return DbHelper.CreateOkResponse();
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse(ex.Message);
+                return DbHelper.ErrorResponse(ex.Message);
             }
         }
 
@@ -217,12 +217,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 var query = "exec spTes_Cuentas_Revisa @banco";
                 conn.Execute(query, new { banco = banco });
-                return  DbHelper.CreateOkResponse("Cuentas verificadas correctamente!", 0);
+                return  DbHelper.OkResponse("Cuentas verificadas correctamente!");
 
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse(ex.Message);
+                return DbHelper.ErrorResponse(ex.Message);
             }
         }
 
@@ -290,11 +290,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     });
                 }
 
-                return DbHelper.CreateOkResponse("Solicitudes movidas correctamente", 0);
+                return DbHelper.OkResponse("Solicitudes movidas correctamente");
             }
             catch (Exception ex)
             {
-                return DbHelper.CreateErrorResponse(ex.Message);
+                return DbHelper.ErrorResponse(ex.Message);
             }
         }
 

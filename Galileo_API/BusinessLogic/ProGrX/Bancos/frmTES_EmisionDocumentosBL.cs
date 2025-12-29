@@ -74,8 +74,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 
         public ErrorDto<List<TesTransaccionDto>> TES_EmisionDocumento_SolicitudesCtaPuente_Obtener(int CodEmpresa, int banco, string tipoDoc)
         {
-           // return _db.TES_EmisionDocumento_SolicitudesCtaPuente_Obtener(CodEmpresa, banco, tipoDoc);
-           return null;
+           return new ErrorDto<List<TesTransaccionDto>>() { Result = new List<TesTransaccionDto>() };
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> TES_EmisionDocumento_CtasPuente_Obtener(int CodEmpresa, string Usuario)
@@ -90,8 +89,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 
         public ErrorDto<object> TES_EmisionDocumento_Generar(int CodEmpresa, string filtros)
         {
-            // return _db.TES_EmisionDocumento_Generar(CodEmpresa, filtros);
-            return null;
+            return new ErrorDto<object>() { Result = new object() };
         }
     }
 }
