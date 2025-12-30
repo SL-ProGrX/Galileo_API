@@ -22,7 +22,7 @@
 
     public class FndRenuevaContratosRequest
     {
-        public int cod_operadora { get; set; } = 0;
+        public int? cod_operadora { get; set; } 
         public string cod_plan_origen { get; set; } = string.Empty;
         public string cod_plan_destino { get; set; } = string.Empty;
         public int? plazo { get; set; }
