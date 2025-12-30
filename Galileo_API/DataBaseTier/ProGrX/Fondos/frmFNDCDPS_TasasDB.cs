@@ -114,8 +114,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 parameters.Add("@Offset", offset);
                 parameters.Add("@Fetch", paginacion);
 
-                string queryCount = $@"SELECT COUNT(*) FROM FND_CDPS_TASA_REF {whereClause}";
-                response.Result.total = connection.Query<int>(queryCount, parameters).FirstOrDefault();
+                var queryT = "SELECT COUNT(*) FROM FND_CDPS_TASA_REF ";
+                if (!string.IsNullOrEmpty(whereClause))
+                {
+                    queryT += " " + whereClause;
+                }
+                response.Result.total = connection.QueryFirstOrDefault<int>(queryT, parameters);
+
 
                 string query = $@"SELECT * FROM FND_CDPS_TASA_REF 
                     {whereClause}

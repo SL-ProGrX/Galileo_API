@@ -22,11 +22,11 @@
 
     public class FndRenuevaContratosRequest
     {
-        public int cod_operadora { get; set; }
+        public int? cod_operadora { get; set; }
         public string cod_plan_origen { get; set; } = string.Empty;
         public string cod_plan_destino { get; set; } = string.Empty;
-        public int plazo { get; set; }
-        public DateTime fecha_vence { get; set; }
+        public int? plazo { get; set; }
+        public DateTime? fecha_vence { get; set; }
         public string usuario { get; set; } = string.Empty;
         public List<FndRenuevaContratosDto> contratos { get; set; } = new List<FndRenuevaContratosDto>();
     }
