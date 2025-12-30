@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
-using Galileo.Models;
 using Galileo.Models.ERROR;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class PortalWebAppSincronizaController : ControllerBase
     {
         private readonly IConfiguration _config;

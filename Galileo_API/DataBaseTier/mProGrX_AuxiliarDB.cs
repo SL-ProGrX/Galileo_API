@@ -6,7 +6,6 @@ using System.Xml.Serialization;
 using Dapper;
 using Humanizer;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 using Galileo.Models;
@@ -43,13 +42,11 @@ namespace Galileo.DataBaseTier
             RegexTimeout
         );
 
-
         private static readonly Regex WhereSafeRegex = new(
             @"^[A-Za-z0-9_\[\]\s\=\<\>\!\(\)'\.""%,+\-]+$",
             RegexOptions.Compiled | RegexOptions.CultureInvariant,
             RegexTimeout
         );
-
 
 
         public MProGrXAuxiliarDB(IConfiguration config)
@@ -62,6 +59,7 @@ namespace Galileo.DataBaseTier
             var controlAuthValue = config.GetSection("AppSettings").GetSection("ControlAutorizacion").Value;
             controlAuth = controlAuthValue ?? string.Empty;
         }
+
 
         #region Periodos / Inventario básicos
 
@@ -145,6 +143,7 @@ namespace Galileo.DataBaseTier
         }
 
         #endregion
+
 
         #region Verificación de líneas / productos / bodegas
 
@@ -301,6 +300,7 @@ namespace Galileo.DataBaseTier
 
         #endregion
 
+
         #region Parámetros / Autorizaciones
 
         public ErrorDto<ParametroValor> fxCxPParametro(int CodEmpresa, string Cod_Parametro)
@@ -332,7 +332,6 @@ namespace Galileo.DataBaseTier
 
             return response;
         }
-
         public ErrorDto fxInvTransaccionesAutoriza(int CodEmpresa, string Boleta, string TipoTran, string AutorizaUser)
         {
             var info = new ErrorDto { Code = 0 };
@@ -381,6 +380,7 @@ namespace Galileo.DataBaseTier
         }
 
         #endregion
+
 
         #region fxSIFCCodigos (consulta códigos genéricos)
 
@@ -475,6 +475,7 @@ FROM {table}
 
         #endregion
 
+
         #region Utilidades simples
 
         public static bool fxCorreoValido(string correo)
@@ -546,6 +547,7 @@ FROM {table}
 
 
         #endregion
+
 
         #region Bitácoras
 
@@ -619,6 +621,7 @@ FROM {table}
 
         #endregion
 
+
         #region Otros helpers
 
         public ErrorDto<List<DropDownListaGenericaModel>> TiposIdentificacion_Obtener(int CodEmpresa)
@@ -689,125 +692,14 @@ FROM {table}
 
         #endregion
 
+
         #region FONDOS v6 - Control de Cambios
-
-        private static Match? ParseUpdateSql(string sql)
-        {
-            if (string.IsNullOrWhiteSpace(sql))
-                return null;
-
-            const string pattern =
-                @"UPDATE\s+(?<table>\w+)\s+SET\s+(?<setClause>.+?)\s+WHERE\s+(?<whereClause>.+)$";
-
-            var match = Regex.Match(
-                sql,
-                pattern,
-                RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.CultureInvariant,
-                RegexTimeout
-            );
-
-            return match.Success ? match : null;
-        }
 
         private static int SetErrorResult(ErrorDto result, string description, int code = -1)
         {
             result.Code = code;
             result.Description = description;
             return result.Code ?? -1;
-        }
-
-        private static DataTable CrearDataTableDiferencias(List<(string Campo, object ValorOriginal, object ValorNuevo)> diferencias)
-        {
-            var dt = new DataTable();
-            dt.Columns.Add("Campo", typeof(string));
-            dt.Columns.Add("ValorOriginal", typeof(object));
-            dt.Columns.Add("ValorNuevo", typeof(object));
-
-            foreach (var dif in diferencias)
-                dt.Rows.Add(dif.Campo, dif.ValorOriginal, dif.ValorNuevo);
-
-            return dt;
-        }
-
-        private static List<string> SplitSetClauseSafely(string input)
-        {
-            var parts = new List<string>();
-            int parentheses = 0;
-            int quotes = 0;
-            int start = 0;
-
-            for (int i = 0; i < input.Length; i++)
-            {
-                char c = input[i];
-
-                if (c == '\'' && (i == 0 || input[i - 1] != '\\'))
-                    quotes ^= 1;
-
-                if (quotes == 0)
-                {
-                    if (c == '(') parentheses++;
-                    else if (c == ')') parentheses--;
-                    else if (c == ',' && parentheses == 0)
-                    {
-                        parts.Add(input[start..i].Trim());
-                        start = i + 1;
-                    }
-                }
-            }
-
-            if (start < input.Length)
-                parts.Add(input[start..].Trim());
-
-            return parts;
-        }
-
-        private static bool SonIguales(object valorOriginal, object valorNuevo)
-        {
-            if (valorOriginal == null && valorNuevo == null) return true;
-            if (valorOriginal == null || valorNuevo == null) return false;
-
-            valorOriginal = ConvertirBoolANumero(valorOriginal);
-            valorNuevo = ConvertirBoolANumero(valorNuevo);
-
-            if (valorOriginal is DateTime dtOriginal)
-            {
-                if (TryConvertToDateTime(valorNuevo, out var dtNuevo))
-                    return dtOriginal.Date == dtNuevo.Date;
-                return false;
-            }
-
-            if (decimal.TryParse(valorOriginal.ToString(), out var num1) &&
-                decimal.TryParse(valorNuevo.ToString(), out var num2))
-                return num1 == num2;
-
-            var strOriginal = valorOriginal.ToString()?.Trim() ?? string.Empty;
-            var strNuevo = valorNuevo.ToString()?.Trim() ?? string.Empty;
-            return strOriginal.Equals(strNuevo, StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static object ConvertirBoolANumero(object valor)
-        {
-            if (valor is bool b) return b ? 1 : 0;
-            if (bool.TryParse(valor?.ToString(), out var parsedBool)) return parsedBool ? 1 : 0;
-            return valor ?? string.Empty;
-        }
-
-        private static bool TryConvertToDateTime(object valor, out DateTime fecha)
-        {
-            fecha = default;
-
-            if (valor is DateTime dt)
-            {
-                fecha = dt;
-                return true;
-            }
-
-            var str = valor?.ToString()?.Trim();
-            if (string.IsNullOrEmpty(str)) return false;
-
-            string[] formatos = { "yyyyMMdd", "dd/MM/yyyy", "yyyy-MM-dd", "MM/dd/yyyy" };
-
-            return DateTime.TryParseExact(str, formatos, CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
         }
 
         public record ControlCambioContext(int CodEmpresa, string Usuario);
@@ -888,29 +780,6 @@ VALUES (
             }
 
             return result;
-        }
-
-        private static string FormatearValorSql(object valor)
-        {
-            if (valor == null || valor is JValue jVal && jVal.Type == JTokenType.Null)
-                return "NULL";
-
-            if (valor is JValue jv)
-            {
-                return jv.Type switch
-                {
-                    JTokenType.Boolean => (bool)jv ? "1" : "0",
-                    JTokenType.String => $"'{jv.ToString().Replace("'", "''")}'",
-                    JTokenType.Integer => jv.ToString(),
-                    JTokenType.Float => jv.ToString(),
-                    _ => $"'{jv.ToString().Replace("'", "''")}'"
-                };
-            }
-
-            if (valor is bool b) return b ? "1" : "0";
-            if (valor is string s) return $"'{s.Replace("'", "''")}'";
-
-            return valor.ToString() ?? "NULL";
         }
 
         public int FndControlAutoriza_Eliminar(FndControlAutorizaData request)
@@ -1018,7 +887,6 @@ VALUES (
             // ✅ Regex con timeout (evita ReDoS)
             return WhereSafeRegex.IsMatch(whereClause);
         }
-
 
         private static bool IsSqlInternoSeguro(string sql)
         {

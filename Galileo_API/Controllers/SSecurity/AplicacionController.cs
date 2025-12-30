@@ -2,6 +2,7 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
 using Galileo.Models.ERROR;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
@@ -20,21 +21,21 @@ namespace Galileo.Controllers
         #region MÉTODOS APP_BANK
 
         [HttpGet("Aplicacion_ObtenerTodos")]
-        // [Authorize]
+        [Authorize]
         public List<Aplicacion> Aplicacion_ObtenerTodos()
         {
             return new AplicacionBL(_config).Aplicacion_ObtenerTodos();
         }
 
         [HttpPost("Aplicacion_Insertar")]
-        // [Authorize]
+        [Authorize]
         public ErrorDto Aplicacion_Insertar(Aplicacion request)
         {
             return new AplicacionBL(_config).Aplicacion_Insertar(request);
         }
 
         [HttpPost("Aplicacion_Actualizar")]
-        //[Authorize]
+        [Authorize]
         public ErrorDto Aplicacion_Actualizar(Aplicacion request)
         {
             return new AplicacionBL(_config).Aplicacion_Actualizar(request);
@@ -53,14 +54,14 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("Bloqueo_Insertar")]
-        // [Authorize]
+        [Authorize]
         public ErrorDto Bloqueo_Insertar(Bloqueo request)
         {
             return new AplicacionBL(_config).Bloqueo_Insertar(request);
         }
 
         [HttpPost("Bloqueo_Eliminar")]
-        //[Authorize]
+        [Authorize]
         public ErrorDto Bloqueo_Eliminar(Bloqueo request)
         {
             return new AplicacionBL(_config).Bloqueo_Eliminar(request);
@@ -72,7 +73,7 @@ namespace Galileo.Controllers
         #region MÉTODOS APP_UPDATES
 
         [HttpGet("Actualizacion_ObtenerTodos")]
-        // [Authorize]
+        [Authorize]
         public List<Actualizacion> Actualizacion_ObtenerTodos(string Cod_App)
         {
             return new AplicacionBL(_config).Actualizacion_ObtenerTodos(Cod_App);
@@ -80,14 +81,14 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Actualizacion_Insertar")]
-        // [Authorize]
+        [Authorize]
         public ErrorDto Actualizacion_Insertar(Actualizacion request)
         {
             return new AplicacionBL(_config).Actualizacion_Insertar(request);
         }
 
         [HttpPost("Actualizacion_Eliminar")]
-        //[Authorize]
+        [Authorize]
         public ErrorDto Actualizacion_Eliminar(Actualizacion request)
         {
             return new AplicacionBL(_config).Actualizacion_Eliminar(request);

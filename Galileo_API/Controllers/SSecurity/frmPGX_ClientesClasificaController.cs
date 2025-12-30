@@ -2,6 +2,7 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
@@ -19,7 +20,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("ClienteClasifica_ObtenerTodos")]
-        // [Authorize]
+        [Authorize]
         public List<ClienteClasifica> Cliente_Clasifica_ObtenerTodos()
         {
             return ClientesClasificaBL.Cliente_Clasifica_ObtenerTodos();
@@ -27,6 +28,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("ClienteClasifica_Guardar")]
+        [Authorize]
         public ErrorDto Cliente_Clasifica_Guardar(ClienteClasifica request)
         {
             return ClientesClasificaBL.Cliente_Clasifica_Guardar(request);
@@ -34,7 +36,7 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("ClienteClasifica_Eliminar")]
-        //[Authorize]
+        [Authorize]
         public ErrorDto Cliente_Clasifica_Eliminar(string request)
         {
             return ClientesClasificaBL.Cliente_Clasifica_Eliminar(request);
@@ -42,7 +44,7 @@ namespace Galileo.Controllers
 
 
         [HttpGet("Cliente_Selecciona_ObtenerTodos")]
-        // [Authorize]
+        [Authorize]
         public List<ClienteSelecciona> Cliente_Selecciona_ObtenerTodos(string usuario)
         {
             return ClientesClasificaBL.Cliente_Selecciona_ObtenerTodos(usuario);
