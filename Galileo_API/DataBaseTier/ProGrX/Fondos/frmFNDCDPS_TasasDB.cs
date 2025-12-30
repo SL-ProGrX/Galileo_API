@@ -3,7 +3,6 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Fondos;
 using Galileo.Models.Security;
-using Microsoft.AspNetCore.Http;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
@@ -65,12 +64,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> Fnd_CdpsTasas_Obtener(int CodEmpresa, bool Exporta, FiltrosLazyLoadData filtros)
         {
-
             var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new TablasListaGenericaModel()
+                Result = new TablasListaGenericaModel
                 {
                     total = 0,
                     lista = new List<FndCdpsTasaRefData>()
@@ -81,31 +79,54 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                string queryCount = "select COUNT(*) from FND_CDPS_TASA_REF";
-                response.Result.total = connection.Query<int>(queryCount).FirstOrDefault();
+                filtros ??= new FiltrosLazyLoadData();
 
-                if (!string.IsNullOrEmpty(filtros.filtro))
+
+                var parameters = new Dapper.DynamicParameters();
+                string whereClause = string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(filtros.filtro))
                 {
-                    filtros.filtro = " WHERE ( " +
-                        " cod_tasa_ref LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR cod_divisa LIKE '%" + filtros.filtro + "%' ) ";
+                    whereClause = @"WHERE (
+                                cod_tasa_ref LIKE @Filtro
+                                OR descripcion LIKE @Filtro
+                                OR cod_divisa LIKE @Filtro
+                            )";
+                    parameters.Add("@Filtro", $"%{filtros.filtro.Trim()}%");
                 }
 
-                if (string.IsNullOrEmpty(filtros.sortField))
+                string sortField = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                string orderByColumn = sortField switch
                 {
-                    filtros.sortField = "cod_tasa_ref";
-                }
+                    "cod_tasa_ref" => "cod_tasa_ref",
+                    "descripcion" => "descripcion",
+                    "cod_divisa" => "cod_divisa",
+                    _ => "cod_tasa_ref"
+                };
 
-                string query = $@"select * from FND_CDPS_TASA_REF {filtros.filtro}
-                    order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}";
+                string sortDirection = (filtros.sortOrder == 0) ? "DESC" : "ASC";
+
+                int pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
+                int paginacion = filtros.paginacion <= 0 ? 10 : filtros.paginacion;
+
+                int offset = pagina;
+
+                parameters.Add("@Offset", offset);
+                parameters.Add("@Fetch", paginacion);
+
+                string queryCount = $@"SELECT COUNT(*) FROM FND_CDPS_TASA_REF {whereClause}";
+                response.Result.total = connection.Query<int>(queryCount, parameters).FirstOrDefault();
+
+                string query = $@"SELECT * FROM FND_CDPS_TASA_REF 
+                    {whereClause}
+                    ORDER BY {orderByColumn} {sortDirection}";
 
                 if (!Exporta)
                 {
-                    query += " OFFSET " + filtros.pagina +" ROWS FETCH NEXT " + filtros.paginacion + " ROWS ONLY";
+                    query += " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY";
                 }
 
-                response.Result.lista = connection.Query<FndCdpsTasaRefData>(query).ToList();
+                response.Result.lista = connection.Query<FndCdpsTasaRefData>(query, parameters).ToList();
             }
             catch (Exception ex)
             {
