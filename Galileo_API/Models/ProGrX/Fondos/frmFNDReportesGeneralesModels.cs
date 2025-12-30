@@ -2,7 +2,7 @@
 {
     public class FndReportesGeneralesCuboFiltros
     {
-        public bool chk_todos { get; set; }
+        public bool chk_todos { get; set; } = false;
         public DateTime fecha_inicio { get; set; }
         public DateTime fecha_corte { get; set; }
     }
