@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
@@ -16,7 +17,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("AppLog_ObtenerTodos")]
-        // [Authorize]
+        [Authorize]
         public List<AppLog> TiposId_ObtenerTodos(int empresa, string ini, string fin)
         {
             return new AppLogBL(_config).AppLog_ObtenerTodos(empresa, ini, fin);

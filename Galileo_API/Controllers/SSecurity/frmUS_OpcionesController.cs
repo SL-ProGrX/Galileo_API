@@ -2,12 +2,14 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/FrmUsOpciones")]
     [Route("api/frmUS_Opciones")]
     [ApiController]
+    [Authorize]
     public class FrmUsOpcionesController : ControllerBase
     {
         readonly FrmUsOpcionesBl OpcionesBL;
@@ -19,7 +21,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("Modulo_ObtenerTodos")]
-        // [Authorize]
         public List<ModuloDto> Modulo_ObtenerTodos()
         {
             return OpcionesBL.Modulo_ObtenerTodos();
@@ -27,7 +28,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("Formulario_ObtenerTodos")]
-        // [Authorize]
         public List<FormularioDto> Formulario_ObtenerTodos(int modulo)
         {
             return OpcionesBL.Formulario_ObtenerTodos(modulo);
@@ -35,7 +35,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("Opcion_ObtenerTodos")]
-        // [Authorize]
         public List<OpcionDto> Opcion_ObtenerTodos(int modulo, string formulario)
         {
             return OpcionesBL.Opcion_ObtenerTodos(modulo, formulario);
@@ -43,7 +42,6 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("Opcion_Eliminar")]
-        //[Authorize]
         public ErrorDto Opcion_Eliminar(string codigo, string formulario, int modulo)
         {
             return OpcionesBL.Opcion_Eliminar(codigo, formulario, modulo);
@@ -51,7 +49,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Opcion_Guardar")]
-        //[Authorize]
         public ErrorDto Opcion_Guardar(OpcionDto request)
         {
             return OpcionesBL.Opcion_Guardar(request);

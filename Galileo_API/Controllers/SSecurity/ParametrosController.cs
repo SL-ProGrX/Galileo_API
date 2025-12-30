@@ -2,11 +2,13 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ParametrosController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -17,7 +19,6 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("Parametros_Obtener")]
-        // [Authorize]
         public ParametrosDto Parametros_Obtener()
         {
             return new ParametrosBL(_config).Parametros_Obtener();
@@ -25,7 +26,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Parametros_Insertar")]
-        // [Authorize]
         public ErrorDto Parametros_Insertar(ParametrosDto request)
         {
             return new ParametrosBL(_config).Parametros_Insertar(request);

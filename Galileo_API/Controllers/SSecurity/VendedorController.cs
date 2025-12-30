@@ -2,12 +2,14 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
 using Galileo.Models.ERROR;
+using Microsoft.AspNetCore.Authorization;
 
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class VendedorController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -18,7 +20,6 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("Vendedor_ObtenerTodos")]
-        // [Authorize]
         public List<Vendedor> Vendedor_ObtenerTodos()
         {
             return new VendedorBL(_config).Vendedor_ObtenerTodos();
@@ -26,14 +27,12 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Vendedor_Insertar")]
-        // [Authorize]
         public ErrorDto Vendedor_Insertar(Vendedor request)
         {
             return new VendedorBL(_config).Vendedor_Insertar(request);
         }
 
         [HttpPost("Vendedor_Eliminar")]
-        //[Authorize]
         public ErrorDto Vendedor_Eliminar(Vendedor request)
         {
             return new VendedorBL(_config).Vendedor_Eliminar(request);
@@ -41,7 +40,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Vendedor_Actualizar")]
-        //[Authorize]
         public ErrorDto Vendedor_Actualizar(Vendedor request)
         {
             return new VendedorBL(_config).Vendedor_Actualizar(request);

@@ -2,12 +2,14 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
 using Galileo.Models.ERROR;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/FrmUsAccessHorarios")]
     [Route("api/frmUS_Access_Horarios")]
     [ApiController]
+    [Authorize]
     public class FrmUsAccessHorariosController : ControllerBase
     {
         private readonly IConfiguration _config;

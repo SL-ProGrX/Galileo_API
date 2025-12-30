@@ -2,12 +2,14 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/FrmUsDerechos")]
     [Route("api/frmUS_Derechos")]
     [ApiController]
+    [Authorize]
     public class FrmUsDerechosController : ControllerBase
     {
         readonly FrmUsDerechosBl DerechosBL;
