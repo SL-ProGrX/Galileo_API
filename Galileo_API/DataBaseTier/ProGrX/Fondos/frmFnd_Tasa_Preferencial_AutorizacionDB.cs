@@ -43,80 +43,109 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var whereClause = $@"WHERE Estado = @pEstado 
-                    AND Registro_Fecha BETWEEN '{data.fecha_inicio:yyyy-MM-dd} 00:00:00'
-                    AND '{data.fecha_corte:yyyy-MM-dd} 23:59:59'";
+                data ??= new FndTasaPrefFiltros();
+                filtro ??= new FiltrosLazyLoadData();
 
-                if (!string.IsNullOrEmpty(data.usuario))
+                var param = new Dapper.DynamicParameters();
+
+                var fechaInicio = (data.fecha_inicio ?? DateTime.Today).Date;
+                var fechaCorte = (data.fecha_corte ?? DateTime.Today).Date.AddDays(1).AddTicks(-1);
+
+                param.Add("@FechaInicio", fechaInicio);
+                param.Add("@FechaCorte", fechaCorte);
+
+                var whereParts = new List<string>
                 {
-                    whereClause += $@" AND Registro_Usuario LIKE '%{data.usuario}%'";
-                }
-
-                if (!string.IsNullOrEmpty(data.cedula))
-                {
-                    whereClause += $@" AND Cedula LIKE '%{data.cedula}%'";
-                }
-
-                if (!string.IsNullOrEmpty(data.nombre))
-                {
-                    whereClause += $@" AND Nombre LIKE '%{data.nombre}%'";
-                }
-
-                string sql = "SELECT COUNT(*) FROM vFnd_TP_List WHERE 1=1 ";
+                    " Registro_Fecha BETWEEN @FechaInicio AND @FechaCorte"
+                };
 
                 if (data.estado != null)
                 {
-                    sql += " AND Estado = @pEstado ";
+                    whereParts.Add("Estado = @pEstado");
+                    param.Add("@pEstado", data.estado);
                 }
 
-                response.Result.total = connection.QueryFirstOrDefault<int>(
-                    sql.ToString(),
-                    new { pEstado = data.estado }
-                );
-
-                if (!string.IsNullOrEmpty(filtro.filtro))
+                if (!string.IsNullOrWhiteSpace(data.usuario))
                 {
-                    var f = filtro.filtro;
-                    filtro.filtro = $@" AND (
-                                      ID_TP           LIKE '%{f}%'
-                                   OR ESTADO_DESC     LIKE '%{f}%'
-                                   OR Cedula          LIKE '%{f}%'
-                                   OR Nombre          LIKE '%{f}%'
-                                   OR Cod_Plan        LIKE '%{f}%'
-                                   OR Cod_Contrato    LIKE '%{f}%'
-                                   OR Plan_Desc       LIKE '%{f}%'
-                               )";
+                    whereParts.Add("Registro_Usuario LIKE @Usuario");
+                    param.Add("@Usuario", $"%{data.usuario.Trim()}%");
                 }
 
-                if (string.IsNullOrEmpty(filtro.sortField))
+                if (!string.IsNullOrWhiteSpace(data.cedula))
                 {
-                    filtro.sortField = "ID_TP";
+                    whereParts.Add("Cedula LIKE @Cedula");
+                    param.Add("@Cedula", $"%{data.cedula.Trim()}%");
                 }
 
-                string sqlLista;
-
-                if (exporta)
+                if (!string.IsNullOrWhiteSpace(data.nombre))
                 {
-                    sqlLista = $@"SELECT * FROM vFnd_TP_List  {whereClause} {filtro.filtro}
-                    ORDER BY {filtro.sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}";
-                }
-                else
-                {
-                    sqlLista = $@" SELECT * FROM vFnd_TP_List {whereClause} {filtro.filtro}
-                    ORDER BY {filtro.sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}
-                    OFFSET {filtro.pagina} ROWS
-                    FETCH NEXT {filtro.paginacion} ROWS ONLY";
+                    whereParts.Add("Nombre LIKE @Nombre");
+                    param.Add("@Nombre", $"%{data.nombre.Trim()}%");
                 }
 
-                response.Result.lista = connection.Query<FndTPListDto>(
-                    sqlLista,
-                    new { pEstado = data.estado }
-                ).ToList();
+                if (!string.IsNullOrWhiteSpace(filtro.filtro))
+                {
+                    whereParts.Add(@"
+                    (
+                           ID_TP        LIKE @Filtro
+                        OR ESTADO_DESC  LIKE @Filtro
+                        OR Cedula       LIKE @Filtro
+                        OR Nombre       LIKE @Filtro
+                        OR Cod_Plan     LIKE @Filtro
+                        OR Cod_Contrato LIKE @Filtro
+                        OR Plan_Desc    LIKE @Filtro
+                    )");
+                    param.Add("@Filtro", $"%{filtro.filtro.Trim()}%");
+                }
+
+                string whereClause = "WHERE 1=1 " + string.Join(" AND ", whereParts);
+
+                string sortField = (filtro.sortField ?? "").Trim();
+                string orderByColumn = sortField.ToUpperInvariant() switch
+                {
+                    "ID_TP" => "ID_TP",
+                    "ESTADO_DESC" => "ESTADO_DESC",
+                    "CEDULA" => "Cedula",
+                    "NOMBRE" => "Nombre",
+                    "COD_PLAN" => "Cod_Plan",
+                    "COD_CONTRATO" => "Cod_Contrato",
+                    "PLAN_DESC" => "Plan_Desc",
+                    "REGISTRO_FECHA" => "Registro_Fecha",
+                    "REGISTRO_USUARIO" => "Registro_Usuario",
+                    _ => "ID_TP"
+                };
+
+                string sortDirection = (filtro.sortOrder == 0) ? "DESC" : "ASC";
+
+                int offset = filtro.pagina < 0 ? 0 : filtro.pagina;
+                int fetch = filtro.paginacion <= 0 ? 10 : filtro.paginacion;
+
+                param.Add("@Offset", offset);
+                param.Add("@Fetch", fetch);
+
+                var sqlCount = "SELECT COUNT(*) FROM vFnd_TP_List";
+                if (!string.IsNullOrEmpty(whereClause))
+                {
+                    sqlCount += " " + whereClause;
+                }
+                response.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, param);
+
+
+                string sqlLista = $@"SELECT * FROM vFnd_TP_List {whereClause}
+                    ORDER BY {orderByColumn} {sortDirection}";
+
+                if (!exporta)
+                {
+                    sqlLista += " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY";
+                }
+
+                response.Result.lista = connection.Query<FndTPListDto>(sqlLista, param).ToList();
             }
             catch (Exception ex)
             {
                 response.Code = -1;
                 response.Description = ex.Message;
+                response.Result = null;
             }
 
             return response;
