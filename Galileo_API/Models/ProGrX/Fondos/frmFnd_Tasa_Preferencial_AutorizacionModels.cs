@@ -1,4 +1,6 @@
-﻿namespace Galileo.Models.ProGrX.Fondos
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Galileo.Models.ProGrX.Fondos
 {
     public class FndTasaPrefFiltros
     {
@@ -14,7 +16,9 @@
 
     public class FndTPListDto
     {
+        [Required]
         public int id_tp { get; set; }
+        [Required]
         public int cod_operadora { get; set; }
         public string cod_plan { get; set; } = string.Empty;
         public string cod_contrato { get; set; } = string.Empty;
@@ -22,12 +26,12 @@
         public string nombre { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public string estado_desc { get; set; } = string.Empty;
-        public decimal monto_inversion { get; set; }
-        public int plazo_dias { get; set; }
-        public decimal tasa_calculada { get; set; }
-        public decimal tasa_solicitada { get; set; }
-        public decimal margen_solicitado { get; set; }
-        public decimal margen_maximo { get; set; }
+        public decimal? monto_inversion { get; set; }
+        public int? plazo_dias { get; set; }
+        public decimal? tasa_calculada { get; set; }
+        public decimal? tasa_solicitada { get; set; }
+        public decimal? margen_solicitado { get; set; }
+        public decimal? margen_maximo { get; set; }
         public string observacion { get; set; } = string.Empty;
         public string cupon_frecuencia { get; set; } = string.Empty;
         public string registro_usuario { get; set; } = string.Empty;
