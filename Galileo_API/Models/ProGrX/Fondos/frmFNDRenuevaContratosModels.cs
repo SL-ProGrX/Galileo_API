@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Galileo.Models.ProGrX.Fondos
+﻿namespace Galileo.Models.ProGrX.Fondos
 {
     public class FndContratosBuscarParams
     {
@@ -24,8 +22,7 @@ namespace Galileo.Models.ProGrX.Fondos
 
     public class FndRenuevaContratosRequest
     {
-        [Required]
-        public int cod_operadora { get; set; } 
+        public int cod_operadora { get; set; } = 0;
         public string cod_plan_origen { get; set; } = string.Empty;
         public string cod_plan_destino { get; set; } = string.Empty;
         public int? plazo { get; set; }
