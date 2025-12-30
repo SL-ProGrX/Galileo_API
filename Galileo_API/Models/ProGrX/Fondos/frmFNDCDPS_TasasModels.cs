@@ -5,8 +5,8 @@
         public string cod_tasa_ref { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public string cod_divisa { get; set; } = string.Empty;
-        public bool activo { get; set; }
-        public DateTime registro_fecha { get; set; }
+        public bool? activo { get; set; }
+        public DateTime? registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
     }
 
