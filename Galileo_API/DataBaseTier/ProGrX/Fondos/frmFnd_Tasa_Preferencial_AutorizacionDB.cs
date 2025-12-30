@@ -98,7 +98,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     param.Add("@Filtro", $"%{filtro.filtro.Trim()}%");
                 }
 
-                string whereClause = "WHERE 1=1 " + string.Join(" AND ", whereParts);
+                string whereClause = "WHERE " + string.Join(" AND ", whereParts);
 
                 string sortField = (filtro.sortField ?? "").Trim();
                 string orderByColumn = sortField.ToUpperInvariant() switch
