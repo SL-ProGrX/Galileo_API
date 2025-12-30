@@ -4,22 +4,21 @@
     {
         public static string FxStringCifrado(string input)
         {
-            var x = new System.Text.StringBuilder();
-            var y = new System.Text.StringBuilder();
+            var asciiReversed = string.Concat(
+                input
+                    .Select(c => ((int)c).ToString())
+                    .Reverse()
+            );
+
+            var resultBuilder = new System.Text.StringBuilder();
             int sec = 0;
 
-            foreach (var c in input)
+            for (int i = 0; i < asciiReversed.Length; i += 3)
             {
-                x.Insert(0, ((int)c).ToString());
-            }
+                int len = Math.Min(3, asciiReversed.Length - i);
+                int block = int.Parse(asciiReversed.Substring(i, len));
 
-            string s = x.ToString();
-            for (int i = 0; i < s.Length; i += 3)
-            {
-                int len = Math.Min(3, s.Length - i);
-                int b = int.Parse(s.Substring(i, len));
-
-                b += sec switch
+                block += sec switch
                 {
                     0 => 1,
                     1 => -5,
@@ -31,24 +30,26 @@
                 };
 
                 sec = (sec + 1) % 6;
-                y.Append(b.ToString());
+
+                resultBuilder.Append(block);
             }
 
-            return FxDepuraCadena(y.ToString());
+            return FxDepuraCadena(resultBuilder.ToString());
         }
 
         private static string FxDepuraCadena(string cadena)
         {
-            var res = new System.Text.StringBuilder();
+            var finalBuilder = new System.Text.StringBuilder();
+
             for (int i = 0; i < cadena.Length - 1; i++)
             {
                 if (int.TryParse(cadena.Substring(i, 2), out int n) &&
                     n > 31 && n != 39 && n != 34)
                 {
-                    res.Insert(0, (char)n);
+                    finalBuilder.Insert(0, (char)n);
                 }
             }
-            return res.ToString();
+            return finalBuilder.ToString();
         }
     }
 }

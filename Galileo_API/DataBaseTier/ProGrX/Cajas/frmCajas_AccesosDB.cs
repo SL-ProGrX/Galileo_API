@@ -2,7 +2,7 @@ using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Cajas;
+using System.Diagnostics;
 using Galileo_API.Models.ProGrX.Cajas;
 using Microsoft.Data.SqlClient;
 using System.Data;
@@ -78,11 +78,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 var claveCifrada = MCajas.FxStringCifrado(clave);
 
                 var sqlValidar = @"
-                            SELECT COUNT(*) 
-                            FROM cajas_usuarios 
-                            WHERE usuario = @Usuario 
-                              AND contrasena = @ClaveCifrada
-                              AND cod_caja = @CodCaja";
+                SELECT COUNT(*) 
+                FROM cajas_usuarios 
+                WHERE usuario = @Usuario 
+                  AND contrasena = @ClaveCifrada
+                  AND cod_caja = @CodCaja";
 
                 int aceptado = connection.ExecuteScalar<int>(sqlValidar, new
                 {
@@ -114,13 +114,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     return response;
                 }
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
+                Debug.WriteLine(ex);
                 response.Code = -1;
                 response.Description = ex.Message;
             }
 
             return response;
         }
+
     }
 }
