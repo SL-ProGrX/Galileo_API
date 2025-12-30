@@ -16,10 +16,8 @@ namespace Galileo.Models.ProGrX.Fondos
 
     public class FndTPListDto
     {
-        [Required]
-        public int id_tp { get; set; }
-        [Required]
-        public int cod_operadora { get; set; }
+        public int id_tp { get; set; } = 0;
+        public int cod_operadora { get; set; } = 0;
         public string cod_plan { get; set; } = string.Empty;
         public string cod_contrato { get; set; } = string.Empty;
         public string cedula { get; set; } = string.Empty;
