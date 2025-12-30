@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace Galileo.Models.ProGrX.Fondos
+﻿namespace Galileo.Models.ProGrX.Fondos
 {
     public class FndTasaPrefFiltros
     {
