@@ -1,9 +1,14 @@
-﻿namespace Galileo.Models.ProGrX.Fondos
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Galileo.Models.ProGrX.Fondos
 {
     public class FndReportesGeneralesCuboFiltros
     {
-        public bool chk_todos { get; set; } = false;
+        [Required]
+        public bool chk_todos { get; set; }
+        [Required]
         public DateTime fecha_inicio { get; set; }
+        [Required]
         public DateTime fecha_corte { get; set; }
     }
 
