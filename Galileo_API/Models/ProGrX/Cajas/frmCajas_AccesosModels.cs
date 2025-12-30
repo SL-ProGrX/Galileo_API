@@ -1,14 +1,14 @@
-﻿namespace Galileo.Models.ProGrX.Cajas
+﻿namespace Galileo_API.Models.ProGrX.Cajas
 {
     public class CajasAperturaDto
     {
         public int cod_Apertura { get; set; }
-        public string? cod_Caja { get; set; }
-        public string? cajaDesc { get; set; }
-        public string? cierre_Tipo { get; set; }
-        public string? cod_Oficina { get; set; }
-        public string? oficinaDesc { get; set; }
-        public string? cod_Unidad { get; set; }
-        public string? cod_Centro_Costo { get; set; }
+        public string cod_Caja { get; set; }
+        public string cajaDesc { get; set; }
+        public string cierre_Tipo { get; set; }
+        public string cod_Oficina { get; set; }
+        public string oficinaDesc { get; set; }
+        public string cod_Unidad { get; set; }
+        public string cod_Centro_Costo { get; set; }
     }
 }
