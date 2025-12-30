@@ -197,6 +197,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                                 $"Gestion Id:{item.id_tp} ..Id: {item.cedula} ..Nombre: {item.nombre}"
                         });
                     }
+                    catch (TimeoutException tex)
+                    {
+                        response.Code = -1;
+                        response.Description = $"Error de tiempo de espera en la autorización de tasa preferencial: {tex.Message}";
+                    }
                     catch (Exception exItem)
                     {
                         msjError.AppendLine($"Error en la gestión {item.id_tp}: {exItem.Message}");
