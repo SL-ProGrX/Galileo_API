@@ -226,7 +226,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         // ================= RECIBE / REVISA =================
 
         /// <summary>
-        /// Método reutilizable para marcar recibe/revisa sin SQL dinámico inseguro
+        ///  reutilizable para marcar recibe/revisa sin SQL dinámico inseguro
         /// </summary>
         private ErrorDto<bool> ActualizarCampoCierre(
             int codEmpresa,
