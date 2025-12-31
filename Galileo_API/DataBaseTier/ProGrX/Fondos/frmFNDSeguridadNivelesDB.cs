@@ -44,29 +44,44 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 var query = "";
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                query = $@"select COUNT(COD_GRUPO) from FND_SEGURIDAD_GRUPOS";
+                query = @"select COUNT(COD_GRUPO) from FND_SEGURIDAD_GRUPOS";
                 response.Result.total = connection.QueryFirstOrDefault<int>(query);
+
+                var parameters = new DynamicParameters();
+                string whereClause = string.Empty;
 
                 if (!string.IsNullOrEmpty(filtros.filtro))
                 {
-                    filtros.filtro = " WHERE ( COD_GRUPO LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' ) ";
+                    whereClause = " WHERE ( COD_GRUPO LIKE @Filter OR DESCRIPCION LIKE @Filter ) ";
+                    parameters.Add("@Filter", "%" + filtros.filtro + "%");
                 }
 
-                if (string.IsNullOrEmpty(filtros.sortField))
+                var allowedSortFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    filtros.sortField = "COD_GRUPO";
+                    "COD_GRUPO",
+                    "DESCRIPCION"
+                };
+
+                var sortField = filtros.sortField;
+                if (string.IsNullOrWhiteSpace(sortField) || !allowedSortFields.Contains(sortField))
+                {
+                    sortField = "COD_GRUPO";
                 }
+
+                var sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
 
                 query = $@"select * from FND_SEGURIDAD_GRUPOS
-                           {filtros.filtro}
-                           order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")} ";
+                           {whereClause}
+                           order by {sortField} {sortDirection}";
+
                 if (!Exporta)
                 {
-                    query += $@" OFFSET {filtros.pagina} ROWS 
-                        FETCH NEXT {filtros.paginacion} ROWS ONLY";
+                    query += " OFFSET @Offset ROWS FETCH NEXT @FetchNext ROWS ONLY";
+                    parameters.Add("@Offset", filtros.pagina);
+                    parameters.Add("@FetchNext", filtros.paginacion);
                 }
-                response.Result.lista = connection.Query<FndSegNivelesGrupoDto>(query).ToList();
+
+                response.Result.lista = connection.Query<FndSegNivelesGrupoDto>(query, parameters).ToList();
             }
             catch (Exception ex)
             {
