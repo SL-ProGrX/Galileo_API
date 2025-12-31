@@ -43,7 +43,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                var query = "SELECT * FROM fnd_remesas WHERE remesa = @Remesa";
+                const string query = "SELECT * FROM fnd_remesas WHERE remesa = @Remesa";
                 var data = connection.QueryFirstOrDefault<FndRemesasData>(query, new { Remesa });
 
                 if (data == null)
@@ -53,7 +53,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     return response; 
                 }
 
-                var queryTotal = @"select isnull(sum(aportes_liq + rendi_liq),0) as Total from fnd_liquidacion 
+                const string queryTotal = @"select isnull(sum(aportes_liq + rendi_liq),0) as Total from fnd_liquidacion 
                     where consec in (select consec from fnd_remesa_asg where remesa = @Remesa)";
                 data.total = connection.ExecuteScalar<decimal>(queryTotal, new { Remesa });
 

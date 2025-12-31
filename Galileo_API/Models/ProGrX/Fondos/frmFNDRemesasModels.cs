@@ -3,7 +3,7 @@
     public class FndRemesasData
     {
         public int remesa { get; set; } = 0;
-        public DateTime fecha { get; set; }
+        public DateTime? fecha { get; set; }
         public string usuario { get; set; } = string.Empty;
         public DateTime? fecha_inicio { get; set; }
         public DateTime? fecha_corte { get; set; }
