@@ -51,7 +51,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     parameters.Add("@Filter", $"%{filtros.filtro}%");
                 }
 
-                var countQuery = $"SELECT COUNT(COD_GRUPO) FROM FND_SEGURIDAD_GRUPOS {whereClause};";
+                string countQuery = $"SELECT COUNT(COD_GRUPO) FROM FND_SEGURIDAD_GRUPOS {whereClause};";
                 response.Result.total = connection.QueryFirstOrDefault<int>(countQuery, parameters);
 
                 var allowedSortFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
