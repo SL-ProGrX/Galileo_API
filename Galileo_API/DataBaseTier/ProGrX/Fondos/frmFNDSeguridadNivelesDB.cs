@@ -67,7 +67,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     sortField = "COD_GRUPO";
                 }
 
-                var sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
+                string sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
 
                 string query = $@"select * from FND_SEGURIDAD_GRUPOS
                            {whereClause}
