@@ -6,7 +6,7 @@
         public string descripcion { get; set; } = string.Empty;
         public decimal? monto_inicio { get; set; }
         public decimal? monto_corte { get; set; }
-        public bool? activo { get; set; }
+        public bool activo { get; set; } = false;
         public DateTime? registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
     }
