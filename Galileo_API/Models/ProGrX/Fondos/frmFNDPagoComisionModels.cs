@@ -2,10 +2,10 @@
 {
     public class FndPagoComisionFiltros
     {
-        public DateTime fecha_inicio { get; set; }
-        public DateTime fecha_corte { get; set; }
+        public DateTime? fecha_inicio { get; set; }
+        public DateTime? fecha_corte { get; set; }
         public int id_banco { get; set; }
-        public DateTime fecha_generacion { get; set; }
+        public DateTime? fecha_generacion { get; set; }
         public string usuario { get; set; } = string.Empty;
     }
 
@@ -36,6 +36,6 @@
         public long referencia { get; set; }
         public string detalle2 { get; set; } = string.Empty;
         public string cuenta { get; set; } = string.Empty;
-        public DateTime fecha { get; set; }
+        public DateTime? fecha { get; set; }
     }
 }

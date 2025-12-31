@@ -2,6 +2,7 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Fondos;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Galileo.DataBaseTier.ProGrX.Fondos
 {
@@ -50,8 +51,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
             try
             {
-                var fechaInicio = Filtros.fecha_inicio.Date;
-                var fechaCorte = Filtros.fecha_corte.Date.AddDays(1).AddSeconds(-1);
+                var fechaInicio = (Filtros.fecha_inicio ?? DateTime.Today).Date;
+                var fechaCorte = (Filtros.fecha_corte ?? DateTime.Today).Date.AddDays(1).AddSeconds(-1);
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
                 const string sql = @"
