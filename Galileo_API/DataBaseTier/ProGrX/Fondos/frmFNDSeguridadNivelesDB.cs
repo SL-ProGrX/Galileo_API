@@ -47,49 +47,59 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
                 var parameters = new DynamicParameters();
 
-                string whereClause = string.Empty;
-                if (!string.IsNullOrWhiteSpace(filtros.filtro))
-                {
-                    whereClause = " WHERE (COD_GRUPO LIKE @Filter OR DESCRIPCION LIKE @Filter) ";
-                    parameters.Add("@Filter", $"%{filtros.filtro}%");
-                }
+                var hasFilter = !string.IsNullOrWhiteSpace(filtros.filtro);
+                const string whereWithFilter =
+                    " WHERE (COD_GRUPO LIKE @Filter OR DESCRIPCION LIKE @Filter) ";
+                const string whereNoFilter = "";
 
-                string countQuery = "SELECT COUNT(COD_GRUPO) FROM FND_SEGURIDAD_GRUPOS ";
-                if (!string.IsNullOrEmpty(whereClause))
-                {
-                    countQuery += whereClause;
-                }
+                if (hasFilter)
+                    parameters.Add("@Filter", $"%{filtros.filtro}%");
+
+                var countQuery = hasFilter
+                    ? "SELECT COUNT(COD_GRUPO) FROM FND_SEGURIDAD_GRUPOS " + whereWithFilter
+                    : "SELECT COUNT(COD_GRUPO) FROM FND_SEGURIDAD_GRUPOS ";
+
                 response.Result.total = connection.QueryFirstOrDefault<int>(countQuery, parameters);
 
-                var allowedSortFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+                var sortField = filtros.sortField;
+                var sortOrder = filtros.sortOrder;
+
+                string orderByColumn = sortField?.Trim().ToUpperInvariant() switch
                 {
-                    "COD_GRUPO",
-                    "DESCRIPCION"
+                    "DESCRIPCION" => "DESCRIPCION",
+                    "COD_GRUPO" => "COD_GRUPO",
+                    _ => "COD_GRUPO"
                 };
 
-                var sortField = filtros.sortField;
-                if (string.IsNullOrWhiteSpace(sortField) || !allowedSortFields.Contains(sortField))
-                    sortField = "COD_GRUPO";
-
-                string sortDirection = (filtros.sortOrder == 0) ? "DESC" : "ASC";
-
-                string query = $@"select * from FND_SEGURIDAD_GRUPOS
-                    {whereClause}
-                    order by {sortField} {sortDirection}";
+                string orderByDirection = (sortOrder == 0) ? "DESC" : "ASC";
 
                 int pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
                 int fetch = filtros.paginacion <= 0 ? 30 : filtros.paginacion;
+                int offset = pagina * fetch; 
 
-                int offset = pagina;
                 parameters.Add("@Offset", offset);
                 parameters.Add("@Fetch", fetch);
 
-                if (!Exporta)
-                {
-                    query += " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY";
-                }
+                string baseSelect = "SELECT * FROM FND_SEGURIDAD_GRUPOS ";
+                string whereClause = hasFilter ? whereWithFilter : whereNoFilter;
 
-                response.Result.lista = connection.Query<FndSegNivelesGrupoDto>(query, parameters).ToList();
+                string queryExporta;
+                string queryPaginado;
+
+                queryExporta =
+                    baseSelect +
+                    whereClause +
+                    " ORDER BY " + orderByColumn + " " + orderByDirection;
+
+                queryPaginado =
+                    baseSelect +
+                    whereClause +
+                    " ORDER BY " + orderByColumn + " " + orderByDirection +
+                    " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY";
+
+                string finalQuery = Exporta ? queryExporta : queryPaginado;
+
+                response.Result.lista = connection.Query<FndSegNivelesGrupoDto>(finalQuery, parameters).ToList();
             }
             catch (Exception ex)
             {
