@@ -2,6 +2,7 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
@@ -18,6 +19,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("EstacionesObtener")]
+        [Authorize]
         public List<EstacionDto> EstacionesObtener(int empresaCod)
         {
             return new FrmUsAccessEstacionesBl(_config).EstacionesObtener(empresaCod);
@@ -25,7 +27,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("EstacionRegistrar")]
-        // [Authorize]
+        [Authorize]
         public ErrorDto EstacionRegistrar(EstacionGuardarDto request)
         {
             return new FrmUsAccessEstacionesBl(_config).EstacionRegistrar(request);
@@ -33,7 +35,7 @@ namespace Galileo.Controllers
 
 
         [HttpGet("EstacionesSinVincularObtener")]
-        // [Authorize]
+        [Authorize]
         public List<EstacionSinVincularDto> EstacionesSinVincularObtener(int empresaCod)
         {
             return new FrmUsAccessEstacionesBl(_config).EstacionesSinVincularObtener(empresaCod);
@@ -41,7 +43,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("EstacionVincular")]
-        // [Authorize]
+        [Authorize]
         public ErrorDto EstacionVincular(EstacionVinculaDto estacionDto)
         {
             return new FrmUsAccessEstacionesBl(_config).EstacionVincular(estacionDto);
@@ -49,7 +51,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("EstacionEliminar")]
-        // [Authorize]
+        [Authorize]
         public ErrorDto EstacionEliminar(EstacionEliminarDto estacionDto)
         {
             return new FrmUsAccessEstacionesBl(_config).EstacionEliminar(estacionDto);

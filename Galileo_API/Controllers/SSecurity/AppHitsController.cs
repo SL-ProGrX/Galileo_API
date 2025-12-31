@@ -2,6 +2,7 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
 using Galileo.Models.ERROR;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
@@ -17,7 +18,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("AppHits_ObtenerTodos")]
-        // [Authorize]
+        [Authorize]
         public List<AppHits> TiposId_ObtenerTodos()
         {
             return new AppHitsBL(_config).AppHits_ObtenerTodos();
@@ -25,14 +26,14 @@ namespace Galileo.Controllers
 
 
         [HttpPost("AppHits_Insertar")]
-        // [Authorize]
+        [Authorize]
         public ErrorDto AppHits_Insertar(AppHits request)
         {
             return new AppHitsBL(_config).AppHits_Insertar(request);
         }
 
         [HttpPost("AppHits_Eliminar")]
-        //[Authorize]
+        [Authorize]
         public ErrorDto AppHits_Eliminar(AppHits request)
         {
             return new AppHitsBL(_config).AppHits_Eliminar(request);
@@ -40,7 +41,7 @@ namespace Galileo.Controllers
 
 
         [HttpPost("AppHits_Actualizar")]
-        //[Authorize]
+        [Authorize]
         public ErrorDto AppHits_Actualizar(AppHits request)
         {
             return new AppHitsBL(_config).AppHits_Actualizar(request);

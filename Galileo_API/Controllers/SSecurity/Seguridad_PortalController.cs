@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
@@ -8,6 +9,7 @@ namespace Galileo.Controllers
     [Route("api/SeguridadPortal")]
     [Route("api/seguridad_portal")]
     [ApiController]
+    [Authorize]
 
     public class SeguridadPortalController : ControllerBase
     {

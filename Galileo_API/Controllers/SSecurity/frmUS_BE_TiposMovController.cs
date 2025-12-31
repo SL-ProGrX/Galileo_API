@@ -2,12 +2,14 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/FrmUsBeTiposMov")]
     [Route("api/frmUS_Be_TiposMov")]
     [ApiController]
+    [Authorize]
     public class FrmUsBeTiposMovController : ControllerBase
     {
         readonly FrmUsBeTiposMovBl MovimientoBEBL;
@@ -18,7 +20,6 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("MovimientoBE_ObtenerTodos")]
-        // [Authorize]
         public List<MovimientoBE> TiposId_ObtenerTodos(int modulo)
         {
             return MovimientoBEBL.MovimientoBE_ObtenerTodos(modulo);
@@ -26,7 +27,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("MovimientoBE_Guardar")]
-        // [Authorize]
         public ErrorDto MovimientoBE_Guardar(MovimientoBE request)
         {
             return MovimientoBEBL.MovimientoBE_Guardar(request);
@@ -34,7 +34,6 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("MovimientoBE_Eliminar")]
-        //[Authorize]
         public ErrorDto MovimientoBE_Eliminar(string movimiento, int modulo)
         {
             return MovimientoBEBL.MovimientoBE_Eliminar(movimiento, modulo);

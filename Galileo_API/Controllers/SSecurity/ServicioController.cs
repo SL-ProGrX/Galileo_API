@@ -2,11 +2,13 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
 using Galileo.Models.ERROR;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ServicioController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -17,7 +19,6 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("Servicio_ObtenerTodos")]
-        // [Authorize]
         public List<ServicioSuscripcion> Servicio_ObtenerTodos()
         {
             return new ServicioBL(_config).Servicio_ObtenerTodos();
@@ -25,7 +26,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Servicio_Insertar")]
-        // [Authorize]
         public ErrorDto Servicio_Insertar(ServicioSuscripcion request)
         {
             return new ServicioBL(_config).Servicio_Insertar(request);
@@ -33,7 +33,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Servicio_Eliminar")]
-        //[Authorize]
         public ErrorDto Servicio_Eliminar(ServicioSuscripcion request)
         {
             return new ServicioBL(_config).Servicio_Eliminar(request);
@@ -41,7 +40,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Servicio_Actualizar")]
-        //[Authorize]
         public ErrorDto Servicio_Actualizar(ServicioSuscripcion request)
         {
             return new ServicioBL(_config).Servicio_Actualizar(request);

@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class ReporteUsuariosController : ControllerBase
     {
 
@@ -17,7 +19,6 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("ReporteUsuariosListadoObtener")]
-        //[Authorize]
         public List<ReporteUsuariosListaRespuestaDto> ReporteUsuariosListadoObtener(ReporteUsuariosListaSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteUsuariosListadoObtener(solicitudDto);
@@ -25,7 +26,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("ReporteUsuariosRolesObtener")]
-        //[Authorize]
         public List<ReporteUsuariosRolesRespuestaDto> ReporteUsuariosRolesObtener(ReporteUsuariosRolesSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteUsuariosRolesObtener(solicitudDto);
@@ -33,7 +33,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("ReporteUsuariosPermisosObtener")]
-        //[Authorize]
         public List<ReporteUsuariosPermisosRespuestaDto> ReporteUsuariosPermisosObtener(ReporteUsuariosPermisosSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteUsuariosPermisosObtener(solicitudDto);
@@ -41,7 +40,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("ReporteRolesPermisosObtener")]
-        //[Authorize]
         public List<ReporteRolesPermisosRespuestaDto> ReporteRolesPermisosObtener(ReporteRolesPermisosSolicitudDto solicitudDto)
         {
             return new ReporteUsuariosBL(_config).ReporteRolesPermisosObtener(solicitudDto);
@@ -49,7 +47,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("RolesObtener")]
-        //[Authorize]
         public List<ReporteUsuarioRolesDto> RolesObtener()
         {
             return new ReporteUsuariosBL(_config).RolesObtener();
@@ -57,7 +54,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("VinculacionesObtener")]
-        //[Authorize]
         public List<ReporteUsuarioVinculacionDto> VinculacionesObtener(int codEmpresa)
         {
             return new ReporteUsuariosBL(_config).VinculacionesObtener(codEmpresa);

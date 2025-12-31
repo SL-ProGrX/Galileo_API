@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
@@ -16,7 +17,7 @@ namespace Galileo.Controllers
         }
 
         [HttpPost("BitacoraObtener")]
-        //[Authorize]
+        [Authorize]
         public List<BitacoraResultDto> BitacoraObtener(BitacoraRequestDto bitacoraRequestDto)
         {
             return new BitacoraBL(_config).BitacoraObtener(bitacoraRequestDto);

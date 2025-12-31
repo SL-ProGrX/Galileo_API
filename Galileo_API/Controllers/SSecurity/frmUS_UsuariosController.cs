@@ -2,12 +2,14 @@ using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/FrmUsUsuarios")]
     [Route("api/frmUS_Usuarios")]
     [ApiController]
+    [Authorize]
     public class FrmUsUsuariosController : ControllerBase
     {
         readonly FrmUsUsuariosBl UsuariosBL;
@@ -19,7 +21,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioExiste")]
-        //[Authorize]
         public int UsuarioExiste(string usuario)
         {
             return UsuariosBL.UsuarioExiste(usuario);
@@ -27,7 +28,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("UsuariosEmpresaObtener")]
-        //[Authorize]
         public List<UsuarioModel> UsuariosEmpresaObtener(int codEmpresa, bool AdminView, bool DirGlobal)
         {
             return UsuariosBL.UsuariosEmpresaObtener(codEmpresa, AdminView, DirGlobal);
@@ -35,7 +35,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("UsuarioConsultar")]
-        //[Authorize]
         public UsuarioModel UsuarioConsultar(string nombreUsuario, int codEmpresa, bool AdminView, bool DirGlobal)
         {
             return UsuariosBL.UsuarioConsultar(nombreUsuario, codEmpresa, AdminView, DirGlobal);
@@ -43,7 +42,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioGuardarActualizar")]
-        //[Authorize]
         public ErrorDto UsuarioGuardarActualizar(UsuarioModel usuarioModel)
         {
             return UsuariosBL.UsuarioGuardarActualizar(usuarioModel);
@@ -51,7 +49,6 @@ namespace Galileo.Controllers
 
         
         [HttpGet("UsuarioClientesConsultar")]
-        //[Authorize]
         public List<UsuarioClienteDto> UsuarioClientesConsultar(string nombreUsuario)
         {
             return UsuariosBL.UsuarioClientesConsultar(nombreUsuario);
@@ -59,7 +56,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioClienteAsignar")]
-        //[Authorize]
         public ErrorDto UsuarioClienteAsignar(UsuarioClienteAsignaDto usuarioClienteAsignaDto)
         {
             return UsuariosBL.UsuarioClienteAsignar(usuarioClienteAsignaDto);
@@ -67,7 +63,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("UsuarioCuentaTiposTransaccionObtener")]
-        //[Authorize]
         public List<TipoTransaccionBitacora> UsuarioCuentaTiposTransaccionObtener()
         {
             return UsuariosBL.UsuarioCuentaTiposTransaccionObtener();
@@ -75,7 +70,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioBitacoraConsultar")]
-        //[Authorize]
         public List<UsuarioCuentaBitacora> UsuarioBitacoraConsultar(UsuarioBitacoraRequest usuarioCuentaBitacoraRequestDto)
         {
             return UsuariosBL.UsuarioBitacoraConsultar(usuarioCuentaBitacoraRequestDto);
@@ -83,7 +77,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("UsuarioClienteRolesConsultar")]
-        //[Authorize]
         public List<UsuarioClienteRolDto> UsuarioClienteRolesConsultar(string nombreUsuario, string codEmpresa)
         {
             return UsuariosBL.UsuarioClienteRolesConsultar(nombreUsuario, codEmpresa);
@@ -91,7 +84,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioClienteRolAsignar")]
-        //[Authorize]
         public ErrorDto UsuarioClienteRolAsignar(UsuarioClienteRolAsignaDto usuarioClienteRolAsignaDto)
         {
             return UsuariosBL.UsuarioClienteRolAsignar(usuarioClienteRolAsignaDto);

@@ -2,12 +2,14 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/FrmUsModulos")]
     [Route("api/frmUS_Modulos")]
     [ApiController]
+    [Authorize]
     public class FrmUsModulosController : ControllerBase
     {
         readonly FrmUsModulosBl ModulosBL;
@@ -19,7 +21,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("Modulo_ObtenerTodos")]
-        // [Authorize]
         public List<ModuloDto> Modulo_ObtenerTodos()
         {
             return ModulosBL.Modulo_ObtenerTodos();
@@ -34,7 +35,6 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("Modulo_Eliminar")]
-        //[Authorize]
         public ErrorDto Modulo_Eliminar(int request)
         {
             return ModulosBL.Modulo_Eliminar(request);

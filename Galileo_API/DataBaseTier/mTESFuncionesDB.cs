@@ -196,16 +196,16 @@ INSERT INTO Tes_Trans_Asiento (
                 var prefix = DateTime.Now.ToString("yyyy.MM.dd");
 
                 const string sqlConsec = @"
-SELECT ISNULL(COUNT(id_token),0) + 1
-FROM tes_tokens
-WHERE id_token LIKE @PrefixLike;";
+                                        SELECT ISNULL(COUNT(id_token),0) + 1
+                                        FROM tes_tokens
+                                        WHERE id_token LIKE @PrefixLike;";
 
                 var consec = connection.QuerySingle<int>(sqlConsec, new { PrefixLike = prefix + "%" });
                 var token = $"{prefix}{consec}";
 
                 const string sqlInsert = @"
-INSERT tes_tokens (id_token, registro_fecha, registro_usuario, estado)
-VALUES (@Token, GETDATE(), @Usuario, 'A');";
+                                        INSERT tes_tokens (id_token, registro_fecha, registro_usuario, estado)
+                                        VALUES (@Token, GETDATE(), @Usuario, 'A');";
 
                 connection.Execute(sqlInsert, new { Token = token, Usuario = usuario });
 

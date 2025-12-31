@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
@@ -15,6 +16,7 @@ namespace Galileo.Controllers
         }
 
         [HttpGet("PaisObtener")]
+        [Authorize]
         public List<string> TablasCargar()
         {
             var bl = new BDAnalisisBL(_config);
