@@ -117,7 +117,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 var queryT = "SELECT COUNT(*) FROM FND_CDPS_TASA_REF ";
                 if (!string.IsNullOrEmpty(whereClause))
                 {
-                    queryT += " " + whereClause;
+                    queryT += whereClause;
                 }
                 response.Result.total = connection.QueryFirstOrDefault<int>(queryT, parameters);
 

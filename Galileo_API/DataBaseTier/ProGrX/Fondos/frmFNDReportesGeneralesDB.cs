@@ -158,11 +158,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns></returns>
         public ErrorDto Fnd_ReportesGenerales_CuboAplicar(int CodEmpresa, FndReportesGeneralesCuboFiltros filtros)
         {
-            DateTime fechaInicioDt = filtros.fecha_inicio != null ? 
-                filtros.fecha_inicio.Value.Date : DateTime.Today;
-
-            DateTime fechaCorteDt = filtros.fecha_corte != null ? 
-                filtros.fecha_corte.Value.Date.AddDays(1).AddTicks(-1) : DateTime.Today.AddDays(1).AddTicks(-1); 
+            DateTime fechaInicioDt = (filtros.fecha_inicio ?? DateTime.Today).Date;
+            DateTime fechaCorteDt = (filtros.fecha_corte ?? DateTime.Today).Date.AddDays(1).AddTicks(-1); 
 
             if (filtros.chk_todos)
             {

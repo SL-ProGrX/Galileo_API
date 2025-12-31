@@ -98,7 +98,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     param.Add("@Filtro", $"%{filtro.filtro.Trim()}%");
                 }
 
-                string whereClause = "WHERE 1=1 " + string.Join(" AND ", whereParts);
+                string whereClause = "WHERE " + string.Join(" AND ", whereParts);
 
                 string sortField = (filtro.sortField ?? "").Trim();
                 string orderByColumn = sortField.ToUpperInvariant() switch
@@ -118,7 +118,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 string sortDirection = (filtro.sortOrder == 0) ? "DESC" : "ASC";
 
                 int offset = filtro.pagina < 0 ? 0 : filtro.pagina;
-                int fetch = filtro.paginacion <= 0 ? 10 : filtro.paginacion;
+                int fetch = filtro.paginacion <= 0 ? 30 : filtro.paginacion;
 
                 param.Add("@Offset", offset);
                 param.Add("@Fetch", fetch);
