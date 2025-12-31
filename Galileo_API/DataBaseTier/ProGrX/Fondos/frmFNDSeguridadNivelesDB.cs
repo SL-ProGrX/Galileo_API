@@ -45,14 +45,18 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
                 var parameters = new DynamicParameters();
 
-                string whereClause = "";
+                string whereClause = string.Empty;
                 if (!string.IsNullOrWhiteSpace(filtros?.filtro))
                 {
                     whereClause = " WHERE (COD_GRUPO LIKE @Filter OR DESCRIPCION LIKE @Filter) ";
                     parameters.Add("@Filter", $"%{filtros.filtro}%");
                 }
 
-                string countQuery = "SELECT COUNT(COD_GRUPO) FROM FND_SEGURIDAD_GRUPOS " + whereClause;
+                string countQuery = "SELECT COUNT(COD_GRUPO) FROM FND_SEGURIDAD_GRUPOS ";
+                if (!string.IsNullOrEmpty(whereClause))
+                {
+                    countQuery += whereClause;
+                }
                 response.Result.total = connection.QueryFirstOrDefault<int>(countQuery, parameters);
 
                 var allowedSortFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
