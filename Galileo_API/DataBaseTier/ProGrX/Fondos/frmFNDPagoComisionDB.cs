@@ -81,17 +81,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
                 foreach (var item in lista)
                 {
-                    if (item.monto > 0)
-                    {
-                        item.monto_comision = Math.Round(
+                    item.monto_comision = item.monto > 0
+                        ? Math.Round(
                             item.monto * (item.porc_comision / 100m),
                             2
-                        );
-                    }
-                    else
-                    {
-                        item.monto_comision = 0;
-                    }
+                        )
+                        : 0;
                 }
 
                 lista = lista.Where(x => x.monto > 0).ToList();
