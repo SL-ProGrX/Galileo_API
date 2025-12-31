@@ -16,24 +16,24 @@
         public string nombre { get; set; } = string.Empty;
         public string cuenta_ahorros { get; set; } = string.Empty;
         public string tipo_pago { get; set; } = string.Empty;
-        public int cod_banco { get; set; }
-        public decimal minimo { get; set; }
-        public decimal porc_comision { get; set; }
-        public decimal monto { get; set; }
-        public int casos { get; set; }
-        public decimal monto_comision { get; set; }
+        public int? cod_banco { get; set; }
+        public decimal? minimo { get; set; }
+        public decimal? porc_comision { get; set; }
+        public decimal? monto { get; set; }
+        public int? casos { get; set; }
+        public decimal? monto_comision { get; set; }
     }
 
     public class MaestroTesoreriaRequest
     {
         public string tipoDocumento { get; set; } = string.Empty;
-        public long banco { get; set; }
-        public decimal monto { get; set; }
+        public long banco { get; set; } = 0;
+        public decimal? monto { get; set; }
         public string codigo { get; set; } = string.Empty;
         public string beneficiario { get; set; } = string.Empty;
-        public long op { get; set; }
+        public long? op { get; set; }
         public string detalle1 { get; set; } = string.Empty;
-        public long referencia { get; set; }
+        public long? referencia { get; set; }
         public string detalle2 { get; set; } = string.Empty;
         public string cuenta { get; set; } = string.Empty;
         public DateTime? fecha { get; set; }
