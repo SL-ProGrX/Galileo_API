@@ -41,11 +41,10 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
             try
             {
-                var query = "";
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                query = @"select COUNT(COD_GRUPO) from FND_SEGURIDAD_GRUPOS";
-                response.Result.total = connection.QueryFirstOrDefault<int>(query);
+                const string queryT = @"select COUNT(COD_GRUPO) from FND_SEGURIDAD_GRUPOS";
+                response.Result.total = connection.QueryFirstOrDefault<int>(queryT);
 
                 var parameters = new DynamicParameters();
                 string whereClause = string.Empty;
@@ -70,7 +69,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
                 var sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
 
-                query = $@"select * from FND_SEGURIDAD_GRUPOS
+                string query = $@"select * from FND_SEGURIDAD_GRUPOS
                            {whereClause}
                            order by {sortField} {sortDirection}";
 
