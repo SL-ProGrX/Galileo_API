@@ -43,10 +43,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
+                filtros ??= new FiltrosLazyLoadData();
+
                 var parameters = new DynamicParameters();
 
                 string whereClause = string.Empty;
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
+                if (!string.IsNullOrWhiteSpace(filtros.filtro))
                 {
                     whereClause = " WHERE (COD_GRUPO LIKE @Filter OR DESCRIPCION LIKE @Filter) ";
                     parameters.Add("@Filter", $"%{filtros.filtro}%");
@@ -65,24 +67,26 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     "DESCRIPCION"
                 };
 
-                var sortField = filtros?.sortField;
+                var sortField = filtros.sortField;
                 if (string.IsNullOrWhiteSpace(sortField) || !allowedSortFields.Contains(sortField))
                     sortField = "COD_GRUPO";
 
-                string sortDirection = (filtros?.sortOrder == 0) ? "DESC" : "ASC";
+                string sortDirection = (filtros.sortOrder == 0) ? "DESC" : "ASC";
 
                 string query = $@"select * from FND_SEGURIDAD_GRUPOS
                     {whereClause}
                     order by {sortField} {sortDirection}";
 
+                int pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
+                int fetch = filtros.paginacion <= 0 ? 30 : filtros.paginacion;
+
+                int offset = pagina;
+                parameters.Add("@Offset", offset);
+                parameters.Add("@Fetch", fetch);
+
                 if (!Exporta)
                 {
-                    int offset = filtros.pagina < 0 ? 0 : filtros.pagina;
-                    int fetch = filtros.paginacion <= 0 ? 30 : filtros.paginacion;
-                    query += " OFFSET @Offset ROWS FETCH NEXT @FetchNext ROWS ONLY";
-                    parameters.Add("@Offset", offset);
-                    parameters.Add("@FetchNext", fetch);
-                    
+                    query += " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY";
                 }
 
                 response.Result.lista = connection.Query<FndSegNivelesGrupoDto>(query, parameters).ToList();
