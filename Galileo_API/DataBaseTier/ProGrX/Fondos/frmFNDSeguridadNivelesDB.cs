@@ -27,12 +27,11 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> Fnd_SegNiveles_Grupos_Obtener(int CodEmpresa, bool Exporta, FiltrosLazyLoadData filtros)
         {
-
             var response = new ErrorDto<TablasListaGenericaModel>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new TablasListaGenericaModel()
+                Result = new TablasListaGenericaModel
                 {
                     total = 0,
                     lista = new List<FndSegNivelesGrupoDto>()
@@ -43,17 +42,17 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                const string queryT = @"select COUNT(COD_GRUPO) from FND_SEGURIDAD_GRUPOS";
-                response.Result.total = connection.QueryFirstOrDefault<int>(queryT);
-
                 var parameters = new DynamicParameters();
-                string whereClause = string.Empty;
 
-                if (!string.IsNullOrEmpty(filtros.filtro))
+                var whereClause = string.Empty;
+                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
                 {
-                    whereClause = " WHERE ( COD_GRUPO LIKE @Filter OR DESCRIPCION LIKE @Filter ) ";
-                    parameters.Add("@Filter", "%" + filtros.filtro + "%");
+                    whereClause = " WHERE (COD_GRUPO LIKE @Filter OR DESCRIPCION LIKE @Filter) ";
+                    parameters.Add("@Filter", $"%{filtros.filtro}%");
                 }
+
+                var countQuery = $"SELECT COUNT(COD_GRUPO) FROM FND_SEGURIDAD_GRUPOS {whereClause};";
+                response.Result.total = connection.QueryFirstOrDefault<int>(countQuery, parameters);
 
                 var allowedSortFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
                 {
@@ -61,23 +60,23 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     "DESCRIPCION"
                 };
 
-                var sortField = filtros.sortField;
+                var sortField = filtros?.sortField;
                 if (string.IsNullOrWhiteSpace(sortField) || !allowedSortFields.Contains(sortField))
-                {
                     sortField = "COD_GRUPO";
-                }
 
-                string sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
+                string sortDirection = (filtros?.sortOrder == 0) ? "DESC" : "ASC";
 
-                string query = $@"select * from FND_SEGURIDAD_GRUPOS
-                           {whereClause}
-                           order by {sortField} {sortDirection}";
+                var query = $@"select * from FND_SEGURIDAD_GRUPOS
+                    {whereClause}
+                    order by {sortField} {sortDirection}";
 
                 if (!Exporta)
                 {
+                    var pageIndex = filtros?.pagina ?? 0;
+                    var pageSize = filtros?.paginacion ?? 30;
                     query += " OFFSET @Offset ROWS FETCH NEXT @FetchNext ROWS ONLY";
-                    parameters.Add("@Offset", filtros.pagina);
-                    parameters.Add("@FetchNext", filtros.paginacion);
+                    parameters.Add("@Offset", pageSize);
+                    parameters.Add("@FetchNext", pageSize);
                 }
 
                 response.Result.lista = connection.Query<FndSegNivelesGrupoDto>(query, parameters).ToList();
