@@ -18,8 +18,8 @@
         public string tipo_pago { get; set; } = string.Empty;
         public int? cod_banco { get; set; }
         public decimal? minimo { get; set; }
-        public decimal? porc_comision { get; set; }
-        public decimal? monto { get; set; }
+        public decimal porc_comision { get; set; } = 0;
+        public decimal monto { get; set; } = 0;
         public int? casos { get; set; }
         public decimal? monto_comision { get; set; }
     }
