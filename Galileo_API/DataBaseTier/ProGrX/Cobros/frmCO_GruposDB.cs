@@ -78,8 +78,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         DetalleMovimiento = $"Grupo de Cobros: {newId}",
                         Modulo = vModulo
                     });
-
-                    response.Code = newId;
                 }
                 else
                 {
