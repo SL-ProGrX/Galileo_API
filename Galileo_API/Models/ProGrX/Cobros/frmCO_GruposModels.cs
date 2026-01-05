@@ -4,7 +4,7 @@
     {
         public int id_grupo { get; set; } = 0;
         public string descripcion { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public bool activo { get; set; } = false;
         public string usuario { get; set; } = string.Empty;
     }
 
