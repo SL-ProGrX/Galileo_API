@@ -126,7 +126,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="IdGrupo"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDto CO_Grupos_Eliminar(int CodEmpresa, int IdGrupo, string Usuario)
+        public ErrorDto CO_Grupos_Eliminar(int CodEmpresa, int GrupoId, string Usuario)
         {
             var result = new ErrorDto
             {
@@ -138,11 +138,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                const string sql = @"exec spCbr_Grupos_Elimina @IdGrupo, @Usuario";
+                const string sql = @"exec spCbr_Grupos_Elimina @GrupoId, @Usuario";
 
                 var spResp = connection.QueryFirstOrDefault(sql, new
                 {
-                    IdGrupo,
+                    GrupoId,
                     Usuario = (Usuario ?? "").Trim().ToUpper()
                 });
 
@@ -160,11 +160,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         EmpresaId = CodEmpresa,
                         Usuario = (Usuario ?? "").Trim().ToUpper(),
                         Movimiento = "Elimina - WEB",
-                        DetalleMovimiento = $"Grupo de Cobros: {IdGrupo}",
+                        DetalleMovimiento = $"Grupo de Cobros: {GrupoId}",
                         Modulo = vModulo
                     });
 
-                    result.Description = $"Grupo de Cobros: {IdGrupo}, Eliminado Satisfactoriamente!";
+                    result.Description = $"Grupo de Cobros: {GrupoId}, Eliminado Satisfactoriamente!";
                 }
                 else
                 {
@@ -189,7 +189,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="Filtro"></param>
         /// <param name="Tipo"></param>
         /// <returns></returns>
-        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, string GrupoId, string Filtro, int Tipo)
+        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, int GrupoId, string Filtro, int Tipo)
         {
             var pTipo = Tipo switch
             {
@@ -224,7 +224,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="IsChecked"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, string GrupoId, int Tipo, string Codigo, bool IsChecked, string Usuario)
+        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, int GrupoId, int Tipo, string Codigo, bool IsChecked, string Usuario)
         {
             var pTipo = Tipo switch
             {
@@ -245,7 +245,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             sql,
             new
             {
-                GrupoId = (GrupoId ?? "").Trim(),
+                GrupoId,
                 Tipo = pTipo,
                 Codigo = (Codigo ?? "").Trim(),
                 Usuario = (Usuario ?? "").Trim().ToUpper(),

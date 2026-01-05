@@ -23,17 +23,17 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.CO_Grupos_Guardar(CodEmpresa, data);
         }
 
-        public ErrorDto CO_Grupos_Eliminar(int CodEmpresa, int IdGrupo, string Usuario)
+        public ErrorDto CO_Grupos_Eliminar(int CodEmpresa, int GrupoId, string Usuario)
         {
-            return _db.CO_Grupos_Eliminar(CodEmpresa, IdGrupo, Usuario);
+            return _db.CO_Grupos_Eliminar(CodEmpresa, GrupoId, Usuario);
         }
 
-        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, string GrupoId, string Filtro, int Tipo)
+        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, int GrupoId, string Filtro, int Tipo)
         {
             return _db.CO_Grupos_Asignacion_Obtener(CodEmpresa, GrupoId, Filtro, Tipo);
         }
 
-        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, string GrupoId, int Tipo, string Codigo, bool IsChecked, string Usuario)
+        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, int GrupoId, int Tipo, string Codigo, bool IsChecked, string Usuario)
         {
             return _db.CO_Grupos_Asignar(CodEmpresa, GrupoId, Tipo, Codigo, IsChecked, Usuario);
         }

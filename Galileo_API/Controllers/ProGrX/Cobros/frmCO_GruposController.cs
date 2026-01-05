@@ -33,21 +33,21 @@ namespace Galileo.Controllers.ProGrX.Fondos
 
         [Authorize]
         [HttpDelete("CO_Grupos_Eliminar")]
-        public ErrorDto CO_Grupos_Eliminar(int CodEmpresa, int IdGrupo, string Usuario)
+        public ErrorDto CO_Grupos_Eliminar(int CodEmpresa, int GrupoId, string Usuario)
         {
-            return _bl.CO_Grupos_Eliminar(CodEmpresa, IdGrupo, Usuario);
+            return _bl.CO_Grupos_Eliminar(CodEmpresa, GrupoId, Usuario);
         }
 
         [Authorize]
         [HttpGet("CO_Grupos_Asignacion_Obtener")]
-        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, string GrupoId, string Filtro, int Tipo)
+        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, int GrupoId, string Filtro, int Tipo)
         {
             return _bl.CO_Grupos_Asignacion_Obtener(CodEmpresa, GrupoId, Filtro, Tipo);
         }
 
         [Authorize]
         [HttpPost("CO_Grupos_Asignar")]
-        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, string GrupoId, int Tipo, string Codigo, bool IsChecked, string Usuario)
+        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, int GrupoId, int Tipo, string Codigo, bool IsChecked, string Usuario)
         {
             return _bl.CO_Grupos_Asignar(CodEmpresa, GrupoId, Tipo, Codigo, IsChecked, Usuario);
         }
