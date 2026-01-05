@@ -208,7 +208,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             sql,
             new
             {
-                GrupoId = GrupoId.Trim(),
+                GrupoId,
                 Tipo = pTipo,
                 Filtro = (Filtro ?? "").Trim()
             });
