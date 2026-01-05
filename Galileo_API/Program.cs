@@ -7,19 +7,28 @@ using Microsoft.OpenApi.Models;
 using Galileo_API;
 using System.Text.Json;
 using System.Globalization;
+using Galileo.DataBaseTier;
 
+// ✅ Asegúrate que este using apunte al namespace real donde está tu filtro
 var builder = WebApplication.CreateBuilder(args);
 
-// Controllers
-builder.Services.AddControllers();
+// ✅ Registrar MemoryCache (si luego cacheas permisos)
+builder.Services.AddMemoryCache();
+
+// ✅ Registrar el filtro como servicio
+builder.Services.AddScoped<EmpresaAccessFilter>();
+
+// ✅ Controllers + filtro global (NO dupliques AddControllers en otro lado)
+builder.Services.AddControllers(options =>
+{
+    options.Filters.AddService<EmpresaAccessFilter>();
+});
+
+// ✅ Authorization (esto reemplaza tu AddMvcCore().AddAuthorization())
+builder.Services.AddAuthorization();
 
 // Swagger + Bearer
 builder.Services.AddEndpointsApiExplorer();
-
-builder.Services.AddMemoryCache();
-
-builder.Services.AddMvcCore()
-    .AddAuthorization();
 
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
 
@@ -45,7 +54,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// ✅ HSTS (para que se envíe Strict-Transport-Security en HTTPS)
+// ✅ HSTS
 builder.Services.AddHsts(options =>
 {
     options.Preload = true;
@@ -53,7 +62,7 @@ builder.Services.AddHsts(options =>
     options.MaxAge = TimeSpan.FromDays(365);
 });
 
-// === JWT Auth (SIN clave en appsettings) ===
+// === JWT Auth ===
 var jwtSection = builder.Configuration.GetSection("Jwt");
 var keyString = builder.Configuration["Jwt:Secret"]; // user-secrets (dev) o env var Jwt__Secret (prod)
 if (string.IsNullOrWhiteSpace(keyString))
@@ -111,7 +120,7 @@ builder.Services
 
 string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
-// 🔒 Orígenes estáticos, creados una sola vez (preferidos por el analizador)
+// CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(name: MyAllowSpecificOrigins, policy =>
@@ -129,7 +138,7 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Establecer la cultura global
+// Cultura global
 var cultureInfo = new CultureInfo("en-US");
 cultureInfo.DateTimeFormat.ShortDatePattern = "MM/dd/yyyy";
 cultureInfo.DateTimeFormat.LongTimePattern = "HH:mm:ss";
@@ -146,70 +155,18 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
-    // ✅ HSTS solo fuera de Development
     app.UseHsts();
 }
 
+// ✅ Orden recomendado
+app.UseHttpsRedirection();
+
+app.UseRouting();
+
 app.UseCors(MyAllowSpecificOrigins);
 
-app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
-
-// ===== Endpoint protegido de prueba =====
-app.MapGet("/secure-ping", () => Results.Ok("Pong seguro ✅"))
-   .RequireAuthorization();
-
-// ===== Endpoint de login (DEMO) que emite un JWT =====
-app.MapPost("/login", (LoginRequestTest req, IConfiguration cfg) =>
-{
-    if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password))
-        return Results.BadRequest("Usuario/Password requeridos");
-
-    var jwt = cfg.GetSection("Jwt");
-
-    var claims = new[]
-    {
-        new Claim(JwtRegisteredClaimNames.Sub, req.Username),
-        new Claim(ClaimTypes.Name, req.Username),
-        new Claim(ClaimTypes.Role, "User")
-    };
-
-    var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(cfg["Jwt:Secret"]!));
-    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-    var expiresMinutes = int.TryParse(jwt["AccessTokenMinutes"], out var m) ? m : 60;
-
-    var token = new JwtSecurityToken(
-        issuer: jwt["Issuer"],
-        audience: jwt["Audience"],
-        claims: claims,
-        expires: DateTime.UtcNow.AddMinutes(expiresMinutes),
-        signingCredentials: creds
-    );
-
-    var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-    return Results.Ok(new { token = tokenString });
-})
-.WithName("Login");
-
-app.MapGet("/whoami", (ClaimsPrincipal user) =>
-{
-    var name = user.Identity?.Name;
-    var sub = user.FindFirstValue(ClaimTypes.NameIdentifier)
-              ?? user.FindFirstValue(JwtRegisteredClaimNames.Sub);
-
-    var claims = user.Claims.Select(c => new { c.Type, c.Value });
-    return Results.Ok(new
-    {
-        message = "Token válido",
-        name,
-        sub,
-        claims
-    });
-})
-.RequireAuthorization();
-
 app.MapControllers();
 
 await app.RunAsync();
@@ -224,7 +181,6 @@ namespace Galileo_API
 {
     internal static class CorsOrigins
     {
-        // Usa HashSet para O(1) y comparación OrdinalIgnoreCase
         public static readonly HashSet<string> Dev = new(StringComparer.OrdinalIgnoreCase)
         {
             "http://localhost:4200",
