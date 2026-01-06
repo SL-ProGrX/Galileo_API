@@ -34,7 +34,7 @@
     {
         public int? Linea { get; set; }
         public string? Cedula { get; set; } = string.Empty;
-        public DateTime Registro_Fecha { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
         public string? Registro_Usuario { get; set; } = string.Empty;
         public decimal? Monto_Registro { get; set; }
         public decimal? Monto { get; set; }
@@ -159,7 +159,7 @@
         public int? CodEmpresa { get; set; }
         public int? IdBanco { get; set; }
         public string? Documento { get; set; } = string.Empty;
-        public DateTime Fecha { get; set; }
+        public DateTime? Fecha { get; set; }
         public decimal Monto { get; set; }
         public string? Descripcion { get; set; } = string.Empty;
         public string? Usuario { get; set; } = string.Empty;
@@ -182,7 +182,7 @@
         public int? CodEmpresa { get; set; }
         public int? IdBanco { get; set; }
         public string? Documento { get; set; } = string.Empty;
-        public DateTime Fecha { get; set; }
+        public DateTime? Fecha { get; set; }
         public decimal Monto { get; set; }
         public string? Descripcion { get; set; } = string.Empty;
         public string? Usuario { get; set; } = string.Empty;
