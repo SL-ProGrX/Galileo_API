@@ -9,7 +9,7 @@
 
     public class CajasServicioConsultaParams
     {
-        public int CodCaja { get; set; }
+        public int? CodCaja { get; set; }
         public string? ServicioBusqueda { get; set; }
     }
 
@@ -31,8 +31,8 @@
     {
         public string? Caja { get; set; }
         public string? Usuario { get; set; }
-        public int Apertura { get; set; }
-        public int SesionId { get; set; }
+        public int? Apertura { get; set; }
+        public int? SesionId { get; set; }
         public string? CodServicio { get; set; }
         public decimal TotalCajas { get; set; }
         public string? Tiquete { get; set; }
@@ -63,13 +63,13 @@
         public decimal Porc_Comision { get; set; }
         public decimal Porc_Impuesto { get; set; }
         public decimal Comision_Minima { get; set; }
-        public int Intercambio { get; set; }
+        public int? Intercambio { get; set; }
         public string? Ef_Cta { get; set; }
         public string? Ef_Codigo { get; set; }
         public string? Cod_Unidad { get; set; }
         public string? Cod_Centro_Costo { get; set; }
         public string? Cabys { get; set; }
-        public int Genera_Factura { get; set; }
+        public int? Genera_Factura { get; set; }
         public decimal Valor_Transito_Valida { get; set; }
     }
 
@@ -93,14 +93,14 @@
         public string? Detalle { get; set; }
         public string? Documento { get; set; }
         public string? Cod_Caja { get; set; }
-        public int Cod_Apertura { get; set; }
-        public int Id_Sesion { get; set; }
+        public int? Cod_Apertura { get; set; }
+        public int? Id_Sesion { get; set; }
     }
 
     public class CajasServiciosTransacInsertParams
     {
         public string? Cod_Caja { get; set; }
-        public int Cod_Apertura { get; set; }
+        public int? Cod_Apertura { get; set; }
         public string? Cod_Recaudador { get; set; }
         public string? Cod_Servicio { get; set; }
         public string? Tipo_Documento { get; set; }
@@ -121,7 +121,7 @@
         public decimal Mnt_Bruto { get; set; }
         public string? Cod_Divisa { get; set; }
         public decimal Tipo_Cambio { get; set; }
-        public int Cod_Contabilidad { get; set; }
+        public int? Cod_Contabilidad { get; set; }
         public string? Cod_Unidad { get; set; }
         public string? Cod_Centro_Costo { get; set; }
         public string? Ef_Cta { get; set; }
@@ -140,7 +140,7 @@
     public class CajasDesglocePagosDocFinalParams
     {
         public string? Cod_Caja { get; set; }
-        public int Cod_Apertura { get; set; }
+        public int? Cod_Apertura { get; set; }
         public string? Tiquete { get; set; }
         public string? Usuario { get; set; }
         public string? Tipo_Documento { get; set; }
@@ -168,7 +168,7 @@
         public string? Cod_Recaudador { get; set; }
         public string? Cod_Servicio { get; set; }
         public string? Cod_Caja { get; set; }
-        public int Cod_Apertura { get; set; }
+        public int? Cod_Apertura { get; set; }
         public string? Usuario { get; set; }
     }
 
