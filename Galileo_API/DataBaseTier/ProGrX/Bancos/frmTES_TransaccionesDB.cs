@@ -2,14 +2,12 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.KindoSinpe;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System.Data;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
