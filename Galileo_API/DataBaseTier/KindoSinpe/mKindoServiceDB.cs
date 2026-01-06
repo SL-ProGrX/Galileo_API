@@ -2,14 +2,13 @@
 using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo.Models.KindoSinpe;
 using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.Data.SqlClient;
-using Galileo.Models.KindoSinpe;
+using System.Data;
 using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
-using System.Linq;
-using System.Data;
 
 namespace Galileo_API.DataBaseTier
 {
