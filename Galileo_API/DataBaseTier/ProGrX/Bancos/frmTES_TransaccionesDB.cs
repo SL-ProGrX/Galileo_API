@@ -769,7 +769,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     Modulo = vModulo
                 });
 
-                ErrorDto detalleError = TES_TransaccionDetalleActualizar(CodEmpresa, solicitud, (transaccion.asientoDetalle ?? new List<TesTransAsientoDto>()));
+                TES_TransaccionDetalleActualizar(CodEmpresa, solicitud, (transaccion.asientoDetalle ?? new List<TesTransAsientoDto>()));
 
                 return OkSimple(solicitud.ToString());
             }

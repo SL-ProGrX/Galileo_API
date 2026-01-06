@@ -1378,18 +1378,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 string vCedulaReg = GetParametro(CodEmpresa, "BCRFormat2");
 
                 // Calcular el Numero de Archivo (consecutivo de transferencias del día)
-                int i = 1;
+                
                 var query = @"select documento_base,count(*) From Tes_Transacciones 
                       where id_banco = @banco and fecha_emision = @fecha
                       and estado = 'T' group by documento_base";
-                var resultados = connection.QueryFirstOrDefault(query, new { banco = filtros.banco, fecha = vFecha });
-                if (resultados != null)
-                {
-                    foreach (var _ in resultados)
-                    {
-                        i++;
-                    }
-                }
+                var resultados = connection.Query(query, new { banco = filtros.banco, fecha = vFecha });
+
+                int i = 1 + resultados.Count();
+
                 string vConArchivo = i.ToString("D3");
 
                 // Cuenta bancaria (asume que tiene dígito verificador)
