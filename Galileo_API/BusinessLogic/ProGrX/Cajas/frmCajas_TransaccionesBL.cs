@@ -34,14 +34,14 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             return _db.CajasTransacciones_Documentos_Obtener(codEmpresa, codCaja);
         }
 
-        public ErrorDto<CajasTransacValidacionResult> CajasTransacciones_Validacion(
+        public ErrorDto<CajasTransacValidacionResult?> CajasTransacciones_Validacion(
             int codEmpresa,
             CajasTransacValidacionParams param)
         {
             return _db.CajasTransacciones_Validacion(codEmpresa, param);
         }
 
-        public ErrorDto<CajasServiciosDatosResult> CajasTransacciones_ServiciosDatos(int codEmpresa, CajasServiciosDatosParams param)
+        public ErrorDto<CajasServiciosDatosResult?> CajasTransacciones_ServiciosDatos(int codEmpresa, CajasServiciosDatosParams param)
         {
             return _db.CajasTransacciones_ServiciosDatos(codEmpresa, param);
         }

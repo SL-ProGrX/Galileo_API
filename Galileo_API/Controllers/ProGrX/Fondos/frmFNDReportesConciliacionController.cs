@@ -41,7 +41,7 @@ namespace Galileo_API.Controllers.ProGrX.Fondos
 
         [Authorize]
         [HttpGet("ReportesConciliacion_PeriodoHistoricoDetalle_Obtener")]
-        public ErrorDto<FndPerHistoricoDetalleModel> ReportesConciliacion_PeriodoHistoricoDetalle_Obtener(int codEmpresa, string idPerHistorico)
+        public ErrorDto<FndPerHistoricoDetalleModel?> ReportesConciliacion_PeriodoHistoricoDetalle_Obtener(int codEmpresa, string idPerHistorico)
         {
             return _bl.ReportesConciliacion_PeriodoHistoricoDetalle_Obtener(codEmpresa, idPerHistorico);
         }

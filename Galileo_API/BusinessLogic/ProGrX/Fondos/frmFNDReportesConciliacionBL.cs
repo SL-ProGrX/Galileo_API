@@ -29,7 +29,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Fondos
             return _db.ReportesConciliacion_PeriodosHistorico_Obtener(codEmpresa);
         }
 
-        public ErrorDto<FndPerHistoricoDetalleModel> ReportesConciliacion_PeriodoHistoricoDetalle_Obtener(int codEmpresa, string idPerHistorico)
+        public ErrorDto<FndPerHistoricoDetalleModel?> ReportesConciliacion_PeriodoHistoricoDetalle_Obtener(int codEmpresa, string idPerHistorico)
         {
             return _db.ReportesConciliacion_PeriodoHistoricoDetalle_Obtener(codEmpresa, idPerHistorico);
         }
