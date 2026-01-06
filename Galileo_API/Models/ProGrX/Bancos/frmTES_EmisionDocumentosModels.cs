@@ -58,36 +58,31 @@ namespace Galileo.Models.TES
         public string lugar_Emision { get; set; } = string.Empty;
     }
 
-    public class TesEmisionDocumentosResponse
-    {
-        public TesEmisionDocFiltros? filtro { get; set; }
-        public SqlConnection? connection { get; set; }
-        public TesBancoDocsData? bancoDocs { get; set; }
-        public TesBancoData? bancoData { get; set; }
-        public string? queryTransac { get; set; }
-        public string? baseQuery { get; set; }
-        public object? parametros { get; set; }
 
-        public int vFirmas { get; set; }
+    internal sealed class EmisionClasificacionRequest
+    {
+        public int CodEmpresa { get; init; }
+        public TesEmisionDocFiltros Filtro { get; init; } = default!;
+        public TesBancoDocsData BancoDocs { get; init; } = default!;
+        public TesBancoData BancoData { get; init; } = default!;
+        public int UsaFirmas { get; init; } // vFirmas
+        public TesArchivosEspecialesData ChequesReport { get; init; } = default!;
+        public FrmReporteGlobal ReporteData { get; init; } = default!;
     }
 
-    public class ClasificarYGenerarBoletaSiAplicaResponse
+    internal sealed class EmisionClasificacionState
     {
-        public int? codEmpresa { get; set; }
-        public TesEmisionDocFiltros? filtro { get; set; }
-        public TesBancoDocsData? bancoDocs { get; set; }
-        public TesBancoData? bancoData { get; set; }
-        public int vFirmas { get; set; }
-        public TesArchivosEspecialesData? chequesReport { get; set; }
-        public TesTransaccionDto? item { get; set; }
-        public FrmReporteGlobal? reporteData { get; set; }
-        public string? reporteCkConFirmas { get; set; }
-        public string? reporteCkSinFirmas { get; set; }
-        public List<TesTransaccionDto>? listaConFirmas { get; set; }
-        public List<TesTransaccionDto>? listaSinFirmas { get; set; }
-        public List<TesTransaccionDto>? listaBoleta { get; set; }
-        public List<byte[]>? pdfsBoleta { get; set; }
-        public FileContentResult? fileResultBoleta { get; set; }
+        public string ReporteCkConFirmas { get; set; } = string.Empty;
+        public string ReporteCkSinFirmas { get; set; } = string.Empty;
+
+        public List<TesTransaccionDto> ListaConFirmas { get; } = new();
+        public List<TesTransaccionDto> ListaSinFirmas { get; } = new();
+
+        public List<TesTransaccionDto> ListaBoleta { get; } = new();
+        public List<byte[]> PdfsBoleta { get; } = new();
+
+        // Si tu flujo necesita conservar “el último file result”
+        public FileContentResult? FileResultBoleta { get; set; }
     }
 
 }
