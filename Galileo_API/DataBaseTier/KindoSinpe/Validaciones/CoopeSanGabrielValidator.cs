@@ -285,7 +285,7 @@ namespace Galileo_API.DataBaseTier
                             Result = new RespuestaRegistro
                             {
                                 MotivoError = 0,
-                                CodigoReferencia = response.PINSendingResult.SINPEReference
+                                CodigoReferencia = response.PINSendingResult!.SINPEReference
                             }
                         };
                     }
@@ -311,9 +311,9 @@ namespace Galileo_API.DataBaseTier
                         Description = "Error al enviar PIN",
                         Result = new RespuestaRegistro
                         {
-                            MotivoError = response.Errors[0].Code,
+                            MotivoError = response.Errors![0].Code,
                             CodigoReferencia = "",
-                            MotivoErrorInterno = response.Errors[0].Message
+                            MotivoErrorInterno = response.Errors![0].Message
                         }
                     };
                 }
