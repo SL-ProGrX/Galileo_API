@@ -8,7 +8,7 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
+    //[Authorize]
     public class PerfilUsuarioController : ControllerBase
     {
         private readonly IConfiguration _config;
