@@ -160,7 +160,7 @@
         public int? IdBanco { get; set; }
         public string? Documento { get; set; } = string.Empty;
         public DateTime? Fecha { get; set; }
-        public decimal Monto { get; set; }
+        public decimal? Monto { get; set; }
         public string? Descripcion { get; set; } = string.Empty;
         public string? Usuario { get; set; } = string.Empty;
         public int? IdRequerida { get; set; }
@@ -183,7 +183,7 @@
         public int? IdBanco { get; set; }
         public string? Documento { get; set; } = string.Empty;
         public DateTime? Fecha { get; set; }
-        public decimal Monto { get; set; }
+        public decimal? Monto { get; set; }
         public string? Descripcion { get; set; } = string.Empty;
         public string? Usuario { get; set; } = string.Empty;
         public string? Inconsistencia { get; set; } = string.Empty;
