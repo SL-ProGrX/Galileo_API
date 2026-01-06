@@ -6,18 +6,13 @@ using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 {
-    public class FrmTesTransaccionesBL
+    public class FrmTesTransaccionesBL(IConfiguration config)
     {
-        private readonly FrmTesTransaccionesDb _db;
-
-        public FrmTesTransaccionesBL(IConfiguration config)
-        {
-            _db = new FrmTesTransaccionesDb(config);
-        }
+        private readonly FrmTesTransaccionesDb _db = new(config);
 
         public ErrorDto<TablasListaGenericaModel> TES_Solicitudes_Obtener(int CodEmpresa, int contabilidad, string filtro)
         {
-            FiltrosLazyLoadData jfiltro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtro);
+            FiltrosLazyLoadData? jfiltro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtro) ?? new FiltrosLazyLoadData();
             return _db.TES_Solicitudes_Obtener(CodEmpresa, contabilidad, jfiltro);
         }
 
@@ -63,7 +58,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 
         public ErrorDto<List<TesTransAsientoDto>> TES_TransaccionAsiento_Obtener(string vSolicitud)
         {
-            TesConsultaAsientos solicitud = JsonConvert.DeserializeObject<TesConsultaAsientos>(vSolicitud);
+            TesConsultaAsientos solicitud = JsonConvert.DeserializeObject<TesConsultaAsientos>(vSolicitud) ?? new TesConsultaAsientos();
             return _db.TES_TransaccionAsiento_Obtener(solicitud);
         }
 
@@ -89,7 +84,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 
         public ErrorDto<int> TES_TransaccionDocumento_Scroll(int CodEmpresa, int scrollCode, string parametros)
         {
-            TesSolicitudDocParametro parametro = JsonConvert.DeserializeObject<TesSolicitudDocParametro>(parametros);
+            TesSolicitudDocParametro parametro = JsonConvert.DeserializeObject<TesSolicitudDocParametro>(parametros) ?? new TesSolicitudDocParametro();
             return _db.TES_TransaccionDocumento_Scroll(CodEmpresa, scrollCode, parametro);
         }
 
@@ -174,9 +169,9 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
             return FrmTesTransaccionesDb.NumeroALetras(numero);
         }
 
-        public ErrorDto<string> fxTesBancoDocsValor(int CodEmpresa, int banco, string tipo)
+        public ErrorDto<string> FxTesBancoDocsValor(int CodEmpresa, int banco, string tipo)
         {
-            return _db.fxTesBancoDocsValor(CodEmpresa, banco, tipo);
+            return _db.FxTesBancoDocsValor(CodEmpresa, banco, tipo);
         }
 
         public ErrorDto<List<TesCuentasBancarias>> TES_TransaccionesCuentasBancarias_Obtener(int CodEmpresa, string identificacion, string banco)
@@ -186,7 +181,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 
         public ErrorDto<CtnxCuentasDto> ObtenerCuentas(int CodEmpresa, string jCuenta)
         {
-            CuentaVarModel cuenta = JsonConvert.DeserializeObject<CuentaVarModel>(jCuenta);
+            CuentaVarModel cuenta = JsonConvert.DeserializeObject<CuentaVarModel>(jCuenta) ?? new CuentaVarModel();
             return _db.ObtenerCuentas(CodEmpresa, cuenta);
         }
 

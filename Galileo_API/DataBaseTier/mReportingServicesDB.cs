@@ -341,10 +341,10 @@ namespace Galileo.DataBaseTier
             }
         }
 
-        private static async Task<string> ReplaceQueryParameters(string? query, JObject? jObject)
+        private static Task<string> ReplaceQueryParameters(string? query, JObject? jObject)
         {
             if (jObject == null || string.IsNullOrEmpty(query))
-                return query ?? string.Empty;
+                return Task.FromResult(query ?? string.Empty);
 
             var result = query;
             foreach (var prop in jObject.Properties())
@@ -354,7 +354,7 @@ namespace Galileo.DataBaseTier
                 result = result.Replace($"@{nombre}", string.IsNullOrWhiteSpace(valor) ? "NULL" : $"'{valor}'", StringComparison.Ordinal);
             }
 
-            return result;
+            return Task.FromResult(result);
         }
     }
 }

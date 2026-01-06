@@ -171,12 +171,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 }
 
                 return trx;
-            });
+            }) ;
         }
 
         #endregion
 
-        #region Asientos
+            #region Asientos
 
         public ErrorDto<List<TesTransAsientoDto>> TES_TransaccionAsiento_Obtener(TesConsultaAsientos vSolicitud)
         {
@@ -1092,7 +1092,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     var whereFiltro = string.IsNullOrWhiteSpace(f.filtro)
                         ? " where estado='A'"
-                        : BuildWhereLike(f, "ID_BANCO", descripcion) + " AND estado='A'";
+                        : BuildWhereLike(f, "ID_BANCO",  descripcion) + " AND estado='A'";
 
                     var (orderBy, dir) = BuildOrderBy(f, whitelist);
 
@@ -1715,7 +1715,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         #region Docs valor / cuentas bancarias / cuentas contables
 
-        public ErrorDto<string> fxTesBancoDocsValor(int CodEmpresa, int banco, string tipo)
+        public ErrorDto<string> FxTesBancoDocsValor(int CodEmpresa, int banco, string tipo)
         {
             return WithConn(CodEmpresa, conn =>
             {
