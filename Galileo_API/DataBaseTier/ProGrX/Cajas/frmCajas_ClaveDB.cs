@@ -2,10 +2,10 @@ using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
-using PgxAPI.Models.ProGrX.Cajas;
 using System.Text;
+using Galileo_API.Models.ProGrX.Cajas;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 {
     public class FrmCajasClaveDb
     {

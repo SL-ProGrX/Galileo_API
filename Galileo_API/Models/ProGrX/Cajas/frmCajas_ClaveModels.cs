@@ -1,13 +1,11 @@
-﻿using static Galileo.Models.ProGrX.Cajas.CajasDesglocePagoRequest;
-
-namespace PgxAPI.Models.ProGrX.Cajas
+﻿namespace Galileo_API.Models.ProGrX.Cajas
 {
 
     public class CajasUsuarioDto
     {
-        public string codigo { get; set; }
-        public string descripcion { get; set; }
-        public int periodicidad_contrasena { get; set; }
+        public string Codigo { get; set; }
+        public string Descripcion { get; set; }
+        public int Periodicidad_Contrasena { get; set; }
     }
 
 

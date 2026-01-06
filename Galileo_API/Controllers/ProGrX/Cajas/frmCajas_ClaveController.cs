@@ -2,8 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Galileo_API.BusinessLogic.ProGrX.Cajas;
 using Galileo.Models.ERROR;
-
-using PgxAPI.Models.ProGrX.Cajas;
+using Galileo_API.Models.ProGrX.Cajas;
 
 namespace Galileo_API.Controllers.ProGrX.Cajas
 {

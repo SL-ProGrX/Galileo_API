@@ -9,17 +9,10 @@ using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 {
-    public class FrmCajasReporteCierresDb
+    public class FrmCajasReporteCierresDb(IConfiguration config)
     {
-        private readonly IConfiguration _config;
+        private readonly IConfiguration _config = config;
         private const string OperacionRealizadaCorrectamente = "Operación realizada correctamente";
-
-        public FrmCajasReporteCierresDb(IConfiguration config)
-        {
-            _config = config;
-        }
-
-        // ================= HELPERS =================
 
         private SqlConnection ObtenerConexion(int codEmpresa)
         {
@@ -28,7 +21,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return new SqlConnection(connString);
         }
 
-        private ErrorDto<T> CrearRespuesta<T>(T defaultValue = default)
+        private static ErrorDto<T> CrearRespuesta<T>(T defaultValue = default)
         {
             return new ErrorDto<T>
             {
@@ -38,7 +31,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             };
         }
 
-        private ErrorDto<T> ErrorRespuesta<T>(T defaultValue, Exception ex)
+        private static ErrorDto<T> ErrorRespuesta<T>(T defaultValue, Exception ex)
         {
             return new ErrorDto<T>
             {
@@ -93,14 +86,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 sql.Append(" ORDER BY Cod_Apertura DESC");
 
-                response.Result = cn.Query<CajasAperturaReporteDto>(
+                response.Result = [.. cn.Query<CajasAperturaReporteDto>(
                     sql.ToString(),
                     new
                     {
                         codCaja,
                         fechaInicio,
                         fechaCorte
-                    }).ToList();
+                    })];
             }
             catch (Exception ex)
             {
@@ -137,14 +130,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                       AND FechaIngreso BETWEEN @fechaInicio AND @fechaCorte
                     ORDER BY FechaIngreso DESC";
 
-                response.Result = cn.Query<CajasAccesoDto>(
+                response.Result = [.. cn.Query<CajasAccesoDto>(
                     sql,
                     new
                     {
                         codCaja,
                         fechaInicio,
                         fechaCorte
-                    }).ToList();
+                    })];
             }
             catch (Exception ex)
             {
@@ -168,7 +161,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 using var cn = ObtenerConexion(codEmpresa);
 
-                response.Result = cn.Query<CajasDepositoDto>(
+                response.Result = [.. cn.Query<CajasDepositoDto>(
                     "spCajas_CierreDepositoDivisa",
                     new
                     {
@@ -177,7 +170,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                         Divisa = "COL"
                     },
                     commandType: CommandType.StoredProcedure
-                ).ToList();
+                )];
             }
             catch (Exception ex)
             {
@@ -328,7 +321,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     FROM CAJAS_DEFINICION
                     ORDER BY COD_CAJA";
 
-                response.Result = cn.Query<DropDownListaGenericaModel>(sql).ToList();
+                response.Result = [.. cn.Query<DropDownListaGenericaModel>(sql)];
             }
             catch (Exception ex)
             {
