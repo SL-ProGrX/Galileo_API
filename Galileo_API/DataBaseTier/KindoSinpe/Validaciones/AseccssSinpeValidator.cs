@@ -1580,17 +1580,20 @@ namespace Galileo_API.DataBaseTier
                             commandType: System.Data.CommandType.StoredProcedure
                         ).ToList();
 
-                if (response.Result != null)
-                {
-                    foreach (var item in response.Result)
-                    {
-                        if (!string.Equals(item.PrecioUnitario!.ToString(), "0", StringComparison.Ordinal))
-                        {
-                            item.Descuentos = ObtieneDescuentos(CodEmpresa, pNumComprobante, pTipoDocumento).Result;
+                if (response.Result == null)
+                    return new ErrorDto<List<Galileo.Models.KindoSinpe.FE_Detalles>>();
 
-                            item.Impuestos = ObtieneImpuestos(CodEmpresa, pNumComprobante, pTipoDocumento, pTipoTramite, item.NumeroLinea).Result;
-                        }
-                    }
+                foreach (var item in response.Result
+                    .Where(x => !string.Equals(x.PrecioUnitario!.ToString(), "0", StringComparison.Ordinal)))
+                {
+                    item.Descuentos = ObtieneDescuentos(CodEmpresa, pNumComprobante, pTipoDocumento).Result;
+                    item.Impuestos = ObtieneImpuestos(
+                        CodEmpresa,
+                        pNumComprobante,
+                        pTipoDocumento,
+                        pTipoTramite,
+                        item.NumeroLinea
+                    ).Result;
                 }
             }
             catch (Exception ex)
