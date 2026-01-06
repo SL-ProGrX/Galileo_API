@@ -33,7 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
  
         public FrmTesTransaccionesDb(IConfiguration config)
         {
-            _config = config;
+            _config = config ?? throw new ArgumentNullException(nameof(config)); 
             mTesoreria = new MTesoreria(config);
             _AuxiliarDB = new MProGrXAuxiliarDB(config);
             _Security_MainDB = new MSecurityMainDb(config);
@@ -45,7 +45,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private SqlConnection OpenConnection(int codEmpresa)
         {
-            var cs = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+            var cs = new PortalDB(_config!).ObtenerDbConnStringEmpresa(codEmpresa);
             return new SqlConnection(cs);
         }
 
@@ -157,18 +157,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return WithConn(CodEmpresa, conn =>
             {
                 var query = @"exec spTes_Transaccion_Consulta @Solicitud";
-                var trx = conn.Query<TesTransaccionDto>(query, new { Solicitud = tesoreria }).FirstOrDefault();
+                var trx = conn.Query<TesTransaccionDto>(query, new { Solicitud = tesoreria }).FirstOrDefault() ?? new TesTransaccionDto();
 
-                if (trx != null)
-                {
-                    trx.detalle = string.Join(" ",
+                trx.detalle = string.Join(" ",
                         trx.detalle1 ?? "",
                         trx.detalle2 ?? "",
                         trx.detalle3 ?? "",
                         trx.detalle4 ?? "",
                         trx.detalle5 ?? ""
                     ).Replace("null", "").Trim();
-                }
 
                 return trx;
             });
@@ -176,7 +173,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         #endregion
 
-        #region Asientos
+            #region Asientos
 
         public ErrorDto<List<TesTransAsientoDto>> TES_TransaccionAsiento_Obtener(TesConsultaAsientos vSolicitud)
         {
@@ -305,7 +302,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             foreach (var item in asientos)
             {
-                item.cod_unidad = vSolicitud.cod_unidad;
+                item.cod_unidad = (vSolicitud.cod_unidad ?? string.Empty);
                 item.tipo_cambio = item.cod_divisa == "DOL" ? tipoCambio : 1m;
                 item.monto = item.monto * tipoCambio;
             }
@@ -315,7 +312,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             if (asientos == null || asientos.Count == 0) return;
 
-            bool esAsientoA = mTesoreria.fxTesTiposDocAsiento(vSolicitud.CodEmpresa, vSolicitud.tipo) == "A";
+            bool esAsientoA = mTesoreria.fxTesTiposDocAsiento(vSolicitud.CodEmpresa, (vSolicitud.tipo ?? string.Empty)) == "A";
 
             asientos[0].debehaber = esAsientoA ? "H" : "D";
             for (int i = 1; i < asientos.Count; i++)
@@ -377,7 +374,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         public ErrorDto<TablasListaGenericaModel> TES_Solicitudes_Obtener(int CodEmpresa, int contabilidad, FiltrosLazyLoadData filtro)
         {
-            string search = filtro.filtro?.Trim();
+            string? search = filtro.filtro?.Trim();
             string sortField = string.IsNullOrWhiteSpace(filtro.sortField) ? nSolicitud : filtro.sortField;
             int sortOrder = (filtro.sortOrder == 0) ? 1 : filtro.sortOrder;
             int pagina = filtro.pagina;
@@ -406,7 +403,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 };
 
                 // Si el campo no está en el mapa, usamos una por defecto (segura)
-                if (!sortMap.TryGetValue(sortField, out string safeSortField))
+                if (!sortMap.TryGetValue(sortField, out string? safeSortField))
                     safeSortField = nSolicitud;
 
                 // La dirección sólo la derivamos de un entero, no del usuario directamente
@@ -520,9 +517,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 return TES_TransaccionDoc_Obtener(
                     CodEmpresa,
-                    documento,
+                    (documento ?? string.Empty),
                     parametros.id_banco,
-                    parametros.tipo,
+                    (parametros.tipo ?? string.Empty),
                     parametros.contabilidad
                 );
             }
@@ -583,7 +580,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 var valida = fxValida(CodEmpresa, usuario, transaccion);
                 if (valida.Code == -1)
-                    return ErrorSimple(valida.Description, -1);
+                    return ErrorSimple((valida.Description ?? string.Empty), -1);
 
                 AjustarTipoCedOrigen(transaccion);
                 ProcesarRegAutorizacion(CodEmpresa, usuario, transaccion);
@@ -621,19 +618,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 CodEmpresa = CodEmpresa,
                 solicitud = t.nsolicitud,
                 contabilidad = contabilidad,
-                tipoCambio = float.Parse(t.tipo_cambio.ToString()),
-                divisa = t.cod_divisa,
-                estado = t.estado,
-                monto = t.monto.Value,
-                id_banco = (int)t.id_banco,
-                cod_unidad = t.cod_unidad,
-                cod_concepto = t.cod_concepto,
-                tipo = t.tipo
+                tipoCambio = float.Parse(t.tipo_cambio?.ToString() ?? "1"),
+                divisa = (t.cod_divisa ?? string.Empty),
+                estado = (t.estado ?? string.Empty),
+                monto = (t.monto ?? 0),
+                id_banco = (t.id_banco ?? 0),
+                cod_unidad = (t.cod_unidad ?? string.Empty),
+                cod_concepto = (t.cod_concepto ?? string.Empty),
+                tipo = (t.tipo ?? string.Empty)
             };
 
         private static void PrepararDetalleEnPartes(TesTransaccionDto t)
         {
-            string[] partes = DividirEnCincoPartes(t.detalle);
+            string[] partes = DividirEnCincoPartes((t.detalle ?? string.Empty));
 
             t.detalle1 = partes[0];
             t.detalle2 = partes[1];
@@ -652,7 +649,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private void ProcesarRegAutorizacion(int CodEmpresa, string usuario, TesTransaccionDto t)
         {
-            var banco = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (int)t.id_banco, t.tipo, "REG_AUTORIZACION");
+            var banco = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (t.id_banco ?? 0), (t.tipo ?? string.Empty), "REG_AUTORIZACION");
             if (banco.Code == -1) return;
 
             t.entregado = "N";
@@ -681,7 +678,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private ErrorDto EmitirSiAplica(int CodEmpresa, string usuario, TesTransaccionDto t, ErrorDto res)
         {
-            var emitir = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (int)t.id_banco, t.tipo, "REG_EMISION").Result;
+            var emitir = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (t.id_banco ?? 0), (t.tipo ?? string.Empty), "REG_EMISION").Result;
             if (emitir != "0") return res;
 
             if (t.nsolicitud == 0)
@@ -701,8 +698,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-                string fechaAutoriza = MProGrXAuxiliarDB.validaFechaGlobal(transaccion.fecha_autorizacion, "yyyy-MM-dd HH:mm:ss"); 
-                if (transaccion.user_autoriza == null) fechaAutoriza = null;
+                string fechaAutoriza = MProGrXAuxiliarDB.validaFechaGlobal(transaccion.fecha_autorizacion, "yyyy-MM-dd HH:mm:ss") ?? string.Empty; 
+                if (transaccion.user_autoriza == null) fechaAutoriza = string.Empty;
 
                 using var connection = OpenConnection(CodEmpresa);
 
@@ -723,8 +720,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         @correo_notifica, @tipo_ced_origen, @cta_iban_origen, @cedula_origen, @tipo_ced_destino
                     );";
 
-                string vReferencia = (transaccion.referencia != null) ? transaccion.referencia.ToString() : "NULL";
-                string vOp = (transaccion.op != null) ? transaccion.op.ToString() : "NULL";
+                string? vReferencia = (transaccion.referencia != null) ? transaccion.referencia.ToString() : "NULL";
+                string? vOp = (transaccion.op != null) ? transaccion.op.ToString() : "NULL";
 
                 var solicitud = connection.QuerySingle<int>(query, new
                 {
@@ -772,7 +769,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     Modulo = vModulo
                 });
 
-                TES_TransaccionDetalleActualizar(CodEmpresa, solicitud, transaccion.asientoDetalle);
+                TES_TransaccionDetalleActualizar(CodEmpresa, solicitud, (transaccion.asientoDetalle ?? new List<TesTransAsientoDto>()));
 
                 return OkSimple(solicitud.ToString());
             }
@@ -859,7 +856,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     Modulo = vModulo
                 });
 
-                TES_TransaccionDetalleActualizar(CodEmpresa, transaccion.nsolicitud, transaccion.asientoDetalle);
+                TES_TransaccionDetalleActualizar(CodEmpresa, transaccion.nsolicitud, (transaccion.asientoDetalle ?? new List<TesTransAsientoDto>()));
 
                 return OkSimple(transaccion.nsolicitud.ToString());
             }
@@ -971,7 +968,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtro);
             try
             {
-                NormalizarFiltros(filtros);
+                NormalizarFiltros((filtros ?? new FiltrosLazyLoadData()));
 
                 using var connection = OpenConnection(CodEmpresa);
 
@@ -979,9 +976,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 if (spec == null)
                     return OkBeneficiarios(new TablasListaGenericaModel());
 
-                int total = connection.Query<int>(spec.CountSql, spec.CountParams(filtros)).FirstOrDefault();
+                int total = connection.Query<int>(spec.CountSql, spec.CountParams((filtros ?? new FiltrosLazyLoadData()))).FirstOrDefault();
 
-                var (sqlLista, parametrosLista) = spec.BuildListSql(filtros);
+                var (sqlLista, parametrosLista) = spec.BuildListSql((filtros ?? new FiltrosLazyLoadData()));
                 var lista = connection.Query<object>(sqlLista, parametrosLista).ToList();
 
                 return OkBeneficiarios(new TablasListaGenericaModel
@@ -1042,7 +1039,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             FiltrosLazyLoadData f,
             IReadOnlyDictionary<string, string> whitelist)
         {
-            if (!whitelist.TryGetValue(f.sortField, out var safeField))
+            if (!whitelist.TryGetValue((f.sortField ?? string.Empty), out var safeField))
                 safeField = whitelist["item"];
 
             var dir = (f.sortOrder == 0 ? "DESC" : "ASC");
@@ -1092,7 +1089,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     var whereFiltro = string.IsNullOrWhiteSpace(f.filtro)
                         ? " where estado='A'"
-                        : BuildWhereLike(f, "ID_BANCO", descripcion) + " AND estado='A'";
+                        : BuildWhereLike(f, "ID_BANCO",  descripcion) + " AND estado='A'";
 
                     var (orderBy, dir) = BuildOrderBy(f, whitelist);
 
@@ -1308,7 +1305,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     cod_divisa = codDivisa
                 });
 
-                return Ok(new TesDivisaAsiento { cod_divisa = codDivisa, tipo_cambio = tc });
+                return Ok(new TesDivisaAsiento { cod_divisa = (codDivisa ?? string.Empty), tipo_cambio = tc });
             }
             catch (Exception ex)
             {
@@ -1520,7 +1517,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             try
             {
                 var errores = new List<string>();
-                var stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+                var stringConn = new PortalDB(_config!).ObtenerDbConnStringEmpresa(CodEmpresa);
 
                 ValidarUsuarioDestino(CodEmpresa, usuario, transaccion, stringConn, errores);
                 ValidarCamposBasicos(CodEmpresa, usuario, transaccion, errores);
@@ -1578,7 +1575,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (t.tipo_ced_origen is null)
                 errores.Add(" - Tipo Beneficiario no es válido ...\n");
 
-            if (mTesoreria.fxTesCuentaObligatoriaVerifica(CodEmpresa, (int)t.id_banco).Result &&
+            if (mTesoreria.fxTesCuentaObligatoriaVerifica(CodEmpresa, (t.id_banco ?? 0)).Result &&
                 string.IsNullOrWhiteSpace(t.cta_ahorros))
             {
                 errores.Add(" - La cuenta destino es requerida para este banco...\n");
@@ -1596,25 +1593,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private void ValidarAutorizaciones(int CodEmpresa, string usuario, TesTransaccionDto t, List<string> errores)
         {
-            if (!mTesoreria.fxTesBancoValida(CodEmpresa, (int)t.id_banco, usuario).Result)
+            if (!mTesoreria.fxTesBancoValida(CodEmpresa, (t.id_banco ?? 0), usuario).Result)
                 errores.Add("- El Usuario Actual no esta Autorizado a utilizar este Banco...\n");
 
-            if (!mTesoreria.fxTesTipoAccesoValida(CodEmpresa, t.id_banco.ToString(), usuario, t.tipo, "S").Result)
+            if (!mTesoreria.fxTesTipoAccesoValida(CodEmpresa, (t.id_banco.ToString() ?? "0"), usuario, (t.tipo ?? string.Empty), "S").Result)
                 errores.Add("- El Usuario Actual no esta Autorizado a utilizar este Tipo de Transacción...\n");
 
-            if (!mTesoreria.fxTesConceptoValida(CodEmpresa, (int)t.id_banco, usuario, t.cod_concepto).Result)
+            if (!mTesoreria.fxTesConceptoValida(CodEmpresa, (t.id_banco ?? 0), usuario, (t.cod_concepto ?? string.Empty)).Result)
                 errores.Add(" - El Usuario Actual no esta Autorizado a utilizar este Concepto...\n");
 
-            if (!mTesoreria.fxTesUnidadValida(CodEmpresa, (int)t.id_banco, usuario, t.cod_unidad).Result)
+            if (!mTesoreria.fxTesUnidadValida(CodEmpresa, (t.id_banco ?? 0), usuario, (t.cod_unidad ?? string.Empty)).Result)
                 errores.Add("- El Usuario Actual no esta Autorizado a utilizar esta unidad...\n");
         }
 
         private void ValidarDocumentoSiAplica(int CodEmpresa, TesTransaccionDto t, List<string> errores)
         {
-            bool regEmision = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (int)t.id_banco, t.tipo, "REG_EMISION").Result == "0";
+            bool regEmision = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (t.id_banco ?? 0), (t.tipo ?? string.Empty), "REG_EMISION").Result == "0";
             if (!regEmision) return;
 
-            bool docAuto = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (int)t.id_banco, t.tipo, "DOC_AUTO").Result == "0";
+            bool docAuto = mTesoreria.fxTesBancoDocsValor(CodEmpresa, (t.id_banco ?? 0), (t.tipo ?? string.Empty), "DOC_AUTO").Result == "0";
             if (!docAuto) return;
 
             var vDocumento = t.ndocumento ?? "";
@@ -1625,7 +1622,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 return;
             }
 
-            if (!mTesoreria.fxTesDocumentoVerifica(CodEmpresa, (int)t.id_banco, t.tipo, t.ndocumento).Result)
+            if (!mTesoreria.fxTesDocumentoVerifica(CodEmpresa, (t.id_banco ?? 0), (t.tipo ?? string.Empty), (t.ndocumento ?? string.Empty)).Result)
                 errores.Add(" - Esta Solicitud se AutoEmite / El #Documento para su Emisión ya se encuentra registrado...\n");
         }
 
@@ -1656,7 +1653,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (curMonto != 0)
                 errores.Add(" - El Asiento Contable debe estar Balanceado ...\n");
 
-            decimal esperado = (decimal)(t.monto * t.tipo_cambio);
+            decimal esperado = (t.monto ?? 0m) * (t.tipo_cambio ?? 0m);
 
             if (t.asientoDetalle[0].monto != esperado)
                 errores.Add(" -El Monto Linea 1 del Asiento no corresponde al original...\n");
@@ -1672,7 +1669,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             short inicializa = 0;
             const string gEnlace = "1";
 
-            foreach (var item in t.asientoDetalle)
+            foreach (TesTransAsientoDto item in t.asientoDetalle ?? Enumerable.Empty<TesTransAsientoDto>())
             {
                 decimal pDebito = item.debehaber == "D" ? item.monto : 0;
                 decimal pCredito = item.debehaber == "H" ? item.monto : 0;
@@ -1715,12 +1712,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         #region Docs valor / cuentas bancarias / cuentas contables
 
-        public ErrorDto<string> fxTesBancoDocsValor(int CodEmpresa, int banco, string tipo)
+        public ErrorDto<string> FxTesBancoDocsValor(int CodEmpresa, int banco, string tipo)
         {
             return WithConn(CodEmpresa, conn =>
             {
                 var query = @"select dbo.fxTes_DocumentoAutoEmite(@banco,@tipo) as AutoEmite";
-                return conn.QueryFirstOrDefault<string>(query, new { banco, tipo });
+                return conn.QueryFirstOrDefault<string>(query, new { banco, tipo }) ?? string.Empty;
             });
         }
 
@@ -1835,7 +1832,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     banco = id_banco,
                     empresa = CodEmpresa
-                });
+                }) ?? new TesCuentasBancarias();
             });
         }
 

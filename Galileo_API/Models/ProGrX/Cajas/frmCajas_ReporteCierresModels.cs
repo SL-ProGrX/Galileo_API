@@ -3,44 +3,44 @@
 
     public class CajasAperturaReporteDto
     {
-        public int cod_apertura { get; set; }
+        public int CodApertura { get; set; }
 
-        public DateTime apertura_fecha { get; set; }
-        public string apertura_usuario { get; set; }
+        public DateTime Apertura_fecha { get; set; }
+        public string? Apertura_Usuario { get; set; }
 
-        public string estado { get; set; }
+        public string? Estado { get; set; }
 
-        public DateTime? cierre_fecha { get; set; }
-        public string? cierre_usuario { get; set; }
+        public DateTime? Cierre_Fecha { get; set; }
+        public string? Cierre_Usuario { get; set; }
 
-        public DateTime? recibe_fecha { get; set; }
-        public string? recibe_usuario { get; set; }
+        public DateTime? Recibe_Fecha { get; set; }
+        public string? Recibe_Usuario { get; set; }
 
-        public DateTime? revisa_fecha { get; set; }
-        public string? revisa_usuario { get; set; }
+        public DateTime? Revisa_Fecha { get; set; }
+        public string? Revisa_Usuario { get; set; }
     }
 
     public class CajasAccesoDto
     {
-        public DateTime fecha { get; set; }
+        public DateTime Fecha { get; set; }
 
-        public string caja { get; set; }
-        public int apertura { get; set; }
+        public string? Caja { get; set; }
+        public int Apertura { get; set; }
 
-        public string usuario { get; set; }
-        public string version { get; set; }
+        public string? Usuario { get; set; }
+        public string? Version { get; set; }
     }
 
     public class CajasDepositoDto
     {
-        public string dp_numero { get; set; }
+        public string? Dp_Numero { get; set; }
 
-        public decimal monto { get; set; }
+        public decimal Monto { get; set; }
 
-        public string estado { get; set; }
+        public string? Estado { get; set; }
 
-        public string dp_cuenta { get; set; }
-        public string bancodesc { get; set; }
+        public string? Dp_Cuenta { get; set; }
+        public string? BancoDesc { get; set; }
     }
 
 

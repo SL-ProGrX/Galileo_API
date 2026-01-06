@@ -1,7 +1,5 @@
-﻿using Newtonsoft.Json;
-using Galileo.Models.ERROR;
-using Galileo.Models.KindoSinpe;
-using System.Net.Http;
+﻿using Galileo.Models.KindoSinpe;
+using Newtonsoft.Json;
 using System.Text;
 
 namespace Galileo_API.DataBaseTier
@@ -18,7 +16,7 @@ namespace Galileo_API.DataBaseTier
         }
 
         // --------------------------------------------------------------------
-        // Helpers de creación de errores (elimina 70% de duplicación)
+        // Helpers de creación de errores
         // --------------------------------------------------------------------
         private static TRes BuildHttpError<TRes>(int code, string msg)
             where TRes : ResBase, new()
@@ -50,8 +48,24 @@ namespace Galileo_API.DataBaseTier
             };
         }
 
+        private static bool GuardUrlOrError<TRes>(
+            string url,
+            string operation,
+            out TRes errorResult)
+            where TRes : ResBase, new()
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                errorResult = BuildDeserializeError<TRes>($"URL requerida para {operation} (vacía o nula).");
+                return false;
+            }
+
+            errorResult = default!;
+            return true;
+        }
+
         // --------------------------------------------------------------------
-        // Helper genérico para llamadas JSON (ya existía)
+        // Helper genérico para llamadas JSON
         // --------------------------------------------------------------------
         private async Task<TRes> PostJsonAsync<TReq, TRes>(
             string baseUrl,
@@ -63,20 +77,24 @@ namespace Galileo_API.DataBaseTier
         {
             try
             {
+                // baseUrl ya viene validado por GuardUrlOrError
                 var json = JsonConvert.SerializeObject(data);
                 using var content = new StringContent(json, Encoding.UTF8, MediaTypeJson);
 
-                using var response = await _client.PostAsync(
-                    CombineUrl(baseUrl, endpoint),
-                    content
-                ).ConfigureAwait(false);
+                using var response = await _client
+                    .PostAsync(CombineUrl(baseUrl, endpoint), content)
+                    .ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                     return onHttpError((int)response.StatusCode, response.ReasonPhrase ?? "HTTP Error");
 
                 var jsonResponse = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var result = JsonConvert.DeserializeObject<TRes>(jsonResponse);
 
+                // Si el servicio devuelve vacío, controlamos acá también.
+                if (string.IsNullOrWhiteSpace(jsonResponse))
+                    return onDeserializeNull(jsonResponse);
+
+                var result = JsonConvert.DeserializeObject<TRes>(jsonResponse);
                 return result ?? onDeserializeNull(jsonResponse);
             }
             catch (Exception ex)
@@ -86,14 +104,17 @@ namespace Galileo_API.DataBaseTier
         }
 
         private static string CombineUrl(string baseUrl, string endpoint)
-            => $"{baseUrl?.TrimEnd('/')}/{endpoint?.TrimStart('/')}";
+            => $"{baseUrl.TrimEnd('/')}/{endpoint.TrimStart('/')}";
 
         // --------------------------------------------------------------------
-        // MÉTODOS DTR REFACTORIZADOS
+        // MÉTODOS DTR
         // --------------------------------------------------------------------
 
         public Task<ResServiceAvailable> IsServiceAvailableAsync(string url, ReqBase ctx)
         {
+            if (!GuardUrlOrError(url, "IsServiceAvailable", out ResServiceAvailable err))
+                return Task.FromResult(err);
+
             return PostJsonAsync<ReqBase, ResServiceAvailable>(
                 url,
                 "/IsServiceAvailable",
@@ -111,6 +132,9 @@ namespace Galileo_API.DataBaseTier
 
         public Task<ResAccountInfo> GetAccountInfoAsync(string url, ReqAccountInfo data)
         {
+            if (!GuardUrlOrError(url, "GetAccountInfo", out ResAccountInfo err))
+                return Task.FromResult(err);
+
             return PostJsonAsync<ReqAccountInfo, ResAccountInfo>(
                 url,
                 "/GetAccountInfo",
@@ -126,11 +150,10 @@ namespace Galileo_API.DataBaseTier
 
         // --------------------------------------------------------------
 
-        public Task<ResDTRSending> SendDebitAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRSending data)
+        public Task<ResDTRSending> SendDebitAsync(string url, ReqDTRSending data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "SendDebit", out ResDTRSending err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqDTRSending, ResDTRSending>(
                 url,
@@ -142,16 +165,15 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
-        public ResDTRSending SendDebit(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqDTRSending d)
-            => SendDebitAsync(p, d).GetAwaiter().GetResult();
+        public ResDTRSending SendDebit(string url, ReqDTRSending d)
+            => SendDebitAsync(url, d).GetAwaiter().GetResult();
 
         // --------------------------------------------------------------
 
-        public Task<ResDTRSending> GetDebitResultAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRInfoChannelRef data)
+        public Task<ResDTRSending> GetDebitResultAsync(string url, ReqDTRInfoChannelRef data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "GetDebitResult", out ResDTRSending err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqDTRInfoChannelRef, ResDTRSending>(
                 url,
@@ -163,16 +185,15 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
-        public ResDTRSending GetDebitResult(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqDTRInfoChannelRef d)
-            => GetDebitResultAsync(p, d).GetAwaiter().GetResult();
+        public ResDTRSending GetDebitResult(string url, ReqDTRInfoChannelRef d)
+            => GetDebitResultAsync(url, d).GetAwaiter().GetResult();
 
         // --------------------------------------------------------------
 
-        public Task<ResDTRInfo> GetDebitDataByChannelRefAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRInfoChannelRef data)
+        public Task<ResDTRInfo> GetDebitDataByChannelRefAsync(string url, ReqDTRInfoChannelRef data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "GetDebitDataByChannelRef", out ResDTRInfo err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqDTRInfoChannelRef, ResDTRInfo>(
                 url,
@@ -184,37 +205,35 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
-        public ResDTRInfo GetDebitDataByChannelRef(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqDTRInfoChannelRef d)
-            => GetDebitDataByChannelRefAsync(p, d).GetAwaiter().GetResult();
+        public ResDTRInfo GetDebitDataByChannelRef(string url, ReqDTRInfoChannelRef d)
+            => GetDebitDataByChannelRefAsync(url, d).GetAwaiter().GetResult();
 
         // --------------------------------------------------------------
 
-        public Task<ResDTRInfo> GetDebitDataBySINPERefAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqDTRInfoSINPERef data)
+        public Task<ResDTRInfo> GetDebitDataBySINPERefAsync(string url, ReqDTRInfoSINPERef data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "GetDebitDataBySINPERef", out ResDTRInfo err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqDTRInfoSINPERef, ResDTRInfo>(
                 url,
                 "/GetDebitDataBySINPERef",
                 data,
-            (code, _) => BuildHttpError<ResDTRInfo>(code, "No se pudo consultar el DTR por referencia SINPE."),
+                (code, _) => BuildHttpError<ResDTRInfo>(code, "No se pudo consultar el DTR por referencia SINPE."),
                 _ => BuildDeserializeError<ResDTRInfo>(MsjError),
                 ex => BuildExceptionError<ResDTRInfo>("GetDebitDataBySINPERef", ex)
             );
         }
 
-        public ResDTRInfo GetDebitDataBySINPERef(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqDTRInfoSINPERef d)
-            => GetDebitDataBySINPERefAsync(p, d).GetAwaiter().GetResult();
+        public ResDTRInfo GetDebitDataBySINPERef(string url, ReqDTRInfoSINPERef d)
+            => GetDebitDataBySINPERefAsync(url, d).GetAwaiter().GetResult();
 
         // --------------------------------------------------------------
 
-        public Task<ResBatchSending> SendBatchAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqBatchSending data)
+        public Task<ResBatchSending> SendBatchAsync(string url, ReqBatchSending data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "SendBatch", out ResBatchSending err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqBatchSending, ResBatchSending>(
                 url,
@@ -226,16 +245,15 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
-        public ResBatchSending SendBatch(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqBatchSending d)
-            => SendBatchAsync(p, d).GetAwaiter().GetResult();
+        public ResBatchSending SendBatch(string url, ReqBatchSending d)
+            => SendBatchAsync(url, d).GetAwaiter().GetResult();
 
         // --------------------------------------------------------------
 
-        public Task<ResBatchState> GetBatchStateAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqBatchState data)
+        public Task<ResBatchState> GetBatchStateAsync(string url, ReqBatchState data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "GetBatchState", out ResBatchState err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqBatchState, ResBatchState>(
                 url,
@@ -247,16 +265,15 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
-        public ResBatchState GetBatchState(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqBatchState d)
-            => GetBatchStateAsync(p, d).GetAwaiter().GetResult();
+        public ResBatchState GetBatchState(string url, ReqBatchState d)
+            => GetBatchStateAsync(url, d).GetAwaiter().GetResult();
 
         // --------------------------------------------------------------
 
-        public Task<ResCustomerDebits> GetCustomerDebitsAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerDebits data)
+        public Task<ResCustomerDebits> GetCustomerDebitsAsync(string url, ReqCustomerDebits data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "GetCustomerDebits", out ResCustomerDebits err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqCustomerDebits, ResCustomerDebits>(
                 url,
@@ -268,16 +285,15 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
-        public ResCustomerDebits GetCustomerDebits(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqCustomerDebits d)
-            => GetCustomerDebitsAsync(p, d).GetAwaiter().GetResult();
+        public ResCustomerDebits GetCustomerDebits(string url, ReqCustomerDebits d)
+            => GetCustomerDebitsAsync(url, d).GetAwaiter().GetResult();
 
         // --------------------------------------------------------------
 
-        public Task<ResAllDebits> GetAllDebitsAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqAllDebits data)
+        public Task<ResAllDebits> GetAllDebitsAsync(string url, ReqAllDebits data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "GetAllDebits", out ResAllDebits err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqAllDebits, ResAllDebits>(
                 url,
@@ -289,16 +305,15 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
-        public ResAllDebits GetAllDebits(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqAllDebits d)
-            => GetAllDebitsAsync(p, d).GetAwaiter().GetResult();
+        public ResAllDebits GetAllDebits(string url, ReqAllDebits d)
+            => GetAllDebitsAsync(url, d).GetAwaiter().GetResult();
 
         // --------------------------------------------------------------
 
-        public Task<ResBase> RegisterAuthorizationAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerServiceAuthorization data)
+        public Task<ResBase> RegisterAuthorizationAsync(string url, ReqCustomerServiceAuthorization data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "RegisterAuthorization", out ResBase err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqCustomerServiceAuthorization, ResBase>(
                 url,
@@ -310,16 +325,15 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
-        public ResBase RegisterAuthorization(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqCustomerServiceAuthorization d)
-            => RegisterAuthorizationAsync(p, d).GetAwaiter().GetResult();
+        public ResBase RegisterAuthorization(string url, ReqCustomerServiceAuthorization d)
+            => RegisterAuthorizationAsync(url, d).GetAwaiter().GetResult();
 
         // --------------------------------------------------------------
 
-        public Task<ResBase> InactivateAuthorizationAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerServiceAuthorization data)
+        public Task<ResBase> InactivateAuthorizationAsync(string url, ReqCustomerServiceAuthorization data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "InactivateAuthorization", out ResBase err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqCustomerServiceAuthorization, ResBase>(
                 url,
@@ -331,16 +345,15 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
-        public ResBase InactivateAuthorization(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqCustomerServiceAuthorization d)
-            => InactivateAuthorizationAsync(p, d).GetAwaiter().GetResult();
+        public ResBase InactivateAuthorization(string url, ReqCustomerServiceAuthorization d)
+            => InactivateAuthorizationAsync(url, d).GetAwaiter().GetResult();
 
         // --------------------------------------------------------------
 
-        public Task<ResCustomerServiceAuthorization> GetStateAuthorizationAsync(
-            ErrorDto<(ParametrosSinpe, HttpClient)> parametros,
-            ReqCustomerServiceAuthorization data)
+        public Task<ResCustomerServiceAuthorization> GetStateAuthorizationAsync(string url, ReqCustomerServiceAuthorization data)
         {
-            var url = parametros.Result.Item1.UrlCGP_DTR;
+            if (!GuardUrlOrError(url, "GetStateAuthorization", out ResCustomerServiceAuthorization err))
+                return Task.FromResult(err);
 
             return PostJsonAsync<ReqCustomerServiceAuthorization, ResCustomerServiceAuthorization>(
                 url,
@@ -352,7 +365,7 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
-        public ResCustomerServiceAuthorization GetStateAuthorization(ErrorDto<(ParametrosSinpe, HttpClient)> p, ReqCustomerServiceAuthorization d)
-            => GetStateAuthorizationAsync(p, d).GetAwaiter().GetResult();
+        public ResCustomerServiceAuthorization GetStateAuthorization(string url, ReqCustomerServiceAuthorization d)
+            => GetStateAuthorizationAsync(url, d).GetAwaiter().GetResult();
     }
 }

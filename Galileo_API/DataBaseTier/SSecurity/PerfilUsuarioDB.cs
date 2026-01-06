@@ -1,12 +1,12 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
+using Microsoft.IdentityModel.Tokens;
 using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
-using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier
 {
@@ -23,13 +23,24 @@ namespace Galileo.DataBaseTier
         {
             var response = new ErrorDto<PerfilUsuarioDto>();
 
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                response.Code = -1;
+                response.Description = "Usuario requerido.";
+                return response;
+            }
+
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
 
-                var values = new { Usuario = usuario };
+                var values = new { Usuario = usuario.Trim() };
+
                 response.Result = connection.QueryFirstOrDefault<PerfilUsuarioDto>(
-                    "spSEG_W_Logon_Info", values, commandType: CommandType.StoredProcedure);
+                    "spSEG_W_Logon_Info",
+                    values,
+                    commandType: CommandType.StoredProcedure
+                );
 
                 if (response.Result == null)
                 {
@@ -38,12 +49,20 @@ namespace Galileo.DataBaseTier
                     return response;
                 }
 
-                // === MISMOS valores que Program.cs (sección 'Jwt') ===
-                var jwt = _config.GetSection("Jwt");
-                var issuer   = jwt["Issuer"];
-                var audience = jwt["Audience"];
-                var secret   = jwt["Secret"];
-                var minutes  = int.TryParse(jwt["AccessTokenMinutes"], out var m) ? m : 60;
+                // Asegurar UserId válido
+                if (response.Result.UserId <= 0)
+                {
+                    response.Code = -1;
+                    response.Description = "Usuario inválido (sin UserId).";
+                    return response;
+                }
+
+                // Leer configuración JWT
+                var jwtSection = _config.GetSection("Jwt");
+                var issuer = jwtSection["Issuer"];
+                var audience = jwtSection["Audience"];
+                var secret = jwtSection["Secret"];
+                var minutes = int.TryParse(jwtSection["AccessTokenMinutes"], out var m) ? m : 60;
 
                 if (string.IsNullOrWhiteSpace(issuer) ||
                     string.IsNullOrWhiteSpace(audience) ||
@@ -54,57 +73,54 @@ namespace Galileo.DataBaseTier
                     return response;
                 }
 
-                var key   = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
-                var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-                // Claims alineados con Program.cs
-                var claims = new List<Claim>
+                if (!response.Result.UserId.HasValue || response.Result.UserId.Value <= 0)
                 {
-                    // Identidad principal
-                    new Claim(JwtRegisteredClaimNames.Sub, response.Result.UserId?.ToString() ?? string.Empty),
-                    new Claim(ClaimTypes.NameIdentifier, response.Result.UserId?.ToString() ?? string.Empty),
-                    new Claim(ClaimTypes.Name, response.Result.Usuario ?? usuario),
+                    response.Code = -1;
+                    response.Description = "Usuario inválido (sin UserId).";
+                    return response;
+                }
 
-                    // Metadatos estándar
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                    new Claim(JwtRegisteredClaimNames.Iat,
-                              DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(),
-                              ClaimValueTypes.Integer64),
-
-                    // Opcionales
-                    // new Claim(ClaimTypes.Email, response.Result.Email ?? string.Empty),
-                    // new Claim(ClaimTypes.Role, response.Result.Rol ?? "User"),
-                };
-
-                var token = new JwtSecurityToken(
+                // Generar token
+                response.Result.token = GenerateJwt(
+                    userId: response.Result.UserId.Value,
+                    username: response.Result.Usuario ?? usuario,
                     issuer: issuer,
                     audience: audience,
-                    claims: claims,
-                    notBefore: DateTime.UtcNow,
-                    expires: DateTime.UtcNow.AddMinutes(minutes),
-                    signingCredentials: creds
+                    secret: secret,
+                    minutes: minutes
+                // Si quieres, aquí puedes pasar email/rol para agregarlos como claims
                 );
 
-                response.Result.token = new JwtSecurityTokenHandler().WriteToken(token);
                 response.Code = 1;
                 response.Description = "Ok";
+                return response;
             }
-            catch (Exception ex)
+            catch
             {
+                // No devuelvas ex.Message en producción
                 response.Code = -1;
-                response.Description = ex.Message;
+                response.Description = "Error interno";
+                return response;
             }
-
-            return response;
         }
 
         public ErrorDto PerfilUsuario_Actualizar(PerfilUsuarioDto request)
         {
             var resp = new ErrorDto();
+
+            if (request == null || request.UserId <= 0)
+            {
+                resp.Code = -1;
+                resp.Description = "Datos inválidos.";
+                return resp;
+            }
+
             try
             {
                 using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
-                var procedure = "[spSEG_W_PerfilUsuario_Actualizar]";
+
+                const string procedure = "spSEG_W_PerfilUsuario_Actualizar";
+
                 var values = new
                 {
                     USERID = request.UserId,
@@ -115,15 +131,60 @@ namespace Galileo.DataBaseTier
                     EMAIL = request.Email,
                 };
 
-                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                resp.Code = connection.Query<int>(procedure, values, commandType: CommandType.StoredProcedure)
+                                      .FirstOrDefault();
+
                 resp.Description = "Ok";
+                return resp;
             }
-            catch (Exception ex)
+            catch
             {
                 resp.Code = -1;
-                resp.Description = ex.Message;
+                resp.Description = "Error interno";
+                return resp;
             }
-            return resp;
+        }
+
+        private static string GenerateJwt(int userId, string username, string issuer, string audience, string secret, int minutes)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var now = DateTime.UtcNow;
+
+            var claims = new List<Claim>
+            {
+                // Identidad
+                new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                new Claim(ClaimTypes.Name, username ?? string.Empty),
+
+                // Metadatos
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+            };
+
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                notBefore: now,
+                expires: now.AddMinutes(minutes),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public bool UsuarioTieneAccesoAEmpresa(int userId, int codEmpresa)
+        {
+            using var cn = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+            var ok = cn.QueryFirstOrDefault<int>(
+                "spSEG_Usuario_TieneAcceso_Empresa",
+                new { UserId = userId, CodEmpresa = codEmpresa },
+                commandType: CommandType.StoredProcedure
+            );
+            return ok == 1;
         }
     }
 }
