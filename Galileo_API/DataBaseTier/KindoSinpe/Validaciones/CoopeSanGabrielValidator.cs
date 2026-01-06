@@ -37,23 +37,23 @@ namespace Galileo_API.DataBaseTier
             {
                 var infoSinpeResult = CargarInfoSinpe(CodEmpresa, solicitud);
                 if (infoSinpeResult.Code == -1)
-                    return ErrorResponse(infoSinpeResult.Description);
+                    return ErrorResponse(infoSinpeResult.Description!);
 
-                _infoSinpe.vInfo = infoSinpeResult.Result;
+                _infoSinpe.vInfo = infoSinpeResult.Result!;
 
-                if (!TieneDatosMinimos(_infoSinpe.vInfo))
+                if (!TieneDatosMinimos(_infoSinpe.vInfo!))
                     return response; // mismo comportamiento que tu código: si no hay datos, regresa Ok
 
-                if (!MKindoServiceDb.IsValidCostaRicaIBAN(_infoSinpe.vInfo.CuentaIBAN))
+                if (!MKindoServiceDb.IsValidCostaRicaIBAN(_infoSinpe.vInfo.CuentaIBAN!))
                     return ErrorResponse("Cuenta IBAN no Valida");
 
                 var context = CrearContexto(parametrosSinpe);
 
-                var servicio = _sinpePIN.IsServiceAvailable(parametrosSinpe.Result.UrlCGP_PIN, context);
+                var servicio = _sinpePIN.IsServiceAvailable(parametrosSinpe?.Result?.UrlCGP_PIN!, context);
                 if (!servicio.IsSuccessful)
                     return ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
 
-                var cuenta = ConsultarCuenta(parametrosSinpe, context, _infoSinpe.vInfo.CuentaIBAN);
+                var cuenta = ConsultarCuenta(parametrosSinpe!, context, _infoSinpe.vInfo.CuentaIBAN!);
                 if (!cuenta.IsSuccessful)
                 {
                     // tu código no hace nada aquí (comentado), así que mantenemos el comportamiento.
@@ -90,7 +90,7 @@ namespace Galileo_API.DataBaseTier
         private static ReqBase CrearContexto(ErrorDto<ParametrosSinpe> parametrosSinpe) =>
             new ReqBase
             {
-                HostId = parametrosSinpe.Result.vHostPin,
+                HostId = parametrosSinpe.Result!.vHostPin,
                 OperationId = Guid.NewGuid().ToString(), // o usa tu OperationId de campo si es requerido por negocio
                 ClientIPAddress = parametrosSinpe.Result.vIpHost,
                 CultureCode = "ES-CR",
@@ -109,11 +109,11 @@ namespace Galileo_API.DataBaseTier
                 ClientIPAddress = context.ClientIPAddress,
                 CultureCode = context.CultureCode,
                 UserCode = context.UserCode,
-                Id = null,
+                Id = string.Empty,
                 AccountNumber = cuentaIban
             };
 
-            return _sinpePIN.GetAccountInfo(parametrosSinpe.Result.UrlCGP_PIN, accountData);
+            return _sinpePIN.GetAccountInfo(parametrosSinpe.Result?.UrlCGP_PIN!, accountData);
         }
 
 
@@ -150,17 +150,17 @@ namespace Galileo_API.DataBaseTier
                     {
                         estadoSinpe = false;
                         idRechazo = 83;
-                        rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
+                        rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
                     }
                     else
                     {
                         respuesta = fxTesEnvioSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vUsuario).Result;
 
-                        if (respuesta.MotivoError != 0)
+                        if (respuesta!.MotivoError != 0)
                         {
                             estadoSinpe = false;
                             idRechazo = 83;
-                            rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result;
+                            rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
                         }
                         else
                         {
@@ -239,29 +239,29 @@ namespace Galileo_API.DataBaseTier
                 pinData.UserCode = context.UserCode;
                 pinData.PINData = new Galileo.Models.KindoSinpe.PINTransfer()
                 {
-                    ChannelReference = solicitud.NDocumento.PadLeft(10, '0'),
+                    ChannelReference = solicitud!.NDocumento!.PadLeft(10, '0'),
                     Amount = solicitud.Monto,
                     TransactionDate = DateTime.Now,
                     Origin = new Galileo.Models.KindoSinpe.OriginCustomer()
                     {
-                        Id = solicitud.CedulaOrigen.Replace("-", ""),
-                        Name = solicitud.NombreOrigen,
-                        IBAN1 = solicitud.CuentaOrigen,
+                        Id = solicitud.CedulaOrigen!.Replace("-", ""),
+                        Name = solicitud.NombreOrigen!,
+                        IBAN1 = solicitud.CuentaOrigen!,
                         CreditIBAN = false,
-                        Email = solicitud.CorreoNotifica?.Trim()
+                        Email = solicitud.CorreoNotifica!.Trim()
                     },
                     Destination = new Galileo.Models.KindoSinpe.DestinationCustomer()
                     {
-                        Id = solicitud.Codigo.Replace("-", ""),
-                        Name = solicitud.Beneficiario,
-                        IBAN = solicitud.Cuenta
+                        Id = solicitud.Codigo!.Replace("-", ""),
+                        Name = solicitud.Beneficiario!,
+                        IBAN = solicitud.Cuenta!
                     },
                     CustomFields = new List<Galileo.Models.KindoSinpe.CustomField>()
                     {
                         new Galileo.Models.KindoSinpe.CustomField()
                         {
                             Name = "Email",
-                            Value = solicitud.CorreoNotifica?.Trim()
+                            Value = solicitud.CorreoNotifica!.Trim()
                         },
                         new Galileo.Models.KindoSinpe.CustomField()
                         {
@@ -271,7 +271,7 @@ namespace Galileo_API.DataBaseTier
                     }
                 };
 
-                var response = _sinpePIN.SendPIN(parametrosSinpe.Result.UrlCGP_PIN, pinData);
+                var response = _sinpePIN.SendPIN(parametrosSinpe.Result?.UrlCGP_PIN!, pinData);
                 if (response.IsSuccessful)
                 {
                     var updateNSolicitud = _mKindo.RegistraDibitoCuenta(CodEmpresa, Nsolicitud, response).Result;

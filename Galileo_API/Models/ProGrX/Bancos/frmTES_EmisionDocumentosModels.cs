@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
+
 namespace Galileo.Models.TES
 {
     public class TesTransaccionesData
@@ -54,4 +57,34 @@ namespace Galileo.Models.TES
         public string formato_transferencia { get; set; } = string.Empty;
         public string lugar_Emision { get; set; } = string.Empty;
     }
+
+
+    internal sealed class EmisionClasificacionRequest
+    {
+        public int CodEmpresa { get; init; }
+        public TesEmisionDocFiltros Filtro { get; init; } = default!;
+        public TesBancoDocsData BancoDocs { get; init; } = default!;
+        public TesBancoData BancoData { get; init; } = default!;
+        public int UsaFirmas { get; init; } // vFirmas
+        public TesArchivosEspecialesData ChequesReport { get; init; } = default!;
+        public FrmReporteGlobal ReporteData { get; init; } = default!;
+    }
+
+    internal sealed class EmisionClasificacionState
+    {
+        public string ReporteCkConFirmas { get; set; } = string.Empty;
+        public string ReporteCkSinFirmas { get; set; } = string.Empty;
+
+        public List<TesTransaccionDto> ListaConFirmas { get; } = new();
+        public List<TesTransaccionDto> ListaSinFirmas { get; } = new();
+
+        public List<TesTransaccionDto> ListaBoleta { get; } = new();
+        public List<byte[]> PdfsBoleta { get; } = new();
+
+        // Si tu flujo necesita conservar “el último file result”
+        public FileContentResult? FileResultBoleta { get; set; }
+    }
+
 }
+
+
