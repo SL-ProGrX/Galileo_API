@@ -2,13 +2,14 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/FrmUsFormularios")]
     [Route("api/frmUS_Formularios")]
     [ApiController]
-    //[Authorize]
+    [Authorize]
     public class FrmUsFormulariosController : ControllerBase
     {
         readonly FrmUsFormulariosBl FormulariosBL;
@@ -26,7 +27,6 @@ namespace Galileo.Controllers
 
 
         [HttpDelete("Formulario_Eliminar")]
-        //[Authorize]
         public ErrorDto Formulario_Eliminar(int modulo, string formulario)
         {
             return FormulariosBL.Formulario_Eliminar(modulo, formulario);
@@ -34,7 +34,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Formulario_Guardar")]
-        //[Authorize]
         public ErrorDto Formulario_Guardar(FormularioDto request)
         {
             return FormulariosBL.Formulario_Guardar(request);

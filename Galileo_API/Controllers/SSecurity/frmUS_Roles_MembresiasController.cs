@@ -2,12 +2,14 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
     [Route("api/FrmUsRolesMembresias")]
     [Route("api/frmUS_Roles_Membresias")]
     [ApiController]
+    [Authorize]
     public class FrmUsRolesMembresiasController : ControllerBase
     {
         private readonly IConfiguration _config;
@@ -19,7 +21,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Acceso_Equipo")]
-        //[Authorize]
         public ErrorDto Acceso_Equipo(EstacionAsignaDto req)
         {
             return new FrmUsRolesMembresiasBl(_config).Acceso_Equipo(req);
@@ -27,7 +28,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Acceso_Horario")]
-        //[Authorize]
         public ErrorDto Acceso_Horario(HorarioAsignaDto req)
         {
             return new FrmUsRolesMembresiasBl(_config).Acceso_Horario(req);
@@ -35,7 +35,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("UsuariosConsultar")]
-        //[Authorize]
         public List<UsuariosConsultaDto> UsuariosConsultar(string? usuario, bool adminView, bool dirGlobal, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).UsuariosConsultar(usuario, adminView, dirGlobal, codEmpresa);
@@ -43,7 +42,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("UsuariosVinculadosConsultar")]
-        //[Authorize]
         public List<UsuariosVinculadosConsultaDto> UsuariosVinculadosConsultar2(string? usuario, bool contabiliza, bool adminView, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).UsuariosVinculadosConsultar(usuario, contabiliza, adminView, codEmpresa);
@@ -51,7 +49,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("Limites_Obtener")]
-        //[Authorize]
         public Limites Limites_Obtener(string usuario, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).Limites_Obtener(usuario, codEmpresa);
@@ -59,7 +56,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("RolesConsultar")]
-        //[Authorize]
         public List<RolConsultaDto> RolesConsultar(string usuario, string? filtro, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).RolesConsultar(usuario, filtro, codEmpresa);
@@ -67,7 +63,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("HorariosConsultar")]
-        //[Authorize]
         public List<HorarioConsultaDto> HorariosConsultar(string usuario, string? filtro, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).HorariosConsultar(usuario, filtro, codEmpresa);
@@ -75,7 +70,6 @@ namespace Galileo.Controllers
 
 
         [HttpGet("EstacionesConsultar")]
-        //[Authorize]
         public List<EstacionConsultaDto> EstacionesConsultar(string usuario, string? filtro, int codEmpresa)
         {
             return new FrmUsRolesMembresiasBl(_config).EstacionesConsultar(usuario, filtro, codEmpresa);
@@ -91,7 +85,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("UsuarioClienteAsigna")]
-        //[Authorize]
         public ErrorDto UsuarioClienteAsigna(UsuarioClienteAsigna req)
         {
             return new FrmUsRolesMembresiasBl(_config).UsuarioClienteAsigna(req);
@@ -99,7 +92,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Limita_Equipo")]
-        //[Authorize]
         public ErrorDto Limita_Equipo(LimitaAcceso req)
         {
             return new FrmUsRolesMembresiasBl(_config).Limita_Equipo(req);
@@ -107,7 +99,6 @@ namespace Galileo.Controllers
 
 
         [HttpPost("Limita_Horario")]
-        //[Authorize]
         public ErrorDto Limita_Horario(LimitaAcceso req)
         {
             return new FrmUsRolesMembresiasBl(_config).Limita_Horario(req);

@@ -2,6 +2,7 @@
 using Galileo.BusinessLogic;
 using Galileo.Models.Security;
 using Galileo.Models.ERROR;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Galileo.Controllers
 {
@@ -22,7 +23,7 @@ namespace Galileo.Controllers
         /// <param name="user"></param>
         /// <returns></returns>
         [HttpGet("UsuarioEstado_Obtener")]
-        // [Authorize]
+        [Authorize]
         public ActivacionCuentaDto UsuarioEstado_Obtener(string user)
         {
             return new ActivacionCuentaBL(_config).UsuarioEstado_Obtener(user);
@@ -48,7 +49,7 @@ namespace Galileo.Controllers
         /// </remarks>
         /// <returns></returns>
         [HttpPost("UsuarioEstado_Actualizar")]
-        //[Authorize]
+        [Authorize]
         public ErrorDto UsuarioEstado_Actualizar(ActivacionCuentaDto request)
         {
             return new ActivacionCuentaBL(_config).UsuarioEstado_Actualizar(request);
