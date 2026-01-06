@@ -1,7 +1,5 @@
-﻿using Newtonsoft.Json;
-using Galileo.Models.ERROR;
-using Galileo.Models.KindoSinpe;
-using System.Net.Http;
+﻿using Galileo.Models.KindoSinpe;
+using Newtonsoft.Json;
 using System.Text;
 
 namespace Galileo_API.DataBaseTier
