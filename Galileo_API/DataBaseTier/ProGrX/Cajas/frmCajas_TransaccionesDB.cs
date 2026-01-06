@@ -348,10 +348,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             if (pTipoCambio == 0)
                 pTipoCambio = 1;
 
-            if (pTipoCambio > 0)
-                return pTipoCambio;
-            else
-                return 1 / Math.Abs(pTipoCambio);
+            return pTipoCambio > 0
+                ? pTipoCambio
+                : 1 / Math.Abs(pTipoCambio);
         }
     }
 }
