@@ -1,19 +1,16 @@
 ﻿using Newtonsoft.Json;
-using Galileo.DataBaseTier.ProGrX.Fondos;
+using Galileo_API.DataBaseTier.ProGrX.Fondos;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Fondos;
+using Galileo_API.Models.ProGrX.Fondos;
 
-namespace Galileo.BusinessLogic.ProGrX.Fondos
+namespace Galileo_API.BusinessLogic.ProGrX.Fondos
 {
     public class FrmFndSeguridadNivelesBl
     {
         private readonly FrmFndSeguridadNivelesDb _db;
 
-        public FrmFndSeguridadNivelesBl(IConfiguration config)
-        {
-            _db = new FrmFndSeguridadNivelesDb(config);
-        }
+        public FrmFndSeguridadNivelesBl(IConfiguration config) => _db = new FrmFndSeguridadNivelesDb(config);
 
         public ErrorDto<TablasListaGenericaModel> Fnd_SegNiveles_Grupos_Obtener(int CodEmpresa, bool Exporta, string Filtros)
         {
