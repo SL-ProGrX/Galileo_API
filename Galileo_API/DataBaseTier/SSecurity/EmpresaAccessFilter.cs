@@ -34,7 +34,7 @@ namespace Galileo.DataBaseTier
             // sacar userId del token (sub)
             var userIdStr = context.HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
                          ?? context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            
+
             Console.WriteLine($"EmpresaAccessFilter -> sub={userIdStr}, codEmpresa={codEmpresa}");
 
             if (!int.TryParse(userIdStr, out var userId))
@@ -61,12 +61,12 @@ namespace Galileo.DataBaseTier
             if (TryGetIntFromArguments(context, "CodEmpresa", out var e3)) return e3;
 
             // DTOs (body)
-            foreach (var arg in context.ActionArguments.Values)
-            {
-                if (arg is null) continue;
-                var val = TryGetIntFromProperties(arg, new[] { "CodEmpresa", "codEmpresa", "EmpresaCod", "empresaCod" });
-                if (val.HasValue) return val.Value;
-            }
+            var propertyNames = new[] { "CodEmpresa", "codEmpresa", "EmpresaCod", "empresaCod" };
+            var val = context.ActionArguments.Values
+                .Where(arg => arg is not null)
+                .Select(arg => TryGetIntFromProperties(arg!, propertyNames))
+                .FirstOrDefault(v => v.HasValue);
+            if (val.HasValue) return val.Value;
             return null;
         }
 
@@ -87,19 +87,19 @@ namespace Galileo.DataBaseTier
 
             var type = obj.GetType();
 
-            foreach (var name in propertyNames)
+            var convertedValue = propertyNames
+                 .Select(name => type.GetProperty(name))
+                 .Where(prop => prop != null)
+                 .Select(prop => prop != null ? prop.GetValue(obj) : null)
+                 .Where(val => val != null)
+                 .Select(val => TryConvertToInt(val!))
+                 .FirstOrDefault(converted => converted.HasValue);
+
+
+            if (convertedValue.HasValue)
             {
-                var prop = type.GetProperty(name);
-                if (prop == null) continue;
-
-                var val = prop.GetValue(obj);
-                if (val != null)
-                {
-                    var converted = TryConvertToInt(val);
-                    if (converted.HasValue) return converted.Value;
-                }
+                return convertedValue.Value;
             }
-
             return null;
         }
 
@@ -107,21 +107,15 @@ namespace Galileo.DataBaseTier
         {
             if (val == null) return null;
 
-            switch (val)
+            return val switch
             {
-                case int i:
-                    return i;
-                case long l:
-                    return (int)l;
-                case short s:
-                    return s;
-                case byte b:
-                    return b;
-                case string str when int.TryParse(str, out var parsed):
-                    return parsed;
-                default:
-                    return null;
-            }
+                int i => i,
+                long l => (int)l,
+                short s => s,
+                byte b => b,
+                string str when int.TryParse(str, out var parsed) => parsed,
+                _ => null,
+            };
         }
     }
 
