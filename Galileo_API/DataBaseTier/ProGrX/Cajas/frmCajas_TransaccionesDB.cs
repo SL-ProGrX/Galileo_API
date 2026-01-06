@@ -149,10 +149,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                   @Cod_Caja, @Cod_Apertura, @Id_Sesion
                 )";
             var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, param);
-            if (result.Code == 0)
-                return DbHelper.CreateOkResponse(true);
-            else
-                return DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            return result.Code == 0
+                 ? DbHelper.CreateOkResponse(true)
+                 : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
         }
 
         /// <summary>
@@ -176,10 +175,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                   @Monto, @Comision, @Impuesto, @Neto, @Cod_Divisa, @Tipo_Cambio
                 )";
             var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, param);
-            if (result.Code == 0)
-                return DbHelper.CreateOkResponse(true);
-            else
-                return DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            return result.Code == 0
+                 ? DbHelper.CreateOkResponse(true)
+                 : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
         }
 
         /// <summary>
@@ -257,10 +255,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 @Ref_01 = @Referencia_01,
                 @Ref_02 = @Referencia_02";
             var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, param);
-            if (result.Code == 0)
-                return DbHelper.CreateOkResponse(true);
-            else
-                return DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            return result.Code == 0
+                 ? DbHelper.CreateOkResponse(true)
+                 : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
         }
 
         /// <summary>
@@ -280,10 +277,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 @Unidad = @Cod_Unidad,
                 @Usuario = @Usuario";
             var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, param);
-            if (result.Code == 0)
-                return DbHelper.CreateOkResponse(true);
-            else
-                return DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            return result.Code == 0
+                 ? DbHelper.CreateOkResponse(true)
+                 : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
         }
 
         /// <summary>
@@ -303,10 +299,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 @Apertura = @Cod_Apertura,
                 @Usuario = @Usuario";
             var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, param);
-            if (result.Code == 0)
-                return DbHelper.CreateOkResponse(true);
-            else
-                return DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            return result.Code == 0
+                 ? DbHelper.CreateOkResponse(true)
+                 : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
         }
 
         /// <summary>
@@ -322,10 +317,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 @NumDoc = @Cod_Transaccion,
                 @Tipo = @Tipo";
             var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, param);
-            if (result.Code == 0)
-                return DbHelper.CreateOkResponse(true);
-            else
-                return DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            return result.Code == 0
+                 ? DbHelper.CreateOkResponse(true)
+                 : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
         }
 
         /// <summary>
@@ -341,10 +335,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 @TipoDocumento = @TipoDocumento,
                 @TipoComprobante = @TipoComprobante";
             var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, param);
-            if (result.Code == 0)
-                return DbHelper.CreateOkResponse(true);
-            else
-                return DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+            return result.Code == 0
+                 ? DbHelper.CreateOkResponse(true)
+                 : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
         }
 
         // Utilidad para tipo de cambio
