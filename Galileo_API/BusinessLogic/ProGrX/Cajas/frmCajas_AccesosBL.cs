@@ -1,7 +1,6 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Cajas;
-using PgxAPI.DataBaseTier;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Cajas
 {
