@@ -1,19 +1,16 @@
 ﻿using Newtonsoft.Json;
-using Galileo.DataBaseTier.ProGrX.Fondos;
+using Galileo_API.DataBaseTier.ProGrX.Fondos;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Fondos;
+using Galileo_API.Models.ProGrX.Fondos;
 
-namespace Galileo.BusinessLogic.ProGrX.Fondos
+namespace Galileo_API.BusinessLogic.ProGrX.Fondos
 {
     public class FrmFndPagoComisionBl
     {
         private readonly FrmFndPagoComisionDb _db;
 
-        public FrmFndPagoComisionBl(IConfiguration config)
-        {
-            _db = new FrmFndPagoComisionDb(config);
-        }
+        public FrmFndPagoComisionBl(IConfiguration config) => _db = new FrmFndPagoComisionDb(config);
 
         public ErrorDto<List<DropDownListaGenericaModel>> FND_PagoComision_Bancos_Obtener(int CodEmpresa, string Usuario)
         {

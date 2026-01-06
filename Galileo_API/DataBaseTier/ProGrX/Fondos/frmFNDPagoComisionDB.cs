@@ -1,19 +1,16 @@
 ﻿using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Fondos;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using Galileo_API.Models.ProGrX.Fondos;
 
-namespace Galileo.DataBaseTier.ProGrX.Fondos
+namespace Galileo_API.DataBaseTier.ProGrX.Fondos
 {
     public class FrmFndPagoComisionDb
     {
         private readonly PortalDB _portalDB;
 
-        public FrmFndPagoComisionDb(IConfiguration? config)
-        {
-            _portalDB = new PortalDB(config);
-        }
+        public FrmFndPagoComisionDb(IConfiguration config) => _portalDB = new PortalDB(config);
 
         /// <summary>
         /// Obtener bancos
@@ -46,7 +43,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new List<FndPagoComisionVendedorData>()
+                Result = null
             };
 
             try
@@ -89,9 +86,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         : 0;
                 }
 
-                lista = lista.Where(x => x.monto > 0).ToList();
-
-                response.Result = lista;
+                response.Result = lista.Where(x => x.monto > 0).ToList();
             }
             catch (Exception ex)
             {
@@ -147,7 +142,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 ////    if (v.monto_comision <= 0)
                 ////        continue;
 
-                ////    // Armar el modelo para fxMaestroTesoreria
+                ////    // Armar el modelo para FxMaestroTesoreria
                 ////    var maestroModel = new MaestroTesoreriaRequest
                 ////    {
                 ////        banco = v.cod_banco,    
@@ -162,7 +157,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 ////        cuenta = v.cuenta_ahorros, 
                 ////        fecha = vFecha
                 ////    };
-                ////    var resMaestro = fxMaestroTesoreria(CodEmpresa, maestroModel);
+                ////    var resMaestro = FxMaestroTesoreria(CodEmpresa, maestroModel);
 
                 ////    if (resMaestro.Code != 0 || resMaestro.Result <= 0)
                 ////    {
@@ -186,8 +181,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 ////        return response;
                 ////    }
 
-                ////    // sbCreaDetalle(lngSolicitud, fxCuentaBanco(...), montoComision, "H", 1)
-                ////    var resDetH = sbCreaDetalle(
+                ////    // SbCreaDetalle(lngSolicitud, fxCuentaBanco(...), montoComision, "H", 1)
+                ////    var resDetH = SbCreaDetalle(
                 ////        CodEmpresa,
                 ////        (int)lngSolicitud, 
                 ////        cuentaBanco,
@@ -203,8 +198,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                 ////        return response;
                 ////    }
 
-                ////    // sbCreaDetalle(lngSolicitud, vCuenta, montoComision, "D", 2)
-                ////    var resDetD = sbCreaDetalle(
+                ////    // SbCreaDetalle(lngSolicitud, vCuenta, montoComision, "D", 2)
+                ////    var resDetD = SbCreaDetalle(
                 ////        CodEmpresa,
                 ////        (int)lngSolicitud,
                 ////        vCuenta,
@@ -276,7 +271,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <param name="CodEmpresa"></param>
         /// <param name="model"></param>
         /// <returns></returns>
-        public ErrorDto<long> fxMaestroTesoreria(int CodEmpresa, MaestroTesoreriaRequest model)
+        public ErrorDto<long> FxMaestroTesoreria(int CodEmpresa, MaestroTesoreriaRequest model)
         {
             var response = new ErrorDto<long>
             {
@@ -362,7 +357,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         /// <param name="DebeHaber"></param>
         /// <param name="Linea"></param>
         /// <returns></returns>
-        public ErrorDto<bool> sbCreaDetalle(int CodEmpresa, int NSolicitud, string CuentaContable, decimal Monto, string DebeHaber, int Linea)
+        public ErrorDto<bool> SbCreaDetalle(int CodEmpresa, int NSolicitud, string CuentaContable, decimal Monto, string DebeHaber, int Linea)
         {
             var response = new ErrorDto<bool>
             {

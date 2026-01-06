@@ -1,6 +1,7 @@
 ﻿using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Cobros;
 using Galileo_API.Models.ProGrX.Cobros;
+using Newtonsoft.Json;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Cobros
 {
@@ -8,10 +9,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
     {
         private readonly FrmCoGruposDb _db;
 
-        public FrmCoGruposBl(IConfiguration config)
-        {
-            _db = new FrmCoGruposDb(config);
-        }
+        public FrmCoGruposBl(IConfiguration config) => _db = new FrmCoGruposDb(config);
 
         public ErrorDto<List<CoGruposData>> CO_Grupos_Obtener(int CodEmpresa)
         {
@@ -28,12 +26,22 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.CO_Grupos_Eliminar(CodEmpresa, GrupoId, Usuario);
         }
 
-        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, int GrupoId, string Filtro, int Tipo)
+        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, string Filtros)
         {
-            return _db.CO_Grupos_Asignacion_Obtener(CodEmpresa, GrupoId, Filtro, Tipo);
+            CoGruposAsignacionFiltros? jfiltro = JsonConvert.DeserializeObject<CoGruposAsignacionFiltros>(Filtros);
+            if (jfiltro == null)
+            {
+                return new ErrorDto<List<CoGruposAsignacionData>>
+                {
+                    Code = -1,
+                    Description = "No se pudo deserializar los filtros.",
+                    Result = null
+                };
+            }
+            return _db.CO_Grupos_Asignacion_Obtener(CodEmpresa, jfiltro);
         }
 
-        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, int GrupoId, int Tipo, string Codigo, bool IsChecked, string Usuario)
+        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, int GrupoId, string Tipo, string Codigo, bool IsChecked, string Usuario)
         {
             return _db.CO_Grupos_Asignar(CodEmpresa, GrupoId, Tipo, Codigo, IsChecked, Usuario);
         }

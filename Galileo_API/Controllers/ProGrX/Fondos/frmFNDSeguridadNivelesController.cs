@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Galileo.BusinessLogic.ProGrX.Fondos;
+using Galileo_API.BusinessLogic.ProGrX.Fondos;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Fondos;
+using Galileo_API.Models.ProGrX.Fondos;
 
-namespace Galileo.Controllers.ProGrX.Fondos
+namespace Galileo_API.Controllers.ProGrX.Fondos
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -13,10 +13,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
     {
         private readonly FrmFndSeguridadNivelesBl _bl;
 
-        public FrmFndSeguridadNivelesController(IConfiguration config)
-        {
-            _bl = new FrmFndSeguridadNivelesBl(config);
-        }
+        public FrmFndSeguridadNivelesController(IConfiguration config) => _bl = new FrmFndSeguridadNivelesBl(config);
 
         [Authorize]
         [HttpGet("Fnd_SegNiveles_Grupos_Obtener")]

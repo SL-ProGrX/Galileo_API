@@ -8,6 +8,13 @@
         public string usuario { get; set; } = string.Empty;
     }
 
+    public class CoGruposAsignacionFiltros
+    {
+        public int id_grupo { get; set; } = 0;
+        public string? filtro { get; set; } = string.Empty;
+        public string tipo { get; set; } = string.Empty;
+    }
+
     public class CoGruposAsignacionData
     {
         public string idX { get; set; } = string.Empty;

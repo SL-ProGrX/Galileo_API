@@ -10,12 +10,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     {
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _mSecurity;
-        private readonly int vModulo = 18;
+        private readonly int vModulo = 4;
 
         public FrmCoGruposDb(IConfiguration config)
+            : this(new PortalDB(config), new MSecurityMainDb(config))
         {
-            _portalDB = new PortalDB(config);
-            _mSecurity = new MSecurityMainDb(config);
+        }
+
+        public FrmCoGruposDb(PortalDB portalDB, MSecurityMainDb mSecurity)
+        {
+            _portalDB = portalDB;
+            _mSecurity = mSecurity;
         }
 
         /// <summary>
@@ -78,8 +83,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         DetalleMovimiento = $"Grupo de Cobros: {newId}",
                         Modulo = vModulo
                     });
-
-                    response.Code = newId;
                 }
                 else
                 {
@@ -185,21 +188,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// Obtiene lista de asignaciones para un grupo de cobros
         /// </summary>
         /// <param name="CodEmpresa"></param>
-        /// <param name="GrupoId"></param>
-        /// <param name="Filtro"></param>
-        /// <param name="Tipo"></param>
+        /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, int GrupoId, string Filtro, int Tipo)
+        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, CoGruposAsignacionFiltros filtros)
         {
-            var pTipo = Tipo switch
-            {
-                0 => "GES",
-                1 => "ARR",
-                2 => "CAU",
-                3 => "USU",
-                _ => ""
-            };
-
             const string sql = @"exec spCbr_Grupos_List_Asignacion @GrupoId, @Tipo, @Filtro";
 
             return DbHelper.ExecuteListQuery<CoGruposAsignacionData>(
@@ -208,9 +200,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             sql,
             new
             {
-                GrupoId,
-                Tipo = pTipo,
-                Filtro = (Filtro ?? "").Trim()
+                GrupoId = filtros.id_grupo,
+                Tipo = filtros.tipo,
+                Filtro = (filtros.filtro ?? "").Trim()
             });
         }
 
@@ -224,17 +216,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="IsChecked"></param>
         /// <param name="Usuario"></param>
         /// <returns></returns>
-        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, int GrupoId, int Tipo, string Codigo, bool IsChecked, string Usuario)
+        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, int GrupoId, string Tipo, string Codigo, bool IsChecked, string Usuario)
         {
-            var pTipo = Tipo switch
-            {
-                0 => "GES",
-                1 => "ARR",
-                2 => "CAU",
-                3 => "USU",
-                _ => ""
-            };
-
             var accion = IsChecked ? "A" : "E";
 
             const string sql = @"exec spCbr_Grupos_List_Asignacion_Add @GrupoId, @Tipo, @Codigo, @Usuario, @Mov";
@@ -246,7 +229,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             new
             {
                 GrupoId,
-                Tipo = pTipo,
+                Tipo,
                 Codigo = (Codigo ?? "").Trim(),
                 Usuario = (Usuario ?? "").Trim().ToUpper(),
                 Mov = accion
