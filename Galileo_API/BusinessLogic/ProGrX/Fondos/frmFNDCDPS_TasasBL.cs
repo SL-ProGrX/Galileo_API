@@ -1,19 +1,16 @@
 ﻿using Newtonsoft.Json;
-using Galileo.DataBaseTier.ProGrX.Fondos;
+using Galileo_API.DataBaseTier.ProGrX.Fondos;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Fondos;
+using Galileo_API.Models.ProGrX.Fondos;
 
-namespace Galileo.BusinessLogic.ProGrX.Fondos
+namespace Galileo_API.BusinessLogic.ProGrX.Fondos
 {
     public class FrmFndCdpsTasasBl
     {
         private readonly FrmFndCdpsTasasDb _db;
 
-        public FrmFndCdpsTasasBl(IConfiguration config)
-        {
-            _db = new FrmFndCdpsTasasDb(config);
-        }
+        public FrmFndCdpsTasasBl(IConfiguration config) => _db = new FrmFndCdpsTasasDb(config);
 
         public ErrorDto<List<DropDownListaGenericaModel>> Fnd_CdpsTasas_Catalogo_Obtener(int CodEmpresa, int Index)
         {
