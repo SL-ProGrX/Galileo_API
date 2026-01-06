@@ -188,8 +188,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <returns></returns>
         public ErrorDto<SifDocsAsientoResult> SifDocsAsiento_Ejecutar(int codEmpresa, SifDocsAsientoParams param)
         {
-            decimal tipoCambioAplicado = Tipo_Cambio_Apl(param.Tipo_Cambio);
-            decimal montoConvertido = param.Mnt_Bruto * tipoCambioAplicado;
+            if (param.Tipo_Cambio == null)
+                throw new ArgumentException("Tipo_Cambio es obligatorio");
+            decimal tipoCambioAplicado = Tipo_Cambio_Apl(param.Tipo_Cambio.Value);
+            decimal montoConvertido = (param.Mnt_Bruto ?? 0m) * tipoCambioAplicado;
 
             var query = @"exec spSIFDocsAsiento
                 @Tipo = @Tipo_Documento,
