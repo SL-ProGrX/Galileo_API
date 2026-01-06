@@ -240,7 +240,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="codFormaPago">Código de la forma de pago.</param>
         /// <returns></returns>
-        public ErrorDto<CajasFormasPagoTipoResult> CargaSaldosFavor_FormaPagoTipo_Obtener(int codEmpresa, string codFormaPago)
+        public ErrorDto<CajasFormasPagoTipoResult?> CargaSaldosFavor_FormaPagoTipo_Obtener(int codEmpresa, string codFormaPago)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
@@ -254,7 +254,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// </summary>
         /// <param name="param">Parámetros: CodEmpresa, IdBanco, Documento, Monto.</param>
         /// <returns></returns>
-        public ErrorDto<CajasDepositosCargadoResult> Cajas_DepositosCargado_Existe(CajasDepositosCargadoParams param)
+        public ErrorDto<CajasDepositosCargadoResult?> Cajas_DepositosCargado_Existe(CajasDepositosCargadoParams param)
         {
             return DbHelper.WithConn(_portalDb, param.CodEmpresa ?? 0, conn =>
             {
@@ -358,7 +358,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <summary>
         /// Ejecuta el procedimiento spCajas_SaldoFavorCarga.
         /// </summary>
-        /// <param name="param">Parámetros: CodEmpresa, CodFormaPago, Documento, Cedula, Nombre, Usuario.</param>
+        /// <param name="param">Parámetros: CodEmpresa, CodFormaPago,Documento, Cedula, Nombre, Usuario.</param>
         /// <returns></returns>
         public ErrorDto<bool> Cajas_SaldoFavorCarga(CajasSaldoFavorCargaParams param)
         {

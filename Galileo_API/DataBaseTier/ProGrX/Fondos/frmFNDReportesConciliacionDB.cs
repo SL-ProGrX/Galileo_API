@@ -58,7 +58,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Fondos
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="idPerHistorico">ID del periodo histórico.</param>
         /// <returns></returns>
-        public ErrorDto<FndPerHistoricoDetalleModel> ReportesConciliacion_PeriodoHistoricoDetalle_Obtener(int codEmpresa, string idPerHistorico)
+        public ErrorDto<FndPerHistoricoDetalleModel?> ReportesConciliacion_PeriodoHistoricoDetalle_Obtener(int codEmpresa, string idPerHistorico)
         {
             var query = @"SELECT * FROM fnd_per_historico WHERE id_per_historico = @idPerHistorico";
             return DbHelper.ExecuteSingleQuery<FndPerHistoricoDetalleModel>(_portalDb, codEmpresa, query, default, new { idPerHistorico });

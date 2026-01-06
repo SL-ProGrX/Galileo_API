@@ -96,7 +96,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="param">Parámetros de validación.</param>
         /// <returns></returns>
-        public ErrorDto<CajasTransacValidacionResult> CajasTransacciones_Validacion(int codEmpresa, CajasTransacValidacionParams param)
+        public ErrorDto<CajasTransacValidacionResult?> CajasTransacciones_Validacion(int codEmpresa, CajasTransacValidacionParams param)
         {
             var query = "exec spCajas_Transac_Validacion @Caja, @Usuario, @Apertura, @SesionId, @TipoProc, @Producto, @Monto, @Ticket";
             var parameters = new
@@ -119,7 +119,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="param">Parámetros de consulta.</param>
         /// <returns></returns>
-        public ErrorDto<CajasServiciosDatosResult> CajasTransacciones_ServiciosDatos(int codEmpresa, CajasServiciosDatosParams param)
+        public ErrorDto<CajasServiciosDatosResult?> CajasTransacciones_ServiciosDatos(int codEmpresa, CajasServiciosDatosParams param)
         {
             var query = "exec spCajas_ServiciosDatos @Recaudador = @Cod_Recaudador, @Servicio = @Cod_Servicio, @Monto = @Monto, @Caja = @Cod_Caja";
             return DbHelper.ExecuteSingleQuery<CajasServiciosDatosResult>(_portalDb, codEmpresa, query, default, param);
