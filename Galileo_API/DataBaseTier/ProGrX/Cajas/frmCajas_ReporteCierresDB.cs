@@ -21,7 +21,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return new SqlConnection(connString);
         }
 
-        private static ErrorDto<T> CrearRespuesta<T>(T defaultValue = default)
+        private static ErrorDto<T> CrearRespuesta<T>(T? defaultValue = default)
         {
             return new ErrorDto<T>
             {

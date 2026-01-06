@@ -234,9 +234,9 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
 
         [Authorize]
         [HttpGet("Tes_BancoValidaEmision")]
-        public ErrorDto<string> fxTesBancoDocsValor(int CodEmpresa, int banco, string tipo)
+        public ErrorDto<string> FxTesBancoDocsValor(int CodEmpresa, int banco, string tipo)
         {
-            return _bl.fxTesBancoDocsValor(CodEmpresa, banco, tipo);
+            return _bl.FxTesBancoDocsValor(CodEmpresa, banco, tipo);
         }
 
         [Authorize]

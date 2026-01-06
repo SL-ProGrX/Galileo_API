@@ -15,7 +15,11 @@ namespace Galileo_API.DataBaseTier
 
         public IWfcSinpe CrearServicio(int CodEmpresa, string usuario)
         {
-            var nombreTipo = _sinpe.GetUriEmpresa(CodEmpresa, usuario).Result.ServiciosSinpe;
+            var nombreTipo = _sinpe
+                            ?.GetUriEmpresa(CodEmpresa, usuario).Result
+                            ?.ServiciosSinpe
+                            ?? throw new NotSupportedException(
+                                $"No se encontró configuración para la empresa {CodEmpresa}");
 
             if (string.IsNullOrWhiteSpace(nombreTipo))
                 throw new NotSupportedException($"No se encontró configuración para la empresa {CodEmpresa}");
