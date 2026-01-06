@@ -61,7 +61,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             => DbHelper.CreateOkResponse<object>(JsonConvert.SerializeObject(payload, Formatting.Indented));
 
         private static ErrorDto<object> OkObj(object? result = null)
-            => DbHelper.CreateOkResponse<object>(result);
+            => DbHelper.CreateOkResponse<object>(result!);
 
         private static ErrorDto<object> Err(string msg, int code = -1)
             => DbHelper.CreateErrorResponse<object>(msg, code, default!);

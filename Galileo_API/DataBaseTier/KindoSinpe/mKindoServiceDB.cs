@@ -87,7 +87,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
             var resultado = new List<CoreInterno.CL_ResultadoValidacion>();
             using var connection = OpenConnection(codEmpresa);
 
-            foreach (var t in request.Transacciones)
+            foreach (var t in request.Transacciones!)
             {
                 var identificacion = normalizarId
                     ? (t.Identificacion ?? "").Trim().Replace("-", "").Replace(" ", "")
@@ -1500,7 +1500,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                     return 1;
                 }
 
-                return GetCurrencyCodeId(cuentaValida.Account.CurrencyCode);
+                return GetCurrencyCodeId(cuentaValida.Account.CurrencyCode!);
             }
             return 1;
         }
@@ -1593,8 +1593,8 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                                     WHERE Nsolicitud = @solicitud ";
                 response.Result = connection.Execute(query, new
                 {
-                    refSinpe = resPIN.PINSendingResult.SINPEReference,
-                    idRechazo = (resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
+                    refSinpe = resPIN.PINSendingResult!.SINPEReference,
+                    idRechazo = (resPIN.Errors!.Length > 0) ? resPIN.Errors[0].Code : 0,
                     estadoSinpe = resPIN.PINSendingResult.IsApproved,
                     solicitud = Nsolicitud
                 }) > 0;

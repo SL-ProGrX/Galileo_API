@@ -10,8 +10,8 @@
     #pragma warning disable S2342
         public class ClienteDataService
         {
-            public string id_empresa { get; set; }
-            public string clase_verificador { get; set; }
+            public string? id_empresa { get; set; }
+            public string? clase_verificador { get; set; }
         }
 
         #region Tipos de datos
@@ -137,26 +137,26 @@
 
         public class ValidaTransRequest
         {
-            public SI_Rastro Rastro { get; set; }
-            public CL_DatosTransaccion[] Transacciones { get; set; }
+            public SI_Rastro? Rastro { get; set; }
+            public CL_DatosTransaccion[]? Transacciones { get; set; }
         }
 
         public class ValidaActualizaTransaccionRequest
         {
-            public SI_Rastro Rastro { get; set; }
-            public CL_ActualizaTransaccion[] Transacciones { get; set; }
+            public SI_Rastro? Rastro { get; set; }
+            public CL_ActualizaTransaccion[]? Transacciones { get; set; }
         }
 
         public class ValidaTransaccionRequest
         {
-            public SI_Rastro Rastro { get; set; }
-            public CL_Transaccion[] Transacciones { get; set; }
+            public SI_Rastro? Rastro { get; set; }
+            public CL_Transaccion[]? Transacciones { get; set; }
         }
 
         public class ValidaTransaccionRechazoRequest
         {
-            public SI_Rastro Rastro { get; set; }
-            public TransaccionRechazada[] Transacciones { get; set; }
+            public SI_Rastro? Rastro { get; set; }
+            public TransaccionRechazada[]? Transacciones { get; set; }
         }
 
         public class CL_ActualizaFechaRequest
@@ -171,7 +171,7 @@
 
         public class CLCierraCiclo
         {
-            public int?[] EntidadesAplazadas { get; set; }
+            public int[]? EntidadesAplazadas { get; set; }
             public int? ServicioSINPE { get; set; }
             public string? Modalidad { get; set; }
             public DateTime? FechaCiclo { get; set; }
@@ -186,27 +186,27 @@
         /// </summary>
         public class ReqBase
         {
-            public string HostId { get; set; }            // Máx. 128 caracteres
-            public string OperationId { get; set; }       // Opcional
-            public string ClientIPAddress { get; set; }   // Opcional, máx. 40 caracteres
-            public string CultureCode { get; set; }       // 5 caracteres (ej: "ES-CR")
-            public string UserCode { get; set; }          // Opcional, máx. 50 caracteres
+            public string? HostId { get; set; }            // Máx. 128 caracteres
+            public string? OperationId { get; set; }       // Opcional
+            public string? ClientIPAddress { get; set; }   // Opcional, máx. 40 caracteres
+            public string? CultureCode { get; set; }       // 5 caracteres (ej: "ES-CR")
+            public string? UserCode { get; set; }          // Opcional, máx. 50 caracteres
         }
 
         public class ParametrosSinpe
         {
-            public string vHost { get; set; } = Environment.MachineName;
-            public string vHostPin { get; set; }
-            public string vIpHost { get; set; }
-            public string vUserCGP { get; set; }
+            public string? vHost { get; set; } = Environment.MachineName;
+            public string? vHostPin { get; set; }
+            public string? vIpHost { get; set; }
+            public string? vUserCGP { get; set; }
             public int vCanalCGP { get; set; } = 5;
 
             public string? UrlCGP_DTR { get; set; }
             public string? UrlCGP_PIN { get; set; }
 
-            public string ServiciosSinpe { get; set; }
+            public string? ServiciosSinpe { get; set; }
 
-            public string vUsuarioLog { get; set; }
+            public string? vUsuarioLog { get; set; }
         }
         #endregion
 
@@ -218,8 +218,8 @@
         public class ResBase
         {
             public bool IsSuccessful { get; set; }
-            public string OperationId { get; set; }
-            public Error[] Errors { get; set; }
+            public string? OperationId { get; set; }
+            public Error[]? Errors { get; set; }
         }
         #endregion
 
@@ -229,8 +229,8 @@
         /// </summary>
         public class CustomField
         {
-            public string Name { get; set; }   // Máx. 50 caracteres
-            public string Value { get; set; }  // Máx. 255 caracteres
+            public string? Name { get; set; }   // Máx. 50 caracteres
+            public string? Value { get; set; }  // Máx. 255 caracteres
         }
         #endregion
 
@@ -242,7 +242,7 @@
         {
             public int Code { get; set; }
             public int Type { get; set; }      // Según codificación sección 8.4
-            public string Message { get; set; } // Máx. 255 caracteres
+            public string? Message { get; set; } // Máx. 255 caracteres
         }
         #endregion
 
@@ -252,11 +252,11 @@
         /// </summary>
         public class OriginCustomer
         {
-            public string Id { get; set; }                 // 5–30 caracteres
-            public string Name { get; set; }               // 8–150 caracteres
-            public string IBAN1 { get; set; }              // Opcional, 22 caracteres
+            public string? Id { get; set; }                 // 5–30 caracteres
+            public string? Name { get; set; }               // 8–150 caracteres
+            public string? IBAN1 { get; set; }              // Opcional, 22 caracteres
             public bool CreditIBAN { get; set; }           // True = acredita cuenta
-            public string Email { get; set; }              // Opcional, 320 caracteres
+            public string? Email { get; set; }              // Opcional, 320 caracteres
         }
         #endregion
 
@@ -266,9 +266,9 @@
         /// </summary>
         public class DestinationCustomer
         {
-            public string Id { get; set; }                 // 5–30 caracteres
-            public string Name { get; set; }               // 8–150 caracteres
-            public string IBAN { get; set; }               // 22 caracteres
+            public string? Id { get; set; }                 // 5–30 caracteres
+            public string? Name { get; set; }               // 8–150 caracteres
+            public string? IBAN { get; set; }               // 22 caracteres
         }
         #endregion
 
@@ -278,15 +278,15 @@
         /// </summary>
         public class Account
         {
-            public string AccountNumber { get; set; }      // 14–34 caracteres
-            public string HolderId { get; set; }           // 30 caracteres
+            public string? AccountNumber { get; set; }      // 14–34 caracteres
+            public string? HolderId { get; set; }           // 30 caracteres
             public int HolderIdType { get; set; }          // según sección 8.1
-            public string Holder { get; set; }             // 100 caracteres
-            public string CurrencyCode { get; set; }       // 3 caracteres (ISO 4217)
-            public string EntityCode { get; set; }         // 4 caracteres
-            public string EntityName { get; set; }         // 255 caracteres
+            public string? Holder { get; set; }             // 100 caracteres
+            public string? CurrencyCode { get; set; }       // 3 caracteres (ISO 4217)
+            public string? EntityCode { get; set; }         // 4 caracteres
+            public string? EntityName { get; set; }         // 255 caracteres
             public int RejectCode { get; set; }
-            public string RejectDescription { get; set; }  // 255 caracteres
+            public string? RejectDescription { get; set; }  // 255 caracteres
         }
         #endregion
 
@@ -296,14 +296,14 @@
         /// </summary>
         public class DTR
         {
-            public string ChannelRefNumber { get; set; }      // 1–25 dígitos
-            public OriginCustomer OriginCustomer { get; set; }
-            public DestinationCustomer DestinationCustomer { get; set; }
-            public string Service { get; set; }               // 1–20 caracteres
+            public string? ChannelRefNumber { get; set; }      // 1–25 dígitos
+            public OriginCustomer? OriginCustomer { get; set; }
+            public DestinationCustomer? DestinationCustomer { get; set; }
+            public string? Service { get; set; }               // 1–20 caracteres
             public decimal Amount { get; set; }               // > 0.00
-            public string CurrencyCode { get; set; }          // 3 caracteres
-            public byte[] SignedDocument { get; set; }        // opcional
-            public string Description { get; set; }           // 15–255 caracteres
+            public string? CurrencyCode { get; set; }          // 3 caracteres
+            public byte[]? SignedDocument { get; set; }        // opcional
+            public string? Description { get; set; }           // 15–255 caracteres
         }
         #endregion
 
@@ -314,8 +314,8 @@
         public class DTRInfo
         {
             public short Type { get; set; }
-            public DTR DebitData { get; set; }
-            public DTRSendingResult DebitResult { get; set; }
+            public DTR? DebitData { get; set; }
+            public DTRSendingResult? DebitResult { get; set; }
         }
         #endregion
 
@@ -325,18 +325,18 @@
         /// </summary>
         public class DebitData
         {
-            public string ChannelRefNumber { get; set; }
-            public string SINPERefNumber { get; set; }
+            public string? ChannelRefNumber { get; set; }
+            public string? SINPERefNumber { get; set; }
             public int Type { get; set; }
-            public OriginCustomer OriginCustomer { get; set; }
-            public DestinationCustomer DestinationCustomer { get; set; }
-            public string Service { get; set; }
+            public OriginCustomer? OriginCustomer { get; set; }
+            public DestinationCustomer? DestinationCustomer { get; set; }
+            public string? Service { get; set; }
             public decimal Amount { get; set; }
-            public string CurrencyCode { get; set; }
-            public string Description { get; set; }
-            public string State { get; set; }
+            public string? CurrencyCode { get; set; }
+            public string? Description { get; set; }
+            public string? State { get; set; }
             public short RejectCode { get; set; }
-            public string RejectDescription { get; set; }
+            public string? RejectDescription { get; set; }
             public DateTime RegistrationDate { get; set; }
             public DateTime ProcessingDate { get; set; }
         }
@@ -348,19 +348,19 @@
         /// </summary>
         public class DTRSendingResult
         {
-            public string ChannelRefNumber { get; set; }
+            public string? ChannelRefNumber { get; set; }
             public long CGPRefNumber { get; set; }
-            public string SINPERefNumber { get; set; }
-            public string CBTrxNumber { get; set; }
+            public string? SINPERefNumber { get; set; }
+            public string? CBTrxNumber { get; set; }
             public decimal DebitedAmount { get; set; }
             public decimal ComissionAmount { get; set; }
-            public string CurrencyComissionAmount { get; set; }
+            public string? CurrencyComissionAmount { get; set; }
             public decimal ExchangeRate { get; set; }
-            public string DebitCurrencyCode { get; set; }
-            public List<CustomField> CustomData { get; set; }
-            public string State { get; set; }
+            public string? DebitCurrencyCode { get; set; }
+            public List<CustomField>? CustomData { get; set; }
+            public string? State { get; set; }
             public short RejectCode { get; set; }
-            public string RejectDescription { get; set; }
+            public string? RejectDescription { get; set; }
             public DateTime RegistrationDate { get; set; }
             public DateTime ProcessingDate { get; set; }
         }
@@ -372,17 +372,17 @@
         /// </summary>
         public class DebitInfo
         {
-            public string ChannelRefNumber { get; set; }
-            public string SINPERefNumber { get; set; }
+            public string? ChannelRefNumber { get; set; }
+            public string? SINPERefNumber { get; set; }
             public int Type { get; set; }
-            public OriginCustomer OriginCustomer { get; set; }
-            public DestinationCustomer DestinationCustomer { get; set; }
+            public OriginCustomer? OriginCustomer { get; set; }
+            public DestinationCustomer? DestinationCustomer { get; set; }
             public decimal Amount { get; set; }
-            public string CurrencyCode { get; set; }
-            public string Description { get; set; }
+            public string? CurrencyCode { get; set; }
+            public string? Description { get; set; }
             public short State { get; set; }
             public short RejectCode { get; set; }
-            public string RejectDescription { get; set; }
+            public string? RejectDescription { get; set; }
             public DateTime RegistrationDate { get; set; }
             public DateTime ProcessingDate { get; set; }
         }
@@ -391,41 +391,41 @@
         #region 7.1.13 ReqDTRInfoChannelRef
         public class ReqDTRInfoChannelRef : ReqBase
         {
-            public string ChannelRefNumber { get; set; }
+            public string? ChannelRefNumber { get; set; }
         }
         #endregion
 
         #region 7.1.14 ReqDTRInfoSINPERef
         public class ReqDTRInfoSINPERef : ReqBase
         {
-            public string SINPERefNumber { get; set; }
+            public string? SINPERefNumber { get; set; }
         }
         #endregion
 
         #region 7.1.15 ResDTRInfo
         public class ResDTRInfo : ResBase
         {
-            public DTR DebitData { get; set; }
-            public DTRSendingResult DebitResult { get; set; }
+            public DTR? DebitData { get; set; }
+            public DTRSendingResult? DebitResult { get; set; }
         }
         #endregion
 
         #region 7.1.16 ReqBatchSending
         public class ReqBatchSending : ReqBase
         {
-            public string ChannelBatchNumber { get; set; }
-            public string Description { get; set; }
+            public string? ChannelBatchNumber { get; set; }
+            public string? Description { get; set; }
             public int CoreIntegrationPoint { get; set; }
             public int CostCenter { get; set; }
-            public List<DTR> Debits { get; set; }
-            public List<CustomField> CustomData { get; set; }
+            public List<DTR>? Debits { get; set; }
+            public List<CustomField>? CustomData { get; set; }
         }
         #endregion
 
         #region 7.1.17 ResBatchSending
         public class ResBatchSending : ResBase
         {
-            public string ChannelBatchNumber { get; set; }
+            public string? ChannelBatchNumber { get; set; }
             public int KINDOBatchNumber { get; set; }
             public bool Accepted { get; set; }
         }
@@ -434,21 +434,21 @@
         #region 7.1.18 ReqBatchState
         public class ReqBatchState : ReqBase
         {
-            public string ChannelBatchNumber { get; set; }
+            public string? ChannelBatchNumber { get; set; }
         }
         #endregion
 
         #region 7.1.19 ResBatchState
         public class ResBatchState : ResBase
         {
-            public BatchSendingResult BatchStateInfo { get; set; }
+            public BatchSendingResult? BatchStateInfo { get; set; }
         }
         #endregion
 
         #region 7.1.20 BatchSendingResult
         public class BatchSendingResult
         {
-            public string ChannelBatchNumber { get; set; }
+            public string? ChannelBatchNumber { get; set; }
             public int KINDOBatchNumber { get; set; }
             public bool BatchState { get; set; }
             public int ProcessedTransfers { get; set; }
@@ -456,7 +456,7 @@
             public int ConfirmedTransfers { get; set; }
             public int RejectedTransfers { get; set; }
             public int OnHoldTransfers { get; set; }
-            public List<DTRSendingResult> DebitsResult { get; set; }
+            public List<DTRSendingResult>? DebitsResult { get; set; }
         }
         #endregion
 
@@ -470,7 +470,7 @@
         #region 7.1.22 ReqCustomerServiceAuthorization
         public class ReqCustomerServiceAuthorization : ReqBase
         {
-            public string CustomerIdentification { get; set; }
+            public string? CustomerIdentification { get; set; }
         }
         #endregion
 
@@ -484,15 +484,15 @@
         #region 7.1.24 ReqAccountInfo
         public class ReqAccountInfo : ReqBase
         {
-            public string Id { get; set; }
-            public string AccountNumber { get; set; }
+            public string? Id { get; set; }
+            public string? AccountNumber { get; set; }
         }
         #endregion
 
         #region 7.1.25 ResAccountInfo
         public class ResAccountInfo : ResBase
         {
-            public Account Account { get; set; }
+            public Account? Account { get; set; }
         }
         #endregion
 
@@ -501,22 +501,22 @@
         {
             public int CoreIntegrationPoint { get; set; }
             public int CostCenter { get; set; }
-            public DTR Debit { get; set; }
-            public List<CustomField> CustomData { get; set; }
+            public DTR? Debit { get; set; }
+            public List<CustomField>? CustomData { get; set; }
         }
         #endregion
 
         #region 7.1.27 ResDTRSending
         public class ResDTRSending : ResBase
         {
-            public DTRSendingResult DTRSendingResult { get; set; }
+            public DTRSendingResult? DTRSendingResult { get; set; }
         }
         #endregion
 
         #region 7.1.28 ReqCustomerDebits
         public class ReqCustomerDebits : ReqBase
         {
-            public string CustomerId { get; set; }
+            public string? CustomerId { get; set; }
             public DateTime InitialDate { get; set; }
             public DateTime FinalDate { get; set; }
             public short Type { get; set; }
@@ -527,7 +527,7 @@
         #region 7.1.29 ResCustomerDebits
         public class ResCustomerDebits : ResBase
         {
-            public List<DTRInfo> Debits { get; set; }
+            public List<DTRInfo>? Debits { get; set; }
         }
         #endregion
 
@@ -545,7 +545,7 @@
         #region 7.1.31 ResAllDebits
         public class ResAllDebits : ResBase
         {
-            public List<DebitInfo> Debits { get; set; }
+            public List<DebitInfo>? Debits { get; set; }
             public int PagesQty { get; set; }
             public int TransfersQty { get; set; }
         }
@@ -563,12 +563,12 @@
             /// <summary>
             /// Número de cuenta IBAN del cliente receptor en su Entidad Financiera.
             /// </summary>
-            public string IBAN2 { get; set; } // 22 caracteres
+            public string? IBAN2 { get; set; } // 22 caracteres
 
             /// <summary>
             /// Dirección de correo electrónico del cliente receptor (opcional).
             /// </summary>
-            public string Email { get; set; } // Opcional, 320 caracteres
+            public string? Email { get; set; } // Opcional, 320 caracteres
         }
 
         /// <summary>
@@ -579,22 +579,22 @@
             /// <summary>
             /// Número de cuenta IBAN.
             /// </summary>
-            public string IBAN { get; set; } // 22 caracteres
+            public string? IBAN { get; set; } // 22 caracteres
 
             /// <summary>
             /// Nombre del titular de la cuenta.
             /// </summary>
-            public string AccountName { get; set; } // Máx. 150 caracteres
+            public string? AccountName { get; set; } // Máx. 150 caracteres
 
             /// <summary>
             /// Identificación del titular.
             /// </summary>
-            public string CustomerId { get; set; } // 5–30 caracteres
+            public string? CustomerId { get; set; } // 5–30 caracteres
 
             /// <summary>
             /// Código de la Entidad Financiera a la que pertenece la cuenta.
             /// </summary>
-            public string EntityCode { get; set; } // Máx. 20 caracteres
+            public string? EntityCode { get; set; } // Máx. 20 caracteres
         }
 
         /// <summary>
@@ -605,7 +605,7 @@
             /// <summary>
             /// Referencia de la transacción asignada por el canal.
             /// </summary>
-            public string ChannelReference { get; set; }
+            public string? ChannelReference { get; set; }
 
             /// <summary>
             /// Monto de la transacción.
@@ -620,17 +620,17 @@
             /// <summary>
             /// Información del cliente que origina la transacción.
             /// </summary>
-            public OriginCustomer Origin { get; set; }
+            public OriginCustomer? Origin { get; set; }
 
             /// <summary>
             /// Información del cliente que recibe la transacción.
             /// </summary>
-            public DestinationCustomer Destination { get; set; }
+            public DestinationCustomer? Destination { get; set; }
 
             /// <summary>
             /// Campos personalizados adicionales asociados a la transacción.
             /// </summary>
-            public List<CustomField> CustomFields { get; set; }
+            public List<CustomField>? CustomFields { get; set; }
         }
 
         /// <summary>
@@ -641,12 +641,12 @@
             /// <summary>
             /// Identificador único de la operación asignado por KINDO.
             /// </summary>
-            public string OperationId { get; set; }
+            public string? OperationId { get; set; }
 
             /// <summary>
             /// Código de referencia de SINPE asignado a la transacción.
             /// </summary>
-            public string SINPEReference { get; set; }
+            public string? SINPEReference { get; set; }
 
             /// <summary>
             /// Fecha y hora en que se procesó la transacción.
@@ -661,7 +661,7 @@
             /// <summary>
             /// Mensaje o detalle del resultado.
             /// </summary>
-            public string Message { get; set; }
+            public string? Message { get; set; }
         }
 
         /// <summary>
@@ -672,7 +672,7 @@
             /// <summary>
             /// Información de la transacción PIN a enviar.
             /// </summary>
-            public PINTransfer PINData { get; set; }
+            public PINTransfer? PINData { get; set; }
         }
 
         /// <summary>
@@ -683,7 +683,7 @@
             /// <summary>
             /// Resultado del envío de la transacción PIN.
             /// </summary>
-            public PINSendingResult PINSendingResult { get; set; }
+            public PINSendingResult? PINSendingResult { get; set; }
         }
 
         /// <summary>
@@ -694,17 +694,17 @@
             /// <summary>
             /// Referencia de la transacción asignada por el canal.
             /// </summary>
-            public string ChannelReference { get; set; }
+            public string? ChannelReference { get; set; }
 
             /// <summary>
             /// Referencia de la transacción asignada por SINPE.
             /// </summary>
-            public string SINPEReference { get; set; }
+            public string? SINPEReference { get; set; }
 
             /// <summary>
             /// Estado actual de la transacción.
             /// </summary>
-            public string Status { get; set; }
+            public string? Status { get; set; }
 
             /// <summary>
             /// Fecha y hora en que se procesó la transacción.
@@ -719,12 +719,12 @@
             /// <summary>
             /// Cliente que origina la transacción.
             /// </summary>
-            public OriginCustomer Origin { get; set; }
+            public OriginCustomer? Origin { get; set; }
 
             /// <summary>
             /// Cliente que recibe la transacción.
             /// </summary>
-            public DestinationCustomer Destination { get; set; }
+            public DestinationCustomer? Destination { get; set; }
         }
 
         /// <summary>
@@ -735,7 +735,7 @@
             /// <summary>
             /// Identificador único del lote.
             /// </summary>
-            public string BatchId { get; set; }
+            public string? BatchId { get; set; }
 
             /// <summary>
             /// Cantidad total de transferencias incluidas en el lote.
@@ -755,7 +755,7 @@
             /// <summary>
             /// Estado actual del lote.
             /// </summary>
-            public string Status { get; set; }
+            public string? Status { get; set; }
         }
 
         /// <summary>
@@ -766,7 +766,7 @@
             /// <summary>
             /// Identificador del lote asignado por KINDO.
             /// </summary>
-            public string BatchId { get; set; }
+            public string? BatchId { get; set; }
 
             /// <summary>
             /// Indica si el envío fue exitoso.
@@ -781,7 +781,7 @@
             /// <summary>
             /// Mensaje descriptivo del resultado.
             /// </summary>
-            public string Message { get; set; }
+            public string? Message { get; set; }
         }
 
         /// <summary>
@@ -792,7 +792,7 @@
             /// <summary>
             /// Referencia de la transacción generada por el canal.
             /// </summary>
-            public string ChannelReference { get; set; }
+            public string? ChannelReference { get; set; }
         }
 
         /// <summary>
@@ -803,7 +803,7 @@
             /// <summary>
             /// Referencia SINPE de la transacción.
             /// </summary>
-            public string SINPEReference { get; set; }
+            public string? SINPEReference { get; set; }
         }
 
         /// <summary>
@@ -814,7 +814,7 @@
             /// <summary>
             /// Información de la transferencia consultada.
             /// </summary>
-            public TransferInfo Transfer { get; set; }
+            public TransferInfo? Transfer { get; set; }
         }
 
         /// <summary>
@@ -825,12 +825,12 @@
             /// <summary>
             /// Lista de transferencias incluidas en el lote.
             /// </summary>
-            public List<PINTransfer> Transfers { get; set; }
+            public List<PINTransfer>? Transfers { get; set; }
 
             /// <summary>
             /// Identificador opcional del lote asignado por el canal.
             /// </summary>
-            public string ChannelBatchId { get; set; }
+            public string? ChannelBatchId { get; set; }
         }
 
         /// <summary>
@@ -841,7 +841,7 @@
             /// <summary>
             /// Resultado del envío del lote.
             /// </summary>
-            public BatchSendingResult BatchResult { get; set; }
+            public BatchSendingResult? BatchResult { get; set; }
         }
 
         /// <summary>
@@ -852,7 +852,7 @@
             /// <summary>
             /// Identificador del lote asignado por KINDO.
             /// </summary>
-            public string BatchId { get; set; }
+            public string? BatchId { get; set; }
         }
 
         /// <summary>
@@ -863,7 +863,7 @@
             /// <summary>
             /// Estado actual del lote de transferencias.
             /// </summary>
-            public string BatchStatus { get; set; }
+            public string? BatchStatus { get; set; }
 
             /// <summary>
             /// Fecha y hora del último cambio de estado.
@@ -879,7 +879,7 @@
             /// <summary>
             /// Identificación del cliente a consultar.
             /// </summary>
-            public string CustomerId { get; set; }
+            public string? CustomerId { get; set; }
 
             /// <summary>
             /// Fecha de inicio del rango de búsqueda.
@@ -900,7 +900,7 @@
             /// <summary>
             /// Lista de transferencias asociadas al cliente.
             /// </summary>
-            public List<TransferInfo> Transfers { get; set; }
+            public List<TransferInfo>? Transfers { get; set; }
         }
 
         /// <summary>
@@ -937,7 +937,7 @@
             /// <summary>
             /// Lista de transferencias incluidas en el resultado.
             /// </summary>
-            public List<TransferInfo> Transfers { get; set; }
+            public List<TransferInfo>? Transfers { get; set; }
 
             /// <summary>
             /// Total de registros encontrados.
@@ -953,7 +953,7 @@
             /// <summary>
             /// Lote de transferencias a importar.
             /// </summary>
-            public TransfersBatch Batch { get; set; }
+            public TransfersBatch? Batch { get; set; }
         }
 
         /// <summary>
@@ -964,7 +964,7 @@
             /// <summary>
             /// Resultado del proceso de importación.
             /// </summary>
-            public BatchSendingResult ImportResult { get; set; }
+            public BatchSendingResult? ImportResult { get; set; }
         }
 
         /// <summary>
@@ -975,12 +975,12 @@
             /// <summary>
             /// Identificador del lote a revertir.
             /// </summary>
-            public string BatchId { get; set; }
+            public string? BatchId { get; set; }
 
             /// <summary>
             /// Motivo de la reversión.
             /// </summary>
-            public string Reason { get; set; }
+            public string? Reason { get; set; }
         }
 
         /// <summary>
@@ -1006,17 +1006,17 @@
 
         public class InfoSinpeRequest
         {
-            public ParametrosSinpe _paramertrosSinpe { get; set; }
-            public vInfoSinpe vInfo { get; set; }
-            public RequestInfo requestInfo { get; set; }
+            public ParametrosSinpe? _paramertrosSinpe { get; set; }
+            public vInfoSinpe? vInfo { get; set; }
+            public RequestInfo? requestInfo { get; set; }
         }
 
         public class ResponseData
         {
             public bool IsSuccessful { get; set; }
-            public string OperationId { get; set; }
-            public List<Errores> Errors { get; set; } = new List<Errores>();
-            public Sinpe_PIN.Account Account { get; set; } = new Sinpe_PIN.Account();
+            public string? OperationId { get; set; }
+            public List<Errores>? Errors { get; set; } = new List<Errores>();
+            public Sinpe_PIN.Account? Account { get; set; } = new Sinpe_PIN.Account();
         }
 
         public class RequestInfo
@@ -1156,7 +1156,7 @@
             public int ReferenciaBanco { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false)]
-            public string ReferenciaSistemaInterno { get; set; }
+            public string? ReferenciaSistemaInterno { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(IsRequired = true, Order = 2)]
             public decimal MontoDebito { get; set; }
@@ -1171,43 +1171,43 @@
             public decimal MontoTotal { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 6)]
-            public string RequestId { get; set; }
+            public string? RequestId { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 7)]
-            public string CodigoReferencia { get; set; }
+            public string? CodigoReferencia { get; set; }
         }
 
         public partial class RegistrarDebitoCuentaResponseBody 
         {
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false)]
-            public RespuestaRegistro[] RegistrarDebitoCuentaResult { get; set; }
+            public RespuestaRegistro[]? RegistrarDebitoCuentaResult { get; set; }
         }
 
         public partial class RegistrarDebitoCuentaRequestBody
         {
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false)]
-            public SI_Rastro Rastro { get; set; }
+            public SI_Rastro? Rastro { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false)]
-            public TransferenciaAS400[] Transacciones { get; set; }
+            public TransferenciaAS400[]? Transacciones { get; set; }
         }
 
         public partial class TransferenciaAS400 
         {
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false)]
-            public Transaccion DatosTransaccion { get; set; }
+            public Transaccion? DatosTransaccion { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 1)]
-            public ClienteAS400 ClienteDestino { get; set; }
+            public ClienteAS400? ClienteDestino { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 2)]
-            public ClienteAS400 ClienteOrigen { get; set; }
+            public ClienteAS400? ClienteOrigen { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(IsRequired = true, Order = 3)]
             public ServiciosSINPE TipoTransaccion { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 4)]
-            public string IdRequest { get; set; }
+            public string? IdRequest { get; set; }
         }
 
         public partial class Transaccion 
@@ -1219,7 +1219,7 @@
             public decimal Monto { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 2)]
-            public string Descripcion { get; set; }
+            public string? Descripcion { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(IsRequired = true, Order = 3)]
             public int EntidadOrigen { get; set; }
@@ -1228,7 +1228,7 @@
             public int CentroCosto { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 5)]
-            public string Servicio { get; set; }
+            public string? Servicio { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(IsRequired = true, Order = 6)]
             public int PuntoIntegracion { get; set; }
@@ -1240,22 +1240,22 @@
             public bool FirmaDigital { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 9)]
-            public string eMAIL { get; set; }
+            public string? eMAIL { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 10)]
-            public string IDCorrelation { get; set; }
+            public string? IDCorrelation { get; set; }
         }
 
         public partial class ClienteAS400 
         {
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false)]
-            public string Identificacion { get; set; }
+            public string? Identificacion { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false)]
-            public string Nombre { get; set; }
+            public string? Nombre { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(EmitDefaultValue = false, Order = 2)]
-            public string IBAN { get; set; }
+            public string? IBAN { get; set; }
 
             [System.Runtime.Serialization.DataMemberAttribute(IsRequired = true, Order = 3)]
             public int TipoCedula { get; set; }
@@ -1264,22 +1264,22 @@
         public partial class RegistrarDebitoCuentaBody 
         {
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public RegistrarDebitoCuentaRequestBody body { get; set; }
+        public RegistrarDebitoCuentaRequestBody? body { get; set; }
 
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public IModelosRastroSIF rastro { get; set; }
+        public IModelosRastroSIF? rastro { get; set; }
     }
 
         public partial class IModelosRastroSIF 
         {
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public string Equipo { get; set; }
+        public string? Equipo { get; set; }
 
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public string IP { get; set; }
+        public string? IP { get; set; }
 
         [System.Runtime.Serialization.DataMemberAttribute()]
-        public string Usuario { get; set; }
+        public string? Usuario { get; set; }
     }
 
     }
