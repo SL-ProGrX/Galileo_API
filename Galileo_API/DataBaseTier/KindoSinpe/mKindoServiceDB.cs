@@ -198,13 +198,13 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                     commandType: CommandType.StoredProcedure);
 
                 bool rechazo = (res?.MOT_RECHAZO ?? 0) > 0;
-
+               
                 resultado.Add(new CoreInterno.CL_RespuestaTransaccion
                 {
                     Resultado = rechazo
                         ? CoreInterno.E_Resultado.Rechazo
                         : CoreInterno.E_Resultado.Exitoso,
-                    MotivoError = rechazo ? (int)res.MOT_RECHAZO : 0,
+                    MotivoError = rechazo ? res!.MOT_RECHAZO : 0,
                     ComprobanteInterno = res?.ID_REFERENCIA
                 });
             }
@@ -467,7 +467,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                 {
                     Resultado = CoreInterno.E_Resultado.Exitoso,
                     Estado = CoreInterno.E_Estado.Activa,
-                    Moneda = result.Moneda,
+                    Moneda = result!.Moneda,
                     NombreTitular = result.NOMBRE,
                     MotivoError = 0
                 };
@@ -490,7 +490,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
             {
                 using var connection = OpenConnection(CodEmpresa);
 
-                string tipo = CuentaIBAN.Substring(8, 2);
+                string tipo = CuentaIBAN!.Substring(8, 2);
 
                 int tipoMovimiento;
                 if (tipo == "01")
@@ -506,7 +506,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                 {
                     CUENTA = CuentaIBAN,
                     TRANSAC_TIPO = tipoMovimiento,
-                    CEDULA = Identificacion.Replace("-", "").Replace(" ", ""),
+                    CEDULA = Identificacion!.Replace("-", "").Replace(" ", ""),
                     MONEDA = CodigoMoneda
                 });
 
@@ -876,7 +876,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                     CodigoServicio = Request.codigoServicio
                 });
 
-                bool disponible = Convert.ToBoolean(result.SaldoDisponible);
+                bool disponible = Convert.ToBoolean(result!.SaldoDisponible);
 
                 resultado.disponible = disponible;
                 resultado.SaldoDisponibleResult = disponible
@@ -1016,7 +1016,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                 1 => "COL",
                 2 => "DOL",
                 3 => "EU",
-                _ => null
+                _ => ""
             };
         }
 
@@ -1247,10 +1247,10 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
 
                 var infoSinpe = new vInfoSinpe
                 {
-                    Cedula = res.Cedula,
-                    CuentaIBAN = res.Cuenta,
-                    tipoID = res.tipoID,
-                    cod_divisa = res.cod_divisa
+                    Cedula = res!.Cedula,
+                    CuentaIBAN = res!.Cuenta,
+                    tipoID = res!.tipoID,
+                    cod_divisa = res!.cod_divisa
                 };
 
                 response.Result = infoSinpe;
@@ -1311,7 +1311,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                     {
                         vHost = Environment.MachineName,
                         vHostPin = parametros.HostIdPIN,
-                        vIpHost = fxObtenerIpEquipoActual(Environment.MachineName).Result,
+                        vIpHost = fxObtenerIpEquipoActual(Environment.MachineName).Result ?? string.Empty,
                         vUserCGP = parametros.UserCGP,
                         vCanalCGP = Convert.ToInt32(parametros.CanalCGP),
                         UrlCGP_DTR = parametros.UrlCGP_DTR,
@@ -1449,7 +1449,12 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
 
                 response.Result = connection.Query<TesTransaccion>(query, new { solicitud = Nsolicitud }).FirstOrDefault();
 
-                response.Result.Codigo = fxTesConsultaInfoSinpe(CodEmpresa, Nsolicitud.ToString()).Result.Cedula.ToString();
+                var infoSinpe =fxTesConsultaInfoSinpe(CodEmpresa, Nsolicitud.ToString()).Result;
+
+                if (response.Result is not null)
+                {
+                    response.Result.Codigo = infoSinpe?.Cedula?.ToString();
+                }
             }
             catch
             {
@@ -1464,16 +1469,18 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
         {
             var _parametrosSinpe = GetUriEmpresa(CodEmpresa, "TS");
 
+            var parametros = _parametrosSinpe?.Result;
+
             ReqBase context = new ReqBase
             {
-                HostId = _parametrosSinpe.Result.vHostPin,
+                HostId = parametros?.vHostPin ?? string.Empty,
                 OperationId = OperationId.ToString(),
-                ClientIPAddress = _parametrosSinpe.Result.vIpHost,
+                ClientIPAddress = parametros?.vIpHost ?? string.Empty,
                 CultureCode = "ES-CR",
-                UserCode = _parametrosSinpe.Result.vUsuarioLog,
+                UserCode = parametros?.vUsuarioLog ?? string.Empty,
             };
 
-            var servicio = _PIN.IsServiceAvailable(_parametrosSinpe.Result.UrlCGP_PIN, context);
+            var servicio = _PIN.IsServiceAvailable((parametros?.UrlCGP_PIN ?? ""), context);
             if (servicio.IsSuccessful)
             {
                 ReqAccountInfo accountData = new ReqAccountInfo
@@ -1483,10 +1490,10 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                     ClientIPAddress = context.ClientIPAddress,
                     CultureCode = context.CultureCode,
                     UserCode = context.UserCode,
-                    Id = null,
+                    Id = string.Empty,
                     AccountNumber = CuentaIBAN
                 };
-                var cuentaValida = _PIN.GetAccountInfo(_parametrosSinpe.Result.UrlCGP_PIN, accountData);
+                var cuentaValida = _PIN.GetAccountInfo((parametros?.UrlCGP_PIN ?? string.Empty), accountData);
 
                 if (cuentaValida.Account == null)
                 {
