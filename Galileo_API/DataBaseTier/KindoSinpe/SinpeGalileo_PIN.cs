@@ -9,6 +9,7 @@ namespace Galileo_API.DataBaseTier
     {
         private readonly HttpClient _client;
         private readonly string strMediaType = "application/json";
+        private readonly string msjJson = "Respuesta inválida del servicio (null).";
 
         public SinpeGalileoPin(IConfiguration config)
         {
@@ -37,7 +38,7 @@ namespace Galileo_API.DataBaseTier
                     return new ResServiceAvailable
                     {
                         IsSuccessful = true,
-                        OperationId = result.OperationId,
+                        OperationId = result!.OperationId,
                         ServiceAvailable = result.ServiceAvailable
                     };
                 }
@@ -90,7 +91,7 @@ namespace Galileo_API.DataBaseTier
                     return
                     new ResAccountInfo
                     {
-                        IsSuccessful = result.IsSuccessful,
+                        IsSuccessful = result!.IsSuccessful,
                         OperationId = result.OperationId,
                         Account = result.Account
                     };
@@ -144,7 +145,7 @@ namespace Galileo_API.DataBaseTier
                     return new ResPINSending
                     {
                         IsSuccessful = true,
-                        OperationId = result.OperationId,
+                        OperationId = result!.OperationId,
                         PINSendingResult = result.PINSendingResult
                     };
                 }
@@ -184,7 +185,7 @@ namespace Galileo_API.DataBaseTier
                 if (response.IsSuccessStatusCode)
                 {
                     var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResPINSending>(jsonResponse);
+                    return JsonConvert.DeserializeObject<ResPINSending>(jsonResponse) ?? throw new JsonException(msjJson);
                 }
 
                 return new ResPINSending
@@ -222,7 +223,7 @@ namespace Galileo_API.DataBaseTier
                 if (response.IsSuccessStatusCode)
                 {
                     var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResTransferInfo>(jsonResponse);
+                    return JsonConvert.DeserializeObject<ResTransferInfo>(jsonResponse) ?? throw new JsonException(msjJson); 
                 }
 
                 return new ResTransferInfo
@@ -260,7 +261,7 @@ namespace Galileo_API.DataBaseTier
                 if (response.IsSuccessStatusCode)
                 {
                     var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResTransferInfo>(jsonResponse);
+                    return JsonConvert.DeserializeObject<ResTransferInfo>(jsonResponse) ?? throw new JsonException(msjJson); 
                 }
 
                 return new ResTransferInfo
@@ -298,7 +299,7 @@ namespace Galileo_API.DataBaseTier
                 if (response.IsSuccessStatusCode)
                 {
                     var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResBatchSending>(jsonResponse);
+                    return JsonConvert.DeserializeObject<ResBatchSending>(jsonResponse) ?? throw new JsonException(msjJson); 
                 }
 
                 return new ResBatchSending
@@ -336,7 +337,7 @@ namespace Galileo_API.DataBaseTier
                 if (response.IsSuccessStatusCode)
                 {
                     var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResBatchState>(jsonResponse);
+                    return JsonConvert.DeserializeObject<ResBatchState>(jsonResponse) ?? throw new JsonException(msjJson); 
                 }
 
                 return new ResBatchState
@@ -374,7 +375,7 @@ namespace Galileo_API.DataBaseTier
                 if (response.IsSuccessStatusCode)
                 {
                     var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResCustomerTransfers>(jsonResponse);
+                    return JsonConvert.DeserializeObject<ResCustomerTransfers>(jsonResponse) ?? throw new JsonException(msjJson); 
                 }
 
                 return new ResCustomerTransfers
@@ -418,7 +419,7 @@ namespace Galileo_API.DataBaseTier
                 if (response.IsSuccessStatusCode)
                 {
                     var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResAllTransfers>(jsonResponse);
+                    return JsonConvert.DeserializeObject<ResAllTransfers>(jsonResponse) ?? throw new JsonException(msjJson); 
                 }
 
                 return new ResAllTransfers
