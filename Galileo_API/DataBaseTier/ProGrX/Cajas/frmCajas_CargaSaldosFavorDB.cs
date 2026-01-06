@@ -73,7 +73,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                var parameters = new { Usuario = param.Usuario, TipoDoc = param.TipoDoc };
+                var parameters = new { param.Usuario, param.TipoDoc };
                 return conn.Query<CajasSaldoFavorTipoLiquidacionResult>(
                     "spCajas_SaldoFavorTipoLiquidacion",
                     parameters,
@@ -166,7 +166,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                var parameters = new { FormaPago = param.FormaPago };
+                var parameters = new { param.FormaPago };
                 return conn.Query<CajasDepositosCuentaBancariaAutResult>(
                     "spCajas_DepositosCuentasBancariasAut",
                     parameters,
@@ -261,9 +261,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 var query = @"SELECT dbo.fxTes_DP_Cargado(@IdBanco, @Documento, '', @Monto) AS Existe";
                 return conn.QueryFirstOrDefault<CajasDepositosCargadoResult>(query, new
                 {
-                    IdBanco = param.IdBanco,
-                    Documento = param.Documento,
-                    Monto = param.Monto
+                    param.IdBanco,
+                    param.Documento,
+                    param.Monto
                 });
             });
         }
@@ -288,14 +288,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     )";
                 conn.Execute(query, new
                 {
-                    IdBanco = param.IdBanco,
-                    Documento = param.Documento,
-                    Fecha = param.Fecha,
-                    Monto = param.Monto,
-                    Descripcion = param.Descripcion,
-                    Usuario = param.Usuario,
-                    IdRequerida = param.IdRequerida,
-                    CodCuenta = param.CodCuenta
+                    param.IdBanco,
+                    param.Documento,
+                    param.Fecha,
+                    param.Monto,
+                    param.Descripcion,
+                    param.Usuario,
+                    param.IdRequerida,
+                    param.CodCuenta
                 });
                 return true;
             });
@@ -312,11 +312,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 var parameters = new
                 {
-                    IdBanco = param.IdBanco,
-                    Documento = param.Documento,
-                    Cedula = param.Cedula,
-                    Nombre = param.Nombre,
-                    Usuario = param.Usuario
+                    param.IdBanco,
+                    param.Documento,
+                    param.Cedula,
+                    param.Nombre,
+                    param.Usuario
                 };
                 conn.Execute("spCajas_Identifica_TES_Depositos", parameters, commandType: System.Data.CommandType.StoredProcedure);
                 return true;
@@ -343,13 +343,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     )";
                 conn.Execute(query, new
                 {
-                    IdBanco = param.IdBanco,
-                    Documento = param.Documento,
-                    Fecha = param.Fecha,
-                    Monto = param.Monto,
-                    Descripcion = param.Descripcion,
-                    Usuario = param.Usuario,
-                    Inconsistencia = param.Inconsistencia
+                    param.IdBanco,
+                    param.Documento,
+                    param.Fecha,
+                    param.Monto,
+                    param.Descripcion,
+                    param.Usuario,
+                    param.Inconsistencia
                 });
                 return true;
             });
@@ -366,11 +366,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 var parameters = new
                 {
-                    CodFormaPago = param.CodFormaPago,
-                    Documento = param.Documento,
-                    Cedula = param.Cedula,
-                    Nombre = param.Nombre,
-                    Usuario = param.Usuario
+                    param.CodFormaPago,
+                    param.Documento,
+                    param.Cedula,
+                    param.Nombre,
+                    param.Usuario
                 };
                 conn.Execute("spCajas_SaldoFavorCarga", parameters, commandType: System.Data.CommandType.StoredProcedure);
                 return true;
@@ -388,14 +388,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 var parameters = new
                 {
-                    IdBanco = param.IdBanco,
-                    Documento = param.Documento,
-                    Cedula = param.Cedula,
-                    Nombre = param.Nombre,
-                    Usuario = param.Usuario,
-                    CodEntidadPago = param.CodEntidadPago,
-                    CodOrigenRecursos = param.CodOrigenRecursos,
-                    DepositoId = param.DepositoId
+                    param.IdBanco,
+                    param.Documento,
+                    param.Cedula,
+                    param.Nombre,
+                    param.Usuario,
+                    param.CodEntidadPago,
+                    param.CodOrigenRecursos,
+                    param.DepositoId
                 };
                 conn.Execute("spCajas_Identifica_TES_Depositos", parameters, commandType: System.Data.CommandType.StoredProcedure);
                 return true;
@@ -415,7 +415,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 {
                     Param1 = (object?)null,
                     Param2 = (object?)null,
-                    IdSaldoFavor = param.IdSaldoFavor
+                    param.IdSaldoFavor
                 };
                 conn.Execute("spCajasNotificaDepositos", parameters, commandType: System.Data.CommandType.StoredProcedure);
                 return true;
@@ -442,8 +442,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 var parameters = new
                 {
-                    Linea = param.Linea,
-                    Usuario = param.Usuario
+                    param.Linea,
+                    param.Usuario
                 };
 
                 conn.Execute(spName, parameters, commandType: System.Data.CommandType.StoredProcedure);

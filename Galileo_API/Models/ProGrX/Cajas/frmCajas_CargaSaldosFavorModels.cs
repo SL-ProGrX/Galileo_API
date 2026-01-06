@@ -36,9 +36,9 @@
         public string? Cedula { get; set; } = string.Empty;
         public DateTime Registro_Fecha { get; set; }
         public string? Registro_Usuario { get; set; } = string.Empty;
-        public decimal Monto_Registro { get; set; }
-        public decimal Monto { get; set; }
-        public decimal Saldo { get; set; }
+        public decimal? Monto_Registro { get; set; }
+        public decimal? Monto { get; set; }
+        public decimal? Saldo { get; set; }
         public string? Doc_Tipo { get; set; } = string.Empty;
         public string? Doc_Numero { get; set; } = string.Empty;
         public int? Doc_Transac_Id { get; set; }
@@ -107,7 +107,7 @@
         public string? Documento { get; set; } = string.Empty;
         public int? NSolicitud { get; set; }
         public DateTime Fecha { get; set; }
-        public decimal Monto { get; set; }
+        public decimal? Monto { get; set; }
         public string? Descripcion { get; set; } = string.Empty;
         public DateTime? Registro_Fecha { get; set; }
         public string? Registro_Usuario { get; set; } = string.Empty;
@@ -146,7 +146,7 @@
         public int? CodEmpresa { get; set; }
         public int? IdBanco { get; set; }
         public string? Documento { get; set; } = string.Empty;
-        public decimal Monto { get; set; }
+        public decimal? Monto { get; set; }
     }
 
     public class CajasDepositosCargadoResult

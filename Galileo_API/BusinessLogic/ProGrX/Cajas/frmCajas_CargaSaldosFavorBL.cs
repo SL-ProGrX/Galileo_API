@@ -5,11 +5,11 @@ using Galileo_API.Models.ProGrX.Cajas;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Cajas
 {
-    public class FrmCajasCargaSaldosFavorBl
+    public class FrmCajasCargaSaldosFavorBL
     {
         private readonly FrmCajasCargaSaldosFavorDB _db;
 
-        public FrmCajasCargaSaldosFavorBl(IConfiguration config)
+        public FrmCajasCargaSaldosFavorBL(IConfiguration config)
         {
             _db = new FrmCajasCargaSaldosFavorDB(config);
         }
