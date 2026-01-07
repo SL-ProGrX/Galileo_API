@@ -4,7 +4,7 @@ using Galileo_API.Models.ProGrX.Cobros;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Galileo.Controllers.ProGrX.Fondos
+namespace Galileo_API.Controllers.ProGrX.Cobros
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -12,10 +12,7 @@ namespace Galileo.Controllers.ProGrX.Fondos
     {
         private readonly FrmCoGruposBl _bl;
 
-        public FrmCoGruposController(IConfiguration config)
-        {
-            _bl = new FrmCoGruposBl(config);
-        }
+        public FrmCoGruposController(IConfiguration config) => _bl = new FrmCoGruposBl(config);
 
         [Authorize]
         [HttpGet("CO_Grupos_Obtener")]
@@ -40,14 +37,14 @@ namespace Galileo.Controllers.ProGrX.Fondos
 
         [Authorize]
         [HttpGet("CO_Grupos_Asignacion_Obtener")]
-        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, int GrupoId, string Filtro, int Tipo)
+        public ErrorDto<List<CoGruposAsignacionData>> CO_Grupos_Asignacion_Obtener(int CodEmpresa, string Filtros)
         {
-            return _bl.CO_Grupos_Asignacion_Obtener(CodEmpresa, GrupoId, Filtro, Tipo);
+            return _bl.CO_Grupos_Asignacion_Obtener(CodEmpresa, Filtros);
         }
 
         [Authorize]
         [HttpPost("CO_Grupos_Asignar")]
-        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, int GrupoId, int Tipo, string Codigo, bool IsChecked, string Usuario)
+        public ErrorDto CO_Grupos_Asignar(int CodEmpresa, int GrupoId, string Tipo, string Codigo, bool IsChecked, string Usuario)
         {
             return _bl.CO_Grupos_Asignar(CodEmpresa, GrupoId, Tipo, Codigo, IsChecked, Usuario);
         }

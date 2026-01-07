@@ -48,14 +48,14 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
         [Authorize]
         [HttpPost("CajasTransacciones_Validacion")]
-        public ErrorDto<CajasTransacValidacionResult> CajasTransacciones_Validacion(int codEmpresa, [FromBody] CajasTransacValidacionParams param)
+        public ErrorDto<CajasTransacValidacionResult?> CajasTransacciones_Validacion(int codEmpresa, [FromBody] CajasTransacValidacionParams param)
         {
             return _bl.CajasTransacciones_Validacion(codEmpresa, param);
         }
 
         [Authorize]
         [HttpPost("CajasTransacciones_ServiciosDatos")]
-        public ErrorDto<CajasServiciosDatosResult> CajasTransacciones_ServiciosDatos(int codEmpresa, [FromBody] CajasServiciosDatosParams param)
+        public ErrorDto<CajasServiciosDatosResult?> CajasTransacciones_ServiciosDatos(int codEmpresa, [FromBody] CajasServiciosDatosParams param)
         {
             return _bl.CajasTransacciones_ServiciosDatos(codEmpresa, param);
         }

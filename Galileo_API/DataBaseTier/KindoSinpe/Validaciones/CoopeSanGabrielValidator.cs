@@ -1,9 +1,6 @@
 ﻿using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
-using Galileo.Models.Security;
-using Sinpe_PIN;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier
 {
