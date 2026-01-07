@@ -35,9 +35,9 @@
     public class ProcesarComprobanteParametros
     {
         public int codEmpresa { get; set; }
-        public string usuario { get; set; }
+        public string? usuario { get; set; }
         public int modulo { get; set; }
         public int solicitud { get; set; }
-        public string documentoManual { get; set; }
+        public string? documentoManual { get; set; }
     }
 }
