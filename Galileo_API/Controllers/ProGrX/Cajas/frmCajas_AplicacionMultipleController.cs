@@ -18,9 +18,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             BL_Cajas_AM = new FrmCajasAplicacionMultipleBl(config);
         }
 
-        // =========================================================
-        // VALIDAR (fxVerificar)
-        // =========================================================
+   
         [Authorize]
         [HttpGet("Cajas_AM_Validar")]
         public ErrorDto<CajasAmValidacionDto> Cajas_AM_Validar(
@@ -38,9 +36,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             );
         }
 
-        // =========================================================
-        // CRÉDITOS PENDIENTES
-        // =========================================================
+
         [Authorize]
         [HttpGet("Cajas_AM_Creditos_Pendientes")]
         public ErrorDto<List<CajasCreditoPendienteDto>> Cajas_AM_Creditos_Pendientes(
@@ -51,9 +47,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             );
         }
 
-        // =========================================================
-        // AGREGAR A LOTE
-        // =========================================================
+ 
         [Authorize]
         [HttpPost("Cajas_AM_Creditos_Agregar")]
         public ErrorDto<bool> Cajas_AM_Creditos_Agregar(
@@ -65,9 +59,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             );
         }
 
-        // =========================================================
-        // ELIMINAR DEL LOTE
-        // =========================================================
+  
         [Authorize]
         [HttpPost("Cajas_AM_Eliminar")]
         public ErrorDto<bool> Cajas_AM_Eliminar(
@@ -77,9 +69,6 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             return BL_Cajas_AM.Cajas_AM_Eliminar(codEmpresa, ids);
         }
 
-        // =========================================================
-        // APLICAR
-        // =========================================================
         [Authorize]
         [HttpPost("Cajas_AM_Aplicar")]
         public ErrorDto<long> Cajas_AM_Aplicar(

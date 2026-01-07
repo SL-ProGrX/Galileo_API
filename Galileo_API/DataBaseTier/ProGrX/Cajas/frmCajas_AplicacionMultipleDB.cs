@@ -2,7 +2,6 @@ using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
-using System.Text;
 using Galileo_API.Models.ProGrX.Cajas;
 using System.Data;
 
