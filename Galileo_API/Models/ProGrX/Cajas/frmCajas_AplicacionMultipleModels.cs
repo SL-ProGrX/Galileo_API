@@ -38,7 +38,7 @@
         public long? operacion { get; set; }
         public string? linea { get; set; }
         public string? tipoAbono { get; set; }
-        public DateTime fecha { get; set; }
+        public DateTime? fecha { get; set; }
         public decimal? abono { get; set; }
         public decimal? saldo { get; set; }
         public decimal? intCor { get; set; }
@@ -55,7 +55,7 @@
         public string? tiquete { get; set; }
         public string? usuario { get; set; }
         public string? cedula { get; set; }
-        public decimal total { get; set; }
+        public decimal? total { get; set; }
         public string? divisa { get; set; }
         public string? notas { get; set; }
         public int? sesionId { get; set; }
