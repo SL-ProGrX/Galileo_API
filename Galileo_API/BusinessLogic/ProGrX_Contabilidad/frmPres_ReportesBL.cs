@@ -22,5 +22,10 @@ namespace Galileo.BusinessLogic
         {
             return DbfrmPres_Reportes.spPres_Ajustes_Permitidos_Obtener(CodEmpresa, codContab, codModelo, Usuario);
         }
+
+        public ErrorDto<List<object>> Pres_ReporteBalanceEstado(int CodEmpresa, PresFiltrosReportes presFiltros)
+        {
+            return DbfrmPres_Reportes.Pres_ReporteBalanceEstado(CodEmpresa, presFiltros);
+        }
     }
 }

@@ -1,8 +1,9 @@
 using Dapper;
-using Microsoft.Data.SqlClient;
-using Newtonsoft.Json;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.PRES;
+using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
 using System.Data;
 
 namespace Galileo.DataBaseTier
@@ -253,35 +254,72 @@ namespace Galileo.DataBaseTier
                     return resp;
                 }
 
-                const string procedure = "spPres_PresupuestoAjustesGuarda";
+                if(request.ajuste_id == "03")
+                {
+                    if (string.IsNullOrEmpty(request.cuentaDestino) ||
+                           string.IsNullOrEmpty(request.unidadDestino) ||
+                           string.IsNullOrEmpty(request.centroCostoDestino))
+                    {
+                        resp.Description = "Para el tipo de ajuste Compensado, debe ingresar Cuenta Destino, Unidad Destino y Centro de Costo Destino!";
+                        resp.Code = -1;
+                        return resp;
+                    }
 
-                var parameters = new DynamicParameters();
-                parameters.Add("Contabilidad", request.cod_conta, DbType.Int32);
-                parameters.Add("Modelo", request.cod_modelo, DbType.String);
-                parameters.Add("Anio", request.anio, DbType.Int32);
-                parameters.Add("Mes", request.mes, DbType.Int32);
-                parameters.Add("Cuenta", request.cuenta, DbType.String);
-                parameters.Add("Mnt_MensualNuevo", request.mensual_nuevo, DbType.Decimal);
-                parameters.Add("Mnt_Ajuste", request.mnt_ajuste, DbType.Decimal);
-                parameters.Add("Unidad", request.cod_unidad, DbType.String);
-                parameters.Add("CentroCosto", request.centro_costo, DbType.String);
-                parameters.Add("Notas", request.notas, DbType.String);
-                parameters.Add("Usuario", request.usuario, DbType.String);
-                parameters.Add("AjusteId", request.ajuste_id, DbType.String);
+                    //Ejecutar procedimiento almacenado spPres_PresupuestoAjustesGuarda
+                    var query = "exec dbo.spPres_PresupuestoAjustesCompensadoGuarda @Contabilidad,@Modelo,@Anio,@Mes,@Cuenta, @CuentaDestino," +
+                        "@Mnt_Ajuste,@Unidad,@CentroCosto,@Notas,@Usuario,@AjusteId, @UnidadDestino, @CentroCostoDestino";
 
-                resp.Code = connection
-                    .ExecuteAsync(procedure, parameters, commandType: CommandType.StoredProcedure)
-                    .Result;
+                    resp.Code = connection.ExecuteAsync(query, new
+                    {
+                        Contabilidad = request.cod_conta,
+                        Modelo = request.cod_modelo,
+                        Anio = request.anio,
+                        Mes = request.mes,
+                        Cuenta = request.cuenta,
+                        CuentaDestino = request.cuentaDestino,
+                        Mnt_Ajuste = request.mnt_ajuste,
+                        Unidad = request.cod_unidad,
+                        CentroCosto = request.centro_costo,
+                        Notas = request.notas,
+                        Usuario = request.usuario,
+                        AjusteId = request.ajuste_id,
+                        UnidadDestino = request.unidadDestino,
+                        CentroCostoDestino = request.centroCostoDestino
+                    }).Result;
+                    
+                    
 
-                resp.Description = "Ajustes aplicados satisfactoriamente!";
+                }
+                else
+                {
+                    const string procedure = "spPres_PresupuestoAjustesGuarda";
+
+                    var parameters = new DynamicParameters();
+                    parameters.Add("Contabilidad", request.cod_conta, DbType.Int32);
+                    parameters.Add("Modelo", request.cod_modelo, DbType.String);
+                    parameters.Add("Anio", request.anio, DbType.Int32);
+                    parameters.Add("Mes", request.mes, DbType.Int32);
+                    parameters.Add("Cuenta", request.cuenta, DbType.String);
+                    parameters.Add("Mnt_MensualNuevo", request.mensual_nuevo, DbType.Decimal);
+                    parameters.Add("Mnt_Ajuste", request.mnt_ajuste, DbType.Decimal);
+                    parameters.Add("Unidad", request.cod_unidad, DbType.String);
+                    parameters.Add("CentroCosto", request.centro_costo, DbType.String);
+                    parameters.Add("Notas", request.notas, DbType.String);
+                    parameters.Add("Usuario", request.usuario, DbType.String);
+                    parameters.Add("AjusteId", request.ajuste_id, DbType.String);
+
+                    resp.Code = connection
+                        .ExecuteAsync(procedure, parameters, commandType: CommandType.StoredProcedure)
+                        .Result;
+                    
+                }
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                DbHelper.ErrorResponse(ex.Message);
             }
 
-            return resp;
+            return  DbHelper.OkResponse("Ajustes aplicados satisfactoriamente!");
         }
 
         /// <summary>
@@ -323,6 +361,36 @@ namespace Galileo.DataBaseTier
                 resp.Result = null;
             }
 
+            return resp;
+        }
+
+        public ErrorDto<CntxCierres> Pres_CierreAjustes_Obtener(int CodEmpresa, string codModelo, int codContab, string usuario)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var resp = new ErrorDto<CntxCierres>();
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                var query = $@"SELECT MES, ANIO
+                                     FROM  [dbo].[fxPres_W_PeriodosActivosModelo]( @modelo, @contabilidad)";
+                var tabla = connection.Query<dynamic>(query).ToList();
+
+                resp.Result = new CntxCierres
+                {
+                    Inicio_Anio = tabla[0].ANIO,
+                    Inicio_Mes = tabla[0].MES,
+                    Estado = "P",
+                    Corte_Anio = tabla[tabla.Count - 1].ANIO,
+                    Corte_Mes = tabla[tabla.Count - 1].MES,
+                };
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = "Pres_CierreAjustes_Obtener - " + ex.Message;
+                resp.Result = null;
+            }
             return resp;
         }
 
@@ -845,5 +913,89 @@ namespace Galileo.DataBaseTier
         }
 
         #endregion
+
+        /// <summary>
+        /// Método que obtiene las cuentas compensadas según la contabilidad y la cuenta inicial
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="contabilidad"></param>
+        /// <param name="cuenta"></param>
+        /// <param name="Usuario"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Pres_AjustesCuentasCompensado(int CodEmpresa, int contabilidad, string cuenta)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var resp = new ErrorDto<List<DropDownListaGenericaModel>>();
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+
+                //tomo los primeros 3 caracteres de la cuenta
+                string cuentaInicio = cuenta.Substring(0, 3);
+
+                var query = $@"select COD_CUENTA as 'item', CONCAT(COD_CUENTA_MASK,' - ',DESCRIPCION ) as 'descripcion' FROM CNTX_CUENTAS 
+                              where COD_CUENTA like @cuenta AND COD_CONTABILIDAD = @contabilidad AND ACEPTA_MOVIMIENTOS = 1 AND BLOQUEADA = 0 AND NIVEL > 1 AND COD_CUENTA != @cuentaOrigen";
+                resp.Result = connection.Query<DropDownListaGenericaModel>(query, new
+                {
+                    cuenta = cuentaInicio + "%",
+                    contabilidad = contabilidad,
+                    cuentaOrigen = cuenta
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+            return resp;
+        }
+
+        /// <summary>
+        /// Método que obtiene el detalle de las cuentas del presupuesto según los filtros puestos por el usuario
+        /// </summary>
+        /// <param name="CodCliente"></param>
+        /// <param name="datos"></param>
+        /// <returns></returns>
+        public ErrorDto<List<PreVistaPresupuestoCuentaData>> PresPlanningCuentaDetalle_Obtener(int CodCliente, string datos)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodCliente);
+            PresVistaPresupuestoCuentaBuscar filtros = JsonConvert.DeserializeObject<PresVistaPresupuestoCuentaBuscar>(datos) ?? new PresVistaPresupuestoCuentaBuscar();
+            var info = new ErrorDto<List<PreVistaPresupuestoCuentaData>>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new List<PreVistaPresupuestoCuentaData>()
+            };
+            try
+            {
+
+
+                using var connection = new SqlConnection(stringConn);
+                string vFecha = "";
+
+                var procedure = "[spPres_W_VistaPresupuestoCompleto_Cuenta]";
+                var values = new
+                {
+                    COD_CONTA = filtros.cod_conta,
+                    COD_MODELO = filtros.cod_modelo,
+                    TIPO_VISTA = filtros.tipo_vista,
+                    Periodo = vFecha
+
+                };
+
+                info.Result = connection.Query<PreVistaPresupuestoCuentaData>(procedure, values, commandType: CommandType.StoredProcedure).ToList();
+
+                return info;
+            }
+            catch (Exception ex)
+            {
+                info.Code = -1;
+                info.Description = ex.Message;
+                info.Result = new List<PreVistaPresupuestoCuentaData>();
+            }
+            return info;
+        }
+
     }
 }

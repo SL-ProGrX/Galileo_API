@@ -126,6 +126,13 @@ namespace Galileo.Models.PRES
         public string notas { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
         public string ajuste_id { get; set; } = string.Empty;
+
+        public string? cuentaDestino { get; set; } = string.Empty;
+        public string? unidadDestino { get; set; } = string.Empty;
+        public string? centroCostoDestino { get; set; } = string.Empty;
+
+        public int? anioDestino { get; set; }
+        public int? mesDestino { get; set; }
     }
 
     public class PresTiposAjustes
