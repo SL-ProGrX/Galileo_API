@@ -1,9 +1,4 @@
 using System.Data;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Extensions.Configuration;
-using Dapper;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 
@@ -19,10 +14,50 @@ namespace Galileo.DataBaseTier
             _portalDb = new PortalDB(config);
         }
 
+        private sealed class EsquemaRow
+        {
+            // Populated by Dapper inside DbHelper
+            public string val_id { get; set; } = string.Empty;
+            public string descripcion { get; set; } = string.Empty;
+            public int activo { get; set; } = 0;
+            public int Total { get; set; } = 0;
+        }
+
+        private sealed class ItemRow
+        {
+            // Populated by Dapper inside DbHelper
+            public string val_item { get; set; } = string.Empty;
+            public string descripcion { get; set; } = string.Empty;
+            public decimal peso { get; set; } = 0m;
+            public int Total { get; set; } = 0;
+        }
+
+        private static void BuildSearch(string? filtro, int? pagina, int? paginacion, out string? like, out int offset, out int fetch)
+        {
+            like = string.IsNullOrWhiteSpace(filtro) ? null : $"%{filtro.Trim()}%";
+
+            offset = pagina.GetValueOrDefault(0);
+            if (offset < 0) offset = 0;
+
+            fetch = paginacion.GetValueOrDefault(int.MaxValue);
+            if (fetch <= 0) fetch = int.MaxValue;
+        }
+
+        private ErrorDto MergeUpsert(int codEmpresa, string mergeSql, object param, string insertMsg, string updateMsg)
+        {
+            var r = DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, mergeSql, string.Empty, param);
+            var code = r.Code is int c ? c : -1;
+            if (code != 0)
+                return DbHelper.ErrorResponse(r.Description ?? ErrorMessage, code);
+
+            var action = (r.Result ?? string.Empty).Trim();
+            var msg = action.Equals("INSERT", StringComparison.OrdinalIgnoreCase) ? insertMsg : updateMsg;
+            return DbHelper.OkResponse(msg);
+        }
+
         public ErrorDto<CprValoraEsquemaDtoList> EsquemaValoracion_Obtener(int codEmpresa, int? pagina, int? paginacion, string? filtro)
         {
-            var like = LikeOrNull(filtro);
-            var (offset, fetch) = PagingOrAll(pagina, paginacion);
+            BuildSearch(filtro, pagina, paginacion, out var like, out var offset, out var fetch);
 
             const string sql = @"SELECT VAL_ID AS val_id,
        descripcion,
@@ -33,19 +68,37 @@ namespace Galileo.DataBaseTier
  ORDER BY VAL_ID DESC
  OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-            return QueryPagedOver<CprValoraEsquemaDto, CprValoraEsquemaDtoList>(
+            var rowsResp = DbHelper.ExecuteListQuery<EsquemaRow>(
+                _portalDb,
                 codEmpresa,
                 sql,
-                new { F = like, Offset = offset, Fetch = fetch },
-                (total, rows) => new CprValoraEsquemaDtoList { Total = total, esquemas = rows },
-                () => new CprValoraEsquemaDtoList { Total = 0, esquemas = new List<CprValoraEsquemaDto>() }
+                new { F = like, Offset = offset, Fetch = fetch }
             );
+
+            var code = rowsResp.Code is int c ? c : -1;
+            if (code != 0)
+                return DbHelper.CreateErrorResponse<CprValoraEsquemaDtoList>(rowsResp.Description ?? ErrorMessage, code, null!);
+
+            var rows = rowsResp.Result ?? new List<EsquemaRow>();
+            var total = rows.Count == 0 ? 0 : rows[0].Total;
+
+            var dtoRows = rows.Select(r => new CprValoraEsquemaDto
+            {
+                val_id = r.val_id,
+                descripcion = r.descripcion,
+                activo = r.activo == 1
+            }).ToList();
+
+            return DbHelper.CreateOkResponse(new CprValoraEsquemaDtoList
+            {
+                Total = total,
+                esquemas = dtoRows
+            });
         }
 
         public ErrorDto<CprValoraItemsDtoList> ValoracionItems_Obtener(int codEmpresa, string val_id, int? pagina, int? paginacion, string? filtro)
         {
-            var like = LikeOrNull(filtro);
-            var (offset, fetch) = PagingOrAll(pagina, paginacion);
+            BuildSearch(filtro, pagina, paginacion, out var like, out var offset, out var fetch);
 
             const string sql = @"SELECT VAL_ITEM AS val_item,
        descripcion,
@@ -57,13 +110,32 @@ namespace Galileo.DataBaseTier
  ORDER BY VAL_ITEM
  OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-            return QueryPagedOver<CprValoraItemsDto, CprValoraItemsDtoList>(
+            var rowsResp = DbHelper.ExecuteListQuery<ItemRow>(
+                _portalDb,
                 codEmpresa,
                 sql,
-                new { ValId = val_id, F = like, Offset = offset, Fetch = fetch },
-                (total, rows) => new CprValoraItemsDtoList { Total = total, items = rows },
-                () => new CprValoraItemsDtoList { Total = 0, items = new List<CprValoraItemsDto>() }
+                new { ValId = val_id, F = like, Offset = offset, Fetch = fetch }
             );
+
+            var code = rowsResp.Code is int c ? c : -1;
+            if (code != 0)
+                return DbHelper.CreateErrorResponse<CprValoraItemsDtoList>(rowsResp.Description ?? ErrorMessage, code, null!);
+
+            var rows = rowsResp.Result ?? new List<ItemRow>();
+            var total = rows.Count == 0 ? 0 : rows[0].Total;
+
+            var dtoRows = rows.Select(r => new CprValoraItemsDto
+            {
+                val_item = r.val_item,
+                descripcion = r.descripcion,
+                peso = r.peso
+            }).ToList();
+
+            return DbHelper.CreateOkResponse(new CprValoraItemsDtoList
+            {
+                Total = total,
+                items = dtoRows
+            });
         }
 
         public ErrorDto EsquemaValoracion_Upsert(int codEmpresa, string usuario, CprValoraEsquemaDto request)
@@ -89,51 +161,29 @@ WHEN NOT MATCHED THEN
     VALUES (@ValId, @Descripcion, @Activo, GETDATE(), @Usuario)
 OUTPUT $action;";
 
-            var r = DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, mergeSql, "", p);
-            var code = r.Code is int c ? c : -1;
-            if (code != 0)
-                return DbHelper.ErrorResponse(r.Description ?? ErrorMessage, code);
-
-            var action = (r.Result ?? string.Empty).Trim();
-            var msg = action.Equals("INSERT", StringComparison.OrdinalIgnoreCase)
-                ? "Esquema agregado satisfactoriamente"
-                : "Esquema actualizado satisfactoriamente";
-
-            return DbHelper.OkResponse(msg);
+            return MergeUpsert(
+                codEmpresa,
+                mergeSql,
+                p,
+                "Esquema agregado satisfactoriamente",
+                "Esquema actualizado satisfactoriamente"
+            );
         }
 
         public ErrorDto EsquemaValoracion_Delete(int codEmpresa, string val_id)
         {
-            // 2 deletes => transacción (para que no queden huérfanos)
-            var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                if (conn.State != ConnectionState.Open) conn.Open();
-                using var tx = conn.BeginTransaction();
+            const string sql = @"BEGIN TRY
+    BEGIN TRAN;
+    DELETE FROM CPR_VALORA_ITEMS WHERE VAL_ID = @ValId;
+    DELETE FROM CPR_VALORA_ESQUEMA WHERE VAL_ID = @ValId;
+    COMMIT TRAN;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRAN;
+    THROW;
+END CATCH";
 
-                try
-                {
-                    conn.Execute(
-                        @"DELETE FROM CPR_VALORA_ITEMS WHERE VAL_ID = @ValId",
-                        new { ValId = val_id },
-                        transaction: tx
-                    );
-
-                    conn.Execute(
-                        @"DELETE FROM CPR_VALORA_ESQUEMA WHERE VAL_ID = @ValId",
-                        new { ValId = val_id },
-                        transaction: tx
-                    );
-
-                    tx.Commit();
-                    return true;
-                }
-                catch
-                {
-                    tx.Rollback();
-                    throw;
-                }
-            });
-
+            var r = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, new { ValId = val_id });
             var code = r.Code is int c ? c : -1;
             return code == 0
                 ? DbHelper.OkResponse("Esquema eliminado satisfactoriamente")
@@ -164,17 +214,13 @@ WHEN NOT MATCHED THEN
     VALUES (@Esquema, @Item, @Descripcion, @Peso, GETDATE(), @Usuario)
 OUTPUT $action;";
 
-            var r = DbHelper.ExecuteSingleQuery<string>(_portalDb, codEmpresa, mergeSql, "", p);
-            var code = r.Code is int c ? c : -1;
-            if (code != 0)
-                return DbHelper.ErrorResponse(r.Description ?? ErrorMessage, code);
-
-            var action = (r.Result ?? string.Empty).Trim();
-            var msg = action.Equals("INSERT", StringComparison.OrdinalIgnoreCase)
-                ? "Item agregado satisfactoriamente"
-                : "Item actualizado satisfactoriamente";
-
-            return DbHelper.OkResponse(msg);
+            return MergeUpsert(
+                codEmpresa,
+                mergeSql,
+                p,
+                "Item agregado satisfactoriamente",
+                "Item actualizado satisfactoriamente"
+            );
         }
 
         public ErrorDto ValoracionItems_Delete(int codEmpresa, string val_id, string val_item)
@@ -191,65 +237,6 @@ OUTPUT $action;";
             return code == 0
                 ? DbHelper.OkResponse("Item eliminado satisfactoriamente")
                 : DbHelper.ErrorResponse(r.Description ?? "Error eliminando item", code);
-        }
-
-
-        private static string? LikeOrNull(string? value)
-        {
-            var v = (value ?? string.Empty).Trim();
-            return v.Length == 0 ? null : string.Concat("%", v, "%");
-        }
-
-        private static (int Offset, int Fetch) PagingOrAll(int? pagina, int? paginacion)
-        {
-            var off = pagina.GetValueOrDefault();
-            if (off < 0) off = 0;
-
-            var take = paginacion.GetValueOrDefault(int.MaxValue);
-            if (take <= 0) take = int.MaxValue;
-
-            return (off, take);
-        }
-
-        private ErrorDto<TList> QueryPagedOver<TDto, TList>(
-            int codEmpresa,
-            string sql,
-            object param,
-            Func<int, List<TDto>, TList> build,
-            Func<TList> emptyFactory)
-            where TList : class
-        {
-            var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-            {
-                if (conn.State != ConnectionState.Open) conn.Open();
-
-                var total = 0;
-                var rows = conn.Query<TDto, int, TDto>(
-                    sql,
-                    (dto, t) =>
-                    {
-                        total = t;
-                        return dto;
-                    },
-                    param,
-                    splitOn: "Total").ToList();
-
-                if (rows.Count == 0)
-                    total = 0;
-
-                return build(total, rows);
-            });
-
-            var code = r.Code is int c ? c : -1;
-            if (code != 0)
-                return new ErrorDto<TList>
-                {
-                    Code = code,
-                    Description = r.Description ?? ErrorMessage,
-                    Result = null
-                };
-
-            return DbHelper.CreateOkResponse(r.Result ?? emptyFactory());
         }
     }
 }
