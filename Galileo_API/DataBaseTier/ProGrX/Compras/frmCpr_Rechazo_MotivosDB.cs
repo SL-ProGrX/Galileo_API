@@ -1,6 +1,7 @@
-using Dapper;
-using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
 using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
@@ -15,18 +16,110 @@ namespace Galileo.DataBaseTier
         private const string DefaultSortField = "COD_RECHAZO";
         private const string SortFieldDescripcion = "DESCRIPCION";
         private const string SortFieldActivo = "ACTIVO";
+        private const string ErrorLiteral = "Error";
 
         private static string Clean(string? value) => (value ?? string.Empty).Trim();
 
         private static ErrorDto Fail(Exception ex) => DbHelper.ErrorResponse(ex.Message, -1);
 
-        private static DynamicParameters BuildMotivoCommonParams(CprRechazosMotivosDto motivo, int activo)
+        private static int SafeCode(ErrorDto r) => r.Code is int c ? c : -1;
+
+        private static int SafeCode<T>(ErrorDto<T> r) => r.Code is int c ? c : -1;
+
+        private static ErrorDto? ValidateMotivo(CprRechazosMotivosDto? motivo, out string cod)
         {
-            var dp = new DynamicParameters();
-            dp.Add("cod_rechazo", Clean(motivo.cod_rechazo));
-            dp.Add("descripcion", Clean(motivo.descripcion));
-            dp.Add("activo", activo);
-            return dp;
+            cod = string.Empty;
+            if (motivo == null)
+                return DbHelper.ErrorResponse("Motivo inválido.", -1);
+
+            cod = Clean(motivo.cod_rechazo);
+            if (string.IsNullOrWhiteSpace(cod))
+                return DbHelper.ErrorResponse("El código del motivo es requerido.", -1);
+
+            return null;
+        }
+
+        private ErrorDto<int> GetExistsCount(int codCliente, string cod)
+        {
+            const string existsSql = @"SELECT COUNT(COD_RECHAZO)
+FROM CPR_RECHAZO_TIPOS
+WHERE UPPER(COD_RECHAZO) = @cod;";
+
+            return DbHelper.ExecuteSingleQuery<int>(
+                _portalDB,
+                codCliente,
+                existsSql,
+                0,
+                new { cod = cod.ToUpperInvariant() }
+            );
+        }
+
+        private static ErrorDto MapExec(ErrorDto exec, string okMsg)
+        {
+            if (exec.Code == 0)
+                return DbHelper.OkResponse(okMsg);
+
+            return DbHelper.ErrorResponse(exec.Description ?? ErrorLiteral, SafeCode(exec));
+        }
+
+        private ErrorDto InsertMotivo(int codCliente, CprRechazosMotivosDto motivo, string cod)
+        {
+            const string insertSql = @"INSERT INTO CPR_RECHAZO_TIPOS
+(
+    COD_RECHAZO,
+    DESCRIPCION,
+    ACTIVO,
+    REGISTRO_FECHA,
+    REGISTRO_USUARIO
+)
+VALUES
+(
+    @cod_rechazo,
+    @descripcion,
+    @activo,
+    GETDATE(),
+    @registro_usuario
+);";
+
+            var exec = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codCliente,
+                insertSql,
+                new
+                {
+                    cod_rechazo = cod,
+                    descripcion = Clean(motivo.descripcion),
+                    activo = motivo.activo ? 1 : 0,
+                    registro_usuario = Clean(motivo.modifica_usuario ?? motivo.registro_usuario)
+                }
+            );
+
+            return MapExec(exec, "Motivo agregado correctamente");
+        }
+
+        private ErrorDto UpdateMotivo(int codCliente, CprRechazosMotivosDto motivo, string cod)
+        {
+            const string updateSql = @"UPDATE CPR_RECHAZO_TIPOS
+   SET DESCRIPCION = @descripcion,
+       ACTIVO = @activo,
+       MODIFICA_FECHA = GETDATE(),
+       MODIFICA_USUARIO = @modifica_usuario
+ WHERE COD_RECHAZO = @cod_rechazo;";
+
+            var exec = DbHelper.ExecuteNonQuery(
+                _portalDB,
+                codCliente,
+                updateSql,
+                new
+                {
+                    cod_rechazo = cod,
+                    descripcion = Clean(motivo.descripcion),
+                    activo = motivo.activo ? 1 : 0,
+                    modifica_usuario = Clean(motivo.modifica_usuario)
+                }
+            );
+
+            return MapExec(exec, "Motivo actualizado correctamente");
         }
 
         public FrmCprRechazoMotivosDB(IConfiguration config)
@@ -34,93 +127,52 @@ namespace Galileo.DataBaseTier
             _portalDB = new PortalDB(config);
         }
 
-        // Helper: usa DbHelper.WithConn y devuelve ErrorDto plano (sin ErrorDto<ErrorDto>)
-        private ErrorDto WithConn(int codEmpresa, Func<SqlConnection, ErrorDto> action)
+        /// <summary>
+        /// Obtiene la lista de motivos de rechazo
+        /// </summary>
+        public ErrorDto<CprRechazosMotivosLista> CprRechazoMotivoLista_Obtener(int CodCliente, string vFiltros)
         {
-            var r = DbHelper.WithConn(_portalDB, codEmpresa, action);
-            return r.Code == 0
-                ? (r.Result ?? DbHelper.ErrorResponse("Error desconocido.", -1))
-                : DbHelper.ErrorResponse(r.Description ?? "Error desconocido.", -1);
-        }
-
-        // Helper: para resultados tipados (la acción devuelve T, NO ErrorDto<T>)
-        private ErrorDto<T> WithConn<T>(int codEmpresa, Func<SqlConnection, T> action)
-        {
-            var r = DbHelper.WithConn(_portalDB, codEmpresa, action);
-            return r.Code == 0
-                ? new ErrorDto<T> { Code = 0, Description = "Ok", Result = r.Result }
-                : new ErrorDto<T> { Code = -1, Description = r.Description, Result = default! };
-        }
-
-        private static FiltrosLazyLoadData ParseFiltrosLazy(string vFiltros)
-        {
+            FiltrosLazyLoadData filtro;
             try
             {
-                return JsonConvert.DeserializeObject<FiltrosLazyLoadData>(vFiltros) ?? new FiltrosLazyLoadData();
+                filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(vFiltros) ?? new FiltrosLazyLoadData();
             }
             catch
             {
-                return new FiltrosLazyLoadData();
+                filtro = new FiltrosLazyLoadData();
             }
-        }
 
-        private static DynamicParameters BuildListadoParams(FiltrosLazyLoadData filtro)
-        {
-            var dp = new DynamicParameters();
+            var like = string.IsNullOrWhiteSpace(filtro.filtro) ? null : $"%{filtro.filtro.Trim()}%";
 
-            dp.Add("q", BuildSearchLike(filtro.filtro));
+            var off = filtro.pagina < 0 ? 0 : filtro.pagina;
+            var take = filtro.paginacion <= 0 ? 10 : filtro.paginacion;
 
-            var (off, take) = NormalizePaging(filtro.pagina, filtro.paginacion);
-            dp.Add("off", off);
-            dp.Add("take", take);
-
-            // Sorting parameters (normalized/whitelisted)
-            dp.Add("sortField", NormalizeSortField(filtro.sortField));
-            dp.Add("sortDir", (filtro.sortOrder == 0) ? 0 : 1); // 0=DESC, 1=ASC
-
-            return dp;
-        }
-
-        private static string? BuildSearchLike(string? raw)
-        {
-            if (string.IsNullOrWhiteSpace(raw))
-                return null;
-
-            return $"%{raw.Trim()}%";
-        }
-
-        private static (int off, int take) NormalizePaging(int pagina, int paginacion)
-        {
-            var off = pagina < 0 ? 0 : pagina;
-            var take = paginacion <= 0 ? 10 : paginacion;
-            return (off, take);
-        }
-
-
-        private static string NormalizeSortField(string? sortField)
-        {
-            var sf = string.IsNullOrWhiteSpace(sortField) ? DefaultSortField : sortField.Trim();
-
-            return sf.ToUpperInvariant() switch
+            // Sort whitelist (avoids SQL injection via ORDER BY)
+            var sfRaw = string.IsNullOrWhiteSpace(filtro.sortField) ? DefaultSortField : filtro.sortField.Trim();
+            var sortField = sfRaw.ToUpperInvariant() switch
             {
-                DefaultSortField => DefaultSortField,
                 SortFieldDescripcion => SortFieldDescripcion,
                 SortFieldActivo => SortFieldActivo,
+                DefaultSortField => DefaultSortField,
                 _ => DefaultSortField
             };
-        }
 
-        private static int ObtenerTotalListado(SqlConnection conn, DynamicParameters dp)
-        {
+            // 0=DESC, 1=ASC
+            var sortDir = (filtro.sortOrder == 0) ? 0 : 1;
+
+            var empty = new CprRechazosMotivosLista { total = 0, lista = new List<CprRechazosMotivosDto>() };
+
             const string countSql = @"SELECT COUNT(COD_RECHAZO)
-                                      FROM CPR_RECHAZO_TIPOS
-                                      WHERE (@q IS NULL OR COD_RECHAZO LIKE @q OR DESCRIPCION LIKE @q);";
+FROM CPR_RECHAZO_TIPOS
+WHERE (@q IS NULL OR COD_RECHAZO LIKE @q OR DESCRIPCION LIKE @q);";
 
-            return conn.ExecuteScalar<int>(countSql, dp);
-        }
+            var totalResp = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodCliente, countSql, 0, new { q = like });
+            if (totalResp.Code != 0)
+            {
+                var code = totalResp.Code is int c ? c : -1;
+                return DbHelper.CreateErrorResponse<CprRechazosMotivosLista>(totalResp.Description ?? ErrorLiteral, code, empty);
+            }
 
-        private static List<CprRechazosMotivosDto> ObtenerListado(SqlConnection conn, DynamicParameters dp)
-        {
             const string dataSql = @"SELECT COD_RECHAZO, DESCRIPCION, ACTIVO
 FROM CPR_RECHAZO_TIPOS
 WHERE (@q IS NULL OR COD_RECHAZO LIKE @q OR DESCRIPCION LIKE @q)
@@ -134,70 +186,26 @@ ORDER BY
     COD_RECHAZO DESC
 OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
 
-            return conn.Query<CprRechazosMotivosDto>(dataSql, dp).ToList();
-        }
+            var listResp = DbHelper.ExecuteListQuery<CprRechazosMotivosDto>(
+                _portalDB,
+                CodCliente,
+                dataSql,
+                new { q = like, off, take, sortField, sortDir }
+            );
 
-        private static ErrorDto<CprRechazosMotivosLista> NormalizeListadoResponse(ErrorDto<CprRechazosMotivosLista> r)
-        {
-            if (r.Code != 0)
-                return ErrorListado(r.Description);
-
-            if (r.Result == null)
-                return OkListado(new CprRechazosMotivosLista { total = 0, lista = new List<CprRechazosMotivosDto>() });
-
-            r.Result.lista ??= new List<CprRechazosMotivosDto>();
-            return OkListado(r.Result);
-        }
-
-        private static ErrorDto<CprRechazosMotivosLista> OkListado(CprRechazosMotivosLista result)
-        {
-            return new ErrorDto<CprRechazosMotivosLista>
+            if (listResp.Code != 0)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = result
-            };
-        }
-
-        private static ErrorDto<CprRechazosMotivosLista> ErrorListado(string? message)
-        {
-            return new ErrorDto<CprRechazosMotivosLista>
-            {
-                Code = -1,
-                Description = string.IsNullOrWhiteSpace(message) ? "Error" : message,
-                Result = new CprRechazosMotivosLista { total = 0, lista = new List<CprRechazosMotivosDto>() }
-            };
-        }
-
-        /// <summary>
-        /// Obtiene la lista de motivos de rechazo
-        /// </summary>
-        public ErrorDto<CprRechazosMotivosLista> CprRechazoMotivoLista_Obtener(int CodCliente, string vFiltros)
-        {
-            var filtro = ParseFiltrosLazy(vFiltros);
-
-            try
-            {
-                var r = WithConn(CodCliente, conn =>
-                {
-                    var dp = BuildListadoParams(filtro);
-
-                    var total = ObtenerTotalListado(conn, dp);
-                    var lista = ObtenerListado(conn, dp);
-
-                    return new CprRechazosMotivosLista
-                    {
-                        total = total,
-                        lista = lista
-                    };
-                });
-
-                return NormalizeListadoResponse(r);
+                var code = listResp.Code is int c ? c : -1;
+                return DbHelper.CreateErrorResponse<CprRechazosMotivosLista>(listResp.Description ?? ErrorLiteral, code, empty);
             }
-            catch (Exception ex)
+
+            var result = new CprRechazosMotivosLista
             {
-                return ErrorListado(ex.Message);
-            }
+                total = totalResp.Result,
+                lista = listResp.Result ?? new List<CprRechazosMotivosDto>()
+            };
+
+            return DbHelper.CreateOkResponse(result);
         }
 
         /// <summary>
@@ -207,92 +215,33 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
         {
             try
             {
-                if (motivo == null)
-                    return DbHelper.ErrorResponse("Motivo inválido.", -1);
+                var validation = ValidateMotivo(motivo, out var cod);
+                if (validation != null)
+                    return validation;
 
-                var cod = Clean(motivo.cod_rechazo);
-                if (string.IsNullOrWhiteSpace(cod))
-                    return DbHelper.ErrorResponse("El código del motivo es requerido.", -1);
+                var existsResp = GetExistsCount(CodCliente, cod);
+                if (existsResp.Code != 0)
+                    return DbHelper.ErrorResponse(existsResp.Description ?? ErrorLiteral, SafeCode(existsResp));
 
-                return WithConn(CodCliente, conn =>
+                var count = existsResp.Result;
+
+                if (motivo.isNew)
                 {
-                    const string existsSql = @"
-                        SELECT COUNT(COD_RECHAZO)
-                        FROM CPR_RECHAZO_TIPOS
-                        WHERE UPPER(COD_RECHAZO) = @cod;";
+                    if (count > 0)
+                        return DbHelper.ErrorResponse($"El motivo de rechazo con el código {cod} ya existe.", -2);
 
-                    var codUpper = cod.ToUpperInvariant();
-                    var count = conn.ExecuteScalar<int>(existsSql, new { cod = codUpper });
+                    return InsertMotivo(CodCliente, motivo, cod);
+                }
 
-                    if (motivo.isNew)
-                    {
-                        if (count > 0)
-                            return DbHelper.ErrorResponse($"El motivo de rechazo con el código {cod} ya existe.", -2);
+                if (count == 0)
+                    return DbHelper.ErrorResponse($"El motivo de rechazo con el código {cod} no existe.", -3);
 
-                        return Insertar_Internal(conn, motivo);
-                    }
-
-                    // update
-                    if (count == 0)
-                        return DbHelper.ErrorResponse($"El motivo de rechazo con el código {cod} no existe.", -3);
-
-                    return Actualizar_Internal(conn, motivo);
-                });
+                return UpdateMotivo(CodCliente, motivo, cod);
             }
             catch (Exception ex)
             {
                 return Fail(ex);
             }
-        }
-
-        private static ErrorDto Insertar_Internal(SqlConnection conn, CprRechazosMotivosDto motivo)
-        {
-            var activo = motivo.activo ? 1 : 0;
-
-            const string sql = @"
-                INSERT INTO CPR_RECHAZO_TIPOS
-                (
-                    COD_RECHAZO,
-                    DESCRIPCION,
-                    ACTIVO,
-                    REGISTRO_FECHA,
-                    REGISTRO_USUARIO
-                )
-                VALUES
-                (
-                    @cod_rechazo,
-                    @descripcion,
-                    @activo,
-                    GETDATE(),
-                    @registro_usuario
-                );";
-
-            var dp = BuildMotivoCommonParams(motivo, activo);
-            dp.Add("registro_usuario", Clean(motivo.modifica_usuario ?? motivo.registro_usuario));
-
-            conn.Execute(sql, dp);
-
-            return DbHelper.OkResponse("Motivo agregado correctamente");
-        }
-
-        private static ErrorDto Actualizar_Internal(SqlConnection conn, CprRechazosMotivosDto motivo)
-        {
-            var activo = motivo.activo ? 1 : 0;
-
-            const string sql = @"
-                UPDATE CPR_RECHAZO_TIPOS
-                   SET DESCRIPCION = @descripcion,
-                       ACTIVO = @activo,
-                       MODIFICA_FECHA = GETDATE(),
-                       MODIFICA_USUARIO = @modifica_usuario
-                 WHERE COD_RECHAZO = @cod_rechazo;";
-
-            var dp = BuildMotivoCommonParams(motivo, activo);
-            dp.Add("modifica_usuario", Clean(motivo.modifica_usuario));
-
-            conn.Execute(sql, dp);
-
-            return DbHelper.OkResponse("Motivo actualizado correctamente");
         }
 
         /// <summary>
@@ -306,12 +255,14 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
                 if (string.IsNullOrWhiteSpace(cod))
                     return DbHelper.ErrorResponse("Código de rechazo inválido.", -1);
 
-                return WithConn(CodCliente, conn =>
-                {
-                    const string sql = @"DELETE FROM CPR_RECHAZO_TIPOS WHERE COD_RECHAZO = @cod;";
-                    conn.Execute(sql, new { cod });
+                const string sql = @"DELETE FROM CPR_RECHAZO_TIPOS WHERE COD_RECHAZO = @cod;";
+                var r = DbHelper.ExecuteNonQuery(_portalDB, CodCliente, sql, new { cod });
+
+                if (r.Code == 0)
                     return DbHelper.OkResponse("Motivo eliminado correctamente");
-                });
+
+                var code = r.Code is int c ? c : -1;
+                return DbHelper.ErrorResponse(r.Description ?? ErrorLiteral, code);
             }
             catch (Exception ex)
             {

@@ -1,4 +1,8 @@
-﻿using Galileo.Models.CPR;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Extensions.Configuration;
+using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier
@@ -12,36 +16,61 @@ namespace Galileo.DataBaseTier
             _portalDb = new PortalDB(config);
         }
 
+        private sealed class TiposSuspensionRow
+        {
+            // Populated by Dapper mapping
+            public string COD_SUSPENSION = string.Empty;
+            public string descripcion = string.Empty;
+            public int ACTIVA = 0;
+            public int Total = 0;
+        }
+
         public ErrorDto<TiposSuspensionDtoList> TiposSuspension_ObtenerTodos(int codEmpresa, int? pagina, int? paginacion, string? filtro)
         {
-            var like = NormalizeLike(filtro);
-            var (offset, fetch) = NormalizePaging(pagina, paginacion);
+            var like = string.IsNullOrWhiteSpace(filtro) ? null : $"%{filtro.Trim()}%";
+            var offset = (pagina is int p && p >= 0) ? p : 0;
+            var fetch = (paginacion is int t && t > 0) ? t : int.MaxValue;
 
-            const string sqlCount = @"SELECT COUNT(*)
-FROM CXP_SUSPENSION_TIPOS
-WHERE (@F IS NULL OR COD_SUSPENSION LIKE @F OR descripcion LIKE @F);";
+            const string sql = @"SELECT COD_SUSPENSION,
+       descripcion,
+       ACTIVA,
+       COUNT(*) OVER() AS Total
+  FROM CXP_SUSPENSION_TIPOS
+ WHERE (@F IS NULL OR COD_SUSPENSION LIKE @F OR descripcion LIKE @F)
+ ORDER BY COD_SUSPENSION
+ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-            var totalResp = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, sqlCount, 0, new { F = like });
-            if (totalResp.Code != 0)
-                return DbHelper.CreateErrorResponse<TiposSuspensionDtoList>(totalResp.Description ?? "Error", totalResp.Code ?? -1, null!);
-
-            const string sqlSelect = @"SELECT COD_SUSPENSION, descripcion, ACTIVA
-FROM CXP_SUSPENSION_TIPOS
-WHERE (@F IS NULL OR COD_SUSPENSION LIKE @F OR descripcion LIKE @F)
-ORDER BY COD_SUSPENSION
-OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
-
-            var listResp = DbHelper.ExecuteListQuery<TiposSuspensionDto>(_portalDb, codEmpresa, sqlSelect, new { F = like, Offset = offset, Fetch = fetch });
-            if (listResp.Code != 0)
-                return DbHelper.CreateErrorResponse<TiposSuspensionDtoList>(listResp.Description ?? "Error", listResp.Code ?? -1, null!);
-
-            return DbHelper.CreateOkResponse(
-                new TiposSuspensionDtoList
-                {
-                    Total = totalResp.Result,
-                    Suspensiones = listResp.Result ?? new List<TiposSuspensionDto>()
-                }
+            var rowsResp = DbHelper.ExecuteListQuery<TiposSuspensionRow>(
+                _portalDb,
+                codEmpresa,
+                sql,
+                new { F = like, Offset = offset, Fetch = fetch }
             );
+
+            if (rowsResp.Code != 0)
+                return new ErrorDto<TiposSuspensionDtoList>
+                {
+                    Code = rowsResp.Code is int c ? c : -1,
+                    Description = rowsResp.Description ?? "Error",
+                    Result = null
+                };
+
+            var rows = rowsResp.Result ?? new List<TiposSuspensionRow>();
+            var total = rows.Count == 0 ? 0 : rows[0].Total;
+
+            var dto = new TiposSuspensionDtoList
+            {
+                Total = total,
+                Suspensiones = rows.Select(r => new TiposSuspensionDto
+                {
+                    Cod_Suspension = r.COD_SUSPENSION,
+                    Descripcion = r.descripcion,
+                    // Mantiene el contrato del DTO: Activa como bool
+                    Activa = r.ACTIVA == 1
+                }).ToList()
+            };
+
+            return DbHelper.CreateOkResponse(dto);
         }
 
         public ErrorDto TiposSuspension_Eliminar(int codEmpresa, string codSuspension)
@@ -56,58 +85,28 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
         public ErrorDto TiposSuspension_Guardar(int codEmpresa, TiposSuspensionDto dto)
         {
-            const string existsSql = @"SELECT COUNT(*)
-FROM CXP_SUSPENSION_TIPOS
-WHERE COD_SUSPENSION = @Cod";
+            const string mergeSql = @"MERGE CXP_SUSPENSION_TIPOS AS T
+USING (SELECT @Cod AS COD_SUSPENSION) AS S
+ON (T.COD_SUSPENSION = S.COD_SUSPENSION)
+WHEN MATCHED THEN
+    UPDATE SET descripcion = @Descripcion,
+               ACTIVA = @Activa
+WHEN NOT MATCHED THEN
+    INSERT (COD_SUSPENSION, descripcion, ACTIVA, REGISTRO_FECHA, REGISTRO_USUARIO)
+    VALUES (@Cod, @Descripcion, @Activa, GETDATE(), @Usuario);";
 
-            var existeResp = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, existsSql, 0, new { Cod = dto.Cod_Suspension });
-            if (existeResp.Code != 0)
-                return DbHelper.ErrorResponse(existeResp.Description ?? "Error", existeResp.Code ?? -1);
-
-            var p = new
-            {
-                Cod = dto.Cod_Suspension,
-                Descripcion = dto.Descripcion,
-                Activa = dto.Activa ? 1 : 0,
-                Usuario = dto.Registro_Usuario
-            };
-
-            if (existeResp.Result <= 0)
-            {
-                const string insertSql = @"INSERT INTO CXP_SUSPENSION_TIPOS
-(COD_SUSPENSION, descripcion, ACTIVA, REGISTRO_FECHA, REGISTRO_USUARIO)
-VALUES
-(@Cod, @Descripcion, @Activa, GETDATE(), @Usuario)";
-
-                return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, insertSql, p);
-            }
-
-            const string updateSql = @"UPDATE CXP_SUSPENSION_TIPOS
-SET descripcion = @Descripcion,
-    ACTIVA = @Activa
-WHERE COD_SUSPENSION = @Cod";
-
-            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, updateSql, p);
-        }
-
-        // ----------------- Helpers -----------------
-
-        private static string? NormalizeLike(string? filtro)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-                return null;
-
-            var f = filtro.Trim();
-            return f.Length == 0 ? null : $"%{f}%";
-        }
-
-        private static (int Offset, int Fetch) NormalizePaging(int? pagina, int? paginacion)
-        {
-            // Keep existing meaning: `pagina` is treated as OFFSET.
-            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
-                return (0, int.MaxValue);
-
-            return (pagina.Value, paginacion.Value);
+            return DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                mergeSql,
+                new
+                {
+                    Cod = dto.Cod_Suspension,
+                    Descripcion = dto.Descripcion,
+                    Activa = dto.Activa ? 1 : 0,
+                    Usuario = dto.Registro_Usuario
+                }
+            );
         }
     }
 }

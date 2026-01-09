@@ -1,6 +1,4 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
-using Galileo.BusinessLogic;
 using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
