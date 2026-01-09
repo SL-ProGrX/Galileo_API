@@ -16,6 +16,19 @@ namespace Galileo.DataBaseTier
         private const string SortFieldDescripcion = "DESCRIPCION";
         private const string SortFieldActivo = "ACTIVO";
 
+        private static string Clean(string? value) => (value ?? string.Empty).Trim();
+
+        private static ErrorDto Fail(Exception ex) => DbHelper.ErrorResponse(ex.Message, -1);
+
+        private static DynamicParameters BuildMotivoCommonParams(CprRechazosMotivosDto motivo, int activo)
+        {
+            var dp = new DynamicParameters();
+            dp.Add("cod_rechazo", Clean(motivo.cod_rechazo));
+            dp.Add("descripcion", Clean(motivo.descripcion));
+            dp.Add("activo", activo);
+            return dp;
+        }
+
         public FrmCprRechazoMotivosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -197,7 +210,7 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
                 if (motivo == null)
                     return DbHelper.ErrorResponse("Motivo inválido.", -1);
 
-                var cod = (motivo.cod_rechazo ?? string.Empty).Trim();
+                var cod = Clean(motivo.cod_rechazo);
                 if (string.IsNullOrWhiteSpace(cod))
                     return DbHelper.ErrorResponse("El código del motivo es requerido.", -1);
 
@@ -208,7 +221,8 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
                         FROM CPR_RECHAZO_TIPOS
                         WHERE UPPER(COD_RECHAZO) = @cod;";
 
-                    var count = conn.ExecuteScalar<int>(existsSql, new { cod = cod.ToUpperInvariant() });
+                    var codUpper = cod.ToUpperInvariant();
+                    var count = conn.ExecuteScalar<int>(existsSql, new { cod = codUpper });
 
                     if (motivo.isNew)
                     {
@@ -227,7 +241,7 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message, -1);
+                return Fail(ex);
             }
         }
 
@@ -253,13 +267,10 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
                     @registro_usuario
                 );";
 
-            conn.Execute(sql, new
-            {
-                cod_rechazo = (motivo.cod_rechazo ?? string.Empty).Trim(),
-                descripcion = (motivo.descripcion ?? string.Empty).Trim(),
-                activo,
-                registro_usuario = (motivo.modifica_usuario ?? motivo.registro_usuario ?? string.Empty).Trim()
-            });
+            var dp = BuildMotivoCommonParams(motivo, activo);
+            dp.Add("registro_usuario", Clean(motivo.modifica_usuario ?? motivo.registro_usuario));
+
+            conn.Execute(sql, dp);
 
             return DbHelper.OkResponse("Motivo agregado correctamente");
         }
@@ -276,13 +287,10 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
                        MODIFICA_USUARIO = @modifica_usuario
                  WHERE COD_RECHAZO = @cod_rechazo;";
 
-            conn.Execute(sql, new
-            {
-                cod_rechazo = (motivo.cod_rechazo ?? string.Empty).Trim(),
-                descripcion = (motivo.descripcion ?? string.Empty).Trim(),
-                activo,
-                modifica_usuario = (motivo.modifica_usuario ?? string.Empty).Trim()
-            });
+            var dp = BuildMotivoCommonParams(motivo, activo);
+            dp.Add("modifica_usuario", Clean(motivo.modifica_usuario));
+
+            conn.Execute(sql, dp);
 
             return DbHelper.OkResponse("Motivo actualizado correctamente");
         }
@@ -294,7 +302,7 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
         {
             try
             {
-                var cod = (cod_rechazo ?? string.Empty).Trim();
+                var cod = Clean(cod_rechazo);
                 if (string.IsNullOrWhiteSpace(cod))
                     return DbHelper.ErrorResponse("Código de rechazo inválido.", -1);
 
@@ -307,7 +315,7 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message, -1);
+                return Fail(ex);
             }
         }
     }

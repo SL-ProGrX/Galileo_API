@@ -86,51 +86,51 @@ namespace Galileo.DataBaseTier
                 p.Add("Fetch", fetch);
 
                 const string qCount = @"
-SELECT COUNT(DISTINCT S.CPR_ID)
-FROM CPR_SOLICITUD S
-LEFT JOIN CPR_SOLICITUD_PROV P
-  ON S.CPR_ID = P.CPR_ID
-LEFT JOIN CORE_UENS U
-  ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
-WHERE P.ADJUDICA_ORDEN IS NOT NULL
-  AND (@HasFiltro = 0 OR (
-        CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
-        ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
-        ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
-        ISNULL(U.DESCRIPCION,'') LIKE @Like
-  ))
-  AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
-  AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados);
-";
+                            SELECT COUNT(DISTINCT S.CPR_ID)
+                            FROM CPR_SOLICITUD S
+                            LEFT JOIN CPR_SOLICITUD_PROV P
+                            ON S.CPR_ID = P.CPR_ID
+                            LEFT JOIN CORE_UENS U
+                            ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
+                            WHERE P.ADJUDICA_ORDEN IS NOT NULL
+                            AND (@HasFiltro = 0 OR (
+                                    CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
+                                    ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
+                                    ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
+                                    ISNULL(U.DESCRIPCION,'') LIKE @Like
+                            ))
+                            AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
+                            AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados);
+                            ";
 
                 var total = conn.QueryFirstOrDefault<int>(qCount, p);
 
                 const string qList = @"
-SELECT DISTINCT
-    S.CPR_ID,
-    P.ADJUDICA_ORDEN,
-    S.DOCUMENTO,
-    U.DESCRIPCION AS COD_UNIDAD_SOLICITANTE,
-    S.ESTADO,
-    S.REGISTRO_USUARIO,
-    S.ENCARGADO_USUARIO
-FROM CPR_SOLICITUD S
-LEFT JOIN CPR_SOLICITUD_PROV P
-  ON S.CPR_ID = P.CPR_ID
-LEFT JOIN CORE_UENS U
-  ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
-WHERE P.ADJUDICA_ORDEN IS NOT NULL
-  AND (@HasFiltro = 0 OR (
-        CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
-        ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
-        ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
-        ISNULL(U.DESCRIPCION,'') LIKE @Like
-  ))
-  AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
-  AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados)
-ORDER BY S.CPR_ID DESC
-OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
-";
+                            SELECT DISTINCT
+                                S.CPR_ID,
+                                P.ADJUDICA_ORDEN,
+                                S.DOCUMENTO,
+                                U.DESCRIPCION AS COD_UNIDAD_SOLICITANTE,
+                                S.ESTADO,
+                                S.REGISTRO_USUARIO,
+                                S.ENCARGADO_USUARIO
+                            FROM CPR_SOLICITUD S
+                            LEFT JOIN CPR_SOLICITUD_PROV P
+                            ON S.CPR_ID = P.CPR_ID
+                            LEFT JOIN CORE_UENS U
+                            ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
+                            WHERE P.ADJUDICA_ORDEN IS NOT NULL
+                            AND (@HasFiltro = 0 OR (
+                                    CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
+                                    ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
+                                    ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
+                                    ISNULL(U.DESCRIPCION,'') LIKE @Like
+                            ))
+                            AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
+                            AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados)
+                            ORDER BY S.CPR_ID DESC
+                            OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
+                            ";
 
                 var solicitudes = conn.Query<CprSolicitudDto>(qList, p).ToList();
 
@@ -141,15 +141,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
                 };
             });
 
-            if (r.Code != 0 || r.Result == null)
-                return new ErrorDto<CprSolicitudLista>
-                {
-                    Code = r.Code ?? -1,
-                    Description = r.Description ?? ErrorLiteral,
-                    Result = null
-                };
-
-            return new ErrorDto<CprSolicitudLista> { Code = 0, Result = r.Result };
+            return WrapRequired(r);
         }
 
 
@@ -505,10 +497,7 @@ WHERE P.CPR_ID = @Id;";
                 return items;
             });
 
-            if (r.Code != 0)
-                return new ErrorDto<List<CprSolicitudBsDto>> { Code = r.Code ?? -1, Description = r.Description ?? ErrorLiteral, Result = null };
-
-            return new ErrorDto<List<CprSolicitudBsDto>> { Code = 0, Result = r.Result ?? new List<CprSolicitudBsDto>() };
+            return WrapList(r);
         }
 
         public ErrorDto CprSolicitudBs_Guardar(int codEmpresa, bool editaBs, CprSolicitudBsDto solicitud)
@@ -568,10 +557,7 @@ WHERE P.CPR_ID = @Id;";
                 return conn.Query<CprValoracionLista>("select VAL_ID as item, descripcion from CPR_VALORA_ESQUEMA;").ToList();
             });
 
-            if (r.Code != 0)
-                return new ErrorDto<List<CprValoracionLista>> { Code = r.Code ?? -1, Description = r.Description ?? ErrorLiteral, Result = null };
-
-            return new ErrorDto<List<CprValoracionLista>> { Code = 0, Result = r.Result ?? new List<CprValoracionLista>() };
+            return WrapList(r);
         }
 
         public ErrorDto<List<CprUensLista>> CprUens_Obtener(int codEmpresa, string usuario)
@@ -581,22 +567,19 @@ WHERE P.CPR_ID = @Id;";
                 EnsureOpen(conn);
 
                 const string sql = @"
-SELECT
-    R.COD_UNIDAD item,
-    U.DESCRIPCION,
-    (select TOP 1 DESCRIPCION from CNTX_UNIDADES WHERE COD_UNIDAD = U.CNTX_UNIDAD) AS CNTX_UNIDAD,
-    (select TOP 1 DESCRIPCION from CNTX_CENTRO_COSTOS WHERE COD_CENTRO_COSTO = U.CNTX_CENTRO_COSTO) AS CNTX_CENTRO_COSTO
-FROM CORE_UENS_USUARIOS_ROLES R
-LEFT JOIN CORE_UENS U ON R.COD_UNIDAD = U.COD_UNIDAD
-WHERE R.CORE_USUARIO = @Usuario;";
+                            SELECT
+                                R.COD_UNIDAD item,
+                                U.DESCRIPCION,
+                                (select TOP 1 DESCRIPCION from CNTX_UNIDADES WHERE COD_UNIDAD = U.CNTX_UNIDAD) AS CNTX_UNIDAD,
+                                (select TOP 1 DESCRIPCION from CNTX_CENTRO_COSTOS WHERE COD_CENTRO_COSTO = U.CNTX_CENTRO_COSTO) AS CNTX_CENTRO_COSTO
+                            FROM CORE_UENS_USUARIOS_ROLES R
+                            LEFT JOIN CORE_UENS U ON R.COD_UNIDAD = U.COD_UNIDAD
+                            WHERE R.CORE_USUARIO = @Usuario;";
 
                 return conn.Query<CprUensLista>(sql, new { Usuario = usuario }).ToList();
             });
 
-            if (r.Code != 0)
-                return new ErrorDto<List<CprUensLista>> { Code = r.Code ?? -1, Description = r.Description ?? ErrorLiteral, Result = null };
-
-            return new ErrorDto<List<CprUensLista>> { Code = 0, Result = r.Result ?? new List<CprUensLista>() };
+            return WrapList(r);
         }
 
         public ErrorDto<List<CprValoracionLista>> CprSolicitudUens_Obtener(int codEmpresa)
@@ -605,14 +588,11 @@ WHERE R.CORE_USUARIO = @Usuario;";
             {
                 EnsureOpen(conn);
                 return conn.Query<CprValoracionLista>(@"
-SELECT [COD_UNIDAD] AS ITEM, [DESCRIPCION]
-FROM [dbo].[CORE_UENS];").ToList();
+                                SELECT [COD_UNIDAD] AS ITEM, [DESCRIPCION]
+                                FROM [dbo].[CORE_UENS];").ToList();
             });
 
-            if (r.Code != 0)
-                return new ErrorDto<List<CprValoracionLista>> { Code = r.Code ?? -1, Description = r.Description ?? ErrorLiteral, Result = null };
-
-            return new ErrorDto<List<CprValoracionLista>> { Code = 0, Result = r.Result ?? new List<CprValoracionLista>() };
+            return WrapList(r);
         }
 
         // ===========================
@@ -666,23 +646,20 @@ FROM [dbo].[CORE_UENS];").ToList();
                 EnsureOpen(conn);
 
                 const string sql = @"
-SELECT
-    REGISTRO_FECHA, REGISTRO_USUARIO,
-    AUTORIZA_FECHA, AUTORIZA_USUARIO,
-    MODIFICA_FECHA, MODIFICA_USUARIO,
-    PRESUPUESTO_USUARIO, PRESUPUESTO_FECHA,
-    ADJUDICA_USUARIO, ADJUDICA_FECHA,
-    DETALLE_SEGUIMIENTO
-FROM CPR_SOLICITUD
-WHERE CPR_ID = @Id;";
+                                SELECT
+                                    REGISTRO_FECHA, REGISTRO_USUARIO,
+                                    AUTORIZA_FECHA, AUTORIZA_USUARIO,
+                                    MODIFICA_FECHA, MODIFICA_USUARIO,
+                                    PRESUPUESTO_USUARIO, PRESUPUESTO_FECHA,
+                                    ADJUDICA_USUARIO, ADJUDICA_FECHA,
+                                    DETALLE_SEGUIMIENTO
+                                FROM CPR_SOLICITUD
+                                WHERE CPR_ID = @Id;";
 
                 return conn.Query<CprSolicitudSeguimientoDto>(sql, new { Id = cod_solicitud }).ToList();
             });
 
-            if (r.Code != 0)
-                return new ErrorDto<List<CprSolicitudSeguimientoDto>> { Code = r.Code ?? -1, Description = r.Description ?? ErrorLiteral, Result = null };
-
-            return new ErrorDto<List<CprSolicitudSeguimientoDto>> { Code = 0, Result = r.Result ?? new List<CprSolicitudSeguimientoDto>() };
+            return WrapList(r);
         }
 
         // ===========================
@@ -845,7 +822,7 @@ WHERE R.CORE_USUARIO = @Usuario
                 var p = new DynamicParameters();
                 p.Add("CodUnidad", cod_unidad ?? "");
 
-                var like = !string.IsNullOrWhiteSpace(filtro) ? $"%{filtro.Trim()}%" : null;
+                var like = NormalizeLike(filtro);
                 p.Add("HasFiltro", like != null ? 1 : 0);
                 p.Add("Like", like);
 
@@ -854,38 +831,38 @@ WHERE R.CORE_USUARIO = @Usuario
                 p.Add("Fetch", fetch);
 
                 const string qCount = @"
-SELECT COUNT(*) FROM (
-    SELECT DISTINCT D.COD_PRODUCTO
-    FROM CPR_PLAN_DT D
-    INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC AND (C.COD_UNIDAD = @CodUnidad OR C.COD_UNIDAD_DESTINO = @CodUnidad)
-    INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-    INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-    WHERE S.CORTE >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
-      AND (@HasFiltro = 0 OR (D.COD_PRODUCTO LIKE @Like OR P.DESCRIPCION LIKE @Like))
-) T;";
+                            SELECT COUNT(*) FROM (
+                                SELECT DISTINCT D.COD_PRODUCTO
+                                FROM CPR_PLAN_DT D
+                                INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC AND (C.COD_UNIDAD = @CodUnidad OR C.COD_UNIDAD_DESTINO = @CodUnidad)
+                                INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
+                                INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
+                                WHERE S.CORTE >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
+                                AND (@HasFiltro = 0 OR (D.COD_PRODUCTO LIKE @Like OR P.DESCRIPCION LIKE @Like))
+                            ) T;";
 
                 var total = conn.Query<int>(qCount, p).FirstOrDefault();
 
                 const string qList = @"
-SELECT DISTINCT
-    D.COD_PRODUCTO,
-    P.DESCRIPCION,
-    P.COSTO_REGULAR,
-    P.EXISTENCIA,
-    P.COD_BARRAS,
-    P.CABYS,
-    P.PRECIO_REGULAR,
-    P.IMPUESTO_VENTAS,
-    P.COD_FABRICANTE,
-    P.I_STOCK
-FROM CPR_PLAN_DT D
-INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC AND (C.COD_UNIDAD = @CodUnidad OR C.COD_UNIDAD_DESTINO = @CodUnidad)
-INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-WHERE S.CORTE >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
-  AND (@HasFiltro = 0 OR (D.COD_PRODUCTO LIKE @Like OR P.DESCRIPCION LIKE @Like))
-ORDER BY D.COD_PRODUCTO
-OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+                            SELECT DISTINCT
+                                D.COD_PRODUCTO,
+                                P.DESCRIPCION,
+                                P.COSTO_REGULAR,
+                                P.EXISTENCIA,
+                                P.COD_BARRAS,
+                                P.CABYS,
+                                P.PRECIO_REGULAR,
+                                P.IMPUESTO_VENTAS,
+                                P.COD_FABRICANTE,
+                                P.I_STOCK
+                            FROM CPR_PLAN_DT D
+                            INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC AND (C.COD_UNIDAD = @CodUnidad OR C.COD_UNIDAD_DESTINO = @CodUnidad)
+                            INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
+                            INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
+                            WHERE S.CORTE >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
+                            AND (@HasFiltro = 0 OR (D.COD_PRODUCTO LIKE @Like OR P.DESCRIPCION LIKE @Like))
+                            ORDER BY D.COD_PRODUCTO
+                            OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
                 var articulos = conn.Query<ArticuloData>(qList, p).ToList();
 
@@ -896,10 +873,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
                 };
             });
 
-            if (r.Code != 0 || r.Result == null)
-                return new ErrorDto<ArticuloDataLista> { Code = r.Code ?? -1, Description = r.Description ?? ErrorLiteral, Result = null };
-
-            return new ErrorDto<ArticuloDataLista> { Code = 0, Result = r.Result };
+           return WrapRequired(r);
         }
 
         // ===========================
@@ -1194,18 +1168,15 @@ WHERE CPR_ID = @Id;";
                 EnsureOpen(conn);
 
                 const string sql = @"
-SELECT u.CORE_USUARIO, u.NOMBRE, u.EMAIL, ur.COD_UNIDAD
-FROM CORE_UENS_USUARIOS_ROLES ur
-INNER JOIN CORE_USUARIOS u ON ur.CORE_USUARIO = u.CORE_USUARIO
-WHERE ur.ROL_ENCARGADO = 1 AND ur.COD_UNIDAD = @CodUnidad;";
+                            SELECT u.CORE_USUARIO, u.NOMBRE, u.EMAIL, ur.COD_UNIDAD
+                            FROM CORE_UENS_USUARIOS_ROLES ur
+                            INNER JOIN CORE_USUARIOS u ON ur.CORE_USUARIO = u.CORE_USUARIO
+                            WHERE ur.ROL_ENCARGADO = 1 AND ur.COD_UNIDAD = @CodUnidad;";
 
                 return conn.Query<EncargadosDto>(sql, new { CodUnidad = cod_unidad }).ToList();
             });
 
-            if (r.Code != 0)
-                return new ErrorDto<List<EncargadosDto>> { Code = r.Code ?? -1, Description = r.Description ?? ErrorLiteral, Result = null };
-
-            return new ErrorDto<List<EncargadosDto>> { Code = 0, Result = r.Result ?? new List<EncargadosDto>() };
+            return WrapList(r);
         }
 
         public ErrorDto<List<string>> CprSolicitud_UsuariosSolicitantes_Obtener(int codEmpresa)
@@ -1214,15 +1185,12 @@ WHERE ur.ROL_ENCARGADO = 1 AND ur.COD_UNIDAD = @CodUnidad;";
             {
                 EnsureOpen(conn);
                 return conn.Query<string>(@"
-SELECT REGISTRO_USUARIO
-FROM CPR_SOLICITUD
-GROUP BY REGISTRO_USUARIO;").ToList();
+                                SELECT REGISTRO_USUARIO
+                                FROM CPR_SOLICITUD
+                                GROUP BY REGISTRO_USUARIO;").ToList();
             });
 
-            if (r.Code != 0)
-                return new ErrorDto<List<string>> { Code = r.Code ?? -1, Description = r.Description ?? ErrorLiteral, Result = null };
-
-            return new ErrorDto<List<string>> { Code = 0, Result = r.Result ?? new List<string>() };
+            return WrapList(r);
         }
 
         public ErrorDto<List<string>> CprSolicitud_UsuariosEncargados_Obtener(int codEmpresa)
@@ -1231,21 +1199,56 @@ GROUP BY REGISTRO_USUARIO;").ToList();
             {
                 EnsureOpen(conn);
                 return conn.Query<string>(@"
-SELECT ENCARGADO_USUARIO
-FROM CPR_SOLICITUD
-WHERE ENCARGADO_USUARIO IS NOT NULL
-GROUP BY ENCARGADO_USUARIO;").ToList();
+                            SELECT ENCARGADO_USUARIO
+                            FROM CPR_SOLICITUD
+                            WHERE ENCARGADO_USUARIO IS NOT NULL
+                            GROUP BY ENCARGADO_USUARIO;").ToList();
             });
 
-            if (r.Code != 0)
-                return new ErrorDto<List<string>> { Code = r.Code ?? -1, Description = r.Description ?? ErrorLiteral, Result = null };
-
-            return new ErrorDto<List<string>> { Code = 0, Result = r.Result ?? new List<string>() };
+            return WrapList(r);
         }
 
         // ===========================
         //  HELPERS
         // ===========================
+
+        private ErrorDto<List<T>> WrapList<T>(ErrorDto<List<T>> r)
+        {
+            if (r.Code != 0)
+                return new ErrorDto<List<T>>
+                {
+                    Code = r.Code ?? -1,
+                    Description = r.Description ?? ErrorLiteral,
+                    Result = null
+                };
+
+            return new ErrorDto<List<T>>
+            {
+                Code = 0,
+                Result = r.Result ?? new List<T>()
+            };
+        }
+
+        private ErrorDto<T> WrapRequired<T>(ErrorDto<T> r, string? nullMessage = null) where T : class
+        {
+            if (r.Code != 0)
+                return new ErrorDto<T>
+                {
+                    Code = r.Code ?? -1,
+                    Description = r.Description ?? ErrorLiteral,
+                    Result = null
+                };
+
+            if (r.Result == null)
+                return new ErrorDto<T>
+                {
+                    Code = -1,
+                    Description = nullMessage ?? ErrorLiteral,
+                    Result = null
+                };
+
+            return new ErrorDto<T> { Code = 0, Result = r.Result };
+        }
 
         private static string? NormalizeLike(string? filtro)
         {

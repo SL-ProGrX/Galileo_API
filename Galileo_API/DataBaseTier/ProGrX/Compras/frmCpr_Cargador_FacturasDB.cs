@@ -26,16 +26,36 @@ namespace Galileo.DataBaseTier
         }
 
 
-        /// <summary>
-        /// Obtiene la lista de facturas XML
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="proveedor"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
-        public ErrorDto<CprFacturasXmlLista> Cargador_Facturas_Obtener(int CodEmpresa, int proveedor, string filtros)
+        // ===========================
+        //  HELPERS (anti-duplication)
+        // ===========================
+
+        private static string? NormalizeLike(string? filtro)
         {
-            CprFacturasXmlFiltros filtro = JsonConvert.DeserializeObject<CprFacturasXmlFiltros>(filtros) ?? new CprFacturasXmlFiltros();
+            if (string.IsNullOrWhiteSpace(filtro))
+                return null;
+
+            var f = filtro.Trim();
+            return f.Length == 0 ? null : $"%{f}%";
+        }
+
+        private static (int Offset, int Fetch) NormalizePaging(int? pagina, int? paginacion)
+        {
+            // Keep current semantics: `pagina` is treated as OFFSET.
+            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
+                return (0, int.MaxValue);
+
+            return (pagina.Value, paginacion.Value);
+        }
+
+        private static string CleanCedJur(string cedJur)
+        {
+            return (cedJur ?? string.Empty).Replace("-", string.Empty).Replace(" ", string.Empty);
+        }
+
+        private ErrorDto<CprFacturasXmlLista> Cargador_Facturas_ObtenerCore(int codEmpresa, int proveedor, string filtros, bool soloActivas)
+        {
+            var filtro = JsonConvert.DeserializeObject<CprFacturasXmlFiltros>(filtros) ?? new CprFacturasXmlFiltros();
 
             var response = new ErrorDto<CprFacturasXmlLista>
             {
@@ -49,18 +69,13 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                var conditions = new List<string>();
-                var p = new DynamicParameters();
-
-                // Solo activas
-                string estadoActivas = "ESTADO IN ('P','A')";
-
-                // Filtro por proveedor (por cédula jurídica normalizada)
+                // Proveedor por cédula jurídica (normalizada)
+                string? cedJurLimpia = null;
                 if (proveedor != 0)
                 {
                     var cedJurProveedorResp = DbHelper.ExecuteSingleQuery<string>(
                         _portalDB,
-                        CodEmpresa,
+                        codEmpresa,
                         "SELECT cedjur FROM cxp_proveedores WHERE cod_proveedor = @CodProveedor",
                         defaultValue: null,
                         parameters: new { CodProveedor = proveedor }
@@ -76,46 +91,37 @@ namespace Galileo.DataBaseTier
                         return response;
                     }
 
-                    var cedJurLimpia = cedJurProveedor.Replace("-", "").Replace(" ", "");
-                    conditions.Add("REPLACE(REPLACE(ced_jur_prov, ' ', ''), '-', '') = @CedJur");
-                    p.Add("@CedJur", cedJurLimpia);
+                    cedJurLimpia = CleanCedJur(cedJurProveedor);
                 }
 
-                // Filtro de búsqueda general
-                if (!string.IsNullOrWhiteSpace(filtro.filtro))
-                {
-                    conditions.Add("(cod_documento LIKE @Q OR nombre_prov LIKE @Q OR ced_jur_prov LIKE @Q)");
-                    p.Add("@Q", $"%{filtro.filtro}%");
-                }
+                var q = NormalizeLike(filtro.filtro);
+                var (offset, fetch) = NormalizePaging(filtro.pagina, filtro.paginacion);
 
-                // WHERE final
-                string where;
-                if (conditions.Count > 0)
-                {
-                    where = " WHERE " + estadoActivas + " AND " + string.Join(" AND ", conditions);
-                }
-                else
-                {
-                    where = " WHERE " + estadoActivas;
-                }
+                var p = new DynamicParameters();
+                p.Add("SoloActivas", soloActivas ? 1 : 0);
+                p.Add("CedJur", cedJurLimpia);
+                p.Add("Q", q);
+                p.Add("Offset", offset);
+                p.Add("Fetch", fetch);
 
-                // Paginación (si viene)
-                string paginaSql = string.Empty;
-                if (filtro.pagina != null && filtro.paginacion != null)
-                {
-                    paginaSql = " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ";
-                    p.Add("@Offset", filtro.pagina);
-                    p.Add("@Fetch", filtro.paginacion);
-                }
+                const string countSql = @"SELECT COUNT(*)
+FROM CPR_FACTURAS_XML
+WHERE (@SoloActivas = 0 OR ESTADO IN ('P','A'))
+  AND (@CedJur IS NULL OR REPLACE(REPLACE(ced_jur_prov, ' ', ''), '-', '') = @CedJur)
+  AND (@Q IS NULL OR (cod_documento LIKE @Q OR nombre_prov LIKE @Q OR ced_jur_prov LIKE @Q));";
 
-                // Total
-                string countQuery = $"SELECT COUNT(*) FROM CPR_FACTURAS_XML {where}";
-                var totalResp = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, countQuery, 0, p);
+                var totalResp = DbHelper.ExecuteSingleQuery<int>(_portalDB, codEmpresa, countSql, 0, p);
                 response.Result.total = totalResp.Result;
 
-                // Lista
-                string dataQuery = $"SELECT * FROM CPR_FACTURAS_XML {where} ORDER BY id DESC {paginaSql}";
-                var listResp = DbHelper.ExecuteListQuery<CprFacturasXmlDto>(_portalDB, CodEmpresa, dataQuery, p);
+                const string dataSql = @"SELECT *
+FROM CPR_FACTURAS_XML
+WHERE (@SoloActivas = 0 OR ESTADO IN ('P','A'))
+  AND (@CedJur IS NULL OR REPLACE(REPLACE(ced_jur_prov, ' ', ''), '-', '') = @CedJur)
+  AND (@Q IS NULL OR (cod_documento LIKE @Q OR nombre_prov LIKE @Q OR ced_jur_prov LIKE @Q))
+ORDER BY id DESC
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+
+                var listResp = DbHelper.ExecuteListQuery<CprFacturasXmlDto>(_portalDB, codEmpresa, dataSql, p);
 
                 if (listResp.Code != 0)
                 {
@@ -135,6 +141,20 @@ namespace Galileo.DataBaseTier
             }
 
             return response;
+        }
+
+
+        /// <summary>
+        /// Obtiene la lista de facturas XML
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="proveedor"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+        public ErrorDto<CprFacturasXmlLista> Cargador_Facturas_Obtener(int CodEmpresa, int proveedor, string filtros)
+        {
+            // Mantiene comportamiento original: solo activas (P, A)
+            return Cargador_Facturas_ObtenerCore(CodEmpresa, proveedor, filtros, soloActivas: true);
         }
 
 
@@ -528,97 +548,8 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<CprFacturasXmlLista> Cargador_FacturasActivas_Obtener(int CodEmpresa, int proveedor, string filtros)
         {
-            CprFacturasXmlFiltros filtro = JsonConvert.DeserializeObject<CprFacturasXmlFiltros>(filtros) ?? new CprFacturasXmlFiltros();
-
-            var response = new ErrorDto<CprFacturasXmlLista>
-            {
-                Code = 0,
-                Result = new CprFacturasXmlLista
-                {
-                    total = 0,
-                    lista = new List<CprFacturasXmlDto>()
-                }
-            };
-
-            try
-            {
-                var conditions = new List<string>();
-                var p = new DynamicParameters();
-
-                // Filtro por proveedor (cédula jurídica normalizada)
-                if (proveedor != 0)
-                {
-                    var cedJurProveedorResp = DbHelper.ExecuteSingleQuery<string>(
-                        _portalDB,
-                        CodEmpresa,
-                        "SELECT cedjur FROM cxp_proveedores WHERE cod_proveedor = @CodProveedor",
-                        defaultValue: null,
-                        parameters: new { CodProveedor = proveedor }
-                    );
-
-                    var cedJurProveedor = cedJurProveedorResp.Result;
-
-                    if (string.IsNullOrWhiteSpace(cedJurProveedor))
-                    {
-                        response.Code = -2;
-                        response.Description = "No se encontró Cédula Jurídica para el proveedor seleccionado. Verifique el registro de proveedor";
-                        response.Result = null;
-                        return response;
-                    }
-
-                    var cedJurLimpia = cedJurProveedor.Replace("-", "").Replace(" ", "");
-                    conditions.Add("REPLACE(REPLACE(ced_jur_prov, ' ', ''), '-', '') = @CedJur");
-                    p.Add("@CedJur", cedJurLimpia);
-                }
-
-                // Filtro de búsqueda general
-                if (!string.IsNullOrWhiteSpace(filtro.filtro))
-                {
-                    conditions.Add("(cod_documento LIKE @Q OR nombre_prov LIKE @Q OR ced_jur_prov LIKE @Q)");
-                    p.Add("@Q", $"%{filtro.filtro}%");
-                }
-
-                // WHERE final
-                string where = conditions.Count > 0
-                    ? " WHERE " + string.Join(" AND ", conditions)
-                    : string.Empty;
-
-                // Paginación
-                string paginaSql = string.Empty;
-                if (filtro.pagina != null && filtro.paginacion != null)
-                {
-                    paginaSql = " OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY ";
-                    p.Add("@Offset", filtro.pagina);
-                    p.Add("@Fetch", filtro.paginacion);
-                }
-
-                // Total
-                string countQuery = $"SELECT COUNT(*) FROM CPR_FACTURAS_XML {where}";
-                var totalResp = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, countQuery, 0, p);
-                response.Result.total = totalResp.Result;
-
-                // Lista
-                string dataQuery = $"SELECT * FROM CPR_FACTURAS_XML {where} ORDER BY id DESC {paginaSql}";
-                var listResp = DbHelper.ExecuteListQuery<CprFacturasXmlDto>(_portalDB, CodEmpresa, dataQuery, p);
-
-                if (listResp.Code != 0)
-                {
-                    response.Code = -1;
-                    response.Description = listResp.Description;
-                    response.Result = null;
-                    return response;
-                }
-
-                response.Result.lista = listResp.Result ?? new List<CprFacturasXmlDto>();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-
-            return response;
+            // Activas (P, A)
+            return Cargador_Facturas_ObtenerCore(CodEmpresa, proveedor, filtros, soloActivas: true);
         }
 
 

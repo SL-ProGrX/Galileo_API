@@ -11,9 +11,13 @@ namespace Galileo.DataBaseTier
         private readonly PortalDB _portalDB;
 
         // Evitar literales repetidos (Sonar)
-        private const string PaginationSqlClause = " OFFSET @off ROWS FETCH NEXT @take ROWS ONLY ";
         private const string ParamOff = "off";
         private const string ParamTake = "take";
+
+        private static ErrorDto Fail(Exception ex) => DbHelper.ErrorResponse(ex.Message, -1);
+
+        private static ErrorDto<T> Fail<T>(Exception ex, T? fallback = default)
+            => new ErrorDto<T> { Code = -1, Description = ex.Message, Result = fallback };
 
         private static string? NormalizeLike(string? filtro)
         {
@@ -67,7 +71,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message, -1);
+                return Fail(ex);
             }
         }
 
@@ -96,12 +100,7 @@ namespace Galileo.DataBaseTier
             }
             catch (Exception ex)
             {
-                return new ErrorDto<CprProveedoresDto>
-                {
-                    Code = -1,
-                    Description = ex.Message,
-                    Result = null
-                };
+                return Fail<CprProveedoresDto>(ex);
             }
         }
 
@@ -132,7 +131,8 @@ WHERE (@q IS NULL OR PROVEEDOR_CODIGO LIKE @q OR CEDJUR LIKE @q OR DESCRIPCION L
                     const string dataSql = @"SELECT PROVEEDOR_CODIGO, CEDJUR, DESCRIPCION
 FROM CPR_PROVEEDORES_TEMPO
 WHERE (@q IS NULL OR PROVEEDOR_CODIGO LIKE @q OR CEDJUR LIKE @q OR DESCRIPCION LIKE @q)
-ORDER BY PROVEEDOR_CODIGO" + PaginationSqlClause + ";";
+ORDER BY PROVEEDOR_CODIGO
+OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
 
                     result.proveedores = conn.Query<CprProveedoresDto>(dataSql, dp).ToList();
                     return result;
@@ -140,7 +140,7 @@ ORDER BY PROVEEDOR_CODIGO" + PaginationSqlClause + ";";
             }
             catch (Exception ex)
             {
-                return new ErrorDto<CprProveedoresLista> { Code = -1, Description = ex.Message, Result = null };
+                return Fail<CprProveedoresLista>(ex);
             }
         }
 
@@ -157,7 +157,7 @@ ORDER BY PROVEEDOR_CODIGO" + PaginationSqlClause + ";";
             }
             catch (Exception ex)
             {
-                return new ErrorDto<CprProveedoresDto> { Code = -1, Description = ex.Message, Result = new CprProveedoresDto() };
+                return Fail(ex, new CprProveedoresDto());
             }
         }
 
@@ -178,7 +178,7 @@ ORDER BY PROVEEDOR_CODIGO" + PaginationSqlClause + ";";
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message, -1);
+                return Fail(ex);
             }
         }
 
@@ -292,7 +292,7 @@ ORDER BY PROVEEDOR_CODIGO" + PaginationSqlClause + ";";
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message, -1);
+                return Fail(ex);
             }
         }
 
@@ -333,7 +333,7 @@ ORDER BY PROVEEDOR_CODIGO" + PaginationSqlClause + ";";
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message, -1);
+                return Fail(ex);
             }
         }
 
@@ -350,7 +350,7 @@ ORDER BY PROVEEDOR_CODIGO" + PaginationSqlClause + ";";
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message, -1);
+                return Fail(ex);
             }
         }
 
@@ -371,7 +371,7 @@ ORDER BY PROVEEDOR_CODIGO" + PaginationSqlClause + ";";
             }
             catch (Exception ex)
             {
-                return new ErrorDto<float> { Code = -1, Description = ex.Message, Result = 0 };
+                return Fail<float>(ex, 0);
             }
         }
 
@@ -393,7 +393,7 @@ ORDER BY PROVEEDOR_CODIGO" + PaginationSqlClause + ";";
             }
             catch (Exception ex)
             {
-                return new ErrorDto<List<CprProveedorBitacoraData>> { Code = -1, Description = ex.Message, Result = null };
+                return Fail<List<CprProveedorBitacoraData>>(ex);
             }
         }
     }
