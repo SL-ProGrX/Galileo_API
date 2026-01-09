@@ -491,6 +491,11 @@ namespace Galileo.DataBaseTier
             var filtros = ParsePlanFiltros(parametros);
             var args = BuildPagedArgs(filtros, includeCorte: true);
 
+            return ObtenerResumenPlanCore(CodEmpresa, filtros, args, prodClas: null);
+        }
+
+        private ErrorDto<CprResumenPlanLista> ObtenerResumenPlanCore(int codEmpresa, CprPlanFiltros filtros, PagedArgs args, int? prodClas)
+        {
             const string sql = @"
                         SELECT D.COD_PRODUCTO,
                                P.DESCRIPCION,
@@ -505,14 +510,16 @@ namespace Galileo.DataBaseTier
                          WHERE D.ID_PC = @IdPc
                            AND (@Corte IS NULL OR S.CORTE = @Corte)
                            AND (@Q IS NULL OR (D.COD_PRODUCTO LIKE @Q OR P.DESCRIPCION LIKE @Q))
+                           AND (@ProdClas IS NULL OR P.COD_PRODCLAS = @ProdClas)
                          ORDER BY S.CORTE DESC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-            var r = DbHelper.ExecuteListQuery<ResumenPlanRow>(_portalDB, CodEmpresa, sql, new
+            var r = DbHelper.ExecuteListQuery<ResumenPlanRow>(_portalDB, codEmpresa, sql, new
             {
                 IdPc = filtros.planCompras,
                 Corte = args.Corte,
                 Q = args.Q,
+                ProdClas = prodClas,
                 Offset = args.Offset,
                 Fetch = args.Fetch
             });
@@ -640,47 +647,9 @@ namespace Galileo.DataBaseTier
                 return DbHelper.CreateOkResponse(new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() });
 
             var args = BuildPagedArgs(filtros, includeCorte: true);
+            args = args with { Q = null };
 
-            const string sql = @"
-                        SELECT D.COD_PRODUCTO,
-                               P.DESCRIPCION,
-                               S.CANTIDAD,
-                               S.MONTO,
-                               S.CORTE,
-                               COUNT(*) OVER() AS TotalRows
-                          FROM CPR_PLAN_DT D
-                          INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
-                          INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-                          INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                         WHERE P.COD_PRODCLAS = @ProdClas
-                           AND D.ID_PC = @IdPc
-                           AND (@Corte IS NULL OR S.CORTE = @Corte)
-                         ORDER BY S.CORTE DESC
-                         OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
-
-            var r = DbHelper.ExecuteListQuery<ResumenPlanRow>(_portalDB, CodEmpresa, sql, new
-            {
-                ProdClas = prodclas,
-                IdPc = filtros.planCompras,
-                Corte = args.Corte,
-                Offset = args.Offset,
-                Fetch = args.Fetch
-            });
-
-            return ToPagedListResponse(
-                r,
-                row => row.TotalRows,
-                x => new CprResumenPlanDto
-                {
-                    cod_producto = x.COD_PRODUCTO,
-                    descripcion = x.DESCRIPCION,
-                    cantidad = x.CANTIDAD,
-                    monto = x.MONTO,
-                    corte = x.CORTE
-                },
-                (total, lineas) => new CprResumenPlanLista { Total = total, Lineas = lineas },
-                () => new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() }
-            );
+            return ObtenerResumenPlanCore(CodEmpresa, filtros, args, prodClas: prodclas);
         }
     }
 }
