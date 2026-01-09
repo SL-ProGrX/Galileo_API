@@ -2,6 +2,7 @@ using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using Newtonsoft.Json;
 
+
 namespace Galileo.DataBaseTier
 {
     public class FrmCprPCPlanningDB
@@ -110,6 +111,29 @@ namespace Galileo.DataBaseTier
             if (fetch <= 0) fetch = int.MaxValue;
 
             return new PagedArgs(corte, q, offset, fetch);
+        }
+
+        private static ErrorDto<TLista> ToPagedListResponse<TRow, TDto, TLista>(
+            ErrorDto<List<TRow>> r,
+            Func<TRow, int> totalRowsSelector,
+            Func<TRow, TDto> mapRow,
+            Func<int, List<TDto>, TLista> listFactory,
+            Func<TLista> emptyFactory)
+        {
+            var code = r.Code is int c ? c : -1;
+            if (code != 0)
+            {
+                return DbHelper.CreateErrorResponse<TLista>(
+                    r.Description ?? DefaultErrorDescription,
+                    code,
+                    emptyFactory());
+            }
+
+            var rows = r.Result ?? new List<TRow>();
+            var total = rows.Count == 0 ? 0 : totalRowsSelector(rows[0]);
+            var lineas = rows.Select(mapRow).ToList();
+
+            return DbHelper.CreateOkResponse(listFactory(total, lineas));
         }
 
 
@@ -493,23 +517,20 @@ namespace Galileo.DataBaseTier
                 Fetch = args.Fetch
             });
 
-            var code = r.Code is int c ? c : -1;
-            if (code != 0)
-                return DbHelper.CreateErrorResponse<CprResumenPlanLista>(r.Description ?? DefaultErrorDescription, code, new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() });
-
-            var rows = r.Result ?? new List<ResumenPlanRow>();
-            var total = rows.Count == 0 ? 0 : rows[0].TotalRows;
-
-            var lineas = rows.Select(x => new CprResumenPlanDto
-            {
-                cod_producto = x.COD_PRODUCTO,
-                descripcion = x.DESCRIPCION,
-                cantidad = x.CANTIDAD,
-                monto = x.MONTO,
-                corte = x.CORTE
-            }).ToList();
-
-            return DbHelper.CreateOkResponse(new CprResumenPlanLista { Total = total, Lineas = lineas });
+            return ToPagedListResponse(
+                r,
+                row => row.TotalRows,
+                x => new CprResumenPlanDto
+                {
+                    cod_producto = x.COD_PRODUCTO,
+                    descripcion = x.DESCRIPCION,
+                    cantidad = x.CANTIDAD,
+                    monto = x.MONTO,
+                    corte = x.CORTE
+                },
+                (total, lineas) => new CprResumenPlanLista { Total = total, Lineas = lineas },
+                () => new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() }
+            );
         }
 
         public ErrorDto<CprPlanContableLista> CprPlanContable_Obtener(int CodEmpresa, string parametros)
@@ -548,24 +569,21 @@ namespace Galileo.DataBaseTier
                 Fetch = args.Fetch
             });
 
-            var code = r.Code is int c ? c : -1;
-            if (code != 0)
-                return DbHelper.CreateErrorResponse<CprPlanContableLista>(r.Description ?? DefaultErrorDescription, code, new CprPlanContableLista { Total = 0, Lineas = new List<CprPlanContableDto>() });
-
-            var rows = r.Result ?? new List<PlanContableRow>();
-            var total = rows.Count == 0 ? 0 : rows[0].TotalRows;
-
-            var lineas = rows.Select(x => new CprPlanContableDto
-            {
-                cuenta = x.CUENTA,
-                descripcion = x.DESCRIPCION,
-                unidad = x.UNIDAD,
-                centro_costo = x.CENTRO_COSTO,
-                total = x.TOTAL,
-                corte = x.CORTE
-            }).ToList();
-
-            return DbHelper.CreateOkResponse(new CprPlanContableLista { Total = total, Lineas = lineas });
+            return ToPagedListResponse(
+                r,
+                row => row.TotalRows,
+                x => new CprPlanContableDto
+                {
+                    cuenta = x.CUENTA,
+                    descripcion = x.DESCRIPCION,
+                    unidad = x.UNIDAD,
+                    centro_costo = x.CENTRO_COSTO,
+                    total = x.TOTAL,
+                    corte = x.CORTE
+                },
+                (total, lineas) => new CprPlanContableLista { Total = total, Lineas = lineas },
+                () => new CprPlanContableLista { Total = 0, Lineas = new List<CprPlanContableDto>() }
+            );
         }
 
         public ErrorDto<CprBitacoraLista> CprBitacora_Obtener(int CodEmpresa, string parametros)
@@ -595,22 +613,19 @@ namespace Galileo.DataBaseTier
                 Fetch = args.Fetch
             });
 
-            var code = r.Code is int c ? c : -1;
-            if (code != 0)
-                return DbHelper.CreateErrorResponse<CprBitacoraLista>(r.Description ?? DefaultErrorDescription, code, new CprBitacoraLista { Total = 0, Lineas = new List<CprBitacoraDto>() });
-
-            var rows = r.Result ?? new List<BitacoraRow>();
-            var total = rows.Count == 0 ? 0 : rows[0].TotalRows;
-
-            var lineas = rows.Select(x => new CprBitacoraDto
-            {
-                id_bitacora = x.ID_BITACORA,
-                fechahora = x.FECHAHORA,
-                usuario = x.USUARIO,
-                detalle = x.DETALLE
-            }).ToList();
-
-            return DbHelper.CreateOkResponse(new CprBitacoraLista { Total = total, Lineas = lineas });
+            return ToPagedListResponse(
+                r,
+                row => row.TotalRows,
+                x => new CprBitacoraDto
+                {
+                    id_bitacora = x.ID_BITACORA,
+                    fechahora = x.FECHAHORA,
+                    usuario = x.USUARIO,
+                    detalle = x.DETALLE
+                },
+                (total, lineas) => new CprBitacoraLista { Total = total, Lineas = lineas },
+                () => new CprBitacoraLista { Total = 0, Lineas = new List<CprBitacoraDto>() }
+            );
         }
 
         public ErrorDto<CprResumenPlanLista> CprResumenPlan_ObtenerxCuenta(int CodEmpresa, string parametros)
@@ -652,23 +667,20 @@ namespace Galileo.DataBaseTier
                 Fetch = args.Fetch
             });
 
-            var code = r.Code is int c ? c : -1;
-            if (code != 0)
-                return DbHelper.CreateErrorResponse<CprResumenPlanLista>(r.Description ?? DefaultErrorDescription, code, new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() });
-
-            var rows = r.Result ?? new List<ResumenPlanRow>();
-            var total = rows.Count == 0 ? 0 : rows[0].TotalRows;
-
-            var lineas = rows.Select(x => new CprResumenPlanDto
-            {
-                cod_producto = x.COD_PRODUCTO,
-                descripcion = x.DESCRIPCION,
-                cantidad = x.CANTIDAD,
-                monto = x.MONTO,
-                corte = x.CORTE
-            }).ToList();
-
-            return DbHelper.CreateOkResponse(new CprResumenPlanLista { Total = total, Lineas = lineas });
+            return ToPagedListResponse(
+                r,
+                row => row.TotalRows,
+                x => new CprResumenPlanDto
+                {
+                    cod_producto = x.COD_PRODUCTO,
+                    descripcion = x.DESCRIPCION,
+                    cantidad = x.CANTIDAD,
+                    monto = x.MONTO,
+                    corte = x.CORTE
+                },
+                (total, lineas) => new CprResumenPlanLista { Total = total, Lineas = lineas },
+                () => new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() }
+            );
         }
     }
 }
