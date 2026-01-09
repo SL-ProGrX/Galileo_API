@@ -61,22 +61,26 @@ namespace Galileo.DataBaseTier
             return f.Length == 0 ? null : $"%{f}%";
         }
 
-        private static bool AddPagingIfNeeded(DynamicParameters dp, int? pagina, int? paginacion)
+        private static (int Offset, int Fetch) NormalizePaging(int? pagina, int? paginacion)
         {
-            var hasPaging = pagina != null && paginacion != null;
-            if (hasPaging)
-            {
-                dp.Add(ParamOff, pagina, DbType.Int32);
-                dp.Add(ParamTake, paginacion, DbType.Int32);
-            }
-            return hasPaging;
+            // Keep current semantics: `pagina` is treated as OFFSET.
+            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
+                return (0, int.MaxValue);
+
+            return (pagina.Value, paginacion.Value);
         }
 
-        private static (int Total, List<T> Rows) QueryPaged<T>(SqlConnection conn, DynamicParameters dp, bool hasPaging,
-            string countSql, string dataSqlNoPaging, string dataSqlPaging)
+        private static void AddPaging(DynamicParameters dp, int? pagina, int? paginacion)
+        {
+            var (off, take) = NormalizePaging(pagina, paginacion);
+            dp.Add(ParamOff, off, DbType.Int32);
+            dp.Add(ParamTake, take, DbType.Int32);
+        }
+
+        private static (int Total, List<T> Rows) QueryPaged<T>(SqlConnection conn, DynamicParameters dp, string countSql, string dataSql)
         {
             var total = conn.ExecuteScalar<int>(countSql, dp);
-            var rows = conn.Query<T>(hasPaging ? dataSqlPaging : dataSqlNoPaging, dp).ToList();
+            var rows = conn.Query<T>(dataSql, dp).ToList();
             return (total, rows);
         }
 
@@ -392,7 +396,7 @@ namespace Galileo.DataBaseTier
                     dp.Add("Corte", corte, DbType.String);
                     dp.Add("Q", q, DbType.String);
 
-                    var hasPaging = AddPagingIfNeeded(dp, filtros.pagina, filtros.paginacion);
+                    AddPaging(dp, filtros.pagina, filtros.paginacion);
 
                     const string countSql = @"
                         SELECT COUNT(D.COD_PRODUCTO)
@@ -404,18 +408,7 @@ namespace Galileo.DataBaseTier
                            AND (@Corte IS NULL OR S.CORTE = @Corte)
                            AND (@Q IS NULL OR (D.COD_PRODUCTO LIKE @Q OR P.DESCRIPCION LIKE @Q));";
 
-                    const string dataSqlNoPaging = @"
-                        SELECT D.COD_PRODUCTO, P.DESCRIPCION, S.CANTIDAD, S.MONTO, S.CORTE
-                          FROM CPR_PLAN_DT D
-                          INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
-                          INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-                          INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                         WHERE D.ID_PC = @IdPc
-                           AND (@Corte IS NULL OR S.CORTE = @Corte)
-                           AND (@Q IS NULL OR (D.COD_PRODUCTO LIKE @Q OR P.DESCRIPCION LIKE @Q))
-                         ORDER BY S.CORTE DESC;";
-
-                    const string dataSqlPaging = @"
+                    const string dataSql = @"
                         SELECT D.COD_PRODUCTO, P.DESCRIPCION, S.CANTIDAD, S.MONTO, S.CORTE
                           FROM CPR_PLAN_DT D
                           INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
@@ -427,7 +420,7 @@ namespace Galileo.DataBaseTier
                          ORDER BY S.CORTE DESC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                    var (total, rows) = QueryPaged<CprResumenPlanDto>(conn, dp, hasPaging, countSql, dataSqlNoPaging, dataSqlPaging);
+                    var (total, rows) = QueryPaged<CprResumenPlanDto>(conn, dp, countSql, dataSql);
                     result.Total = total;
                     result.Lineas = rows;
                     return result;
@@ -457,7 +450,7 @@ namespace Galileo.DataBaseTier
                     dp.Add("Corte", corte, DbType.String);
                     dp.Add("Q", q, DbType.String);
 
-                    var hasPaging = AddPagingIfNeeded(dp, filtros.pagina, filtros.paginacion);
+                    AddPaging(dp, filtros.pagina, filtros.paginacion);
 
                     const string countSql = @"
                         SELECT COUNT(*)
@@ -475,27 +468,7 @@ namespace Galileo.DataBaseTier
                                    AND (@Q IS NULL OR (Z.COD_CUENTA_MASK LIKE @Q OR Z.DESCRIPCION LIKE @Q))
                                ) T;";
 
-                    const string dataSqlNoPaging = @"
-                        SELECT DISTINCT
-                               Z.COD_CUENTA_MASK AS CUENTA,
-                               Z.DESCRIPCION,
-                               U.CNTX_UNIDAD AS UNIDAD,
-                               U.CNTX_CENTRO_COSTO AS CENTRO_COSTO,
-                               (S.MONTO * S.CANTIDAD) AS TOTAL,
-                               S.CORTE
-                          FROM CPR_PLAN_DT D
-                          INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
-                          INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-                          INNER JOIN CORE_UENS U ON C.COD_UNIDAD = U.COD_UNIDAD
-                          INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                          INNER JOIN PV_PROD_CLASIFICA B ON P.COD_PRODCLAS = B.COD_PRODCLAS
-                          INNER JOIN CNTX_CUENTAS Z ON B.COD_CUENTA = Z.COD_CUENTA
-                         WHERE D.ID_PC = @IdPc
-                           AND (@Corte IS NULL OR S.CORTE = @Corte)
-                           AND (@Q IS NULL OR (Z.COD_CUENTA_MASK LIKE @Q OR Z.DESCRIPCION LIKE @Q))
-                         ORDER BY S.CORTE DESC;";
-
-                    const string dataSqlPaging = @"
+                    const string dataSql = @"
                         SELECT DISTINCT
                                Z.COD_CUENTA_MASK AS CUENTA,
                                Z.DESCRIPCION,
@@ -516,7 +489,7 @@ namespace Galileo.DataBaseTier
                          ORDER BY S.CORTE DESC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                    var (total, rows) = QueryPaged<CprPlanContableDto>(conn, dp, hasPaging, countSql, dataSqlNoPaging, dataSqlPaging);
+                    var (total, rows) = QueryPaged<CprPlanContableDto>(conn, dp, countSql, dataSql);
                     result.Total = total;
                     result.Lineas = rows;
                     return result;
@@ -545,7 +518,7 @@ namespace Galileo.DataBaseTier
                     dp.Add("Mov", mov, DbType.String);
                     dp.Add("Q", q, DbType.String);
 
-                    var hasPaging = AddPagingIfNeeded(dp, filtros.pagina, filtros.paginacion);
+                    AddPaging(dp, filtros.pagina, filtros.paginacion);
 
                     const string countSql = @"
                         SELECT COUNT(*)
@@ -553,14 +526,7 @@ namespace Galileo.DataBaseTier
                          WHERE MOVIMIENTO LIKE @Mov
                            AND (@Q IS NULL OR (USUARIO LIKE @Q OR DETALLE LIKE @Q OR CONVERT(VARCHAR(30), FECHAHORA, 120) LIKE @Q));";
 
-                    const string dataSqlNoPaging = @"
-                        SELECT ID_BITACORA, FECHAHORA, USUARIO, DETALLE
-                          FROM CPR_BITACORA_SOLICITUD
-                         WHERE MOVIMIENTO LIKE @Mov
-                           AND (@Q IS NULL OR (USUARIO LIKE @Q OR DETALLE LIKE @Q OR CONVERT(VARCHAR(30), FECHAHORA, 120) LIKE @Q))
-                         ORDER BY FECHAHORA DESC;";
-
-                    const string dataSqlPaging = @"
+                    const string dataSql = @"
                         SELECT ID_BITACORA, FECHAHORA, USUARIO, DETALLE
                           FROM CPR_BITACORA_SOLICITUD
                          WHERE MOVIMIENTO LIKE @Mov
@@ -568,7 +534,7 @@ namespace Galileo.DataBaseTier
                          ORDER BY FECHAHORA DESC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                    var (total, rows) = QueryPaged<CprBitacoraDto>(conn, dp, hasPaging, countSql, dataSqlNoPaging, dataSqlPaging);
+                    var (total, rows) = QueryPaged<CprBitacoraDto>(conn, dp, countSql, dataSql);
                     result.Total = total;
                     result.Lineas = rows;
                     return result;
@@ -608,7 +574,7 @@ namespace Galileo.DataBaseTier
                     dp.Add("IdPc", filtros.planCompras, DbType.Int32);
                     dp.Add("Corte", corte, DbType.String);
 
-                    var hasPaging = AddPagingIfNeeded(dp, filtros.pagina, filtros.paginacion);
+                    AddPaging(dp, filtros.pagina, filtros.paginacion);
 
                     const string countSql = @"
                         SELECT COUNT(D.COD_PRODUCTO)
@@ -620,18 +586,7 @@ namespace Galileo.DataBaseTier
                            AND D.ID_PC = @IdPc
                            AND (@Corte IS NULL OR S.CORTE = @Corte);";
 
-                    const string dataSqlNoPaging = @"
-                        SELECT D.COD_PRODUCTO, P.DESCRIPCION, S.CANTIDAD, S.MONTO, S.CORTE
-                          FROM CPR_PLAN_DT D
-                          INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
-                          INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-                          INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                         WHERE P.COD_PRODCLAS = @ProdClas
-                           AND D.ID_PC = @IdPc
-                           AND (@Corte IS NULL OR S.CORTE = @Corte)
-                         ORDER BY S.CORTE DESC;";
-
-                    const string dataSqlPaging = @"
+                    const string dataSql = @"
                         SELECT D.COD_PRODUCTO, P.DESCRIPCION, S.CANTIDAD, S.MONTO, S.CORTE
                           FROM CPR_PLAN_DT D
                           INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
@@ -643,7 +598,7 @@ namespace Galileo.DataBaseTier
                          ORDER BY S.CORTE DESC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                    var (total, rows) = QueryPaged<CprResumenPlanDto>(conn, dp, hasPaging, countSql, dataSqlNoPaging, dataSqlPaging);
+                    var (total, rows) = QueryPaged<CprResumenPlanDto>(conn, dp, countSql, dataSql);
                     result.Total = total;
                     result.Lineas = rows;
                     return result;

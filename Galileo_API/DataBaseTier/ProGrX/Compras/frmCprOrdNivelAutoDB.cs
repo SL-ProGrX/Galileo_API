@@ -1,3 +1,7 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Extensions.Configuration;
 using System.Data;
 using Dapper;
 using Newtonsoft.Json;
@@ -16,6 +20,32 @@ namespace Galileo.DataBaseTier
             _portalDb = new PortalDB(config);
         }
 
+        private static UsuariosAuthorizaLista QueryUsuariosChecklist(
+            IDbConnection conn,
+            FiltroLazy filtros,
+            string totalSql,
+            string listSql,
+            object? extraParams = null)
+        {
+            EnsureOpen(conn);
+
+            var like = NormalizeLike(filtros.filtro);
+            var (offset, fetch) = NormalizePaging(filtros.pagina, filtros.paginacion);
+
+            var dp = extraParams == null ? new DynamicParameters() : new DynamicParameters(extraParams);
+            dp.Add("F", like);
+            dp.Add("Offset", offset);
+            dp.Add("Fetch", fetch);
+
+            var total = conn.QueryFirstOrDefault<int>(totalSql, dp);
+            var lista = conn.Query<UsuariosAutorizaData>(listSql, dp).ToList();
+
+            return new UsuariosAuthorizaLista { total = total, lista = lista };
+        }
+
+        private static UsuariosAuthorizaLista EmptyUsuariosChecklist()
+            => new UsuariosAuthorizaLista { total = 0, lista = new List<UsuariosAutorizaData>() };
+
         // ----------------- Usuarios Autorizadores -----------------
 
         public ErrorDto<UsuariosAuthorizaLista> UsuariosAutorizadores_Obtener(int CodEmpresa, string jFiltros)
@@ -24,22 +54,12 @@ namespace Galileo.DataBaseTier
 
             var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
-                EnsureOpen(conn);
-
-                var like = NormalizeLike(filtros.filtro);
-                var (offset, fetch) = NormalizePaging(filtros.pagina, filtros.paginacion);
-
                 const string sqlTotal = @"
 SELECT COUNT(U.nombre)
 FROM usuarios U
 LEFT JOIN cpr_orden_autorizadores A ON U.nombre = A.usuario
 WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F);
 ";
-
-                var total = conn.QueryFirstOrDefault<int>(
-                    sqlTotal,
-                    new { F = like }
-                );
 
                 const string sqlLista = @"
 SELECT
@@ -54,15 +74,10 @@ ORDER BY A.fecha DESC
 OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 ";
 
-                var lista = conn.Query<UsuariosAutorizaData>(
-                    sqlLista,
-                    new { F = like, Offset = offset, Fetch = fetch }
-                ).ToList();
-
-                return new UsuariosAuthorizaLista { total = total, lista = lista };
+                return QueryUsuariosChecklist(conn, filtros, sqlTotal, sqlLista);
             });
 
-            return Map(r, () => new UsuariosAuthorizaLista { total = 0, lista = new List<UsuariosAutorizaData>() });
+            return Map(r, EmptyUsuariosChecklist);
         }
 
         public ErrorDto OrdenAutousers_Insertar(int CodEmpresa, string usuario, string usuario_asignado)
@@ -163,22 +178,12 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
             var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
-                EnsureOpen(conn);
-
-                var like = NormalizeLike(filtros.filtro);
-                var (offset, fetch) = NormalizePaging(filtros.pagina, filtros.paginacion);
-
                 const string sqlTotal = @"
 SELECT COUNT(U.nombre)
 FROM usuarios U
 LEFT JOIN cpr_INVUSRFECHAS A ON U.nombre = A.usuario
 WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F);
 ";
-
-                var total = conn.QueryFirstOrDefault<int>(
-                    sqlTotal,
-                    new { F = like }
-                );
 
                 const string sqlLista = @"
 SELECT
@@ -193,15 +198,10 @@ ORDER BY A.usuario DESC
 OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 ";
 
-                var lista = conn.Query<UsuariosAutorizaData>(
-                    sqlLista,
-                    new { F = like, Offset = offset, Fetch = fetch }
-                ).ToList();
-
-                return new UsuariosAuthorizaLista { total = total, lista = lista };
+                return QueryUsuariosChecklist(conn, filtros, sqlTotal, sqlLista);
             });
 
-            return Map(r, () => new UsuariosAuthorizaLista { total = 0, lista = new List<UsuariosAutorizaData>() });
+            return Map(r, EmptyUsuariosChecklist);
         }
 
         public ErrorDto FechaCambioAutorizadores_Insertar(int CodEmpresa, string usuario, string registro_usuario)
@@ -259,11 +259,6 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
             var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
-                EnsureOpen(conn);
-
-                var like = NormalizeLike(filtros.filtro);
-                var (offset, fetch) = NormalizePaging(filtros.pagina, filtros.paginacion);
-
                 const string sqlTotal = @"
 SELECT COUNT(U.nombre)
 FROM usuarios U
@@ -271,11 +266,6 @@ LEFT JOIN cpr_orden_autousers C
        ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
 WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F);
 ";
-
-                var total = conn.QueryFirstOrDefault<int>(
-                    sqlTotal,
-                    new { Usuario = usuario, F = like }
-                );
 
                 const string sqlLista = @"
 SELECT
@@ -291,15 +281,10 @@ ORDER BY C.fecha_asignacion DESC
 OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 ";
 
-                var lista = conn.Query<UsuariosAutorizaData>(
-                    sqlLista,
-                    new { Usuario = usuario, F = like, Offset = offset, Fetch = fetch }
-                ).ToList();
-
-                return new UsuariosAuthorizaLista { total = total, lista = lista };
+                return QueryUsuariosChecklist(conn, filtros, sqlTotal, sqlLista, new { Usuario = usuario });
             });
 
-            return Map(r, () => new UsuariosAuthorizaLista { total = 0, lista = new List<UsuariosAutorizaData>() });
+            return Map(r, EmptyUsuariosChecklist);
         }
 
         // ----------------- Rangos -----------------
