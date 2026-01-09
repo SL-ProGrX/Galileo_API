@@ -12,13 +12,11 @@ namespace PgxAPI.Controllers.ProGrX.Bancos
     [Authorize]
     public class FrmTesAutorizaChKeyController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmTesAutorizaChKeyBL _authChKeyBL;
 
         public FrmTesAutorizaChKeyController(IConfiguration config)
         {
-            _config = config;
-            _authChKeyBL = new FrmTesAutorizaChKeyBL(_config);
+            _authChKeyBL = new FrmTesAutorizaChKeyBL(config);
         }
 
         

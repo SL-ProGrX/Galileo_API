@@ -2,19 +2,16 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
-using Microsoft.Data.SqlClient;
 
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesAutorizaChKeyDB
     {
-        private readonly IConfiguration? _config;
         private readonly PortalDB _portalDB;
 
         public FrmTesAutorizaChKeyDB(IConfiguration config)
         {
-            _config = config;
             _portalDB = new PortalDB(config);
         }
 
