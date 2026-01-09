@@ -23,7 +23,7 @@
 
     public class CoAplExcProcesadosResult
     {
-        public int aplicados { get; set; }
-        public int pendientes { get; set; }
+        public int aplicados { get; set; } = 0;
+        public int pendientes { get; set; } = 0;
     }
 }
