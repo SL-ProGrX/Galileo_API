@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 
-namespace PgxAPI.Controllers.ProGrX.Bancos
+namespace Galileo.Controllers.ProGrX.Bancos
 {
     [Route("api/[controller]")]
     [ApiController]

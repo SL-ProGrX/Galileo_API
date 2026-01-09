@@ -4,12 +4,12 @@ using Galileo.Models.ERROR;
 
 namespace Galileo.DataBaseTier
 {
-    public class FrmCprValoraciontiposDB
+    public class FrmCprValoracionTiposDB
     {
         private const string ErrorMessage = "Error";
         private readonly PortalDB _portalDb;
 
-        public FrmCprValoraciontiposDB(IConfiguration config)
+        public FrmCprValoracionTiposDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
         }
