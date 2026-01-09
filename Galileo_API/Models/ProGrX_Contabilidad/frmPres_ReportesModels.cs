@@ -8,4 +8,25 @@ namespace Galileo.Models.PRES
         public int Corte_Mes { get; set; }
         public string Estado { get; set; } = string.Empty;
     }
+
+    public class PresFiltrosReportes
+    {
+        public required string tipoInforme { get; set; }
+        public required int contabilidad { get; set; }
+        public required string unidadNegocio { get; set; }
+        public required string centroCosto { get; set; }
+        public required string modelo { get; set; }
+        public string? periodo { get; set; }
+        public string? tiposAjuste { get; set; }
+        public bool cuentasResumen { get; set; } = false;
+
+        public string? tipoReporte { get; set; }
+        public string? nivelReporte { get; set; }
+
+        public bool chkCalculaEstadosPreliminares { get; set; } = false;
+        public bool chkNoMostrarCeros { get; set; } = false;
+        public bool chkMostrarTitulos { get; set; } = false;
+        public bool chkCuentasOrden { get; set; } = false;
+        public bool chkFormatoNumCuentas { get; set; } = false;
+    }
 }
