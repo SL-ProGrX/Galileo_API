@@ -2,8 +2,14 @@
 using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
-using System.Data;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Galileo.DataBaseTier
 {
@@ -46,26 +52,25 @@ namespace Galileo.DataBaseTier
             {
                 EnsureOpen(conn);
 
-                const string sql = @"
-SELECT
-    O.*,
-    RTRIM(C.tipo_orden) AS Causa_ID,
-    RTRIM(C.descripcion) AS Causa_Desc,
-    Prov.Descripcion AS Proveedor,
-    RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS no_solicitud
-FROM cpr_ordenes O
-INNER JOIN cpr_Tipo_Orden C ON O.tipo_orden = C.tipo_orden
-INNER JOIN CxP_Proveedores Prov ON O.cod_Proveedor = Prov.cod_proveedor
-LEFT JOIN CPR_SOLICITUD_PROV sp
-    ON sp.ADJUDICA_ORDEN = O.COD_ORDEN
-   AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-WHERE
-    O.cod_orden = @CodOrden
-    AND O.estado = 'A'
-    AND O.Proceso IN ('A','D','X');";
+            const string sql = @"
+            SELECT
+                O.*,
+                RTRIM(C.tipo_orden) AS Causa_ID,
+                RTRIM(C.descripcion) AS Causa_Desc,
+                Prov.Descripcion AS Proveedor,
+                RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS no_solicitud
+            FROM cpr_ordenes O
+            INNER JOIN cpr_Tipo_Orden C ON O.tipo_orden = C.tipo_orden
+            INNER JOIN CxP_Proveedores Prov ON O.cod_Proveedor = Prov.cod_proveedor
+            LEFT JOIN CPR_SOLICITUD_PROV sp
+                ON sp.ADJUDICA_ORDEN = O.COD_ORDEN
+            AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
+            WHERE
+                O.cod_orden = @CodOrden
+                AND O.estado = 'A'
+                AND O.Proceso IN ('A','D','X');";
 
-                var result = conn.QueryFirstOrDefault<OrdenCompraSinFacturaData>(sql, new { CodOrden = codOrden });
-                return result ?? new OrdenCompraSinFacturaData();
+               return QuerySingleOrNew<OrdenCompraSinFacturaData>(conn, sql, new { CodOrden = codOrden });
             });
         }
 
@@ -76,24 +81,23 @@ WHERE
                 EnsureOpen(conn);
 
                 const string sql = @"
-SELECT
-    E.*,
-    (RTRIM(C.Tipo_Orden) + ' - ' + C.descripcion) AS Causa,
-    P.descripcion AS Proveedor,
-    O.nota,
-    E.notas AS CompraNotas,
-    RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS no_solicitud
-FROM cpr_ordenes O
-INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden
-INNER JOIN cpr_Compras E ON O.cod_orden = E.cod_orden
-LEFT JOIN CPR_SOLICITUD_PROV sp
-    ON sp.ADJUDICA_ORDEN = O.COD_ORDEN
-   AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
-INNER JOIN cxp_proveedores P ON E.cod_proveedor = P.cod_proveedor
-WHERE E.cod_compra = @CodCompra;";
+                SELECT
+                    E.*,
+                    (RTRIM(C.Tipo_Orden) + ' - ' + C.descripcion) AS Causa,
+                    P.descripcion AS Proveedor,
+                    O.nota,
+                    E.notas AS CompraNotas,
+                    RIGHT(REPLICATE('0', 10) + CAST(sp.CPR_ID AS VARCHAR), 10) AS no_solicitud
+                FROM cpr_ordenes O
+                INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden
+                INNER JOIN cpr_Compras E ON O.cod_orden = E.cod_orden
+                LEFT JOIN CPR_SOLICITUD_PROV sp
+                    ON sp.ADJUDICA_ORDEN = O.COD_ORDEN
+                AND sp.PROVEEDOR_CODIGO = O.COD_PROVEEDOR
+                INNER JOIN cxp_proveedores P ON E.cod_proveedor = P.cod_proveedor
+                WHERE E.cod_compra = @CodCompra;";
 
-                var result = conn.QueryFirstOrDefault<OrdenCompraFacturaData>(sql, new { CodCompra = codCompra });
-                return result ?? new OrdenCompraFacturaData();
+                return QuerySingleOrNew<OrdenCompraFacturaData>(conn, sql, new { CodCompra = codCompra });
             });
         }
 
@@ -104,49 +108,49 @@ WHERE E.cod_compra = @CodCompra;";
                 EnsureOpen(conn);
 
                 var response = new CompraOrdenLineasData();
+                var p = new { CodFactura = filtros.CodOrden, CodProveedor = filtros.CodProveedor };
 
                 const string qTotal = @"
-SELECT COUNT(D.cod_producto)
-FROM cpr_Compras_detalle D
-INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
-WHERE D.cod_factura = @CodFactura AND D.cod_proveedor = @CodProveedor;";
+                            SELECT COUNT(D.cod_producto)
+                            FROM cpr_Compras_detalle D
+                            INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
+                            WHERE D.cod_factura = @CodFactura AND D.cod_proveedor = @CodProveedor;";
 
-                response.total = conn.Query<int>(qTotal, new { CodFactura = filtros.CodOrden, CodProveedor = filtros.CodProveedor }).FirstOrDefault();
 
                 const string qCantidad = @"
-SELECT ISNULL(SUM(D.cantidad), 0)
-FROM cpr_Compras_detalle D
-INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
-WHERE D.cod_factura = @CodFactura AND D.cod_proveedor = @CodProveedor;";
+                            SELECT ISNULL(SUM(D.cantidad), 0)
+                            FROM cpr_Compras_detalle D
+                            INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
+                            WHERE D.cod_factura = @CodFactura AND D.cod_proveedor = @CodProveedor;";
 
-                response.cantidad = conn.Query<long>(qCantidad, new { CodFactura = filtros.CodOrden, CodProveedor = filtros.CodProveedor }).FirstOrDefault();
+                FillTotals(response, conn, qTotal, qCantidad, p);
 
                 const string sql = @"
-SELECT
-    D.cod_producto,
-    P.descripcion,
-    P.COD_UNIDAD AS unidad,
-    od.CANTIDAD AS qtyOrg,
-    0 AS qtyPend,
-    D.cantidad,
-    D.cod_bodega,
-    D.precio,
-    ISNULL(D.descuento,0) AS descuento,
-    D.imp_ventas,
-    0 AS Total,
-    NULL AS tipoProd,
-    ppc.DESCRIPCION AS familia
-FROM cpr_Compras_detalle D
-INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
-LEFT JOIN CPR_COMPRAS C ON C.COD_FACTURA = D.COD_FACTURA
-LEFT JOIN cpr_ordenes_detalle od
-    ON od.COD_ORDEN = C.COD_ORDEN
-   AND od.COD_PRODUCTO = D.COD_PRODUCTO
-LEFT JOIN PV_PROD_CLASIFICA ppc ON ppc.COD_PRODCLAS = P.COD_PRODCLAS
-WHERE D.cod_factura = @CodFactura AND D.cod_proveedor = @CodProveedor
-ORDER BY D.cod_producto;";
+                            SELECT
+                                D.cod_producto,
+                                P.descripcion,
+                                P.COD_UNIDAD AS unidad,
+                                od.CANTIDAD AS qtyOrg,
+                                0 AS qtyPend,
+                                D.cantidad,
+                                D.cod_bodega,
+                                D.precio,
+                                ISNULL(D.descuento,0) AS descuento,
+                                D.imp_ventas,
+                                0 AS Total,
+                                NULL AS tipoProd,
+                                ppc.DESCRIPCION AS familia
+                            FROM cpr_Compras_detalle D
+                            INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
+                            LEFT JOIN CPR_COMPRAS C ON C.COD_FACTURA = D.COD_FACTURA
+                            LEFT JOIN cpr_ordenes_detalle od
+                                ON od.COD_ORDEN = C.COD_ORDEN
+                            AND od.COD_PRODUCTO = D.COD_PRODUCTO
+                            LEFT JOIN PV_PROD_CLASIFICA ppc ON ppc.COD_PRODCLAS = P.COD_PRODCLAS
+                            WHERE D.cod_factura = @CodFactura AND D.cod_proveedor = @CodProveedor
+                            ORDER BY D.cod_producto;";
 
-                response.lineas = conn.Query<OrdenCompraDetalleData>(sql, new { CodFactura = filtros.CodOrden, CodProveedor = filtros.CodProveedor }).ToList();
+                response.lineas = QueryLineas(conn, sql, p);
                 return response;
             });
         }
@@ -158,72 +162,72 @@ ORDER BY D.cod_producto;";
                 EnsureOpen(conn);
 
                 var response = new CompraOrdenLineasData();
+                var p = new { CodOrden = filtros.CodOrden };
 
                 const string qTotal = @"
-SELECT COUNT(D.cod_producto)
-FROM cpr_ordenes_detalle D
-INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
-WHERE D.cod_orden = @CodOrden;";
+                            SELECT COUNT(D.cod_producto)
+                            FROM cpr_ordenes_detalle D
+                            INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
+                            WHERE D.cod_orden = @CodOrden;";
 
-                response.total = conn.Query<int>(qTotal, new { CodOrden = filtros.CodOrden }).FirstOrDefault();
 
                 const string qCantidad = @"
-SELECT ISNULL(SUM(D.cantidad),0)
-FROM cpr_ordenes_detalle D
-INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
-WHERE D.cod_orden = @CodOrden;";
+                            SELECT ISNULL(SUM(D.cantidad),0)
+                            FROM cpr_ordenes_detalle D
+                            INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
+                            WHERE D.cod_orden = @CodOrden;";
 
-                response.cantidad = conn.Query<long>(qCantidad, new { CodOrden = filtros.CodOrden }).FirstOrDefault();
+                FillTotals(response, conn, qTotal, qCantidad, p);
 
                 var like = BuildLike(filtros.filtro);
                 var hasFiltro = !string.IsNullOrWhiteSpace(like);
 
                 // Nota: el SQL es fijo; solo activamos el filtro por parámetro
                 var sql = @"
-SELECT
-    cod_producto, descripcion, unidad, qtyOrg, qtyPend, Cantidad, cod_bodega, precio, Descuento, imp_ventas, Total, tipoProd, familia
-FROM (
-    SELECT
-        D.cod_producto,
-        P.descripcion,
-        P.COD_UNIDAD AS unidad,
-        D.cantidad AS qtyOrg,
-        (D.cantidad - SUM(ISNULL(ccd.cantidad, 0))) AS qtyPend,
-        (D.cantidad - SUM(ISNULL(ccd.cantidad, 0))) AS Cantidad,
-        '' AS cod_bodega,
-        D.precio,
-        ISNULL(D.descuento, 0) AS Descuento,
-        D.imp_ventas,
-        0 AS Total,
-        P.TIPO_PRODUCTO AS tipoProd,
-        ppc.DESCRIPCION AS familia
-    FROM cpr_ordenes_detalle D
-    INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
-    LEFT JOIN CPR_COMPRAS cc ON cc.COD_ORDEN = D.cod_orden
-    LEFT JOIN cpr_compras_detalle ccd
-        ON ccd.cod_factura = cc.cod_factura
-       AND ccd.cod_producto = D.cod_producto
-    LEFT JOIN PV_PROD_CLASIFICA ppc ON ppc.COD_PRODCLAS = P.COD_PRODCLAS
-    WHERE D.cod_orden = @CodOrden
-      AND (@HasFiltro = 0 OR (D.cod_producto LIKE @Like OR P.descripcion LIKE @Like))
-    GROUP BY
-        D.cod_producto, P.descripcion, P.COD_UNIDAD, D.cantidad,
-        D.precio, D.descuento, D.imp_ventas, P.TIPO_PRODUCTO, ppc.DESCRIPCION
-) T
-ORDER BY cod_producto
-OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+                    SELECT
+                        cod_producto, descripcion, unidad, qtyOrg, qtyPend, Cantidad, cod_bodega, precio, Descuento, imp_ventas, Total, tipoProd, familia
+                    FROM (
+                        SELECT
+                            D.cod_producto,
+                            P.descripcion,
+                            P.COD_UNIDAD AS unidad,
+                            D.cantidad AS qtyOrg,
+                            (D.cantidad - SUM(ISNULL(ccd.cantidad, 0))) AS qtyPend,
+                            (D.cantidad - SUM(ISNULL(ccd.cantidad, 0))) AS Cantidad,
+                            '' AS cod_bodega,
+                            D.precio,
+                            ISNULL(D.descuento, 0) AS Descuento,
+                            D.imp_ventas,
+                            0 AS Total,
+                            P.TIPO_PRODUCTO AS tipoProd,
+                            ppc.DESCRIPCION AS familia
+                        FROM cpr_ordenes_detalle D
+                        INNER JOIN pv_productos P ON D.cod_producto = P.cod_producto
+                        LEFT JOIN CPR_COMPRAS cc ON cc.COD_ORDEN = D.cod_orden
+                        LEFT JOIN cpr_compras_detalle ccd
+                            ON ccd.cod_factura = cc.cod_factura
+                        AND ccd.cod_producto = D.cod_producto
+                        LEFT JOIN PV_PROD_CLASIFICA ppc ON ppc.COD_PRODCLAS = P.COD_PRODCLAS
+                        WHERE D.cod_orden = @CodOrden
+                        AND (@HasFiltro = 0 OR (D.cod_producto LIKE @Like OR P.descripcion LIKE @Like))
+                        GROUP BY
+                            D.cod_producto, P.descripcion, P.COD_UNIDAD, D.cantidad,
+                            D.precio, D.descuento, D.imp_ventas, P.TIPO_PRODUCTO, ppc.DESCRIPCION
+                    ) T
+                    ORDER BY cod_producto
+                    OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                var offset = filtros.pagina ?? 0;
-                var fetch = filtros.paginacion ?? 50;
+                var (offset, fetch) = NormalizePaging(filtros.pagina, filtros.paginacion, 50);
 
-                response.lineas = conn.Query<OrdenCompraDetalleData>(sql, new
+
+                response.lineas = QueryLineas(conn, sql, new
                 {
                     CodOrden = filtros.CodOrden,
                     HasFiltro = hasFiltro ? 1 : 0,
                     Like = like,
                     Offset = offset,
                     Fetch = fetch
-                }).ToList();
+                });              
 
                 return response;
             });
@@ -385,6 +389,32 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
             return filtro.Length == 0 ? "" : $"%{filtro}%";
         }
 
+        private static (int Offset, int Fetch) NormalizePaging(int? pagina, int? paginacion, int defaultFetch)
+        {
+            var offset = pagina ?? 0;
+            if (offset < 0) offset = 0;
+
+            var fetch = paginacion ?? defaultFetch;
+            if (fetch <= 0) fetch = defaultFetch;
+
+            return (offset, fetch);
+        }
+
+        private static T QuerySingleOrNew<T>(IDbConnection conn, string sql, object param) where T : class, new()
+        {
+            var result = conn.QueryFirstOrDefault<T>(sql, param);
+            return result ?? new T();
+        }
+
+        private static void FillTotals(CompraOrdenLineasData response, IDbConnection conn, string totalSql, string cantidadSql, object param)
+        {
+            response.total = conn.Query<int>(totalSql, param).FirstOrDefault();
+            response.cantidad = conn.Query<long>(cantidadSql, param).FirstOrDefault();
+        }
+
+        private static List<OrdenCompraDetalleData> QueryLineas(IDbConnection conn, string sql, object param)
+            => conn.Query<OrdenCompraDetalleData>(sql, param).ToList();
+
         private static ErrorDto ValidarPinCompra(IDbConnection conn, IDbTransaction tx, ComprasOrdenDatos orden)
         {
             if (string.IsNullOrWhiteSpace(orden.pin))
@@ -517,7 +547,7 @@ VALUES
             return DbHelper.CreateOkResponse();
         }
 
-        private static ErrorDto ProcesarCxP(IDbConnection conn, IDbTransaction tx, ComprasOrdenDatos orden,TotalesCompra totales)
+        private static ErrorDto ProcesarCxP(IDbConnection conn, IDbTransaction tx, ComprasOrdenDatos orden, TotalesCompra totales)
         {
             var esCredito = string.Equals(orden.tipo_pago, "CR", StringComparison.OrdinalIgnoreCase);
 

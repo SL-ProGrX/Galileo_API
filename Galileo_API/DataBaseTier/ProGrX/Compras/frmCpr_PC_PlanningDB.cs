@@ -1,126 +1,211 @@
-using Dapper;
-using Microsoft.Data.SqlClient;
-using Newtonsoft.Json;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
+using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 
 namespace Galileo.DataBaseTier
 {
     public class FrmCprPCPlanningDB
     {
+        private const string DefaultErrorDescription = "Error";
         private readonly PortalDB _portalDB;
-
-        // Sonar: evitar literales repetidos
-        private const string ParamOff = "Offset";
-        private const string ParamTake = "Fetch";
 
         public FrmCprPCPlanningDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
         }
 
-        // Helper: usa DbHelper.WithConn y devuelve ErrorDto plano (sin ErrorDto<ErrorDto>)
-        private ErrorDto WithConn(int codEmpresa, Func<SqlConnection, ErrorDto> action)
+        private sealed class ResumenPlanRow
         {
-            var r = DbHelper.WithConn(_portalDB, codEmpresa, action);
-            return r.Code == 0
-                ? (r.Result ?? DbHelper.ErrorResponse("Error desconocido.", -1))
-                : DbHelper.ErrorResponse(r.Description ?? "Error desconocido.", -1);
+            public string COD_PRODUCTO { get; set; } = string.Empty;
+            public string DESCRIPCION { get; set; } = string.Empty;
+            public int CANTIDAD { get; set; } = 0;
+            public decimal MONTO { get; set; } = 0m;
+            public DateTime CORTE { get; set; } = default;
+            public int TotalRows { get; set; } = 0;
         }
 
-        // Helper: igual pero para resultados tipados
-        private ErrorDto<T> WithConn<T>(int codEmpresa, Func<SqlConnection, T> action)
+        private sealed class PlanContableRow
         {
-            var r = DbHelper.WithConn(_portalDB, codEmpresa, action);
-            return r.Code == 0
-                ? new ErrorDto<T> { Code = 0, Description = "Ok", Result = r.Result }
-                : new ErrorDto<T> { Code = -1, Description = r.Description, Result = default };
+            public string CUENTA { get; set; } = string.Empty;
+            public string DESCRIPCION { get; set; } = string.Empty;
+            public string UNIDAD { get; set; } = string.Empty;
+            public string CENTRO_COSTO { get; set; } = string.Empty;
+            public decimal TOTAL { get; set; } = 0m;
+            public DateTime CORTE { get; set; } = default;
+            public int TotalRows { get; set; } = 0;
         }
 
-        // ===========================
-        //  HELPERS (anti-duplication)
-        // ===========================
-
-        private static string? NormalizePeriodo(string? periodo)
+        private sealed class BitacoraRow
         {
-            if (string.IsNullOrWhiteSpace(periodo))
-                return null;
-
-            return string.Equals(periodo, "Todos", StringComparison.OrdinalIgnoreCase)
-                ? null
-                : periodo;
+            public int ID_BITACORA { get; set; } = 0;
+            public DateTime FECHAHORA { get; set; } = default;
+            public string USUARIO { get; set; } = string.Empty;
+            public string DETALLE { get; set; } = string.Empty;
+            public int TotalRows { get; set; } = 0;
         }
 
-        private static string? NormalizeLike(string? filtro)
+        private sealed class CorteUpsertContext
         {
-            if (string.IsNullOrWhiteSpace(filtro))
-                return null;
+            public CorteUpsertContext(int codEmpresa, int idPlan, string usuario, bool actualizar)
+            {
+                CodEmpresa = codEmpresa;
+                IdPlan = idPlan;
+                Usuario = usuario;
+                Actualizar = actualizar;
+            }
 
-            var f = filtro.Trim();
-            return f.Length == 0 ? null : $"%{f}%";
+            public int CodEmpresa { get; }
+            public int IdPlan { get; }
+            public string Usuario { get; }
+            public bool Actualizar { get; }
         }
 
-        private static (int Offset, int Fetch) NormalizePaging(int? pagina, int? paginacion)
-        {
-            // Keep current semantics: `pagina` is treated as OFFSET.
-            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
-                return (0, int.MaxValue);
+        private static int CodeOrMinus1<T>(ErrorDto<T> r) => r.Code is int c ? c : -1;
 
-            return (pagina.Value, paginacion.Value);
+        private static CprPlanDTUpsert DeserializePlanDT(string parametros)
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<CprPlanDTUpsert>(parametros) ?? new CprPlanDTUpsert();
+            }
+            catch
+            {
+                return new CprPlanDTUpsert();
+            }
         }
 
-        private static void AddPaging(DynamicParameters dp, int? pagina, int? paginacion)
+        private static (int CantidadTotal, decimal MontoTotal) CalcularTotales(List<CprPlanDTCortesDto>? cortes)
         {
-            var (off, take) = NormalizePaging(pagina, paginacion);
-            dp.Add(ParamOff, off, DbType.Int32);
-            dp.Add(ParamTake, take, DbType.Int32);
+            if (cortes == null || cortes.Count == 0)
+                return (0, 0m);
+
+            var cantidadTotal = 0;
+            var montoTotal = 0m;
+
+            foreach (var item in cortes)
+            {
+                cantidadTotal += item.cantidad;
+                montoTotal += item.monto * item.cantidad;
+            }
+
+            return (cantidadTotal, montoTotal);
         }
 
-        private static (int Total, List<T> Rows) QueryPaged<T>(SqlConnection conn, DynamicParameters dp, string countSql, string dataSql)
+        private ErrorDto<int> EjecutarPlanDtUpsert(int codEmpresa, CprPlanDTUpsert plan, int cantidadTotal, decimal montoTotal)
         {
-            var total = conn.ExecuteScalar<int>(countSql, dp);
-            var rows = conn.Query<T>(dataSql, dp).ToList();
-            return (total, rows);
+            const string spSql = @"exec spCPR_Plan_DT_Upsert @IdPC, @CodProducto, @MontoUnitario, @CantidadTotal, @MontoTotal, @Usuario;";
+
+            return DbHelper.ExecuteSingleQuery<int>(
+                _portalDB,
+                codEmpresa,
+                spSql,
+                0,
+                new
+                {
+                    IdPC = plan.id_pc,
+                    CodProducto = plan.cod_producto,
+                    MontoUnitario = plan.monto_unitario,
+                    CantidadTotal = cantidadTotal,
+                    MontoTotal = montoTotal,
+                    Usuario = plan.usuario
+                }
+            );
+        }
+
+        private ErrorDto<int> ObtenerConteoCortes(int codEmpresa, int idPlan)
+        {
+            const string existeSql = @"SELECT COUNT(*) FROM CPR_PLAN_DT_CORTES WHERE ID_PLAN = @id_plan;";
+            return DbHelper.ExecuteSingleQuery<int>(_portalDB, codEmpresa, existeSql, 0, new { id_plan = idPlan });
+        }
+
+        private ErrorDto GuardarCorte(CorteUpsertContext ctx, CprPlanDTCortesDto item)
+        {
+            if (ctx.Actualizar)
+            {
+                const string upd = @"
+                                UPDATE CPR_PLAN_DT_CORTES
+                                   SET CANTIDAD = @cantidad,
+                                       MONTO = @monto,
+                                       MODIFICA_FECHA = GETDATE(),
+                                       MODIFICA_USUARIO = @usuario
+                                 WHERE ID_PLAN = @id_plan AND CORTE = @corte;";
+
+                var ur = DbHelper.ExecuteNonQuery(_portalDB, ctx.CodEmpresa, upd, new
+                {
+                    cantidad = item.cantidad,
+                    monto = item.monto,
+                    usuario = ctx.Usuario,
+                    id_plan = ctx.IdPlan,
+                    corte = item.corte
+                });
+
+                if (ur.Code == 0)
+                    return DbHelper.CreateOkResponse();
+
+                var uc = ur.Code is int c ? c : -1;
+                return DbHelper.ErrorResponse(ur.Description ?? DefaultErrorDescription, uc);
+            }
+
+            const string ins = @"
+                                INSERT INTO CPR_PLAN_DT_CORTES (CORTE, ID_PLAN, CANTIDAD, MONTO, REGISTRO_FECHA, REGISTRO_USUARIO)
+                                VALUES (@corte, @id_plan, @cantidad, @monto, GETDATE(), @usuario);";
+
+            var ir = DbHelper.ExecuteNonQuery(_portalDB, ctx.CodEmpresa, ins, new
+            {
+                corte = item.corte,
+                id_plan = ctx.IdPlan,
+                cantidad = item.cantidad,
+                monto = item.monto,
+                usuario = ctx.Usuario
+            });
+
+            if (ir.Code == 0)
+                return DbHelper.CreateOkResponse();
+
+            var ic2 = ir.Code is int c2 ? c2 : -1;
+            return DbHelper.ErrorResponse(ir.Description ?? DefaultErrorDescription, ic2);
         }
 
         public ErrorDto<List<CprPlanComprasDto>> CprPlanCompras_Obtener(int CodEmpresa)
         {
-            try
-            {
-                return WithConn(CodEmpresa, conn =>
-                {
-                    const string sql = @"SELECT * FROM CPR_PLAN_COMPRAS;";
-                    return conn.Query<CprPlanComprasDto>(sql).ToList();
-                });
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto<List<CprPlanComprasDto>> { Code = -1, Description = ex.Message, Result = null };
-            }
+            const string sql = @"SELECT * FROM CPR_PLAN_COMPRAS;";
+
+            var r = DbHelper.ExecuteListQuery<CprPlanComprasDto>(_portalDB, CodEmpresa, sql, null);
+            var code = r.Code is int c ? c : -1;
+
+            if (code != 0)
+                return new ErrorDto<List<CprPlanComprasDto>> { Code = code, Description = r.Description ?? DefaultErrorDescription, Result = null };
+
+            return DbHelper.CreateOkResponse(r.Result ?? new List<CprPlanComprasDto>());
         }
 
         public ErrorDto<CprPlanDTDto> CprPlanDT_Obtener(int CodEmpresa, int PlanCompras, string CodProducto)
         {
-            try
-            {
-                return WithConn(CodEmpresa, conn =>
-                {
-                    const string existeSql = @"SELECT COUNT(*) FROM CPR_PLAN_DT WHERE ID_PC = @id_pc AND COD_PRODUCTO = @cod_producto;";
-                    var existe = conn.ExecuteScalar<int>(existeSql, new { id_pc = PlanCompras, cod_producto = CodProducto });
+            const string existeSql = @"SELECT COUNT(*) FROM CPR_PLAN_DT WHERE ID_PC = @id_pc AND COD_PRODUCTO = @cod_producto;";
+            var existeR = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, existeSql, 0, new { id_pc = PlanCompras, cod_producto = CodProducto });
+            var existeCode = existeR.Code is int ec ? ec : -1;
+            if (existeCode != 0)
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>(existeR.Description ?? DefaultErrorDescription, existeCode, default!);
 
-                    // Sonar: no lanzar System.Exception
-                    if (existe <= 0)
-                        throw new InvalidOperationException("Producto sin registrar");
+            if (existeR.Result <= 0)
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>("Producto sin registrar", -1, default!);
 
-                    const string planSql = @"SELECT * FROM CPR_PLAN_DT WHERE ID_PC = @id_pc AND COD_PRODUCTO = @cod_producto;";
-                    var plan = conn.QueryFirstOrDefault<CprPlanDTDto>(planSql, new { id_pc = PlanCompras, cod_producto = CodProducto });
+            const string planSql = @"SELECT * FROM CPR_PLAN_DT WHERE ID_PC = @id_pc AND COD_PRODUCTO = @cod_producto;";
+            var planR = DbHelper.ExecuteSingleQuery<CprPlanDTDto>(_portalDB, CodEmpresa, planSql, null, new { id_pc = PlanCompras, cod_producto = CodProducto });
+            var planCode = planR.Code is int pc ? pc : -1;
+            if (planCode != 0)
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>(planR.Description ?? DefaultErrorDescription, planCode, default!);
 
-                    if (plan == null)
-                        throw new InvalidOperationException("No se pudo obtener la información del producto.");
+            var plan = planR.Result;
+            if (plan == null)
+                return DbHelper.CreateErrorResponse<CprPlanDTDto>("No se pudo obtener la información del producto.", -1, default!);
 
-                    // UEN correspondiente
-                    const string uenSql = @"
+            const string uenSql = @"
                         SELECT DISTINCT
                             CASE
                                 WHEN ISNULL(PC.COD_UNIDAD_DESTINO,'') = '' THEN PC.COD_UNIDAD
@@ -129,10 +214,10 @@ namespace Galileo.DataBaseTier
                         FROM CPR_PLAN_COMPRAS PC
                         WHERE ID_PC = @id_pc;";
 
-                    var uen = conn.QueryFirstOrDefault<string>(uenSql, new { id_pc = PlanCompras }) ?? "";
+            var uenR = DbHelper.ExecuteSingleQuery<string>(_portalDB, CodEmpresa, uenSql, string.Empty, new { id_pc = PlanCompras });
+            var uen = uenR.Code == 0 ? (uenR.Result ?? string.Empty) : string.Empty;
 
-                    // Totales (tránsito/reservada/entregada)
-                    const string totalesSql = @"
+            const string totalesSql = @"
                         SELECT T.*,
                                (SELECT COUNT(A.COD_PRODUCTO)
                                   FROM PV_CONTROL_ACTIVOS A
@@ -168,47 +253,59 @@ namespace Galileo.DataBaseTier
                         ) T
                         WHERE T.UEN = @uen;";
 
-                    var totales = conn.QueryFirstOrDefault<CprPlanDTTotalesData>(totalesSql, new { cod_producto = CodProducto, uen });
+            var totR = DbHelper.ExecuteSingleQuery<CprPlanDTTotalesData>(
+                _portalDB,
+                CodEmpresa,
+                totalesSql,
+                null,
+                new { cod_producto = CodProducto, uen }
+            );
 
-                    plan.cantidad_transito = totales?.qty_solicitada ?? 0;
-                    plan.cantidad_reservada = totales?.qty_recervada ?? 0;
-                    plan.cantidad_despachada = totales?.qty_entregada ?? 0;
-
-                    return plan;
-                });
-            }
-            catch (Exception ex)
+            if (totR.Code == 0 && totR.Result != null)
             {
-                return new ErrorDto<CprPlanDTDto> { Code = -1, Description = ex.Message, Result = null };
+                plan.cantidad_transito = totR.Result.qty_solicitada;
+                plan.cantidad_reservada = totR.Result.qty_recervada;
+                plan.cantidad_despachada = totR.Result.qty_entregada;
             }
+            else
+            {
+                plan.cantidad_transito = 0;
+                plan.cantidad_reservada = 0;
+                plan.cantidad_despachada = 0;
+            }
+
+            return DbHelper.CreateOkResponse(plan);
         }
 
         public ErrorDto<List<CprPlanDTCortesDto>> CprPlanDTCortes_Obtener(int CodEmpresa, int PlanCompras, string CodProducto)
         {
-            try
-            {
-                return WithConn(CodEmpresa, conn =>
-                {
-                    const string idPlanSql = @"
+            const string idPlanSql = @"
                         SELECT COALESCE((SELECT ID_PLAN FROM CPR_PLAN_DT WHERE ID_PC = @id_pc AND COD_PRODUCTO = @cod_producto), 0) AS ID_PLAN;";
 
-                    var idPlan = conn.ExecuteScalar<int>(idPlanSql, new { id_pc = PlanCompras, cod_producto = CodProducto });
+            var idPlanR = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, idPlanSql, 0, new { id_pc = PlanCompras, cod_producto = CodProducto });
+            var idPlanCode = idPlanR.Code is int c ? c : -1;
+            if (idPlanCode != 0)
+                return new ErrorDto<List<CprPlanDTCortesDto>> { Code = idPlanCode, Description = idPlanR.Description ?? DefaultErrorDescription, Result = null };
 
-                    int existe = 0;
-                    if (idPlan != 0)
-                    {
-                        const string existeSql = @"SELECT COUNT(*) FROM CPR_PLAN_DT_CORTES WHERE ID_PLAN = @id_plan;";
-                        existe = conn.ExecuteScalar<int>(existeSql, new { id_plan = idPlan });
-                    }
+            var idPlan = idPlanR.Result;
 
-                    if (idPlan != 0 && existe > 0)
-                    {
-                        const string cortesSql = @"SELECT corte, cantidad, monto FROM CPR_PLAN_DT_CORTES WHERE ID_PLAN = @id_plan;";
-                        return conn.Query<CprPlanDTCortesDto>(cortesSql, new { id_plan = idPlan }).ToList();
-                    }
+            if (idPlan != 0)
+            {
+                const string existeSql = @"SELECT COUNT(*) FROM CPR_PLAN_DT_CORTES WHERE ID_PLAN = @id_plan;";
+                var exR = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, existeSql, 0, new { id_plan = idPlan });
+                if (exR.Code == 0 && exR.Result > 0)
+                {
+                    const string cortesSql = @"SELECT corte, cantidad, monto FROM CPR_PLAN_DT_CORTES WHERE ID_PLAN = @id_plan;";
+                    var listR = DbHelper.ExecuteListQuery<CprPlanDTCortesDto>(_portalDB, CodEmpresa, cortesSql, new { id_plan = idPlan });
+                    var listCode = listR.Code is int lc ? lc : -1;
+                    if (listCode != 0)
+                        return new ErrorDto<List<CprPlanDTCortesDto>> { Code = listCode, Description = listR.Description ?? DefaultErrorDescription, Result = null };
 
-                    // Si no hay cortes guardados: genera el rango de cortes según periodo del plan compras
-                    const string dateRangeSql = @"
+                    return DbHelper.CreateOkResponse(listR.Result ?? new List<CprPlanDTCortesDto>());
+                }
+            }
+
+            const string dateRangeSql = @"
                         WITH DateRange AS
                         (
                             SELECT CONVERT(DATE, DATEADD(MONTH, DATEDIFF(MONTH, 0, P.INICIO) + 1, -1)) AS corte
@@ -230,49 +327,37 @@ namespace Galileo.DataBaseTier
                           FROM DateRange
                          ORDER BY corte;";
 
-                    return conn.Query<CprPlanDTCortesDto>(dateRangeSql, new { id_pc = PlanCompras }).ToList();
-                });
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto<List<CprPlanDTCortesDto>> { Code = -1, Description = ex.Message, Result = null };
-            }
+            var genR = DbHelper.ExecuteListQuery<CprPlanDTCortesDto>(_portalDB, CodEmpresa, dateRangeSql, new { id_pc = PlanCompras });
+            var genCode = genR.Code is int gc ? gc : -1;
+            if (genCode != 0)
+                return new ErrorDto<List<CprPlanDTCortesDto>> { Code = genCode, Description = genR.Description ?? DefaultErrorDescription, Result = null };
+
+            return DbHelper.CreateOkResponse(genR.Result ?? new List<CprPlanDTCortesDto>());
         }
 
         public ErrorDto CprPlanCompras_Insert(int CodEmpresa, CprPlanComprasDto request)
         {
-            try
-            {
-                return WithConn(CodEmpresa, conn =>
-                {
-                    const string sql = @"
+            const string sql = @"
                         INSERT INTO CPR_PLAN_COMPRAS (ID_PERIODO, COD_UNIDAD, COD_UNIDAD_DESTINO, ESTADO, REGISTRO_FECHA, REGISTRO_USUARIO)
                         VALUES (@id_periodo, @cod_unidad, @cod_unidad_destino, 'P', GETDATE(), @registro_usuario);";
 
-                    conn.Execute(sql, new
-                    {
-                        request.id_periodo,
-                        request.cod_unidad,
-                        request.cod_unidad_destino,
-                        request.registro_usuario
-                    });
-
-                    return DbHelper.OkResponse("Plan de compras agregado satisfactoriamente");
-                });
-            }
-            catch (Exception ex)
+            var r = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, sql, new
             {
-                return DbHelper.ErrorResponse(ex.Message, -1);
-            }
+                request.id_periodo,
+                request.cod_unidad,
+                request.cod_unidad_destino,
+                request.registro_usuario
+            });
+
+            var code = r.Code is int c ? c : -1;
+            return code == 0
+                ? DbHelper.OkResponse("Plan de compras agregado satisfactoriamente")
+                : DbHelper.ErrorResponse(r.Description ?? DefaultErrorDescription, code);
         }
 
         public ErrorDto CprPlanCompras_Update(int CodEmpresa, CprPlanComprasDto request)
         {
-            try
-            {
-                return WithConn(CodEmpresa, conn =>
-                {
-                    const string sql = @"
+            const string sql = @"
                         UPDATE CPR_PLAN_COMPRAS
                            SET ID_PERIODO = @id_periodo,
                                COD_UNIDAD = @cod_unidad,
@@ -281,96 +366,49 @@ namespace Galileo.DataBaseTier
                                MODIFICA_USUARIO = @modifica_usuario
                          WHERE ID_PC = @id_pc;";
 
-                    conn.Execute(sql, new
-                    {
-                        request.id_periodo,
-                        request.cod_unidad,
-                        request.cod_unidad_destino,
-                        request.modifica_usuario,
-                        request.id_pc
-                    });
-
-                    return DbHelper.OkResponse("Plan de compras actualizado satisfactoriamente");
-                });
-            }
-            catch (Exception ex)
+            var r = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, sql, new
             {
-                return DbHelper.ErrorResponse(ex.Message, -1);
-            }
+                request.id_periodo,
+                request.cod_unidad,
+                request.cod_unidad_destino,
+                request.modifica_usuario,
+                request.id_pc
+            });
+
+            var code = r.Code is int c ? c : -1;
+            return code == 0
+                ? DbHelper.OkResponse("Plan de compras actualizado satisfactoriamente")
+                : DbHelper.ErrorResponse(r.Description ?? "Error", code);
         }
 
         public ErrorDto CprPlanDT_Upsert(int CodEmpresa, string parametros, List<CprPlanDTCortesDto> cortes)
         {
             try
             {
-                var plan = JsonConvert.DeserializeObject<CprPlanDTUpsert>(parametros) ?? new CprPlanDTUpsert();
+                var plan = DeserializePlanDT(parametros);
+                var (cantidadTotal, montoTotal) = CalcularTotales(cortes);
 
-                return WithConn(CodEmpresa, conn =>
+                var idPlanR = EjecutarPlanDtUpsert(CodEmpresa, plan, cantidadTotal, montoTotal);
+                var idPlanCode = CodeOrMinus1(idPlanR);
+                if (idPlanCode != 0)
+                    return DbHelper.ErrorResponse(idPlanR.Description ?? DefaultErrorDescription, idPlanCode);
+
+                var idPlan = idPlanR.Result;
+
+                var exR = ObtenerConteoCortes(CodEmpresa, idPlan);
+                var exCode = CodeOrMinus1(exR);
+                if (exCode != 0)
+                    return DbHelper.ErrorResponse(exR.Description ?? DefaultErrorDescription, exCode);
+
+                var ctx = new CorteUpsertContext(CodEmpresa, idPlan, plan.usuario ?? string.Empty, exR.Result > 0);
+                foreach (var item in cortes ?? new List<CprPlanDTCortesDto>())
                 {
-                    int cantidadTotal = 0;
-                    decimal montoTotal = 0;
+                    var r = GuardarCorte(ctx, item);
+                    if (r.Code != 0)
+                        return r;
+                }
 
-                    foreach (var item in cortes ?? new List<CprPlanDTCortesDto>())
-                    {
-                        cantidadTotal += item.cantidad;
-                        montoTotal += item.monto * item.cantidad;
-                    }
-
-                    const string spSql = @"exec spCPR_Plan_DT_Upsert @IdPC, @CodProducto, @MontoUnitario, @CantidadTotal, @MontoTotal, @Usuario;";
-
-                    var spParams = new DynamicParameters();
-                    spParams.Add("IdPC", plan.id_pc, DbType.Int32);
-                    spParams.Add("CodProducto", plan.cod_producto, DbType.String);
-                    spParams.Add("MontoUnitario", plan.monto_unitario, DbType.Decimal);
-                    spParams.Add("CantidadTotal", cantidadTotal, DbType.Int32);
-                    spParams.Add("MontoTotal", montoTotal, DbType.Decimal);
-                    spParams.Add("Usuario", plan.usuario, DbType.String);
-
-                    var idPlan = conn.Query<int>(spSql, spParams).FirstOrDefault();
-
-                    const string existeSql = @"SELECT COUNT(*) FROM CPR_PLAN_DT_CORTES WHERE ID_PLAN = @id_plan;";
-                    var existe = conn.ExecuteScalar<int>(existeSql, new { id_plan = idPlan });
-
-                    foreach (var item in cortes ?? new List<CprPlanDTCortesDto>())
-                    {
-                        if (existe > 0)
-                        {
-                            const string upd = @"
-                                UPDATE CPR_PLAN_DT_CORTES
-                                   SET CANTIDAD = @cantidad,
-                                       MONTO = @monto,
-                                       MODIFICA_FECHA = GETDATE(),
-                                       MODIFICA_USUARIO = @usuario
-                                 WHERE ID_PLAN = @id_plan AND CORTE = @corte;";
-
-                            conn.Execute(upd, new
-                            {
-                                cantidad = item.cantidad,
-                                monto = item.monto,
-                                usuario = plan.usuario,
-                                id_plan = idPlan,
-                                corte = item.corte
-                            });
-                        }
-                        else
-                        {
-                            const string ins = @"
-                                INSERT INTO CPR_PLAN_DT_CORTES (CORTE, ID_PLAN, CANTIDAD, MONTO, REGISTRO_FECHA, REGISTRO_USUARIO)
-                                VALUES (@corte, @id_plan, @cantidad, @monto, GETDATE(), @usuario);";
-
-                            conn.Execute(ins, new
-                            {
-                                corte = item.corte,
-                                id_plan = idPlan,
-                                cantidad = item.cantidad,
-                                monto = item.monto,
-                                usuario = plan.usuario
-                            });
-                        }
-                    }
-
-                    return DbHelper.OkResponse("Plan actualizado satisfactoriamente");
-                });
+                return DbHelper.OkResponse("Plan actualizado satisfactoriamente");
             }
             catch (Exception ex)
             {
@@ -380,36 +418,34 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<CprResumenPlanLista> CprResumenPlan_Obtener(int CodEmpresa, string parametros)
         {
+            CprPlanFiltros filtros;
             try
             {
-                var filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
+                filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
+            }
+            catch
+            {
+                filtros = new CprPlanFiltros();
+            }
 
-                return WithConn(CodEmpresa, conn =>
-                {
-                    var result = new CprResumenPlanLista();
+            var corte = string.IsNullOrWhiteSpace(filtros.periodo) || string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : filtros.periodo;
 
-                    var corte = NormalizePeriodo(filtros.periodo);
-                    var q = NormalizeLike(filtros.filtro);
+            var q = string.IsNullOrWhiteSpace(filtros.filtro) ? null : $"%{filtros.filtro.Trim()}%";
 
-                    var dp = new DynamicParameters();
-                    dp.Add("IdPc", filtros.planCompras, DbType.Int32);
-                    dp.Add("Corte", corte, DbType.String);
-                    dp.Add("Q", q, DbType.String);
+            var offset = filtros.pagina ?? 0;
+            if (offset < 0) offset = 0;
+            var fetch = filtros.paginacion ?? int.MaxValue;
+            if (fetch <= 0) fetch = int.MaxValue;
 
-                    AddPaging(dp, filtros.pagina, filtros.paginacion);
-
-                    const string countSql = @"
-                        SELECT COUNT(D.COD_PRODUCTO)
-                          FROM CPR_PLAN_DT D
-                          INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
-                          INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-                          INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                         WHERE D.ID_PC = @IdPc
-                           AND (@Corte IS NULL OR S.CORTE = @Corte)
-                           AND (@Q IS NULL OR (D.COD_PRODUCTO LIKE @Q OR P.DESCRIPCION LIKE @Q));";
-
-                    const string dataSql = @"
-                        SELECT D.COD_PRODUCTO, P.DESCRIPCION, S.CANTIDAD, S.MONTO, S.CORTE
+            const string sql = @"
+                        SELECT D.COD_PRODUCTO,
+                               P.DESCRIPCION,
+                               S.CANTIDAD,
+                               S.MONTO,
+                               S.CORTE,
+                               COUNT(*) OVER() AS TotalRows
                           FROM CPR_PLAN_DT D
                           INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
                           INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
@@ -420,62 +456,66 @@ namespace Galileo.DataBaseTier
                          ORDER BY S.CORTE DESC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                    var (total, rows) = QueryPaged<CprResumenPlanDto>(conn, dp, countSql, dataSql);
-                    result.Total = total;
-                    result.Lineas = rows;
-                    return result;
-                });
-            }
-            catch (Exception ex)
+            var r = DbHelper.ExecuteListQuery<ResumenPlanRow>(_portalDB, CodEmpresa, sql, new
             {
-                return new ErrorDto<CprResumenPlanLista> { Code = -1, Description = ex.Message, Result = null };
-            }
+                IdPc = filtros.planCompras,
+                Corte = corte,
+                Q = q,
+                Offset = offset,
+                Fetch = fetch
+            });
+
+            var code = r.Code is int c ? c : -1;
+            if (code != 0)
+                return DbHelper.CreateErrorResponse<CprResumenPlanLista>(r.Description ?? DefaultErrorDescription, code, new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() });
+
+            var rows = r.Result ?? new List<ResumenPlanRow>();
+            var total = rows.Count == 0 ? 0 : rows[0].TotalRows;
+
+            var lineas = rows.Select(x => new CprResumenPlanDto
+            {
+                cod_producto = x.COD_PRODUCTO,
+                descripcion = x.DESCRIPCION,
+                cantidad = x.CANTIDAD,
+                monto = x.MONTO,
+                corte = x.CORTE
+            }).ToList();
+
+            return DbHelper.CreateOkResponse(new CprResumenPlanLista { Total = total, Lineas = lineas });
         }
 
         public ErrorDto<CprPlanContableLista> CprPlanContable_Obtener(int CodEmpresa, string parametros)
         {
+            CprPlanFiltros filtros;
             try
             {
-                var filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
+                filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
+            }
+            catch
+            {
+                filtros = new CprPlanFiltros();
+            }
 
-                return WithConn(CodEmpresa, conn =>
-                {
-                    var result = new CprPlanContableLista();
+            var corte = string.IsNullOrWhiteSpace(filtros.periodo) || string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : filtros.periodo;
 
-                    var corte = NormalizePeriodo(filtros.periodo);
-                    var q = NormalizeLike(filtros.filtro);
+            var q = string.IsNullOrWhiteSpace(filtros.filtro) ? null : $"%{filtros.filtro.Trim()}%";
 
-                    var dp = new DynamicParameters();
-                    dp.Add("IdPc", filtros.planCompras, DbType.Int32);
-                    dp.Add("Corte", corte, DbType.String);
-                    dp.Add("Q", q, DbType.String);
+            var offset = filtros.pagina ?? 0;
+            if (offset < 0) offset = 0;
+            var fetch = filtros.paginacion ?? int.MaxValue;
+            if (fetch <= 0) fetch = int.MaxValue;
 
-                    AddPaging(dp, filtros.pagina, filtros.paginacion);
-
-                    const string countSql = @"
-                        SELECT COUNT(*)
-                          FROM (
-                                SELECT DISTINCT Z.COD_CUENTA_MASK, Z.DESCRIPCION, S.CORTE
-                                  FROM CPR_PLAN_DT D
-                                  INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
-                                  INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-                                  INNER JOIN CORE_UENS U ON C.COD_UNIDAD = U.COD_UNIDAD
-                                  INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                                  INNER JOIN PV_PROD_CLASIFICA B ON P.COD_PRODCLAS = B.COD_PRODCLAS
-                                  INNER JOIN CNTX_CUENTAS Z ON B.COD_CUENTA = Z.COD_CUENTA
-                                 WHERE D.ID_PC = @IdPc
-                                   AND (@Corte IS NULL OR S.CORTE = @Corte)
-                                   AND (@Q IS NULL OR (Z.COD_CUENTA_MASK LIKE @Q OR Z.DESCRIPCION LIKE @Q))
-                               ) T;";
-
-                    const string dataSql = @"
+            const string sql = @"
                         SELECT DISTINCT
                                Z.COD_CUENTA_MASK AS CUENTA,
                                Z.DESCRIPCION,
                                U.CNTX_UNIDAD AS UNIDAD,
                                U.CNTX_CENTRO_COSTO AS CENTRO_COSTO,
                                (S.MONTO * S.CANTIDAD) AS TOTAL,
-                               S.CORTE
+                               S.CORTE,
+                               COUNT(*) OVER() AS TotalRows
                           FROM CPR_PLAN_DT D
                           INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
                           INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
@@ -489,105 +529,128 @@ namespace Galileo.DataBaseTier
                          ORDER BY S.CORTE DESC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                    var (total, rows) = QueryPaged<CprPlanContableDto>(conn, dp, countSql, dataSql);
-                    result.Total = total;
-                    result.Lineas = rows;
-                    return result;
-                });
-            }
-            catch (Exception ex)
+            var r = DbHelper.ExecuteListQuery<PlanContableRow>(_portalDB, CodEmpresa, sql, new
             {
-                return new ErrorDto<CprPlanContableLista> { Code = -1, Description = ex.Message, Result = null };
-            }
+                IdPc = filtros.planCompras,
+                Corte = corte,
+                Q = q,
+                Offset = offset,
+                Fetch = fetch
+            });
+
+            var code = r.Code is int c ? c : -1;
+            if (code != 0)
+                return DbHelper.CreateErrorResponse<CprPlanContableLista>(r.Description ?? DefaultErrorDescription, code, new CprPlanContableLista { Total = 0, Lineas = new List<CprPlanContableDto>() });
+
+            var rows = r.Result ?? new List<PlanContableRow>();
+            var total = rows.Count == 0 ? 0 : rows[0].TotalRows;
+
+            var lineas = rows.Select(x => new CprPlanContableDto
+            {
+                cuenta = x.CUENTA,
+                descripcion = x.DESCRIPCION,
+                unidad = x.UNIDAD,
+                centro_costo = x.CENTRO_COSTO,
+                total = x.TOTAL,
+                corte = x.CORTE
+            }).ToList();
+
+            return DbHelper.CreateOkResponse(new CprPlanContableLista { Total = total, Lineas = lineas });
         }
 
         public ErrorDto<CprBitacoraLista> CprBitacora_Obtener(int CodEmpresa, string parametros)
         {
+            CprPlanFiltros filtros;
             try
             {
-                var filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
+                filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
+            }
+            catch
+            {
+                filtros = new CprPlanFiltros();
+            }
 
-                return WithConn(CodEmpresa, conn =>
-                {
-                    var result = new CprBitacoraLista();
+            var mov = $"%Plan:{filtros.planCompras}%";
+            var q = string.IsNullOrWhiteSpace(filtros.filtro) ? null : $"%{filtros.filtro.Trim()}%";
 
-                    var mov = $"%Plan:{filtros.planCompras}%";
-                    var q = NormalizeLike(filtros.filtro);
+            var offset = filtros.pagina ?? 0;
+            if (offset < 0) offset = 0;
+            var fetch = filtros.paginacion ?? int.MaxValue;
+            if (fetch <= 0) fetch = int.MaxValue;
 
-                    var dp = new DynamicParameters();
-                    dp.Add("Mov", mov, DbType.String);
-                    dp.Add("Q", q, DbType.String);
-
-                    AddPaging(dp, filtros.pagina, filtros.paginacion);
-
-                    const string countSql = @"
-                        SELECT COUNT(*)
-                          FROM CPR_BITACORA_SOLICITUD
-                         WHERE MOVIMIENTO LIKE @Mov
-                           AND (@Q IS NULL OR (USUARIO LIKE @Q OR DETALLE LIKE @Q OR CONVERT(VARCHAR(30), FECHAHORA, 120) LIKE @Q));";
-
-                    const string dataSql = @"
-                        SELECT ID_BITACORA, FECHAHORA, USUARIO, DETALLE
+            const string sql = @"
+                        SELECT ID_BITACORA,
+                               FECHAHORA,
+                               USUARIO,
+                               DETALLE,
+                               COUNT(*) OVER() AS TotalRows
                           FROM CPR_BITACORA_SOLICITUD
                          WHERE MOVIMIENTO LIKE @Mov
                            AND (@Q IS NULL OR (USUARIO LIKE @Q OR DETALLE LIKE @Q OR CONVERT(VARCHAR(30), FECHAHORA, 120) LIKE @Q))
                          ORDER BY FECHAHORA DESC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                    var (total, rows) = QueryPaged<CprBitacoraDto>(conn, dp, countSql, dataSql);
-                    result.Total = total;
-                    result.Lineas = rows;
-                    return result;
-                });
-            }
-            catch (Exception ex)
+            var r = DbHelper.ExecuteListQuery<BitacoraRow>(_portalDB, CodEmpresa, sql, new
             {
-                return new ErrorDto<CprBitacoraLista> { Code = -1, Description = ex.Message, Result = null };
-            }
+                Mov = mov,
+                Q = q,
+                Offset = offset,
+                Fetch = fetch
+            });
+
+            var code = r.Code is int c ? c : -1;
+            if (code != 0)
+                return DbHelper.CreateErrorResponse<CprBitacoraLista>(r.Description ?? DefaultErrorDescription, code, new CprBitacoraLista { Total = 0, Lineas = new List<CprBitacoraDto>() });
+
+            var rows = r.Result ?? new List<BitacoraRow>();
+            var total = rows.Count == 0 ? 0 : rows[0].TotalRows;
+
+            var lineas = rows.Select(x => new CprBitacoraDto
+            {
+                id_bitacora = x.ID_BITACORA,
+                fechahora = x.FECHAHORA,
+                usuario = x.USUARIO,
+                detalle = x.DETALLE
+            }).ToList();
+
+            return DbHelper.CreateOkResponse(new CprBitacoraLista { Total = total, Lineas = lineas });
         }
 
         public ErrorDto<CprResumenPlanLista> CprResumenPlan_ObtenerxCuenta(int CodEmpresa, string parametros)
         {
+            CprPlanFiltros filtros;
             try
             {
-                var filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
+                filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
+            }
+            catch
+            {
+                filtros = new CprPlanFiltros();
+            }
 
-                return WithConn(CodEmpresa, conn =>
-                {
-                    var result = new CprResumenPlanLista();
-                    var dp = new DynamicParameters();
+            const string prodClasSql = @"SELECT TOP 1 COD_PRODCLAS FROM PV_PROD_CLASIFICA WHERE COD_CUENTA = @cod_cuenta;";
+            var prodR = DbHelper.ExecuteSingleQuery<int?>(_portalDB, CodEmpresa, prodClasSql, 0, new { cod_cuenta = filtros.filtro });
+            var prodclas = (prodR.Code == 0 ? (prodR.Result ?? 0) : 0);
 
-                    // Trae COD_PRODCLAS para la cuenta
-                    const string prodClasSql = @"SELECT TOP 1 COD_PRODCLAS FROM PV_PROD_CLASIFICA WHERE COD_CUENTA = @cod_cuenta;";
-                    var prodclas = conn.QueryFirstOrDefault<int?>(prodClasSql, new { cod_cuenta = filtros.filtro }) ?? 0;
+            if (prodclas <= 0)
+                return DbHelper.CreateOkResponse(new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() });
 
-                    if (prodclas <= 0)
-                    {
-                        result.Total = 0;
-                        result.Lineas = new List<CprResumenPlanDto>();
-                        return result;
-                    }
+            var corte = string.IsNullOrWhiteSpace(filtros.periodo) || string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : filtros.periodo;
 
-                    var corte = NormalizePeriodo(filtros.periodo);
+            var offset = filtros.pagina ?? 0;
+            if (offset < 0) offset = 0;
+            var fetch = filtros.paginacion ?? int.MaxValue;
+            if (fetch <= 0) fetch = int.MaxValue;
 
-                    dp.Add("ProdClas", prodclas, DbType.Int32);
-                    dp.Add("IdPc", filtros.planCompras, DbType.Int32);
-                    dp.Add("Corte", corte, DbType.String);
-
-                    AddPaging(dp, filtros.pagina, filtros.paginacion);
-
-                    const string countSql = @"
-                        SELECT COUNT(D.COD_PRODUCTO)
-                          FROM CPR_PLAN_DT D
-                          INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
-                          INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
-                          INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                         WHERE P.COD_PRODCLAS = @ProdClas
-                           AND D.ID_PC = @IdPc
-                           AND (@Corte IS NULL OR S.CORTE = @Corte);";
-
-                    const string dataSql = @"
-                        SELECT D.COD_PRODUCTO, P.DESCRIPCION, S.CANTIDAD, S.MONTO, S.CORTE
+            const string sql = @"
+                        SELECT D.COD_PRODUCTO,
+                               P.DESCRIPCION,
+                               S.CANTIDAD,
+                               S.MONTO,
+                               S.CORTE,
+                               COUNT(*) OVER() AS TotalRows
                           FROM CPR_PLAN_DT D
                           INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
                           INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
@@ -598,16 +661,32 @@ namespace Galileo.DataBaseTier
                          ORDER BY S.CORTE DESC
                          OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                    var (total, rows) = QueryPaged<CprResumenPlanDto>(conn, dp, countSql, dataSql);
-                    result.Total = total;
-                    result.Lineas = rows;
-                    return result;
-                });
-            }
-            catch (Exception ex)
+            var r = DbHelper.ExecuteListQuery<ResumenPlanRow>(_portalDB, CodEmpresa, sql, new
             {
-                return new ErrorDto<CprResumenPlanLista> { Code = -1, Description = ex.Message, Result = null };
-            }
+                ProdClas = prodclas,
+                IdPc = filtros.planCompras,
+                Corte = corte,
+                Offset = offset,
+                Fetch = fetch
+            });
+
+            var code = r.Code is int c ? c : -1;
+            if (code != 0)
+                return DbHelper.CreateErrorResponse<CprResumenPlanLista>(r.Description ?? "Error", code, new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() });
+
+            var rows = r.Result ?? new List<ResumenPlanRow>();
+            var total = rows.Count == 0 ? 0 : rows[0].TotalRows;
+
+            var lineas = rows.Select(x => new CprResumenPlanDto
+            {
+                cod_producto = x.COD_PRODUCTO,
+                descripcion = x.DESCRIPCION,
+                cantidad = x.CANTIDAD,
+                monto = x.MONTO,
+                corte = x.CORTE
+            }).ToList();
+
+            return DbHelper.CreateOkResponse(new CprResumenPlanLista { Total = total, Lineas = lineas });
         }
     }
 }
