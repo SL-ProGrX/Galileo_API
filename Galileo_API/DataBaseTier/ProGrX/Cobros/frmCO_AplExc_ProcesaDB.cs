@@ -8,7 +8,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     public class FrmCoAplExcProcesaDb
     {
         private readonly PortalDB _portalDB;
-        private readonly int vModulo = 4;
 
         public FrmCoAplExcProcesaDb(IConfiguration config)
             : this(new PortalDB(config), new MSecurityMainDb(config))
