@@ -65,10 +65,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 int contadorValidos = 0;
                 int totalCasos = seleccionados.Count;
 
-                foreach (var item in seleccionados)
+                foreach (var cedula in seleccionados.Select(x => x.cedula.Trim()))
                 {
-                    var cedula = item.cedula.Trim();
-
                     const string aplicaSql =
                         @"exec spCBR_Excedente_Apl_Proceso_Aplicacion 
                     @Usuario, @Cedula, @AplicacionId;";
