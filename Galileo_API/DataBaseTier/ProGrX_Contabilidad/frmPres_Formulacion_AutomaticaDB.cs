@@ -1,8 +1,9 @@
 ﻿using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.PRES;
 using Galileo.Models.ProGrX_Contabilidad;
+using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
 using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX_Contabilidad
@@ -89,71 +90,31 @@ namespace Galileo.DataBaseTier.ProGrX_Contabilidad
             string vTipo,
             string usuario)
         {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
             var resp = new ErrorDto<List<PresFormulacionAutoDto>>
             {
                 Code = 0,
                 Description = "OK",
                 Result = new List<PresFormulacionAutoDto>()
             };
-
-            const string procInicial   = "[spPres_Formula_Inicia]";
-            const string procCredito   = "[spPres_Formula_Auxiliar_Credito]";
-            const string procAhorros   = "[spPres_Formula_Auxiliar_Ahorros]";
-            const string procActivos   = "[spPres_Formula_Auxiliar_Activos]";
-            const string procResultado = "[spPres_Formula_Resultado]";
-
             try
             {
-                using var connection = CreateConnection(codEmpresa);
-
-                // 1) Inicializa tabla de resultados
-                var baseParams = new
+                using var connection = new SqlConnection(stringConn);
+                //Inicializa Tabla de Resultados
+                var procedure = "[spPres_W_Formulacion_Automatica]";
+                var values = new
                 {
                     Modelo = codModelo,
-                    Usuario = usuario
+                    Usuario = usuario,
+                    vTipo = vTipo
                 };
-
-                connection.Execute(
-                    procInicial,
-                    baseParams,
-                    commandType: CommandType.StoredProcedure);
-
-                // 2) Ejecuta el auxiliar según tipo
-                string? auxProcedure = vTipo switch
-                {
-                    "CA" => procCredito, // Cartera
-                    "AG" => procAhorros, // Ahorros y Gasto Financiero
-                    "DA" => procActivos, // Depreciaciones de Activos
-                    "PE" => procActivos, // Estandar de Partidas Contables
-                    _    => null
-                };
-
-                if (auxProcedure == null)
+                resp.Result = connection.Query<PresFormulacionAutoDto>(procedure, values,
+                    commandType: System.Data.CommandType.StoredProcedure,
+                    commandTimeout: 0).ToList();
+                if (resp.Result == null)
                 {
                     resp.Code = -1;
-                    resp.Description = $"Tipo de formulación desconocido: '{vTipo}'.";
-                    resp.Result = null;
-                    return resp;
-                }
-
-                connection.Execute(
-                    auxProcedure,
-                    baseParams,
-                    commandType: CommandType.StoredProcedure,
-                    commandTimeout: 600);
-
-                // 3) Trae el resultado de la formulación
-                resp.Result = connection
-                    .Query<PresFormulacionAutoDto>(
-                        procResultado,
-                        baseParams,
-                        commandType: CommandType.StoredProcedure)
-                    .ToList();
-
-                if (resp.Result == null || resp.Result.Count == 0)
-                {
-                    resp.Code = -1;
-                    resp.Description = "Error al aplicar la formulación (sin resultados).";
+                    resp.Description = "Error al aplicar la formulación";
                     resp.Result = null;
                     return resp;
                 }
@@ -164,7 +125,6 @@ namespace Galileo.DataBaseTier.ProGrX_Contabilidad
                 resp.Description = "Pres_Formulacion_Automatica - " + ex.Message;
                 resp.Result = null;
             }
-
             return resp;
         }
     }
