@@ -15,7 +15,6 @@ namespace Galileo.DataBaseTier
         private const string DefaultSortField = "COD_RECHAZO";
         private const string SortFieldDescripcion = "DESCRIPCION";
         private const string SortFieldActivo = "ACTIVO";
-        private const string PaginationClause = " OFFSET @off ROWS FETCH NEXT @take ROWS ONLY ";
 
         public FrmCprRechazoMotivosDB(IConfiguration config)
         {
@@ -62,6 +61,10 @@ namespace Galileo.DataBaseTier
             dp.Add("off", off);
             dp.Add("take", take);
 
+            // Sorting parameters (normalized/whitelisted)
+            dp.Add("sortField", NormalizeSortField(filtro.sortField));
+            dp.Add("sortDir", (filtro.sortOrder == 0) ? 0 : 1); // 0=DESC, 1=ASC
+
             return dp;
         }
 
@@ -80,22 +83,6 @@ namespace Galileo.DataBaseTier
             return (off, take);
         }
 
-        private static string BuildListadoOrderBy(FiltrosLazyLoadData filtro)
-        {
-            var sortField = NormalizeSortField(filtro.sortField);
-            var sortDir = (filtro.sortOrder == 0) ? "DESC" : "ASC";
-
-            // ORDER BY solo con literales (whitelist)
-            return (sortField, sortDir) switch
-            {
-                (SortFieldDescripcion, "ASC") => $"ORDER BY {SortFieldDescripcion} ASC",
-                (SortFieldDescripcion, "DESC") => $"ORDER BY {SortFieldDescripcion} DESC",
-                (SortFieldActivo, "ASC") => $"ORDER BY {SortFieldActivo} ASC",
-                (SortFieldActivo, "DESC") => $"ORDER BY {SortFieldActivo} DESC",
-                (DefaultSortField, "ASC") => "ORDER BY COD_RECHAZO ASC",
-                _ => "ORDER BY COD_RECHAZO DESC"
-            };
-        }
 
         private static string NormalizeSortField(string? sortField)
         {
@@ -119,13 +106,20 @@ namespace Galileo.DataBaseTier
             return conn.ExecuteScalar<int>(countSql, dp);
         }
 
-        private static List<CprRechazosMotivosDto> ObtenerListado(SqlConnection conn, DynamicParameters dp, string orderBy)
+        private static List<CprRechazosMotivosDto> ObtenerListado(SqlConnection conn, DynamicParameters dp)
         {
-            var dataSql = $@"SELECT COD_RECHAZO, DESCRIPCION, ACTIVO
-                             FROM CPR_RECHAZO_TIPOS
-                             WHERE (@q IS NULL OR COD_RECHAZO LIKE @q OR DESCRIPCION LIKE @q)
-                             {orderBy}
-                             {PaginationClause};";
+            const string dataSql = @"SELECT COD_RECHAZO, DESCRIPCION, ACTIVO
+FROM CPR_RECHAZO_TIPOS
+WHERE (@q IS NULL OR COD_RECHAZO LIKE @q OR DESCRIPCION LIKE @q)
+ORDER BY
+    CASE WHEN @sortField = 'DESCRIPCION' AND @sortDir = 1 THEN DESCRIPCION END ASC,
+    CASE WHEN @sortField = 'DESCRIPCION' AND @sortDir = 0 THEN DESCRIPCION END DESC,
+    CASE WHEN @sortField = 'ACTIVO' AND @sortDir = 1 THEN ACTIVO END ASC,
+    CASE WHEN @sortField = 'ACTIVO' AND @sortDir = 0 THEN ACTIVO END DESC,
+    CASE WHEN @sortField = 'COD_RECHAZO' AND @sortDir = 1 THEN COD_RECHAZO END ASC,
+    CASE WHEN @sortField = 'COD_RECHAZO' AND @sortDir = 0 THEN COD_RECHAZO END DESC,
+    COD_RECHAZO DESC
+OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
 
             return conn.Query<CprRechazosMotivosDto>(dataSql, dp).ToList();
         }
@@ -174,10 +168,9 @@ namespace Galileo.DataBaseTier
                 var r = WithConn(CodCliente, conn =>
                 {
                     var dp = BuildListadoParams(filtro);
-                    var orderBy = BuildListadoOrderBy(filtro);
 
                     var total = ObtenerTotalListado(conn, dp);
-                    var lista = ObtenerListado(conn, dp, orderBy);
+                    var lista = ObtenerListado(conn, dp);
 
                     return new CprRechazosMotivosLista
                     {

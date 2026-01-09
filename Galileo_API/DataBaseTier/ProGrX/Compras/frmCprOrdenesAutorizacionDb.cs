@@ -26,41 +26,90 @@ namespace Galileo.DataBaseTier
             {
                 if (conn.State != ConnectionState.Open) conn.Open();
 
-                var (baseWhere, baseParams) = BuildBaseWhere(req);
-                var (filtroWhere, filtroParams) = BuildFiltroWhere(filtro);
-                var (pagingSql, pagingParams) = BuildPaging(pagina, paginacion);
+                var like = NormalizeLike(filtro);
+                var (offset, fetch) = NormalizePaging(pagina, paginacion);
 
-                // Total con el mismo filtro (para que el total sea consistente con la búsqueda)
-                var totalSql =
-                    "SELECT COUNT(O.cod_orden) " +
-                    "FROM cpr_ordenes O " +
-                    "INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden " +
-                    baseWhere +
-                    filtroWhere;
+                const string sqlTotal = @"
+SELECT COUNT(O.cod_orden)
+FROM cpr_ordenes O
+INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden
+WHERE O.autoriza_fecha IS NULL
+  AND O.estado = 'S'
+  AND O.tipo_orden = @Tipo
+  AND O.genera_user IN (
+        SELECT usuario_asignado
+        FROM cpr_orden_autousers
+        WHERE usuario = @Usuario
+  )
+  AND (@TodosPendientes = 1 OR O.genera_fecha BETWEEN @FechaInicio AND @FechaCorte)
+  AND (
+        @F IS NULL
+        OR CAST(O.cod_orden AS NVARCHAR(50)) LIKE @F
+        OR C.Descripcion LIKE @F
+        OR O.nota LIKE @F
+        OR O.proceso LIKE @F
+  );
+";
 
-                var totalParams = MergeParams(baseParams, filtroParams);
-                var total = conn.QueryFirstOrDefault<int>(totalSql, totalParams);
+                var total = conn.QueryFirstOrDefault<int>(
+                    sqlTotal,
+                    new
+                    {
+                        Tipo = req.tipo,
+                        Usuario = req.usuario,
+                        TodosPendientes = req.todosPendientes ? 1 : 0,
+                        FechaInicio = req.fechaInicio,
+                        FechaCorte = req.fechaCorte,
+                        F = like
+                    }
+                );
 
-                // Lista
-                var listSql =
-                    "SELECT " +
-                    "    O.cod_orden, " +
-                    "    C.Descripcion AS TipoOrdenDesc, " +
-                    "    O.total, " +
-                    "    O.genera_user, " +
-                    "    O.genera_fecha, " +
-                    "    C.Descripcion AS TipoOrden, " +
-                    "    O.nota, " +
-                    "    O.proceso " +
-                    "FROM cpr_ordenes O " +
-                    "INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden " +
-                    baseWhere +
-                    filtroWhere +
-                    " ORDER BY O.cod_orden " +
-                    pagingSql;
+                const string sqlLista = @"
+SELECT
+    O.cod_orden,
+    C.Descripcion AS TipoOrdenDesc,
+    O.total,
+    O.genera_user,
+    O.genera_fecha,
+    C.Descripcion AS TipoOrden,
+    O.nota,
+    O.proceso
+FROM cpr_ordenes O
+INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden
+WHERE O.autoriza_fecha IS NULL
+  AND O.estado = 'S'
+  AND O.tipo_orden = @Tipo
+  AND O.genera_user IN (
+        SELECT usuario_asignado
+        FROM cpr_orden_autousers
+        WHERE usuario = @Usuario
+  )
+  AND (@TodosPendientes = 1 OR O.genera_fecha BETWEEN @FechaInicio AND @FechaCorte)
+  AND (
+        @F IS NULL
+        OR CAST(O.cod_orden AS NVARCHAR(50)) LIKE @F
+        OR C.Descripcion LIKE @F
+        OR O.nota LIKE @F
+        OR O.proceso LIKE @F
+  )
+ORDER BY O.cod_orden
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
+";
 
-                var listParams = MergeParams(baseParams, filtroParams, pagingParams);
-                var ordenes = conn.Query<OrdenCompra>(listSql, listParams).ToList();
+                var ordenes = conn.Query<OrdenCompra>(
+                    sqlLista,
+                    new
+                    {
+                        Tipo = req.tipo,
+                        Usuario = req.usuario,
+                        TodosPendientes = req.todosPendientes ? 1 : 0,
+                        FechaInicio = req.fechaInicio,
+                        FechaCorte = req.fechaCorte,
+                        F = like,
+                        Offset = offset,
+                        Fetch = fetch
+                    }
+                ).ToList();
 
                 return new OrdenCompraDto
                 {
@@ -242,65 +291,21 @@ namespace Galileo.DataBaseTier
 
         // ----------------- Helpers SQL -----------------
 
-        private static (string whereSql, DynamicParameters p) BuildBaseWhere(OrdenCompraRequestDto req)
-        {
-            var p = new DynamicParameters();
-
-            // Base: pendientes de autorización
-            var where = @"
-                WHERE O.autoriza_fecha IS NULL
-                  AND O.estado = 'S'
-                  AND O.tipo_orden = @Tipo
-                  AND O.genera_user IN (
-                        SELECT usuario_asignado
-                        FROM cpr_orden_autousers
-                        WHERE usuario = @Usuario
-                  )";
-
-            p.Add("Tipo", req.tipo, DbType.String);
-            p.Add("Usuario", req.usuario, DbType.String);
-
-            if (!req.todosPendientes)
-            {
-                where += " AND O.genera_fecha BETWEEN @FechaInicio AND @FechaCorte";
-                p.Add("FechaInicio", req.fechaInicio, DbType.DateTime);
-                p.Add("FechaCorte", req.fechaCorte, DbType.DateTime);
-            }
-
-            return (where, p);
-        }
-
-        private static (string whereSql, object parameters) BuildFiltroWhere(string? filtro)
+        private static string? NormalizeLike(string? filtro)
         {
             if (string.IsNullOrWhiteSpace(filtro))
-                return (string.Empty, new { });
+                return null;
 
-            var like = $"%{filtro.Trim()}%";
-
-            // Se concatena como AND porque `baseWhere` ya trae WHERE ...
-            return (
-                " AND (" +
-                "CAST(O.cod_orden AS NVARCHAR(50)) LIKE @F " +
-                "OR C.Descripcion LIKE @F " +
-                "OR O.nota LIKE @F " +
-                "OR O.proceso LIKE @F)",
-                new { F = like }
-            );
+            var f = filtro.Trim();
+            return f.Length == 0 ? null : $"%{f}%";
         }
 
-        private static (string pagingSql, object parameters) BuildPaging(int pagina, int paginacion)
+        private static (int Offset, int Fetch) NormalizePaging(int pagina, int paginacion)
         {
             if (pagina < 0 || paginacion <= 0)
-                return (string.Empty, new { });
+                return (0, int.MaxValue);
 
-            return ("OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY", new { Offset = pagina, Fetch = paginacion });
-        }
-
-        private static object MergeParams(params object[] parts)
-        {
-            var p = new DynamicParameters();
-            foreach (var part in parts) p.AddDynamicParams(part);
-            return p;
+            return (pagina, paginacion);
         }
 
         private static List<string> ParseCodigos(string? codigosOrden)

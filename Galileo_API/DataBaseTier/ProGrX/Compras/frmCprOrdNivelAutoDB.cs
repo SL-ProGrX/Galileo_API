@@ -26,22 +26,22 @@ namespace Galileo.DataBaseTier
             {
                 EnsureOpen(conn);
 
-                var (whereSql, whereParams) = BuildUserFilterWhere(filtros.filtro);
-                var (pagingSql, pagingParams) = BuildPaging(filtros.pagina, filtros.paginacion);
-                var prms = MergeParams(whereParams, pagingParams);
+                var like = NormalizeLike(filtros.filtro);
+                var (offset, fetch) = NormalizePaging(filtros.pagina, filtros.paginacion);
 
-                const string sqlTotalBase = @"
+                const string sqlTotal = @"
 SELECT COUNT(U.nombre)
 FROM usuarios U
 LEFT JOIN cpr_orden_autorizadores A ON U.nombre = A.usuario
+WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F);
 ";
 
                 var total = conn.QueryFirstOrDefault<int>(
-                    sqlTotalBase + " " + whereSql,
-                    prms // ✅ mismo prms que lista
+                    sqlTotal,
+                    new { F = like }
                 );
 
-                const string sqlListaBase = @"
+                const string sqlLista = @"
 SELECT
     U.nombre,
     U.descripcion,
@@ -49,13 +49,14 @@ SELECT
     CASE WHEN A.fecha IS NOT NULL THEN 1 ELSE 0 END AS isCheck
 FROM usuarios U
 LEFT JOIN cpr_orden_autorizadores A ON U.nombre = A.usuario
+WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F)
+ORDER BY A.fecha DESC
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 ";
 
                 var lista = conn.Query<UsuariosAutorizaData>(
-                    sqlListaBase + " " + whereSql + @"
-ORDER BY A.fecha DESC
-" + pagingSql,
-                    prms
+                    sqlLista,
+                    new { F = like, Offset = offset, Fetch = fetch }
                 ).ToList();
 
                 return new UsuariosAuthorizaLista { total = total, lista = lista };
@@ -164,22 +165,22 @@ ORDER BY A.fecha DESC
             {
                 EnsureOpen(conn);
 
-                var (whereSql, whereParams) = BuildUserFilterWhere(filtros.filtro);
-                var (pagingSql, pagingParams) = BuildPaging(filtros.pagina, filtros.paginacion);
-                var prms = MergeParams(whereParams, pagingParams);
+                var like = NormalizeLike(filtros.filtro);
+                var (offset, fetch) = NormalizePaging(filtros.pagina, filtros.paginacion);
 
-                const string sqlTotalBase = @"
+                const string sqlTotal = @"
 SELECT COUNT(U.nombre)
 FROM usuarios U
 LEFT JOIN cpr_INVUSRFECHAS A ON U.nombre = A.usuario
+WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F);
 ";
 
                 var total = conn.QueryFirstOrDefault<int>(
-                    sqlTotalBase + " " + whereSql,
-                    prms
+                    sqlTotal,
+                    new { F = like }
                 );
 
-                const string sqlListaBase = @"
+                const string sqlLista = @"
 SELECT
     U.nombre,
     U.descripcion,
@@ -187,13 +188,14 @@ SELECT
     CASE WHEN A.usuario IS NOT NULL THEN 1 ELSE 0 END AS isCheck
 FROM usuarios U
 LEFT JOIN cpr_INVUSRFECHAS A ON U.nombre = A.usuario
+WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F)
+ORDER BY A.usuario DESC
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 ";
 
                 var lista = conn.Query<UsuariosAutorizaData>(
-                    sqlListaBase + " " + whereSql + @"
-ORDER BY A.usuario DESC
-" + pagingSql,
-                    prms
+                    sqlLista,
+                    new { F = like, Offset = offset, Fetch = fetch }
                 ).ToList();
 
                 return new UsuariosAuthorizaLista { total = total, lista = lista };
@@ -259,24 +261,23 @@ ORDER BY A.usuario DESC
             {
                 EnsureOpen(conn);
 
-                var (whereSql, whereParams) = BuildUserFilterWhere(filtros.filtro);
-                var (pagingSql, pagingParams) = BuildPaging(filtros.pagina, filtros.paginacion);
+                var like = NormalizeLike(filtros.filtro);
+                var (offset, fetch) = NormalizePaging(filtros.pagina, filtros.paginacion);
 
-                var baseParams = MergeParams(whereParams, new { Usuario = usuario });
-                var prms = MergeParams(whereParams, pagingParams, new { Usuario = usuario });
-
-                var total = conn.QueryFirstOrDefault<int>(
-                    @"
+                const string sqlTotal = @"
 SELECT COUNT(U.nombre)
 FROM usuarios U
 LEFT JOIN cpr_orden_autousers C
        ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
-" + whereSql,
-                    baseParams
+WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F);
+";
+
+                var total = conn.QueryFirstOrDefault<int>(
+                    sqlTotal,
+                    new { Usuario = usuario, F = like }
                 );
 
-                var lista = conn.Query<UsuariosAutorizaData>(
-                    @"
+                const string sqlLista = @"
 SELECT
     U.nombre,
     U.descripcion,
@@ -285,10 +286,14 @@ SELECT
 FROM usuarios U
 LEFT JOIN cpr_orden_autousers C
        ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
-" + whereSql + @"
+WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F)
 ORDER BY C.fecha_asignacion DESC
-" + pagingSql,
-                    prms
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
+";
+
+                var lista = conn.Query<UsuariosAutorizaData>(
+                    sqlLista,
+                    new { Usuario = usuario, F = like, Offset = offset, Fetch = fetch }
                 ).ToList();
 
                 return new UsuariosAuthorizaLista { total = total, lista = lista };
@@ -417,34 +422,29 @@ ORDER BY C.fecha_asignacion DESC
 
         // ----------------- Helpers comunes -----------------
 
+        private static string? NormalizeLike(string? filtro)
+        {
+            if (string.IsNullOrWhiteSpace(filtro))
+                return null;
+
+            var f = filtro.Trim();
+            return f.Length == 0 ? null : $"%{f}%";
+        }
+
+        private static (int Offset, int Fetch) NormalizePaging(int? pagina, int? paginacion)
+        {
+            // We keep the existing meaning: `pagina` is used as OFFSET.
+            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
+                return (0, int.MaxValue);
+
+            return (pagina.Value, paginacion.Value);
+        }
+
         private static void EnsureOpen(IDbConnection conn)
         {
             if (conn.State != ConnectionState.Open) conn.Open();
         }
 
-        private static (string whereSql, object parameters) BuildUserFilterWhere(string? filtro)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-                return (string.Empty, new { });
-
-            var like = $"%{filtro.Trim()}%";
-            return ("WHERE U.nombre LIKE @F OR U.descripcion LIKE @F", new { F = like });
-        }
-
-        private static (string pagingSql, object parameters) BuildPaging(int? pagina, int? paginacion)
-        {
-            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
-                return (string.Empty, new { });
-
-            return ("OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY", new { Offset = pagina.Value, Fetch = paginacion.Value });
-        }
-
-        private static object MergeParams(params object[] parts)
-        {
-            var p = new DynamicParameters();
-            foreach (var part in parts) p.AddDynamicParams(part);
-            return p;
-        }
 
         private static T? SafeParse<T>(string json)
         {

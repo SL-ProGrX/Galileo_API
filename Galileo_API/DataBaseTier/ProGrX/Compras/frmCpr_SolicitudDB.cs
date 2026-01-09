@@ -1,12 +1,10 @@
 using Dapper;
-using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using System.Data;
 using Galileo.Models.Security;
-using System.Text;
 
 namespace Galileo.DataBaseTier
 {
@@ -50,10 +48,44 @@ namespace Galileo.DataBaseTier
                 EnsureOpen(conn);
 
                 var p = new DynamicParameters();
-                var where = BuildSolicitudListaWhere(filtro, p);
 
-                // COUNT con filtros (en el original no aplicaba filtros)
-                var qCount = $@"
+                // Filtro texto
+                var like = NormalizeLike(filtro.filtro);
+                p.Add("HasFiltro", like is null ? 0 : 1);
+                p.Add("Like", like);
+
+                // Solicitantes
+                var solicitantes = (filtro.solicitante ?? new List<string>())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                var hasSolicitantes = solicitantes.Count > 0 ? 1 : 0;
+                if (solicitantes.Count == 0) solicitantes.Add(string.Empty); // evita IN ()
+
+                p.Add("HasSolicitantes", hasSolicitantes);
+                p.Add("Solicitantes", solicitantes);
+
+                // Encargados
+                var encargados = (filtro.encargado ?? new List<string>())
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Select(x => x.Trim())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                var hasEncargados = encargados.Count > 0 ? 1 : 0;
+                if (encargados.Count == 0) encargados.Add(string.Empty); // evita IN ()
+
+                p.Add("HasEncargados", hasEncargados);
+                p.Add("Encargados", encargados);
+
+                // Paginación (si no viene, usa defaults)
+                var (offset, fetch, _) = GetPaging(filtro.pagina, filtro.paginacion);
+                p.Add("Offset", offset);
+                p.Add("Fetch", fetch);
+
+                const string qCount = @"
 SELECT COUNT(DISTINCT S.CPR_ID)
 FROM CPR_SOLICITUD S
 LEFT JOIN CPR_SOLICITUD_PROV P
@@ -61,19 +93,19 @@ LEFT JOIN CPR_SOLICITUD_PROV P
 LEFT JOIN CORE_UENS U
   ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
 WHERE P.ADJUDICA_ORDEN IS NOT NULL
-{where};";
+  AND (@HasFiltro = 0 OR (
+        CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
+        ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
+        ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
+        ISNULL(U.DESCRIPCION,'') LIKE @Like
+  ))
+  AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
+  AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados);
+";
 
-                var total = conn.Query<int>(qCount, p).FirstOrDefault();
+                var total = conn.QueryFirstOrDefault<int>(qCount, p);
 
-                // Paginación
-                var (offset, fetch, usePaging) = GetPaging(filtro.pagina, filtro.paginacion);
-                if (usePaging)
-                {
-                    p.Add("Offset", offset);
-                    p.Add("Fetch", fetch);
-                }
-
-                var qList = $@"
+                const string qList = @"
 SELECT DISTINCT
     S.CPR_ID,
     P.ADJUDICA_ORDEN,
@@ -88,9 +120,17 @@ LEFT JOIN CPR_SOLICITUD_PROV P
 LEFT JOIN CORE_UENS U
   ON U.COD_UNIDAD = S.COD_UNIDAD_SOLICITANTE
 WHERE P.ADJUDICA_ORDEN IS NOT NULL
-{where}
+  AND (@HasFiltro = 0 OR (
+        CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
+        ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
+        ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
+        ISNULL(U.DESCRIPCION,'') LIKE @Like
+  ))
+  AND (@HasSolicitantes = 0 OR S.REGISTRO_USUARIO IN @Solicitantes)
+  AND (@HasEncargados = 0 OR S.ENCARGADO_USUARIO IN @Encargados)
 ORDER BY S.CPR_ID DESC
-{(usePaging ? "OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY" : "")};";
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
+";
 
                 var solicitudes = conn.Query<CprSolicitudDto>(qList, p).ToList();
 
@@ -112,54 +152,13 @@ ORDER BY S.CPR_ID DESC
             return new ErrorDto<CprSolicitudLista> { Code = 0, Result = r.Result };
         }
 
-        private static string BuildSolicitudListaWhere(CprSolicitudFiltro filtro, DynamicParameters p)
-        {
-            var conditions = new List<string>();
-
-            // filtro texto
-            if (!string.IsNullOrWhiteSpace(filtro.filtro))
-            {
-                p.Add("Like", $"%{filtro.filtro.Trim()}%");
-                conditions.Add(@"
-(
-    CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
-    ISNULL(P.ADJUDICA_ORDEN,'') LIKE @Like OR
-    ISNULL(S.REGISTRO_USUARIO,'') LIKE @Like OR
-    ISNULL(U.DESCRIPCION,'') LIKE @Like
-)");
-            }
-
-            // solicitantes
-            if (filtro.solicitante != null)
-            {
-                var list = filtro.solicitante.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct().ToList();
-                if (list.Count > 0)
-                {
-                    p.Add("Solicitantes", list);
-                    conditions.Add("S.REGISTRO_USUARIO IN @Solicitantes");
-                }
-            }
-
-            // encargados
-            if (filtro.encargado != null)
-            {
-                var list = filtro.encargado.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct().ToList();
-                if (list.Count > 0)
-                {
-                    p.Add("Encargados", list);
-                    conditions.Add("S.ENCARGADO_USUARIO IN @Encargados");
-                }
-            }
-
-            if (conditions.Count == 0) return "";
-
-            // Ya existe un WHERE base, así que usamos AND ...
-            return " AND " + string.Join(" AND ", conditions);
-        }
 
         private static (int Offset, int Fetch, bool UsePaging) GetPaging(int? pagina, int? paginacion)
         {
-            if (pagina == null || paginacion == null) return (0, 0, false);
+            // Always return a usable paging tuple so the SQL can be constant.
+            if (pagina == null || paginacion == null || pagina < 0 || paginacion <= 0)
+                return (0, int.MaxValue, true);
+
             return (pagina.Value, paginacion.Value, true);
         }
 
@@ -850,12 +849,9 @@ WHERE R.CORE_USUARIO = @Usuario
                 p.Add("HasFiltro", like != null ? 1 : 0);
                 p.Add("Like", like);
 
-                var (offset, fetch, usePaging) = GetPaging(pagina, paginacion);
-                if (usePaging)
-                {
-                    p.Add("Offset", offset);
-                    p.Add("Fetch", fetch);
-                }
+                var (offset, fetch, _) = GetPaging(pagina, paginacion);
+                p.Add("Offset", offset);
+                p.Add("Fetch", fetch);
 
                 const string qCount = @"
 SELECT COUNT(*) FROM (
@@ -870,7 +866,7 @@ SELECT COUNT(*) FROM (
 
                 var total = conn.Query<int>(qCount, p).FirstOrDefault();
 
-                var qList = $@"
+                const string qList = @"
 SELECT DISTINCT
     D.COD_PRODUCTO,
     P.DESCRIPCION,
@@ -889,7 +885,7 @@ INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
 WHERE S.CORTE >= DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0)
   AND (@HasFiltro = 0 OR (D.COD_PRODUCTO LIKE @Like OR P.DESCRIPCION LIKE @Like))
 ORDER BY D.COD_PRODUCTO
-{(usePaging ? "OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY" : "")};";
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
                 var articulos = conn.Query<ArticuloData>(qList, p).ToList();
 
@@ -1250,6 +1246,15 @@ GROUP BY ENCARGADO_USUARIO;").ToList();
         // ===========================
         //  HELPERS
         // ===========================
+
+        private static string? NormalizeLike(string? filtro)
+        {
+            if (string.IsNullOrWhiteSpace(filtro))
+                return null;
+
+            var f = filtro.Trim();
+            return f.Length == 0 ? null : $"%{f}%";
+        }
 
         private static void EnsureOpen(IDbConnection conn)
         {

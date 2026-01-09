@@ -19,36 +19,28 @@ namespace Galileo.DataBaseTier
         {
             var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                var hasFiltro = !string.IsNullOrWhiteSpace(filtro);
-                var like = hasFiltro ? $"%{filtro!.Trim()}%" : null;
+                var like = NormalizeLike(filtro);
+                var (offset, fetch) = NormalizePaging(pagina, paginacion);
 
-                const string totalNoFiltroSql = "SELECT COUNT(*) FROM CPR_VALORA_ESQUEMA";
-                const string totalConFiltroSql = "SELECT COUNT(*) FROM CPR_VALORA_ESQUEMA WHERE VAL_ID LIKE @F OR descripcion LIKE @F";
+                const string totalSql = @"SELECT COUNT(*)
+FROM CPR_VALORA_ESQUEMA
+WHERE (@F IS NULL OR VAL_ID LIKE @F OR descripcion LIKE @F);";
 
                 var total = conn.QueryFirstOrDefault<int>(
-                    hasFiltro ? totalConFiltroSql : totalNoFiltroSql,
-                    hasFiltro ? new { F = like } : null
+                    totalSql,
+                    new { F = like }
                 );
 
-                var (pagingSql, pagingParams) = BuildPaging(pagina, paginacion);
+                const string listSql = @"SELECT VAL_ID, descripcion, Activo
+FROM CPR_VALORA_ESQUEMA
+WHERE (@F IS NULL OR VAL_ID LIKE @F OR descripcion LIKE @F)
+ORDER BY VAL_ID DESC
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                const string listNoFiltroSql = @"SELECT VAL_ID, descripcion, Activo
-                       FROM CPR_VALORA_ESQUEMA
-                       ORDER BY VAL_ID DESC
-";
-
-                const string listConFiltroSql = @"SELECT VAL_ID, descripcion, Activo
-                       FROM CPR_VALORA_ESQUEMA
-                       WHERE VAL_ID LIKE @F OR descripcion LIKE @F
-                       ORDER BY VAL_ID DESC
-";
-
-                var sql = (hasFiltro ? listConFiltroSql : listNoFiltroSql) + pagingSql;
-                var prms = hasFiltro
-                    ? MergeParams(new { F = like }, pagingParams)
-                    : pagingParams;
-
-                var esquemas = conn.Query<CprValoraEsquemaDto>(sql, prms).ToList();
+                var esquemas = conn.Query<CprValoraEsquemaDto>(
+                    listSql,
+                    new { F = like, Offset = offset, Fetch = fetch }
+                ).ToList();
 
                 return new CprValoraEsquemaDtoList { Total = total, esquemas = esquemas };
             });
@@ -63,39 +55,30 @@ namespace Galileo.DataBaseTier
         {
             var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                var hasFiltro = !string.IsNullOrWhiteSpace(filtro);
-                var like = hasFiltro ? $"%{filtro!.Trim()}%" : null;
+                var like = NormalizeLike(filtro);
+                var (offset, fetch) = NormalizePaging(pagina, paginacion);
 
-                const string totalNoFiltroSql = "SELECT COUNT(*) FROM CPR_VALORA_ITEMS WHERE VAL_ID = @ValId";
-                const string totalConFiltroSql = "SELECT COUNT(*) FROM CPR_VALORA_ITEMS WHERE VAL_ID = @ValId AND (VAL_ITEM LIKE @F OR descripcion LIKE @F)";
+                const string totalSql = @"SELECT COUNT(*)
+FROM CPR_VALORA_ITEMS
+WHERE VAL_ID = @ValId
+  AND (@F IS NULL OR VAL_ITEM LIKE @F OR descripcion LIKE @F);";
 
                 var total = conn.QueryFirstOrDefault<int>(
-                    hasFiltro ? totalConFiltroSql : totalNoFiltroSql,
-                    hasFiltro ? new { ValId = val_id, F = like } : new { ValId = val_id }
+                    totalSql,
+                    new { ValId = val_id, F = like }
                 );
 
-                var (pagingSql, pagingParams) = BuildPaging(pagina, paginacion);
+                const string listSql = @"SELECT VAL_ITEM, descripcion, Peso
+FROM CPR_VALORA_ITEMS
+WHERE VAL_ID = @ValId
+  AND (@F IS NULL OR VAL_ITEM LIKE @F OR descripcion LIKE @F)
+ORDER BY VAL_ITEM
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                const string listNoFiltroSql = @"SELECT VAL_ITEM, descripcion, Peso
-                       FROM CPR_VALORA_ITEMS
-                       WHERE VAL_ID = @ValId
-                       ORDER BY VAL_ITEM
-";
-
-                const string listConFiltroSql = @"SELECT VAL_ITEM, descripcion, Peso
-                       FROM CPR_VALORA_ITEMS
-                       WHERE VAL_ID = @ValId AND (VAL_ITEM LIKE @F OR descripcion LIKE @F)
-                       ORDER BY VAL_ITEM
-";
-
-                var sql = (hasFiltro ? listConFiltroSql : listNoFiltroSql) + pagingSql;
-
-                var baseParams = hasFiltro
-                    ? new { ValId = val_id, F = like }
-                    : new { ValId = val_id, F = (string?)null };
-                var prms = MergeParams(baseParams, pagingParams);
-
-                var items = conn.Query<CprValoraItemsDto>(sql, prms).ToList();
+                var items = conn.Query<CprValoraItemsDto>(
+                    listSql,
+                    new { ValId = val_id, F = like, Offset = offset, Fetch = fetch }
+                ).ToList();
 
                 return new CprValoraItemsDtoList { Total = total, items = items };
             });
@@ -268,20 +251,22 @@ namespace Galileo.DataBaseTier
 
         // ---------------- Helpers ----------------
 
-        private static (string pagingSql, object parameters) BuildPaging(int? pagina, int? paginacion)
+        private static string? NormalizeLike(string? filtro)
         {
-            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
-                return (string.Empty, new { });
+            if (string.IsNullOrWhiteSpace(filtro))
+                return null;
 
-            return ("OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY",
-                new { Offset = pagina.Value, Fetch = paginacion.Value });
+            var f = filtro.Trim();
+            return f.Length == 0 ? null : $"%{f}%";
         }
 
-        private static object MergeParams(object a, object b)
+        private static (int Offset, int Fetch) NormalizePaging(int? pagina, int? paginacion)
         {
-            var p = new DynamicParameters(a);
-            p.AddDynamicParams(b);
-            return p;
+            // Keep the existing meaning: `pagina` is treated as OFFSET.
+            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
+                return (0, int.MaxValue);
+
+            return (pagina.Value, paginacion.Value);
         }
     }
 }

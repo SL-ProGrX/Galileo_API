@@ -18,6 +18,14 @@ namespace Galileo.DataBaseTier
         private readonly MSecurityMainDb _bitacoraDb;
         private readonly MComprasDB _comprasDb;
 
+        // Whitelist for dynamic identifier usage (prevents SQL injection via table/column names)
+        private static readonly IReadOnlyDictionary<string, HashSet<string>> AllowedCodigoTargets =
+            new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["cpr_Ordenes"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "cod_orden" },
+                ["cpr_compras"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "cod_compra" }
+            };
+
         public FrmCprCompraDirectaDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
@@ -365,9 +373,17 @@ namespace Galileo.DataBaseTier
         // =========================
         private static string GenerarCodigo(IDbConnection conn, IDbTransaction tx, string tabla, string campo)
         {
-            // Mantiene tu patrón (MAX+1). Mejor reemplazar por SEQUENCE/SP si existe.
-            var sql = $@"SELECT RIGHT(REPLICATE('0', 10) + CAST(ISNULL(MAX(CAST({campo} AS INT)),0) + 1 AS VARCHAR(10)), 10)
-                         FROM {tabla}";
+            // NOTE: Table/column identifiers cannot be parameterized; enforce a strict whitelist.
+            if (string.IsNullOrWhiteSpace(tabla) || string.IsNullOrWhiteSpace(campo))
+                throw new ArgumentException("Tabla/campo inválidos para generar código.");
+
+            if (!AllowedCodigoTargets.TryGetValue(tabla, out var camposPermitidos) || !camposPermitidos.Contains(campo))
+                throw new InvalidOperationException($"GenerarCodigo: destino no permitido (tabla='{tabla}', campo='{campo}').");
+
+            // Safe because identifiers are whitelisted and wrapped.
+            var sql = $@"SELECT RIGHT(REPLICATE('0', 10) + CAST(ISNULL(MAX(CAST([{campo}] AS INT)),0) + 1 AS VARCHAR(10)), 10)
+                         FROM [{tabla}]";
+
             return conn.QueryFirstOrDefault<string>(sql, transaction: tx) ?? "0000000001";
         }
 

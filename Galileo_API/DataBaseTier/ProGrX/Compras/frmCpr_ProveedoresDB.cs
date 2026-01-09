@@ -15,6 +15,23 @@ namespace Galileo.DataBaseTier
         private const string ParamOff = "off";
         private const string ParamTake = "take";
 
+        private static string? NormalizeLike(string? filtro)
+        {
+            if (string.IsNullOrWhiteSpace(filtro))
+                return null;
+
+            var f = filtro.Trim();
+            return f.Length == 0 ? null : $"%{f}%";
+        }
+
+        private static (int Off, int Take) NormalizePaging(int? pagina, int? paginacion)
+        {
+            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
+                return (0, int.MaxValue);
+
+            return (pagina.Value, paginacion.Value);
+        }
+
         public FrmCprProveedoresDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -96,34 +113,26 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
+                    var like = NormalizeLike(filtro.filtro);
+                    var (off, take) = NormalizePaging(filtro.pagina, filtro.paginacion);
+
                     var dp = new DynamicParameters();
-                    var where = "";
-
-                    if (!string.IsNullOrWhiteSpace(filtro.filtro))
-                    {
-                        where = " WHERE (PROVEEDOR_CODIGO LIKE @q OR CEDJUR LIKE @q OR DESCRIPCION LIKE @q) ";
-                        dp.Add("q", $"%{filtro.filtro.Trim()}%");
-                    }
-
-                    var paginaSql = "";
-                    if (filtro.pagina != null && filtro.paginacion != null)
-                    {
-                        paginaSql = PaginationSqlClause;
-                        dp.Add(ParamOff, filtro.pagina);
-                        dp.Add(ParamTake, filtro.paginacion);
-                    }
+                    dp.Add("q", like);
+                    dp.Add(ParamOff, off);
+                    dp.Add(ParamTake, take);
 
                     var result = new CprProveedoresLista();
 
-                    var countSql = $@"SELECT COUNT(*) FROM CPR_PROVEEDORES_TEMPO {where};";
+                    const string countSql = @"SELECT COUNT(*)
+FROM CPR_PROVEEDORES_TEMPO
+WHERE (@q IS NULL OR PROVEEDOR_CODIGO LIKE @q OR CEDJUR LIKE @q OR DESCRIPCION LIKE @q);";
+
                     result.total = conn.ExecuteScalar<int>(countSql, dp);
 
-                    var dataSql = $@"
-                        SELECT PROVEEDOR_CODIGO, CEDJUR, DESCRIPCION
-                        FROM CPR_PROVEEDORES_TEMPO
-                        {where}
-                        ORDER BY PROVEEDOR_CODIGO
-                        {paginaSql};";
+                    const string dataSql = @"SELECT PROVEEDOR_CODIGO, CEDJUR, DESCRIPCION
+FROM CPR_PROVEEDORES_TEMPO
+WHERE (@q IS NULL OR PROVEEDOR_CODIGO LIKE @q OR CEDJUR LIKE @q OR DESCRIPCION LIKE @q)
+ORDER BY PROVEEDOR_CODIGO" + PaginationSqlClause + ";";
 
                     result.proveedores = conn.Query<CprProveedoresDto>(dataSql, dp).ToList();
                     return result;

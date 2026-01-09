@@ -18,28 +18,30 @@ namespace Galileo.DataBaseTier
         {
             var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                var (sqlWhere, prms) = BuildFiltro(filtro);
+                // DbHelper.WithConn should provide an open connection, but be defensive
+                if (conn.State != ConnectionState.Open) conn.Open();
 
-                const string sqlCountBase = "SELECT COUNT(*) FROM CXP_SUSPENSION_TIPOS ";
+                var like = NormalizeLike(filtro);
+                var (offset, fetch) = NormalizePaging(pagina, paginacion);
+
+                const string sqlCount = @"SELECT COUNT(*)
+FROM CXP_SUSPENSION_TIPOS
+WHERE (@F IS NULL OR COD_SUSPENSION LIKE @F OR descripcion LIKE @F);";
+
                 var total = conn.QueryFirstOrDefault<int>(
-                    sqlCountBase + sqlWhere,
-                    prms
+                    sqlCount,
+                    new { F = like }
                 );
 
-                var (sqlPaging, pagingParams) = BuildPaging(pagina, paginacion);
-                var finalParams = MergeParams(prms, pagingParams);
-
-                const string sqlSelectBase = @"SELECT COD_SUSPENSION, descripcion, ACTIVA
-                       FROM CXP_SUSPENSION_TIPOS
-                       ";
-
-                var sql = sqlSelectBase + sqlWhere + @"
-                       ORDER BY COD_SUSPENSION
-                       " + sqlPaging;
+                const string sqlSelect = @"SELECT COD_SUSPENSION, descripcion, ACTIVA
+FROM CXP_SUSPENSION_TIPOS
+WHERE (@F IS NULL OR COD_SUSPENSION LIKE @F OR descripcion LIKE @F)
+ORDER BY COD_SUSPENSION
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
                 var rows = conn.Query<TiposSuspensionDto>(
-                    sql,
-                    finalParams
+                    sqlSelect,
+                    new { F = like, Offset = offset, Fetch = fetch }
                 ).ToList();
 
                 return new TiposSuspensionDtoList
@@ -128,33 +130,22 @@ namespace Galileo.DataBaseTier
             );
         }
 
-        private static (string whereSql, object parameters) BuildFiltro(string? filtro)
+        private static string? NormalizeLike(string? filtro)
         {
             if (string.IsNullOrWhiteSpace(filtro))
-                return (string.Empty, new { });
+                return null;
 
-            // LIKE parametrizado (sin injection)
-            var like = $"%{filtro.Trim()}%";
-            return ("WHERE COD_SUSPENSION LIKE @F OR descripcion LIKE @F", new { F = like });
+            var f = filtro.Trim();
+            return f.Length == 0 ? null : $"%{f}%";
         }
 
-        private static (string pagingSql, object parameters) BuildPaging(int? pagina, int? paginacion)
+        private static (int Offset, int Fetch) NormalizePaging(int? pagina, int? paginacion)
         {
+            // Keep existing meaning: `pagina` is treated as OFFSET.
             if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
-                return (string.Empty, new { });
+                return (0, int.MaxValue);
 
-            // Aquí asumimos que "pagina" ya viene como OFFSET (igual que tu implementación original).
-            // Si en realidad "pagina" era número de página, cambia a: offset = (pagina.Value - 1) * paginacion.Value
-            return ("OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY",
-                new { Offset = pagina.Value, Fetch = paginacion.Value });
-        }
-
-        private static object MergeParams(object a, object b)
-        {
-            // Dapper acepta DynamicParameters para combinar cómodo
-            var p = new DynamicParameters(a);
-            p.AddDynamicParams(b);
-            return p;
+            return (pagina.Value, paginacion.Value);
         }
     }
 }
