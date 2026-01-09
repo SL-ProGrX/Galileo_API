@@ -10,9 +10,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
     public class FrmTesAutorizaChKeyDB
     {
         private readonly IConfiguration? _config;
+        private readonly PortalDB _portalDB;
+
         public FrmTesAutorizaChKeyDB(IConfiguration config)
         {
             _config = config;
+            _portalDB = new PortalDB(config);
         }
 
         /// <summary>
@@ -22,11 +25,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto Tes_AutorizaChKey_Cambiar(AutorizaChKeyData usuario)
         {
-            string stringConn = new PortalDB(_config!).ObtenerDbConnStringEmpresa(usuario.CodEmpresa);
+            var connection = DbHelper.OpenConnection(_portalDB, usuario.CodEmpresa);
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
+                
                 //Verifica si la clave actual es correcta
                 var  query = @"SELECT isnull(count(*),0) as existe from tes_autorizaciones 
                                 where nombre = @usuario and clave = @claveActual ";
