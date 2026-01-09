@@ -1,7 +1,6 @@
 ﻿using System.Data;
 using System.Text;
 using Dapper;
-using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.CPR;
@@ -17,14 +16,6 @@ namespace Galileo.DataBaseTier
         private readonly MProGrXAuxiliarDB _auxiliarDb;
         private readonly MSecurityMainDb _bitacoraDb;
         private readonly MComprasDB _comprasDb;
-
-        // Whitelist for dynamic identifier usage (prevents SQL injection via table/column names)
-        private static readonly IReadOnlyDictionary<string, HashSet<string>> AllowedCodigoTargets =
-            new Dictionary<string, HashSet<string>>(StringComparer.OrdinalIgnoreCase)
-            {
-                ["cpr_Ordenes"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "cod_orden" },
-                ["cpr_compras"] = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "cod_compra" }
-            };
 
         public FrmCprCompraDirectaDB(IConfiguration config)
         {
@@ -373,16 +364,22 @@ namespace Galileo.DataBaseTier
         // =========================
         private static string GenerarCodigo(IDbConnection conn, IDbTransaction tx, string tabla, string campo)
         {
-            // NOTE: Table/column identifiers cannot be parameterized; enforce a strict whitelist.
             if (string.IsNullOrWhiteSpace(tabla) || string.IsNullOrWhiteSpace(campo))
                 throw new ArgumentException("Tabla/campo inválidos para generar código.");
 
-            if (!AllowedCodigoTargets.TryGetValue(tabla, out var camposPermitidos) || !camposPermitidos.Contains(campo))
-                throw new InvalidOperationException($"GenerarCodigo: destino no permitido (tabla='{tabla}', campo='{campo}').");
+            // Sonar can still flag dynamic SQL even with whitelists; use constant SQL per allowed target.
+            const string sqlOrden = @"SELECT RIGHT(REPLICATE('0', 10) + CAST(ISNULL(MAX(CAST([cod_orden] AS INT)),0) + 1 AS VARCHAR(10)), 10)
+FROM [cpr_Ordenes]";
 
-            // Safe because identifiers are whitelisted and wrapped.
-            var sql = $@"SELECT RIGHT(REPLICATE('0', 10) + CAST(ISNULL(MAX(CAST([{campo}] AS INT)),0) + 1 AS VARCHAR(10)), 10)
-                         FROM [{tabla}]";
+            const string sqlCompra = @"SELECT RIGHT(REPLICATE('0', 10) + CAST(ISNULL(MAX(CAST([cod_compra] AS INT)),0) + 1 AS VARCHAR(10)), 10)
+FROM [cpr_compras]";
+
+            var sql = (tabla.Trim(), campo.Trim()) switch
+            {
+                ("cpr_Ordenes", "cod_orden") => sqlOrden,
+                ("cpr_compras", "cod_compra") => sqlCompra,
+                _ => throw new InvalidOperationException($"GenerarCodigo: destino no permitido (tabla='{tabla}', campo='{campo}').")
+            };
 
             return conn.QueryFirstOrDefault<string>(sql, transaction: tx) ?? "0000000001";
         }
