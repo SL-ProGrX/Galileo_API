@@ -1,6 +1,5 @@
 ﻿using System.Data;
 using Dapper;
-using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
@@ -25,42 +24,43 @@ namespace Galileo.DataBaseTier
         {
             var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                var (baseWhere, p) = BuildBaseWhere(req);
-                var total = conn.QueryFirstOrDefault<int>(
-                    $@"SELECT COUNT(O.cod_orden)
-                       FROM cpr_ordenes O
-                       INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden
-                       {baseWhere}",
-                    p
-                );
+                if (conn.State != ConnectionState.Open) conn.Open();
 
-                var (filtroWhere, filtroParams) = BuildFiltroListado(filtro);
+                var (baseWhere, baseParams) = BuildBaseWhere(req);
+                var (filtroWhere, filtroParams) = BuildFiltroWhere(filtro);
                 var (pagingSql, pagingParams) = BuildPaging(pagina, paginacion);
 
-                var prms = MergeParams(p, filtroParams, pagingParams);
+                // Total con el mismo filtro (para que el total sea consistente con la búsqueda)
+                var totalSql =
+                    "SELECT COUNT(O.cod_orden) " +
+                    "FROM cpr_ordenes O " +
+                    "INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden " +
+                    baseWhere +
+                    filtroWhere;
 
-                // Nota: filtro se aplica sobre el resultset "T" (como hacías), pero parametrizado.
-                var sql = $@"
-                    SELECT *
-                    FROM (
-                        SELECT
-                            O.cod_orden,
-                            C.Descripcion AS TipoOrdenDesc,
-                            O.total,
-                            O.genera_user,
-                            O.genera_fecha,
-                            C.Descripcion AS TipoOrden,
-                            O.nota,
-                            O.proceso
-                        FROM cpr_ordenes O
-                        INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden
-                        {baseWhere}
-                        ORDER BY O.cod_orden
-                        {pagingSql}
-                    ) T
-                    {filtroWhere}";
+                var totalParams = MergeParams(baseParams, filtroParams);
+                var total = conn.QueryFirstOrDefault<int>(totalSql, totalParams);
 
-                var ordenes = conn.Query<OrdenCompra>(sql, prms).ToList();
+                // Lista
+                var listSql =
+                    "SELECT " +
+                    "    O.cod_orden, " +
+                    "    C.Descripcion AS TipoOrdenDesc, " +
+                    "    O.total, " +
+                    "    O.genera_user, " +
+                    "    O.genera_fecha, " +
+                    "    C.Descripcion AS TipoOrden, " +
+                    "    O.nota, " +
+                    "    O.proceso " +
+                    "FROM cpr_ordenes O " +
+                    "INNER JOIN cpr_Tipo_Orden C ON O.Tipo_Orden = C.Tipo_Orden " +
+                    baseWhere +
+                    filtroWhere +
+                    " ORDER BY O.cod_orden " +
+                    pagingSql;
+
+                var listParams = MergeParams(baseParams, filtroParams, pagingParams);
+                var ordenes = conn.Query<OrdenCompra>(listSql, listParams).ToList();
 
                 return new OrdenCompraDto
                 {
@@ -84,101 +84,100 @@ namespace Galileo.DataBaseTier
         // ----------------- Resolver (Autorizar/Rechazar) -----------------
 
         private ErrorDto ResolverOrdenes(int codEmpresa, OrdenCompraResolucionRequestDto req, string estadoFinal)
-{
-    var codigos = ParseCodigos(req.codigosOrden);
-    if (codigos.Count == 0)
-        return DbHelper.ErrorResponse("Debe indicar códigos de orden", -1);
-
-    var res = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
-        EjecutarResolucionEnTx(conn, req, estadoFinal, codigos)
-    );
-
-    return MapTxResult(res);
-}
-
-private ErrorDto EjecutarResolucionEnTx(
-    SqlConnection conn,
-    OrdenCompraResolucionRequestDto req,
-    string estadoFinal,
-    List<string> codigos)
-{
-    if (conn.State != ConnectionState.Open) conn.Open();
-    using var tx = conn.BeginTransaction();
-
-    try
-    {
-        var valida = ValidarSiAplica(conn, tx, req.usuario, estadoFinal, codigos);
-        if (valida.Code != 0)
         {
-            tx.Rollback();
-            return valida;
+            var codigos = ParseCodigos(req.codigosOrden);
+            if (codigos.Count == 0)
+                return DbHelper.ErrorResponse("Debe indicar códigos de orden", -1);
+
+            var res = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                EjecutarResolucionEnTx(conn, req, estadoFinal, codigos)
+            );
+
+            return MapTxResult(res);
         }
 
-        var upd = ActualizarOrdenes(conn, tx, req.usuario, estadoFinal, codigos);
-        if (upd.Code != 0)
+        private ErrorDto EjecutarResolucionEnTx(
+            SqlConnection conn,
+            OrdenCompraResolucionRequestDto req,
+            string estadoFinal,
+            List<string> codigos)
         {
-            tx.Rollback();
-            return upd;
+            if (conn.State != ConnectionState.Open) conn.Open();
+            using var tx = conn.BeginTransaction();
+
+            try
+            {
+                var valida = ValidarSiAplica(conn, tx, req.usuario, estadoFinal, codigos);
+                if (valida.Code != 0)
+                {
+                    tx.Rollback();
+                    return valida;
+                }
+
+                var upd = ActualizarOrdenes(conn, tx, req.usuario, estadoFinal, codigos);
+                if (upd.Code != 0)
+                {
+                    tx.Rollback();
+                    return upd;
+                }
+
+                tx.Commit();
+                return DbHelper.CreateOkResponse();
+            }
+            catch (Exception ex)
+            {
+                tx.Rollback();
+                return DbHelper.ErrorResponse(ex.Message, -1);
+            }
         }
 
-        tx.Commit();
-        return DbHelper.CreateOkResponse();
-    }
-    catch
-    {
-        tx.Rollback();
-        throw;
-    }
-}
+        private ErrorDto ValidarSiAplica(
+            SqlConnection conn,
+            SqlTransaction tx,
+            string usuario,
+            string estadoFinal,
+            List<string> codigos)
+        {
+            if (estadoFinal != "A")
+                return DbHelper.CreateOkResponse();
 
-private ErrorDto ValidarSiAplica(
-    SqlConnection conn,
-    SqlTransaction tx,
-    string usuario,
-    string estadoFinal,
-    List<string> codigos)
-{
-    if (estadoFinal != "A")
-        return DbHelper.CreateOkResponse();
+            // Regla original: validar usando el primer código
+            return ValidarRangoAutorizacion(conn, tx, codigos[0], usuario);
+        }
 
-    // Regla original: validar usando el primer código
-    return ValidarRangoAutorizacion(conn, tx, codigos[0], usuario);
-}
+        private ErrorDto ActualizarOrdenes(
+            SqlConnection conn,
+            SqlTransaction tx,
+            string usuario,
+            string estadoFinal,
+            List<string> codigos)
+        {
+            foreach (var codOrden in codigos)
+            {
+                var rows = conn.Execute(
+                    @"UPDATE cpr_ordenes
+                      SET autoriza_fecha = GETDATE(),
+                          autoriza_user  = @Usuario,
+                          estado         = @Estado
+                      WHERE cod_orden = @CodOrden",
+                    new { Usuario = usuario, Estado = estadoFinal, CodOrden = codOrden },
+                    transaction: tx
+                );
 
-private ErrorDto ActualizarOrdenes(
-    SqlConnection conn,
-    SqlTransaction tx,
-    string usuario,
-    string estadoFinal,
-    List<string> codigos)
-{
-    foreach (var codOrden in codigos)
-    {
-        var rows = conn.Execute(
-            @"UPDATE cpr_ordenes
-              SET autoriza_fecha = GETDATE(),
-                  autoriza_user  = @Usuario,
-                  estado         = @Estado
-              WHERE cod_orden = @CodOrden",
-            new { Usuario = usuario, Estado = estadoFinal, CodOrden = codOrden },
-            transaction: tx
-        );
+                if (rows <= 0)
+                    return DbHelper.ErrorResponse("Error al actualizar órdenes de compra", -1);
+            }
 
-        if (rows <= 0)
-            return DbHelper.ErrorResponse("Error al actualizar órdenes de compra", -1);
-    }
+            return DbHelper.CreateOkResponse();
+        }
 
-    return DbHelper.CreateOkResponse();
-}
+        private static ErrorDto MapTxResult(ErrorDto<ErrorDto> r)
+        {
+            if (r.Code != 0 || r.Result == null)
+                return DbHelper.ErrorResponse(r.Description ?? "Error", r.Code ?? -1);
 
-private static ErrorDto MapTxResult(ErrorDto<ErrorDto> r)
-{
-    // OJO: r.Code es int (no int?) en tu modelo, no uses ?? aquí.
-    if (r.Code != 0 || r.Result == null)
-        return DbHelper.ErrorResponse(r.Description ?? "Error", r.Code ?? -1);
-
-    return r.Result;
-}
+            return r.Result;
+        }
 
 
 
@@ -271,13 +270,22 @@ private static ErrorDto MapTxResult(ErrorDto<ErrorDto> r)
             return (where, p);
         }
 
-        private static (string whereSql, object parameters) BuildFiltroListado(string? filtro)
+        private static (string whereSql, object parameters) BuildFiltroWhere(string? filtro)
         {
             if (string.IsNullOrWhiteSpace(filtro))
                 return (string.Empty, new { });
 
             var like = $"%{filtro.Trim()}%";
-            return ("WHERE cod_orden LIKE @F OR TipoOrdenDesc LIKE @F OR nota LIKE @F OR proceso LIKE @F", new { F = like });
+
+            // Se concatena como AND porque `baseWhere` ya trae WHERE ...
+            return (
+                " AND (" +
+                "CAST(O.cod_orden AS NVARCHAR(50)) LIKE @F " +
+                "OR C.Descripcion LIKE @F " +
+                "OR O.nota LIKE @F " +
+                "OR O.proceso LIKE @F)",
+                new { F = like }
+            );
         }
 
         private static (string pagingSql, object parameters) BuildPaging(int pagina, int paginacion)

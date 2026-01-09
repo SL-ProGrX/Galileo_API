@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
@@ -19,20 +20,25 @@ namespace Galileo.DataBaseTier
             {
                 var (sqlWhere, prms) = BuildFiltro(filtro);
 
+                const string sqlCountBase = "SELECT COUNT(*) FROM CXP_SUSPENSION_TIPOS ";
                 var total = conn.QueryFirstOrDefault<int>(
-                    $"SELECT COUNT(*) FROM CXP_SUSPENSION_TIPOS {sqlWhere}",
+                    sqlCountBase + sqlWhere,
                     prms
                 );
 
                 var (sqlPaging, pagingParams) = BuildPaging(pagina, paginacion);
                 var finalParams = MergeParams(prms, pagingParams);
 
-                var rows = conn.Query<TiposSuspensionDto>(
-                    $@"SELECT COD_SUSPENSION, descripcion, ACTIVA
+                const string sqlSelectBase = @"SELECT COD_SUSPENSION, descripcion, ACTIVA
                        FROM CXP_SUSPENSION_TIPOS
-                       {sqlWhere}
+                       ";
+
+                var sql = sqlSelectBase + sqlWhere + @"
                        ORDER BY COD_SUSPENSION
-                       {sqlPaging}",
+                       " + sqlPaging;
+
+                var rows = conn.Query<TiposSuspensionDto>(
+                    sql,
                     finalParams
                 ).ToList();
 
@@ -89,7 +95,7 @@ namespace Galileo.DataBaseTier
 
         // ----------------- Helpers -----------------
 
-        private static void Insertar(System.Data.IDbConnection conn, TiposSuspensionDto dto)
+        private static void Insertar(IDbConnection conn, TiposSuspensionDto dto)
         {
             conn.Execute(
                 @"INSERT INTO CXP_SUSPENSION_TIPOS
@@ -106,7 +112,7 @@ namespace Galileo.DataBaseTier
             );
         }
 
-        private static void Actualizar(System.Data.IDbConnection conn, TiposSuspensionDto dto)
+        private static void Actualizar(IDbConnection conn, TiposSuspensionDto dto)
         {
             conn.Execute(
                 @"UPDATE CXP_SUSPENSION_TIPOS

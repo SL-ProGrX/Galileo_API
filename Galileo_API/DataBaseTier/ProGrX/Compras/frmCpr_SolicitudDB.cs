@@ -69,8 +69,8 @@ WHERE P.ADJUDICA_ORDEN IS NOT NULL
                 var (offset, fetch, usePaging) = GetPaging(filtro.pagina, filtro.paginacion);
                 if (usePaging)
                 {
-                    p.Add("@Offset", offset);
-                    p.Add("@Fetch", fetch);
+                    p.Add("Offset", offset);
+                    p.Add("Fetch", fetch);
                 }
 
                 var qList = $@"
@@ -119,7 +119,7 @@ ORDER BY S.CPR_ID DESC
             // filtro texto
             if (!string.IsNullOrWhiteSpace(filtro.filtro))
             {
-                p.Add("@Like", $"%{filtro.filtro.Trim()}%");
+                p.Add("Like", $"%{filtro.filtro.Trim()}%");
                 conditions.Add(@"
 (
     CAST(S.CPR_ID AS VARCHAR(20)) LIKE @Like OR
@@ -135,7 +135,7 @@ ORDER BY S.CPR_ID DESC
                 var list = filtro.solicitante.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct().ToList();
                 if (list.Count > 0)
                 {
-                    p.Add("@Solicitantes", list);
+                    p.Add("Solicitantes", list);
                     conditions.Add("S.REGISTRO_USUARIO IN @Solicitantes");
                 }
             }
@@ -146,7 +146,7 @@ ORDER BY S.CPR_ID DESC
                 var list = filtro.encargado.Where(x => !string.IsNullOrWhiteSpace(x)).Select(x => x.Trim()).Distinct().ToList();
                 if (list.Count > 0)
                 {
-                    p.Add("@Encargados", list);
+                    p.Add("Encargados", list);
                     conditions.Add("S.ENCARGADO_USUARIO IN @Encargados");
                 }
             }
@@ -303,13 +303,10 @@ ORDER BY S.CPR_ID DESC
             {
                 EnsureOpen(conn);
 
-                var comp = scroll == 1 ? ">" : "<";
-                var order = scroll == 1 ? "ASC" : "DESC";
-
-                var sql = $@"
+                const string sqlNext = @"
 SELECT TOP 1 *
 FROM CPR_SOLICITUD
-WHERE CPR_ID {comp} @Codigo
+WHERE CPR_ID > @Codigo
   AND COD_UNIDAD IN (
         SELECT R.COD_UNIDAD
         FROM CORE_UENS_USUARIOS_ROLES R
@@ -317,9 +314,27 @@ WHERE CPR_ID {comp} @Codigo
         WHERE R.CORE_USUARIO = @Usuario
           AND (R.ROL_CONSULTA = 1 OR R.ROL_ENCARGADO = 1)
   )
-ORDER BY CPR_ID {order};";
+ORDER BY CPR_ID ASC;";
 
-                return conn.QueryFirstOrDefault<CprSolicitudDto>(sql, new { Codigo = codId, Usuario = usuario }) ?? new CprSolicitudDto();
+                const string sqlPrev = @"
+SELECT TOP 1 *
+FROM CPR_SOLICITUD
+WHERE CPR_ID < @Codigo
+  AND COD_UNIDAD IN (
+        SELECT R.COD_UNIDAD
+        FROM CORE_UENS_USUARIOS_ROLES R
+        LEFT JOIN CORE_UENS U ON R.COD_UNIDAD = U.COD_UNIDAD
+        WHERE R.CORE_USUARIO = @Usuario
+          AND (R.ROL_CONSULTA = 1 OR R.ROL_ENCARGADO = 1)
+  )
+ORDER BY CPR_ID DESC;";
+
+                var sql = scroll == 1 ? sqlNext : sqlPrev;
+
+                return conn.QueryFirstOrDefault<CprSolicitudDto>(
+                    sql,
+                    new { Codigo = codId, Usuario = usuario }
+                ) ?? new CprSolicitudDto();
             });
 
             if (r.Code != 0)
@@ -779,47 +794,40 @@ WHERE CPR_ID = @Id;",
 
         public ErrorDto ValidaUsuarioSolicitud(int codEmpresa, string usuario, string permiso, string? cod_unidad)
         {
-            // columna de rol: whitelist (no viene del usuario final)
-            var roleCol = permiso switch
-            {
-                "C" => "ROL_CONSULTA",
-                "A" => "ROL_AUTORIZA",
-                "S" => "ROL_SOLICITA",
-                "E" => "ROL_ENCARGADO",
-                "L" => "ROL_LIDER",
-                _ => ""
-            };
-
             var r = DbHelper.WithConn<string>(_portalDb, codEmpresa, conn =>
             {
                 EnsureOpen(conn);
 
-                var sb = new StringBuilder();
-                sb.Append(@"
+                const string sql = @"
 SELECT TOP 1 'X'
 FROM CORE_UENS_USUARIOS_ROLES R
 LEFT JOIN CORE_UENS U ON R.COD_UNIDAD = U.COD_UNIDAD
-WHERE R.CORE_USUARIO = @Usuario ");
+WHERE R.CORE_USUARIO = @Usuario
+  AND (@CodUnidad IS NULL OR @CodUnidad = '' OR R.COD_UNIDAD = @CodUnidad)
+  AND (
+        (@Permiso = 'C' AND R.ROL_CONSULTA = 1)
+     OR (@Permiso = 'A' AND R.ROL_AUTORIZA  = 1)
+     OR (@Permiso = 'S' AND R.ROL_SOLICITA  = 1)
+     OR (@Permiso = 'E' AND R.ROL_ENCARGADO = 1)
+     OR (@Permiso = 'L' AND R.ROL_LIDER     = 1)
+     OR (@Permiso IS NULL OR @Permiso = '')
+  );";
 
-                var p = new DynamicParameters();
-                p.Add("@Usuario", usuario);
-
-                if (!string.IsNullOrWhiteSpace(cod_unidad))
-                {
-                    sb.Append(" AND R.COD_UNIDAD = @CodUnidad ");
-                    p.Add("@CodUnidad", cod_unidad);
-                }
-
-                if (!string.IsNullOrWhiteSpace(roleCol))
-                    sb.Append($" AND R.{roleCol} = 1 ");
-
-                return conn.QueryFirstOrDefault<string>(sb.ToString(), p) ?? string.Empty;
+                return conn.QueryFirstOrDefault<string>(
+                    sql,
+                    new
+                    {
+                        Usuario = usuario,
+                        CodUnidad = cod_unidad ?? string.Empty,
+                        Permiso = permiso
+                    }
+                ) ?? string.Empty;
             });
 
             if (r.Code != 0)
                 return DbHelper.ErrorResponse(r.Description ?? ErrorLiteral, r.Code ?? -1);
 
-            if (r.Result == null)
+            if (string.IsNullOrWhiteSpace(r.Result))
                 return DbHelper.ErrorResponse("El usuario no tiene permisos para realizar esta acción", -1);
 
             return DbHelper.CreateOkResponse();
@@ -836,17 +844,17 @@ WHERE R.CORE_USUARIO = @Usuario ");
                 EnsureOpen(conn);
 
                 var p = new DynamicParameters();
-                p.Add("@CodUnidad", cod_unidad ?? "");
+                p.Add("CodUnidad", cod_unidad ?? "");
 
                 var like = !string.IsNullOrWhiteSpace(filtro) ? $"%{filtro.Trim()}%" : null;
-                p.Add("@HasFiltro", like != null ? 1 : 0);
-                p.Add("@Like", like);
+                p.Add("HasFiltro", like != null ? 1 : 0);
+                p.Add("Like", like);
 
                 var (offset, fetch, usePaging) = GetPaging(pagina, paginacion);
                 if (usePaging)
                 {
-                    p.Add("@Offset", offset);
-                    p.Add("@Fetch", fetch);
+                    p.Add("Offset", offset);
+                    p.Add("Fetch", fetch);
                 }
 
                 const string qCount = @"

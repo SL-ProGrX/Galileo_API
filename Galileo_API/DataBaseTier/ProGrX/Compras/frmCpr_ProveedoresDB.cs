@@ -12,8 +12,8 @@ namespace Galileo.DataBaseTier
 
         // Evitar literales repetidos (Sonar)
         private const string PaginationSqlClause = " OFFSET @off ROWS FETCH NEXT @take ROWS ONLY ";
-        private const string ParamOff = "@off";
-        private const string ParamTake = "@take";
+        private const string ParamOff = "off";
+        private const string ParamTake = "take";
 
         public FrmCprProveedoresDB(IConfiguration config)
         {
@@ -60,17 +60,15 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
-                    var where = (scroll == 1)
-                        ? " WHERE PROVEEDOR_CODIGO > @codigo "
-                        : " WHERE PROVEEDOR_CODIGO < @codigo ";
+                    if (string.IsNullOrWhiteSpace(codigo))
+                        throw new InvalidOperationException("Debe indicar el código para realizar el scroll.");
 
-                    var orderBy = (scroll == 1)
-                        ? " ORDER BY PROVEEDOR_CODIGO ASC "
-                        : " ORDER BY PROVEEDOR_CODIGO DESC ";
+                    const string sqlAsc = @"SELECT TOP 1 * FROM CPR_PROVEEDORES_TEMPO WHERE PROVEEDOR_CODIGO > @Codigo ORDER BY PROVEEDOR_CODIGO ASC;";
+                    const string sqlDesc = @"SELECT TOP 1 * FROM CPR_PROVEEDORES_TEMPO WHERE PROVEEDOR_CODIGO < @Codigo ORDER BY PROVEEDOR_CODIGO DESC;";
 
-                    var sql = $@"SELECT TOP 1 * FROM CPR_PROVEEDORES_TEMPO {where} {orderBy};";
+                    var sql = (scroll == 1) ? sqlAsc : sqlDesc;
 
-                    var result = conn.QueryFirstOrDefault<CprProveedoresDto>(sql, new { codigo });
+                    var result = conn.QueryFirstOrDefault<CprProveedoresDto>(sql, new { Codigo = codigo });
 
                     // ✅ Sin throw System.Exception (quita S112)
                     if (result == null)
@@ -104,7 +102,7 @@ namespace Galileo.DataBaseTier
                     if (!string.IsNullOrWhiteSpace(filtro.filtro))
                     {
                         where = " WHERE (PROVEEDOR_CODIGO LIKE @q OR CEDJUR LIKE @q OR DESCRIPCION LIKE @q) ";
-                        dp.Add("@q", $"%{filtro.filtro}%");
+                        dp.Add("q", $"%{filtro.filtro.Trim()}%");
                     }
 
                     var paginaSql = "";
@@ -143,8 +141,8 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
-                    const string sql = @"SELECT P.* FROM CPR_PROVEEDORES_TEMPO P WHERE P.PROVEEDOR_CODIGO = @codigo;";
-                    var result = conn.QueryFirstOrDefault<CprProveedoresDto>(sql, new { codigo });
+                    const string sql = @"SELECT P.* FROM CPR_PROVEEDORES_TEMPO P WHERE P.PROVEEDOR_CODIGO = @Codigo;";
+                    var result = conn.QueryFirstOrDefault<CprProveedoresDto>(sql, new { Codigo = codigo });
                     return result ?? new CprProveedoresDto();
                 });
             }
@@ -336,8 +334,8 @@ namespace Galileo.DataBaseTier
             {
                 return WithConn(CodEmpresa, conn =>
                 {
-                    const string sql = @"DELETE CPR_PROVEEDORES_TEMPO WHERE PROVEEDOR_CODIGO = @codigo;";
-                    conn.Execute(sql, new { codigo });
+                    const string sql = @"DELETE CPR_PROVEEDORES_TEMPO WHERE PROVEEDOR_CODIGO = @Codigo;";
+                    conn.Execute(sql, new { Codigo = codigo });
                     return DbHelper.OkResponse("Proveedor eliminado correctamente");
                 });
             }
@@ -356,10 +354,10 @@ namespace Galileo.DataBaseTier
                     const string sql = @"
                         SELECT AVG(V.VALORA_PUNTAJE) AS VALORA_PUNTAJE
                         FROM CPR_SOLICITUD_PROV V
-                        WHERE V.PROVEEDOR_CODIGO = @codigo
+                        WHERE V.PROVEEDOR_CODIGO = @Codigo
                         GROUP BY V.PROVEEDOR_CODIGO;";
 
-                    return conn.QueryFirstOrDefault<float>(sql, new { codigo });
+                    return conn.QueryFirstOrDefault<float>(sql, new { Codigo = codigo });
                 });
             }
             catch (Exception ex)
@@ -378,10 +376,10 @@ namespace Galileo.DataBaseTier
                         SELECT V.CPR_ID, V.ESTADO, V.VALORA_FECHA, V.VALORA_USUARIO, V.VALORA_PUNTAJE
                         FROM CPR_SOLICITUD_PROV V
                         LEFT JOIN CPR_PROVEEDORES_TEMPO P ON V.PROVEEDOR_CODIGO = P.COD_PROVEEDOR
-                        WHERE V.PROVEEDOR_CODIGO = @codigo
+                        WHERE V.PROVEEDOR_CODIGO = @Codigo
                         ORDER BY V.PROVEEDOR_CODIGO DESC;";
 
-                    return conn.Query<CprProveedorBitacoraData>(sql, new { codigo }).ToList();
+                    return conn.Query<CprProveedorBitacoraData>(sql, new { Codigo = codigo }).ToList();
                 });
             }
             catch (Exception ex)

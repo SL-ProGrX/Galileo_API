@@ -19,23 +19,36 @@ namespace Galileo.DataBaseTier
         {
             var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                var (whereSql, whereParams) = BuildFiltroEsquema(filtro);
+                var hasFiltro = !string.IsNullOrWhiteSpace(filtro);
+                var like = hasFiltro ? $"%{filtro!.Trim()}%" : null;
+
+                const string totalNoFiltroSql = "SELECT COUNT(*) FROM CPR_VALORA_ESQUEMA";
+                const string totalConFiltroSql = "SELECT COUNT(*) FROM CPR_VALORA_ESQUEMA WHERE VAL_ID LIKE @F OR descripcion LIKE @F";
+
                 var total = conn.QueryFirstOrDefault<int>(
-                    $"SELECT COUNT(*) FROM CPR_VALORA_ESQUEMA {whereSql}",
-                    whereParams
+                    hasFiltro ? totalConFiltroSql : totalNoFiltroSql,
+                    hasFiltro ? new { F = like } : null
                 );
 
                 var (pagingSql, pagingParams) = BuildPaging(pagina, paginacion);
-                var prms = MergeParams(whereParams, pagingParams);
 
-                var esquemas = conn.Query<CprValoraEsquemaDto>(
-                    $@"SELECT VAL_ID, descripcion, Activo
+                const string listNoFiltroSql = @"SELECT VAL_ID, descripcion, Activo
                        FROM CPR_VALORA_ESQUEMA
-                       {whereSql}
                        ORDER BY VAL_ID DESC
-                       {pagingSql}",
-                    prms
-                ).ToList();
+";
+
+                const string listConFiltroSql = @"SELECT VAL_ID, descripcion, Activo
+                       FROM CPR_VALORA_ESQUEMA
+                       WHERE VAL_ID LIKE @F OR descripcion LIKE @F
+                       ORDER BY VAL_ID DESC
+";
+
+                var sql = (hasFiltro ? listConFiltroSql : listNoFiltroSql) + pagingSql;
+                var prms = hasFiltro
+                    ? MergeParams(new { F = like }, pagingParams)
+                    : pagingParams;
+
+                var esquemas = conn.Query<CprValoraEsquemaDto>(sql, prms).ToList();
 
                 return new CprValoraEsquemaDtoList { Total = total, esquemas = esquemas };
             });
@@ -50,23 +63,39 @@ namespace Galileo.DataBaseTier
         {
             var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                var (whereSql, whereParams) = BuildFiltroItems(val_id, filtro);
+                var hasFiltro = !string.IsNullOrWhiteSpace(filtro);
+                var like = hasFiltro ? $"%{filtro!.Trim()}%" : null;
+
+                const string totalNoFiltroSql = "SELECT COUNT(*) FROM CPR_VALORA_ITEMS WHERE VAL_ID = @ValId";
+                const string totalConFiltroSql = "SELECT COUNT(*) FROM CPR_VALORA_ITEMS WHERE VAL_ID = @ValId AND (VAL_ITEM LIKE @F OR descripcion LIKE @F)";
+
                 var total = conn.QueryFirstOrDefault<int>(
-                    $"SELECT COUNT(*) FROM CPR_VALORA_ITEMS {whereSql}",
-                    whereParams
+                    hasFiltro ? totalConFiltroSql : totalNoFiltroSql,
+                    hasFiltro ? new { ValId = val_id, F = like } : new { ValId = val_id }
                 );
 
                 var (pagingSql, pagingParams) = BuildPaging(pagina, paginacion);
-                var prms = MergeParams(whereParams, pagingParams);
 
-                var items = conn.Query<CprValoraItemsDto>(
-                    $@"SELECT VAL_ITEM, descripcion, Peso
+                const string listNoFiltroSql = @"SELECT VAL_ITEM, descripcion, Peso
                        FROM CPR_VALORA_ITEMS
-                       {whereSql}
+                       WHERE VAL_ID = @ValId
                        ORDER BY VAL_ITEM
-                       {pagingSql}",
-                    prms
-                ).ToList();
+";
+
+                const string listConFiltroSql = @"SELECT VAL_ITEM, descripcion, Peso
+                       FROM CPR_VALORA_ITEMS
+                       WHERE VAL_ID = @ValId AND (VAL_ITEM LIKE @F OR descripcion LIKE @F)
+                       ORDER BY VAL_ITEM
+";
+
+                var sql = (hasFiltro ? listConFiltroSql : listNoFiltroSql) + pagingSql;
+
+                var baseParams = hasFiltro
+                    ? new { ValId = val_id, F = like }
+                    : new { ValId = val_id, F = (string?)null };
+                var prms = MergeParams(baseParams, pagingParams);
+
+                var items = conn.Query<CprValoraItemsDto>(sql, prms).ToList();
 
                 return new CprValoraItemsDtoList { Total = total, items = items };
             });
@@ -224,38 +253,20 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto ValoracionItems_Delete(int codEmpresa, string val_id, string val_item)
         {
-            return DbHelper.ExecuteNonQuery(
+            var r = DbHelper.ExecuteNonQuery(
                 _portalDb,
                 codEmpresa,
                 @"DELETE FROM CPR_VALORA_ITEMS
                   WHERE VAL_ID = @ValId AND VAL_ITEM = @ValItem",
                 new { ValId = val_id, ValItem = val_item }
-            ).Code == 0
+            );
+
+            return r.Code == 0
                 ? DbHelper.OkResponse("Item eliminado satisfactoriamente")
-                : DbHelper.ErrorResponse("Error eliminando item", -1);
+                : DbHelper.ErrorResponse(r.Description ?? "Error eliminando item", r.Code ?? -1);
         }
 
         // ---------------- Helpers ----------------
-
-        private static (string whereSql, object parameters) BuildFiltroEsquema(string? filtro)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-                return (string.Empty, new { });
-
-            var like = $"%{filtro.Trim()}%";
-            return ("WHERE VAL_ID LIKE @F OR descripcion LIKE @F", new { F = like });
-        }
-
-        private static (string whereSql, object parameters) BuildFiltroItems(string valId, string? filtro)
-        {
-            // OJO: tu versión original tenía un bug de precedencia (AND/OR).
-            // Aquí queda correcto: siempre filtra por VAL_ID, y si hay filtro aplica (VAL_ITEM OR descripcion)
-            if (string.IsNullOrWhiteSpace(filtro))
-                return ("WHERE VAL_ID = @ValId", new { ValId = valId });
-
-            var like = $"%{filtro.Trim()}%";
-            return ("WHERE VAL_ID = @ValId AND (VAL_ITEM LIKE @F OR descripcion LIKE @F)", new { ValId = valId, F = like });
-        }
 
         private static (string pagingSql, object parameters) BuildPaging(int? pagina, int? paginacion)
         {

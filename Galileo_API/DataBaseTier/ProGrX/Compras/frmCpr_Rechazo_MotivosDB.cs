@@ -13,6 +13,8 @@ namespace Galileo.DataBaseTier
 
         // Evitar literales repetidos (Sonar)
         private const string DefaultSortField = "COD_RECHAZO";
+        private const string SortFieldDescripcion = "DESCRIPCION";
+        private const string SortFieldActivo = "ACTIVO";
         private const string PaginationClause = " OFFSET @off ROWS FETCH NEXT @take ROWS ONLY ";
 
         public FrmCprRechazoMotivosDB(IConfiguration config)
@@ -38,58 +40,144 @@ namespace Galileo.DataBaseTier
                 : new ErrorDto<T> { Code = -1, Description = r.Description, Result = default! };
         }
 
+        private static FiltrosLazyLoadData ParseFiltrosLazy(string vFiltros)
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<FiltrosLazyLoadData>(vFiltros) ?? new FiltrosLazyLoadData();
+            }
+            catch
+            {
+                return new FiltrosLazyLoadData();
+            }
+        }
+
+        private static DynamicParameters BuildListadoParams(FiltrosLazyLoadData filtro)
+        {
+            var dp = new DynamicParameters();
+
+            dp.Add("q", BuildSearchLike(filtro.filtro));
+
+            var (off, take) = NormalizePaging(filtro.pagina, filtro.paginacion);
+            dp.Add("off", off);
+            dp.Add("take", take);
+
+            return dp;
+        }
+
+        private static string? BuildSearchLike(string? raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw))
+                return null;
+
+            return $"%{raw.Trim()}%";
+        }
+
+        private static (int off, int take) NormalizePaging(int pagina, int paginacion)
+        {
+            var off = pagina < 0 ? 0 : pagina;
+            var take = paginacion <= 0 ? 10 : paginacion;
+            return (off, take);
+        }
+
+        private static string BuildListadoOrderBy(FiltrosLazyLoadData filtro)
+        {
+            var sortField = NormalizeSortField(filtro.sortField);
+            var sortDir = (filtro.sortOrder == 0) ? "DESC" : "ASC";
+
+            // ORDER BY solo con literales (whitelist)
+            return (sortField, sortDir) switch
+            {
+                (SortFieldDescripcion, "ASC") => $"ORDER BY {SortFieldDescripcion} ASC",
+                (SortFieldDescripcion, "DESC") => $"ORDER BY {SortFieldDescripcion} DESC",
+                (SortFieldActivo, "ASC") => $"ORDER BY {SortFieldActivo} ASC",
+                (SortFieldActivo, "DESC") => $"ORDER BY {SortFieldActivo} DESC",
+                (DefaultSortField, "ASC") => "ORDER BY COD_RECHAZO ASC",
+                _ => "ORDER BY COD_RECHAZO DESC"
+            };
+        }
+
+        private static string NormalizeSortField(string? sortField)
+        {
+            var sf = string.IsNullOrWhiteSpace(sortField) ? DefaultSortField : sortField.Trim();
+
+            return sf.ToUpperInvariant() switch
+            {
+                DefaultSortField => DefaultSortField,
+                SortFieldDescripcion => SortFieldDescripcion,
+                SortFieldActivo => SortFieldActivo,
+                _ => DefaultSortField
+            };
+        }
+
+        private static int ObtenerTotalListado(SqlConnection conn, DynamicParameters dp)
+        {
+            const string countSql = @"SELECT COUNT(COD_RECHAZO)
+                                      FROM CPR_RECHAZO_TIPOS
+                                      WHERE (@q IS NULL OR COD_RECHAZO LIKE @q OR DESCRIPCION LIKE @q);";
+
+            return conn.ExecuteScalar<int>(countSql, dp);
+        }
+
+        private static List<CprRechazosMotivosDto> ObtenerListado(SqlConnection conn, DynamicParameters dp, string orderBy)
+        {
+            var dataSql = $@"SELECT COD_RECHAZO, DESCRIPCION, ACTIVO
+                             FROM CPR_RECHAZO_TIPOS
+                             WHERE (@q IS NULL OR COD_RECHAZO LIKE @q OR DESCRIPCION LIKE @q)
+                             {orderBy}
+                             {PaginationClause};";
+
+            return conn.Query<CprRechazosMotivosDto>(dataSql, dp).ToList();
+        }
+
+        private static ErrorDto<CprRechazosMotivosLista> NormalizeListadoResponse(ErrorDto<CprRechazosMotivosLista> r)
+        {
+            if (r.Code != 0)
+                return ErrorListado(r.Description);
+
+            if (r.Result == null)
+                return OkListado(new CprRechazosMotivosLista { total = 0, lista = new List<CprRechazosMotivosDto>() });
+
+            r.Result.lista ??= new List<CprRechazosMotivosDto>();
+            return OkListado(r.Result);
+        }
+
+        private static ErrorDto<CprRechazosMotivosLista> OkListado(CprRechazosMotivosLista result)
+        {
+            return new ErrorDto<CprRechazosMotivosLista>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = result
+            };
+        }
+
+        private static ErrorDto<CprRechazosMotivosLista> ErrorListado(string? message)
+        {
+            return new ErrorDto<CprRechazosMotivosLista>
+            {
+                Code = -1,
+                Description = string.IsNullOrWhiteSpace(message) ? "Error" : message,
+                Result = new CprRechazosMotivosLista { total = 0, lista = new List<CprRechazosMotivosDto>() }
+            };
+        }
+
         /// <summary>
         /// Obtiene la lista de motivos de rechazo
         /// </summary>
         public ErrorDto<CprRechazosMotivosLista> CprRechazoMotivoLista_Obtener(int CodCliente, string vFiltros)
         {
-            var filtro = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(vFiltros) ?? new FiltrosLazyLoadData();
+            var filtro = ParseFiltrosLazy(vFiltros);
 
             try
             {
-                // OJO: aquí la acción devuelve CprRechazosMotivosLista (no ErrorDto<>), para evitar ErrorDto<ErrorDto<>>
                 var r = WithConn(CodCliente, conn =>
                 {
-                    var dp = new DynamicParameters();
+                    var dp = BuildListadoParams(filtro);
+                    var orderBy = BuildListadoOrderBy(filtro);
 
-                    // WHERE (busqueda)
-                    var where = string.Empty;
-                    if (!string.IsNullOrWhiteSpace(filtro.filtro))
-                    {
-                        where = " WHERE (COD_RECHAZO LIKE @q OR DESCRIPCION LIKE @q) ";
-                        dp.Add("@q", $"%{filtro.filtro}%");
-                    }
-
-                    // SORT (whitelist)
-                    var sortField = string.IsNullOrWhiteSpace(filtro.sortField) ? DefaultSortField : filtro.sortField.Trim();
-                    sortField = sortField.ToUpperInvariant() switch
-                    {
-                        "COD_RECHAZO" => "COD_RECHAZO",
-                        "DESCRIPCION" => "DESCRIPCION",
-                        "ACTIVO" => "ACTIVO",
-                        _ => DefaultSortField
-                    };
-                    var sortDir = (filtro.sortOrder == 0) ? "DESC" : "ASC";
-
-                    // PAGINACIÓN
-                    var off = filtro.pagina < 0 ? 0 : filtro.pagina;
-                    var take = filtro.paginacion <= 0 ? 10 : filtro.paginacion;
-                    dp.Add("@off", off);
-                    dp.Add("@take", take);
-
-                    // TOTAL (con filtro)
-                    var countSql = $@"SELECT COUNT(COD_RECHAZO) FROM CPR_RECHAZO_TIPOS {where};";
-                    var total = conn.ExecuteScalar<int>(countSql, dp);
-
-                    // DATA
-                    var dataSql = $@"
-                        SELECT COD_RECHAZO, DESCRIPCION, ACTIVO
-                        FROM CPR_RECHAZO_TIPOS
-                        {where}
-                        ORDER BY {sortField} {sortDir}
-                        {PaginationClause};";
-
-                    var lista = conn.Query<CprRechazosMotivosDto>(dataSql, dp).ToList();
+                    var total = ObtenerTotalListado(conn, dp);
+                    var lista = ObtenerListado(conn, dp, orderBy);
 
                     return new CprRechazosMotivosLista
                     {
@@ -98,31 +186,11 @@ namespace Galileo.DataBaseTier
                     };
                 });
 
-                // Si falló, devolvemos Result NO nulo (evita warning CS8625)
-                if (r.Code != 0)
-                {
-                    return new ErrorDto<CprRechazosMotivosLista>
-                    {
-                        Code = -1,
-                        Description = r.Description,
-                        Result = new CprRechazosMotivosLista { total = 0, lista = new List<CprRechazosMotivosDto>() }
-                    };
-                }
-
-                // Normaliza por si algo vino null
-                r.Result ??= new CprRechazosMotivosLista { total = 0, lista = new List<CprRechazosMotivosDto>() };
-                r.Result.lista ??= new List<CprRechazosMotivosDto>();
-
-                return r;
+                return NormalizeListadoResponse(r);
             }
             catch (Exception ex)
             {
-                return new ErrorDto<CprRechazosMotivosLista>
-                {
-                    Code = -1,
-                    Description = ex.Message,
-                    Result = new CprRechazosMotivosLista { total = 0, lista = new List<CprRechazosMotivosDto>() }
-                };
+                return ErrorListado(ex.Message);
             }
         }
 

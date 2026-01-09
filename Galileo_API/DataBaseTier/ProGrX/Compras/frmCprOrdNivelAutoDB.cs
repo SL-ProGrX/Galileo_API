@@ -1,7 +1,6 @@
 using System.Data;
 using Dapper;
 using Newtonsoft.Json;
-using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
@@ -25,30 +24,37 @@ namespace Galileo.DataBaseTier
 
             var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
+                EnsureOpen(conn);
+
                 var (whereSql, whereParams) = BuildUserFilterWhere(filtros.filtro);
                 var (pagingSql, pagingParams) = BuildPaging(filtros.pagina, filtros.paginacion);
-
                 var prms = MergeParams(whereParams, pagingParams);
 
+                const string sqlTotalBase = @"
+SELECT COUNT(U.nombre)
+FROM usuarios U
+LEFT JOIN cpr_orden_autorizadores A ON U.nombre = A.usuario
+";
+
                 var total = conn.QueryFirstOrDefault<int>(
-                    $@"SELECT COUNT(U.nombre)
-                       FROM usuarios U
-                       LEFT JOIN cpr_orden_autorizadores A ON U.nombre = A.usuario
-                       {whereSql}",
-                    whereParams
+                    sqlTotalBase + " " + whereSql,
+                    prms // ✅ mismo prms que lista
                 );
 
+                const string sqlListaBase = @"
+SELECT
+    U.nombre,
+    U.descripcion,
+    A.fecha,
+    CASE WHEN A.fecha IS NOT NULL THEN 1 ELSE 0 END AS isCheck
+FROM usuarios U
+LEFT JOIN cpr_orden_autorizadores A ON U.nombre = A.usuario
+";
+
                 var lista = conn.Query<UsuariosAutorizaData>(
-                    $@"SELECT
-                           U.nombre,
-                           U.descripcion,
-                           A.fecha,
-                           CASE WHEN A.fecha IS NOT NULL THEN 1 ELSE 0 END AS isCheck
-                       FROM usuarios U
-                       LEFT JOIN cpr_orden_autorizadores A ON U.nombre = A.usuario
-                       {whereSql}
-                       ORDER BY A.fecha DESC
-                       {pagingSql}",
+                    sqlListaBase + " " + whereSql + @"
+ORDER BY A.fecha DESC
+" + pagingSql,
                     prms
                 ).ToList();
 
@@ -64,14 +70,13 @@ namespace Galileo.DataBaseTier
                 _portalDb,
                 CodEmpresa,
                 @"INSERT INTO cpr_orden_autousers(usuario, usuario_asignado, fecha_Asignacion)
-                  VALUES (@Usuario, @Asignado, GETDATE())",
+                  VALUES (@Usuario, @Asignado, GETDATE());",
                 new { Usuario = usuario, Asignado = usuario_asignado }
             );
 
-            int errorCode = r.Code != 0 ? (r.Code ?? -1) : -1;
             return r.Code == 0 && r.Result > 0
                 ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(r.Description ?? "Error al guardar la orden de autorización", errorCode);
+                : DbHelper.ErrorResponse(r.Description ?? "Error al guardar la orden de autorización", GetErrorCode(r.Code));
         }
 
         public ErrorDto OrdenAutousers_Eliminar(int CodEmpresa, string usuario, string usuario_asignado)
@@ -80,22 +85,16 @@ namespace Galileo.DataBaseTier
                 _portalDb,
                 CodEmpresa,
                 @"DELETE cpr_orden_autousers
-                  WHERE usuario = @Usuario AND usuario_asignado = @Asignado",
+                  WHERE usuario = @Usuario AND usuario_asignado = @Asignado;",
                 new { Usuario = usuario, Asignado = usuario_asignado }
             );
 
             return r.Code == 0 && r.Result > 0
                 ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(
-                    r.Description ?? "Error al borrar la orden de autorización",
-                    GetErrorCode(r.Code)
-                );
+                : DbHelper.ErrorResponse(r.Description ?? "Error al borrar la orden de autorización", GetErrorCode(r.Code));
         }
 
-        private static int GetErrorCode(int? code)
-        {
-            return code != 0 ? (code ?? -1) : -1;
-        }
+        private static int GetErrorCode(int? code) => (code.HasValue && code.Value != 0) ? code.Value : -1;
 
         public ErrorDto OrdenAutorizadores_Insertar(int CodEmpresa, string usuario)
         {
@@ -103,34 +102,32 @@ namespace Galileo.DataBaseTier
                 _portalDb,
                 CodEmpresa,
                 @"INSERT INTO cpr_orden_autorizadores(usuario, fecha, estado)
-                  VALUES (@Usuario, GETDATE(), 'A')",
+                  VALUES (@Usuario, GETDATE(), 'A');",
                 new { Usuario = usuario }
             );
 
-            int errorCode = r.Code != 0 ? (r.Code ?? -1) : -1;
             return r.Code == 0 && r.Result > 0
                 ? DbHelper.OkResponse($"Usuario Autorizador de Ordenes de Compra: {usuario}")
-                : DbHelper.ErrorResponse(r.Description ?? "Error en guardar usuario Autorizadores", errorCode);
+                : DbHelper.ErrorResponse(r.Description ?? "Error en guardar usuario Autorizadores", GetErrorCode(r.Code));
         }
 
         public ErrorDto OrdenAutorizadores_Eliminar(int CodEmpresa, string usuario)
         {
-            // Borra en 2 tablas => transacción
             var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
-                if (conn.State != ConnectionState.Open) conn.Open();
+                EnsureOpen(conn);
                 using var tx = conn.BeginTransaction();
 
                 try
                 {
                     conn.Execute(
-                        @"DELETE cpr_orden_autousers WHERE usuario = @Usuario",
+                        @"DELETE cpr_orden_autousers WHERE usuario = @Usuario;",
                         new { Usuario = usuario },
                         transaction: tx
                     );
 
                     var rows = conn.Execute(
-                        @"DELETE cpr_orden_autorizadores WHERE usuario = @Usuario",
+                        @"DELETE cpr_orden_autorizadores WHERE usuario = @Usuario;",
                         new { Usuario = usuario },
                         transaction: tx
                     );
@@ -144,10 +141,10 @@ namespace Galileo.DataBaseTier
                     tx.Commit();
                     return DbHelper.OkResponse($"Usuario Autorizador de Ordenes de Compra: {usuario}");
                 }
-                catch
+                catch (Exception ex)
                 {
                     tx.Rollback();
-                    throw;
+                    return DbHelper.ErrorResponse(ex.Message, -1);
                 }
             });
 
@@ -165,29 +162,37 @@ namespace Galileo.DataBaseTier
 
             var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
+                EnsureOpen(conn);
+
                 var (whereSql, whereParams) = BuildUserFilterWhere(filtros.filtro);
                 var (pagingSql, pagingParams) = BuildPaging(filtros.pagina, filtros.paginacion);
                 var prms = MergeParams(whereParams, pagingParams);
 
+                const string sqlTotalBase = @"
+SELECT COUNT(U.nombre)
+FROM usuarios U
+LEFT JOIN cpr_INVUSRFECHAS A ON U.nombre = A.usuario
+";
+
                 var total = conn.QueryFirstOrDefault<int>(
-                    $@"SELECT COUNT(U.nombre)
-                       FROM usuarios U
-                       LEFT JOIN cpr_INVUSRFECHAS A ON U.nombre = A.usuario
-                       {whereSql}",
-                    whereParams
+                    sqlTotalBase + " " + whereSql,
+                    prms
                 );
 
+                const string sqlListaBase = @"
+SELECT
+    U.nombre,
+    U.descripcion,
+    A.usuario,
+    CASE WHEN A.usuario IS NOT NULL THEN 1 ELSE 0 END AS isCheck
+FROM usuarios U
+LEFT JOIN cpr_INVUSRFECHAS A ON U.nombre = A.usuario
+";
+
                 var lista = conn.Query<UsuariosAutorizaData>(
-                    $@"SELECT
-                           U.nombre,
-                           U.descripcion,
-                           A.usuario,
-                           CASE WHEN A.usuario IS NOT NULL THEN 1 ELSE 0 END AS isCheck
-                       FROM usuarios U
-                       LEFT JOIN cpr_INVUSRFECHAS A ON U.nombre = A.usuario
-                       {whereSql}
-                       ORDER BY A.usuario DESC
-                       {pagingSql}",
+                    sqlListaBase + " " + whereSql + @"
+ORDER BY A.usuario DESC
+" + pagingSql,
                     prms
                 ).ToList();
 
@@ -203,14 +208,13 @@ namespace Galileo.DataBaseTier
                 _portalDb,
                 CodEmpresa,
                 @"INSERT INTO CPR_INVUSRFECHAS(usuario, registro_fecha, registro_usuario)
-                  VALUES (@Usuario, GETDATE(), @RegistroUsuario)",
+                  VALUES (@Usuario, GETDATE(), @RegistroUsuario);",
                 new { Usuario = usuario, RegistroUsuario = registro_usuario }
             );
 
-            int errorCode = (r.Code != null && r.Code != 0) ? r.Code.Value : -1;
             return r.Code == 0 && r.Result > 0
                 ? DbHelper.OkResponse($"Usuario Autorizado Cambio Fecha Compras: {usuario}")
-                : DbHelper.ErrorResponse(r.Description ?? "Error en guardar autorización de cambio de fecha", errorCode);
+                : DbHelper.ErrorResponse(r.Description ?? "Error en guardar autorización de cambio de fecha", GetErrorCode(r.Code));
         }
 
         public ErrorDto FechaCambioAutorizadores_Eliminar(int CodEmpresa, string usuario)
@@ -218,14 +222,13 @@ namespace Galileo.DataBaseTier
             var r = DbHelper.ExecuteNonQueryWithResult(
                 _portalDb,
                 CodEmpresa,
-                @"DELETE CPR_INVUSRFECHAS WHERE usuario = @Usuario",
+                @"DELETE CPR_INVUSRFECHAS WHERE usuario = @Usuario;",
                 new { Usuario = usuario }
             );
 
-            int errorCode = (r.Code != null && r.Code != 0) ? r.Code.Value : -1;
             return r.Code == 0 && r.Result > 0
                 ? DbHelper.OkResponse($"Usuario Autorizado Cambio Fecha Compras: {usuario}")
-                : DbHelper.ErrorResponse(r.Description ?? "Error en borrar autorización de cambio de fecha", errorCode);
+                : DbHelper.ErrorResponse(r.Description ?? "Error en borrar autorización de cambio de fecha", GetErrorCode(r.Code));
         }
 
         // ----------------- Listas -----------------
@@ -243,7 +246,7 @@ namespace Galileo.DataBaseTier
                   FROM usuarios U
                   INNER JOIN cpr_orden_autorizadores A ON U.nombre = A.usuario
                   WHERE U.nombre LIKE @F OR U.descripcion LIKE @F
-                  ORDER BY U.nombre",
+                  ORDER BY U.nombre;",
                 new { F = like }
             );
         }
@@ -254,33 +257,37 @@ namespace Galileo.DataBaseTier
 
             var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
+                EnsureOpen(conn);
+
                 var (whereSql, whereParams) = BuildUserFilterWhere(filtros.filtro);
                 var (pagingSql, pagingParams) = BuildPaging(filtros.pagina, filtros.paginacion);
 
-                // total incluye la condición del usuario
-                var total = conn.QueryFirstOrDefault<int>(
-                    $@"SELECT COUNT(U.nombre)
-                       FROM usuarios U
-                       LEFT JOIN cpr_orden_autousers C
-                              ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
-                       {whereSql}",
-                    MergeParams(whereParams, new { Usuario = usuario })
-                );
-
+                var baseParams = MergeParams(whereParams, new { Usuario = usuario });
                 var prms = MergeParams(whereParams, pagingParams, new { Usuario = usuario });
 
+                var total = conn.QueryFirstOrDefault<int>(
+                    @"
+SELECT COUNT(U.nombre)
+FROM usuarios U
+LEFT JOIN cpr_orden_autousers C
+       ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
+" + whereSql,
+                    baseParams
+                );
+
                 var lista = conn.Query<UsuariosAutorizaData>(
-                    $@"SELECT
-                           U.nombre,
-                           U.descripcion,
-                           C.fecha_asignacion,
-                           CASE WHEN C.fecha_asignacion IS NOT NULL THEN 1 ELSE 0 END AS isCheck
-                       FROM usuarios U
-                       LEFT JOIN cpr_orden_autousers C
-                              ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
-                       {whereSql}
-                       ORDER BY C.fecha_asignacion DESC
-                       {pagingSql}",
+                    @"
+SELECT
+    U.nombre,
+    U.descripcion,
+    C.fecha_asignacion,
+    CASE WHEN C.fecha_asignacion IS NOT NULL THEN 1 ELSE 0 END AS isCheck
+FROM usuarios U
+LEFT JOIN cpr_orden_autousers C
+       ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
+" + whereSql + @"
+ORDER BY C.fecha_asignacion DESC
+" + pagingSql,
                     prms
                 ).ToList();
 
@@ -297,7 +304,7 @@ namespace Galileo.DataBaseTier
             return DbHelper.ExecuteListQuery<RangosDto>(
                 _portalDb,
                 CodEmpresa,
-                @"SELECT * FROM cpr_orden_rangos"
+                @"SELECT * FROM cpr_orden_rangos;"
             );
         }
 
@@ -306,7 +313,7 @@ namespace Galileo.DataBaseTier
             return DbHelper.ExecuteListQuery<RangosUsuariosDto>(
                 _portalDb,
                 CodCliente,
-                @"EXEC spCPR_RANGOS_USUARIOS @CodRango, @CodUen, @Filtro",
+                @"EXEC spCPR_RANGOS_USUARIOS @CodRango, @CodUen, @Filtro;",
                 new { CodRango = cod_rango, CodUen = cod_uen, Filtro = filtro ?? string.Empty }
             );
         }
@@ -315,7 +322,6 @@ namespace Galileo.DataBaseTier
         {
             var activo = request.activo ? 1 : 0;
 
-            // Cod_Categoria no se usa en tu SQL original; lo dejo para compatibilidad con firma.
             return DbHelper.ExecuteNonQuery(
                 _portalDb,
                 CodCliente,
@@ -325,7 +331,7 @@ namespace Galileo.DataBaseTier
                       @CodRango,
                       @RegistroUsuario,
                       @CodRangoUsuario,
-                      @Uen",
+                      @Uen;",
                 new
                 {
                     Nombre = request.nombre,
@@ -349,7 +355,7 @@ namespace Galileo.DataBaseTier
                       monto_maximo = @MontoMaximo,
                       modifica_fecha = GETDATE(),
                       modifica_usuario = @ModificaUsuario
-                  WHERE cod_rango = @CodRango",
+                  WHERE cod_rango = @CodRango;",
                 new
                 {
                     Descripcion = request.descripcion,
@@ -365,10 +371,12 @@ namespace Galileo.DataBaseTier
         {
             var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
+                EnsureOpen(conn);
+
                 var existe = conn.QueryFirstOrDefault<int>(
                     @"SELECT COUNT(*)
                       FROM cpr_orden_rangos
-                      WHERE cod_rango = @CodRango",
+                      WHERE cod_rango = @CodRango;",
                     new { CodRango = request.cod_rango }
                 );
 
@@ -377,7 +385,7 @@ namespace Galileo.DataBaseTier
 
                 var rows = conn.Execute(
                     @"INSERT INTO cpr_orden_rangos(cod_rango, descripcion, monto_minimo, monto_maximo, registro_fecha, registro_usuario)
-                      VALUES (@CodRango, @Descripcion, @MontoMinimo, @MontoMaximo, GETDATE(), @RegistroUsuario)",
+                      VALUES (@CodRango, @Descripcion, @MontoMinimo, @MontoMaximo, GETDATE(), @RegistroUsuario);",
                     new
                     {
                         CodRango = request.cod_rango,
@@ -402,12 +410,17 @@ namespace Galileo.DataBaseTier
             return DbHelper.ExecuteNonQuery(
                 _portalDb,
                 CodEmpresa,
-                @"DELETE cpr_orden_rangos WHERE cod_rango = @CodRango",
+                @"DELETE cpr_orden_rangos WHERE cod_rango = @CodRango;",
                 new { CodRango = id }
             );
         }
 
         // ----------------- Helpers comunes -----------------
+
+        private static void EnsureOpen(IDbConnection conn)
+        {
+            if (conn.State != ConnectionState.Open) conn.Open();
+        }
 
         private static (string whereSql, object parameters) BuildUserFilterWhere(string? filtro)
         {
@@ -423,7 +436,6 @@ namespace Galileo.DataBaseTier
             if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
                 return (string.Empty, new { });
 
-            // Tu patrón: pagina es OFFSET
             return ("OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY", new { Offset = pagina.Value, Fetch = paginacion.Value });
         }
 

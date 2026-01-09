@@ -1,6 +1,6 @@
-﻿using Dapper;
+﻿using System.Data;
+using Dapper;
 using Newtonsoft.Json;
-using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 
@@ -19,25 +19,36 @@ namespace Galileo.DataBaseTier
         {
             var filtro = SafeParseFiltro(jFiltros);
 
+            // En tu modelo, pagina funciona como OFFSET.
+            var offset = filtro.pagina < 0 ? 0 : filtro.pagina;
+            var fetch = filtro.paginacion <= 0 ? 50 : filtro.paginacion;
+
+            var raw = (filtro.filtro ?? string.Empty).Trim();
+            var like = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
+
             var r = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
-                var (whereSql, whereParams) = BuildFiltroTiposOrden(filtro.filtro);
+                var p = new DynamicParameters();
+                p.Add("Like", like, DbType.String);
+                p.Add("Offset", offset, DbType.Int32);
+                p.Add("Fetch", fetch, DbType.Int32);
 
+                // Total (mismo filtro)
                 var total = conn.QueryFirstOrDefault<int>(
-                    $"SELECT COUNT(Tipo_Orden) FROM cpr_Tipo_Orden {whereSql}",
-                    whereParams
+                    @"SELECT COUNT(Tipo_Orden)
+                      FROM cpr_Tipo_Orden
+                      WHERE (@Like IS NULL OR Tipo_Orden LIKE @Like OR descripcion LIKE @Like);",
+                    p
                 );
 
-                var (pagingSql, pagingParams) = BuildPaging(filtro.pagina, filtro.paginacion);
-                var prms = MergeParams(whereParams, pagingParams);
-
+                // Lista (sin concatenar SQL)
                 var lista = conn.Query<TiposOrdenDto>(
-                    $@"SELECT Tipo_Orden, descripcion, activo
-                       FROM cpr_Tipo_Orden
-                       {whereSql}
-                       ORDER BY Tipo_Orden
-                       {pagingSql}",
-                    prms
+                    @"SELECT Tipo_Orden, descripcion, activo
+                      FROM cpr_Tipo_Orden
+                      WHERE (@Like IS NULL OR Tipo_Orden LIKE @Like OR descripcion LIKE @Like)
+                      ORDER BY Tipo_Orden
+                      OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;",
+                    p
                 ).ToList();
 
                 return new TiposOrdenLista
@@ -47,10 +58,13 @@ namespace Galileo.DataBaseTier
                 };
             });
 
-            if (r.Code != 0)
-                return DbHelper.CreateErrorResponse<TiposOrdenLista>(r.Description ?? "Error", r.Code ?? -1, null!);
+            var code = Convert.ToInt32(r.Code);
+            if (code != 0)
+                return DbHelper.CreateErrorResponse<TiposOrdenLista>(r.Description ?? "Error", code != 0 ? code : -1, null!);
 
-            return DbHelper.CreateOkResponse(r.Result ?? new TiposOrdenLista { total = 0, lista = new List<TiposOrdenDto>() });
+            return DbHelper.CreateOkResponse(
+                r.Result ?? new TiposOrdenLista { total = 0, lista = new List<TiposOrdenDto>() }
+            );
         }
 
         public ErrorDto TipoOrden_Actualizar(int codEmpresa, TiposOrdenDto tiposOrden)
@@ -117,7 +131,8 @@ namespace Galileo.DataBaseTier
                 ) ?? "00";
             });
 
-            return (r.Code == 0 && !string.IsNullOrWhiteSpace(r.Result)) ? r.Result! : "00";
+            var code = Convert.ToInt32(r.Code);
+            return (code == 0 && !string.IsNullOrWhiteSpace(r.Result)) ? r.Result! : "00";
         }
 
         public ErrorDto<List<RangosMontos>> rangosMontos_Obtener(int codEmpresa, string usuario)
@@ -148,31 +163,6 @@ namespace Galileo.DataBaseTier
             {
                 return new TipoOrdenFiltro();
             }
-        }
-
-        private static (string whereSql, object parameters) BuildFiltroTiposOrden(string? filtro)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-                return (string.Empty, new { });
-
-            var like = $"%{filtro.Trim()}%";
-            return ("WHERE Tipo_Orden LIKE @F OR descripcion LIKE @F", new { F = like });
-        }
-
-        private static (string pagingSql, object parameters) BuildPaging(int pagina, int paginacion)
-        {
-            if (pagina <= 0 || paginacion <= 0)
-                return (string.Empty, new { });
-
-            // tu implementación: pagina es OFFSET
-            return ("OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY", new { Offset = pagina, Fetch = paginacion });
-        }
-
-        private static object MergeParams(object a, object b)
-        {
-            var p = new DynamicParameters(a);
-            p.AddDynamicParams(b);
-            return p;
         }
     }
 }

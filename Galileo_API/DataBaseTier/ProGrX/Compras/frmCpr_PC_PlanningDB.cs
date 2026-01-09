@@ -12,9 +12,8 @@ namespace Galileo.DataBaseTier
         private readonly PortalDB _portalDB;
 
         // Sonar: evitar literales repetidos
-        private const string PaginationSqlClause = " OFFSET @off ROWS FETCH NEXT @take ROWS ONLY ";
-        private const string ParamOff = "@off";
-        private const string ParamTake = "@take";
+        private const string ParamOff = "Offset";
+        private const string ParamTake = "Fetch";
 
         public FrmCprPCPlanningDB(IConfiguration config)
         {
@@ -341,54 +340,65 @@ namespace Galileo.DataBaseTier
 
                 return WithConn(CodEmpresa, conn =>
                 {
-                    var where = "WHERE D.ID_PC = @id_pc ";
-                    var dp = new DynamicParameters();
-                    dp.Add("@id_pc", filtros.planCompras);
-
-                    if (!string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase) &&
-                        !string.IsNullOrWhiteSpace(filtros.periodo))
-                    {
-                        where += "AND S.CORTE = @corte ";
-                        dp.Add("@corte", filtros.periodo);
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(filtros.filtro))
-                    {
-                        where += "AND (D.COD_PRODUCTO LIKE @q OR P.DESCRIPCION LIKE @q) ";
-                        dp.Add("@q", $"%{filtros.filtro}%");
-                    }
-
-                    var paginaSql = "";
-                    if (filtros.pagina != null && filtros.paginacion != null)
-                    {
-                        paginaSql = PaginationSqlClause;
-                        dp.Add(ParamOff, filtros.pagina);
-                        dp.Add(ParamTake, filtros.paginacion);
-                    }
-
                     var result = new CprResumenPlanLista();
 
-                    var countSql = $@"
+                    var corte = (!string.IsNullOrWhiteSpace(filtros.periodo) &&
+                                 !string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase))
+                        ? filtros.periodo
+                        : null;
+
+                    var q = !string.IsNullOrWhiteSpace(filtros.filtro)
+                        ? $"%{filtros.filtro}%"
+                        : null;
+
+                    var dp = new DynamicParameters();
+                    dp.Add("IdPc", filtros.planCompras, DbType.Int32);
+                    dp.Add("Corte", corte, DbType.String);
+                    dp.Add("Q", q, DbType.String);
+
+                    var hasPaging = filtros.pagina != null && filtros.paginacion != null;
+                    if (hasPaging)
+                    {
+                        dp.Add(ParamOff, filtros.pagina, DbType.Int32);
+                        dp.Add(ParamTake, filtros.paginacion, DbType.Int32);
+                    }
+
+                    const string countSql = @"
                         SELECT COUNT(D.COD_PRODUCTO)
                           FROM CPR_PLAN_DT D
                           INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
                           INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
                           INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                          {where};";
+                         WHERE D.ID_PC = @IdPc
+                           AND (@Corte IS NULL OR S.CORTE = @Corte)
+                           AND (@Q IS NULL OR (D.COD_PRODUCTO LIKE @Q OR P.DESCRIPCION LIKE @Q));";
 
                     result.Total = conn.ExecuteScalar<int>(countSql, dp);
 
-                    var dataSql = $@"
+                    const string dataSqlNoPaging = @"
                         SELECT D.COD_PRODUCTO, P.DESCRIPCION, S.CANTIDAD, S.MONTO, S.CORTE
                           FROM CPR_PLAN_DT D
                           INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
                           INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
                           INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                          {where}
-                         ORDER BY S.CORTE DESC
-                         {paginaSql};";
+                         WHERE D.ID_PC = @IdPc
+                           AND (@Corte IS NULL OR S.CORTE = @Corte)
+                           AND (@Q IS NULL OR (D.COD_PRODUCTO LIKE @Q OR P.DESCRIPCION LIKE @Q))
+                         ORDER BY S.CORTE DESC;";
 
-                    result.Lineas = conn.Query<CprResumenPlanDto>(dataSql, dp).ToList();
+                    const string dataSqlPaging = @"
+                        SELECT D.COD_PRODUCTO, P.DESCRIPCION, S.CANTIDAD, S.MONTO, S.CORTE
+                          FROM CPR_PLAN_DT D
+                          INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
+                          INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
+                          INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
+                         WHERE D.ID_PC = @IdPc
+                           AND (@Corte IS NULL OR S.CORTE = @Corte)
+                           AND (@Q IS NULL OR (D.COD_PRODUCTO LIKE @Q OR P.DESCRIPCION LIKE @Q))
+                         ORDER BY S.CORTE DESC
+                         OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+
+                    result.Lineas = conn.Query<CprResumenPlanDto>(hasPaging ? dataSqlPaging : dataSqlNoPaging, dp).ToList();
                     return result;
                 });
             }
@@ -406,34 +416,30 @@ namespace Galileo.DataBaseTier
 
                 return WithConn(CodEmpresa, conn =>
                 {
-                    var where = "WHERE D.ID_PC = @id_pc ";
-                    var dp = new DynamicParameters();
-                    dp.Add("@id_pc", filtros.planCompras);
-
-                    if (!string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase) &&
-                        !string.IsNullOrWhiteSpace(filtros.periodo))
-                    {
-                        where += "AND S.CORTE = @corte ";
-                        dp.Add("@corte", filtros.periodo);
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(filtros.filtro))
-                    {
-                        where += "AND (Z.COD_CUENTA_MASK LIKE @q OR Z.DESCRIPCION LIKE @q) ";
-                        dp.Add("@q", $"%{filtros.filtro}%");
-                    }
-
-                    var paginaSql = "";
-                    if (filtros.pagina != null && filtros.paginacion != null)
-                    {
-                        paginaSql = PaginationSqlClause;
-                        dp.Add(ParamOff, filtros.pagina);
-                        dp.Add(ParamTake, filtros.paginacion);
-                    }
-
                     var result = new CprPlanContableLista();
 
-                    var countSql = $@"
+                    var corte = (!string.IsNullOrWhiteSpace(filtros.periodo) &&
+                                 !string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase))
+                        ? filtros.periodo
+                        : null;
+
+                    var q = !string.IsNullOrWhiteSpace(filtros.filtro)
+                        ? $"%{filtros.filtro}%"
+                        : null;
+
+                    var dp = new DynamicParameters();
+                    dp.Add("IdPc", filtros.planCompras, DbType.Int32);
+                    dp.Add("Corte", corte, DbType.String);
+                    dp.Add("Q", q, DbType.String);
+
+                    var hasPaging = filtros.pagina != null && filtros.paginacion != null;
+                    if (hasPaging)
+                    {
+                        dp.Add(ParamOff, filtros.pagina, DbType.Int32);
+                        dp.Add(ParamTake, filtros.paginacion, DbType.Int32);
+                    }
+
+                    const string countSql = @"
                         SELECT COUNT(*)
                           FROM (
                                 SELECT DISTINCT Z.COD_CUENTA_MASK, Z.DESCRIPCION, S.CORTE
@@ -444,12 +450,14 @@ namespace Galileo.DataBaseTier
                                   INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
                                   INNER JOIN PV_PROD_CLASIFICA B ON P.COD_PRODCLAS = B.COD_PRODCLAS
                                   INNER JOIN CNTX_CUENTAS Z ON B.COD_CUENTA = Z.COD_CUENTA
-                                  {where}
+                                 WHERE D.ID_PC = @IdPc
+                                   AND (@Corte IS NULL OR S.CORTE = @Corte)
+                                   AND (@Q IS NULL OR (Z.COD_CUENTA_MASK LIKE @Q OR Z.DESCRIPCION LIKE @Q))
                                ) T;";
 
                     result.Total = conn.ExecuteScalar<int>(countSql, dp);
 
-                    var dataSql = $@"
+                    const string dataSqlNoPaging = @"
                         SELECT DISTINCT
                                Z.COD_CUENTA_MASK AS CUENTA,
                                Z.DESCRIPCION,
@@ -464,11 +472,33 @@ namespace Galileo.DataBaseTier
                           INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
                           INNER JOIN PV_PROD_CLASIFICA B ON P.COD_PRODCLAS = B.COD_PRODCLAS
                           INNER JOIN CNTX_CUENTAS Z ON B.COD_CUENTA = Z.COD_CUENTA
-                          {where}
-                         ORDER BY S.CORTE DESC
-                         {paginaSql};";
+                         WHERE D.ID_PC = @IdPc
+                           AND (@Corte IS NULL OR S.CORTE = @Corte)
+                           AND (@Q IS NULL OR (Z.COD_CUENTA_MASK LIKE @Q OR Z.DESCRIPCION LIKE @Q))
+                         ORDER BY S.CORTE DESC;";
 
-                    result.Lineas = conn.Query<CprPlanContableDto>(dataSql, dp).ToList();
+                    const string dataSqlPaging = @"
+                        SELECT DISTINCT
+                               Z.COD_CUENTA_MASK AS CUENTA,
+                               Z.DESCRIPCION,
+                               U.CNTX_UNIDAD AS UNIDAD,
+                               U.CNTX_CENTRO_COSTO AS CENTRO_COSTO,
+                               (S.MONTO * S.CANTIDAD) AS TOTAL,
+                               S.CORTE
+                          FROM CPR_PLAN_DT D
+                          INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
+                          INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
+                          INNER JOIN CORE_UENS U ON C.COD_UNIDAD = U.COD_UNIDAD
+                          INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
+                          INNER JOIN PV_PROD_CLASIFICA B ON P.COD_PRODCLAS = B.COD_PRODCLAS
+                          INNER JOIN CNTX_CUENTAS Z ON B.COD_CUENTA = Z.COD_CUENTA
+                         WHERE D.ID_PC = @IdPc
+                           AND (@Corte IS NULL OR S.CORTE = @Corte)
+                           AND (@Q IS NULL OR (Z.COD_CUENTA_MASK LIKE @Q OR Z.DESCRIPCION LIKE @Q))
+                         ORDER BY S.CORTE DESC
+                         OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+
+                    result.Lineas = conn.Query<CprPlanContableDto>(hasPaging ? dataSqlPaging : dataSqlNoPaging, dp).ToList();
                     return result;
                 });
             }
@@ -488,35 +518,46 @@ namespace Galileo.DataBaseTier
                 {
                     var result = new CprBitacoraLista();
 
-                    var where = "WHERE MOVIMIENTO LIKE @mov ";
+                    var mov = $"%Plan:{filtros.planCompras}%";
+                    var q = !string.IsNullOrWhiteSpace(filtros.filtro)
+                        ? $"%{filtros.filtro}%"
+                        : null;
+
                     var dp = new DynamicParameters();
-                    dp.Add("@mov", $"%Plan:{filtros.planCompras}%");
+                    dp.Add("Mov", mov, DbType.String);
+                    dp.Add("Q", q, DbType.String);
 
-                    if (!string.IsNullOrWhiteSpace(filtros.filtro))
+                    var hasPaging = filtros.pagina != null && filtros.paginacion != null;
+                    if (hasPaging)
                     {
-                        where += "AND (USUARIO LIKE @q OR DETALLE LIKE @q OR CONVERT(VARCHAR(30), FECHAHORA, 120) LIKE @q) ";
-                        dp.Add("@q", $"%{filtros.filtro}%");
+                        dp.Add(ParamOff, filtros.pagina, DbType.Int32);
+                        dp.Add(ParamTake, filtros.paginacion, DbType.Int32);
                     }
 
-                    var paginaSql = "";
-                    if (filtros.pagina != null && filtros.paginacion != null)
-                    {
-                        paginaSql = PaginationSqlClause;
-                        dp.Add(ParamOff, filtros.pagina);
-                        dp.Add(ParamTake, filtros.paginacion);
-                    }
+                    const string countSql = @"
+                        SELECT COUNT(*)
+                          FROM CPR_BITACORA_SOLICITUD
+                         WHERE MOVIMIENTO LIKE @Mov
+                           AND (@Q IS NULL OR (USUARIO LIKE @Q OR DETALLE LIKE @Q OR CONVERT(VARCHAR(30), FECHAHORA, 120) LIKE @Q));";
 
-                    var countSql = $@"SELECT COUNT(*) FROM CPR_BITACORA_SOLICITUD {where};";
                     result.Total = conn.ExecuteScalar<int>(countSql, dp);
 
-                    var dataSql = $@"
+                    const string dataSqlNoPaging = @"
                         SELECT ID_BITACORA, FECHAHORA, USUARIO, DETALLE
                           FROM CPR_BITACORA_SOLICITUD
-                          {where}
-                         ORDER BY FECHAHORA DESC
-                         {paginaSql};";
+                         WHERE MOVIMIENTO LIKE @Mov
+                           AND (@Q IS NULL OR (USUARIO LIKE @Q OR DETALLE LIKE @Q OR CONVERT(VARCHAR(30), FECHAHORA, 120) LIKE @Q))
+                         ORDER BY FECHAHORA DESC;";
 
-                    result.Lineas = conn.Query<CprBitacoraDto>(dataSql, dp).ToList();
+                    const string dataSqlPaging = @"
+                        SELECT ID_BITACORA, FECHAHORA, USUARIO, DETALLE
+                          FROM CPR_BITACORA_SOLICITUD
+                         WHERE MOVIMIENTO LIKE @Mov
+                           AND (@Q IS NULL OR (USUARIO LIKE @Q OR DETALLE LIKE @Q OR CONVERT(VARCHAR(30), FECHAHORA, 120) LIKE @Q))
+                         ORDER BY FECHAHORA DESC
+                         OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+
+                    result.Lineas = conn.Query<CprBitacoraDto>(hasPaging ? dataSqlPaging : dataSqlNoPaging, dp).ToList();
                     return result;
                 });
             }
@@ -539,48 +580,67 @@ namespace Galileo.DataBaseTier
 
                     // Trae COD_PRODCLAS para la cuenta
                     const string prodClasSql = @"SELECT TOP 1 COD_PRODCLAS FROM PV_PROD_CLASIFICA WHERE COD_CUENTA = @cod_cuenta;";
-                    var prodclas = conn.QueryFirstOrDefault<int>(prodClasSql, new { cod_cuenta = filtros.filtro });
+                    var prodclas = conn.QueryFirstOrDefault<int?>(prodClasSql, new { cod_cuenta = filtros.filtro }) ?? 0;
 
-                    var where = "WHERE P.COD_PRODCLAS = @prodclas AND D.ID_PC = @id_pc ";
-                    dp.Add("@prodclas", prodclas);
-                    dp.Add("@id_pc", filtros.planCompras);
-
-                    if (!string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase) &&
-                        !string.IsNullOrWhiteSpace(filtros.periodo))
+                    if (prodclas <= 0)
                     {
-                        where += "AND S.CORTE = @corte ";
-                        dp.Add("@corte", filtros.periodo);
+                        result.Total = 0;
+                        result.Lineas = new List<CprResumenPlanDto>();
+                        return result;
                     }
 
-                    var paginaSql = "";
-                    if (filtros.pagina != null && filtros.paginacion != null)
+                    var corte = (!string.IsNullOrWhiteSpace(filtros.periodo) &&
+                                 !string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase))
+                        ? filtros.periodo
+                        : null;
+
+                    dp.Add("ProdClas", prodclas, DbType.Int32);
+                    dp.Add("IdPc", filtros.planCompras, DbType.Int32);
+                    dp.Add("Corte", corte, DbType.String);
+
+                    var hasPaging = filtros.pagina != null && filtros.paginacion != null;
+                    if (hasPaging)
                     {
-                        paginaSql = PaginationSqlClause;
-                        dp.Add(ParamOff, filtros.pagina);
-                        dp.Add(ParamTake, filtros.paginacion);
+                        dp.Add(ParamOff, filtros.pagina, DbType.Int32);
+                        dp.Add(ParamTake, filtros.paginacion, DbType.Int32);
                     }
 
-                    var countSql = $@"
+                    const string countSql = @"
                         SELECT COUNT(D.COD_PRODUCTO)
                           FROM CPR_PLAN_DT D
                           INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
                           INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
                           INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                          {where};";
+                         WHERE P.COD_PRODCLAS = @ProdClas
+                           AND D.ID_PC = @IdPc
+                           AND (@Corte IS NULL OR S.CORTE = @Corte);";
 
                     result.Total = conn.ExecuteScalar<int>(countSql, dp);
 
-                    var dataSql = $@"
+                    const string dataSqlNoPaging = @"
                         SELECT D.COD_PRODUCTO, P.DESCRIPCION, S.CANTIDAD, S.MONTO, S.CORTE
                           FROM CPR_PLAN_DT D
                           INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
                           INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
                           INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
-                          {where}
-                         ORDER BY S.CORTE DESC
-                         {paginaSql};";
+                         WHERE P.COD_PRODCLAS = @ProdClas
+                           AND D.ID_PC = @IdPc
+                           AND (@Corte IS NULL OR S.CORTE = @Corte)
+                         ORDER BY S.CORTE DESC;";
 
-                    result.Lineas = conn.Query<CprResumenPlanDto>(dataSql, dp).ToList();
+                    const string dataSqlPaging = @"
+                        SELECT D.COD_PRODUCTO, P.DESCRIPCION, S.CANTIDAD, S.MONTO, S.CORTE
+                          FROM CPR_PLAN_DT D
+                          INNER JOIN CPR_PLAN_COMPRAS C ON D.ID_PC = C.ID_PC
+                          INNER JOIN CPR_PLAN_DT_CORTES S ON D.ID_PLAN = S.ID_PLAN
+                          INNER JOIN PV_PRODUCTOS P ON D.COD_PRODUCTO = P.COD_PRODUCTO
+                         WHERE P.COD_PRODCLAS = @ProdClas
+                           AND D.ID_PC = @IdPc
+                           AND (@Corte IS NULL OR S.CORTE = @Corte)
+                         ORDER BY S.CORTE DESC
+                         OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+
+                    result.Lineas = conn.Query<CprResumenPlanDto>(hasPaging ? dataSqlPaging : dataSqlNoPaging, dp).ToList();
                     return result;
                 });
             }
