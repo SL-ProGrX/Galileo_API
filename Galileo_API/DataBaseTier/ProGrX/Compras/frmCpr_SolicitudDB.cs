@@ -489,9 +489,10 @@ WHERE P.CPR_ID = @Id;";
                     var map = conn.Query<(string COD_PRODUCTO, string COD_UNIDAD)>(qUnidades, new { Productos = productos })
                                   .ToDictionary(x => x.COD_PRODUCTO, x => x.COD_UNIDAD);
 
-                    foreach (var it in items)
-                        if (!string.IsNullOrWhiteSpace(it.cod_producto) && map.TryGetValue(it.cod_producto, out var u))
-                            it.unidad = u;
+                    foreach (var it in items.Where(it => !string.IsNullOrWhiteSpace(it.cod_producto) && map.ContainsKey(it.cod_producto)))
+                    {
+                        it.unidad = map[it.cod_producto];
+                    }
                 }
 
                 return items;
@@ -695,9 +696,17 @@ WHERE P.CPR_ID = @Id;";
                     var map = conn.Query<(string COD_PRODUCTO, string COD_UNIDAD)>(qUnidades, new { Productos = productos })
                                   .ToDictionary(x => x.COD_PRODUCTO, x => x.COD_UNIDAD);
 
-                    foreach (var it in lista.cotizaciones)
-                        if (!string.IsNullOrWhiteSpace(it.cod_producto) && map.TryGetValue(it.cod_producto, out var u))
-                            it.unidad = u;
+                     foreach (var entry in lista.cotizaciones
+                         .Where(it => !string.IsNullOrWhiteSpace(it.cod_producto))
+                         .Select(it =>
+                         {
+                             bool found = map.TryGetValue(it.cod_producto!, out string? unidad);
+                             return new { Item = it, Found = found, Unidad = unidad };
+                         })
+                         .Where(x => x.Found))
+                     {
+                         entry.Item.unidad = entry.Unidad;
+                     }
                 }
 
                 return lista;
@@ -873,7 +882,7 @@ WHERE R.CORE_USUARIO = @Usuario
                 };
             });
 
-           return WrapRequired(r);
+            return WrapRequired(r);
         }
 
         // ===========================

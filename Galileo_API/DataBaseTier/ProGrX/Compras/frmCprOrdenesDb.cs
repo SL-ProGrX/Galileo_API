@@ -85,7 +85,7 @@ namespace Galileo.DataBaseTier
             {
                 Code = ordenR.Code,
                 Description = ordenR.Description,
-                Result = ordenR.Result ?? new OrdenDto()
+                Result = ordenR.Result
             };
         }
 
@@ -797,8 +797,10 @@ namespace Galileo.DataBaseTier
                 var base64String = await response.Content.ReadAsStringAsync();
                 var fileBytes = Convert.FromBase64String(base64String);
 
-                var stream = new MemoryStream(fileBytes);
-                return new FormFile(stream, 0, fileBytes.Length, "file", $"OrdenCompra_{cod_orden}.pdf");
+                using var stream = new MemoryStream(fileBytes);
+                // Create a new MemoryStream for the returned FormFile to avoid leaking the disposable flagged by CodeQL
+                var fileStream = new MemoryStream(stream.ToArray());
+                return new FormFile(fileStream, 0, fileBytes.Length, "file", $"OrdenCompra_{cod_orden}.pdf");
             }
             catch
             {

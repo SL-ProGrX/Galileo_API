@@ -3,13 +3,7 @@ using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
 
 
 namespace Galileo.DataBaseTier
