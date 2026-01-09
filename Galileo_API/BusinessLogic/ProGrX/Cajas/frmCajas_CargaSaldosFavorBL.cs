@@ -54,12 +54,12 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
             return _db.CargaSaldosFavor_FormasPago_Obtener(codEmpresa);
         }
 
-        public ErrorDto<CajasFormasPagoTipoResult> CargaSaldosFavor_FormaPagoTipo_Obtener(int codEmpresa, string codFormaPago)
+        public ErrorDto<CajasFormasPagoTipoResult?> CargaSaldosFavor_FormaPagoTipo_Obtener(int codEmpresa, string codFormaPago)
         {
             return _db.CargaSaldosFavor_FormaPagoTipo_Obtener(codEmpresa, codFormaPago);
         }
 
-        public ErrorDto<CajasDepositosCargadoResult> Cajas_DepositosCargado_Existe(CajasDepositosCargadoParams param)
+        public ErrorDto<CajasDepositosCargadoResult?> Cajas_DepositosCargado_Existe(CajasDepositosCargadoParams param)
         {
             return _db.Cajas_DepositosCargado_Existe(param);
         }

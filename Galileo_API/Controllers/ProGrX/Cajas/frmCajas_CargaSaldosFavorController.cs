@@ -76,14 +76,14 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
         [Authorize]
         [HttpGet("CargaSaldosFavor_FormaPagoTipo_Obtener")]
-        public ErrorDto<CajasFormasPagoTipoResult> CargaSaldosFavor_FormaPagoTipo_Obtener(int codEmpresa, string codFormaPago)
+        public ErrorDto<CajasFormasPagoTipoResult?> CargaSaldosFavor_FormaPagoTipo_Obtener(int codEmpresa, string codFormaPago)
         {
             return _bl.CargaSaldosFavor_FormaPagoTipo_Obtener(codEmpresa, codFormaPago);
         }
 
         [Authorize]
         [HttpPost("Cajas_DepositosCargado_Existe")]
-        public ErrorDto<CajasDepositosCargadoResult> Cajas_DepositosCargado_Existe([FromBody] CajasDepositosCargadoParams param)
+        public ErrorDto<CajasDepositosCargadoResult?> Cajas_DepositosCargado_Existe([FromBody] CajasDepositosCargadoParams param)
         {
             return _bl.Cajas_DepositosCargado_Existe(param);
         }

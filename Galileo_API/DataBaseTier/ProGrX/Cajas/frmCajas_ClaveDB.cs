@@ -24,7 +24,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             var response = new ErrorDto<List<CajasUsuarioDto>>
             {
                 Code = 0,
-                Description = "Operación realizada correctamente",
+                Description = "Operaciï¿½n realizada correctamente",
                 Result = new List<CajasUsuarioDto>()
             };
 
@@ -89,7 +89,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     tx
                 );
 
-                // Reemplace la excepción genérica por una excepción específica
+                // Reemplace la excepciï¿½n genï¿½rica por una excepciï¿½n especï¿½fica
                 if (existe == 0)
                     throw new InvalidOperationException(
                         "La clave del sistema digitada no corresponde a su usuario."
