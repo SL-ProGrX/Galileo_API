@@ -11,11 +11,13 @@ using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 
+
 namespace Galileo.DataBaseTier
 {
     public class FrmCprComprasOrdenDB
     {
         private const string ErrorLiteral = "Ocurrió un error inesperado.";
+        private const string BitacoraMovimientoRegistra = "Registra";
         private readonly PortalDB _portalDb;
 
         private readonly MProGrXAuxiliarDB _mProGrxAuxiliar;
@@ -1044,71 +1046,110 @@ VALUES
             return new ErrorDto { Code = r.Result, Description = "Ok" };
         }
 
+        private static string BuildFacturaEmailBody(string proveedor, string codFactura, string accion)
+        {
+            return @$"<html lang=""es""><body>
+<p>Estimado/a {proveedor} la factura número #{codFactura} se ha {accion}.</p>
+</body></html>";
+        }
+
+        private ErrorDto<(string Proveedor, string Email)> ObtenerProveedorEmailPorFacturaXml(int codEmpresa, string codFactura)
+        {
+            return DbHelper.WithConn<(string Proveedor, string Email)>(_portalDb, codEmpresa, conn =>
+            {
+                EnsureOpen(conn);
+
+                const string sql = @"
+SELECT TOP 1
+    ISNULL(f.NOMBRE_PROV, '') AS Proveedor,
+    ISNULL(p.EMAIL, '') AS Email
+FROM CPR_FACTURAS_XML f
+LEFT JOIN CXP_PROVEEDORES p
+    ON REPLACE(p.CEDJUR, '-', '') = REPLACE(f.CED_JUR_PROV, '-', '')
+WHERE f.cod_documento = @Doc;";
+
+                return conn.QueryFirstOrDefault<(string Proveedor, string Email)>(sql, new { Doc = codFactura });
+            });
+        }
+
+        private ErrorDto<(string Proveedor, string Email)> ObtenerProveedorEmailPorCodProveedor(int codEmpresa, int codProveedor)
+        {
+            return DbHelper.WithConn<(string Proveedor, string Email)>(_portalDb, codEmpresa, conn =>
+            {
+                EnsureOpen(conn);
+
+                const string sql = @"
+SELECT TOP 1
+    ISNULL(descripcion, '') AS Proveedor,
+    ISNULL(EMAIL, '') AS Email
+FROM CXP_PROVEEDORES
+WHERE cod_proveedor = @Prov;";
+
+                return conn.QueryFirstOrDefault<(string Proveedor, string Email)>(sql, new { Prov = codProveedor });
+            });
+        }
+
+        private async Task TrySendEmailAndLog(int codEmpresa, string to, string subject, string body, string registroUsuario, string bitacoraDetalle)
+        {
+            if (!string.Equals(sendEmail, "Y", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (string.IsNullOrWhiteSpace(to))
+                return;
+
+            var eConfigResult = _envioCorreoDB.CorreoConfig(codEmpresa, Notificaciones);
+            if (eConfigResult == null || eConfigResult.Code != 0 || eConfigResult.Result == null)
+                return;
+
+            var eConfig = eConfigResult.Result;
+
+            var emailRequest = new EmailRequest
+            {
+                To = to,
+                From = eConfig.User,
+                Subject = subject,
+                Body = body,
+                Attachments = new List<IFormFile>()
+            };
+
+            var resp = new ErrorDto();
+            await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
+
+            BitacoraEnvioCorreo(new BitacoraComprasInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                consec = 0,
+                movimiento = BitacoraMovimientoRegistra,
+                detalle = bitacoraDetalle,
+                registro_usuario = registroUsuario
+            });
+        }
+
         // ===========================
         //  CORREOS
         // ===========================
 
         private async Task CorreoNotificaAutorizaFactura_Enviar(int codEmpresa, string cod_factura, string usuario)
         {
-            var resp = new ErrorDto();
-
             try
             {
-                var datos = DbHelper.WithConn<(string Proveedor, string Email)>(_portalDb, codEmpresa, conn =>
-                {
-                    EnsureOpen(conn);
-
-                    var prov = conn.QueryFirstOrDefault<string>(
-                        "SELECT NOMBRE_PROV FROM CPR_FACTURAS_XML WHERE cod_documento = @Doc;",
-                        new { Doc = cod_factura });
-
-                    var ced = conn.QueryFirstOrDefault<string>(
-                        "SELECT CED_JUR_PROV FROM CPR_FACTURAS_XML WHERE cod_documento = @Doc;",
-                        new { Doc = cod_factura });
-
-                    var email = conn.QueryFirstOrDefault<string>(
-                        "SELECT EMAIL FROM CXP_PROVEEDORES WHERE cedjur = @Ced;",
-                        new { Ced = ced });
-
-                    return (prov ?? "", email ?? "");
-                });
-
-                if (datos.Code != 0) return;
+                var datos = ObtenerProveedorEmailPorFacturaXml(codEmpresa, cod_factura);
+                if (datos.Code != 0)
+                    return;
 
                 var proveedor = datos.Result.Proveedor;
                 var emailProveedor = datos.Result.Email;
 
-                var eConfigResult = _envioCorreoDB.CorreoConfig(codEmpresa, Notificaciones);
-                if (eConfigResult == null || eConfigResult.Code != 0 || eConfigResult.Result == null) return;
+                var body = BuildFacturaEmailBody(proveedor, cod_factura, "aprobado");
 
-                var eConfig = eConfigResult.Result;
-
-                var body = @$"<html lang=""es""><body>
-<p>Estimado/a {proveedor} la factura número #{cod_factura} se ha aprobado.</p>
-</body></html>";
-
-                if (sendEmail == "Y")
-                {
-                    var emailRequest = new EmailRequest
-                    {
-                        To = emailProveedor,
-                        From = eConfig.User,
-                        Subject = "Aprobación de factura",
-                        Body = body,
-                        Attachments = new List<IFormFile>()
-                    };
-
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
-
-                    BitacoraEnvioCorreo(new BitacoraComprasInsertarDto
-                    {
-                        EmpresaId = codEmpresa,
-                        consec = 0,
-                        movimiento = "Registra",
-                        detalle = $@"Envío de correo de aprobacion de factura #{cod_factura}",
-                        registro_usuario = usuario
-                    });
-                }
+                await TrySendEmailAndLog(
+                    codEmpresa,
+                    emailProveedor,
+                    "Aprobación de factura",
+                    body,
+                    usuario,
+                    $@"Envío de correo de aprobacion de factura #{cod_factura}"
+                );
             }
             catch
             {
@@ -1118,61 +1159,25 @@ VALUES
 
         private async Task CorreoNotificaRegistraFactura_Enviar(int codEmpresa, string cod_factura, string usuario, int cod_proveedor)
         {
-            var resp = new ErrorDto();
-
             try
             {
-                var datos = DbHelper.WithConn<(string Proveedor, string Email)>(_portalDb, codEmpresa, conn =>
-                {
-                    EnsureOpen(conn);
-
-                    var prov = conn.QueryFirstOrDefault<string>(
-                        "SELECT descripcion FROM CXP_PROVEEDORES WHERE cod_proveedor = @Prov;",
-                        new { Prov = cod_proveedor });
-
-                    var email = conn.QueryFirstOrDefault<string>(
-                        "SELECT EMAIL FROM CXP_PROVEEDORES WHERE cod_proveedor = @Prov;",
-                        new { Prov = cod_proveedor });
-
-                    return (prov ?? "", email ?? "");
-                });
-
-                if (datos.Code != 0) return;
+                var datos = ObtenerProveedorEmailPorCodProveedor(codEmpresa, cod_proveedor);
+                if (datos.Code != 0)
+                    return;
 
                 var proveedor = datos.Result.Proveedor;
                 var emailProveedor = datos.Result.Email;
 
-                var eConfigResult = _envioCorreoDB.CorreoConfig(codEmpresa, Notificaciones);
-                if (eConfigResult == null || eConfigResult.Code != 0 || eConfigResult.Result == null) return;
+                var body = BuildFacturaEmailBody(proveedor, cod_factura, "registrado");
 
-                var eConfig = eConfigResult.Result;
-
-                var body = @$"<html lang=""es""><body>
-<p>Estimado/a {proveedor} la factura número #{cod_factura} se ha registrado.</p>
-</body></html>";
-
-                if (sendEmail == "Y")
-                {
-                    var emailRequest = new EmailRequest
-                    {
-                        To = emailProveedor,
-                        From = eConfig.User,
-                        Subject = "Registro de factura",
-                        Body = body,
-                        Attachments = new List<IFormFile>()
-                    };
-
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
-
-                    BitacoraEnvioCorreo(new BitacoraComprasInsertarDto
-                    {
-                        EmpresaId = codEmpresa,
-                        consec = 0,
-                        movimiento = "Registra",
-                        detalle = $@"Envío de correo de registro de factura #{cod_factura}",
-                        registro_usuario = usuario
-                    });
-                }
+                await TrySendEmailAndLog(
+                    codEmpresa,
+                    emailProveedor,
+                    "Registro de factura",
+                    body,
+                    usuario,
+                    $@"Envío de correo de registro de factura #{cod_factura}"
+                );
             }
             catch
             {

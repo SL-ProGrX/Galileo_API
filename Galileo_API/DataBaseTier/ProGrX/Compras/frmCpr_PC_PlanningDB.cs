@@ -1,11 +1,6 @@
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
-using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
 
 namespace Galileo.DataBaseTier
 {
@@ -21,32 +16,35 @@ namespace Galileo.DataBaseTier
 
         private sealed class ResumenPlanRow
         {
-            public string COD_PRODUCTO { get; set; } = string.Empty;
-            public string DESCRIPCION { get; set; } = string.Empty;
-            public int CANTIDAD { get; set; } = 0;
-            public decimal MONTO { get; set; } = 0m;
-            public DateTime CORTE { get; set; } = default;
-            public int TotalRows { get; set; } = 0;
+            // Populated by Dapper mapping
+            public string COD_PRODUCTO = string.Empty;
+            public string DESCRIPCION = string.Empty;
+            public int CANTIDAD = 0;
+            public decimal MONTO = 0m;
+            public DateTime CORTE = default;
+            public int TotalRows = 0;
         }
 
         private sealed class PlanContableRow
         {
-            public string CUENTA { get; set; } = string.Empty;
-            public string DESCRIPCION { get; set; } = string.Empty;
-            public string UNIDAD { get; set; } = string.Empty;
-            public string CENTRO_COSTO { get; set; } = string.Empty;
-            public decimal TOTAL { get; set; } = 0m;
-            public DateTime CORTE { get; set; } = default;
-            public int TotalRows { get; set; } = 0;
+            // Populated by Dapper mapping
+            public string CUENTA = string.Empty;
+            public string DESCRIPCION = string.Empty;
+            public string UNIDAD = string.Empty;
+            public string CENTRO_COSTO = string.Empty;
+            public decimal TOTAL = 0m;
+            public DateTime CORTE = default;
+            public int TotalRows = 0;
         }
 
         private sealed class BitacoraRow
         {
-            public int ID_BITACORA { get; set; } = 0;
-            public DateTime FECHAHORA { get; set; } = default;
-            public string USUARIO { get; set; } = string.Empty;
-            public string DETALLE { get; set; } = string.Empty;
-            public int TotalRows { get; set; } = 0;
+            // Populated by Dapper mapping
+            public int ID_BITACORA = 0;
+            public DateTime FECHAHORA = default;
+            public string USUARIO = string.Empty;
+            public string DETALLE = string.Empty;
+            public int TotalRows = 0;
         }
 
         private sealed class CorteUpsertContext
@@ -66,6 +64,54 @@ namespace Galileo.DataBaseTier
         }
 
         private static int CodeOrMinus1<T>(ErrorDto<T> r) => r.Code is int c ? c : -1;
+        
+        private sealed record PagedArgs(string? Corte, string? Q, int Offset, int Fetch);
+
+        private static CprPlanFiltros ParsePlanFiltros(string parametros)
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
+            }
+            catch
+            {
+                return new CprPlanFiltros();
+            }
+        }
+
+        private static string? NormalizePeriodo(string? periodo)
+        {
+            if (string.IsNullOrWhiteSpace(periodo))
+                return null;
+
+            return string.Equals(periodo, "Todos", StringComparison.OrdinalIgnoreCase)
+                ? null
+                : periodo;
+        }
+
+        private static string? NormalizeLike(string? filtro)
+        {
+            if (string.IsNullOrWhiteSpace(filtro))
+                return null;
+
+            var f = filtro.Trim();
+            return f.Length == 0 ? null : $"%{f}%";
+        }
+
+        private static PagedArgs BuildPagedArgs(CprPlanFiltros filtros, bool includeCorte)
+        {
+            var corte = includeCorte ? NormalizePeriodo(filtros.periodo) : null;
+            var q = NormalizeLike(filtros.filtro);
+
+            var offset = filtros.pagina.GetValueOrDefault(0);
+            if (offset < 0) offset = 0;
+
+            var fetch = filtros.paginacion.GetValueOrDefault(int.MaxValue);
+            if (fetch <= 0) fetch = int.MaxValue;
+
+            return new PagedArgs(corte, q, offset, fetch);
+        }
+
 
         private static CprPlanDTUpsert DeserializePlanDT(string parametros)
         {
@@ -378,7 +424,7 @@ namespace Galileo.DataBaseTier
             var code = r.Code is int c ? c : -1;
             return code == 0
                 ? DbHelper.OkResponse("Plan de compras actualizado satisfactoriamente")
-                : DbHelper.ErrorResponse(r.Description ?? "Error", code);
+                : DbHelper.ErrorResponse(r.Description ?? DefaultErrorDescription, code);
         }
 
         public ErrorDto CprPlanDT_Upsert(int CodEmpresa, string parametros, List<CprPlanDTCortesDto> cortes)
@@ -418,26 +464,8 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<CprResumenPlanLista> CprResumenPlan_Obtener(int CodEmpresa, string parametros)
         {
-            CprPlanFiltros filtros;
-            try
-            {
-                filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
-            }
-            catch
-            {
-                filtros = new CprPlanFiltros();
-            }
-
-            var corte = string.IsNullOrWhiteSpace(filtros.periodo) || string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase)
-                ? null
-                : filtros.periodo;
-
-            var q = string.IsNullOrWhiteSpace(filtros.filtro) ? null : $"%{filtros.filtro.Trim()}%";
-
-            var offset = filtros.pagina ?? 0;
-            if (offset < 0) offset = 0;
-            var fetch = filtros.paginacion ?? int.MaxValue;
-            if (fetch <= 0) fetch = int.MaxValue;
+            var filtros = ParsePlanFiltros(parametros);
+            var args = BuildPagedArgs(filtros, includeCorte: true);
 
             const string sql = @"
                         SELECT D.COD_PRODUCTO,
@@ -459,10 +487,10 @@ namespace Galileo.DataBaseTier
             var r = DbHelper.ExecuteListQuery<ResumenPlanRow>(_portalDB, CodEmpresa, sql, new
             {
                 IdPc = filtros.planCompras,
-                Corte = corte,
-                Q = q,
-                Offset = offset,
-                Fetch = fetch
+                Corte = args.Corte,
+                Q = args.Q,
+                Offset = args.Offset,
+                Fetch = args.Fetch
             });
 
             var code = r.Code is int c ? c : -1;
@@ -486,26 +514,8 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<CprPlanContableLista> CprPlanContable_Obtener(int CodEmpresa, string parametros)
         {
-            CprPlanFiltros filtros;
-            try
-            {
-                filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
-            }
-            catch
-            {
-                filtros = new CprPlanFiltros();
-            }
-
-            var corte = string.IsNullOrWhiteSpace(filtros.periodo) || string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase)
-                ? null
-                : filtros.periodo;
-
-            var q = string.IsNullOrWhiteSpace(filtros.filtro) ? null : $"%{filtros.filtro.Trim()}%";
-
-            var offset = filtros.pagina ?? 0;
-            if (offset < 0) offset = 0;
-            var fetch = filtros.paginacion ?? int.MaxValue;
-            if (fetch <= 0) fetch = int.MaxValue;
+            var filtros = ParsePlanFiltros(parametros);
+            var args = BuildPagedArgs(filtros, includeCorte: true);
 
             const string sql = @"
                         SELECT DISTINCT
@@ -532,10 +542,10 @@ namespace Galileo.DataBaseTier
             var r = DbHelper.ExecuteListQuery<PlanContableRow>(_portalDB, CodEmpresa, sql, new
             {
                 IdPc = filtros.planCompras,
-                Corte = corte,
-                Q = q,
-                Offset = offset,
-                Fetch = fetch
+                Corte = args.Corte,
+                Q = args.Q,
+                Offset = args.Offset,
+                Fetch = args.Fetch
             });
 
             var code = r.Code is int c ? c : -1;
@@ -560,23 +570,10 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<CprBitacoraLista> CprBitacora_Obtener(int CodEmpresa, string parametros)
         {
-            CprPlanFiltros filtros;
-            try
-            {
-                filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
-            }
-            catch
-            {
-                filtros = new CprPlanFiltros();
-            }
+            var filtros = ParsePlanFiltros(parametros);
+            var args = BuildPagedArgs(filtros, includeCorte: false);
 
             var mov = $"%Plan:{filtros.planCompras}%";
-            var q = string.IsNullOrWhiteSpace(filtros.filtro) ? null : $"%{filtros.filtro.Trim()}%";
-
-            var offset = filtros.pagina ?? 0;
-            if (offset < 0) offset = 0;
-            var fetch = filtros.paginacion ?? int.MaxValue;
-            if (fetch <= 0) fetch = int.MaxValue;
 
             const string sql = @"
                         SELECT ID_BITACORA,
@@ -593,9 +590,9 @@ namespace Galileo.DataBaseTier
             var r = DbHelper.ExecuteListQuery<BitacoraRow>(_portalDB, CodEmpresa, sql, new
             {
                 Mov = mov,
-                Q = q,
-                Offset = offset,
-                Fetch = fetch
+                Q = args.Q,
+                Offset = args.Offset,
+                Fetch = args.Fetch
             });
 
             var code = r.Code is int c ? c : -1;
@@ -618,15 +615,7 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<CprResumenPlanLista> CprResumenPlan_ObtenerxCuenta(int CodEmpresa, string parametros)
         {
-            CprPlanFiltros filtros;
-            try
-            {
-                filtros = JsonConvert.DeserializeObject<CprPlanFiltros>(parametros) ?? new CprPlanFiltros();
-            }
-            catch
-            {
-                filtros = new CprPlanFiltros();
-            }
+            var filtros = ParsePlanFiltros(parametros);
 
             const string prodClasSql = @"SELECT TOP 1 COD_PRODCLAS FROM PV_PROD_CLASIFICA WHERE COD_CUENTA = @cod_cuenta;";
             var prodR = DbHelper.ExecuteSingleQuery<int?>(_portalDB, CodEmpresa, prodClasSql, 0, new { cod_cuenta = filtros.filtro });
@@ -635,14 +624,7 @@ namespace Galileo.DataBaseTier
             if (prodclas <= 0)
                 return DbHelper.CreateOkResponse(new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() });
 
-            var corte = string.IsNullOrWhiteSpace(filtros.periodo) || string.Equals(filtros.periodo, "Todos", StringComparison.OrdinalIgnoreCase)
-                ? null
-                : filtros.periodo;
-
-            var offset = filtros.pagina ?? 0;
-            if (offset < 0) offset = 0;
-            var fetch = filtros.paginacion ?? int.MaxValue;
-            if (fetch <= 0) fetch = int.MaxValue;
+            var args = BuildPagedArgs(filtros, includeCorte: true);
 
             const string sql = @"
                         SELECT D.COD_PRODUCTO,
@@ -665,14 +647,14 @@ namespace Galileo.DataBaseTier
             {
                 ProdClas = prodclas,
                 IdPc = filtros.planCompras,
-                Corte = corte,
-                Offset = offset,
-                Fetch = fetch
+                Corte = args.Corte,
+                Offset = args.Offset,
+                Fetch = args.Fetch
             });
 
             var code = r.Code is int c ? c : -1;
             if (code != 0)
-                return DbHelper.CreateErrorResponse<CprResumenPlanLista>(r.Description ?? "Error", code, new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() });
+                return DbHelper.CreateErrorResponse<CprResumenPlanLista>(r.Description ?? DefaultErrorDescription, code, new CprResumenPlanLista { Total = 0, Lineas = new List<CprResumenPlanDto>() });
 
             var rows = r.Result ?? new List<ResumenPlanRow>();
             var total = rows.Count == 0 ? 0 : rows[0].TotalRows;

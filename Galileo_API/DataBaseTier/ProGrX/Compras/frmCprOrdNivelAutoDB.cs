@@ -1,9 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using Microsoft.Extensions.Configuration;
-using System.Data;
-using Dapper;
 using Newtonsoft.Json;
 using Galileo.Models.CPR;
 using Galileo.Models.ERROR;
@@ -13,6 +7,7 @@ namespace Galileo.DataBaseTier
 {
     public class FrmCprOrdNivelAutoDB
     {
+        private const string DefaultErrorMessage = "Error";
         private readonly PortalDB _portalDb;
 
         public FrmCprOrdNivelAutoDB(IConfiguration config)
@@ -20,64 +15,97 @@ namespace Galileo.DataBaseTier
             _portalDb = new PortalDB(config);
         }
 
-        private static UsuariosAuthorizaLista QueryUsuariosChecklist(
-            IDbConnection conn,
-            FiltroLazy filtros,
-            string totalSql,
-            string listSql,
-            object? extraParams = null)
+        private sealed class UsuariosChecklistRow
         {
-            EnsureOpen(conn);
-
-            var like = NormalizeLike(filtros.filtro);
-            var (offset, fetch) = NormalizePaging(filtros.pagina, filtros.paginacion);
-
-            var dp = extraParams == null ? new DynamicParameters() : new DynamicParameters(extraParams);
-            dp.Add("F", like);
-            dp.Add("Offset", offset);
-            dp.Add("Fetch", fetch);
-
-            var total = conn.QueryFirstOrDefault<int>(totalSql, dp);
-            var lista = conn.Query<UsuariosAutorizaData>(listSql, dp).ToList();
-
-            return new UsuariosAuthorizaLista { total = total, lista = lista };
+            // Populated by Dapper mapping
+            public string nombre = string.Empty;
+            public string descripcion = string.Empty;
+            public DateTime? fecha = null;
+            public DateTime? fecha_asignacion = null;
+            public string? usuario = null;
+            public int isCheck = 0;
+            public int TotalRows = 0;
         }
 
-        private static UsuariosAuthorizaLista EmptyUsuariosChecklist()
-            => new UsuariosAuthorizaLista { total = 0, lista = new List<UsuariosAutorizaData>() };
+        private static (string? Like, int Offset, int Fetch) BuildSearch(FiltroLazy filtros)
+        {
+            var like = string.IsNullOrWhiteSpace(filtros.filtro) ? null : $"%{filtros.filtro.Trim()}%";
+
+            var offset = filtros.pagina.GetValueOrDefault(0);
+            if (offset < 0) offset = 0;
+
+            var fetch = filtros.paginacion.GetValueOrDefault(int.MaxValue);
+            if (fetch <= 0) fetch = int.MaxValue;
+
+            return (like, offset, fetch);
+        }
+
+        private static UsuariosAuthorizaLista ToUsuariosChecklist(List<UsuariosChecklistRow>? rows)
+        {
+            var list = rows ?? new List<UsuariosChecklistRow>();
+            var total = list.Count == 0 ? 0 : list[0].TotalRows;
+
+            var dto = list.Select(r => new UsuariosAutorizaData
+            {
+                nombre = r.nombre,
+                descripcion = r.descripcion,
+                fecha = r.fecha,
+                fecha_asignacion = r.fecha_asignacion,
+                usuario = r.usuario,
+                isCheck = r.isCheck != 0
+            }).ToList();
+
+            return new UsuariosAuthorizaLista { total = total, lista = dto };
+        }
+
+        private static int CodeOrMinus1(int? code) => (code.HasValue && code.Value != 0) ? code.Value : -1;
+
+        private static FiltroLazy ParseFiltroLazy(string json)
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<FiltroLazy>(json) ?? new FiltroLazy();
+            }
+            catch
+            {
+                return new FiltroLazy();
+            }
+        }
+
 
         // ----------------- Usuarios Autorizadores -----------------
 
         public ErrorDto<UsuariosAuthorizaLista> UsuariosAutorizadores_Obtener(int CodEmpresa, string jFiltros)
         {
-            var filtros = SafeParse<FiltroLazy>(jFiltros) ?? new FiltroLazy();
+            var filtros = ParseFiltroLazy(jFiltros);
+            var (like, offset, fetch) = BuildSearch(filtros);
 
-            var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
-            {
-                const string sqlTotal = @"
-SELECT COUNT(U.nombre)
-FROM usuarios U
-LEFT JOIN cpr_orden_autorizadores A ON U.nombre = A.usuario
-WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F);
-";
-
-                const string sqlLista = @"
+            const string sql = @"
 SELECT
     U.nombre,
     U.descripcion,
     A.fecha,
-    CASE WHEN A.fecha IS NOT NULL THEN 1 ELSE 0 END AS isCheck
+    CAST(NULL AS DATETIME) AS fecha_asignacion,
+    CAST(NULL AS VARCHAR(100)) AS usuario,
+    CASE WHEN A.fecha IS NOT NULL THEN 1 ELSE 0 END AS isCheck,
+    COUNT(*) OVER() AS TotalRows
 FROM usuarios U
 LEFT JOIN cpr_orden_autorizadores A ON U.nombre = A.usuario
 WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F)
 ORDER BY A.fecha DESC
-OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
-";
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                return QueryUsuariosChecklist(conn, filtros, sqlTotal, sqlLista);
-            });
+            var r = DbHelper.ExecuteListQuery<UsuariosChecklistRow>(
+                _portalDb,
+                CodEmpresa,
+                sql,
+                new { F = like, Offset = offset, Fetch = fetch }
+            );
 
-            return Map(r, EmptyUsuariosChecklist);
+            if (r.Code != 0)
+                return DbHelper.CreateErrorResponse<UsuariosAuthorizaLista>(r.Description ?? DefaultErrorMessage, CodeOrMinus1(r.Code), new UsuariosAuthorizaLista { total = 0, lista = new List<UsuariosAutorizaData>() });
+
+            return DbHelper.CreateOkResponse(ToUsuariosChecklist(r.Result));
         }
 
         public ErrorDto OrdenAutousers_Insertar(int CodEmpresa, string usuario, string usuario_asignado)
@@ -92,7 +120,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
             return r.Code == 0 && r.Result > 0
                 ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(r.Description ?? "Error al guardar la orden de autorización", GetErrorCode(r.Code));
+                : DbHelper.ErrorResponse(r.Description ?? DefaultErrorMessage + " al guardar la orden de autorización", CodeOrMinus1(r.Code));
         }
 
         public ErrorDto OrdenAutousers_Eliminar(int CodEmpresa, string usuario, string usuario_asignado)
@@ -107,10 +135,8 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
             return r.Code == 0 && r.Result > 0
                 ? DbHelper.OkResponse("Ok")
-                : DbHelper.ErrorResponse(r.Description ?? "Error al borrar la orden de autorización", GetErrorCode(r.Code));
+                : DbHelper.ErrorResponse(r.Description ?? DefaultErrorMessage + " al borrar la orden de autorización", CodeOrMinus1(r.Code));
         }
-
-        private static int GetErrorCode(int? code) => (code.HasValue && code.Value != 0) ? code.Value : -1;
 
         public ErrorDto OrdenAutorizadores_Insertar(int CodEmpresa, string usuario)
         {
@@ -124,84 +150,74 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
             return r.Code == 0 && r.Result > 0
                 ? DbHelper.OkResponse($"Usuario Autorizador de Ordenes de Compra: {usuario}")
-                : DbHelper.ErrorResponse(r.Description ?? "Error en guardar usuario Autorizadores", GetErrorCode(r.Code));
+                : DbHelper.ErrorResponse(r.Description ?? "Error en guardar usuario Autorizadores", CodeOrMinus1(r.Code));
         }
 
         public ErrorDto OrdenAutorizadores_Eliminar(int CodEmpresa, string usuario)
         {
-            var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
-            {
-                EnsureOpen(conn);
-                using var tx = conn.BeginTransaction();
+            const string sql = @"
+BEGIN TRY
+    BEGIN TRAN;
 
-                try
-                {
-                    conn.Execute(
-                        @"DELETE cpr_orden_autousers WHERE usuario = @Usuario;",
-                        new { Usuario = usuario },
-                        transaction: tx
-                    );
+    DELETE cpr_orden_autousers WHERE usuario = @Usuario;
+    DELETE cpr_orden_autorizadores WHERE usuario = @Usuario;
 
-                    var rows = conn.Execute(
-                        @"DELETE cpr_orden_autorizadores WHERE usuario = @Usuario;",
-                        new { Usuario = usuario },
-                        transaction: tx
-                    );
+    DECLARE @rows INT = @@ROWCOUNT;
 
-                    if (rows <= 0)
-                    {
-                        tx.Rollback();
-                        return DbHelper.ErrorResponse("Error en borrar usuario Autorizador", -1);
-                    }
+    COMMIT TRAN;
+    SELECT @rows;
+END TRY
+BEGIN CATCH
+    IF @@TRANCOUNT > 0 ROLLBACK TRAN;
+    THROW;
+END CATCH";
 
-                    tx.Commit();
-                    return DbHelper.OkResponse($"Usuario Autorizador de Ordenes de Compra: {usuario}");
-                }
-                catch (Exception ex)
-                {
-                    tx.Rollback();
-                    return DbHelper.ErrorResponse(ex.Message, -1);
-                }
-            });
+            var r = DbHelper.ExecuteNonQueryWithResult(
+                _portalDb,
+                CodEmpresa,
+                sql,
+                new { Usuario = usuario }
+            );
 
-            if (r.Code != 0 || r.Result == null)
-                return DbHelper.ErrorResponse(r.Description ?? "Error", r.Code ?? -1);
+            if (r.Code == 0 && r.Result > 0)
+                return DbHelper.OkResponse($"Usuario Autorizador de Ordenes de Compra: {usuario}");
 
-            return r.Result;
+            return DbHelper.ErrorResponse(r.Description ?? "Error en borrar usuario Autorizador", CodeOrMinus1(r.Code));
         }
 
         // ----------------- Cambio de fecha autorizadores -----------------
 
         public ErrorDto<UsuariosAuthorizaLista> FechaCamnbioAutorizadores_Obtener(int CodEmpresa, string jFiltros)
         {
-            var filtros = SafeParse<FiltroLazy>(jFiltros) ?? new FiltroLazy();
+            var filtros = ParseFiltroLazy(jFiltros);
+            var (like, offset, fetch) = BuildSearch(filtros);
 
-            var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
-            {
-                const string sqlTotal = @"
-SELECT COUNT(U.nombre)
-FROM usuarios U
-LEFT JOIN cpr_INVUSRFECHAS A ON U.nombre = A.usuario
-WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F);
-";
-
-                const string sqlLista = @"
+            const string sql = @"
 SELECT
     U.nombre,
     U.descripcion,
+    CAST(NULL AS DATETIME) AS fecha,
+    CAST(NULL AS DATETIME) AS fecha_asignacion,
     A.usuario,
-    CASE WHEN A.usuario IS NOT NULL THEN 1 ELSE 0 END AS isCheck
+    CASE WHEN A.usuario IS NOT NULL THEN 1 ELSE 0 END AS isCheck,
+    COUNT(*) OVER() AS TotalRows
 FROM usuarios U
 LEFT JOIN cpr_INVUSRFECHAS A ON U.nombre = A.usuario
 WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F)
 ORDER BY A.usuario DESC
-OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
-";
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                return QueryUsuariosChecklist(conn, filtros, sqlTotal, sqlLista);
-            });
+            var r = DbHelper.ExecuteListQuery<UsuariosChecklistRow>(
+                _portalDb,
+                CodEmpresa,
+                sql,
+                new { F = like, Offset = offset, Fetch = fetch }
+            );
 
-            return Map(r, EmptyUsuariosChecklist);
+            if (r.Code != 0)
+                return DbHelper.CreateErrorResponse<UsuariosAuthorizaLista>(r.Description ?? "Error", CodeOrMinus1(r.Code), new UsuariosAuthorizaLista { total = 0, lista = new List<UsuariosAutorizaData>() });
+
+            return DbHelper.CreateOkResponse(ToUsuariosChecklist(r.Result));
         }
 
         public ErrorDto FechaCambioAutorizadores_Insertar(int CodEmpresa, string usuario, string registro_usuario)
@@ -216,7 +232,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
             return r.Code == 0 && r.Result > 0
                 ? DbHelper.OkResponse($"Usuario Autorizado Cambio Fecha Compras: {usuario}")
-                : DbHelper.ErrorResponse(r.Description ?? "Error en guardar autorización de cambio de fecha", GetErrorCode(r.Code));
+                : DbHelper.ErrorResponse(r.Description ?? "Error en guardar autorización de cambio de fecha", CodeOrMinus1(r.Code));
         }
 
         public ErrorDto FechaCambioAutorizadores_Eliminar(int CodEmpresa, string usuario)
@@ -230,7 +246,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
             return r.Code == 0 && r.Result > 0
                 ? DbHelper.OkResponse($"Usuario Autorizado Cambio Fecha Compras: {usuario}")
-                : DbHelper.ErrorResponse(r.Description ?? "Error en borrar autorización de cambio de fecha", GetErrorCode(r.Code));
+                : DbHelper.ErrorResponse(r.Description ?? "Error en borrar autorización de cambio de fecha", CodeOrMinus1(r.Code));
         }
 
         // ----------------- Listas -----------------
@@ -255,36 +271,36 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
         public ErrorDto<UsuariosAuthorizaLista> ListaAutousers_Obtener(int CodEmpresa, string usuario, string jFiltros)
         {
-            var filtros = SafeParse<FiltroLazy>(jFiltros) ?? new FiltroLazy();
+            var filtros = ParseFiltroLazy(jFiltros);
+            var (like, offset, fetch) = BuildSearch(filtros);
 
-            var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
-            {
-                const string sqlTotal = @"
-SELECT COUNT(U.nombre)
-FROM usuarios U
-LEFT JOIN cpr_orden_autousers C
-       ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
-WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F);
-";
-
-                const string sqlLista = @"
+            const string sql = @"
 SELECT
     U.nombre,
     U.descripcion,
+    CAST(NULL AS DATETIME) AS fecha,
     C.fecha_asignacion,
-    CASE WHEN C.fecha_asignacion IS NOT NULL THEN 1 ELSE 0 END AS isCheck
+    CAST(NULL AS VARCHAR(100)) AS usuario,
+    CASE WHEN C.fecha_asignacion IS NOT NULL THEN 1 ELSE 0 END AS isCheck,
+    COUNT(*) OVER() AS TotalRows
 FROM usuarios U
 LEFT JOIN cpr_orden_autousers C
        ON U.nombre = C.usuario_asignado AND C.usuario = @Usuario
 WHERE (@F IS NULL OR U.nombre LIKE @F OR U.descripcion LIKE @F)
 ORDER BY C.fecha_asignacion DESC
-OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
-";
+OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                return QueryUsuariosChecklist(conn, filtros, sqlTotal, sqlLista, new { Usuario = usuario });
-            });
+            var r = DbHelper.ExecuteListQuery<UsuariosChecklistRow>(
+                _portalDb,
+                CodEmpresa,
+                sql,
+                new { Usuario = usuario, F = like, Offset = offset, Fetch = fetch }
+            );
 
-            return Map(r, EmptyUsuariosChecklist);
+            if (r.Code != 0)
+                return DbHelper.CreateErrorResponse<UsuariosAuthorizaLista>(r.Description ?? "Error", CodeOrMinus1(r.Code), new UsuariosAuthorizaLista { total = 0, lista = new List<UsuariosAutorizaData>() });
+
+            return DbHelper.CreateOkResponse(ToUsuariosChecklist(r.Result));
         }
 
         // ----------------- Rangos -----------------
@@ -359,40 +375,34 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
 
         public ErrorDto Rangos_Agregar(int CodEmpresa, RangosDto request)
         {
-            var r = DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
-            {
-                EnsureOpen(conn);
+            const string existeSql = @"SELECT COUNT(*) FROM cpr_orden_rangos WHERE cod_rango = @CodRango;";
+            var ex = DbHelper.ExecuteSingleQuery<int>(_portalDb, CodEmpresa, existeSql, 0, new { CodRango = request.cod_rango });
+            if (ex.Code != 0)
+                return DbHelper.ErrorResponse(ex.Description ?? DefaultErrorMessage, CodeOrMinus1(ex.Code));
 
-                var existe = conn.QueryFirstOrDefault<int>(
-                    @"SELECT COUNT(*)
-                      FROM cpr_orden_rangos
-                      WHERE cod_rango = @CodRango;",
-                    new { CodRango = request.cod_rango }
-                );
+            if (ex.Result > 0)
+                return DbHelper.ErrorResponse($"Ya existe un rango con el código: {request.cod_rango}, por favor verifique", -1);
 
-                if (existe > 0)
-                    return DbHelper.ErrorResponse($"Ya existe un rango con el código: {request.cod_rango}, por favor verifique", -1);
+            const string insSql = @"INSERT INTO cpr_orden_rangos(cod_rango, descripcion, monto_minimo, monto_maximo, registro_fecha, registro_usuario)
+VALUES (@CodRango, @Descripcion, @MontoMinimo, @MontoMaximo, GETDATE(), @RegistroUsuario);";
 
-                var rows = conn.Execute(
-                    @"INSERT INTO cpr_orden_rangos(cod_rango, descripcion, monto_minimo, monto_maximo, registro_fecha, registro_usuario)
-                      VALUES (@CodRango, @Descripcion, @MontoMinimo, @MontoMaximo, GETDATE(), @RegistroUsuario);",
-                    new
-                    {
-                        CodRango = request.cod_rango,
-                        Descripcion = request.descripcion,
-                        MontoMinimo = request.monto_minimo,
-                        MontoMaximo = request.monto_maximo,
-                        RegistroUsuario = request.registro_usuario
-                    }
-                );
+            var ins = DbHelper.ExecuteNonQueryWithResult(
+                _portalDb,
+                CodEmpresa,
+                insSql + " SELECT @@ROWCOUNT;",
+                new
+                {
+                    CodRango = request.cod_rango,
+                    Descripcion = request.descripcion,
+                    MontoMinimo = request.monto_minimo,
+                    MontoMaximo = request.monto_maximo,
+                    RegistroUsuario = request.registro_usuario
+                }
+            );
 
-                return rows > 0 ? DbHelper.CreateOkResponse() : DbHelper.ErrorResponse("No se pudo insertar el rango", -1);
-            });
-
-            if (r.Code != 0 || r.Result == null)
-                return DbHelper.ErrorResponse(r.Description ?? "Error", r.Code ?? -1);
-
-            return r.Result;
+            return ins.Code == 0 && ins.Result > 0
+                ? DbHelper.CreateOkResponse()
+                : DbHelper.ErrorResponse(ins.Description ?? "No se pudo insertar el rango", CodeOrMinus1(ins.Code));
         }
 
         public ErrorDto Rangos_Eliminar(int CodEmpresa, string id)
@@ -405,44 +415,5 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;
             );
         }
 
-        // ----------------- Helpers comunes -----------------
-
-        private static string? NormalizeLike(string? filtro)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-                return null;
-
-            var f = filtro.Trim();
-            return f.Length == 0 ? null : $"%{f}%";
-        }
-
-        private static (int Offset, int Fetch) NormalizePaging(int? pagina, int? paginacion)
-        {
-            // We keep the existing meaning: `pagina` is used as OFFSET.
-            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
-                return (0, int.MaxValue);
-
-            return (pagina.Value, paginacion.Value);
-        }
-
-        private static void EnsureOpen(IDbConnection conn)
-        {
-            if (conn.State != ConnectionState.Open) conn.Open();
-        }
-
-
-        private static T? SafeParse<T>(string json)
-        {
-            try { return JsonConvert.DeserializeObject<T>(json); }
-            catch { return default; }
-        }
-
-        private static ErrorDto<T> Map<T>(ErrorDto<T> r, Func<T> emptyFactory)
-        {
-            if (r.Code != 0)
-                return DbHelper.CreateErrorResponse<T>(r.Description ?? "Error", r.Code ?? -1, default!);
-
-            return DbHelper.CreateOkResponse(r.Result ?? emptyFactory());
-        }
     }
 }

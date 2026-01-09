@@ -1,10 +1,10 @@
 using Dapper;
-using Newtonsoft.Json;
 using Galileo.Models;
 using Galileo.Models.CPR;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
 using System.Data;
 
 namespace Galileo.DataBaseTier
@@ -30,29 +30,73 @@ namespace Galileo.DataBaseTier
         //  HELPERS (anti-duplication)
         // ===========================
 
-        private static string? NormalizeLike(string? filtro)
-        {
-            if (string.IsNullOrWhiteSpace(filtro))
-                return null;
-
-            var f = filtro.Trim();
-            return f.Length == 0 ? null : $"%{f}%";
-        }
-
-        private static (int Offset, int Fetch) NormalizePaging(int? pagina, int? paginacion)
-        {
-            // Keep current semantics: `pagina` is treated as OFFSET.
-            if (pagina is null || paginacion is null || pagina < 0 || paginacion <= 0)
-                return (0, int.MaxValue);
-
-            return (pagina.Value, paginacion.Value);
-        }
-
+        /// <summary>
+        /// Limpia cédula jurídica (quita guiones y espacios)
+        /// </summary>
+        /// <param name="cedJur"></param>
+        /// <returns></returns>
         private static string CleanCedJur(string cedJur)
         {
             return (cedJur ?? string.Empty).Replace("-", string.Empty).Replace(" ", string.Empty);
         }
 
+
+        /// <summary>
+        /// Envía correo si está habilitado en configuración
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="to"></param>
+        /// <param name="subject"></param>
+        /// <param name="body"></param>
+        /// <param name="registroUsuario"></param>
+        /// <param name="bitacoraDetalle"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        private async Task SendEmailAndLogIfEnabled(int codEmpresa, string to, string subject, string body, string registroUsuario, string bitacoraDetalle)
+        {
+            if (!string.Equals(_sendEmail, "Y", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            if (string.IsNullOrWhiteSpace(to))
+                return;
+
+            var correoConfigResult = _envioCorreoDB.CorreoConfig(codEmpresa, _notificaciones);
+            if (correoConfigResult == null || correoConfigResult.Code != 0 || correoConfigResult.Result == null)
+                throw new InvalidOperationException($"No se pudo obtener la configuración de correo: {correoConfigResult?.Description}");
+
+            var eConfig = correoConfigResult.Result;
+
+            var emailRequest = new EmailRequest
+            {
+                To = to,
+                From = eConfig.User,
+                Subject = subject,
+                Body = body,
+                Attachments = new List<IFormFile>()
+            };
+
+            var resp = new ErrorDto();
+            await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
+
+            BitacoraEnvioCorreo(new BitacoraComprasInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                consec = 0,
+                movimiento = "Registra",
+                detalle = bitacoraDetalle,
+                registro_usuario = registroUsuario
+            });
+        }
+
+
+        /// <summary>
+        /// Obtiene la lista de facturas XML
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="proveedor"></param>
+        /// <param name="filtros"></param>
+        /// <param name="soloActivas"></param>
+        /// <returns></returns>
         private ErrorDto<CprFacturasXmlLista> Cargador_Facturas_ObtenerCore(int codEmpresa, int proveedor, string filtros, bool soloActivas)
         {
             var filtro = JsonConvert.DeserializeObject<CprFacturasXmlFiltros>(filtros) ?? new CprFacturasXmlFiltros();
@@ -60,17 +104,13 @@ namespace Galileo.DataBaseTier
             var response = new ErrorDto<CprFacturasXmlLista>
             {
                 Code = 0,
-                Result = new CprFacturasXmlLista
-                {
-                    total = 0,
-                    lista = new List<CprFacturasXmlDto>()
-                }
+                Result = new CprFacturasXmlLista { total = 0, lista = new List<CprFacturasXmlDto>() }
             };
 
             try
             {
-                // Proveedor por cédula jurídica (normalizada)
                 string? cedJurLimpia = null;
+
                 if (proveedor != 0)
                 {
                     var cedJurProveedorResp = DbHelper.ExecuteSingleQuery<string>(
@@ -94,34 +134,53 @@ namespace Galileo.DataBaseTier
                     cedJurLimpia = CleanCedJur(cedJurProveedor);
                 }
 
-                var q = NormalizeLike(filtro.filtro);
-                var (offset, fetch) = NormalizePaging(filtro.pagina, filtro.paginacion);
+                var q = string.IsNullOrWhiteSpace(filtro.filtro) ? null : $"%{filtro.filtro.Trim()}%";
 
-                var p = new DynamicParameters();
-                p.Add("SoloActivas", soloActivas ? 1 : 0);
-                p.Add("CedJur", cedJurLimpia);
-                p.Add("Q", q);
-                p.Add("Offset", offset);
-                p.Add("Fetch", fetch);
+                var offset = filtro.pagina.GetValueOrDefault(0);
+                if (offset < 0) offset = 0;
 
-                const string countSql = @"SELECT COUNT(*)
-FROM CPR_FACTURAS_XML
-WHERE (@SoloActivas = 0 OR ESTADO IN ('P','A'))
-  AND (@CedJur IS NULL OR REPLACE(REPLACE(ced_jur_prov, ' ', ''), '-', '') = @CedJur)
-  AND (@Q IS NULL OR (cod_documento LIKE @Q OR nombre_prov LIKE @Q OR ced_jur_prov LIKE @Q));";
+                var fetch = filtro.paginacion.GetValueOrDefault(int.MaxValue);
+                if (fetch <= 0) fetch = int.MaxValue;
 
-                var totalResp = DbHelper.ExecuteSingleQuery<int>(_portalDB, codEmpresa, countSql, 0, p);
-                response.Result.total = totalResp.Result;
+                const string sql = @"SELECT *, COUNT(*) OVER() AS TotalRows
+        FROM CPR_FACTURAS_XML
+        WHERE (@SoloActivas = 0 OR ESTADO IN ('P','A'))
+        AND (@CedJur IS NULL OR REPLACE(REPLACE(ced_jur_prov, ' ', ''), '-', '') = @CedJur)
+        AND (@Q IS NULL OR (cod_documento LIKE @Q OR nombre_prov LIKE @Q OR ced_jur_prov LIKE @Q))
+        ORDER BY id DESC
+        OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                const string dataSql = @"SELECT *
-FROM CPR_FACTURAS_XML
-WHERE (@SoloActivas = 0 OR ESTADO IN ('P','A'))
-  AND (@CedJur IS NULL OR REPLACE(REPLACE(ced_jur_prov, ' ', ''), '-', '') = @CedJur)
-  AND (@Q IS NULL OR (cod_documento LIKE @Q OR nombre_prov LIKE @Q OR ced_jur_prov LIKE @Q))
-ORDER BY id DESC
-OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+                var listResp = DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+                {
+                    if (conn.State != ConnectionState.Open)
+                        conn.Open();
 
-                var listResp = DbHelper.ExecuteListQuery<CprFacturasXmlDto>(_portalDB, codEmpresa, dataSql, p);
+                    var total = 0;
+
+                    var list = conn.Query<CprFacturasXmlDto, int, CprFacturasXmlDto>(
+                        sql,
+                        (dto, t) =>
+                        {
+                            total = t;
+                            return dto;
+                        },
+                        new
+                        {
+                            SoloActivas = soloActivas ? 1 : 0,
+                            CedJur = cedJurLimpia,
+                            Q = q,
+                            Offset = offset,
+                            Fetch = fetch
+                        },
+                        splitOn: "TotalRows"
+                    ).ToList();
+
+                    return new CprFacturasXmlLista
+                    {
+                        total = list.Count == 0 ? 0 : total,
+                        lista = list
+                    };
+                });
 
                 if (listResp.Code != 0)
                 {
@@ -131,7 +190,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
                     return response;
                 }
 
-                response.Result.lista = listResp.Result ?? new List<CprFacturasXmlDto>();
+                response.Result = listResp.Result ?? new CprFacturasXmlLista { total = 0, lista = new List<CprFacturasXmlDto>() };
             }
             catch (Exception ex)
             {
@@ -228,6 +287,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
             return response;
         }
 
+
         /// <summary>
         /// Inserta la factura XML
         /// </summary>
@@ -282,6 +342,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
             return resp;
         }
+
 
         /// <summary>
         /// Verifica si la factura ya existe
@@ -554,7 +615,7 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
 
         /// <summary>
-        /// Notifica registro de factura al proveedor por correo
+        /// Envía correo de notificación de registro de factura
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="proveedor"></param>
@@ -564,11 +625,8 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
         /// <returns></returns>
         private async Task CorreoNotificaRegistroFactura_Enviar(int CodEmpresa, string proveedor, string factura, string ced_jur, string registro_usuario)
         {
-            ErrorDto resp = new ErrorDto { Code = 0 };
-
             try
             {
-                // Email proveedor (parametrizado)
                 var emailResp = DbHelper.ExecuteSingleQuery<string>(
                     _portalDB,
                     CodEmpresa,
@@ -577,59 +635,33 @@ OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
                     parameters: new { CedJur = ced_jur }
                 );
 
-                string emailProveedor = emailResp.Result ?? string.Empty;
+                var emailProveedor = emailResp.Result ?? string.Empty;
 
-                // Config correo
-                var correoConfigResult = _envioCorreoDB.CorreoConfig(CodEmpresa, _notificaciones);
-                if (correoConfigResult == null || correoConfigResult.Code != 0 || correoConfigResult.Result == null)
-                {
-                    throw new InvalidOperationException($"No se pudo obtener la configuración de correo: {correoConfigResult?.Description}");
-                }
+                var body = @$"<html lang=""es"">
+        <head>
+        <meta charset=""UTF-8"">
+        <meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"">
+        <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
+        <title>Notificación de carga de factura</title>
+        </head>
+        <body>
+        <h2><strong>Notificación de carga de factura</strong></h2>
+        <p>Estimado/a {proveedor} La factura #{factura} se ha cargado.</p>
+        </body>
+        </html>";
 
-                EnvioCorreoModels eConfig = correoConfigResult.Result;
-
-                string body = @$"<html lang=""es"">
-<head>
-<meta charset=""UTF-8"">
-<meta http-equiv=""Content-Type"" content=""text/html; charset=utf-8"">
-<meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-<title>Notificación de carga de factura</title>
-</head>
-<body>
-<h2><strong>Notificación de carga de factura</strong></h2>
-<p>Estimado/a {proveedor} La factura #{factura} se ha cargado.</p>
-</body>
-</html>";
-
-                List<IFormFile> attachments = new List<IFormFile>();
-
-                if (_sendEmail == "Y" && !string.IsNullOrWhiteSpace(emailProveedor))
-                {
-                    EmailRequest emailRequest = new EmailRequest
-                    {
-                        To = emailProveedor,
-                        From = eConfig.User,
-                        Subject = "Notificación de carga de factura",
-                        Body = body,
-                        Attachments = attachments
-                    };
-
-                    await _envioCorreoDB.SendEmailAsync(emailRequest, eConfig, resp);
-
-                    BitacoraEnvioCorreo(new BitacoraComprasInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        consec = 0,
-                        movimiento = "Registra",
-                        detalle = $@"Envío de correo de registro de factura #{factura} a {proveedor}",
-                        registro_usuario = registro_usuario
-                    });
-                }
+                await SendEmailAndLogIfEnabled(
+                    CodEmpresa,
+                    emailProveedor,
+                    "Notificación de carga de factura",
+                    body,
+                    registro_usuario,
+                    $@"Envío de correo de registro de factura #{factura} a {proveedor}"
+                );
             }
-            catch (Exception ex)
+            catch
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                // no rompe el flujo si falla el correo
             }
         }
 
