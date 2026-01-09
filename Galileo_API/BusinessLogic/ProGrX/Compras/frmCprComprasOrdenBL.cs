@@ -27,14 +27,9 @@ namespace Galileo.BusinessLogic
         {
             CompraOrderLineaTablaFiltros filtros = JsonConvert.DeserializeObject<CompraOrderLineaTablaFiltros>(Jfiltros) ?? new CompraOrderLineaTablaFiltros();
 
-            if (filtros.CodProveedor != 0)
-            {
-                return _db.OrdenesDetalleF_Obtener(CodEmpresa, filtros);
-            }
-            else
-            {
-                return _db.OrdenesDetalleO_Obtener(CodEmpresa, filtros);
-            }
+             return filtros.CodProveedor != 0
+                 ? _db.OrdenesDetalleF_Obtener(CodEmpresa, filtros)
+                 : _db.OrdenesDetalleO_Obtener(CodEmpresa, filtros);
 
         }
 
