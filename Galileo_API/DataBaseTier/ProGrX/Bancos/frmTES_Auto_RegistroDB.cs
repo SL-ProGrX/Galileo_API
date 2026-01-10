@@ -235,37 +235,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <param name="CodEmpresa"></param>
         /// <param name="tipo"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Tes_AutoRegistroTipos_Obtener(int CodEmpresa, int? tipo, string? filtro)
+        public ErrorDto<List<DropDownListaGenericaModel>> Tes_AutoRegistroTipos_Obtener(int CodEmpresa, int? tipo = 0, string? filtro = null)
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                var query = "";
-                switch (tipo)
+                // Si filtro viene null, lo tratamos como vacío
+                filtro ??= "";
+
+                string sql = tipo switch
                 {
-                    case 1: //Personas
-                        query = $@"Select Cedula as 'item', Nombre as 'descripcion' from Socios Where Cedula ";
-                        break;
-                    case 2: //Bancos
-                        query = $@"select ID_BANCO as 'item',descripcion from TES_BANCOS where ID_BANCO ";
-                        break;
-                    case 3: //Proveedores
-                        query = $@"Select CEDJUR as 'item', DESCRIPCION  from CXP_PROVEEDORES where CEDJUR ";
-                        break;
-                    case 4: //Cuentas por Cobrar
-                        query = $@"select Cod_Acreedor as 'item', DESCRIPCION  from CRD_APA_ACREEDORES where cod_acreedor ";
-                        break;
-                    case 5: //Empleados
-                        query = $@"Select IDENTIFICACION as 'item', NOMBRE_COMPLETO as 'descripcion' from RH_PERSONAS Where IDENTIFICACION ";
-                        break;
-                    case 6: //Directos
-                        query = $@"Select CODIGO as 'item', BENEFICIARIO as 'descripcion' from vTes_Beneficiarios Where CODIGO ";
-                        break;
-                }
+                    1 => @"Select Cedula as item, Nombre as descripcion
+                   from Socios
+                   where Cedula like @filtro",
 
-                query += @$"like '%{filtro}%'";
+                    2 => @"select ID_BANCO as item, descripcion as descripcion
+                   from TES_BANCOS
+                   where ID_BANCO like @filtro",
 
+                    3 => @"Select CEDJUR as item, DESCRIPCION as descripcion
+                   from CXP_PROVEEDORES
+                   where CEDJUR like @filtro",
 
-                return conn.Query<DropDownListaGenericaModel>(query).ToList();
+                    4 => @"select Cod_Acreedor as item, DESCRIPCION as descripcion
+                   from CRD_APA_ACREEDORES
+                   where cod_acreedor like @filtro",
+
+                    5 => @"Select IDENTIFICACION as item, NOMBRE_COMPLETO as descripcion
+                   from RH_PERSONAS
+                   where IDENTIFICACION like @filtro",
+
+                    6 => @"Select CODIGO as item, BENEFICIARIO as descripcion
+                   from vTes_Beneficiarios
+                   where CODIGO like @filtro"
+
+                    0 => DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>("Tipo inválido"),
+                };
+
+                // Ojo: el comodín % va en el valor del parámetro
+                var param = new { filtro = $"%{filtro}%" };
+
+                return conn.Query<DropDownListaGenericaModel>(sql, param).ToList();
             });
         }
 
@@ -321,16 +330,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                string where = "";
-                if (concepto != null)
-                {
-                    where = $" AND COD_CONCEPTO = '{concepto}'";
-                }
-
-                var query = $"select COD_CONCEPTO, DESCRIPCION, COD_CUENTA_MASK, DP_TRAMITE_APL, CUENTA_DESC from vTes_Conceptos WHERE AUTO_REGISTRO = 1 AND ESTADO = 'A' ";
-                query += where;
-
-                return conn.Query<TesAutoregistroConceptos>(query).ToList();
+                var query = $"select COD_CONCEPTO, DESCRIPCION, COD_CUENTA_MASK, DP_TRAMITE_APL, CUENTA_DESC from vTes_Conceptos WHERE AUTO_REGISTRO = 1 AND ESTADO = 'A' and (@concepto is null or COD_CONCEPTO = @concepto) ";
+                return conn.Query<TesAutoregistroConceptos>(query, new { concepto }).ToList();
             });
         }
 
