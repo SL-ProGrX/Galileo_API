@@ -22,17 +22,7 @@
         public string? Cierre_Tipo { get; set; }
         public DateTime? Registro_Fecha { get; set; }
         public string? Registro_Usuario { get; set; }
-        public short? Permite_Mov_Cbrjud { get; set; }
-        public short? Limita_Consulta { get; set; }
-        public short? Limita_Creditos { get; set; }
-        public short? Limita_Fondos { get; set; }
-        public short? Limita_Cxc { get; set; }
-        public short? Limita_Patrimonio { get; set; }
-        public short? Permite_Rc { get; set; }
-        public short? Permite_Traslados_Ef { get; set; }
-        public short? Rol_Boveda { get; set; }
-        public short? Utiliza_Cta_Caja_Ef { get; set; }
-        public short? Limita_Fondos_Fp { get; set; }
+        public CajasDefinicionRestricciones? Restricciones { get; set; }
         public string? OficinaDesc { get; set; }
         public string? CuentaDesc { get; set; }
     }
@@ -132,6 +122,20 @@
         public short? Apertura_Compartida { get; set; }
         public string? Cierre_Periocidad { get; set; }
         public string? Cierre_Tipo { get; set; }
+        public CajasDefinicionRestricciones? Restricciones { get; set; }
+        public required string Registro_Usuario { get; set; }
+    }
+
+    public class CajasDefinicionCopiaParams
+    {
+        public required string CajaOrigen { get; set; }
+        public required string CajaDestino { get; set; }
+        public required string Usuario { get; set; }
+        public required string CajaNombre { get; set; }
+    }
+
+    public class CajasDefinicionRestricciones
+    {
         public short? Permite_Mov_Cbrjud { get; set; }
         public short? Limita_Consulta { get; set; }
         public short? Limita_Creditos { get; set; }
@@ -143,15 +147,6 @@
         public short? Rol_Boveda { get; set; }
         public short? Utiliza_Cta_Caja_Ef { get; set; }
         public short? Limita_Fondos_Fp { get; set; }
-        public required string Registro_Usuario { get; set; }
-    }
-
-    public class CajasDefinicionCopiaParams
-    {
-        public required string CajaOrigen { get; set; }
-        public required string CajaDestino { get; set; }
-        public required string Usuario { get; set; }
-        public required string CajaNombre { get; set; }
     }
 
 }

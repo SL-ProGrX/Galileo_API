@@ -508,7 +508,36 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                   @Limita_Patrimonio,@Permite_Rc,@Permite_Traslados_Ef,@Rol_Boveda,@Utiliza_Cta_Caja_Ef,@Limita_Fondos_Fp,
                   dbo.MyGetdate(),@Registro_Usuario
                 )";
-            var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, param);
+
+            var parametros = new
+            {
+                param.Cod_Caja,
+                param.Descripcion,
+                param.Notas,
+                param.Activa,
+                param.Apertura_Fecha,
+                param.Apertura_Compartida,
+                param.Cierre_Periocidad,
+                param.Cierre_Tipo,
+                param.Periocidad_Contrasena,
+                param.Oficina_Utiliza_Usuario,
+                param.Cod_Oficina,
+                param.Cod_Cuenta_Dev,
+                param.Restricciones?.Permite_Mov_Cbrjud,
+                param.Restricciones?.Limita_Consulta,
+                param.Restricciones?.Limita_Creditos,
+                param.Restricciones?.Limita_Fondos,
+                param.Restricciones?.Limita_Cxc,
+                param.Restricciones?.Limita_Patrimonio,
+                param.Restricciones?.Permite_Rc,
+                param.Restricciones?.Permite_Traslados_Ef,
+                param.Restricciones?.Rol_Boveda,
+                param.Restricciones?.Utiliza_Cta_Caja_Ef,
+                param.Restricciones?.Limita_Fondos_Fp,
+                param.Registro_Usuario
+            };
+
+            var result = DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, parametros);
 
             if (result.Code == 0)
             {
