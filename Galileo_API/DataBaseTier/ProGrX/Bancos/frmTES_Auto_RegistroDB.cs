@@ -241,6 +241,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 // Si filtro viene null, lo tratamos como vacío
                 filtro ??= "";
+                if(tipo == null)
+                {
+                    tipo = 0;
+                }
 
                 string sql = tipo switch
                 {
@@ -266,9 +270,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                     6 => @"Select CODIGO as item, BENEFICIARIO as descripcion
                    from vTes_Beneficiarios
-                   where CODIGO like @filtro"
+                   where CODIGO like @filtro",
 
-                    0 => DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>("Tipo inválido"),
+                    _ => @"Select '' as item, '' as descripcion Where 1 = 0" // Consulta vacía para tipos no reconocidos
                 };
 
                 // Ojo: el comodín % va en el valor del parámetro
