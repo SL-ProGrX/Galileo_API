@@ -3,10 +3,10 @@
     // Clase base con las propiedades comunes
     public class CajasDefinicionBase
     {
-        public short Activa { get; set; }
-        public DateTime Apertura_Fecha { get; set; }
-        public short Periocidad_Contrasena { get; set; }
-        public short Oficina_Utiliza_Usuario { get; set; }
+        public short? Activa { get; set; }
+        public DateTime? Apertura_Fecha { get; set; }
+        public short? Periocidad_Contrasena { get; set; }
+        public short? Oficina_Utiliza_Usuario { get; set; }
     }
 
     public class CajasDefinicionDetalleModel : CajasDefinicionBase
