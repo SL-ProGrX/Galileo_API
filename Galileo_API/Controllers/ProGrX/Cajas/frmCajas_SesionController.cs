@@ -6,9 +6,9 @@ using Galileo_API.BusinessLogic.ProGrX.Cajas;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace PgxAPI.Controllers.ProGrX.Cajas
+namespace Galileo.Controllers.ProGrX.Cajas
 {
-    namespace PgxAPI.Controllers
+    namespace Galileo.Controllers
     {
         [Route("api/[controller]")]
         [ApiController]
