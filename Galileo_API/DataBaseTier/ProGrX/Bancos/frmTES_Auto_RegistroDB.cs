@@ -410,39 +410,53 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto<TesAutoRegistroLista> Tes_AutoRegistroLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var result = new ErrorDto<TesAutoRegistroLista>()
+
+            var result = new ErrorDto<TesAutoRegistroLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new TesAutoRegistroLista()
+                Result = new TesAutoRegistroLista
                 {
                     total = 0,
                     lista = new List<TesAutoRegistroDto>()
                 }
             };
+
             try
             {
-                var query = "";
-                //Busco Total
-                query = $"select Count(*) from vTES_AUTO_REGISTRO ";
-                result.Result.total = conn.Query<int>(query).FirstOrDefault();
+                // Normaliza inputs
+                var filtro = string.IsNullOrWhiteSpace(filtros?.filtro) ? null : filtros.filtro.Trim();
 
-                if (filtros.filtro != null)
-                {
-                    filtros.filtro = " WHERE id_auto LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR palabras_clave LIKE '%" + filtros.filtro + "%' ";
-                }
+                // Importante: OFFSET y FETCH deben ser int (y con límites razonables)
+                int offset = Math.Max(0, filtros?.pagina ?? 0);
+                int fetch = Math.Clamp(filtros?.paginacion ?? 10, 1, 200); // ajusta el max a tu gusto
 
-                string paginaActual = " OFFSET " + filtros.pagina + " ROWS ";
-                string paginacionActual = " FETCH NEXT " + filtros.paginacion + " ROWS ONLY ";
+                // Para LIKE: el % va en el parámetro, NO en el SQL
+                var like = filtro is null ? null : $"%{filtro}%";
 
-                query = $@"select * from vTES_AUTO_REGISTRO ";
-                query += filtros.filtro;
-                query += $@"ORDER BY id_auto  {paginaActual} {paginacionActual}";
+                // Total con el mismo filtro (si quieres total “filtrado”)
+                const string sqlCount = @"
+                        select Count(*)
+                        from vTES_AUTO_REGISTRO
+                        where (@like is null
+                               or id_auto like @like
+                               or descripcion like @like
+                               or palabras_clave like @like);";
 
-                result.Result.lista = conn.Query<TesAutoRegistroDto>(query).ToList();
+                result.Result.total = conn.QuerySingle<int>(sqlCount, new { like });
 
+                // Datos paginados
+                const string sqlData = @"
+                                select *
+                                from vTES_AUTO_REGISTRO
+                                where (@like is null
+                                       or id_auto like @like
+                                       or descripcion like @like
+                                       or palabras_clave like @like)
+                                order by id_auto
+                                offset @offset rows fetch next @fetch rows only;";
+
+                result.Result.lista = conn.Query<TesAutoRegistroDto>(sqlData, new { like, offset, fetch }).ToList();
             }
             catch (Exception ex)
             {
@@ -451,6 +465,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 result.Result.total = 0;
                 result.Result.lista = new List<TesAutoRegistroDto>();
             }
+
             return result;
         }
 
