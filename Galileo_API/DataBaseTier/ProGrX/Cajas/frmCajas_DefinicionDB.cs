@@ -316,14 +316,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             if (result.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = codEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"REGISTRA CONCEPTO: {param.CodAuxiliar} en Caja: {param.CodCaja}",
-                    Movimiento = "REGISTRA - WEB",
-                    Modulo = vModulo
-                });
+                RegistrarBitacora(codEmpresa, usuario, $"REGISTRA CONCEPTO: {param.CodAuxiliar} en Caja: {param.CodCaja}", "REGISTRA - WEB");
             }
 
             return result.Code == 0
@@ -348,14 +341,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             if (result.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = codEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"ELIMINA CONCEPTO: {param.CodAuxiliar} de Caja: {param.CodCaja}",
-                    Movimiento = "ELIMINA - WEB",
-                    Modulo = vModulo
-                });
+                RegistrarBitacora(codEmpresa, usuario, $"ELIMINA CONCEPTO: {param.CodAuxiliar} de Caja: {param.CodCaja}", "ELIMINA - WEB");
             }
 
             return result.Code == 0
@@ -526,14 +512,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             if (result.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = codEmpresa,
-                    Usuario = param.Registro_Usuario,
-                    DetalleMovimiento = $"Definición Cajas: {param.Cod_Caja}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
+                RegistrarBitacora(codEmpresa, param.Registro_Usuario, $"Definición Cajas: {param.Cod_Caja}", "Registra - WEB");
             }
 
             return result.Code == 0
@@ -554,14 +533,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             if (result.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = codEmpresa,
-                    Usuario = param.Usuario,
-                    DetalleMovimiento = $"Copia Caja: {param.CajaOrigen} a {param.CajaDestino}",
-                    Movimiento = "Aplica - WEB",
-                    Modulo = vModulo
-                });
+                RegistrarBitacora(codEmpresa, param.Usuario, $"Copia Caja: {param.CajaOrigen} a {param.CajaDestino}", "Aplica - WEB");
             }
 
             return result.Code == 0
@@ -584,19 +556,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             if (result.Code == 0)
             {
-                Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = codEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Caja : {codCaja}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
-                });
+                RegistrarBitacora(codEmpresa, usuario, $"Caja : {codCaja}", "Elimina - WEB");
             }
 
             return result.Code == 0
                 ? DbHelper.CreateOkResponse(true)
                 : DbHelper.CreateErrorResponse<bool>(result.Description ?? error, result.Code ?? -1, false);
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string detalle, string movimiento)
+        {
+            Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalle,
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
         }
     }
 }
