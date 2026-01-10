@@ -7,19 +7,19 @@
         public DateTime? Apertura_Fecha { get; set; }
         public short? Periocidad_Contrasena { get; set; }
         public short? Oficina_Utiliza_Usuario { get; set; }
+        public string? Descripcion { get; set; }
+        public string? Cod_Oficina { get; set; }
+        public string? Cod_Cuenta_Dev { get; set; }
+        public string? Notas { get; set; }
     }
 
     public class CajasDefinicionDetalleModel : CajasDefinicionBase
     {
         public string? Cod_Caja { get; set; }
-        public string? Descripcion { get; set; }
-        public string? Notas { get; set; }
         public int? Apertura_Codigo { get; set; }
         public short? Apertura_Compartida { get; set; }
         public string? Cierre_Periocidad { get; set; }
         public string? Cierre_Tipo { get; set; }
-        public string? Cod_Oficina { get; set; }
-        public string? Cod_Cuenta_Dev { get; set; }
         public DateTime? Registro_Fecha { get; set; }
         public string? Registro_Usuario { get; set; }
         public short? Permite_Mov_Cbrjud { get; set; }
@@ -129,13 +129,9 @@
     public class CajasDefinicionInsertParams : CajasDefinicionBase
     {
         public required string Cod_Caja { get; set; }
-        public string? Descripcion { get; set; }
-        public string? Notas { get; set; }
         public short? Apertura_Compartida { get; set; }
         public string? Cierre_Periocidad { get; set; }
         public string? Cierre_Tipo { get; set; }
-        public string? Cod_Oficina { get; set; }
-        public string? Cod_Cuenta_Dev { get; set; }
         public short? Permite_Mov_Cbrjud { get; set; }
         public short? Limita_Consulta { get; set; }
         public short? Limita_Creditos { get; set; }
