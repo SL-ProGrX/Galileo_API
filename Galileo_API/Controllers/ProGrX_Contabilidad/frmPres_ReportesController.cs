@@ -29,5 +29,11 @@ namespace Galileo.Controllers
         {
             return _bl.spPres_Ajustes_Permitidos_Obtener(CodEmpresa, codContab, codModelo, Usuario);
         }
+
+        [HttpPost("Pres_ReporteBalanceEstado")]
+        public ErrorDto<List<object>> Pres_ReporteBalanceEstado(int CodEmpresa, PresFiltrosReportes presFiltros)
+        {
+            return _bl.Pres_ReporteBalanceEstado(CodEmpresa, presFiltros);
+        }
     }
 }

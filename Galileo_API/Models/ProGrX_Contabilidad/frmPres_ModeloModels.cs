@@ -22,6 +22,7 @@ namespace Galileo.Models.PRES
         public string Resolucion_Notas { get; set; } = string.Empty;
         public bool Mostrar_Inicio { get; set; }
         public string Periodo { get; set; } = string.Empty;
+        public decimal Patrimonio_Promedio { get; set; } = 0;
     }
 
     public class PresModeloInsert
@@ -33,6 +34,8 @@ namespace Galileo.Models.PRES
         public string Notas { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
+
+        public decimal Patrimonio_Promedio { get; set; } = 0;
     }
 
     public class PressModeloUsuarios
