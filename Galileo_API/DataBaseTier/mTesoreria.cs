@@ -1028,17 +1028,17 @@ namespace Galileo.DataBaseTier
                 ? fxTesTipoDocConsec(parametros.codEmpresa, data.id_banco, tipo, "+").Result.ToString()
                 : string.Empty;
 
-            string documentoFinal = data.doc_auto ? consecutivo : parametros.documentoManual;
+            string documentoFinal = data.doc_auto ? consecutivo : parametros.documentoManual ?? string.Empty;
 
             ActualizarTransaccionEmitida(
                 connection,
                 parametros.solicitud,
-                parametros.usuario,
+                parametros.usuario ?? string.Empty,
                 fechaEmision,
-                documentoFinal,
+                documentoFinal ?? string.Empty,
                 debeActualizarDocumento: data.doc_auto || !string.IsNullOrWhiteSpace(parametros.documentoManual));
 
-            PostActualizarTransaccion(parametros.codEmpresa, parametros.usuario, parametros.modulo, parametros.solicitud, data, tipo, consecutivo);
+            PostActualizarTransaccion(parametros.codEmpresa, parametros.usuario ?? string.Empty, parametros.modulo, parametros.solicitud, data, tipo, consecutivo);
 
             return Ok();
         }

@@ -133,5 +133,78 @@ namespace Galileo.DataBaseTier
 
             return resp;
         }
+
+        public ErrorDto<List<object>> Pres_ReporteBalanceEstado (int CodEmpresa, PresFiltrosReportes presFiltros)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var resp = new ErrorDto<List<object>>();
+
+            const string proc = "[spPres_ReporteGeneralEstado]";
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+
+                resp.Result = connection.Query<object>(
+                    proc,
+                    new
+                    {
+                        TipoInforme = presFiltros.tipoInforme,
+                        Contabilidad = presFiltros.contabilidad,
+                        Unidad = presFiltros.unidadNegocio,
+                        Centro = presFiltros.centroCosto,
+                        Modelo = presFiltros.modelo,
+                        Periodo = presFiltros.periodo,
+                        TiposAjuste = presFiltros.tiposAjuste,
+                        TipoReporte = presFiltros.tipoReporte,
+                        Nivel = presFiltros.nivelReporte,
+                        ChkCalcPreliminar = presFiltros.chkCalculaEstadosPreliminares,
+                        ChkNoMostrarCeros = presFiltros.chkNoMostrarCeros,
+                        ChkMostrarTitulos = presFiltros.chkMostrarTitulos,
+                        ChkCuentasOrden = presFiltros.chkCuentasOrden,
+                        ChkFormatoNumCuentas = presFiltros.chkFormatoNumCuentas
+                    },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                resp.Code = 0;
+                resp.Description = "OK";
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = null;
+            }
+
+            return resp;
+        }
+
+        public ErrorDto<float> Pres_ReportesIndicadores(int CodEmpresa, string modelo, int codContab)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var resp = new ErrorDto<float>();
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                var query = $@"select dbo.fxPres_Indicador_ROE(@modelo, @contabilidad ) as ROE";
+                var indicador = connection.Query<float>(query, new
+                {
+                    modelo = modelo,
+                    contabilidad = codContab
+                }).FirstOrDefault();
+
+                resp.Result = indicador;
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = "Pres_CierreAjustes_Obtener - " + ex.Message;
+                resp.Result = 0;
+            }
+            return resp;
+        }
+
     }
 }

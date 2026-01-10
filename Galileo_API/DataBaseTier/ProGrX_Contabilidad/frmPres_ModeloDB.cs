@@ -279,7 +279,8 @@ namespace Galileo.DataBaseTier
                 Descripcion = request.Descripcion,
                 Notas = request.Notas,
                 Estado = estado,
-                Usuario = request.Usuario
+                Usuario = request.Usuario,
+                Patrimonio = request.Patrimonio_Promedio
             };
 
             return ExecuteStoredProcNonQuery(
