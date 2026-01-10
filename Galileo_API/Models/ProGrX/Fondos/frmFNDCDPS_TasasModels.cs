@@ -1,4 +1,4 @@
-﻿namespace Galileo.Models.ProGrX.Fondos
+﻿namespace Galileo_API.Models.ProGrX.Fondos
 {
     public class FndCdpsTasaRefData
     {

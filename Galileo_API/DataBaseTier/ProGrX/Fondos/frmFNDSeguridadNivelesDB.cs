@@ -1,11 +1,11 @@
 ﻿using Dapper;
+using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Fondos;
 using Galileo.Models.Security;
-using PdfSharp.Pdf.Filters;
+using Galileo_API.Models.ProGrX.Fondos;
 
-namespace Galileo.DataBaseTier.ProGrX.Fondos
+namespace Galileo_API.DataBaseTier.ProGrX.Fondos
 {
     public class FrmFndSeguridadNivelesDb
     {
@@ -14,9 +14,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private readonly int vModulo = 18;
 
         public FrmFndSeguridadNivelesDb(IConfiguration config)
+            : this(new MSecurityMainDb(config), new PortalDB(config))
         {
-            _securityMainDB = new MSecurityMainDb(config);
-            _portalDB = new PortalDB(config);
+        }
+
+        public FrmFndSeguridadNivelesDb(MSecurityMainDb securityMainDB, PortalDB portalDB)
+        {
+            _securityMainDB = securityMainDB;
+            _portalDB = portalDB;
         }
 
         /// <summary>
@@ -189,6 +194,8 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
                 int existe = connection.QueryFirstOrDefault<int>(qryExiste, new { CodGrupo = Data.cod_grupo });
 
+                string Usuario = Data.registro_usuario?.Trim().ToUpper() ?? "";
+
                 if (existe == 0)
                 {
                     const string qryInsert = @"
@@ -220,13 +227,13 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                         MontoInicio = Data.monto_inicio,
                         MontoCorte = Data.monto_corte,
                         Activo = Data.activo ? 1 : 0,
-                        Usuario = Data.registro_usuario?.Trim()
+                        Usuario
                     });
 
                     _securityMainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
-                        Usuario = Data.registro_usuario?.Trim().ToUpper(),
+                        Usuario = Usuario,
                         DetalleMovimiento = $"Grupo de Seguridad: {Data.cod_grupo} - {Data.descripcion}",
                         Movimiento = "Registra - WEB",
                         Modulo = vModulo
@@ -253,7 +260,7 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     _securityMainDB.Bitacora(new BitacoraInsertarDto
                     {
                         EmpresaId = CodEmpresa,
-                        Usuario = Data.registro_usuario?.Trim().ToUpper(),
+                        Usuario = Usuario,
                         DetalleMovimiento = $"Grupo de Seguridad: {Data.cod_grupo} - {Data.descripcion}",
                         Movimiento = "Modifica - WEB",
                         Modulo = vModulo

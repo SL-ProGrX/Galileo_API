@@ -1,10 +1,11 @@
 ﻿using Dapper;
 using Galileo.Models;
+using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Fondos;
+using Galileo_API.Models.ProGrX.Fondos;
 using Galileo.Models.Security;
 
-namespace Galileo.DataBaseTier.ProGrX.Fondos
+namespace Galileo_API.DataBaseTier.ProGrX.Fondos
 {
     public class FrmFndCdpsTasasDb
     {
@@ -13,9 +14,14 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
         private readonly PortalDB _portalDB;
 
         public FrmFndCdpsTasasDb(IConfiguration config)
+        : this(new MSecurityMainDb(config), new PortalDB(config))
         {
-            _mSecurity = new MSecurityMainDb(config);
-            _portalDB = new PortalDB(config);
+        }
+
+        public FrmFndCdpsTasasDb(MSecurityMainDb mSecurity, PortalDB portalDB)
+        {
+            _mSecurity = mSecurity;
+            _portalDB = portalDB;
         }
 
         /// <summary>
@@ -42,10 +48,12 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
 
             if (string.IsNullOrWhiteSpace(query))
             {
-                var response = new ErrorDto<List<DropDownListaGenericaModel>>();
-                response.Code = -1;
-                response.Description = "Opción inválida.";
-                response.Result = null;
+                ErrorDto<List<DropDownListaGenericaModel>> response = new()
+                {
+                    Code = -1,
+                    Description = "Opción inválida.",
+                    Result = null
+                };
                 return response;
             }
 
@@ -339,11 +347,17 @@ namespace Galileo.DataBaseTier.ProGrX.Fondos
                     TasaCod = CodTasaRef,
                     fCuponId = IdCupon,
                     PlazoId = IdPlazo,
-                    Tasa = Tasa,
+                    Tasa,
                     Estado = 1,
                     Usuario = Usuario.Trim().ToUpper()
                 });
 
+                if (spResp == null)
+                {
+                    response.Code = -1;
+                    response.Description = "El procedimiento no retorn&oacute; respuesta.";
+                    return response;
+                }
                 if (spResp.pass == 0)
                 {
                     response.Code = -1;
