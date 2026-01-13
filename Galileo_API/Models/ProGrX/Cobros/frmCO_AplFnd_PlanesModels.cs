@@ -21,8 +21,8 @@
     public class FondosAplConfigPrioridadAddParams
     {
         public string? Codigo { get; set; }
-        public int Orden { get; set; }
-        public int Activo { get; set; }
+        public int? Orden { get; set; }
+        public int? Activo { get; set; }
         public string? Usuario { get; set; }
     }
 
