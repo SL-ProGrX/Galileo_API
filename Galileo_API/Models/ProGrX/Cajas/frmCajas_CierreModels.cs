@@ -7,6 +7,20 @@
         public string cta { get; set; } = string.Empty;
     }
 
+    public class CajasCierreData
+    {
+        public bool cierre_ciego { get; set; }
+        public string estado_texto { get; set; } = string.Empty;
+        public int cod_apertura { get; set; }
+        public string estado { get; set; } = string.Empty;
+        public DateTime? apertura_fecha { get; set; }
+        public string apertura_usuario { get; set; } = string.Empty;
+        public DateTime? en_uso_fecha { get; set; }
+        public string en_uso_usuario { get; set; } = string.Empty;
+        public DateTime? apertura_vence { get; set; }
+        public bool apertura_compartida { get; set; }
+    }
+
     public class CajasCierreFormaPagoData
     {
         public string cod_forma_pago { get; set; } = string.Empty;

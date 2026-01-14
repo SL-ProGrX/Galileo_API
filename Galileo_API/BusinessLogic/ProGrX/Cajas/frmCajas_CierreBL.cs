@@ -11,6 +11,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
 
         public FrmCajasCierreBl(IConfiguration config) => _db = new FrmCajasCierreDb(config);
 
+        public ErrorDto<CajasCierreData> CajasCierre_AperturaCarga_Obtener(int CodEmpresa, string Caja, int Apertura)
+        {
+            return _db.CajasCierre_AperturaCarga_Obtener(CodEmpresa, Caja, Apertura);
+        }
+
         public ErrorDto<List<DropDownListaGenericaModel>> CajasCierre_Divisas_Obtener(int CodEmpresa, int Contabilidad)
         {
             return _db.CajasCierre_Divisas_Obtener(CodEmpresa, Contabilidad);

@@ -61,14 +61,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <summary>
         /// Abre caja para el usuario
         /// </summary>
-        public ErrorDto Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string appVersion, string clave)
+        public ErrorDto<CajasAperturaDto> Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string appVersion, string clave)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
-            var response = new ErrorDto
+            var response = new ErrorDto<CajasAperturaDto>
             {
                 Code = 0,
                 Description = "Ok",
+                Result = null
             };
 
             try
@@ -93,7 +94,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 if (aceptado <= 0)
                 {
-                    response.Code = -1;
+                    response.Code = -2;
                     response.Description = "No se encuentra autorizado para utilizar esta caja.";
                     return response;
                 }
@@ -109,16 +110,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 if (result == null)
                 {
-                    response.Code = -1;
+                    response.Code = -2;
                     response.Description = "No existe Apertura Disponible para esta caja o se encuentra en uso por otro usuario.";
                     return response;
+                } else
+                {
+                    response.Result = result;
                 }
+                response.Description = "Ok";
+                response.Code = 0;
             }
             catch (SqlException ex)
             {
                 Debug.WriteLine(ex);
                 response.Code = -1;
                 response.Description = ex.Message;
+                response.Result = null;
             }
 
             return response;

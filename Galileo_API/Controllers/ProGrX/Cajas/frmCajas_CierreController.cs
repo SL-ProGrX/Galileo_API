@@ -16,6 +16,13 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         public FrmCajasCierreController(IConfiguration config) => _bl = new FrmCajasCierreBl(config);
 
         [Authorize]
+        [HttpGet("CajasCierre_AperturaCarga_Obtener")]
+        public ErrorDto<CajasCierreData> CajasCierre_AperturaCarga_Obtener(int CodEmpresa, string Caja, int Apertura)
+        {
+            return _bl.CajasCierre_AperturaCarga_Obtener(CodEmpresa, Caja, Apertura);
+        }
+
+        [Authorize]
         [HttpGet("CajasCierre_Divisas_Obtener")]
         public ErrorDto<List<DropDownListaGenericaModel>> CajasCierre_Divisas_Obtener(int CodEmpresa, int Contabilidad)
         {
