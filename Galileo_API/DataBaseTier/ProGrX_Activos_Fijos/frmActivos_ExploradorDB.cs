@@ -17,9 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
-        // =====================================================
-        // MÉTODO GENÉRICO (reduce duplicación Sonar)
-        // =====================================================
+
         private ErrorDto<List<T>> EjecutarLista<T>(
             int codEmpresa,
             Func<SqlConnection, List<T>> query)
