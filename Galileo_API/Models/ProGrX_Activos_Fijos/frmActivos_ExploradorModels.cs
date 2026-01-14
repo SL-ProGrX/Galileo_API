@@ -5,6 +5,7 @@
         public string? nombre { get; set; }
         public string? descripcion { get; set; }
         public string? responsable { get; set; }
+        public bool? infoAdicional { get; set; }
         public string? proveedor { get; set; }
 
         public string? tipoActivo { get; set; }
@@ -16,15 +17,13 @@
         public string? placaDesde { get; set; }
         public string? placaHasta { get; set; }
 
-        public bool infoAdicional { get; set; }
-
         public DateTime? fechaAdqDesde { get; set; }
         public DateTime? fechaAdqHasta { get; set; }
 
         public DateTime? fechaInstDesde { get; set; }
         public DateTime? fechaInstHasta { get; set; }
 
-        public string tipoVisualizacion { get; set; } = "L"; // L | A | C
+        public string? tipoVisualizacion { get; set; } = "L"; // L | A | C
     }
 
     public class ActivoExploradorDto
