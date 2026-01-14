@@ -1,0 +1,101 @@
+﻿using Galileo.DataBaseTier;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo_API.Models.ProGrX.Cajas;
+
+namespace Galileo_API.DataBaseTier.ProGrX.Cajas
+{
+    public class FrmCajasCierreDb
+    {
+        private readonly PortalDB _portalDb;
+
+        public FrmCajasCierreDb(IConfiguration config)
+            : this(new PortalDB(config))
+        {
+        }
+
+        public FrmCajasCierreDb(PortalDB portalDB)
+        {
+            _portalDb = portalDB;
+        }
+
+        public ErrorDto<CajasCierreData> CajasCierre_AperturaCarga_Obtener(int CodEmpresa, string Caja, int Apertura)
+        {
+            const string sqlCierreTipo = @"select CIERRE_TIPO
+                from CAJAS_DEFINICION where COD_CAJA = @Caja;";
+
+            var cierreTipoResult = DbHelper.ExecuteSingleQuery<string>(
+                _portalDb, CodEmpresa, sqlCierreTipo, "", new { Caja });
+
+            var cierreTipo = cierreTipoResult.Result;
+            var vCierreCiego = string.Equals(cierreTipo, "C", StringComparison.OrdinalIgnoreCase);
+
+            const string sqlApertura = @"
+                select *, Case when Estado = 'A' then 'Abierta' else 'Cerrada' end as 'Estado'
+                from CAJAS_APERTURAS_MAIN
+                where COD_CAJA = @Caja and COD_APERTURA = @Apertura;";
+
+            var aperturaResult = DbHelper.ExecuteSingleQuery<CajasCierreData>(
+                _portalDb, 
+                CodEmpresa,
+                sqlApertura, 
+                defaultValue: new CajasCierreData(), 
+                parameters: new { Caja, Apertura });
+
+            var resultData = aperturaResult.Result ?? new CajasCierreData();
+            resultData.cierre_ciego = vCierreCiego;
+
+            return DbHelper.CreateOkResponse(resultData);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> CajasCierre_Divisas_Obtener(int CodEmpresa, int Contabilidad)
+        {
+            const string sql = @"Select rtrim(cod_divisa) as 'item', rtrim(Descripcion) as 'descripcion' 
+                from CNTX_DIVISAS where COD_CONTABILIDAD = @Contabilidad Order by DIVISA_LOCAL desc,COD_DIVISA";
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(
+                _portalDb, CodEmpresa, sql, new { Contabilidad });
+        }
+
+        public ErrorDto<List<CajasCierreCuentasData>> CajasCierre_Cuentas_Obtener(int CodEmpresa)
+        {
+            const string sql = @"exec spCajas_DepositosCuentasBancarias";
+
+            return DbHelper.ExecuteListQuery<CajasCierreCuentasData>(
+                _portalDb, CodEmpresa, sql);
+        }
+
+        public ErrorDto<List<CajasCierreFormaPagoData>> CajasCierre_FormaPago_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa)
+        {
+            const string sql = @"exec spCajas_CierreFPTotal @Caja, @Apertura, @Divisa";
+
+            return DbHelper.ExecuteListQuery<CajasCierreFormaPagoData>(
+                _portalDb, CodEmpresa, sql, new {Caja, Apertura, Divisa});
+        }
+
+        public ErrorDto<List<CajasCierreDenominacionData>> CajasCierre_Denominacion_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa, string Tipo)
+        {
+            const string sql = @"exec spCajas_CierreEFDetalle @Caja, @Apertura, @Divisa, @Tipo";
+
+            return DbHelper.ExecuteListQuery<CajasCierreDenominacionData>(
+                _portalDb, CodEmpresa, sql, new { Caja, Apertura, Divisa, Tipo });
+        }
+
+        public ErrorDto<List<CajasCierreDepositosData>> CajasCierre_Depositos_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa)
+        {
+            const string sql = @"exec spCajas_CierreDepositoDivisa @Caja, @Apertura, @Divisa";
+
+            return DbHelper.ExecuteListQuery<CajasCierreDepositosData>(
+                _portalDb, CodEmpresa, sql, new { Caja, Apertura, Divisa });
+        }
+
+        public ErrorDto<decimal> CajasCierre_TotalDepositar_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa)
+        {
+            const string sql = @"select SI_EFECTIVO From CAJAS_APERTURAS_CIERRES 
+                where COD_CAJA = @Caja and COD_APERTURA = @Apertura and COD_DIVISA = @Divisa";
+
+            return DbHelper.ExecuteSingleQuery<decimal>(
+                _portalDb, CodEmpresa, sql, 0, new { Caja, Apertura, Divisa });
+        }
+    }
+}
