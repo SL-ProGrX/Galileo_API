@@ -13,10 +13,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
     {
         private readonly IConfiguration _config;
 
-        public FrmCajasAccesosDb(IConfiguration config)
-        {
-            _config = config;
-        }
+        public FrmCajasAccesosDb(IConfiguration config) => _config = config;
 
         /// <summary>
         /// Obtiene cajas disponibles
@@ -28,7 +25,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
-                Result = new List<DropDownListaGenericaModel>()
+                Result = []
             };
 
             try
@@ -46,7 +43,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return response;
         }
 
-        private List<DropDownListaGenericaModel> ObtenerCajasDisponibles(SqlConnection connection, string usuario)
+        private static List<DropDownListaGenericaModel> ObtenerCajasDisponibles(SqlConnection connection, string usuario)
         {
             var query = "spCajas_CierreCajasDisponibles";
 
@@ -61,7 +58,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <summary>
         /// Abre caja para el usuario
         /// </summary>
-        public ErrorDto<CajasAperturaDto> Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string appVersion, string clave)
+        public ErrorDto<CajasAperturaDto> Cajas_AbreCaja(int codEmpresa, string codCaja, string usuario, string clave)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
 
