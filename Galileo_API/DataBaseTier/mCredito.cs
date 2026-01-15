@@ -1,8 +1,12 @@
-﻿namespace Galileo.DataBaseTier
+﻿using Dapper;
+using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
+using System.Reflection;
+
+namespace Galileo.DataBaseTier
 {
     public static class MCredito
     {
-
         public static string fxMembresia(DateTime vFecha)
         {
             DateTime fechaServidor = DateTime.Now;
@@ -44,6 +48,25 @@
 
             return vResultado;
 
+        }
+
+        public static string fxCrdParametro(SqlConnection conn, string pParametro)
+        {
+            try
+            {
+                var query = $@"select valor from crd_parametros where cod_parametro = @parametro ";
+                var resultado = conn.QueryFirstOrDefault<string>(query, new { parametro = pParametro });
+                if(string.IsNullOrEmpty(resultado))
+                {
+                    return "3";
+                }
+
+                return resultado;
+            }
+            catch (Exception)
+            {
+                return "3";
+            }
         }
 
     }
