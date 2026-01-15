@@ -38,5 +38,10 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         {
             return _db.CajasCrdAbonosSt_Operaciones_Obtener(CodEmpresa);
         }
+
+        public ErrorDto<CajasCrdAbonoCargaOperacionData> CajasCrdAbonosSt_CargaOperacionCodCed(int CodEmpresa, string cedula, string codigo)
+        {
+            return _db.CajasCrdAbonosSt_CargaOperacionCodCed(CodEmpresa, cedula, codigo);
+        }
     }
 }

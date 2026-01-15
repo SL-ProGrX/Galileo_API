@@ -2,30 +2,33 @@ using Dapper;
 using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System.Text.RegularExpressions;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
-    public class frmTES_BancosDB
+    public class FrmTesBancosDB
     {
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb DBBitacora;
         private readonly MCntLinkDB mCntLink;
-        private readonly string dirRDLC = string.Empty;
+        private readonly string dirRDLC;
         private readonly int vModulo = 9; // Módulo de Tesorería
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
         private readonly string vBanco = "Bancos";
 
-        public frmTES_BancosDB(IConfiguration config)
+        public FrmTesBancosDB(IConfiguration config)
         {
             DBBitacora = new MSecurityMainDb(config);
             mCntLink = new MCntLinkDB(config);
             _portalDB = new PortalDB(config);
-            dirRDLC = config.GetSection("AppSettings").GetSection("RutaRDLC").Value.ToString();
+            dirRDLC = config.GetSection("AppSettings").GetSection("RutaRDLC").Value!.ToString();
         }
 
         public ErrorDto Bitacora(BitacoraInsertarDto data)
@@ -139,8 +142,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 var like = hasFiltro ? $"%{texto}%" : null;
 
                 
-                var offset = (filtros?.pagina).GetValueOrDefault(0);
-                var fetch = (filtros?.paginacion).GetValueOrDefault(0);
+                var offset = filtros!.pagina;
+                var fetch = filtros!.paginacion;
                 var usarPaginacion = fetch > 0;
 
                 const string sqlCount = @"
@@ -326,38 +329,101 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto TES_Bancos_Guardar(int CodEmpresa, bool vEdita, string Usuario, TesBancoDto param)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = ""
-            };
-            var query = "";
+
             try
             {
+                // 1) Validación duplicado
+                if (CuentaBancariaDuplicada(conn, param.cod_cuenta, vEdita ? param.id_banco : 0))
+                {
+                    return DbHelper.ErrorResponse("Existe ya un Banco registrado con la misma Cuenta Bancaria.");
+                }
+
+                // 2) Cuentas contables formateadas (una sola vez)
                 string ctaContable = mCntLink.fxgCntCuentaFormato(CodEmpresa, false, param.cod_cuenta, 0);
                 string ctaComisionSINPE = mCntLink.fxgCntCuentaFormato(CodEmpresa, false, param.cod_cuenta_con, 0);
-                // --- Validación cuenta bancaria duplicada ---
-                var cuentaBancaria = param.cta?.Trim() ?? "";
-                var idBancoActual = vEdita ? param.id_banco : 0;
 
-                var queryExiste = @"SELECT ISNULL(COUNT(*),0) 
+                // 3) Parametrización única
+                var sqlParams = BuildSqlParams(param, ctaContable, ctaComisionSINPE);
+
+                // 4) Insert/Update
+                int idBanco = vEdita
+                    ? UpdateBanco(conn, param.id_banco, sqlParams)
+                    : InsertBanco(conn, sqlParams);
+
+                // 4) Insert/Update
+                string msj = vEdita
+                    ? "Información actualizada satisfactoriamente..."
+                    : "Información guardada satisfactoriamente...";
+
+                // 5) Bitácora
+                RegistrarBitacora(CodEmpresa, Usuario, idBanco, vEdita);
+
+                return DbHelper.OkResponse(msj);
+            }
+            catch (Exception ex)
+            {
+               return DbHelper.ErrorResponse(ex.Message);   
+            }
+            
+        }
+
+        private static bool CuentaBancariaDuplicada(SqlConnection conn, string cuentaBancaria, int idBancoActual)
+        {
+            string SqlExisteCuenta = @"SELECT ISNULL(COUNT(*),0) 
                                 FROM Tes_Bancos 
                                 WHERE cta = @cuentaBancaria 
                                   AND Id_Banco != @idBancoActual";
+            var existe = conn.QueryFirst<int>(SqlExisteCuenta, new { cuentaBancaria, idBancoActual });
+            return existe > 0;
+        }
 
-                int existe = conn.QueryFirst<int>(queryExiste,
-                    new { cuentaBancaria, idBancoActual });
+        private static object BuildSqlParams(
+           TesBancoDto param,
+            string ctaContable,
+            string ctaComisionSinpe)
+        {
+            return new
+            {
+                nombre = param.descripcion.Trim(),
+                cuentaBancariaPuente = param.puente,
+                estado = param.estado,
+                utilizaPlan = param.utiliza_plan,
+                formato = param.formato_transferencia,
+                formatoN2 = param.formato_transferencias_n2,
+                cuentaBancaria = param.cod_cuenta,
+                cuentaContable = ctaContable,
+                descCorta = param.desc_corta,
+                regional = param.cta_regional,
+                monitoreo = param.monitoreo,
+                grupo = param.cod_grupo,
+                archivoEspecial = param.archivo_especial_ck,
+                chequeEspecialFirma = param.archivo_cheques_firmas,
+                chequeEspecialNoFirma = param.archivo_cheques_sin_firmas,
+                formatoEspecial = param.utiliza_formato_especial,
+                lugarEmision = param.lugar_emision,
+                supervisa = param.supervision,
+                dias = param.supervision_dias,
+                SINPE_CtaInterna = param.sinpe_interna,
+                SINPE_Codigo = param.sinpe_empresa,
+                codigoCliente = param.codigo_cliente,
+                divisa = param.cod_divisa,
+                autoGestion = param.utiliza_autogestion,
+                con_ComisionSINPEMnt = param.concilia_ar_comision,
+                con_ComisionSINPECta = ctaComisionSinpe,
+                con_Unidad = param.unidad,
+                con_Centro = param.centro,
+                con_Centro_Comision = param.centro_com,
+                con_Concepto = param.concepto,
+                banco = param.id_banco,
+                ilocalizable = param.ilocalizable == true ? 1 : 0,
+                int_grupos_asociados = param.int_grupos_asociados == true ? 1 : 0,
+                int_requiere_cuenta_destino = param.int_requiere_cuenta_destino == true ? 1 : 0
+            };
+        }
 
-                if (existe > 0)
-                {
-                    response.Code = -1;
-                    response.Description = "Existe ya un Banco registrado con la misma Cuenta Bancaria.";
-                    return response;
-                }
-
-                if (vEdita)
-                {
-                    query = @"update Tes_Bancos set Descripcion = @nombre, Puente = @cuentaBancariaPuente
+        private static int UpdateBanco(SqlConnection conn, int idBanco, object sqlParams)
+        {
+            string SqlUpdateBanco =  @"update Tes_Bancos set Descripcion = @nombre, Puente = @cuentaBancariaPuente
                         ,estado = @estado, Utiliza_Plan = @utilizaPlan, formato_transferencia = @formato
                         ,formato_transferencias_N2 = @formatoN2, cta = @cuentaBancaria, CtaConta = @cuentaContable
                         ,Desc_Corta = @descCorta, cta_regional = @regional, monitoreo = @monitoreo, cod_grupo = @grupo
@@ -370,132 +436,48 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         , CONCILIA_AR_CENTRO = @con_Centro, CONCILIA_AR_CENTRO_COM = @con_Centro_Comision, CONCILIA_AR_CONCEPTO = @con_Concepto
                         , ILOCALIZABLE = @ilocalizable , INT_GRUPOS_ASOCIADOS = @int_grupos_asociados, INT_REQUIERE_CUENTA_DESTINO = @int_requiere_cuenta_destino
                         Where Id_Banco = @banco";
-                    conn.Execute(query,
-                        new
-                        {
-                            nombre = param.descripcion.Trim(),
-                            cuentaBancariaPuente = param.puente,
-                            param.estado,
-                            utilizaPlan = param.utiliza_plan,
-                            formato = param.formato_transferencia,
-                            formatoN2 = param.formato_transferencias_n2,
-                            cuentaBancaria,
-                            cuentaContable = ctaContable,
-                            descCorta = param.desc_corta,
-                            regional = param.cta_regional,
-                            param.monitoreo,
-                            grupo = param.cod_grupo,
-                            archivoEspecial = param.archivo_especial_ck,
-                            chequeEspecialFirma = param.archivo_cheques_firmas,
-                            chequeEspecialNoFirma = param.archivo_cheques_sin_firmas,
-                            formatoEspecial = param.utiliza_formato_especial,
-                            lugarEmision = param.lugar_emision,
-                            supervisa = param.supervision,
-                            dias = param.supervision_dias,
-                            SINPE_CtaInterna = param.sinpe_interna,
-                            SINPE_Codigo = param.sinpe_empresa,
-                            codigoCliente = param.codigo_cliente,
-                            divisa = param.cod_divisa,
-                            autoGestion = param.utiliza_autogestion,
-                            con_ComisionSINPEMnt = param.concilia_ar_comision,
-                            con_ComisionSINPECta = ctaComisionSINPE,
-                            con_Unidad = param.unidad,
-                            con_Centro = param.centro,
-                            con_Centro_Comision = param.centro_com,
-                            con_Concepto = param.concepto,
-                            banco = param.id_banco,
-                            ilocalizable = param.ilocalizable == true ? 1 : 0,
-                            int_grupos_asociados = param.int_grupos_asociados == true ? 1 : 0,
-                            int_requiere_cuenta_destino = param.int_requiere_cuenta_destino == true ? 1 : 0
-                        });
-
-                    Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = Usuario.ToUpper(),
-                        DetalleMovimiento = "Cuenta Bancaria: " + param.id_banco,
-                        Movimiento = "MODIFICA - WEB",
-                        Modulo = 9
-                    });
-
-                    response.Code = param.id_banco;
-                    response.Description = "Información actualizada satisfactoriamente...";
-                }
-                else
-                {
-                    query = @"insert Tes_Bancos(descripcion,estado,Utiliza_Plan,formato_transferencia,formato_transferencias_N2,Cta,CtaConta,Desc_Corta
-                        ,firmas_desde,firmas_hasta,saldo,fecha_envia,cta_regional,cod_grupo,monitoreo,ARCHIVO_ESPECIAL_CK,puente
-                        ,archivo_cheques_firmas,archivo_cheques_sin_firmas,utiliza_formato_especial,lugar_emision
-                        ,SUPERVISION,SUPERVISION_DIAS,SINPE_INTERNA,SINPE_EMPRESA, CODIGO_CLIENTE, cod_divisa, UTILIZA_AUTOGESTION
-                        ,CONCILIA_AR_COMISION, CONCILIA_AR_COMISION_CTA, CONCILIA_AR_UNIDAD, CONCILIA_AR_CENTRO, CONCILIA_AR_CENTRO_COM, CONCILIA_AR_CONCEPTO, ILOCALIZABLE, 
-                        INT_GRUPOS_ASOCIADOS, INT_REQUIERE_CUENTA_DESTINO) 
-                        values(@nombre, @estado, @utilizaPlan, @formato, @formatoN2, @cuentaBancaria, @cuentaContable, @descCorta,0,0,0,dbo.MyGetdate()
-                        , @regional, @grupo, @monitoreo, @archivoEspecial, @cuentaBancariaPuente, @chequeEspecialFirma, @chequeEspecialNoFirma, @formatoEspecial
-                        , @lugarEmision, @supervisa, @dias, @SINPE_CtaInterna, @SINPE_Codigo, @CodigoCliente, @divisa, @autoGestion, @con_ComisionSINPEMnt
-                        , @con_ComisionSINPECta, @con_Unidad, @con_Centro, @con_Centro_Comision, @con_Concepto, @ilocalizable, 
-                          @int_grupos_asociados, @int_requiere_cuenta_destino)";
-                    conn.Execute(query,
-                        new
-                        {
-                            nombre = param.descripcion,
-                            param.estado,
-                            utilizaPlan = param.utiliza_plan == true ? 1 : 0,
-                            formato = param.formato_transferencia,
-                            formatoN2 = param.formato_transferencias_n2,
-                            cuentaBancaria,
-                            cuentaContable = ctaContable,
-                            descCorta = param.desc_corta.Trim(),
-                            regional = param.cta_regional ? 1 : 0,
-                            monitoreo = param.monitoreo ? 1 : 0,
-                            grupo = param.cod_grupo,
-                            archivoEspecial = param.archivo_especial_ck ?? "",
-                            cuentaBancariaPuente = param.puente == true ? 1 : 0,
-                            chequeEspecialFirma = param.archivo_cheques_firmas ?? "",
-                            chequeEspecialNoFirma = param.archivo_cheques_sin_firmas ?? "",
-                            formatoEspecial = param.utiliza_formato_especial == true ? 1 : 0,
-                            lugarEmision = param.lugar_emision ?? "",
-                            supervisa = param.supervision == true ? 1 : 0,
-                            dias = param.supervision_dias,
-                            SINPE_CtaInterna = param.sinpe_interna == true ? 1 : 0,
-                            SINPE_Codigo = param.sinpe_empresa ?? "",
-                            CodigoCliente = param.codigo_cliente ?? "",
-                            divisa = param.cod_divisa,
-                            autoGestion = param.utiliza_autogestion == true ? 1 : 0,
-                            con_ComisionSINPEMnt = param.concilia_ar_comision ?? 0,
-                            con_ComisionSINPECta = ctaComisionSINPE ?? "",
-                            con_Unidad = param.unidad ?? "",
-                            con_Centro = param.centro ?? "",
-                            con_Centro_Comision = param.centro_com ?? "",
-                            con_Concepto = param.concepto ?? "",
-                            ilocalizable = param.ilocalizable == true ? 1 : 0,
-                            int_grupos_asociados = param.int_grupos_asociados == true ? 1 : 0,
-                            int_requiere_cuenta_destino = param.int_requiere_cuenta_destino == true ? 1 : 0
-                        });
-
-                    var queryId = "select isnull(max(id_Banco),0) as ultimo from Tes_Bancos";
-                    int idBanco = conn.QueryFirst<int>(queryId);
-
-                    Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = Usuario.ToUpper(),
-                        DetalleMovimiento = "Cuenta Bancaria: " + idBanco,
-                        Movimiento = "REGISTRA - WEB",
-                        Modulo = 9
-                    });
-
-                    response.Code = idBanco;
-                    response.Description = "Información guardada satisfactoriamente...";
-                }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-            return response;
+            conn.Execute(SqlUpdateBanco, sqlParams);
+            return idBanco;
         }
 
+        private static int InsertBanco(SqlConnection conn, object sqlParams)
+        {
+            string SqlInsertBanco = @"INSERT Tes_Bancos
+                                        (
+                                            descripcion,estado,Utiliza_Plan,formato_transferencia,formato_transferencias_N2,
+                                            Cta,CtaConta,Desc_Corta,firmas_desde,firmas_hasta,saldo,fecha_envia,
+                                            cta_regional,cod_grupo,monitoreo,ARCHIVO_ESPECIAL_CK,puente,
+                                            archivo_cheques_firmas,archivo_cheques_sin_firmas,utiliza_formato_especial,lugar_emision,
+                                            SUPERVISION,SUPERVISION_DIAS,SINPE_INTERNA,SINPE_EMPRESA,CODIGO_CLIENTE,cod_divisa,UTILIZA_AUTOGESTION,
+                                            CONCILIA_AR_COMISION,CONCILIA_AR_COMISION_CTA,CONCILIA_AR_UNIDAD,CONCILIA_AR_CENTRO,CONCILIA_AR_CENTRO_COM,CONCILIA_AR_CONCEPTO,
+                                            ILOCALIZABLE, INT_GRUPOS_ASOCIADOS, INT_REQUIERE_CUENTA_DESTINO
+                                        )
+                                        VALUES
+                                        (
+                                            @nombre, @estado, @utilizaPlan, @formato, @formatoN2,
+                                            @cuentaBancaria, @cuentaContable, @descCorta, 0, 0, 0, dbo.MyGetdate(),
+                                            @regional, @grupo, @monitoreo, @archivoEspecial, @cuentaBancariaPuente,
+                                            @chequeEspecialFirma, @chequeEspecialNoFirma, @formatoEspecial, @lugarEmision,
+                                            @supervisa, @dias, @SINPE_CtaInterna, @SINPE_Codigo, @codigoCliente, @divisa, @autoGestion,
+                                            @con_ComisionSINPEMnt, @con_ComisionSINPECta, @con_Unidad, @con_Centro, @con_Centro_Comision, @con_Concepto,
+                                            @ilocalizable, @int_grupos_asociados, @int_requiere_cuenta_destino
+                                        );
+
+                                        SELECT CAST(SCOPE_IDENTITY() AS int);";
+            return conn.QueryFirst<int>(SqlInsertBanco, sqlParams);
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, int idBanco, bool edita)
+        {
+            Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
+                DetalleMovimiento = $"Cuenta Bancaria: {idBanco}",
+                Movimiento = edita ? "MODIFICA-WEB" : "REGISTRA-WEB",
+                Modulo = 9
+            });
+        }
 
         /// <summary>
         /// Borra un banco mediante el id_banco
@@ -683,13 +665,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto TES_BancosGrupos_Asignar(int CodEmpresa, int id_banco, bool asigna,TesBancosGruposAsgDto grupo )
         {
              using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+
             try
             {
+                string msj = "";
                 //limpio registro si existe
                 var query = $@"delete TES_BANCOS_GRUPOS_ASG where ID_BANCO = @banco and COD_GRUPO = @cod_grupo";
                 conn.Execute(query, new { banco = id_banco, grupo.cod_grupo });
@@ -699,19 +678,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     //inserto el registro
                     query = $@"insert into TES_BANCOS_GRUPOS_ASG (ID_BANCO, COD_GRUPO) values (@banco, @cod_grupo)";
                     conn.Execute(query, new { banco = id_banco, grupo.cod_grupo });
-                    response.Description = "Grupo Asignado Correctamente!";
+                    msj = "Grupo Asignado Correctamente!";
                 }
                 else
                 {
-                    response.Description = "Grupo Des-asignado Correctamente!";
+                    msj = "Grupo Des-asignado Correctamente!";
                 }
+
+                return DbHelper.OkResponse(msj);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-            return response;
         }
 
         // Change the return type of the method from ErrorDto to Task<ErrorDto>
@@ -749,9 +728,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         WHERE t.name = 'Tes_Bancos'
                           AND c.name = @col;";
 
-                var existeColumna = conn.QueryFirstOrDefault<int?>(
+                var existeColumna = await conn.QueryFirstOrDefaultAsync<int>(
                     sqlCheckColumn,
-                    new { col }) ?? 0;
+                    new { col });
 
                 if (existeColumna <= 0)
                 {
@@ -759,17 +738,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 }
 
                 // 3) Obtener nombre anterior (columna validada)
-                var sqlGetOld = $@"
-                        SELECT QUOTENAME({col}) 
-                        FROM Tes_Bancos 
-                        WHERE id_banco = @codBanco;";
-
-                // ⚠️ QUOTENAME en SELECT no devuelve el valor, solo el nombre escapado,
-                // por eso aquí NO se usa. El blindaje real está en la validación previa.
-                var sqlGetOldSafe = $"SELECT ";
+                var sqlGetOldSafe = $"SELECT QUOTENAME(";
                 sqlGetOldSafe += col;
-                sqlGetOldSafe += " FROM Tes_Bancos WHERE id_banco = @codBanco;";
-                var docNameOld = conn.QueryFirstOrDefault<string>(sqlGetOldSafe, new { codBanco }) ?? string.Empty;
+                sqlGetOldSafe += ") FROM Tes_Bancos WHERE id_banco = @codBanco;";
+                var docNameOld = await conn.QueryFirstOrDefaultAsync<string>(sqlGetOldSafe, new { codBanco }) ?? string.Empty;
 
 
 
@@ -813,28 +785,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
              using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
             var error = new ErrorDto<ArchivoDto> { Code = 0, Description = "Ok" };
 
-            // 1) Validar columna para evitar inyección
-            var columna = documento switch
-            {
-                "archivo_especial_ck" => "archivo_especial_ck",
-                "archivo_cheques_firmas" => "archivo_cheques_firmas",
-                "archivo_cheques_sin_firmas" => "archivo_cheques_sin_firmas",
-                _ => null
-            };
-            if (columna is null) return null;
+
 
             string docNameOld = "";
-            // 2) leer nombre guardado en BD con Dapper (parametriza el id)
-            //Elimina registro anterior:
+
             var Query = $@"SELECT ";
-            Query += columna;
+            Query += documento;
             Query += " FROM Tes_Bancos WHERE id_banco = @codBanco;";
             docNameOld = conn.QueryFirstOrDefault<string>(Query, new { codBanco }) ?? string.Empty;
 
             // 2) Armar ruta primaria o defaults
             string ruta = !string.IsNullOrWhiteSpace(docNameOld)
                 ? Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, $"{codBanco}_{docNameOld}")
-                : columna switch
+                : documento switch
                 {
                     "archivo_especial_ck" => Path.Combine(dirRDLC, "Banking_DocFormat.rdl"),
                     "archivo_cheques_firmas" => Path.Combine(dirRDLC, "Banking_DocFormat01.rdl"),
@@ -844,13 +807,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             // 3) Fallback a carpeta de empresa si la ruta no existe
             if (!File.Exists(ruta))
             {
-                ruta = columna switch
+                ruta = documento switch
                 {
                     "archivo_especial_ck" => Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, "Banking_DocFormat.rdl"),
                     "archivo_cheques_firmas" => Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, "Banking_DocFormat01.rdl"),
                     _ => Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, "Banking_DocFormat02.rdl"),
                 };
-                if (!File.Exists(ruta)) return null;
+                if (!File.Exists(ruta)) return new ErrorDto<ArchivoDto>();
             }
 
             // 4) Nombre “bonito” (sin prefijo CodBanco_)

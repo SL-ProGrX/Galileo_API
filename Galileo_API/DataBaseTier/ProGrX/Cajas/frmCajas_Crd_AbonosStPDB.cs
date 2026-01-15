@@ -20,6 +20,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         private readonly MProGrxMain _mProGrx;
         private readonly MSecurityMainDb _mSecurityMainDb;
         private readonly MCajas _mCajas;
+        private readonly MCobroDb _mCobro;
 
         public FrmCajasCrdAbonosStpDB(IConfiguration config)
         {
@@ -28,6 +29,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             _mProGrx = new MProGrxMain(config);
             _mSecurityMainDb = new MSecurityMainDb(config);
             _mCajas = new MCajas(config);
+            _mCobro = new MCobroDb(config);
         }
 
         /// <summary>
@@ -111,8 +113,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-        
-
                 const string query = @"SELECT
                                                 R.id_solicitud,
                                                 R.saldo,
@@ -182,8 +182,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return DbHelper.ExecuteListQuery<CajasCrdAbonoMorosidadData>(_portalDB, CodEmpresa, sql, parameters);
         }
 
-
-        public ErrorDto<List<CajasCrdAbonoCargaOperacionData>> CajasCrdAbonosSt_CargaOperacionCodCed(int CodEmpresa, string cedula, string codigo)
+        /// <summary>
+        /// Metodo para cargar la operacion por cedula y codigo
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cedula"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
+        public ErrorDto<CajasCrdAbonoCargaOperacionData> CajasCrdAbonosSt_CargaOperacionCodCed(int CodEmpresa, string cedula, string codigo)
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
@@ -216,7 +222,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                             AND R.cedula = @cedula
                             AND R.codigo = @codigo";
 
-                return conn.Query<CajasCrdAbonoCargaOperacionData>(query).ToList();
+                return conn.QueryFirstAsync<CajasCrdAbonoCargaOperacionData>(query, new
+                {
+                    cedula,
+                    codigo
+                }).Result ?? new CajasCrdAbonoCargaOperacionData();
             });
         }
 
@@ -236,7 +246,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 decimal glngFechaCR = _mProGrx.glngFechaCR(CodEmpresa);
 
-                if(request.lblFecUltMovR < glngFechaCR)
+                if (request.lblFecUltMovR < glngFechaCR)
                 {
                     request.lblFecUltMovR = (long)glngFechaCR;
                 }
@@ -264,7 +274,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     Apertura = request.mApertura,
                     Recalcula = request.chkRecalculaCuota,
                     CargoAnticipo = request.datosAnticipo,
-                    IntExtra = (request.tipo == "E")? request.datosInteres: 0,
+                    IntExtra = (request.tipo == "E") ? request.datosInteres : 0,
                     FechaPagoReal = request.FechaCancelacion
                 };
 
@@ -289,7 +299,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 string mensaje = "";
                 string vNotas = MProGrxMain.sbSIFCleanTxtInject(request.descripcion);
-                
+
                 //Verifica el proceso
                 if (!VerificaProceso(conn, request))
                 {
@@ -348,16 +358,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 decimal pTipoCambio = _mCajas.fxCajasTipoCambio(CodEmpresa, 0, variable.vTipoDoc);
                 variable.tipoCambio = pTipoCambio;
 
-                var DocAfectacion = spCrdDocumentoAfectacionStP(CodEmpresa, variable.vTipoDoc, (long)variable.vNumDoc! , "R");
+                var DocAfectacion = spCrdDocumentoAfectacionStP(CodEmpresa, variable.vTipoDoc, (long)variable.vNumDoc!, "R");
 
                 var CuentaOperacion = spCrdOperacionCtas(CodEmpresa, (long)variable.id_solicutud!);
 
                 var lineas = BuildLineas(DocAfectacion, variable, solicitud);
 
                 //Control de Documentos v2
-                var doc = ControlDocumentosV2_RegistrarAsync(CodEmpresa, solicitud, variable, DocAfectacion, CuentaOperacion,lineas);
+                var doc = ControlDocumentosV2_RegistrarAsync(CodEmpresa, solicitud, variable, DocAfectacion, CuentaOperacion, lineas);
 
-                if(doc.Result.Code == -1)
+                if (doc.Result.Code == -1)
                 {
                     return DbHelper.ErrorResponse("Error al registrar el documento de abono: " + doc.Result.Description, -1);
                 }
@@ -368,10 +378,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 return DbHelper.ErrorResponse("Error al registrar el documento de abono", -1);
             }
-            
+
         }
 
-        private CajasCrdAbonoAfectacionData spCrdDocumentoAfectacionStP(int CodEmpresa, string vTipoDoc, long vNumDoc, string Formato )
+        private CajasCrdAbonoAfectacionData spCrdDocumentoAfectacionStP(int CodEmpresa, string vTipoDoc, long vNumDoc, string Formato)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
@@ -400,7 +410,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         private static string[] BuildLineas(
-            CajasCrdAbonoAfectacionData DocAfectacion, 
+            CajasCrdAbonoAfectacionData DocAfectacion,
             CajasCrdAbonosStpVariables variable,
             CajasCrdAbonosStPDData solicitud)
         {
@@ -423,7 +433,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             l[8] = $"Operacion/Línea   ..: Op.:{solicitud.id_solicitud} L.:{solicitud.codigo}-{(solicitud.opex.ToString() ?? string.Empty).ToUpperInvariant()}";
             l[9] = $"Descripción       ..: {solicitud.descripcion}";
             l[10] = $"Proc. Retencion   ..: {(vRetencion ? "SI" : "NO")}";
-            l[11] = variable.FechaCancelacionEnable 
+            l[11] = variable.FechaCancelacionEnable
                 ? $"Fecha Real Abono {variable.FechaCancelacion:dd/MM/yyyy}"
                 : string.Empty;
 
@@ -433,11 +443,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         public async Task<ErrorDto> ControlDocumentosV2_RegistrarAsync(
                  int codEmpresa,
-                CajasCrdAbonosStPDData solicitud,     
-                CajasCrdAbonosStpVariables vars,     
+                CajasCrdAbonosStPDData solicitud,
+                CajasCrdAbonosStpVariables vars,
                 CajasCrdAbonoAfectacionData afectacion,
                 CajasCrdAbonooperacionCtas CuentaOperacion,
-                string?[] lineas                      
+                string?[] lineas
             )
         {
             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
@@ -552,11 +562,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     p.Add("@CodTransaccion", vars.vNumDoc.Value.ToString(), DbType.String);
                     p.Add("@Monto", monto * vars.tipoCambio, DbType.Decimal);
                     p.Add("@Tipo", "C", DbType.String);
-                    p.Add("@Divisa", solicitud.Divisa, DbType.String);     
+                    p.Add("@Divisa", solicitud.Divisa, DbType.String);
                     p.Add("@TipoCambio", vars.tipoCambio, DbType.Decimal);
                     p.Add("@Enlace", vars.enlace, DbType.Int32);
 
-                   
+
                     p.Add("@CodUnidad", vars.unidadCaja, DbType.String);         // VB: rs!Cod_Unidad (aprox)
                     p.Add("@CodCentroCosto", "", DbType.String);            // VB: rs!Cod_Centro_Costo (pendiente)
 
@@ -569,10 +579,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 }
 
                 // 2) Asientos (según montos)
-                var ctaIntC = CuentaOperacion.cta_int_c;   
-                var ctaIntM = CuentaOperacion.cta_int_m;   
-                var ctaCargo = CuentaOperacion.cta_cargos;  
-                var ctaAmort = CuentaOperacion.cta_amortiza;  
+                var ctaIntC = CuentaOperacion.cta_int_c;
+                var ctaIntM = CuentaOperacion.cta_int_m;
+                var ctaCargo = CuentaOperacion.cta_cargos;
+                var ctaAmort = CuentaOperacion.cta_amortiza;
 
                 await ExecAsientoAsync(afectacion.IntCor, ctaIntC);
                 await ExecAsientoAsync(afectacion.IntMor, ctaIntM);
@@ -610,5 +620,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return resp;
         }
 
+
+        public ErrorDto<decimal> fxFechaProcesoSiguiente(int CodEmpresa, decimal pProceso)
+        {
+            return new ErrorDto<decimal>()
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = _mCobro.fxFechaProcesoSiguiente(CodEmpresa, pProceso)
+            };
+        }
+
+        public ErrorDto<decimal> fxCalcula_Cuota(decimal Monto, int Plazo, object Interes, string? Frecuencia = "M")
+        {
+            return new ErrorDto<decimal>()
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = _mCobro.fxCalcula_Cuota(Monto, Plazo, Interes, Frecuencia)
+            };
+        }
     }
 }
