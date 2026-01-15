@@ -1,4 +1,7 @@
-﻿namespace Galileo_API.Models.ProGrX.Cajas
+﻿using Galileo.Models.CxP;
+using System;
+
+namespace Galileo_API.Models.ProGrX.Cajas
 {
     public sealed class CajasCrdAbonosStPDData
     {
@@ -24,7 +27,7 @@
 
         public decimal amortiza { get; set; }
 
-        public long? fecult { get; set; }  // yyyymm (VB6 lo trata como Long)
+        public decimal? fecult { get; set; }  // yyyymm (VB6 lo trata como Long)
 
         public long Prideduc { get; set; }
 
@@ -42,7 +45,7 @@
 
         public decimal montoApr { get; set; }
 
-        public long? fechaforp { get; set; }
+        public DateTime? fechaforp { get; set; }
 
         public string Base_Calculo { get; set; } = string.Empty;
 
@@ -62,6 +65,65 @@
         public int Caja_Valida_Concepto { get; set; }
     }
 
+    public sealed class CajasCrdAbonosStpVariables
+    {
+        public string? detalle { get; set; }
+        public string? vTipoDoc { get; set; }
+        public long? vNumDoc { get; set; }
+        public string? vConcepto { get; set; }
+        public string? vCuenta { get; set; }
+        public int? id_solicutud { get; set; }
+
+        public DateTime? _fechaAbono { get; set; }
+        public DateTime? _fechaMinima { get; set; }
+
+        public bool? chkRecalculaCuota { get; set; }
+
+        public decimal? vAmortizacion { get; set; }
+        public decimal? vMoraAmortiza { get; set; }
+        public decimal? vInteres { get; set; }
+        public decimal? vMoraInteres { get; set; }
+
+        public decimal? vCargo { get; set; }
+        public decimal? vMoraCargo { get; set; }
+
+        public decimal? vAnticipo { get; set; }
+        public string? vAnticipoTag { get; set; } = string.Empty;
+        public decimal? vCompromiso { get; set; }
+
+        public decimal? vPoliza { get; set; }
+        public DateTime FechaCancelacion { get; set; }
+        public bool FechaCancelacionEnable { get; set; }
+        public decimal? vCompromisoPoliza { get; set; }
+        public decimal? vDiferencia { get; set; }
+
+        public decimal? totalCajas { get; set; }
+
+        public string? notas { get; set; } = string.Empty;
+
+        public int? iDias { get; set; }
+
+        public decimal? vTempCuota { get; set; }
+
+        public string? vBaseCalculo { get; set; } = string.Empty;
+        public decimal? vPrideduc { get; set; }
+        public decimal? vOperacion { get; set; }
+        public decimal? vPlazo { get; set; }
+
+        public decimal? vSaldoMes { get; set; }
+
+        public decimal? vCuotasDeducidas { get; set; }
+        public decimal? vCuotasDirectas { get; set; }
+
+        public bool? vRetencion { get; set; }
+
+        public decimal? vTempAmort { get; set; }
+        public decimal? vTempCargo { get; set; }
+        public decimal? vTempIntCor { get; set; }
+
+        public string? pCharRelleno { get; set; } = string.Empty;
+    }
+
     public class CajasCrdAbonoRequest
     {
         public long id_solicitud { get; set; }
@@ -79,6 +141,10 @@
         public DateTime FechaCancelacion { get; set; }
 
         public string vNotas { get; set; } = string.Empty;
+
+        public string? vCuenta { get; set; }
+
+        public long? lblFecUltMovR {  get; set; }
     }
 
     public class CajasCrdAbonoMorosidadData
@@ -115,4 +181,32 @@
         public string poliza { get; set; } = string.Empty;
     }
 
+    public class CajasCrdAbonoAfectacionData
+    {
+        public decimal IntCor { get; set; } = 0;
+        public decimal IntMor { get; set; } = 0;
+        public decimal Principal { get; set; } = 0;
+        public decimal Cargos { get; set; } = 0;
+        public decimal Polizas { get; set; } = 0;
+    }
+
+    public sealed class CajasCrdAbonooperacionCtas
+    {
+        public int id_solicitud { get; set; }
+        public string codigo { get; set; } = string.Empty;
+        public decimal saldo { get; set; }
+        public string proceso { get; set; } = string.Empty;          // 'N' / 'S'
+        public string retencion { get; set; } = string.Empty;        // 'N' / 'S'
+        public string poliza { get; set; } = string.Empty;           // 'N' / 'S'
+        public string cta_amortiza { get; set; } = string.Empty;
+        public string cta_int_c { get; set; } = string.Empty;
+        public string cta_int_m { get; set; } = string.Empty;
+        public string? cta_cargos { get; set; }
+        public string cod_divisa { get; set; } = string.Empty;
+        public string cod_oficina_r { get; set; } = string.Empty;
+        public string cod_unidad { get; set; } = string.Empty;
+        public string? cod_centro_costo { get; set; }
+        public decimal tipo_cambio { get; set; }
+        public string? cta_iva { get; set; }
+    }
 }

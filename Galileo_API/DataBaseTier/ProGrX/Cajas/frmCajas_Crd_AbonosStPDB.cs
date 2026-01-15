@@ -1,19 +1,31 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Cajas;
 using Microsoft.Data.SqlClient;
+using Microsoft.Reporting.Map.WebForms.BingMaps;
+using Org.BouncyCastle.Ocsp;
+using System.Drawing;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 {
     public class FrmCajasCrdAbonosStpDB
     {
         private readonly PortalDB _portalDB;
+        private readonly MRecibos _mRecibos;
+        private readonly MProGrxMain _mProGrx;
+        private readonly MSecurityMainDb _mSecurityMainDb;
+        private readonly MCajas _mCajas;
 
         public FrmCajasCrdAbonosStpDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
+            _mRecibos = new MRecibos(config);
+            _mProGrx = new MProGrxMain(config);
+            _mSecurityMainDb = new MSecurityMainDb(config);
+            _mCajas = new MCajas(config);
         }
 
         /// <summary>
@@ -55,7 +67,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 const string query = @"
                     SELECT 
-                        R.id_solicitud AS operacion,
+                        R.id_solicitud,
                         R.codigo,
                         S.cedula,
                         S.nombre,
@@ -93,10 +105,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <param name="CodCaja"></param>
         /// <param name="OperacionId"></param>
         /// <returns></returns>
-        public ErrorDto<List<CajasCrdAbonosStPDData>> CajasCrdAbonosSt_ConsultaOperacion_Obtener(int CodEmpresa, string CodCaja, int OperacionId)
+        public ErrorDto<CajasCrdAbonosStPDData> CajasCrdAbonosSt_ConsultaOperacion_Obtener(int CodEmpresa, string CodCaja, int OperacionId)
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
+        
+
                 const string query = @"SELECT
                                                 R.id_solicitud,
                                                 R.saldo,
@@ -133,20 +147,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                                               AND R.saldo > 0
                                               AND R.ID_SOLICITUD = @OperacionId";
 
-                var op = conn.Query<CajasCrdAbonosStPDData>(query, new { CodCaja, OperacionId }).ToList();
+                var op = conn.QueryFirstOrDefault<CajasCrdAbonosStPDData>(query, new { CodCaja, OperacionId }) ?? new CajasCrdAbonosStPDData();
 
-                foreach (var item in op)
+                op.Saldo_mes = op.Saldo_mes < 0 ? 0 : op.Saldo_mes;
+                if (op.Saldo_mes == 0)
                 {
-                    item.Saldo_mes = item.Saldo_mes < 0 ? 0 : item.Saldo_mes;
-                    if (item.Saldo_mes == 0)
-                    {
-                      var updateSQl = "update reg_creditos set saldo_mes = saldo where id_solicitud = @id_solicitud";
-                      conn.Execute(updateSQl, new { Saldo_mes = item.Saldo_mes, id_solicitud = item.id_solicitud });
+                    var updateSQl = "update reg_creditos set saldo_mes = saldo where id_solicitud = @id_solicitud";
+                    conn.Execute(updateSQl, new { Saldo_mes = op.Saldo_mes, id_solicitud = op.id_solicitud });
 
-                      item.Saldo_mes = item.saldo;
-                    }
+                    op.Saldo_mes = op.saldo;
                 }
-                
+
                 return op;
             });
         }
@@ -218,6 +229,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             try
             {
+
+                long vNumDoc = _mRecibos.fxDocumentoConsecutivo(CodEmpresa, request.tipoDoc);
+
+                decimal glngFechaCR = _mProGrx.glngFechaCR(CodEmpresa);
+
+                if(request.lblFecUltMovR < glngFechaCR)
+                {
+                    request.lblFecUltMovR = (long)glngFechaCR;
+                }
                 var sql = @"exec spCajas_CrdAbono @Operacion, 
 									@Abono , 
 									@TipoDoc, 
@@ -235,14 +255,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     Operacion = request.id_solicitud,
                     Abono = request.totalCajs,
                     TipoDoc = request.tipoDoc,
-                    NumDoc = request.numDoc,
+                    NumDoc = vNumDoc,
                     Concepto = request.concepto,
                     Usuario = request.mUsuario,
                     Caja = request.mCaja,
                     Apertura = request.mApertura,
                     Recalcula = request.chkRecalculaCuota,
                     CargoAnticipo = request.datosAnticipo,
-                    IntExtra = request.datosInteres,
+                    IntExtra = (request.tipo == "E")? request.datosInteres: 0,
                     FechaPagoReal = request.FechaCancelacion
                 };
 
@@ -261,21 +281,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         }
 
-        private ErrorDto fxVerifica(int CodEmpresa, CajasCrdAbonosStPDData request)
+        private ErrorDto fxVerifica(SqlConnection conn, CajasCrdAbonosStPDData request)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
                 string mensaje = "";
                 string vNotas = MProGrxMain.sbSIFCleanTxtInject(request.descripcion);
-
+                
                 //Verifica el proceso
                 if (!VerificaProceso(conn, request))
                 {
                     mensaje += "- Esta CAJA no cuenta con permisos para realizar abonos a Creditos en Cobro Judicial, verifique...";
                 }
 
-                return DbHelper.CreateOkResponse();
+                return DbHelper.OkResponse(mensaje + vNotas);
             }
             catch (Exception ex)
             {
@@ -288,11 +307,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             try
             {
+                if (fxVerifica(conn, request).Code == -1)
+                {
+                    return false;
+                }
+
                 if (request.proceso == "J")
                 {
                     var sql = "select dbo.fxCajas_AbonoCbrJudAutorizada(@pCaja,@usuario) as Valor";
-                    var result = conn.QueryFirstOrDefault<int>(sql, new { pCaja = request.codigo, usuario = request.cedula });
-                    return result == 1 ? true : false;
+                    var result = conn.QueryFirstOrDefault<bool>(sql, new { pCaja = request.codigo, usuario = request.cedula });
+                    return result;
                 }
             }
             catch (Exception)
@@ -302,23 +326,103 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return false;
         }
 
-        private bool VerificaCongelamiento(SqlConnection conn, CajasCrdAbonosStPDData request)
+        public ErrorDto Bitacora(int CodEmpresa, string usuario, string detalle)
         {
+            return _mSecurityMainDb.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalle,
+                Movimiento = "Registra - WEB",
+                Modulo = 5
+            });
+        }
+
+        public ErrorDto sbDocumentoAbono(int CodEmpresa, CajasCrdAbonosStPDData solicitud, CajasCrdAbonosStpVariables variable)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                if (request.proceso == "J")
+                decimal pTipoCambio = _mCajas.fxCajasTipoCambio(CodEmpresa, 0, variable.vTipoDoc);
+
+                var DocAfectacion = spCrdDocumentoAfectacionStP(CodEmpresa, variable.vTipoDoc, (long)variable.vNumDoc! , "R");
+
+                var CuentaOperacion = spCrdOperacionCtas(CodEmpresa, (long)variable.id_solicutud!);
+
+                var lineas = BuildLineas(DocAfectacion, variable, solicitud);
+
+                if(lineas.Length > 0)
                 {
-                    var sql = "select dbo.fxCajas_AbonoCbrJudAutorizada(@pCaja,@usuario) as Valor";
-                    var result = conn.QueryFirstOrDefault<int>(sql, new { pCaja = request.codigo, usuario = request.cedula });
-                    return result == 1 ? true : false;
+                    string detalle = $"Registro de documento de abono. Doc: {variable.vTipoDoc}-{variable.vNumDoc}, Operación: {solicitud.id_solicitud}, Socio: {solicitud.cedula}, Monto Abono: {variable.totalCajas}, Cuenta Contable: {variable.vCuenta}, Tipo Cambio: {pTipoCambio}, {CuentaOperacion.codigo}";
+                    return DbHelper.OkResponse(detalle);
                 }
+
+                return DbHelper.CreateOkResponse();
             }
             catch (Exception)
             {
-                return false;
+                return DbHelper.ErrorResponse("Error al registrar el documento de abono", -1);
             }
-            return false;
+            
         }
 
+        private CajasCrdAbonoAfectacionData spCrdDocumentoAfectacionStP(int CodEmpresa, string vTipoDoc, long vNumDoc, string Formato )
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            try
+            {
+                return conn.QueryFirstOrDefault<CajasCrdAbonoAfectacionData>("exec spCrdDocumentoAfectacionStP @vTipoDoc, @vNumDoc, @Formato",
+                    new { vTipoDoc, vNumDoc, Formato }) ?? new CajasCrdAbonoAfectacionData();
+            }
+            catch (Exception)
+            {
+                return new CajasCrdAbonoAfectacionData();
+            }
+        }
+
+        private CajasCrdAbonooperacionCtas spCrdOperacionCtas(int CodEmpresa, long Operacion)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            try
+            {
+                return conn.QueryFirstOrDefault<CajasCrdAbonooperacionCtas>("exec exec spCrdOperacionCtas @Operacion",
+                    new { Operacion }) ?? new CajasCrdAbonooperacionCtas();
+            }
+            catch (Exception)
+            {
+                return new CajasCrdAbonooperacionCtas();
+            }
+        }
+
+        private static string[] BuildLineas(
+            CajasCrdAbonoAfectacionData DocAfectacion, 
+            CajasCrdAbonosStpVariables variable,
+            CajasCrdAbonosStPDData solicitud)
+        {
+            var saldoActual = variable.vSaldoMes - DocAfectacion.Principal;
+
+            string Fill(string label, decimal value) =>
+                $"{label} ..: {value:#,0.00}"; // Reemplaza por tu fxStringRelleno si lo necesitas
+
+            bool vRetencion = (solicitud.retencion == "N");
+
+            var l = new string[12]; // usaremos 1..11 para mimetizar VB6
+            l[1] = Fill("Saldo Anterior", (decimal)variable.vSaldoMes!);
+            l[2] = Fill("Saldo Actual", (decimal)saldoActual!);
+            l[3] = Fill("Interes Corriente", DocAfectacion.IntCor);
+            l[4] = Fill("Interes Atrasado", DocAfectacion.IntMor);
+            l[5] = Fill("Amortización", DocAfectacion.Principal);
+            l[6] = Fill("Cargos Totales", DocAfectacion.Cargos);
+            l[7] = Fill("Pólizas", DocAfectacion.Polizas);
+
+            l[8] = $"Operacion/Línea   ..: Op.:{solicitud.id_solicitud} L.:{solicitud.codigo}-{(solicitud.opex.ToString() ?? string.Empty).ToUpperInvariant()}";
+            l[9] = $"Descripción       ..: {solicitud.descripcion}";
+            l[10] = $"Proc. Retencion   ..: {(vRetencion ? "SI" : "NO")}";
+            l[11] = variable.FechaCancelacionEnable 
+                ? $"Fecha Real Abono {variable.FechaCancelacion:dd/MM/yyyy}"
+                : string.Empty;
+
+            return l;
+        }
     }
 }
