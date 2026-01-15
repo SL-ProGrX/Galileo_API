@@ -6,7 +6,9 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.Cajas;
 using Microsoft.Data.SqlClient;
 using Microsoft.Reporting.Map.WebForms.BingMaps;
+using Microsoft.ReportingServices.ReportProcessing.OnDemandReportObjectModel;
 using Org.BouncyCastle.Ocsp;
+using System.Data;
 using System.Drawing;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cajas
@@ -344,6 +346,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             try
             {
                 decimal pTipoCambio = _mCajas.fxCajasTipoCambio(CodEmpresa, 0, variable.vTipoDoc);
+                variable.tipoCambio = pTipoCambio;
 
                 var DocAfectacion = spCrdDocumentoAfectacionStP(CodEmpresa, variable.vTipoDoc, (long)variable.vNumDoc! , "R");
 
@@ -351,10 +354,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 var lineas = BuildLineas(DocAfectacion, variable, solicitud);
 
-                if(lineas.Length > 0)
+                //Control de Documentos v2
+                var doc = ControlDocumentosV2_RegistrarAsync(CodEmpresa, solicitud, variable, DocAfectacion, CuentaOperacion,lineas);
+
+                if(doc.Result.Code == -1)
                 {
-                    string detalle = $"Registro de documento de abono. Doc: {variable.vTipoDoc}-{variable.vNumDoc}, Operación: {solicitud.id_solicitud}, Socio: {solicitud.cedula}, Monto Abono: {variable.totalCajas}, Cuenta Contable: {variable.vCuenta}, Tipo Cambio: {pTipoCambio}, {CuentaOperacion.codigo}";
-                    return DbHelper.OkResponse(detalle);
+                    return DbHelper.ErrorResponse("Error al registrar el documento de abono: " + doc.Result.Description, -1);
                 }
 
                 return DbHelper.CreateOkResponse();
@@ -424,5 +429,186 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             return l;
         }
+
+
+        public async Task<ErrorDto> ControlDocumentosV2_RegistrarAsync(
+                 int codEmpresa,
+                CajasCrdAbonosStPDData solicitud,     
+                CajasCrdAbonosStpVariables vars,     
+                CajasCrdAbonoAfectacionData afectacion,
+                CajasCrdAbonooperacionCtas CuentaOperacion,
+                string?[] lineas                      
+            )
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+            var resp = new ErrorDto { Code = 0, Description = "Ok" };
+
+            try
+            {
+                if (vars.vNumDoc is null || string.IsNullOrWhiteSpace(vars.vTipoDoc))
+                    throw new InvalidOperationException("vNumDoc y vTipoDoc son requeridos.");
+
+                if (lineas == null || lineas.Length < 11)
+                    throw new InvalidOperationException("Se requieren 11 líneas (linea1..linea11).");
+
+                // Total VB: curIntC + curIntM + curAmortiza + curCargo (ojo: VB no sumó poliza en el insert)
+                var montoTransaccion = afectacion.IntCor + afectacion.IntMor + afectacion.Principal + afectacion.Cargos;
+
+                using var tx = await conn.BeginTransactionAsync();
+
+                // 1) INSERT SIF_TRANSACCIONES (parametrizado)
+                const string sqlInsert = @"
+                            INSERT INTO SIF_TRANSACCIONES
+                            (
+                                COD_TRANSACCION,
+                                TIPO_DOCUMENTO,
+                                REGISTRO_FECHA,
+                                REGISTRO_USUARIO,
+                                Cliente_IDENTIFICACION,
+                                CLIENTE_NOMBRE,
+                                cod_concepto,
+                                monto,
+                                estado,
+                                Referencia_01,
+                                Referencia_02,
+                                Referencia_03,
+                                cod_oficina,
+                                linea1,linea2,linea3,linea4,linea5,linea6,linea7,linea8,linea9,linea10,linea11,
+                                detalle,
+                                documento,
+                                cod_caja,
+                                cod_apertura
+                            )
+                            VALUES
+                            (
+                                @CodTransaccion,
+                                @TipoDocumento,
+                                dbo.MyGetdate(),
+                                @Usuario,
+                                @ClienteId,
+                                @ClienteNombre,
+                                @CodConcepto,
+                                @Monto,
+                                'P',
+                                @Ref01,
+                                @Ref02,
+                                @Ref03,
+                                @CodOficina,
+                                @Linea1,@Linea2,@Linea3,@Linea4,@Linea5,@Linea6,@Linea7,@Linea8,@Linea9,@Linea10,@Linea11,
+                                @Detalle,
+                                @Documento,
+                                @CodCaja,
+                                @CodApertura
+                            );";
+
+
+                await conn.ExecuteAsync(
+                    sqlInsert,
+                    new
+                    {
+                        CodTransaccion = vars.vNumDoc.Value.ToString(), // en VB iba como string concatenado
+                        TipoDocumento = vars.vTipoDoc,
+                        Usuario = vars.usuarioRegistro,
+                        ClienteId = (solicitud.cedula ?? string.Empty).Trim(),
+                        ClienteNombre = (solicitud.nombre ?? string.Empty).Trim(),
+                        CodConcepto = vars.vConcepto,
+                        Monto = montoTransaccion,
+                        Ref01 = solicitud.id_solicitud,
+                        Ref02 = solicitud.codigo,
+                        Ref03 = vars.vNumDoc,
+                        CodOficina = vars.oficinaTitular,
+                        Linea1 = lineas[0] ?? "",
+                        Linea2 = lineas[1] ?? "",
+                        Linea3 = lineas[2] ?? "",
+                        Linea4 = lineas[3] ?? "",
+                        Linea5 = lineas[4] ?? "",
+                        Linea6 = lineas[5] ?? "",
+                        Linea7 = lineas[6] ?? "",
+                        Linea8 = lineas[7] ?? "",
+                        Linea9 = lineas[8] ?? "",
+                        Linea10 = lineas[9] ?? "",
+                        Linea11 = lineas[10] ?? "",
+                        Detalle = vars.notas ?? vars.detalle ?? "",
+                        Documento = vars.vNumDoc,
+                        CodCaja = vars.codCaja,
+                        CodApertura = vars.codApertura
+                    },
+                    tx
+                );
+
+                // Helper local para spSIFDocsAsiento (equivalente a los 4 IF del VB)
+                async Task ExecAsientoAsync(decimal monto, string cuenta)
+                {
+                    if (monto <= 0) return;
+
+                    // En VB: monto * pTipoCambio, 'C', rs!cod_Divisa, pTipoCambio, gEnlace,
+                    //        rs!Cod_Unidad, rs!Cod_Centro_Costo, cuentaX, rs!Id_Solicitud, rs!Codigo, vAseDocDeposito
+
+                    const string sp = "spSIFDocsAsiento";
+
+                    var p = new DynamicParameters();
+                    p.Add("@TipoDocumento", vars.vTipoDoc, DbType.String);
+                    p.Add("@CodTransaccion", vars.vNumDoc.Value.ToString(), DbType.String);
+                    p.Add("@Monto", monto * vars.tipoCambio, DbType.Decimal);
+                    p.Add("@Tipo", "C", DbType.String);
+                    p.Add("@Divisa", solicitud.Divisa, DbType.String);     
+                    p.Add("@TipoCambio", vars.tipoCambio, DbType.Decimal);
+                    p.Add("@Enlace", vars.enlace, DbType.Int32);
+
+                   
+                    p.Add("@CodUnidad", vars.unidadCaja, DbType.String);         // VB: rs!Cod_Unidad (aprox)
+                    p.Add("@CodCentroCosto", "", DbType.String);            // VB: rs!Cod_Centro_Costo (pendiente)
+
+                    p.Add("@Cuenta", cuenta, DbType.String);                // VB: rs!ctaintc / ctaintm / CtaCargos / ctaamortiza
+                    p.Add("@IdSolicitud", solicitud.id_solicitud, DbType.Int64);
+                    p.Add("@Codigo", solicitud.codigo, DbType.String);
+                    p.Add("@Documento", vars.vNumDoc, DbType.String);
+
+                    await conn.ExecuteAsync(sp, p, tx, commandType: CommandType.StoredProcedure);
+                }
+
+                // 2) Asientos (según montos)
+                var ctaIntC = CuentaOperacion.cta_int_c;   
+                var ctaIntM = CuentaOperacion.cta_int_m;   
+                var ctaCargo = CuentaOperacion.cta_cargos;  
+                var ctaAmort = CuentaOperacion.cta_amortiza;  
+
+                await ExecAsientoAsync(afectacion.IntCor, ctaIntC);
+                await ExecAsientoAsync(afectacion.IntMor, ctaIntM);
+                await ExecAsientoAsync(afectacion.Cargos, ctaCargo);
+                await ExecAsientoAsync(afectacion.Principal, ctaAmort);
+
+                // 3) Desgloce pagos (VB: incluye poliza en condición)
+                if ((afectacion.IntCor + afectacion.IntMor + afectacion.Principal + afectacion.Cargos) > 0)
+                {
+                    const string spPagos = "spCajas_DesglocePagosDocFinal";
+
+                    var pPago = new DynamicParameters();
+                    pPago.Add("@Caja", vars.codCaja, DbType.Int32);
+                    pPago.Add("@Apertura", vars.codApertura, DbType.Int32);
+                    pPago.Add("@Tiquete", vars.tiquete, DbType.String);
+                    pPago.Add("@Usuario", vars.usuarioRegistro, DbType.String);
+                    pPago.Add("@TipoDocumento", vars.vTipoDoc, DbType.String);
+                    pPago.Add("@CodTransaccion", vars.vNumDoc.Value.ToString(), DbType.String);
+                    pPago.Add("@Unidad", vars.unidadCaja, DbType.String);
+                    pPago.Add("@IdSolicitud", solicitud.id_solicitud, DbType.Int64);
+                    pPago.Add("@Codigo", solicitud.codigo, DbType.String);
+
+                    await conn.ExecuteAsync(spPagos, pPago, tx, commandType: CommandType.StoredProcedure);
+                }
+
+                // 4) Commit
+                await tx.CommitAsync();
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+            }
+
+            return resp;
+        }
+
     }
 }
