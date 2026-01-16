@@ -54,7 +54,7 @@
         public DateTime registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
         public int id_banco { get; set; }
-        public bool estado { get; set; } 
+        public int estado { get; set; } 
         public string banco_estado { get; set; } = string.Empty;
         public string banco_numero { get; set; } = string.Empty;
         public int tesoreria_id { get; set; }
@@ -65,4 +65,41 @@
         public string itmx { get; set; } = string.Empty;
     }
 
+    public class CajasCierreDepositoRequest
+    {
+        public string caja { get; set; } = string.Empty;
+        public int apertura { get; set; }
+        public string divisa { get; set; } = string.Empty;
+        public decimal monto { get; set; }
+        public string dp_numero { get; set; } = string.Empty;
+        public string dp_cuenta { get; set; } = string.Empty;
+        public string usuario { get; set; } = string.Empty;
+        public int dp_banco { get; set; }
+        public int estado { get; set; }
+    }
+
+    public class CajasCierreFPDetalleData
+    {
+        public string documentodesc { get; set; } = string.Empty;
+        public string cod_transaccion { get; set; } = string.Empty;
+        public DateTime registro_fecha { get; set; }
+        public decimal monto_doc { get; set; }
+        public string registro_usuario { get; set; } = string.Empty;
+        public string cod_forma_pago { get; set; } = string.Empty;
+        public string referencia { get; set; } = string.Empty;
+        public decimal tipo_cambio { get; set; }
+        public string observaciones { get; set; } = string.Empty;
+        public decimal importe_real { get; set; }
+        public string cod_divisa { get; set; } = string.Empty;
+    }
+
+    public class CajasCierreDenominacionRequest
+    {
+        public string caja { get; set; } = string.Empty;
+        public int apertura { get; set; }
+        public string divisa { get; set; } = string.Empty;
+        public decimal denominacion { get; set; }
+        public int cantidad { get; set; }
+        public string tipo { get; set; } = string.Empty;
+    }
 }

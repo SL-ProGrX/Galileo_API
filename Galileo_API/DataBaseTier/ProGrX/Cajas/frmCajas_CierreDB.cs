@@ -14,10 +14,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
         }
 
-        public FrmCajasCierreDb(PortalDB portalDB)
-        {
-            _portalDb = portalDB;
-        }
+        public FrmCajasCierreDb(PortalDB portalDB) => _portalDb = portalDB;
 
         public ErrorDto<CajasCierreData> CajasCierre_AperturaCarga_Obtener(int CodEmpresa, string Caja, int Apertura)
         {
@@ -96,6 +93,99 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
             return DbHelper.ExecuteSingleQuery<decimal>(
                 _portalDb, CodEmpresa, sql, 0, new { Caja, Apertura, Divisa });
+        }
+
+        public ErrorDto<List<CajasCierreFPDetalleData>> CajasCierre_FPDetalle_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa, string CodFP)
+        {
+            const string sql = @"exec spCajas_CierreFPDetalle @Caja, @Apertura, @Divisa, @CodFP";
+
+            return DbHelper.ExecuteListQuery<CajasCierreFPDetalleData>(
+                _portalDb, CodEmpresa, sql, new { Caja, Apertura, Divisa, CodFP });
+        }
+
+        public ErrorDto CajasCierre_Deposito_Guardar(int CodEmpresa, CajasCierreDepositoRequest request)
+        {
+            const string sql = @"exec spCajas_CierreRegistraDeposito @Caja, @Apertura, @Divisa, 
+                @Monto, @DP_Numero, @DP_Cuenta, @Usuario, @DP_Banco, @Estado";
+
+            return DbHelper.ExecuteNonQuery(
+                _portalDb, 
+                CodEmpresa, 
+                sql, 
+                new { 
+                    Caja = request.caja, 
+                    Apertura = request.apertura, 
+                    Divisa = request.divisa,
+                    Monto = request.monto,
+                    DP_Numero = request.dp_numero,
+                    DP_Cuenta = request.dp_cuenta,
+                    Usuario = request.usuario,
+                    DP_Banco = request.dp_banco,
+                    Estado = request.estado
+                }
+            );
+        }
+
+        public ErrorDto CajasCierre_Preliminar_Aplicar(int CodEmpresa, string Caja, int Apertura, string Usuario)
+        {
+            const string sql = @"exec spCajas_CierreCajaMain @Caja, @Apertura, @Usuario";
+
+            return DbHelper.ExecuteNonQuery(
+                _portalDb,
+                CodEmpresa,
+                sql,
+                new { Caja, Apertura, Usuario }
+            );
+        }
+
+        public ErrorDto CajasCierre_Aplicar(int CodEmpresa, string Caja, int Apertura, string Usuario)
+        {
+            const string sqlValida = @"exec spCajas_Cierre_Validacion @Caja, @Usuario, @Apertura";
+
+            var fxValidaCierreCaja = DbHelper.ExecuteSingleQuery<string>(
+                _portalDb,
+                CodEmpresa,
+                sqlValida,
+                "",
+                new { Caja, Apertura, Usuario }
+            ).Result;
+
+            if (!string.IsNullOrEmpty(fxValidaCierreCaja) && fxValidaCierreCaja.Length > 0)
+            {
+                return new ErrorDto
+                {
+                    Code = -2,
+                    Description = fxValidaCierreCaja
+                };
+            }
+
+            const string sql = @"exec spCajas_CierreCajaMain @Caja, @Apertura, @Usuario, 0";
+
+            return DbHelper.ExecuteNonQuery(
+                _portalDb,
+                CodEmpresa,
+                sql,
+                new { Caja, Apertura, Usuario }
+            );
+        }
+
+        public ErrorDto CajasCierre_Denominacion_Registrar(int CodEmpresa, CajasCierreDenominacionRequest request)
+        {
+            const string sql = @"exec spCajas_CierreRegistraEFDenominacion @Caja, @Apertura, @Divisa, @Denominacion, @Cantidad, @Tipo";
+
+            return DbHelper.ExecuteNonQuery(
+                _portalDb,
+                CodEmpresa,
+                sql,
+                new { 
+                    Caja = request.caja, 
+                    Apertura = request.apertura, 
+                    Divisa = request.divisa, 
+                    Denominacion = request.denominacion,
+                    Cantidad = request.cantidad,
+                    Tipo = request.tipo
+                }
+            );
         }
     }
 }

@@ -64,6 +64,39 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             return _bl.CajasCierre_TotalDepositar_Obtener(CodEmpresa, Caja, Apertura, Divisa);
         }
 
+        [Authorize]
+        [HttpGet("CajasCierre_FPDetalle_Obtener")]
+        public ErrorDto<List<CajasCierreFPDetalleData>> CajasCierre_FPDetalle_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa, string CodFP)
+        {
+            return _bl.CajasCierre_FPDetalle_Obtener(CodEmpresa, Caja, Apertura, Divisa, CodFP);
+        }
 
+        [Authorize]
+        [HttpPost("CajasCierre_Deposito_Guardar")]
+        public ErrorDto CajasCierre_Deposito_Guardar(int CodEmpresa, CajasCierreDepositoRequest Request)
+        {
+            return _bl.CajasCierre_Deposito_Guardar(CodEmpresa, Request);
+        }
+
+        [Authorize]
+        [HttpPost("CajasCierre_Preliminar_Aplicar")]
+        public ErrorDto CajasCierre_Preliminar_Aplicar(int CodEmpresa, string Caja, int Apertura, string Usuario)
+        {
+            return _bl.CajasCierre_Preliminar_Aplicar(CodEmpresa, Caja, Apertura, Usuario);
+        }
+
+        [Authorize]
+        [HttpPost("CajasCierre_Aplicar")]
+        public ErrorDto CajasCierre_Aplicar(int CodEmpresa, string Caja, int Apertura, string Usuario)
+        {
+            return _bl.CajasCierre_Aplicar(CodEmpresa, Caja, Apertura, Usuario);
+        }
+
+        [Authorize]
+        [HttpPost("CajasCierre_Denominacion_Registrar")]
+        public ErrorDto CajasCierre_Denominacion_Registrar(int CodEmpresa, CajasCierreDenominacionRequest Request)
+        {
+            return _bl.CajasCierre_Denominacion_Registrar(CodEmpresa, Request);
+        }
     }
 }
