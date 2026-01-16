@@ -6,6 +6,7 @@ using Galileo.Models.ProGrX_Activos_Fijos;
 using Microsoft.Data.SqlClient;
 using System.Text;
 
+
 namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
 {
     public class FrmActivosExploradorDB
@@ -28,7 +29,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             var response = new ErrorDto<List<T>>
             {
                 Code = 0,
-                Description = "Operación realizada correctamente",
                 Result = new List<T>()
             };
 
@@ -47,9 +47,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             return response;
         }
 
-        // =====================================================
-        // DEPARTAMENTOS
-        // =====================================================
+        /// <summary>
+        /// Obtiene los departamentos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Departamentos(int codEmpresa)
         {
             return EjecutarLista<DropDownListaGenericaModel>(
@@ -65,9 +67,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
-        // =====================================================
-        // SECCIONES
-        // =====================================================
+       /// <summary>
+       /// Obtiene las secciones
+       /// </summary>
+       /// <param name="codEmpresa"></param>
+       /// <param name="codDepartamento"></param>
+       /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Secciones(
             int codEmpresa,
             string codDepartamento)
@@ -86,9 +91,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
-        // =====================================================
-        // TIPOS DE ACTIVO
-        // =====================================================
+        /// <summary>
+        /// Obtiene los tipos activos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TiposActivo(int codEmpresa)
         {
             return EjecutarLista<DropDownListaGenericaModel>(
@@ -104,9 +111,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
-        // =====================================================
-        // JUSTIFICACIONES
-        // =====================================================
+    /// <summary>
+    /// Obtiene las justificaciones
+    /// </summary>
+    /// <param name="codEmpresa"></param>
+    /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Justificaciones(int codEmpresa)
         {
             return EjecutarLista<DropDownListaGenericaModel>(
@@ -122,9 +131,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
-        // =====================================================
-        // LISTAR ACTIVOS (EXPLORADOR)
-        // =====================================================
+      
+        /// <summary>
+        /// Obtiene la lista de resultados
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="f"></param>
+        /// <returns></returns>
         public ErrorDto<List<ActivoExploradorDto>> Listar(
             int codEmpresa,
             ActivosExploradorFiltrosDto f)
@@ -181,5 +194,219 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
                 }
             );
         }
+
+        /// <summary>
+        /// Obtiene las ubicaciones
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Ubicaciones(int codEmpresa)
+        {
+            string connString =
+                _portalDB.ObtenerDbConnStringEmpresa(codEmpresa);
+
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Description = "Operación realizada correctamente",
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
+            try
+            {
+                using var cn = new SqlConnection(connString);
+
+                string sql = @"
+            SELECT
+                RTRIM(COD_LOCALIZA) AS item,
+                RTRIM(descripcion) AS descripcion
+            FROM ACTIVOS_LOCALIZACIONES
+            WHERE Activa = 1
+            ORDER BY descripcion";
+
+                response.Result = cn
+                    .Query<DropDownListaGenericaModel>(sql)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = new List<DropDownListaGenericaModel>();
+            }
+
+            return response;
+        }
+
+
+        /// <summary>
+        /// Obtiene la fecha del servidor
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto FechaServidor_Obtener(int CodEmpresa)
+        {
+            string connString =_portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
+
+            var response = new ErrorDto
+            {
+                Code = 0,
+                Description = "Operaci�n realizada correctamente"
+            };
+
+            try
+            {
+                using var connection = new SqlConnection(connString);
+                string sql = "SELECT dbo.MyGetdate() AS Fecha";
+
+                var fechaServidor = connection.QuerySingle<DateTime>(sql);
+
+                response.Description = fechaServidor.ToString("yyyy-MM-dd HH:mm:ss");
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Obtiene los responsables
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Responsables(int codEmpresa)
+        {
+            string connString =
+                _portalDB.ObtenerDbConnStringEmpresa(codEmpresa);
+
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Description = "Operación realizada correctamente",
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
+            try
+            {
+                using var cn = new SqlConnection(connString);
+
+                string sql = @"
+                        SELECT
+                            RTRIM(Identificacion) AS item,
+                            RTRIM(Nombre) AS descripcion
+                        FROM Activos_Personas
+                        ORDER BY Nombre";
+
+                response.Result = cn
+                    .Query<DropDownListaGenericaModel>(sql)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = new List<DropDownListaGenericaModel>();
+            }
+
+            return response;
+        }
+
+       
+
+        /// <summary>
+        /// Obtiene los proveedores
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Proveedores(int codEmpresa)
+        {
+            string connString =
+                _portalDB.ObtenerDbConnStringEmpresa(codEmpresa);
+
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Description = "Operación realizada correctamente",
+                Result = new List<DropDownListaGenericaModel>()
+            };
+
+            try
+            {
+                using var cn = new SqlConnection(connString);
+
+                string sql = @"
+            SELECT
+                RTRIM(cod_proveedor) AS item,
+                RTRIM(descripcion) AS descripcion
+            FROM Activos_proveedores
+            ORDER BY descripcion";
+
+                response.Result = cn
+                    .Query<DropDownListaGenericaModel>(sql)
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+                response.Result = new List<DropDownListaGenericaModel>();
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Obtiene los periodos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="estado"></param>
+        /// <returns></returns>
+        public ErrorDto<List<PeriodoExploradorDto>> Periodos(int codEmpresa, string estado)
+        {
+            var response = new ErrorDto<List<PeriodoExploradorDto>>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = new()
+            };
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa)
+                );
+
+                string sql = @"SELECT
+                        anio,
+                        mes,
+                        EOMONTH(DATEFROMPARTS(anio, mes, 1)) AS fecha_periodo,
+                        UPPER(
+                            DATENAME(MONTH, DATEFROMPARTS(anio, mes, 1))
+                            + ' DE '
+                            + CAST(anio AS VARCHAR)
+                        ) AS periodo
+                    FROM Activos_Periodos
+                    WHERE estado = @estado
+                    ORDER BY anio DESC, mes DESC";
+
+                response.Result = cn.Query<PeriodoExploradorDto>(sql, new { estado }).ToList();
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+
+
+
+
+
     }
 }
