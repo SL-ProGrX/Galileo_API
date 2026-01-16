@@ -1,12 +1,10 @@
 ﻿using Dapper;
-using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
-using Microsoft.ReportingServices.Diagnostics.Internal;
 using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
