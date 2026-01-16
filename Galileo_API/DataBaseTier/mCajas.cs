@@ -1,7 +1,18 @@
-﻿namespace Galileo_API.DataBaseTier.ProGrX.Cajas
+﻿using Dapper;
+using Galileo.DataBaseTier;
+using Galileo.Models.CxP;
+using Microsoft.CodeAnalysis;
+
+namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 {
-    public static class MCajas
+    public class MCajas
     {
+        private readonly PortalDB _portalDB;
+
+        public MCajas(IConfiguration config)
+        {
+            _portalDB = new PortalDB(config);
+        }
         public static string FxStringCifrado(string input)
         {
             var asciiReversed = string.Concat(
@@ -50,6 +61,16 @@
                 }
             }
             return finalBuilder.ToString();
+        }
+
+        public decimal fxCajasTipoCambio(int codEmpresa, int gEnlace, string pDivisa, string? pTipo = "C")
+        {
+            return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
+            {
+                string sql = @"select dbo.fxCajas_TipoCambio(@gEnlace, @pDivisa,dbo.MyGetdate() , @pTipo) as 'TipoCambio'";
+                var tipoCambio = conn.QueryFirstOrDefault<decimal?>(sql, new { gEnlace, pDivisa, pTipo });
+                return tipoCambio ?? 1m;
+            }).Result;
         }
     }
 }
