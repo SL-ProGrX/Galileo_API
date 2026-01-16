@@ -355,10 +355,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                decimal pTipoCambio = _mCajas.fxCajasTipoCambio(CodEmpresa, 0, variable.vTipoDoc);
+                decimal pTipoCambio = _mCajas.fxCajasTipoCambio(CodEmpresa, 0, variable.vTipoDoc!);
                 variable.tipoCambio = pTipoCambio;
 
-                var DocAfectacion = spCrdDocumentoAfectacionStP(CodEmpresa, variable.vTipoDoc, (long)variable.vNumDoc!, "R");
+                var DocAfectacion = spCrdDocumentoAfectacionStP(CodEmpresa, variable.vTipoDoc!, (long)variable.vNumDoc!, "R");
 
                 var CuentaOperacion = spCrdOperacionCtas(CodEmpresa, (long)variable.id_solicutud!);
 
@@ -586,7 +586,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 await ExecAsientoAsync(afectacion.IntCor, ctaIntC);
                 await ExecAsientoAsync(afectacion.IntMor, ctaIntM);
-                await ExecAsientoAsync(afectacion.Cargos, ctaCargo);
+                await ExecAsientoAsync(afectacion.Cargos, ctaCargo!);
                 await ExecAsientoAsync(afectacion.Principal, ctaAmort);
 
                 // 3) Desgloce pagos (VB: incluye poliza en condición)
