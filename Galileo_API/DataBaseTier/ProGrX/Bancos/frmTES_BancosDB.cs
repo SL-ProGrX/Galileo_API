@@ -741,7 +741,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 p.Add("@NombreAnterior", dbType: DbType.String, size: 260, direction: ParameterDirection.Output);
 
                 await conn.ExecuteAsync(
-                    "dbo.TES_BancosArchivos_PrepararYActualizar",
+                    "dbo.spTES_W_BancosArchivos_PrepararYActualizar",
                     p,
                     commandType: CommandType.StoredProcedure);
 
@@ -809,10 +809,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             string docNameOld = "";
 
-            var Query = $@"SELECT ";
-            Query += documento;
-            Query += " FROM Tes_Bancos WHERE id_banco = @codBanco;";
-            docNameOld = conn.QueryFirstOrDefault<string>(Query, new { codBanco }) ?? string.Empty;
+            docNameOld =  conn.QueryFirstOrDefault<string>(
+                "dbo.spTES_W_BancosArchivos_ObtenerNombreAnterior",
+                new { IdBanco = codBanco, DocumentoCol = documento },
+                commandType: CommandType.StoredProcedure) ?? string.Empty;
 
             // 2) Armar ruta primaria o defaults
             string ruta = !string.IsNullOrWhiteSpace(docNameOld)

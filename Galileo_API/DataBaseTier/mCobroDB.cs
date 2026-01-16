@@ -30,7 +30,7 @@ namespace Galileo_API.DataBaseTier
             return DbHelper.ExecuteSingleQuery<decimal>(_portalDB, CodEmpresa, sql, 0, parametros).Result;
         }
 
-        public decimal fxCalcula_Cuota(decimal Monto,int Plazo,object Interes, string? Frecuencia = "M")
+        public static decimal fxCalcula_Cuota(decimal Monto,int Plazo,object Interes, string? Frecuencia = "M")
         {
             decimal curInteresMensual = 0, curfactor = 1;
 
