@@ -94,9 +94,9 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
 
         [Authorize]
         [HttpPost("CajasCierre_Denominacion_Registrar")]
-        public ErrorDto CajasCierre_Denominacion_Registrar(int CodEmpresa, CajasCierreDenominacionRequest Request)
+        public ErrorDto CajasCierre_Denominacion_Registrar(int CodEmpresa, CajasCierreDenominacionRequest denominacionRequest)
         {
-            return _bl.CajasCierre_Denominacion_Registrar(CodEmpresa, Request);
+            return _bl.CajasCierre_Denominacion_Registrar(CodEmpresa, denominacionRequest);
         }
     }
 }
