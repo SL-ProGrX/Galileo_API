@@ -122,6 +122,15 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public decimal? vTempIntCor { get; set; }
 
         public string? pCharRelleno { get; set; } = string.Empty;
+
+        public int? codCaja { get; set; }
+        public int? codApertura { get; set; }
+        public string? usuarioRegistro { get; set; }              // glogon.Usuario / ModuloCajas.mUsuario
+        public string? oficinaTitular { get; set; }                // GLOBALES.gOficinaTitular
+        public int? enlace { get; set; }                          // GLOBALES.gEnlace
+        public decimal? tipoCambio { get; set; }                // pTipoCambio
+        public string? tiquete { get; set; }                      // ModuloCajas.mTiquete
+        public string? unidadCaja { get; set; }
     }
 
     public class CajasCrdAbonoRequest

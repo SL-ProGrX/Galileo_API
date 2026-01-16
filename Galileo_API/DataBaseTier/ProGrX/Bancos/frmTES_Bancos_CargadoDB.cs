@@ -42,13 +42,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto<List<TesBancoCargadoConceptos>> Tes_BancosCargadoConceptos_Obtener(int CodEmpresa, string? concepto = null)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var response = new ErrorDto<List<TesBancoCargadoConceptos>>
-            {
-                Code = 0,
-                Description = "Consulta realizada correctamente",
-                Result = new List<TesBancoCargadoConceptos>()
-            };
-
             try
             {
                 var conceptoTrim = concepto?.Trim();
@@ -66,18 +59,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                               AND ESTADO = 'A'
                               AND (@concepto IS NULL OR COD_CONCEPTO = @concepto);";
 
-                response.Result = conn.Query<TesBancoCargadoConceptos>(
+                var response = conn.Query<TesBancoCargadoConceptos>(
                     sql,
                     new { concepto = hasConcepto ? conceptoTrim : null }
                 ).ToList();
+
+                return DbHelper.CreateOkResponse(response);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
+               return DbHelper.CreateErrorResponse<List<TesBancoCargadoConceptos>>(ex.Message);
             }
-            return response;
+            
         }
 
         /// <summary>
@@ -88,23 +81,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroUnidades_Obtener(int CodEmpresa)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Consulta realizada correctamente",
-                Result = new List<DropDownListaGenericaModel>()
-            };
             try
             {
                 var query = $@"select COD_UNIDAD as 'item', DESCRIPCION from vCNTX_UNIDADES_LOCAL";
-                response.Result = conn.Query<DropDownListaGenericaModel>(query).ToList();
+                var Result = conn.Query<DropDownListaGenericaModel>(query).ToList();
+                return DbHelper.CreateOkResponse(Result);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+               return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
             }
-            return response;
         }
 
         /// <summary>
@@ -115,23 +101,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto<List<DropDownListaGenericaModel>> Tes_BancosCargadoCentroCostos_Obtener(int CodEmpresa)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Consulta realizada correctamente",
-                Result = new List<DropDownListaGenericaModel>()
-            };
             try
             {
                 var query = $@"select COD_CENTRO_COSTO as 'item', DESCRIPCION from vCNTX_CENTRO_COSTO_LOCAL";
-                response.Result = conn.Query<DropDownListaGenericaModel>(query).ToList();
+                var request = conn.Query<DropDownListaGenericaModel>(query).ToList();
+
+                return DbHelper.CreateOkResponse(request);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-            return response;
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
+            } 
         }
 
 
@@ -267,15 +247,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 {
                     response.Description = "Ok";
                 }
-
+                return response;
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-
-            return response;
         }
 
         /// <summary>
@@ -288,12 +265,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             TesFiltrosRegistroBancoDto filtro = JsonConvert.DeserializeObject<TesFiltrosRegistroBancoDto>(filtros) ?? new TesFiltrosRegistroBancoDto();
-
-            var response = new ErrorDto<List<TeslistaRegistroBancosDto>>
-            {
-                Code = 0,
-                Result = new List<TeslistaRegistroBancosDto>()
-            };
 
             try
             {
@@ -314,20 +285,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     Descripcion = filtro.descripcion
                 };
 
-                response.Result = conn
+                var response = conn
                     .Query<TeslistaRegistroBancosDto>(query, parameters, commandType: CommandType.StoredProcedure)
                     .ToList();
 
-
+                return DbHelper.CreateOkResponse(response);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
+                return DbHelper.CreateErrorResponse<List<TeslistaRegistroBancosDto>>(ex.Message);
             }
-
-            return response;
         }
 
 
@@ -341,10 +308,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             List<RegistroBancoDto> lista = JsonConvert.DeserializeObject<List<RegistroBancoDto>>(registroLista) ?? new List<RegistroBancoDto>();
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0
-            };
 
             try
             {
@@ -364,25 +327,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     });
                 }
 
-                response.Description = "Registro procesado correctamente!";
+                return DbHelper.OkResponse("Registro procesado correctamente!");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-            return response;
+            
         }
 
         public ErrorDto TES_RegistrosBancosCargados_Elimina(int CodEmpresa, string registroLista)
         {
             List<RegistroBancoDto> lista = JsonConvert.DeserializeObject<List<RegistroBancoDto>>(registroLista) ?? new List<RegistroBancoDto>();
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var response = new ErrorDto
-            {
-                Code = 0
-            };
-
             try
             {
                 foreach (var item in lista)
@@ -393,14 +350,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         LineaId = item.Linea_Id
                     });
                 }
-                response.Description = "Registro procesado correctamente!";
+                return DbHelper.OkResponse("Registro procesado correctamente!");
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-            return response;
+            
         }
     }
 }
