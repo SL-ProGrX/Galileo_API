@@ -17,9 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             _portalDB = new PortalDB(config);
         }
 
-        // ======================================================
-        // MÉTODO BASE – LISTAS (ANTI-DUPLICACIÓN)
-        // ======================================================
+       
         private ErrorDto<List<T>> EjecutarLista<T>(
             int codEmpresa,
             Func<SqlConnection, List<T>> query)
@@ -49,10 +47,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             return response;
         }
 
-        // ======================================================
-        // COMBOS / CATÁLOGOS
-        // ======================================================
-
+   
+        /// <summary>
+        /// Obtiene los departamentos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Departamentos(int codEmpresa)
         {
             return EjecutarLista<DropDownListaGenericaModel>(
@@ -66,7 +66,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
                 ").ToList()
             );
         }
-
+        /// <summary>
+        /// Obtiene las secciones
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codDepartamento"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Secciones(
             int codEmpresa,
             string codDepartamento)
@@ -84,6 +89,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
+        /// <summary>
+        /// Obtiene los tipos de activos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TiposActivo(int codEmpresa)
         {
             return EjecutarLista<DropDownListaGenericaModel>(
@@ -98,6 +108,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
+        /// <summary>
+        /// Obtiene las justificaciones
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Justificaciones(int codEmpresa)
         {
             return EjecutarLista<DropDownListaGenericaModel>(
@@ -112,6 +127,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
+        /// <summary>
+        /// Obtiene las ubicaciones
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Ubicaciones(int codEmpresa)
         {
             return EjecutarLista<DropDownListaGenericaModel>(
@@ -127,6 +147,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
+        /// <summary>
+        /// Obtiene las responsables
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Responsables(int codEmpresa)
         {
             return EjecutarLista<DropDownListaGenericaModel>(
@@ -141,6 +166,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
+        /// <summary>
+        /// Obtiene los proveedores
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Proveedores(int codEmpresa)
         {
             return EjecutarLista<DropDownListaGenericaModel>(
@@ -155,9 +185,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
-        // ======================================================
-        // PERÍODOS
-        // ======================================================
+
+        /// <summary>
+        /// Obtiene los periodos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="estado"></param>
+        /// <returns></returns>
 
         public ErrorDto<List<PeriodoExploradorDto>> Periodos(
             int codEmpresa,
@@ -182,10 +216,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             );
         }
 
-        // ======================================================
-        // FECHA SERVIDOR (ESCALAR – NO LISTA)
-        // ======================================================
-
+      
+        /// <summary>
+        /// Obtiene la fecha del servidor
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto FechaServidor_Obtener(int codEmpresa)
         {
             string connString =
@@ -217,10 +253,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             return response;
         }
 
-        // ======================================================
-        // LISTADO PRINCIPAL
-        // ======================================================
-
+       
+        /// <summary>
+        /// Obtiene la lista de activos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="f"></param>
+        /// <returns></returns>
         public ErrorDto<List<ActivoExploradorDto>> Listar(
             int codEmpresa,
             ActivosExploradorFiltrosDto f)
