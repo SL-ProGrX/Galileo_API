@@ -6,12 +6,14 @@ using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using System.Data;
 using System.Text.RegularExpressions;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesBancosDB
     {
+
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb DBBitacora;
         private readonly MCntLinkDB mCntLink;
@@ -692,89 +694,110 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         // Change the return type of the method from ErrorDto to Task<ErrorDto>
         public async Task<ErrorDto> TES_BancosArchivos_Subir(
-          int codEmpresa,
-          int codBanco,
-          string documento,
-          IFormFile file)
+    int codEmpresa,
+    int codBanco,
+    string documento,
+    IFormFile file)
         {
-             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
+            string ext = string.Empty;
+            string col = string.Empty;
+            var validacion = Validasiones(file, documento, ref ext, ref col);
+            if(validacion.Code == -1)
+                return validacion;
+
+            // 1) Paths controlados
+            var baseDir = Path.GetFullPath(Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco));
+            Directory.CreateDirectory(baseDir);
+
+            var nuevoNombre = $"{codBanco}_{col}{ext}";
+            var destino = Path.GetFullPath(Path.Combine(baseDir, nuevoNombre));
+
+            if (!destino.StartsWith(baseDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
+                return DbHelper.ErrorResponse("Ruta de destino inválida.");
+
+            // 2) Guardar archivo nuevo primero
+            try
+            {
+                await using (var stream = new FileStream(destino, FileMode.Create, FileAccess.Write, FileShare.None))
+                {
+                    await file.CopyToAsync(stream);
+                }
+            }
+            catch (Exception ex)
+            {
+                // BD no tocada, así que solo reportas
+                return DbHelper.ErrorResponse($"Error guardando archivo: {ex.Message}");
+            }
 
             try
             {
-                if (file == null || file.Length <= 0)
+                // 3) Actualizar BD (SP) + obtener anterior
+                var p = new DynamicParameters();
+                p.Add("@IdBanco", codBanco);
+                p.Add("@DocumentoCol", col);
+                p.Add("@NuevoNombre", nuevoNombre);
+                p.Add("@NombreAnterior", dbType: DbType.String, size: 260, direction: ParameterDirection.Output);
+
+                await conn.ExecuteAsync(
+                    "dbo.TES_BancosArchivos_PrepararYActualizar",
+                    p,
+                    commandType: CommandType.StoredProcedure);
+
+                var docNameOld = (p.Get<string>("@NombreAnterior") ?? string.Empty).Trim();
+
+                // 4) Borrar anterior (best effort, sin tumbar el proceso)
+                if (!string.IsNullOrWhiteSpace(docNameOld) &&
+                    !string.Equals(docNameOld, nuevoNombre, StringComparison.OrdinalIgnoreCase))
                 {
-                    return DbHelper.ErrorResponse("No se recibió un archivo válido.");
-                }
+                    var oldNameOnly = Path.GetFileName(docNameOld);
+                    var pathOld = Path.GetFullPath(Path.Combine(baseDir, oldNameOnly));
 
-                var col = documento?.Trim();
-
-                // 1) Validación sintáctica estricta del nombre de columna
-                // Solo letras, números y underscore
-                if (string.IsNullOrWhiteSpace(col) ||
-                    !System.Text.RegularExpressions.Regex.IsMatch(col, @"^[A-Za-z0-9_]+$", RegexOptions.CultureInvariant, RegexTimeout))
-                {
-                    return DbHelper.ErrorResponse("Nombre de columna inválido.");
-                }
-
-                // 2) Verificar que la columna exista realmente en Tes_Bancos
-                const string sqlCheckColumn = @"
-                        SELECT 1
-                        FROM sys.columns c
-                        JOIN sys.tables t ON t.object_id = c.object_id
-                        WHERE t.name = 'Tes_Bancos'
-                          AND c.name = @col;";
-
-                var existeColumna = await conn.QueryFirstOrDefaultAsync<int>(
-                    sqlCheckColumn,
-                    new { col });
-
-                if (existeColumna <= 0)
-                {
-                    return DbHelper.ErrorResponse("La columna indicada no existe.");
-                }
-
-                // 3) Obtener nombre anterior (columna validada)
-                var sqlGetOldSafe = $"SELECT QUOTENAME(";
-                sqlGetOldSafe += col;
-                sqlGetOldSafe += ") FROM Tes_Bancos WHERE id_banco = @codBanco;";
-                var docNameOld = await conn.QueryFirstOrDefaultAsync<string>(sqlGetOldSafe, new { codBanco }) ?? string.Empty;
-
-
-
-                // Eliminar archivo anterior
-                if (!string.IsNullOrEmpty(docNameOld))
-                {
-                    var pathOld = Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco, $"{codBanco}_{docNameOld}");
-                    if (File.Exists(pathOld))
+                    if (pathOld.StartsWith(baseDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) &&
+                        File.Exists(pathOld))
                     {
                         File.Delete(pathOld);
                     }
-                }
-
-                // 🔹 Definir el nuevo nombre
-                var nuevoNombre = $"{codBanco}_{file.FileName}";
-
-                // Ruta destino
-                var basePath = Path.Combine(dirRDLC, codEmpresa.ToString(), vBanco);
-                Directory.CreateDirectory(basePath);
-
-                var destino = Path.Combine(basePath, nuevoNombre);
-
-                // Guardar archivo
-                using (var stream = File.Create(destino))
-                {
-                    await file.CopyToAsync(stream); // ✅ usar await
                 }
 
                 return DbHelper.OkResponse("Archivo subido correctamente.");
             }
             catch (Exception ex)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                // 5) Rollback manual: si BD falló, borra el nuevo para no dejar basura
+                try
+                {
+                    if (File.Exists(destino))
+                        File.Delete(destino);
+                }
+                catch
+                {
+                    // Aquí normalmente logueas, pero no tapes el error principal
+                }
+
+                return DbHelper.ErrorResponse($"Error actualizando BD: {ex.Message}");
             }
-           
         }
+
+        private static ErrorDto Validasiones(IFormFile file, string documento, ref string ext, ref string col)
+        {
+             // 0) Validaciones
+            if (file == null || file.Length <= 0)
+                return DbHelper.ErrorResponse("No se recibió un archivo válido.");
+
+            ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (ext != ".rdl" && ext != ".rdlc")
+                return DbHelper.ErrorResponse("Extensión inválida. Solo .rdl/.rdlc.");
+
+            col = (documento ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(col) ||
+                !Regex.IsMatch(col, @"^[A-Za-z0-9_]+$", RegexOptions.None, RegexTimeout))
+                return DbHelper.ErrorResponse("Nombre de columna inválido.");
+
+            return DbHelper.CreateOkResponse();
+        }
+
 
         // Resuelve qué archivo devolver (SIN exponerlo al cliente)
         public ErrorDto<ArchivoDto> ResolverDocumento(int codEmpresa, int codBanco, string documento)
