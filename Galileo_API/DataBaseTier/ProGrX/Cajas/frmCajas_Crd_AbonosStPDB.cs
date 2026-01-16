@@ -637,7 +637,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 Code = 0,
                 Description = "Ok",
-                Result = _mCobro.fxCalcula_Cuota(Monto, Plazo, Interes, Frecuencia)
+                Result = MCobroDb.fxCalcula_Cuota(Monto, Plazo, Interes, Frecuencia)
             };
         }
     }
