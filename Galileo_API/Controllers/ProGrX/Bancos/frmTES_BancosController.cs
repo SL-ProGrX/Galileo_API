@@ -4,6 +4,7 @@ using Galileo.Models.ProGrX.Bancos;
 using Galileo_API.BusinessLogic;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.RegularExpressions;
 
 namespace Galileo_API.Controllers.ProGrX.Bancos
 {
@@ -12,6 +13,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
     public class FrmTesBancosController : ControllerBase
     {
         private readonly FrmTesBancosBL BancosBL;
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
 
         public FrmTesBancosController(IConfiguration config)
         {
@@ -156,7 +158,29 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
             if (ext != ".rdl" && ext != ".rdlc")
                 return BadRequest("Extensión inválida. Solo .rdl/.rdlc.");
 
-            ErrorDto result = await BancosBL.TES_BancosArchivos_Subir(CodEmpresa, CodBanco, documento, file);
+            // ✅ Sanitizar documento (bloquea ../, rutas absolutas, separadores, etc.)
+            documento = (documento ?? string.Empty).Trim();
+
+            // 1) no permitir rutas
+            if (documento.Contains("..", StringComparison.Ordinal) ||
+                documento.Contains('/', StringComparison.Ordinal) ||
+                documento.Contains('\\', StringComparison.Ordinal) ||
+                Path.IsPathRooted(documento))
+            {
+                return BadRequest("Nombre de documento inválido.");
+            }
+
+            // 2) opcional: allowlist de caracteres (recomendado)
+            // letras, números, guion, guion bajo y punto
+            if (!System.Text.RegularExpressions.Regex.IsMatch(documento, @"^[a-zA-Z0-9._-]+$",RegexOptions.None, RegexTimeout))
+                return BadRequest("Nombre de documento inválido.");
+
+            // 3) opcional: longitud máxima
+            if (documento.Length > 100)
+                return BadRequest("Nombre de documento inválido.");
+
+            var result = await BancosBL.TES_BancosArchivos_Subir(CodEmpresa, CodBanco, documento, file);
+
 
             if (result.Code == -1)
             {
