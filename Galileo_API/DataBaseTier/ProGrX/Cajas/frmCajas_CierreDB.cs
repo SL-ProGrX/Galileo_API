@@ -16,6 +16,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         public FrmCajasCierreDb(PortalDB portalDB) => _portalDb = portalDB;
 
+        /// <summary>
+        /// Obtener información de la caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Caja"></param>
+        /// <param name="Apertura"></param>
+        /// <returns></returns>
         public ErrorDto<CajasCierreData> CajasCierre_AperturaCarga_Obtener(int CodEmpresa, string Caja, int Apertura)
         {
             const string sqlCierreTipo = @"select CIERRE_TIPO
@@ -45,6 +52,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return DbHelper.CreateOkResponse(resultData);
         }
 
+        /// <summary>
+        /// Obtener divisas disponibles para el cierre de caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Contabilidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CajasCierre_Divisas_Obtener(int CodEmpresa, int Contabilidad)
         {
             const string sql = @"Select rtrim(cod_divisa) as 'item', rtrim(Descripcion) as 'descripcion' 
@@ -54,6 +67,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 _portalDb, CodEmpresa, sql, new { Contabilidad });
         }
 
+        /// <summary>
+        /// Obtener cuentas bancarias para depositos
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CajasCierreCuentasData>> CajasCierre_Cuentas_Obtener(int CodEmpresa)
         {
             const string sql = @"exec spCajas_DepositosCuentasBancarias";
@@ -62,6 +80,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 _portalDb, CodEmpresa, sql);
         }
 
+        /// <summary>
+        /// Obtener formas de pago y totales para el cierre de caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Caja"></param>
+        /// <param name="Apertura"></param>
+        /// <param name="Divisa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CajasCierreFormaPagoData>> CajasCierre_FormaPago_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa)
         {
             const string sql = @"exec spCajas_CierreFPTotal @Caja, @Apertura, @Divisa";
@@ -70,6 +96,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 _portalDb, CodEmpresa, sql, new {Caja, Apertura, Divisa});
         }
 
+        /// <summary>
+        /// Obtener denominaciones para el cierre de caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Caja"></param>
+        /// <param name="Apertura"></param>
+        /// <param name="Divisa"></param>
+        /// <param name="Tipo"></param>
+        /// <returns></returns>
         public ErrorDto<List<CajasCierreDenominacionData>> CajasCierre_Denominacion_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa, string Tipo)
         {
             const string sql = @"exec spCajas_CierreEFDetalle @Caja, @Apertura, @Divisa, @Tipo";
@@ -78,6 +113,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 _portalDb, CodEmpresa, sql, new { Caja, Apertura, Divisa, Tipo });
         }
 
+        /// <summary>
+        /// Obtener depositos registrados para el cierre de caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Caja"></param>
+        /// <param name="Apertura"></param>
+        /// <param name="Divisa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CajasCierreDepositosData>> CajasCierre_Depositos_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa)
         {
             const string sql = @"exec spCajas_CierreDepositoDivisa @Caja, @Apertura, @Divisa";
@@ -86,6 +129,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 _portalDb, CodEmpresa, sql, new { Caja, Apertura, Divisa });
         }
 
+        /// <summary>
+        /// Obtener total a depositar para el cierre de caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Caja"></param>
+        /// <param name="Apertura"></param>
+        /// <param name="Divisa"></param>
+        /// <returns></returns>
         public ErrorDto<decimal> CajasCierre_TotalDepositar_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa)
         {
             const string sql = @"select SI_EFECTIVO From CAJAS_APERTURAS_CIERRES 
@@ -95,6 +146,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 _portalDb, CodEmpresa, sql, 0, new { Caja, Apertura, Divisa });
         }
 
+        /// <summary>
+        /// Obtener detalle de formas de pago para el cierre de caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Caja"></param>
+        /// <param name="Apertura"></param>
+        /// <param name="Divisa"></param>
+        /// <param name="CodFP"></param>
+        /// <returns></returns>
         public ErrorDto<List<CajasCierreFPDetalleData>> CajasCierre_FPDetalle_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa, string CodFP)
         {
             const string sql = @"exec spCajas_CierreFPDetalle @Caja, @Apertura, @Divisa, @CodFP";
@@ -103,6 +163,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 _portalDb, CodEmpresa, sql, new { Caja, Apertura, Divisa, CodFP });
         }
 
+        /// <summary>
+        /// Guardar deposito para el cierre de caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CajasCierre_Deposito_Guardar(int CodEmpresa, CajasCierreDepositoRequest request)
         {
             const string sql = @"exec spCajas_CierreRegistraDeposito @Caja, @Apertura, @Divisa, 
@@ -126,6 +192,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             );
         }
 
+        /// <summary>
+        /// Aplicar cierre preliminar de caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Caja"></param>
+        /// <param name="Apertura"></param>
+        /// <param name="Usuario"></param>
+        /// <returns></returns>
         public ErrorDto CajasCierre_Preliminar_Aplicar(int CodEmpresa, string Caja, int Apertura, string Usuario)
         {
             const string sql = @"exec spCajas_CierreCajaMain @Caja, @Apertura, @Usuario";
@@ -138,6 +212,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             );
         }
 
+        /// <summary>
+        /// Aplicar cierre de caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Caja"></param>
+        /// <param name="Apertura"></param>
+        /// <param name="Usuario"></param>
+        /// <returns></returns>
         public ErrorDto CajasCierre_Aplicar(int CodEmpresa, string Caja, int Apertura, string Usuario)
         {
             const string sqlValida = @"exec spCajas_Cierre_Validacion @Caja, @Usuario, @Apertura";
@@ -169,6 +251,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             );
         }
 
+        /// <summary>
+        /// Registrar denominación para el cierre de caja
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CajasCierre_Denominacion_Registrar(int CodEmpresa, CajasCierreDenominacionRequest request)
         {
             const string sql = @"exec spCajas_CierreRegistraEFDenominacion @Caja, @Apertura, @Divisa, @Denominacion, @Cantidad, @Tipo";
