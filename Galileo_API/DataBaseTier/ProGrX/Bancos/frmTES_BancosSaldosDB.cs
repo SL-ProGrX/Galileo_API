@@ -3,12 +3,10 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.TES;
-using Microsoft.Data.SqlClient;
-using Microsoft.ReportingServices.Diagnostics.Internal;
 using Newtonsoft.Json;
 
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo_API.DataBaseTier
 {
     public class FrmTesBancosSaldosDB
     {

@@ -2,7 +2,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.TES;
 using Newtonsoft.Json;
-using PgxAPI.DataBaseTier;
+using Galileo_API.DataBaseTier;
 
 
 namespace Galileo_API.BusinessLogic
