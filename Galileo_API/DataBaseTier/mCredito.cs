@@ -69,5 +69,10 @@ namespace Galileo.DataBaseTier
             }
         }
 
+        public static int fxMesDias(int pMes, int pAnio)
+        {
+            return DateTime.DaysInMonth(pAnio, pMes);
+        }
+
     }
 }

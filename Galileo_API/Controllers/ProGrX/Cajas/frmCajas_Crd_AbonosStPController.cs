@@ -49,5 +49,11 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             return _bl.CajasCrdAbonosSt_Operaciones_Obtener(CodEmpresa);
         }
 
+        [HttpGet("CajasCrdAbonosSt_CargaOperacionCodCed")]
+        public ErrorDto<CajasCrdAbonoCargaOperacionData> CajasCrdAbonosSt_CargaOperacionCodCed(int CodEmpresa, string cedula, string codigo)
+        {
+            return _bl.CajasCrdAbonosSt_CargaOperacionCodCed(CodEmpresa, cedula, codigo);
+        }
+
     }
 }
