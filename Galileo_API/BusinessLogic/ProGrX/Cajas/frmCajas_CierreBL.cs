@@ -45,5 +45,30 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         {
             return _db.CajasCierre_TotalDepositar_Obtener(CodEmpresa, Caja, Apertura, Divisa);
         }
+
+        public ErrorDto<List<CajasCierreFPDetalleData>> CajasCierre_FPDetalle_Obtener(int CodEmpresa, string Caja, int Apertura, string Divisa, string CodFP)
+        {
+            return _db.CajasCierre_FPDetalle_Obtener(CodEmpresa, Caja, Apertura, Divisa, CodFP);
+        }
+
+        public ErrorDto CajasCierre_Deposito_Guardar(int CodEmpresa, CajasCierreDepositoRequest Request)
+        {
+            return _db.CajasCierre_Deposito_Guardar(CodEmpresa, Request);
+        }
+
+        public ErrorDto CajasCierre_Preliminar_Aplicar(int CodEmpresa, string Caja, int Apertura, string Usuario)
+        {
+            return _db.CajasCierre_Preliminar_Aplicar(CodEmpresa, Caja, Apertura, Usuario);
+        }
+
+        public ErrorDto CajasCierre_Aplicar(int CodEmpresa, string Caja, int Apertura, string Usuario)
+        {
+            return _db.CajasCierre_Aplicar(CodEmpresa, Caja, Apertura, Usuario);
+        }
+
+        public ErrorDto CajasCierre_Denominacion_Registrar(int CodEmpresa, CajasCierreDenominacionRequest Request)
+        {
+            return _db.CajasCierre_Denominacion_Registrar(CodEmpresa, Request);
+        }
     }
 }

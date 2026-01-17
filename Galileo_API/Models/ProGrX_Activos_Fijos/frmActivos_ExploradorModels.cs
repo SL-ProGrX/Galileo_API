@@ -51,5 +51,14 @@
         public string? proveedor { get; set; }
     }
 
+    public class PeriodoExploradorDto
+    {
+        public int anio { get; set; }
+        public int mes { get; set; }
+        public DateTime fecha_periodo { get; set; }
+        public string periodo { get; set; } = string.Empty;
+    }
+
+
 
 }
