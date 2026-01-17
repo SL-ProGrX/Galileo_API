@@ -4,7 +4,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using System.Globalization;
 
-namespace PgxAPI.DataBaseTier.ProGrX.Bancos
+namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesConciliacionDB
     {
