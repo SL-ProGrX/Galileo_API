@@ -85,107 +85,68 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto TES_CambioFecha_Cambiar(int CodEmpresa, TesCambioFechasModel fechas)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
             try
             {
-                var query = "";
+                if (fechas is null)
+                    return DbHelper.ErrorResponse("Parámetros inválidos.");
 
-                string fechaActual = MProGrXAuxiliarDB.validaFechaGlobal(fechas.fechaActual, "yyyy-MM-dd HH:mm:ss") ?? throw new ArgumentException("Fecha actual inválida");
-                string fechaNueva = MProGrXAuxiliarDB.validaFechaGlobal(fechas.fechaNueva, "yyyy-MM-dd HH:mm:ss") ?? throw new ArgumentException("Fecha nueva inválida");
+                var fechaActual = MProGrXAuxiliarDB.validaFechaGlobal(fechas.fechaActual, "yyyy-MM-dd HH:mm:ss")
+                    ?? throw new ArgumentException("Fecha actual inválida");
 
-                string bitacoara = "";
+                var fechaNueva = MProGrXAuxiliarDB.validaFechaGlobal(fechas.fechaNueva, "yyyy-MM-dd HH:mm:ss")
+                    ?? throw new ArgumentException("Fecha nueva inválida");
+
+                const string sqlSolicitud = @"
+UPDATE Tes_Transacciones
+SET Fecha_Solicitud = @fechaNueva
+WHERE NSolicitud = @solicitud;";
+
+                const string sqlEmision = @"
+UPDATE Tes_Transacciones
+SET Fecha_Emision = @fechaNueva
+WHERE NSolicitud = @solicitud;";
+
+                const string sqlAnulacion = @"
+UPDATE Tes_Transacciones
+SET Fecha_Anula = @fechaNueva
+WHERE NSolicitud = @solicitud;";
+
+                string query;
+                string etiqueta;
 
                 switch (fechas.fecha)
                 {
-                    case "S": // Solicitud
-                        query = $@"Update Tes_Transacciones Set Fecha_Solicitud = @fechaNueva
-                                        Where NSolicitud = @solicitud";
-
-                        conn.Execute(query,
-                                new
-                                {
-                                    fechaNueva = fechaNueva,
-                                    solicitud = fechas.nsolicitud
-                                });
-
-                        bitacoara = $@"Cambia Fecha Solicitud de {fechaActual} a {fechaNueva} /Nota: {fechas.detalle_Anulacion}";
-
-                        mTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacoara, fechas.usuario!);
-                        //Insertar en la bitacora
-                        mSecurity.Bitacora(new BitacoraInsertarDto
-                        {
-                            EmpresaId = CodEmpresa,
-                            Usuario = fechas.usuario!,
-                            Modulo = vModulo, // Tesoreria
-                            Movimiento = "Modifica",
-                            DetalleMovimiento = bitacoara,
-                        });
-
+                    case "S":
+                        query = sqlSolicitud;
+                        etiqueta = "Solicitud";
                         break;
-                    case "E": // Emision
-
-                        query = $@"Update Tes_Transacciones Set Fecha_Emision = @fechaNueva
-                                        Where NSolicitud = @solicitud";
-
-                        conn.Execute(query,
-                                new
-                                {
-                                    fechaNueva = fechaNueva,
-                                    solicitud = fechas.nsolicitud
-                                });
-
-                        bitacoara = $@"Cambia Fecha Emisión de {fechaActual} a {fechaNueva} /Nota: {fechas.detalle_Anulacion}";
-
-                        //Insertar en la bitacora
-                        mTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacoara, fechas.usuario!);
-                        //Insertar en la bitacora
-                        mSecurity.Bitacora(new BitacoraInsertarDto
-                        {
-                            EmpresaId = CodEmpresa,
-                            Usuario = fechas.usuario!,
-                            Modulo = vModulo, // Tesoreria
-                            Movimiento = "Modifica",
-                            DetalleMovimiento = bitacoara,
-                        });
-
+                    case "E":
+                        query = sqlEmision;
+                        etiqueta = "Emisión";
                         break;
-                    case "A": // Anulacion
-
-                        query = $@"Update Tes_Transacciones Set Fecha_Anula = @fechaNueva
-                                        Where NSolicitud = @solicitud";
-
-                        conn.Execute(query,
-                                new
-                                {
-                                    fechaNueva = fechaNueva,
-                                    solicitud = fechas.nsolicitud
-                                });
-
-                        bitacoara = $@"Cambia Fecha Anulación de {fechaActual} a {fechaNueva} /Nota: {fechas.detalle_Anulacion}";
-
-
-                        //Insertar en la bitacora
-                        mTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacoara, fechas.usuario!);
-
-                        mSecurity.Bitacora(new BitacoraInsertarDto
-                        {
-                            EmpresaId = CodEmpresa,
-                            Usuario = fechas.usuario!,
-                            Modulo = vModulo, // Tesoreria
-                            Movimiento = "Modifica",
-                            DetalleMovimiento = bitacoara,
-                        });
-
-
+                    case "A":
+                        query = sqlAnulacion;
+                        etiqueta = "Anulación";
                         break;
                     default:
-                        break;
-
+                        return DbHelper.ErrorResponse("Tipo de fecha inválido.");
                 }
 
-                conn.Execute(query,
-                new
+                conn.Execute(query, new { fechaNueva, solicitud = fechas.nsolicitud });
+
+                var nota = fechas.detalle_Anulacion ?? string.Empty;
+                var bitacora = $"Cambia Fecha {etiqueta} de {fechaActual} a {fechaNueva} /Nota: {nota}";
+
+                mTesoreria.sbTesBitacoraEspecial(CodEmpresa, fechas.nsolicitud, "08", bitacora, fechas.usuario!);
+
+                mSecurity.Bitacora(new BitacoraInsertarDto
                 {
-                    solicitud = fechas.nsolicitud
+                    EmpresaId = CodEmpresa,
+                    Usuario = fechas.usuario!,
+                    Modulo = vModulo,
+                    Movimiento = "Modifica",
+                    DetalleMovimiento = bitacora
                 });
 
                 return DbHelper.OkResponse("Fecha cambiada con éxito.");
@@ -195,8 +156,5 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 return DbHelper.ErrorResponse($"Error al cambiar la fecha: {ex.Message}");
             }
         }
-
-        
-
     }
 }
