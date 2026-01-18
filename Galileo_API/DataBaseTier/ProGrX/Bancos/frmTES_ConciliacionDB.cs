@@ -776,14 +776,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         pId_Bancos = item.id.ToString()!;
                     }
 
-                    if (filtro.movFiltro == "T")
-                    {
-                        query = $@"exec spTes_Concilia_Reversa @bancos, @ahno , @mes , @id_bancos, @id_libros, @usuario ";
-                    }
-                    else
-                    {
-                        query = $@"exec spTes_Concilia_Reversa @bancos, @ahno , @mes , @id_bancos, @id_libros, @usuario ";
-                    }
+                    query = $@"exec spTes_Concilia_Reversa @bancos, @ahno , @mes , @id_bancos, @id_libros, @usuario ";
 
                     conn.Execute(query, new
                     {
