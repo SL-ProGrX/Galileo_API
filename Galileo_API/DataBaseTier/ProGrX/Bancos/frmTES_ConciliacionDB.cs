@@ -640,7 +640,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     return DbHelper.ErrorResponse(vMensaje);
                 }
 
-                var query = "";
                 datos.ForEach(item => {
                     string pId_Bancos = "";
                     string pId_Libros = "";
@@ -655,16 +654,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         pId_Bancos = item.id.ToString();
                     }
 
-                    if (filtro.movFiltro == "T")
-                    {
-                        query = $@"exec spTes_Concilia_Aplicacion  @bancos, @ahno , @mes , @id_bancos, @id_libros, @usuario ";
-                    }
-                    else
-                    {
-                        query = $@"exec spTes_Concilia_Aplicacion_Lote @bancos, @ahno , @mes , @id_bancos, @id_libros, @usuario ";
-                    }
+                    var storedProcedure = filtro.movFiltro == "T"
+                    ? "spTes_Concilia_Aplicacion"
+                    : "spTes_Concilia_Aplicacion_Lote";
 
-                    conn.Execute(query, new
+                    
+
+                    conn.Execute(storedProcedure, new
                     {
                         bancos = filtro.banco,
                         ahno = filtro.ahno,
@@ -672,7 +668,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         id_bancos = pId_Bancos,
                         id_libros = pId_Libros,
                         usuario = filtro.usuario
-                    });
+                    },
+                    commandType: System.Data.CommandType.StoredProcedure
+                    );
                 });
             
                 return DbHelper.CreateOkResponse();
