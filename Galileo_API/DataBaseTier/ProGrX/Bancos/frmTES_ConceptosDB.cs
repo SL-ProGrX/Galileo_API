@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
@@ -136,11 +137,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto Tes_Conceptos_Guardar(int CodEmpresa, string usuario ,TesConceptosData concepto)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
             try
             {
                 var query = $@"select isnull(count(*),0) as Existe from tes_conceptos 
@@ -151,26 +147,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 bool cuentaValida = _mCnt.fxgCntCuentaValida(CodEmpresa, vCuenta);
                 if (!cuentaValida)
                 {
-                    result.Code = -1;
-                    result.Description = "La cuenta contable no es válida.";
-                    return result;
+                    return DbHelper.ErrorResponse("La cuenta contable no es válida.");
                 }
 
                 if (existe > 0)
                 {
-                    result = Tes_Conceptos_Actualizar(CodEmpresa, usuario, vCuenta, concepto);
+                    return Tes_Conceptos_Actualizar(CodEmpresa, usuario, vCuenta, concepto);
                 }
                 else
                 {
-                    result = Tes_Conceptos_Insertar(CodEmpresa, usuario, vCuenta, concepto);
+                    return Tes_Conceptos_Insertar(CodEmpresa, usuario, vCuenta, concepto);
                 }
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-            return result;
         }
 
         /// <summary>
@@ -184,11 +176,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private ErrorDto Tes_Conceptos_Insertar(int CodEmpresa, string usuario, string cuenta ,TesConceptosData concepto)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
             try
             {
                 string query = @"
@@ -221,13 +208,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     Movimiento = "Registra - WEB",
                     Modulo = vModulo
                 });
+
+                return DbHelper.OkResponse("Concepto de tesorería insertado correctamente.");
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-            return result;
+            
         }
 
         /// <summary>
@@ -241,11 +229,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private ErrorDto Tes_Conceptos_Actualizar(int CodEmpresa, string usuario,string cuenta, TesConceptosData concepto)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
             try
             {
                 string query = @"
@@ -279,13 +262,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     Movimiento = "MODIFICA - WEB",
                     Modulo = vModulo
                 });
+
+                return DbHelper.OkResponse("Concepto de tesorería actualizado correctamente.");
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-            return result;
         }
 
         /// <summary>
@@ -320,8 +303,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
             return result;
         }
@@ -370,15 +352,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     filtro = hasFiltro ? texto : null,
                     like
                 }).ToList();
+
+                return DbHelper.CreateOkResponse(result.Result);
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = new List<TesConceptosData>();
+                return DbHelper.CreateErrorResponse<List<TesConceptosData>>(ex.Message);
             }
-
-            return result;
         }
 
         /// <summary>
@@ -393,11 +373,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto Tes_Concepto_Valida(int CodEmpresa, string codigo)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
             try
             {
                 string query = $@"SELECT COUNT('X') FROM tes_conceptos 
@@ -406,21 +381,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 if (existe > 0)
                 {
-                    result.Code = 1; // Existe
-                    result.Description = "El concepto de tesorería ya existe.";
+                    return DbHelper.ErrorResponse("El concepto de tesorería ya existe."); 
                 }
                 else
                 {
-                    result.Code = 0; // No existe
-                    result.Description = "El concepto de tesorería no existe.";
+                    return DbHelper.OkResponse("El concepto de tesorería no existe.");
                 }
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-            return result;
+           
         }
     }
 }
