@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
+using Galileo.Models.Security;
 using System.Globalization;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
@@ -150,14 +151,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     usuario = filtro.usuario
                 });
 
-                query = $@"exec spTes_Concilia_Periodo_Actualiza @banco, @ahno,@mes,@usuario";
-                conn.Execute(query, new
-                {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    usuario = filtro.usuario
-                });
+                spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
 
                 return DbHelper.CreateOkResponse();
             }
@@ -363,15 +357,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     usuario = filtro.usuario
                 }, commandTimeout: 900);
 
-                query = $@"exec spTes_Concilia_Periodo_Actualiza @banco,@ahno,@mes,@usuario";
-                conn.Execute(query, new
-                {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    usuario = filtro.usuario
-                }, commandTimeout: 900);
-
+                spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
+               
                 return DbHelper.CreateOkResponse();
             }
             catch (Exception ex)
@@ -406,14 +393,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     usuario = filtro.usuario
                 }, commandTimeout: 300);
 
-                query = $@"exec spTes_Concilia_Periodo_Actualiza @banco,@ahno,@mes,@usuario";
-                conn.Execute(query, new
-                {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    usuario = filtro.usuario
-                }, commandTimeout: 300);
+                spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
 
                 return DbHelper.CreateOkResponse();
             }
@@ -492,14 +472,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 }
 
                 //Actualiza Resumen
-                query = $@"exec spTes_Concilia_Periodo_Actualiza @bancos, @ahno , @mes , @usuario ";
-                conn.Execute(query, new
-                {
-                    bancos = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    usuario = filtro.usuario
-                });
+                spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
 
                 return DbHelper.CreateOkResponse();
             }
@@ -721,7 +694,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = $@" exec spTes_Concilia_Periodo_Resultados_Caso_Detalle  
+                const string query = $@" exec spTes_Concilia_Periodo_Resultados_Caso_Lote 
                                             @banco,
                                             @ahno,
                                             @mes,
@@ -789,15 +762,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     });
                 });
 
-                //Actualiza Resumen
-                query = $@"exec spTes_Concilia_Periodo_Actualiza @bancos, @ahno , @mes , @usuario ";
-                conn.Execute(query, new
-                {
-                    bancos = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    usuario = filtro.usuario
-                });
+                spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
 
                 return DbHelper.CreateOkResponse();
             }
@@ -809,6 +774,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         #endregion
 
+        private void spTesConciliaPeriodoActualiza(int CodEmpresa, int banco, int ahno, int mes, string usuario)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            var query = $@"exec spTes_Concilia_Periodo_Actualiza @bancos, @ahno , @mes , @usuario ";
+            conn.Execute(query, new
+            {
+                bancos = banco,
+                ahno = ahno,
+                mes = mes,
+                usuario = usuario
+            }, commandTimeout: 900);
+        }
 
     }
 }
