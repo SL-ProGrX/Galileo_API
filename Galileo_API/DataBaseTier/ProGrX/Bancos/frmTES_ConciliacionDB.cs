@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
+using PdfSharp.Pdf.Filters;
 using System.Globalization;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
@@ -136,7 +137,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+
+                if(RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
@@ -173,7 +175,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
@@ -211,7 +213,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
@@ -263,7 +265,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
@@ -297,7 +299,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
@@ -343,7 +345,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
@@ -379,7 +381,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+                if(RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
@@ -444,7 +446,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
@@ -495,7 +497,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
@@ -608,7 +610,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
@@ -726,12 +728,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                if (!string.IsNullOrEmpty(filtro.periodoEstado) && filtro.periodoEstado.StartsWith('C'))
+                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
                 {
                     return DbHelper.ErrorResponse(vMensaje);
                 }
-
-
                 var query = "";
 
                 datos.ForEach(item =>
@@ -787,5 +787,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }, commandTimeout: 900);
         }
 
+        private ErrorDto RunIfPeriodoAbierto(string? periodoEstado)
+        {
+            if (!string.IsNullOrEmpty(periodoEstado) && periodoEstado.StartsWith('C'))
+            {
+                return DbHelper.ErrorResponse(vMensaje);
+            }
+            return DbHelper.CreateOkResponse();
+        }
     }
 }
