@@ -3,7 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
-using PdfSharp.Pdf.Filters;
+using System.Data;
 using System.Globalization;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
@@ -24,16 +24,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <summary>
         /// Obtiene las cuentas bancarias para conciliación de un usuario específico en una empresa dada.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto<List<TesConciliacionCuentaData>> TES_ConciliacionBancosLst_Obtener(int CodEmpresa, string usuario)
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = $@"exec spTes_Cuenta_Bancaria_Acceso_General @usuario, 'ASI'";
-
-                return conn.Query<TesConciliacionCuentaData>(query, new { usuario = usuario }).ToList();
+                const string query = @"exec spTes_Cuenta_Bancaria_Acceso_General @usuario, 'ASI'";
+                return conn.Query<TesConciliacionCuentaData>(query, new { usuario }).ToList();
             });
         }
 
@@ -42,20 +38,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <summary>
         /// Consulta el historial de conciliación bancaria para una empresa y banco específicos, filtrado por usuario.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_banco"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto<List<TesConciliacionHistorico>> TES_ConciliacionHistorico_Obtener(int CodEmpresa, int id_banco, string usuario)
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = $@"exec spTes_Concilia_Periodo_Consulta @id_banco, @usuario ";
-
+                const string query = @"exec spTes_Concilia_Periodo_Consulta @id_banco, @usuario";
                 return conn.Query<TesConciliacionHistorico>(query, new { id_banco, usuario }).ToList();
             });
         }
-
 
         #endregion
 
@@ -64,21 +54,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <summary>
         /// Consulta los periodos de conciliación bancaria para una empresa, banco, año y mes específicos.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="id_banco"></param>
-        /// <param name="pAnio"></param>
-        /// <param name="mes"></param>
-        /// <returns></returns>
         public ErrorDto<TesConciliaPeriodo> TES_ConciliacionPeriodo_Consulta(int CodEmpresa, string usuario, int id_banco, int pAnio, int mes)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            try
+            return Exec(CodEmpresa, conn =>
             {
-                //Valido si existe
-                var query = $@"Select COUNT('X') from vTES_CONCILIA_PERIODO
-                                    where id_Banco = @banco
-                                      and Anio = @anio
-                                      and Mes = @mes ";
+                // Valido si existe
+                var query = @"Select COUNT('X') from vTES_CONCILIA_PERIODO
+                              where id_Banco = @banco
+                                and Anio = @anio
+                                and Mes = @mes";
+
                 var exists = conn.Query<int>(query, new
                 {
                     banco = id_banco,
@@ -101,11 +86,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     });
                 }
 
-                query = $@"select *
-                                    from vTES_CONCILIA_PERIODO
-                                    where id_Banco = @banco
-                                      and Anio = @anio
-                                      and Mes = @mes ";
+                query = @"select *
+                          from vTES_CONCILIA_PERIODO
+                          where id_Banco = @banco
+                            and Anio = @anio
+                            and Mes = @mes";
+
                 var result = conn.Query<TesConciliaPeriodo>(query, new
                 {
                     banco = id_banco,
@@ -119,290 +105,205 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 }
 
                 return DbHelper.CreateOkResponse(result);
-            }
-            catch (Exception)
-            {
-                return DbHelper.CreateErrorResponse<TesConciliaPeriodo>("Error al obtener las cuentas bancarias para conciliación.");
-            }
+            },
+            "Error al obtener las cuentas bancarias para conciliación.");
         }
 
         /// <summary>
         /// Actualiza el saldo de conciliación bancaria para un periodo específico, validando si el periodo está cerrado.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
         public ErrorDto TES_ConciliacionSaldo_Actualiza(int CodEmpresa, TesConciliaFiltros filtro)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            try
-            {
-
-                if(RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
+                    const string query = @"exec spTes_Concilia_Periodo_Actualiza_Saldo_Cta @banco, @ahno,@mes,@saldo,@usuario";
 
-                var query = $@"exec spTes_Concilia_Periodo_Actualiza_Saldo_Cta @banco, @ahno,@mes,@saldo,@usuario";
-                conn.Execute(query, new
-                {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    saldo = filtro.saldo,
-                    usuario = filtro.usuario
-                });
+                    conn.Execute(query, new
+                    {
+                        banco = filtro.banco,
+                        ahno = filtro.ahno,
+                        mes = filtro.mes,
+                        saldo = filtro.saldo,
+                        usuario = filtro.usuario
+                    });
 
-                spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
 
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception)
-            {
-                return DbHelper.ErrorResponse("Error al actualizar el saldo de conciliación bancaria.");
-            }
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al actualizar el saldo de conciliación bancaria.");
         }
 
         /// <summary>
         /// Guarda nota y saldo actual de conciliación bancaria para un periodo específico.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
         public ErrorDto TES_ConciliacionResumen_Guardar(int CodEmpresa, TesConciliaFiltros filtro)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
+                    const string query = @"exec spTes_Concilia_Periodo_Add @banco,@ahno,@mes,'A',@notas,@usuarios,@saldos,@saldoActual";
 
-                var query = $@"exec spTes_Concilia_Periodo_Add @banco,@ahno,@mes,'A',@notas,@usuarios,@saldos,@saldoActual";
-                conn.Execute(query, new
-                {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    notas = filtro.notas ?? string.Empty,
-                    usuarios = filtro.usuario,
-                    saldos = filtro.saldo,
-                    saldoActual = filtro.saldoActual
-                });
+                    conn.Execute(query, new
+                    {
+                        banco = filtro.banco,
+                        ahno = filtro.ahno,
+                        mes = filtro.mes,
+                        notas = filtro.notas ?? string.Empty,
+                        usuarios = filtro.usuario,
+                        saldos = filtro.saldo,
+                        saldoActual = filtro.saldoActual
+                    });
 
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message.ToString());
-            }
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al guardar el resumen de conciliación bancaria.");
         }
 
         /// <summary>
         /// Carga un archivo de conciliación bancaria, procesando cada fila y actualizando el saldo de conciliación para un periodo específico.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <param name="file"></param>
-        /// <returns></returns>
         public ErrorDto TES_ConciliacionResumenArchivo_Cargar(int CodEmpresa, TesConciliaFiltros filtro, List<TesConciliacioExcelDto> file)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
-
-                foreach (var row in file)
-                {
-                    if (row.importe < 0)
+                    foreach (var row in file)
                     {
-                        row.tipo = "D";
+                        if (row.importe < 0)
+                        {
+                            row.tipo = "D";
+                        }
+
+                        string fechaExcel = MProGrXAuxiliarDB.validaFechaGlobal(row.fecha, vDateFormat) ?? string.Empty;
+
+                        const string query = @"exec spTes_Concilia_Banco_Mov @banco,@fechaExcel,@ndocumento,@tipo,@importe,@descripcion,0,@usuario";
+
+                        conn.Execute(query, new
+                        {
+                            banco = filtro.banco,
+                            fechaExcel,
+                            ndocumento = row.documento,
+                            tipo = row.tipo,
+                            importe = row.importe,
+                            descripcion = row.descripcion,
+                            usuario = filtro.usuario
+                        });
                     }
 
-                    string fechaExcel = MProGrXAuxiliarDB.validaFechaGlobal(row.fecha, vDateFormat) ?? string.Empty;
+                    TES_Conciliacion_Actualizar(CodEmpresa, filtro);
 
-                    var query = $@"exec spTes_Concilia_Banco_Mov @banco,@fechaExcel,@ndocumento,@tipo,@importe,@descripcion,0,@usuario";
-                    conn.Execute(query, new
-                    {
-                        banco = filtro.banco,
-                        fechaExcel = fechaExcel,
-                        ndocumento = row.documento,
-                        tipo = row.tipo,
-                        importe = row.importe,
-                        descripcion = row.descripcion,
-                        usuario = filtro.usuario
-                    });
-
-                }
-
-                TES_Conciliacion_Actualizar(CodEmpresa, filtro);
-
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message.ToString());
-            }
-
-           
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al cargar el archivo de conciliación bancaria.");
         }
 
         /// <summary>
         /// Cierra un periodo de conciliación bancaria para una empresa, banco, año y mes específicos.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
         public ErrorDto TES_ConciliacionResumenPeriodo_Cerrar(int CodEmpresa, TesConciliaFiltros filtro)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
+                    const string query = @"exec spTes_Concilia_Periodo_Cierra @banco,@ahno,@mes,@usuario";
 
-                var query = $@"exec spTes_Concilia_Periodo_Cierra @banco,@ahno,@mes,@usuario";
-                conn.Execute(query, new
-                {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    usuario = filtro.usuario
-                }, commandTimeout: 300);
+                    conn.Execute(query, new
+                    {
+                        banco = filtro.banco,
+                        ahno = filtro.ahno,
+                        mes = filtro.mes,
+                        usuario = filtro.usuario
+                    }, commandTimeout: 300);
 
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message.ToString());
-            }
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al cerrar el periodo de conciliación bancaria.");
         }
 
         /// <summary>
         /// Realiza la conciliación de movimientos entre bancos o libros, dependiendo del tipo especificado.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="tipo"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
         public ErrorDto TES_ConciliacionResumen_Concilia(int CodEmpresa, int tipo, TesConciliaFiltros filtro)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            try
-            {
-                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
+                    string query;
+                    switch (tipo)
+                    {
+                        case 0:
+                            query = @"exec spTes_Concilia_Bancos_EntreSi @banco,@ahno,@mes,@usuario";
+                            break;
+                        case 1:
+                            query = @"exec spTes_Concilia_Libros_EntreSi @banco,@ahno,@mes,@usuario";
+                            break;
+                        default:
+                            return DbHelper.ErrorResponse("Tipo de operación no válido.");
+                    }
 
-                var query = "";
-                switch (tipo)
-                {
-                    case 0: // Concilia Movimientos (E/S) Banco
-                        query = $@"exec spTes_Concilia_Bancos_EntreSi @banco,@ahno,@mes,@usuario";
-                        break;
-                    case 1: // Concilia Movimientos (E/S) Libros
-                        query = $@"exec spTes_Concilia_Libros_EntreSi @banco,@ahno,@mes,@usuario";
-                        break;
-                    default: // Cierra  
-                        return DbHelper.ErrorResponse("Tipo de operación no válido.");
-                }
+                    conn.Execute(query, new
+                    {
+                        banco = filtro.banco,
+                        ahno = filtro.ahno,
+                        mes = filtro.mes,
+                        usuario = filtro.usuario
+                    }, commandTimeout: 300);
 
-                conn.Execute(query, new
-                {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    usuario = filtro.usuario
-                }, commandTimeout: 300);
-
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message.ToString());
-            }
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al conciliar los movimientos.");
         }
 
         /// <summary>
         /// Actualiza el saldo de conciliación bancaria de forma automática para un periodo específico, validando si el periodo está cerrado.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
         public ErrorDto TES_Conciliacion_Actualizar(int CodEmpresa, TesConciliaFiltros filtro)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
+                    const string query = @"exec spTes_Concilia_Automatica @banco,@ahno,@mes,@usuario";
 
-                var query = $@"exec spTes_Concilia_Automatica @banco,@ahno,@mes,@usuario";
-                conn.Execute(query, new
-                {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    usuario = filtro.usuario
-                }, commandTimeout: 900);
+                    conn.Execute(query, new
+                    {
+                        banco = filtro.banco,
+                        ahno = filtro.ahno,
+                        mes = filtro.mes,
+                        usuario = filtro.usuario
+                    }, commandTimeout: 900);
 
-                spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
-               
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message.ToString());
-            }
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
+
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al actualizar la conciliación bancaria.");
         }
 
         /// <summary>
-        /// Inicializa un periodo de conciliación bancaria para una empresa, banco, año y mes específicos, permitiendo la actualización del saldo inicial.
+        /// Inicializa un periodo de conciliación bancaria para una empresa, banco, año y mes específicos.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
         public ErrorDto TES_Conciliacion_Inicializa(int CodEmpresa, TesConciliaFiltros filtro)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                if(RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
+                    const string query = @"exec spTes_Concilia_Periodo_Inicializa @banco,@ahno,@mes,@usuario";
 
-                var query = $@"exec spTes_Concilia_Periodo_Inicializa @banco,@ahno,@mes,@usuario";
-                conn.Execute(query, new
-                {
-                    banco = filtro.banco,
-                    ahno = filtro.ahno,
-                    mes = filtro.mes,
-                    usuario = filtro.usuario
-                }, commandTimeout: 300);
+                    conn.Execute(query, new
+                    {
+                        banco = filtro.banco,
+                        ahno = filtro.ahno,
+                        mes = filtro.mes,
+                        usuario = filtro.usuario
+                    }, commandTimeout: 300);
 
-                spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario);
 
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message.ToString());   
-            }
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al inicializar el periodo de conciliación bancaria.");
         }
 
         #endregion
@@ -412,14 +313,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <summary>
         /// Obtiene los resultados de conciliación bancaria para un periodo específico, filtrando por varios criterios.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
         public ErrorDto<List<TesConciliaResultados>> TES_ConciliacionResultados_Obtener(int CodEmpresa, TesConciliaResultadoFiltros filtros)
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = $@"exec spTes_Concilia_Periodo_Resultados @banco, @ahno ,@mes,@ubicacion,@tipoDoc,@estadoCasos";
+                const string query = @"exec spTes_Concilia_Periodo_Resultados @banco, @ahno ,@mes,@ubicacion,@tipoDoc,@estadoCasos";
 
                 return conn.Query<TesConciliaResultados>(query, new
                 {
@@ -434,133 +332,92 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         /// <summary>
-        /// Registra automáticamente los resultados de conciliación bancaria para un periodo específico, actualizando el saldo y el estado del periodo.
+        /// Registra automáticamente los resultados de conciliación bancaria para un periodo específico.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
         public ErrorDto TES_ConciliacionResultados_Autoregistro(int CodEmpresa, TesConciliacionResultosFiltro filtro, List<TesConciliaResultados> datos)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
-
-                bool vCuenta = mCntLinkDB.fxgCntCuentaValida(CodEmpresa, filtro.ar_cuenta!);
-                if (!vCuenta)
-                {
-                    return DbHelper.ErrorResponse("La cuenta contable indicada para el auto-registro no es válida!");
-                }
-
-                var query = "";
-                foreach (var item in datos)
-                {
-                    query = $@"exec spTes_Concilia_Auto_Registro @bancos, @ahno , @mes , @id, @cuenta , @usuario , @chkAutoReg ";
-                    conn.Execute(query, new
+                    bool vCuenta = mCntLinkDB.fxgCntCuentaValida(CodEmpresa, filtro.ar_cuenta!);
+                    if (!vCuenta)
                     {
-                        bancos = filtro.banco,
-                        ahno = filtro.ahno,
-                        mes = filtro.mes,
-                        id = item.id,
-                        cuenta = filtro.ar_cuenta,
-                        usuario = filtro.usuario,
-                        chkAutoReg = filtro.chkAutoReg ? 1 : 0
-                    });
-                }
+                        return DbHelper.ErrorResponse("La cuenta contable indicada para el auto-registro no es válida!");
+                    }
 
-                //Actualiza Resumen
-                spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
+                    const string query = @"exec spTes_Concilia_Auto_Registro @bancos, @ahno , @mes , @id, @cuenta , @usuario , @chkAutoReg";
 
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message.ToString());
-            }
+                    foreach (var item in datos)
+                    {
+                        conn.Execute(query, new
+                        {
+                            bancos = filtro.banco,
+                            ahno = filtro.ahno,
+                            mes = filtro.mes,
+                            id = item.id,
+                            cuenta = filtro.ar_cuenta,
+                            usuario = filtro.usuario,
+                            chkAutoReg = filtro.chkAutoReg ? 1 : 0
+                        });
+                    }
+
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
+
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al realizar el auto-registro de resultados.");
         }
 
         /// <summary>
-        /// 
+        /// Marca resultados como pendientes.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
         public ErrorDto TES_ConciliacionResultados_Pendiente(int CodEmpresa, TesConciliacionResultosFiltro filtro, List<TesConciliaResultados> datos)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
+                    const string query = @"exec spTes_Concilia_Pendiente @bancos, @ahno , @mes , @id , @ubicacion , @usuario";
 
-                var query = "";
-                foreach (var item in datos)
-                {
-                    query = $@"exec spTes_Concilia_Pendiente @bancos, @ahno , @mes , @id , @ubicacion , @usuario ";
-                    conn.Execute(query, new
+                    foreach (var item in datos)
                     {
-                        bancos = filtro.banco,
-                        ahno = filtro.ahno,
-                        mes = filtro.mes,
-                        id = item.id,
-                        ubicacion = filtro.ubicacion,
-                        usuario = filtro.usuario
-                    });
-                }
+                        conn.Execute(query, new
+                        {
+                            bancos = filtro.banco,
+                            ahno = filtro.ahno,
+                            mes = filtro.mes,
+                            id = item.id,
+                            ubicacion = filtro.ubicacion,
+                            usuario = filtro.usuario
+                        });
+                    }
 
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message.ToString());
-            }
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al marcar pendientes de conciliación.");
         }
-
 
         #endregion
 
         #region Conciliación
 
         /// <summary>
-        /// Obtiene los datos de conciliación asignados para un periodo específico, filtrando por varios criterios.
+        /// Obtiene los datos de conciliación asignados para un periodo específico.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
         public ErrorDto<List<TesConciliaAsigna>> TES_ConciliacionAsigna_Obtener(int CodEmpresa, TesConciliaAsignaFiltros filtros)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
+            return Exec(CodEmpresa, conn =>
             {
                 string fechaInicio = MProGrXAuxiliarDB.validaFechaGlobal(filtros.dtpConciliaInicio, vDateFormat) ?? string.Empty;
                 DateTime original = DateTime.ParseExact(fechaInicio, vDateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None);
                 DateTime inicioDia = original.Date;
-
                 string resultadoInicio = inicioDia.ToString(vDateFormat);
 
-
                 string fechaCorte = MProGrXAuxiliarDB.validaFechaGlobal(filtros.dtpConciliaCorte, vDateFormat) ?? string.Empty;
-                DateTime originalCorte = DateTime.ParseExact(
-                    fechaCorte,
-                    vDateFormat,
-                    CultureInfo.InvariantCulture,
-                    DateTimeStyles.None);
+                DateTime originalCorte = DateTime.ParseExact(fechaCorte, vDateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None);
                 DateTime afechaFin = originalCorte.Date.AddHours(23).AddMinutes(59).AddSeconds(59);
-
                 string resultadoCorte = afechaFin.ToString(vDateFormat);
 
-
-                var query = $@" exec spTes_Concilia_Periodo_Disponibles 
+                const string query = @"exec spTes_Concilia_Periodo_Disponibles 
                                             @banco,
                                             @ahno,
                                             @mes,
@@ -573,6 +430,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                             @chkConciliaFiltroFechas,
                                             @dtpConciliaInicio,
                                             @dtpConciliaCorte";
+
                 var response = conn.Query<TesConciliaAsigna>(query, new
                 {
                     banco = filtros.banco,
@@ -590,90 +448,66 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 }).ToList();
 
                 return DbHelper.CreateOkResponse(response);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<List<TesConciliaAsigna>>(ex.Message.ToString());
-            }
+            }, "Error al obtener datos para asignación de conciliación.");
         }
 
         /// <summary>
-        /// Aplica la conciliación bancaria para un periodo específico, asignando los datos de conciliación a los movimientos correspondientes.
+        /// Aplica la conciliación bancaria para un periodo específico.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
         public ErrorDto TES_Conciliacion_Aplicar(int CodEmpresa, TesConciliacionFiltro filtro, List<TesConciliaAsigna> datos)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
-
-                datos.ForEach(item => {
-                    string pId_Bancos = "";
-                    string pId_Libros = "";
-                    if (filtro.ubicacion == "B")
+                    datos.ForEach(item =>
                     {
-                        pId_Bancos = filtro.mov_id!;
-                        pId_Libros = item.id.ToString();
-                    }
-                    else
-                    {
-                        pId_Libros = filtro.mov_id!;
-                        pId_Bancos = item.id.ToString();
-                    }
+                        string pId_Bancos;
+                        string pId_Libros;
 
-                    var storedProcedure = filtro.movFiltro == "T"
-                    ? "spTes_Concilia_Aplicacion"
-                    : "spTes_Concilia_Aplicacion_Lote";
+                        if (filtro.ubicacion == "B")
+                        {
+                            pId_Bancos = filtro.mov_id!;
+                            pId_Libros = item.id.ToString();
+                        }
+                        else
+                        {
+                            pId_Libros = filtro.mov_id!;
+                            pId_Bancos = item.id.ToString();
+                        }
 
-                    
+                        var storedProcedure = filtro.movFiltro == "T"
+                            ? "spTes_Concilia_Aplicacion"
+                            : "spTes_Concilia_Aplicacion_Lote";
 
-                    conn.Execute(storedProcedure, new
-                    {
-                        bancos = filtro.banco,
-                        ahno = filtro.ahno,
-                        mes = filtro.mes,
-                        id_bancos = pId_Bancos,
-                        id_libros = pId_Libros,
-                        usuario = filtro.usuario
-                    },
-                    commandType: System.Data.CommandType.StoredProcedure
-                    );
-                });
-            
-                return DbHelper.CreateOkResponse();
+                        conn.Execute(storedProcedure, new
+                        {
+                            bancos = filtro.banco,
+                            ahno = filtro.ahno,
+                            mes = filtro.mes,
+                            id_bancos = pId_Bancos,
+                            id_libros = pId_Libros,
+                            usuario = filtro.usuario
+                        }, commandType: CommandType.StoredProcedure);
+                    });
 
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message.ToString());
-            }
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al aplicar la conciliación bancaria.");
         }
 
         /// <summary>
-        /// Detalle de Transacciones Vinculadas 
+        /// Detalle de Transacciones Vinculadas
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name=""></param>
-        /// <returns></returns>
-        public ErrorDto<List<TesConciliacionDetallesData>> TES_ConciliacionDetalle_Obtener(int CodEmpresa, TesConciliacionFiltro filtro )
+        public ErrorDto<List<TesConciliacionDetallesData>> TES_ConciliacionDetalle_Obtener(int CodEmpresa, TesConciliacionFiltro filtro)
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = $@" exec spTes_Concilia_Periodo_Resultados_Caso_Detalle  
+                const string query = @"exec spTes_Concilia_Periodo_Resultados_Caso_Detalle  
                                             @banco,
                                             @ahno,
                                             @mes,
                                             @ubicacion,
-                                            @caso
-                                           ";
+                                            @caso";
 
                 return conn.Query<TesConciliacionDetallesData>(query, new
                 {
@@ -687,22 +521,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         /// <summary>
-        /// Obtiene los detalles de un lote de conciliación bancaria para un periodo específico, filtrando por varios criterios.
+        /// Obtiene los detalles de un lote de conciliación bancaria para un periodo específico.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
         public ErrorDto<List<TesConciliacionDetallesLoteData>> TES_ConciliacionDetalleLote_Obtener(int CodEmpresa, TesConciliacionFiltro filtro)
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = $@" exec spTes_Concilia_Periodo_Resultados_Caso_Lote 
+                const string query = @"exec spTes_Concilia_Periodo_Resultados_Caso_Lote 
                                             @banco,
                                             @ahno,
                                             @mes,
                                             @ubicacion,
-                                            @caso
-                                           ";
+                                            @caso";
 
                 return conn.Query<TesConciliacionDetallesLoteData>(query, new
                 {
@@ -716,60 +546,47 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         /// <summary>
-        /// Método para revertir una conciliación bancaria, permitiendo deshacer la asignación de movimientos entre bancos o libros.
+        /// Revierte una conciliación bancaria.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
         public ErrorDto TES_Conciliacion_Reversa(int CodEmpresa, TesConciliacionFiltro filtro, List<TesConciliacionDetallesData> datos)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                if (RunIfPeriodoAbierto(filtro.periodoEstado).Code == -1)
+            return Exec(CodEmpresa, conn =>
+                GuardPeriodoAbierto(filtro.periodoEstado, () =>
                 {
-                    return DbHelper.ErrorResponse(vMensaje);
-                }
-                var query = "";
+                    const string query = @"exec spTes_Concilia_Reversa @bancos, @ahno , @mes , @id_bancos, @id_libros, @usuario";
 
-                datos.ForEach(item =>
-                {
-                    string pId_Bancos = "";
-                    string pId_Libros = "";
-                    if (filtro.ubicacion == "B")
+                    datos.ForEach(item =>
                     {
-                        pId_Bancos = filtro.mov_id!;
-                        pId_Libros = item.id.ToString()!;
-                    }
-                    else
-                    {
-                        pId_Libros = filtro.mov_id!;
-                        pId_Bancos = item.id.ToString()!;
-                    }
+                        string pId_Bancos;
+                        string pId_Libros;
 
-                    query = $@"exec spTes_Concilia_Reversa @bancos, @ahno , @mes , @id_bancos, @id_libros, @usuario ";
+                        if (filtro.ubicacion == "B")
+                        {
+                            pId_Bancos = filtro.mov_id!;
+                            pId_Libros = item.id.ToString()!;
+                        }
+                        else
+                        {
+                            pId_Libros = filtro.mov_id!;
+                            pId_Bancos = item.id.ToString()!;
+                        }
 
-                    conn.Execute(query, new
-                    {
-                        bancos = filtro.banco,
-                        ahno = filtro.ahno,
-                        mes = filtro.mes,
-                        id_bancos = pId_Bancos,
-                        id_libros = pId_Libros,
-                        usuario = filtro.usuario
+                        conn.Execute(query, new
+                        {
+                            bancos = filtro.banco,
+                            ahno = filtro.ahno,
+                            mes = filtro.mes,
+                            id_bancos = pId_Bancos,
+                            id_libros = pId_Libros,
+                            usuario = filtro.usuario
+                        });
                     });
-                });
 
-                spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
+                    spTesConciliaPeriodoActualiza(CodEmpresa, filtro.banco, filtro.ahno, filtro.mes, filtro.usuario!);
 
-                return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message.ToString());
-            }
+                    return DbHelper.CreateOkResponse();
+                }),
+                "Error al revertir la conciliación bancaria.");
         }
 
         #endregion
@@ -777,13 +594,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private void spTesConciliaPeriodoActualiza(int CodEmpresa, int banco, int ahno, int mes, string usuario)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var query = $@"exec spTes_Concilia_Periodo_Actualiza @bancos, @ahno , @mes , @usuario ";
+            const string query = @"exec spTes_Concilia_Periodo_Actualiza @bancos, @ahno , @mes , @usuario";
+
             conn.Execute(query, new
             {
                 bancos = banco,
-                ahno = ahno,
-                mes = mes,
-                usuario = usuario
+                ahno,
+                mes,
+                usuario
             }, commandTimeout: 900);
         }
 
@@ -794,6 +612,41 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 return DbHelper.ErrorResponse(vMensaje);
             }
             return DbHelper.CreateOkResponse();
+        }
+
+        // ✅ Helper único para NO repetir el if(...) en 10 métodos (reduce duplicidad de Sonar)
+        private ErrorDto GuardPeriodoAbierto(string? periodoEstado, Func<ErrorDto> action)
+        {
+            var check = RunIfPeriodoAbierto(periodoEstado);
+            if (check.Code == -1) return check; // ya trae vMensaje
+            return action();
+        }
+
+        // Tus helpers: quedan intactos
+        private ErrorDto Exec(int codEmpresa, Func<IDbConnection, ErrorDto> action, string errorMsg)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+            try
+            {
+                return action(conn);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(ex.Message) ? errorMsg : ex.Message);
+            }
+        }
+
+        private ErrorDto<T> Exec<T>(int codEmpresa, Func<IDbConnection, ErrorDto<T>> action, string errorMsg)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+            try
+            {
+                return action(conn);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<T>(string.IsNullOrWhiteSpace(ex.Message) ? errorMsg : ex.Message);
+            }
         }
     }
 }
