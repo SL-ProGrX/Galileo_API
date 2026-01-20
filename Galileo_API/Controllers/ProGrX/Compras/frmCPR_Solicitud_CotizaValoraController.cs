@@ -8,6 +8,7 @@ namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [Authorize]
+    [ApiController]
     public class FrmCprSolicitudCotizaValoraController : ControllerBase
     {
         private readonly FrmCprSolicitudCotizaValoraBL _bl;
