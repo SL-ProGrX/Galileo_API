@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Galileo.Models;
+﻿using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Activos_Fijos;
 using Galileo_API.BusinessLogic.ProGrX_Activos_Fijos;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.ProGrX_Activos_Fijos
 {
@@ -55,6 +55,44 @@ namespace Galileo_API.Controllers.ProGrX_Activos_Fijos
         {
             return BL_ActivosExplorador.Listar(codEmpresa, filtros);
         }
+
+        [Authorize]
+        [HttpGet("Ubicaciones")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Ubicaciones(int codEmpresa)
+        {
+            return BL_ActivosExplorador.Ubicaciones(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("FechaServidor_Obtener")]
+        public ErrorDto FechaServidor_Obtener(int CodEmpresa)
+        {
+            return BL_ActivosExplorador.FechaServidor_Obtener(CodEmpresa);
+        }
+
+
+        [Authorize]
+        [HttpGet("Responsables")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Responsables(int codEmpresa)
+        {
+            return BL_ActivosExplorador.Responsables(codEmpresa);
+        }
+
+
+        [Authorize]
+        [HttpGet("Proveedores")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Proveedores(int codEmpresa)
+        {
+            return BL_ActivosExplorador.Proveedores(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("Periodos")]
+        public ErrorDto<List<PeriodoExploradorDto>> Periodos(int codEmpresa,string estado)
+        {
+            return BL_ActivosExplorador.Periodos(codEmpresa, estado);
+        }
+
 
     }
 }
