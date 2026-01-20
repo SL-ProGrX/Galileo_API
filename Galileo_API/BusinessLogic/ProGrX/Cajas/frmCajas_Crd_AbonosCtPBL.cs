@@ -14,5 +14,15 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         {
             return _db.CajasCrdAbonosCtP_ConsultaOperacion_Obtener(CodEmpresa, CodCaja, OperacionId);
         }
+
+        public ErrorDto<List<CajasCrdAbonosCtPData>> CajasCrdAbonosCtP_Operaciones_Obtener(int CodEmpresa)
+        {
+            return _db.CajasCrdAbonosCtP_Operaciones_Obtener(CodEmpresa);
+        }
+
+        public ErrorDto<List<CajasCrdOperacionTransacData>> CajasCrdAbonosCtP_OperacionTransac_Obtener(int CodEmpresa, int IdSolicitud)
+        {
+            return _db.CajasCrdAbonosCtP_OperacionTransac_Obtener(CodEmpresa, IdSolicitud);
+        }
     }
 }

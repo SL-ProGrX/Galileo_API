@@ -33,7 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     inner join Socios S on R.cedula = S.cedula
                     left join Sif_Oficinas Ofi on R.cod_Oficina_R = Ofi.cod_Oficina
                     left join CATALOGO_GRUPOS Pre on R.cod_grupo = Pre.cod_grupo
-                    left join vista_morosidad V on R.id_solicitud = V.id_solicitu
+                    left join vista_morosidad V on R.id_solicitud = V.id_solicitud
                     where R.estado = 'A' and R.saldo > 0
                     and R.ID_SOLICITUD = @OperacionId";
 
@@ -50,6 +50,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 return op;
             });
+        }
+
+        public ErrorDto<List<CajasCrdAbonosCtPData>> CajasCrdAbonosCtP_Operaciones_Obtener(int CodEmpresa)
+        {
+            const string query = @"SELECT R.id_solicitud,R.Codigo,S.Cedula,S.Nombre,C.Descripcion 
+                from REG_CREDITOS R inner join SOCIOS S on R.cedula = S.cedula 
+                inner join Catalogo C on R.codigo = C.codigo 
+                WHERE R.estado = 'A' ORDER BY R.cedula";
+
+            return DbHelper.ExecuteListQuery<CajasCrdAbonosCtPData>(_portalDb, CodEmpresa, query);
+        }
+
+        public ErrorDto<List<CajasCrdOperacionTransacData>> CajasCrdAbonosCtP_OperacionTransac_Obtener(int CodEmpresa, int IdSolicitud)
+        {
+            const string sql = @"select * from CRD_OPERACION_TRANSAC 
+                where estado = 'A' and id_solicitud = @IdSolicitud 
+                and Fecha_Inicio < GETDATE() order by ID_SEQ asc";
+            return DbHelper.ExecuteListQuery<CajasCrdOperacionTransacData>(_portalDb, CodEmpresa, sql, new {IdSolicitud});
         }
     }
 }
