@@ -3,6 +3,69 @@ using System;
 
 namespace Galileo_API.Models.ProGrX.Cajas
 {
+    #region Simulación (migración de lógica VB6 a backend)
+
+    public sealed class ProyeccionCuotaDto
+    {
+        public decimal Interes { get; set; }
+        public decimal Amortiza { get; set; }
+        public long FechaProceso { get; set; }
+        public decimal Saldo { get; set; }
+        public decimal Cuota { get; set; }
+    }
+
+    public sealed class SimularCuotasRequest
+    {
+        public long OperacionId { get; set; }
+        public int CantidadCuotas { get; set; }
+        public long FecUltMov { get; set; }          // yyyymm
+        public long PriDeduc { get; set; }           // yyyymm
+        public int Plazo { get; set; }
+        public decimal Interes { get; set; }         // tasa anual (ej: 12.5)
+        public decimal SaldoMes { get; set; }
+        public decimal Cuota { get; set; }           // cuota base
+        public decimal AmortizaActual { get; set; }  // amortiza actual (estado)
+        public string BaseCalculo { get; set; } = "01";
+        public bool EsRetencion { get; set; }
+    }
+
+    public sealed class SimularCuotasResponse
+    {
+        public List<ProyeccionCuotaDto> Proyeccion { get; set; } = new();
+        public decimal TotalInteres { get; set; }
+        public decimal TotalAmortiza { get; set; }
+        public long FecUltMovR { get; set; }
+        public decimal CuotaR { get; set; }
+        public decimal SaldoR { get; set; }
+        public int CuotasMaximas { get; set; }
+    }
+
+    public sealed class RecalculaCuotaRequest
+    {
+        public decimal SaldoR { get; set; }
+        public int Plazo { get; set; }
+        public long PriDeduc { get; set; }
+        public long FecUltMovR { get; set; }
+        public decimal Interes { get; set; }
+    }
+
+    public sealed class RecalculaCuotaResponse
+    {
+        public decimal CuotaR { get; set; }
+    }
+
+    public sealed class MoraConsultaResponse
+    {
+        public List<CajasCrdAbonoMorosidadData> Items { get; set; } = new();
+        public int Cuotas { get; set; }
+        public decimal Amortiza { get; set; }
+        public decimal Interes { get; set; }
+        public decimal Cargos { get; set; }
+        public decimal Total { get; set; }
+        public bool PermiteExtraordinario { get; set; }
+    }
+
+
     public sealed class CajasCrdAbonosStPDData
     {
         // reg_creditos
@@ -10,11 +73,11 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
         public decimal saldo { get; set; }
 
-        public decimal Saldo_mes { get; set; }
+        public decimal saldo_mes { get; set; }
 
         public string proceso { get; set; } = string.Empty;
 
-        public string Divisa { get; set; } = "COL";
+        public string divisa { get; set; } = "COL";
 
         public decimal? interesv { get; set; }
 
@@ -29,7 +92,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
         public decimal? fecult { get; set; }  // yyyymm (VB6 lo trata como Long)
 
-        public long Prideduc { get; set; }
+        public long prideduc { get; set; }
 
         public int? opex { get; set; }
 
@@ -47,7 +110,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
         public DateTime? fechaforp { get; set; }
 
-        public string Base_Calculo { get; set; } = string.Empty;
+        public string base_calculo { get; set; } = string.Empty;
 
         // socios
         public string nombre { get; set; } = string.Empty;
@@ -59,10 +122,12 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
         public string poliza { get; set; } = "N";    // 'S' / 'N'
 
-        public decimal PORC_CARGO_CANCELACION { get; set; }
+        public decimal porc_cargo_cancelacion { get; set; }
 
         // función
-        public int Caja_Valida_Concepto { get; set; }
+        public int caja_valida_concepto { get; set; }
+
+        public decimal glngFechaCR { get; set; }
     }
 
     public sealed class CajasCrdAbonosStpVariables
@@ -219,3 +284,4 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public string? cta_iva { get; set; }
     }
 }
+#endregion
