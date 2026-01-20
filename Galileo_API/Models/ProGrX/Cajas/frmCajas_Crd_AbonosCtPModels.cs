@@ -57,13 +57,13 @@
 
         public string poliza { get; set; } = "N";    // 'S' / 'N'
 
-        public decimal? PORC_CARGO_CANCELACION { get; set; }
+        public decimal? porc_cargo_cancelacion { get; set; }
 
-        public int? ANTICIPO_MESES { get; set; }
+        public int? anticipo_meses { get; set; }
 
         public int? diasActivo { get; set; }
 
-        public string autPagoAnt { get; set; } = string.Empty;
+        public int? autPagoAnt { get; set; } 
 
         public string lineaDesc { get; set; } = string.Empty;
 
@@ -80,4 +80,21 @@
         public int? iva_porc { get; set; }
     }
 
+    public class CajasCrdOperacionTransacData
+    {
+        public decimal id_seq { get; set; }
+        public int num_cuota { get; set; }
+        public int fecha_proceso { get; set; }
+        public DateTime fecha_pago { get; set; }
+        public decimal cuota { get; set; }
+        public int mora_dias { get; set; }
+        public decimal intcor { get; set; }
+        public decimal intmor { get; set; }
+        public decimal principal { get; set; }
+        public decimal cargos { get; set; }
+        public decimal poliza { get; set; }
+        public decimal iva { get; set; }
+        public int dias_calculo { get; set; }
+        public DateTime fecha_corte { get; set; }
+    }
 }
