@@ -1,6 +1,7 @@
 ﻿using CoreInterno;
 using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
 using Galileo_API.Controllers.WFCSinpe;
@@ -65,7 +66,31 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
     @MONTO,
     NULL
 );"
-        }
+        },
+        {
+            "fxSinpe_ValidaDebito",
+            @"
+SELECT *
+FROM dbo.fxSinpe_ValidaDebito(
+    @IDENTIFICACION,
+    @CUENTAIBAN,
+    @CODIGO_MONEDA,
+    @CODIGO_SERVICIO,
+    @MONTO,
+    @REGISTROUSUARIO
+);"
+        },{
+         "fxSinpe_ValidaCredito",
+          @"SELECT *
+FROM dbo.fxSinpe_ValidaCredito(
+    @IDENTIFICACION,
+    @CUENTAIBAN,
+    @CODIGO_MONEDA,
+    @CODIGO_SERVICIO,
+    @MONTO,
+    @REGISTROUSUARIO
+);"
+         },
          // agrega aquí todas las funciones permitidas reales
      };
 
@@ -98,7 +123,8 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                     CUENTAIBAN = t.CuentaIBAN,
                     CODIGO_MONEDA = t.CodigoMoneda,
                     CODIGO_SERVICIO = t.CodigoServicio,
-                    MONTO = t.Monto
+                    MONTO = t.Monto,
+                    REGISTROUSUARIO = request.Rastro!.Usuario
                 });
 
                 if ((int?)valida?.CODIGO_ERROR > 0)
@@ -124,7 +150,17 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                     resultado.Add(new CoreInterno.CL_ResultadoValidacion
                     {
                         Resultado = CoreInterno.E_Resultado.Exitoso,
-                        MotivoError = 0
+                        MotivoError = 0,
+                        InformacionAdicional = new CL_Adicional_Info[]
+                        {
+                            new CL_Adicional_Info
+                                                {
+                                                    Mostrar = true,
+                                                    Nombre = "PgrX",
+                                                    NombreFisico = "Galileo",
+                                                    Valor = valida!.DETALLE
+                                                }
+                        }
                     });
                 }
             }
@@ -377,7 +413,7 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
                         DesProducto = result.DesProducto,
                         Estado = (result.ESTADO == "A") ? 1 : 23,
                         IdTitular = result.IdTitular,
-                        Moneda = result.Moneda,
+                        Moneda = result.MONEDA,
                         NombreTitular = result.NombreTitular,
                         TipoId = result.TipoId
                     };
@@ -825,26 +861,62 @@ FROM dbo.fnSinpe_ValidaTransaccionMasiva(
         #endregion
 
         #region Métodos para la integración de la liquidación de la cámara
-
-        public static bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
+        /// <summary>
+        /// Este método permite la actualización de la fecha de ciclo para una transacción particular.
+        /// Se utiliza para permitir que una transacción que falló en su ciclo original pueda 
+        /// ser enviada en un ciclo posterior.
+        /// </summary>
+        /// <param name="ComprobanteCGP"> Número único con que CGP identifica la transacción. </param>
+        /// <param name="DocumentoSistemaInterno"> Número de documento generado a la transacción por su Sistema Interno. </param>
+        /// <param name="ServicioSINPE"> Código de servicio SINPE de la transacción. </param>
+        /// <param name="FechaCiclo"> Fecha de ciclo a liquidar. </param>
+        /// <param name="CodigoReferenciaAnterior"> Código de referencia generado anteriormente. </param>
+        /// <param name="CodigoReferenciaNuevo"> Código de referencia generado. </param>
+        /// <returns> Objeto con un Boolean que indica si la actualización se realizó correctamente. </returns>
+        public bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
         {
             try
             {
+                // NOTA: En la implementación real, la lógica del Core debe buscar la transacción
+                // usando el ComprobanteCGP o el DocumentoSistemaInterno y luego actualizar:
+                // 1. La Fecha de Ciclo con el nuevo valor.
+                // 2. El Código de Referencia, si es necesario.
+
                 return true;
             }
-            catch
+            catch (Exception)
             {
                 return false;
             }
         }
 
-        public static bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
+
+        /// <summary>
+        /// Este método permite liquidar todas las transacciones congeladas que pertenecen 
+        /// a un servicio y fecha de ciclo determinado, excluyendo a las entidades aplazadas.
+        /// </summary>
+        /// <param name="EntidadesAplazadas"> Lista de entidades que deben permanecer con transacciones congeladas. </param>
+        /// <param name="ServicioSINPE"> Código de servicio a liquidar (ej: 31, 32). </param>
+        /// <param name="Modalidad"> Modalidad del servicio (S=Saliente, E = Entrante). </param>
+        /// <param name="FechaCiclo"> Fecha de ciclo hasta la cual se deben liquidar las transacciones. </param>
+        /// <returns> Objeto con un Boolean que indica si la liquidación de las transacciones fue correcta. </returns>
+        public bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
         {
             try
             {
+                // NOTA: La lógica del Core Financiero debe realizar una consulta y actualización masiva:
+
+                // 1. **Selección:** Identificar todas las transacciones en estado "Congelado" que cumplen con:
+                //    * ServicioSINPE = valor_suministrado.
+                //    * Fecha de Ciclo <= FechaCiclo_suministrada.
+                // 2. **Exclusión:** Excluir de la selección a todas las transacciones cuya Entidad 
+                //    de origen/destino se encuentre en la lista 'EntidadesAplazadas'.
+                // 3. **Liquidación:** Cambiar el estado de las transacciones seleccionadas de "Congelado" 
+                //    a "Aplicado" o "Liquidado".
+
                 return true;
             }
-            catch
+            catch (Exception)
             {
                 return false;
             }

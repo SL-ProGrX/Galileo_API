@@ -47,7 +47,7 @@ namespace Galileo_API.DataBaseTier
                 var context = CrearContexto(parametrosSinpe);
 
                 var servicio = _sinpePIN.IsServiceAvailable(parametrosSinpe?.Result?.UrlCGP_PIN!, context);
-                if (!servicio.IsSuccessful)
+                if (!servicio.ServiceAvailable)
                     return ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
 
                 var cuenta = ConsultarCuenta(parametrosSinpe!, context, _infoSinpe.vInfo.CuentaIBAN!);
@@ -58,6 +58,9 @@ namespace Galileo_API.DataBaseTier
                 }
 
                 // aquí irían validaciones futuras (divisa, cédula, etc.)
+                response.Description = $@"La cuenta IBAN {_infoSinpe.vInfo.CuentaIBAN} registrada a 
+                                        nombre de {cuenta.Account!.Holder} cédula: {cuenta.Account.HolderId} Tipo Id: {_infoSinpe.vInfo.tipoID} 
+                                        Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCode}-{cuenta.Account.EntityName}";
                 return response;
             }
             catch (Exception ex)
