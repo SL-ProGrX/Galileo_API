@@ -25,7 +25,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private const string SF_MODIFICA_USUARIO = "modifica_usuario";
         private const string SP_LISTA = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Lista;";
         private const string SP_ADD = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Add @Codigo, @Orden, @CntAplica, @Activo, @Usuario;";
-        private const string SP_UPD = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Upd @Codigo, @Orden, @CntAplica, @Activo, @Usuario;";
+        private const string SP_UPD = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Add @Codigo, @Orden, @CntAplica, @Activo, @Usuario;";
         private const string SP_DEL = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Del @Codigo, @Usuario;";
 
         public FrmCOAplExcPrioridadesDB(IConfiguration config)
