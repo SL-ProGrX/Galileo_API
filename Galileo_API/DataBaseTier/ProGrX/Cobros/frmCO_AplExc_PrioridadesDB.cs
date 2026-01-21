@@ -25,8 +25,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private const string SF_MODIFICA_USUARIO = "modifica_usuario";
         private const string SP_LISTA = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Lista;";
         private const string SP_ADD = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Add @Codigo, @Orden, @CntAplica, @Activo, @Usuario;";
-        private const string SP_UPD = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Upd @Codigo, @Orden, @CntAplica, @Activo, @Usuario;"; // Ajusta si difiere
+        private const string SP_UPD = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Upd @Codigo, @Orden, @CntAplica, @Activo, @Usuario;";
         private const string SP_DEL = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Del @Codigo, @Usuario;";
+
         public FrmCOAplExcPrioridadesDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -225,6 +226,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return false;
         }
+
         private static List<COAplExcPrioridadData> MapRaw(List<dynamic> raw)
         {
             var lista = new List<COAplExcPrioridadData>();
@@ -291,7 +293,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return filtrada;
         }
-
         private static List<COAplExcPrioridadData> AplicarSort(List<COAplExcPrioridadData> lista, string? sortFieldIn, int sortOrder)
         {
             string sortField = (sortFieldIn ?? "").Trim() switch
@@ -335,7 +336,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 _ => 0
             };
         }
-
         private static int CompareBool(bool a, bool b)
         {
             if (a == b) return 0;
@@ -357,6 +357,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return paged;
         }
+
         /// <summary>
         /// Inserta una prioridad.
         /// </summary>
@@ -383,30 +384,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var rs = conn.QueryFirstOrDefault<dynamic>(SP_ADD, p);
 
-                int pass;
-                string mensaje;
-                string movimiento;
-                LeerRespuestaSp(rs, out pass, out mensaje, out movimiento);
-
-                if (pass != 1)
-                    return DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(mensaje) ? "No fue posible guardar el registro." : mensaje, -2);
-
-                DBBitacora.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
-                    DetalleMovimiento = $"Prioridad Apl. Exc. a Mora. Garantia: {codigo}",
-                    Movimiento = string.IsNullOrWhiteSpace(movimiento) ? "REGISTRA - WEB" : (movimiento.Trim() + " - WEB"),
-                    Modulo = vModulo
-                });
-
-                return DbHelper.OkResponse(string.IsNullOrWhiteSpace(mensaje) ? "Guardado satisfactoriamente." : mensaje);
+                return ProcesarRespuestaGuardar(
+                    CodEmpresa,
+                    usuario,
+                    codigo,
+                    rs,
+                    "REGISTRA - WEB");
             }
             catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+
         /// <summary>
         /// Actualiza una prioridad.
         /// </summary>
@@ -433,30 +423,50 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 var rs = conn.QueryFirstOrDefault<dynamic>(SP_UPD, p);
 
-                int pass;
-                string mensaje;
-                string movimiento;
-                LeerRespuestaSp(rs, out pass, out mensaje, out movimiento);
-
-                if (pass != 1)
-                    return DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(mensaje) ? "No fue posible guardar el registro." : mensaje, -2);
-
-                DBBitacora.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
-                    DetalleMovimiento = $"Prioridad Apl. Exc. a Mora. Garantia: {codigo}",
-                    Movimiento = string.IsNullOrWhiteSpace(movimiento) ? "ACTUALIZA - WEB" : (movimiento.Trim() + " - WEB"),
-                    Modulo = vModulo
-                });
-
-                return DbHelper.OkResponse(string.IsNullOrWhiteSpace(mensaje) ? "Guardado satisfactoriamente." : mensaje);
+                return ProcesarRespuestaGuardar(
+                    CodEmpresa,
+                    usuario,
+                    codigo,
+                    rs,
+                    "ACTUALIZA - WEB");
             }
             catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+
+        /// <summary>
+        /// Procesa la respuesta de un SP de guardar y registra bitácora.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codigo"></param>
+        /// <param name="rs"></param>
+        /// <param name="movimientoDefault"></param>
+        /// <returns></returns>
+        private ErrorDto ProcesarRespuestaGuardar(int CodEmpresa, string usuario, string codigo, dynamic rs, string movimientoDefault)
+        {
+            int pass;
+            string mensaje;
+            string movimiento;
+            LeerRespuestaSp(rs, out pass, out mensaje, out movimiento);
+
+            if (pass != 1)
+                return DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(mensaje) ? "No fue posible guardar el registro." : mensaje, -2);
+
+            DBBitacora.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
+                DetalleMovimiento = $"Prioridad Apl. Exc. a Mora. Garantia: {codigo}",
+                Movimiento = string.IsNullOrWhiteSpace(movimiento) ? movimientoDefault : (movimiento.Trim() + " - WEB"),
+                Modulo = vModulo
+            });
+
+            return DbHelper.OkResponse(string.IsNullOrWhiteSpace(mensaje) ? "Guardado satisfactoriamente." : mensaje);
+        }
+
         /// <summary>
         /// Lee Pass/Mensaje/Movimiento desde el resultado dinámico de un SP.
         /// </summary>
@@ -469,7 +479,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             string passStr = Convert.ToString(rs?.Pass ?? rs?.PASS ?? "0") ?? "0";
             string msgStr = Convert.ToString(rs?.Mensaje ?? rs?.MENSAJE ?? "") ?? "";
             string movStr = Convert.ToString(rs?.Movimiento ?? rs?.MOVIMIENTO ?? "") ?? "";
-
             pass = Convert.ToInt32(passStr.Trim() == "" ? "0" : passStr.Trim());
             mensaje = msgStr;
             movimiento = movStr;
