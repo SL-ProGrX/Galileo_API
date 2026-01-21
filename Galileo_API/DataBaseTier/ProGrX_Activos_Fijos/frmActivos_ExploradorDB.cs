@@ -253,26 +253,60 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             return response;
         }
 
-       
+
         /// <summary>
         /// Obtiene la lista de activos
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="f"></param>
         /// <returns></returns>
-        public ErrorDto<List<ActivoExploradorDto>> Listar(
-            int codEmpresa,
-            ActivosExploradorFiltrosDto f)
+        public ErrorDto<List<ActivoExploradorDto>> Listar( int codEmpresa,ActivosExploradorFiltrosDto f)
         {
-            return EjecutarLista<ActivoExploradorDto>(
-                codEmpresa,
+            return EjecutarLista<ActivoExploradorDto>(codEmpresa,
                 cn =>
                 {
                     var sql = new StringBuilder(@"
-                        SELECT *
-                        FROM vActivos_General
-                        WHERE 1 = 1
-                    ");
+                SELECT
+                    NUM_PLACA            AS num_placa,
+                    PLACA_ALTERNA        AS placa_alterna,
+                    NOMBRE               AS nombre,
+
+                    FECHA_ADQUISICION    AS fecha_adquisicion,
+                    FECHA_INSTALACION    AS fecha_instalacion,
+
+                    TIPO_ACTIVO          AS tipo_activo,
+                    Tipo_Activo_Desc     AS tipo_activo_desc,
+
+                    VALOR_HISTORICO      AS valor_historico,
+                    VALOR_DESECHO        AS valor_desecho,
+
+                    ESTADO               AS estado,
+
+                    Responsable          AS responsable,
+                    Departamento         AS departamento,
+                    Seccion              AS seccion,
+                    Localizacion         AS localizacion,
+                    Proveedor            AS proveedor,
+                    VIDA_UTIL        AS vida_util,
+                    VALOR_DESECHO    AS valor_desecho
+                FROM dbo.vActivos_General
+                WHERE 1 = 1
+            ");
+
+                    switch (f.tipoVisualizacion)
+                    {
+                        case "A": 
+                            sql.Append(" AND ESTADO = 'A'");
+                            break;
+
+                        case "C": 
+                            sql.Append(" AND ESTADO IN ('R', 'D')");
+                            break;
+
+                        case "L": 
+                        default:
+                            break;
+                    }
 
                     var param = new DynamicParameters();
 
@@ -281,26 +315,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
                         sql.Append(" AND Nombre LIKE @nombre");
                         param.Add("nombre", $"%{f.nombre}%");
                     }
-
                     if (!string.IsNullOrWhiteSpace(f.descripcion))
                     {
                         sql.Append(" AND Descripcion LIKE @descripcion");
                         param.Add("descripcion", $"%{f.descripcion}%");
                     }
-
-                    if (!string.IsNullOrWhiteSpace(f.tipoActivo))
+                    if (!string.IsNullOrWhiteSpace(f.tipo_activo)
+                        && !f.tipo_activo.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
                     {
                         sql.Append(" AND Tipo_Activo = @tipoActivo");
-                        param.Add("tipoActivo", f.tipoActivo);
+                        param.Add("tipoActivo", f.tipo_activo);
                     }
-
-                    if (!string.IsNullOrWhiteSpace(f.departamento))
+                    if (!string.IsNullOrWhiteSpace(f.departamento)
+                        && !f.departamento.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
                     {
                         sql.Append(" AND cod_Departamento = @departamento");
                         param.Add("departamento", f.departamento);
                     }
 
-                    if (!string.IsNullOrWhiteSpace(f.seccion))
+                    if (!string.IsNullOrWhiteSpace(f.seccion)
+                        && !f.seccion.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
                     {
                         sql.Append(" AND cod_Seccion = @seccion");
                         param.Add("seccion", f.seccion);
@@ -308,14 +342,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
 
                     sql.Append(" ORDER BY Num_Placa");
 
-                    return cn
-                        .Query<ActivoExploradorDto>(
-                            sql.ToString(),
-                            param
-                        )
-                        .ToList();
+                    return cn.Query<ActivoExploradorDto>(
+                        sql.ToString(),
+                        param
+                    ).ToList();
                 }
             );
         }
+
     }
 }
