@@ -32,10 +32,12 @@ namespace Galileo.BusinessLogic
         {
             return _db.ObtenerBodegas(CodEmpresa);
         }
+
         public ErrorDto VerificaFactura(int CodEmpresa, string CodFactura, int CodProveedor)
         {
             return _db.VerificaFactura(CodEmpresa, CodFactura, CodProveedor);
         }
+        
         public ErrorDto<DevolucionData?> Devolucion_Obtener(int CodEmpresa, string CodDevolucion)
         {
             return _db.Devolucion_Obtener(CodEmpresa, CodDevolucion);
