@@ -14,6 +14,7 @@
         public DateTime fecha_registro { get; set; } = DateTime.Now;
         public string usuario_actualiza { get; set; } = string.Empty;
         public DateTime? fecha_actualiza { get; set; } = null;
+        public bool activo { get; set; } = true;
         public bool isNew { get; set; } = false;
     }
 }
