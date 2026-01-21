@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Data;
 using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models;
-using Galileo.Models.CxP;
 using Galileo_API.Models.ProGrX.Cajas;
 using Microsoft.Data.SqlClient;
 
@@ -265,138 +260,41 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             try
             {
+                var v = ValidarSimulacion(req);
+                if (v.Code != 0)
+                    return DbHelper.CreateErrorResponse<SimularCuotasResponse>(v.Description!);
+
                 if (req.CantidadCuotas <= 0)
                     return DbHelper.CreateOkResponse(new SimularCuotasResponse());
 
-                long lngFecha = req.FecUltMov;
+                var lngFecha = AjustarFechaInicial(codEmpresa, req);
+                var curSaldo = CalcularSaldoInicial(req);
 
-                decimal curSaldo;
-                if (!req.EsRetencion)
-                {
-                    curSaldo = req.SaldoMes;
-                }
-                else
-                {
-                    // reglas heredadas VB6
-                    if (req.Plazo > 900)
-                        curSaldo = req.Cuota * 20m;
-                    else
-                        curSaldo = (req.Cuota * req.Plazo) - req.AmortizaActual;
-                }
-
-                // Ajuste fecha vs prideduc
-                if (lngFecha < req.PriDeduc)
-                    lngFecha = (long)_mCobro.fxFechaProcesoAnterior(codEmpresa, req.PriDeduc);
-
-                var proy = new List<ProyeccionCuotaDto>(req.CantidadCuotas);
-
-                decimal totalAmort = 0m;
-                decimal totalInter = 0m;
-                decimal curCuota = req.Cuota;
-                int cuotaMax = 0;
-
-                if (string.Equals(req.BaseCalculo, "01", StringComparison.OrdinalIgnoreCase))
-                {
-                    // 360/360
-                    for (int i = 1; i <= req.CantidadCuotas; i++)
+                if (curSaldo <= 0)
+                    return DbHelper.CreateOkResponse(new SimularCuotasResponse
                     {
-                        if (curSaldo <= 0) break;
+                        Proyeccion = new List<ProyeccionCuotaDto>(),
+                        FecUltMovR = lngFecha
+                    });
 
-                        cuotaMax = i;
+                var proy = CrearListaProyeccion(req.CantidadCuotas);
 
-                        var tmpInter = (curSaldo * req.Interes) / 1200m;
-                        var tmpAmort = req.Cuota - tmpInter;
-
-                        totalInter += tmpInter;
-                        totalAmort += tmpAmort;
-
-                        curSaldo -= tmpAmort;
-                        lngFecha = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, lngFecha);
-
-                        proy.Add(new ProyeccionCuotaDto
-                        {
-                            Interes = tmpInter,
-                            Amortiza = tmpAmort,
-                            FechaProceso = lngFecha,
-                            Saldo = curSaldo,
-                            Cuota = curCuota
-                        });
-
-                        if (curSaldo < 0)
-                        {
-                            // ajuste final
-                            proy[^1] = new ProyeccionCuotaDto
-                            {
-                                Interes = 0,
-                                Amortiza = curSaldo,
-                                FechaProceso = lngFecha,
-                                Saldo = 0,
-                                Cuota = curSaldo
-                            };
-                            totalAmort += curSaldo;
-                            curSaldo = 0;
-                        }
-                    }
-                }
-                else
+                var estado = new SimulacionEstado
                 {
-                    // 365/360
-                    long procesosTmp = req.PriDeduc;
-                    int plazoRst = 0;
-                    while (procesosTmp < lngFecha)
-                    {
-                        procesosTmp = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, procesosTmp);
-                        plazoRst++;
-                    }
-                    plazoRst = req.Plazo - plazoRst;
-
-                    var baseDate = ParseProcesoToFirstDay(lngFecha);
-
-                    for (int i = 1; i <= req.CantidadCuotas; i++)
-                    {
-                        cuotaMax = i;
-
-                        int dias = (plazoRst == 1 || plazoRst == req.Plazo)
-                            ? 30
-                            : DateTime.DaysInMonth(baseDate.Year, baseDate.Month);
-
-                        var tmpInter = curSaldo * (req.Interes / 100m) * dias / 360m;
-                        var tmpAmort = curCuota - tmpInter;
-
-                        totalInter += tmpInter;
-                        totalAmort += tmpAmort;
-
-                        curSaldo -= tmpAmort;
-                        lngFecha = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, lngFecha);
-                        baseDate = baseDate.AddMonths(1);
-
-                        proy.Add(new ProyeccionCuotaDto
-                        {
-                            Interes = tmpInter,
-                            Amortiza = tmpAmort,
-                            FechaProceso = lngFecha,
-                            Saldo = curSaldo,
-                            Cuota = curCuota
-                        });
-
-                        plazoRst = Math.Max(1, plazoRst - 1);
-                        curCuota = MCobroDb.fxCalcula_Cuota(curSaldo, plazoRst, req.Interes, "M");
-                    }
-                }
-
-                // saldoR según regla VB
-                var saldoR = req.EsRetencion ? req.Cuota : (req.SaldoMes - totalAmort);
-
-                var resp = new SimularCuotasResponse
-                {
-                    Proyeccion = proy,
-                    TotalInteres = totalInter,
-                    TotalAmortiza = totalAmort,
-                    FecUltMovR = lngFecha,
-                    CuotaR = curCuota,
-                    SaldoR = saldoR,
-                    CuotasMaximas = cuotaMax
+                    FechaProceso = lngFecha,
+                    Saldo = curSaldo,
+                    Cuota = req.Cuota
                 };
+
+                var totales = new TotalesSimulacion();
+
+                int cuotaMax;
+                if (EsBase360(req.BaseCalculo))
+                    cuotaMax = SimularBase360(codEmpresa, req, proy, estado, totales);
+                else
+                    cuotaMax = SimularBase365(codEmpresa, req, proy, estado, totales);
+
+                var resp = ConstruirRespuesta(req, proy, estado, totales, cuotaMax);
 
                 return DbHelper.CreateOkResponse(resp);
             }
@@ -404,6 +302,215 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 return DbHelper.CreateErrorResponse<SimularCuotasResponse>("Error simulando cuotas: " + ex.Message, -1);
             }
+        }
+
+        private const int MAX_CUOTAS = 480; // ajusta al negocio
+
+        private static ErrorDto ValidarSimulacion(SimularCuotasRequest req)
+        {
+            if (req == null)
+                return DbHelper.ErrorResponse("Request inválido.");
+
+            if (req.CantidadCuotas < 0 || req.CantidadCuotas > MAX_CUOTAS)
+                return DbHelper.ErrorResponse($"CantidadCuotas fuera de rango (0..{MAX_CUOTAS}).");
+
+            if (req.Interes < 0m || req.Interes > 200m) // ejemplo de rango defensivo
+                return DbHelper.ErrorResponse("Interés fuera de rango.");
+
+            if (req.Plazo < 0 || req.Plazo > 1200) // defensivo
+                return DbHelper.ErrorResponse("Plazo fuera de rango.");
+
+            return DbHelper.CreateOkResponse();
+        }
+
+        private long AjustarFechaInicial(int codEmpresa, SimularCuotasRequest req)
+        {
+            var lngFecha = req.FecUltMov;
+
+            // Ajuste fecha vs prideduc
+            if (lngFecha < req.PriDeduc)
+                lngFecha = (long)_mCobro.fxFechaProcesoAnterior(codEmpresa, req.PriDeduc);
+
+            return lngFecha;
+        }
+
+        private static decimal CalcularSaldoInicial(SimularCuotasRequest req)
+        {
+            if (!req.EsRetencion)
+                return req.SaldoMes;
+
+            // reglas heredadas VB6
+            return (req.Plazo > 900)
+                ? req.Cuota * 20m
+                : (req.Cuota * req.Plazo) - req.AmortizaActual;
+        }
+
+        private static bool EsBase360(string? baseCalculo) =>
+            string.Equals(baseCalculo, "01", StringComparison.OrdinalIgnoreCase);
+
+        private static List<ProyeccionCuotaDto> CrearListaProyeccion(int cantidadCuotas)
+        {
+            // S6639: no reservar basado en input sin límite (ya validado arriba)
+            return new List<ProyeccionCuotaDto>(cantidadCuotas);
+        }
+
+        private int SimularBase360(
+            int codEmpresa,
+            SimularCuotasRequest req,
+            List<ProyeccionCuotaDto> proy,
+            SimulacionEstado estado,
+            TotalesSimulacion totales)
+        {
+            int cuotaMax = 0;
+
+            for (int i = 1; i <= req.CantidadCuotas; i++)
+            {
+                if (estado.Saldo <= 0) break;
+
+                cuotaMax = i;
+
+                var tmpInter = (estado.Saldo * req.Interes) / 1200m;
+                var tmpAmort = req.Cuota - tmpInter;
+
+                totales.TotalInteres += tmpInter;
+                totales.TotalAmortiza += tmpAmort;
+
+                estado.Saldo -= tmpAmort;
+                estado.FechaProceso = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, estado.FechaProceso);
+
+                proy.Add(CrearFila(tmpInter, tmpAmort, estado.FechaProceso, estado.Saldo, estado.Cuota));
+
+                if (estado.Saldo < 0)
+                {
+                    AjustarSaldoFinalNegativo(proy, totales, estado);
+                    break;
+                }
+            }
+
+            return cuotaMax;
+        }
+
+        private int SimularBase365(
+            int codEmpresa,
+            SimularCuotasRequest req,
+            List<ProyeccionCuotaDto> proy,
+            SimulacionEstado estado,
+            TotalesSimulacion totales)
+        {
+            int cuotaMax = 0;
+
+            var plazoRst = CalcularPlazoRestante(codEmpresa, req, estado.FechaProceso);
+            var baseDate = ParseProcesoToFirstDay(estado.FechaProceso);
+
+            for (int i = 1; i <= req.CantidadCuotas; i++)
+            {
+                cuotaMax = i;
+
+                var dias = CalcularDiasPeriodo(req, plazoRst, baseDate);
+
+                var tmpInter = estado.Saldo * (req.Interes / 100m) * dias / 360m;
+                var tmpAmort = estado.Cuota - tmpInter;
+
+                totales.TotalInteres += tmpInter;
+                totales.TotalAmortiza += tmpAmort;
+
+                estado.Saldo -= tmpAmort;
+                estado.FechaProceso = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, estado.FechaProceso);
+                baseDate = baseDate.AddMonths(1);
+
+                proy.Add(CrearFila(tmpInter, tmpAmort, estado.FechaProceso, estado.Saldo, estado.Cuota));
+
+                plazoRst = Math.Max(1, plazoRst - 1);
+                estado.Cuota = MCobroDb.fxCalcula_Cuota(estado.Saldo, plazoRst, req.Interes, "M");
+            }
+
+            return cuotaMax;
+        }
+
+        private static ProyeccionCuotaDto CrearFila(decimal interes, decimal amortiza, long fechaProceso, decimal saldo, decimal cuota) =>
+            new ProyeccionCuotaDto
+            {
+                Interes = interes,
+                Amortiza = amortiza,
+                FechaProceso = fechaProceso,
+                Saldo = saldo,
+                Cuota = cuota
+            };
+
+        private static void AjustarSaldoFinalNegativo(List<ProyeccionCuotaDto> proy, TotalesSimulacion totales, SimulacionEstado estado)
+        {
+            // estado.Saldo es negativo aquí: se corrige última fila y totales.
+            var saldoNeg = estado.Saldo;
+
+            // reemplaza última fila (mismo patrón que tu código original)
+            proy[^1] = new ProyeccionCuotaDto
+            {
+                Interes = 0m,
+                Amortiza = saldoNeg,
+                FechaProceso = estado.FechaProceso,
+                Saldo = 0m,
+                Cuota = saldoNeg
+            };
+
+            totales.TotalAmortiza += saldoNeg;
+            estado.Saldo = 0m;
+        }
+
+        private int CalcularPlazoRestante(int codEmpresa, SimularCuotasRequest req, long fechaProceso)
+        {
+            long procesosTmp = req.PriDeduc;
+            int plazoRst = 0;
+
+            while (procesosTmp < fechaProceso)
+            {
+                procesosTmp = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, procesosTmp);
+                plazoRst++;
+            }
+
+            return req.Plazo - plazoRst;
+        }
+
+        private static int CalcularDiasPeriodo(SimularCuotasRequest req, int plazoRst, DateTime baseDate)
+        {
+            if (plazoRst == 1 || plazoRst == req.Plazo)
+                return 30;
+
+            return DateTime.DaysInMonth(baseDate.Year, baseDate.Month);
+        }
+
+        private static SimularCuotasResponse ConstruirRespuesta(
+            SimularCuotasRequest req,
+            List<ProyeccionCuotaDto> proy,
+            SimulacionEstado estado,
+            TotalesSimulacion totales,
+            int cuotaMax)
+        {
+            // saldoR según regla VB
+            var saldoR = req.EsRetencion ? req.Cuota : (req.SaldoMes - totales.TotalAmortiza);
+
+            return new SimularCuotasResponse
+            {
+                Proyeccion = proy,
+                TotalInteres = totales.TotalInteres,
+                TotalAmortiza = totales.TotalAmortiza,
+                FecUltMovR = estado.FechaProceso,
+                CuotaR = estado.Cuota,
+                SaldoR = saldoR,
+                CuotasMaximas = cuotaMax
+            };
+        }
+
+        private sealed class SimulacionEstado
+        {
+            public long FechaProceso { get; set; }
+            public decimal Saldo { get; set; }
+            public decimal Cuota { get; set; }
+        }
+
+        private sealed class TotalesSimulacion
+        {
+            public decimal TotalAmortiza { get; set; }
+            public decimal TotalInteres { get; set; }
         }
 
         /// <summary>
@@ -416,15 +523,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 long lngFecha = req.FecUltMovR;
                 if (lngFecha < req.PriDeduc) lngFecha = req.PriDeduc;
 
+                const int MAX_ITER_FECHAS = 1500; // defensivo, ajusta a tu negocio
+
                 long procesosTmp = req.PriDeduc;
-                int plazoRst = 1;
-                while (procesosTmp < lngFecha)
+                int pasos = 0;
+
+                while (procesosTmp < lngFecha && pasos < MAX_ITER_FECHAS)
                 {
                     procesosTmp = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, procesosTmp);
-                    plazoRst++;
+                    pasos++;
                 }
 
-                plazoRst = req.Plazo - plazoRst;
+                if (procesosTmp < lngFecha)
+                {
+                    // No logró alcanzar lngFecha dentro del límite: protege contra DoS / datos corruptos
+                    return DbHelper.CreateErrorResponse<RecalculaCuotaResponse>("Rango de fechas inválido o excede el límite de iteraciones permitido.");
+                }
+
+                var plazoRst = req.Plazo - pasos;
                 if (plazoRst <= 0) plazoRst = 1;
 
                 var cuotaR = MCobroDb.fxCalcula_Cuota(req.SaldoR, plazoRst, req.Interes, "M");
@@ -439,11 +555,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         private static DateTime ParseProcesoToFirstDay(long yyyymm)
         {
-            var s = yyyymm.ToString();
-            if (s.Length < 6) throw new ArgumentException("Proceso inválido: se espera yyyymm.");
-            var y = int.Parse(s.Substring(0, 4));
-            var m = int.Parse(s.Substring(s.Length - 2, 2));
-            return new DateTime(y, m, 1);
+            if (yyyymm <= 0)
+                throw new ArgumentException("Proceso inválido: se espera yyyymm.");
+
+            var year = (int)(yyyymm / 100);
+            var month = (int)(yyyymm % 100);
+
+            if (month < 1 || month > 12)
+                throw new ArgumentException("Proceso inválido: mes fuera de rango.");
+
+            return new DateTime(year, month, 1, 0, 0, 0, DateTimeKind.Unspecified);
         }
 
         #region Aplicar abono (spCajas_CrdAbono) + validaciones
@@ -457,6 +578,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
             try
             {
+                CajasCrdAbonosStPDData abono = new CajasCrdAbonosStPDData
+                {
+                    id_solicitud = request.id_solicitud,
+                    descripcion = request.vNotas
+                };
+                var valida = fxVerifica(codEmpresa, conn, abono);
+                if (valida.Code != 0)
+                    return valida;
+
                 long vNumDoc = _mRecibos.fxDocumentoConsecutivo(codEmpresa, request.tipoDoc);
                 decimal glngFechaCR = _mProGrx.glngFechaCR(codEmpresa);
 
@@ -493,8 +623,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 };
 
                 var result = DbHelper.ExecuteSingleQuery<dynamic>(_portalDB, codEmpresa, sql, parameters).Result;
-                if (result != null && result.Pendiente > 0)
-                    return DbHelper.CreateErrorResponse("Quedó un monto pendiente de :" + result.Pendiente);
+                if (result != null && result?.Pendiente > 0)
+                    return DbHelper.CreateErrorResponse("Quedó un monto pendiente de :" + result?.Pendiente);
 
                 return DbHelper.CreateOkResponse();
             }
@@ -511,15 +641,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             try
             {
-                string mensaje = "";
-                string vNotas = MProGrxMain.sbSIFCleanTxtInject(request.descripcion);
+                var notas = MProGrxMain.sbSIFCleanTxtInject(request.descripcion) ?? string.Empty;
 
-                mensaje += VerificaProceso(conn, request);
-                mensaje += VerificaCongelamiento(codEmpresa, request);
-                mensaje += VerificaOperacion(request.id_solicitud);
-                mensaje += VerificaSaldoActual(conn, request);
+                var mensaje =
+                    (VerificaProceso(conn, request) ?? string.Empty) +
+                    (VerificaCongelamiento(codEmpresa, request) ?? string.Empty) +
+                    (VerificaOperacion(request.id_solicitud) ?? string.Empty) +
+                    (VerificaSaldoActual(conn, request) ?? string.Empty);
 
-                return DbHelper.OkResponse(mensaje + vNotas);
+                mensaje = mensaje.Trim();
+
+                if (!string.IsNullOrEmpty(mensaje))
+                    return DbHelper.ErrorResponse(mensaje + notas, -1);
+
+                return DbHelper.OkResponse(notas);
             }
             catch (Exception ex)
             {
