@@ -15,8 +15,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb DBBitacora;
         private readonly int vModulo = 4;
-
-        // Constantes de sortField (evita S1192 y deja limpio)
         private const string SF_CODIGO = "codigo";
         private const string SF_DESCRIPCION = "descripcion";
         private const string SF_ORDEN = "orden";
@@ -74,9 +72,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 return response;
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<COAplExcPrioridadesListaResult>(ex.Message);
+            }
+            catch (Exception)
+            {
+                return DbHelper.CreateErrorResponse<COAplExcPrioridadesListaResult>(
+                    "Ocurrió un error inesperado al obtener la lista de prioridades.");
             }
         }
 
@@ -135,9 +138,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 return Co_AplExc_Prioridades_Actualizar(conn, CodEmpresa, usuario, prioridad, orden);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (Exception)
+            {
+                return DbHelper.ErrorResponse("Ocurrió un error inesperado al guardar la prioridad.");
             }
         }
 
@@ -163,12 +170,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 const string q = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Del @Codigo, @Usuario;";
                 var rs = conn.QueryFirstOrDefault<dynamic>(q, p);
 
-                int pass = Convert.ToInt32((rs?.Pass ?? rs?.PASS ?? 0).ToString());
-                string mensaje = (rs?.Mensaje ?? rs?.MENSAJE ?? "").ToString();
-                string movimiento = (rs?.Movimiento ?? rs?.MOVIMIENTO ?? "").ToString();
+                int pass;
+                string mensaje;
+                string movimiento;
+                LeerRespuestaSp(rs, out pass, out mensaje, out movimiento);
 
                 if (pass != 1)
-                    return DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(mensaje) ? "No existe el registro a eliminar!" : mensaje, -2);
+                    return DbHelper.ErrorResponse(
+                        string.IsNullOrWhiteSpace(mensaje) ? "No existe el registro a eliminar!" : mensaje,
+                        -2);
 
                 DBBitacora.Bitacora(new BitacoraInsertarDto
                 {
@@ -181,9 +191,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 return DbHelper.OkResponse(string.IsNullOrWhiteSpace(mensaje) ? "Eliminado satisfactoriamente." : mensaje);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (InvalidCastException ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (FormatException ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (Exception)
+            {
+                return DbHelper.ErrorResponse("Ocurrió un error inesperado al eliminar la prioridad.");
             }
         }
 
@@ -356,6 +378,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <summary>
         /// Inserta una prioridad.
         /// </summary>
+        /// <param name="conn"></param>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="prioridad"></param>
@@ -379,9 +402,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 const string q = @"EXEC spCBR_Excedente_Apl_Config_Prioridades_Add @Codigo, @Orden, @CntAplica, @Activo, @Usuario;";
                 var rs = conn.QueryFirstOrDefault<dynamic>(q, p);
 
-                int pass = Convert.ToInt32((rs?.Pass ?? rs?.PASS ?? 0).ToString());
-                string mensaje = (rs?.Mensaje ?? rs?.MENSAJE ?? "").ToString();
-                string movimiento = (rs?.Movimiento ?? rs?.MOVIMIENTO ?? "").ToString();
+                int pass;
+                string mensaje;
+                string movimiento;
+                LeerRespuestaSp(rs, out pass, out mensaje, out movimiento);
 
                 if (pass != 1)
                     return DbHelper.ErrorResponse(string.IsNullOrWhiteSpace(mensaje) ? "No fue posible guardar el registro." : mensaje, -2);
@@ -397,15 +421,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 return DbHelper.OkResponse(string.IsNullOrWhiteSpace(mensaje) ? "Guardado satisfactoriamente." : mensaje);
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (InvalidCastException ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (FormatException ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (Exception)
+            {
+                return DbHelper.ErrorResponse("Ocurrió un error inesperado al guardar la prioridad.");
             }
         }
 
         /// <summary>
         /// Actualiza una prioridad.
         /// </summary>
+        /// <param name="conn"></param>
         /// <param name="CodEmpresa"></param>
         /// <param name="usuario"></param>
         /// <param name="prioridad"></param>
@@ -414,6 +451,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private ErrorDto Co_AplExc_Prioridades_Actualizar(SqlConnection conn, int CodEmpresa, string usuario, COAplExcPrioridadData prioridad, int orden)
         {
             return Co_AplExc_Prioridades_Insertar(conn, CodEmpresa, usuario, prioridad, orden);
+        }
+
+        /// <summary>
+        /// Lee Pass/Mensaje/Movimiento desde el resultado dinámico de un SP.
+        /// </summary>
+        /// <param name="rs"></param>
+        /// <param name="pass"></param>
+        /// <param name="mensaje"></param>
+        /// <param name="movimiento"></param>
+        private static void LeerRespuestaSp(dynamic rs, out int pass, out string mensaje, out string movimiento)
+        {
+            string passStr = Convert.ToString(rs?.Pass ?? rs?.PASS ?? "0") ?? "0";
+            string msgStr = Convert.ToString(rs?.Mensaje ?? rs?.MENSAJE ?? "") ?? "";
+            string movStr = Convert.ToString(rs?.Movimiento ?? rs?.MOVIMIENTO ?? "") ?? "";
+
+            pass = Convert.ToInt32(passStr.Trim() == "" ? "0" : passStr.Trim());
+            mensaje = msgStr;
+            movimiento = movStr;
         }
     }
 }
