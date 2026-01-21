@@ -8,7 +8,7 @@
         public bool? infoAdicional { get; set; }
         public string? proveedor { get; set; }
 
-        public string? tipoActivo { get; set; }
+        public string? tipo_activo { get; set; }
         public string? departamento { get; set; }
         public string? seccion { get; set; }
         public string? ubicacion { get; set; }

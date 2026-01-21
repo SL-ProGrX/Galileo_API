@@ -13,7 +13,10 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
     {
         private readonly FrmCajasCierreBl _bl;
 
-        public FrmCajasCierreController(IConfiguration config) => _bl = new FrmCajasCierreBl(config);
+        public FrmCajasCierreController(IConfiguration config)
+        {
+            _bl = new FrmCajasCierreBl(config);
+        }
 
         [Authorize]
         [HttpGet("CajasCierre_AperturaCarga_Obtener")]
