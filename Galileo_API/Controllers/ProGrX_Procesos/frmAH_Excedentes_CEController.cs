@@ -69,14 +69,14 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
 
         [Authorize]
         [HttpPost("Excedentes_CasoEspecial_Add")]
-        public ErrorDto<ExcedentesCasoEspecialAddResult?> Excedentes_CasoEspecial_Add([FromQuery] int codEmpresa, [FromBody] ExcedentesCasoEspecialAddParams param)
+        public ErrorDto<OperacionCasoEspecialResult?> Excedentes_CasoEspecial_Add([FromQuery] int codEmpresa, [FromBody] ExcedentesCasoEspecialAddParams param)
         {
             return _bl.Excedentes_CasoEspecial_Add(codEmpresa, param);
         }
 
         [Authorize]
         [HttpPost("Excedentes_CasoEspecial_Delete")]
-        public ErrorDto<ExcedentesCasoEspecialDeleteResult?> Excedentes_CasoEspecial_Delete([FromQuery] int codEmpresa, [FromBody] ExcedentesCasoEspecialDeleteParams param)
+        public ErrorDto<OperacionCasoEspecialResult?> Excedentes_CasoEspecial_Delete([FromQuery] int codEmpresa, [FromBody] CasoEspecialBaseParams param)
         {
             return _bl.Excedentes_CasoEspecial_Delete(codEmpresa, param);
         }
@@ -153,21 +153,21 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
 
         [Authorize]
         [HttpPost("Excedentes_Cambio_Salida_Add")]
-        public ErrorDto<ExcedentesCambioSalidaAddResult?> Excedentes_Cambio_Salida_Add([FromQuery] int codEmpresa, [FromBody] ExcedentesCambioSalidaAddParams param)
+        public ErrorDto<OperacionCasoEspecialResult?> Excedentes_Cambio_Salida_Add([FromQuery] int codEmpresa, [FromBody] ExcedentesCambioSalidaAddParams param)
         {
             return _bl.Excedentes_Cambio_Salida_Add(codEmpresa, param);
         }
 
         [Authorize]
         [HttpPost("Excedentes_Cambio_Salida_Delete")]
-        public ErrorDto<ExcedentesCambioSalidaDeleteResult?> Excedentes_Cambio_Salida_Delete([FromQuery] int codEmpresa, [FromBody] ExcedentesCambioSalidaDeleteParams param)
+        public ErrorDto<OperacionCasoEspecialResult?> Excedentes_Cambio_Salida_Delete([FromQuery] int codEmpresa, [FromBody] ExcedentesCambioSalidaDeleteParams param)
         {
             return _bl.Excedentes_Cambio_Salida_Delete(codEmpresa, param);
         }
 
         [Authorize]
         [HttpPost("Excedentes_Cambio_Salida_Autoriza")]
-        public ErrorDto<ExcedentesCambioSalidaAutorizaResult?> Excedentes_Cambio_Salida_Autoriza([FromQuery] int codEmpresa, [FromBody] ExcedentesCambioSalidaAutorizaParams param)
+        public ErrorDto<OperacionCasoEspecialResult?> Excedentes_Cambio_Salida_Autoriza([FromQuery] int codEmpresa, [FromBody] CasoEspecialBaseParams param)
         {
             return _bl.Excedentes_Cambio_Salida_Autoriza(codEmpresa, param);
         }

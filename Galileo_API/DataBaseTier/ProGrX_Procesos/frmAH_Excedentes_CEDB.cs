@@ -140,7 +140,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="param">Parámetros del caso especial.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto<ExcedentesCasoEspecialAddResult?> Excedentes_CasoEspecial_Add(int codEmpresa, ExcedentesCasoEspecialAddParams param)
+        public ErrorDto<OperacionCasoEspecialResult?> Excedentes_CasoEspecial_Add(int codEmpresa, ExcedentesCasoEspecialAddParams param)
         {
             var query = "exec spExc_Caso_Especial_Add @IdCE, @PeriodoId, @Cedula, @Detalle, @Porcentaje, @Salida, @Usuario";
             var parameters = new
@@ -153,7 +153,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 param.Salida,
                 param.Usuario
             };
-            return DbHelper.ExecuteSingleQuery<ExcedentesCasoEspecialAddResult>(_portalDb, codEmpresa, query, default, parameters);
+            return DbHelper.ExecuteSingleQuery<OperacionCasoEspecialResult>(_portalDb, codEmpresa, query, default, parameters);
         }
 
         /// <summary>
@@ -162,7 +162,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="param">Parámetros del caso especial a eliminar.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto<ExcedentesCasoEspecialDeleteResult?> Excedentes_CasoEspecial_Delete(int codEmpresa, ExcedentesCasoEspecialDeleteParams param)
+        public ErrorDto<OperacionCasoEspecialResult?> Excedentes_CasoEspecial_Delete(int codEmpresa, CasoEspecialBaseParams param)
         {
             var query = "exec spExc_Caso_Especial_Delete @IdCE, @PeriodoId, @Cedula, @Usuario";
             var parameters = new
@@ -172,7 +172,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 param.Cedula,
                 param.Usuario
             };
-            return DbHelper.ExecuteSingleQuery<ExcedentesCasoEspecialDeleteResult>(_portalDb, codEmpresa, query, default, parameters);
+            return DbHelper.ExecuteSingleQuery<OperacionCasoEspecialResult>(_portalDb, codEmpresa, query, default, parameters);
         }
 
         /// <summary>
@@ -340,7 +340,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         /// <summary>
         /// Inserta o actualiza un cambio de salida.
         /// </summary>
-        public ErrorDto<ExcedentesCambioSalidaAddResult?> Excedentes_Cambio_Salida_Add(int codEmpresa, ExcedentesCambioSalidaAddParams param)
+        public ErrorDto<OperacionCasoEspecialResult?> Excedentes_Cambio_Salida_Add(int codEmpresa, ExcedentesCambioSalidaAddParams param)
         {
             var query = "exec spExc_Cambio_Salida_Add @IdCS, @PeriodoId, @Cedula, @Detalle, @Salida, @Usuario";
             var parameters = new
@@ -352,13 +352,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 param.Salida,
                 param.Usuario
             };
-            return DbHelper.ExecuteSingleQuery<ExcedentesCambioSalidaAddResult>(_portalDb, codEmpresa, query, default, parameters);
+            return DbHelper.ExecuteSingleQuery<OperacionCasoEspecialResult>(_portalDb, codEmpresa, query, default, parameters);
         }
 
         /// <summary>
         /// Elimina un cambio de salida.
         /// </summary>
-        public ErrorDto<ExcedentesCambioSalidaDeleteResult?> Excedentes_Cambio_Salida_Delete(int codEmpresa, ExcedentesCambioSalidaDeleteParams param)
+        public ErrorDto<OperacionCasoEspecialResult?> Excedentes_Cambio_Salida_Delete(int codEmpresa, ExcedentesCambioSalidaDeleteParams param)
         {
             var query = "exec spExc_Cambio_Salida_Delete @IdCS, @PeriodoId, @Cedula, @Salida, @Usuario";
             var parameters = new
@@ -369,7 +369,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 param.Salida,
                 param.Usuario
             };
-            return DbHelper.ExecuteSingleQuery<ExcedentesCambioSalidaDeleteResult>(_portalDb, codEmpresa, query, default, parameters);
+            return DbHelper.ExecuteSingleQuery<OperacionCasoEspecialResult>(_portalDb, codEmpresa, query, default, parameters);
         }
 
         /// <summary>
@@ -378,7 +378,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="param">Parámetros de autorización.</param>
         /// <returns>Resultado de la operación.</returns>
-        public ErrorDto<ExcedentesCambioSalidaAutorizaResult?> Excedentes_Cambio_Salida_Autoriza(int codEmpresa, ExcedentesCambioSalidaAutorizaParams param)
+        public ErrorDto<OperacionCasoEspecialResult?> Excedentes_Cambio_Salida_Autoriza(int codEmpresa, CasoEspecialBaseParams param)
         {
             var query = "exec spExc_Cambio_Salida_Autoriza @IdCS, @PeriodoId, @Cedula, @Usuario";
             var parameters = new
@@ -388,7 +388,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
                 param.Cedula,
                 param.Usuario
             };
-            return DbHelper.ExecuteSingleQuery<ExcedentesCambioSalidaAutorizaResult>(_portalDb, codEmpresa, query, default, parameters);
+            return DbHelper.ExecuteSingleQuery<OperacionCasoEspecialResult>(_portalDb, codEmpresa, query, default, parameters);
         }
 
     }
