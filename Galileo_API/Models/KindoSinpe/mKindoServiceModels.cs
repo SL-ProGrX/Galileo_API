@@ -423,8 +423,8 @@
         {
             public string? ChannelBatchNumber { get; set; }
             public string? Description { get; set; }
-            public int CoreIntegrationPoint { get; set; }
-            public int CostCenter { get; set; }
+            public new int? CoreIntegrationPoint { get; set; }
+            public new int? CostCenter { get; set; }
             public List<DTR>? Debits { get; set; }
             public List<CustomField>? CustomData { get; set; }
         }

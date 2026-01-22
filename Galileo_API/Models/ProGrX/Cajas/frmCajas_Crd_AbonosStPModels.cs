@@ -5,7 +5,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
 {
     #region Simulación (migración de lógica VB6 a backend)
 
-    public sealed class ProyeccionCuotaDto
+    public class ProyeccionCuotaDto
     {
         public decimal Interes { get; set; }
         public decimal Amortiza { get; set; }
@@ -14,7 +14,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public decimal Cuota { get; set; }
     }
 
-    public sealed class SimularCuotasRequest
+    public class SimularCuotasRequest
     {
         public long OperacionId { get; set; }
         public int CantidadCuotas { get; set; }
@@ -29,9 +29,9 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public bool EsRetencion { get; set; }
     }
 
-    public sealed class SimularCuotasResponse
+    public class SimularCuotasResponse
     {
-        public List<ProyeccionCuotaDto> Proyeccion { get; set; } = new();
+        public List<ProyeccionCuotaDto>? Proyeccion { get; set; }
         public decimal TotalInteres { get; set; }
         public decimal TotalAmortiza { get; set; }
         public long FecUltMovR { get; set; }
@@ -40,7 +40,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public int CuotasMaximas { get; set; }
     }
 
-    public sealed class RecalculaCuotaRequest
+    public class RecalculaCuotaRequest
     {
         public decimal SaldoR { get; set; }
         public int Plazo { get; set; }
@@ -49,12 +49,12 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public decimal Interes { get; set; }
     }
 
-    public sealed class RecalculaCuotaResponse
+    public class RecalculaCuotaResponse
     {
         public decimal CuotaR { get; set; }
     }
 
-    public sealed class MoraConsultaResponse
+    public class MoraConsultaResponse
     {
         public List<CajasCrdAbonoMorosidadData> Items { get; set; } = new();
         public int Cuotas { get; set; }
@@ -66,7 +66,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
     }
 
 
-    public sealed class CajasCrdAbonosStPDData
+    public class CajasCrdAbonosStPDData
     {
         // reg_creditos
         public long id_solicitud { get; set; }
@@ -130,7 +130,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public decimal glngFechaCR { get; set; }
     }
 
-    public sealed class CajasCrdAbonosStpVariables
+    public class CajasCrdAbonosStpVariables
     {
         public string? detalle { get; set; }
         public string? vTipoDoc { get; set; }
