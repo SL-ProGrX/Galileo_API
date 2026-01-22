@@ -97,7 +97,7 @@ namespace Galileo_API.Controllers.ProGrX_Procesos
 
         [Authorize]
         [HttpGet("Excedentes_Mass_CE_Consulta")]
-        public ErrorDto<List<ExcedentesMassCEConsultaResult>> Excedentes_Mass_CE_Consulta([FromQuery] int codEmpresa, [FromQuery] int periodoId)
+        public ErrorDto<List<ExcedentesMassConsultaBaseResult>> Excedentes_Mass_CE_Consulta([FromQuery] int codEmpresa, [FromQuery] int periodoId)
         {
             return _bl.Excedentes_Mass_CE_Consulta(codEmpresa, periodoId);
         }

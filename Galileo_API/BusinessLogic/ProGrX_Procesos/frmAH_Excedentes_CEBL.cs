@@ -47,8 +47,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Procesos
         public ErrorDto<ExcedentesMassValidaResult?> Excedentes_Mass_CE_Valida(int codEmpresa, int periodoId)
             => _db.Excedentes_Mass_CE_Valida(codEmpresa, periodoId);
 
-        public ErrorDto<List<ExcedentesMassCEConsultaResult>> Excedentes_Mass_CE_Consulta(int codEmpresa, int periodoId)
-            => _db.Excedentes_Mass_CE_Consulta(codEmpresa, periodoId);
+        public ErrorDto<List<ExcedentesMassConsultaBaseResult>> Excedentes_Mass_CE_Consulta(int codEmpresa, int periodoId)
+        {
+            return _db.Excedentes_Mass_CE_Consulta(codEmpresa, periodoId);
+        }
 
         public ErrorDto Excedentes_Mass_CE_Procesa(int codEmpresa, int periodoId)
             => _db.Excedentes_Mass_CE_Procesa(codEmpresa, periodoId);

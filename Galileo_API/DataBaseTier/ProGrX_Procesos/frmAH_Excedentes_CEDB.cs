@@ -217,11 +217,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Procesos
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="periodoId">ID del periodo.</param>
         /// <returns>Lista de casos especiales masivos CE.</returns>
-        public ErrorDto<List<ExcedentesMassCEConsultaResult>> Excedentes_Mass_CE_Consulta(int codEmpresa, int periodoId)
+        public ErrorDto<List<ExcedentesMassConsultaBaseResult>> Excedentes_Mass_CE_Consulta(int codEmpresa, int periodoId)
         {
             var query = "exec spEXC_Mass_CE_Consulta @PeriodoId, 'CE'";
             var parameters = new { PeriodoId = periodoId };
-            return DbHelper.ExecuteListQuery<ExcedentesMassCEConsultaResult>(_portalDb, codEmpresa, query, parameters);
+            return DbHelper.ExecuteListQuery<ExcedentesMassConsultaBaseResult>(_portalDb, codEmpresa, query, parameters);
         }
 
         /// <summary>

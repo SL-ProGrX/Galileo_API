@@ -130,11 +130,6 @@
         public string Registro_Usuario { get; set; } = string.Empty;
     }
 
-    public class ExcedentesMassCEConsultaResult : ExcedentesMassConsultaBaseResult
-    {
-        // No campos adicionales
-    }
-
     public class ExcedentesMassCSConsultaResult : ExcedentesMassConsultaBaseResult
     {
         public int? Autoriza_Ind { get; set; }
