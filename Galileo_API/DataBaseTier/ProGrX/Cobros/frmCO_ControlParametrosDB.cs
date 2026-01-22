@@ -121,6 +121,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 return DbHelper.OkResponse("Guardado satisfactoriamente.");
             }
+            catch (SqlException ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
             catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
