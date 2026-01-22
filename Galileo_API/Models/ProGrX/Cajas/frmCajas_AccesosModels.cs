@@ -2,13 +2,13 @@
 {
     public class CajasAperturaDto
     {
-        public int Cod_Apertura { get; set; }
-        public string? Cod_Caja { get; set; }
-        public string? CajaDesc { get; set; }
-        public string? Cierre_Tipo { get; set; }
-        public string? Cod_Oficina { get; set; }
-        public string? OficinaDesc { get; set; }
-        public string? Cod_Unidad { get; set; }
-        public string? Cod_Centro_Costo { get; set; }
+        public int cod_Apertura { get; set; }
+        public string? cod_Caja { get; set; }
+        public string? cajaDesc { get; set; }
+        public string? cierre_Tipo { get; set; }
+        public string? cod_Oficina { get; set; }
+        public string? oficinaDesc { get; set; }
+        public string? cod_Unidad { get; set; }
+        public string? cod_Centro_Costo { get; set; }
     }
 }

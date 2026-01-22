@@ -14,6 +14,9 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private readonly MSecurityMainDb _Security_MainDB;
         private const string connectionStringName = "DefaultConnString";
+        // Timeout recomendado por Microsoft / Sonar
+        private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(200);
+
 
         public MProGrxMain(IConfiguration config)
         {
@@ -653,6 +656,44 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
+        // Palabras que VB6 estaba "limpiando"
+        private static readonly string[] ForbiddenTokens =
+        {
+            "SELECT", "DELETE", "UPDATE", "INSERT",
+            "EXEC", "ALTER", "CREATE",
+            "SP_"
+        };
+
+        public static string sbSIFCleanTxtInject(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+                return string.Empty;
+
+            var text = input;
+
+            // Reemplazo de comillas simples (VB6 hacía esto)
+            text = text.Replace("'", " ");
+
+            // Reemplazo de palabras clave (case-insensitive, palabra completa)
+            foreach (var token in ForbiddenTokens)
+            {
+                text = Regex.Replace(
+                    text,
+                    $@"\b{Regex.Escape(token)}\b",
+                    " ",
+                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant
+                    , RegexTimeout
+                );
+            }
+
+            // Normalizar espacios múltiples
+            text = Regex.Replace(text, @"\s{2,}", " ", RegexOptions.None, RegexTimeout);
+
+            return text.Trim();
+
+        }
+
+       
     }
 
 }
