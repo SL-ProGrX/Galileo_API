@@ -6,7 +6,7 @@ namespace PgxAPI.BusinessLogic.KindoSinpe
     public class MKindoServiceBL
     {
         private readonly IConfiguration? _config;
-        private MKindoServiceDb _DB;
+        private readonly MKindoServiceDb _DB;
 
         public MKindoServiceBL(IConfiguration config)
         {

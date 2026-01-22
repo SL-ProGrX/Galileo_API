@@ -1429,22 +1429,7 @@ where nsolicitud in ";
             }
         }
 
-        private static bool TryValidarSinpe(IWfcSinpe servicio, int codEmpresa, string usuario, TesTransaccionDto trx, List<ErrorDto> results)
-        {
-            var nsol = trx.nsolicitud;
 
-            var valida = servicio.fxValidacionSinpe(codEmpresa, nsol.ToString(CultureInfo.InvariantCulture), usuario);
-            if (valida is null)
-                return true;
-
-            results.Add(new ErrorDto
-            {
-                Code = valida.Code,
-                Description = $"N° {nsol}-{valida.Description}"
-            });
-
-            return valida.Code != -1;
-        }
 
         private ErrorDto EmitirSinpe(IWfcSinpe servicio, int codEmpresa, string usuario, TesTransaccionDto trx)
         {
@@ -1471,7 +1456,6 @@ where nsolicitud in ";
                        
                     case "TR":
                         return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                        //servicio.fxTesEmisionSinpeTiempoReal(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
                     default:
                         break;
                 }

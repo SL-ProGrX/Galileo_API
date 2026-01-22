@@ -1192,7 +1192,8 @@ FROM dbo.fxSinpe_ValidaCredito(
             if (string.IsNullOrWhiteSpace(iban))
                 return null;
 
-            var match = Regex.Match(iban, @"-(\d{4})-");
+            var match = Regex.Match(iban, @"-(\d{4})-", RegexOptions.IgnoreCase | RegexOptions.Singleline,
+                RegexTimeout);
 
             if (!match.Success)
                 return null;
@@ -1788,7 +1789,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                              FROM dbo.fxSinpe_Valida_MovimientosPermitidos(@iban);";
 
             var response = conn.Query<dynamic>(Query, new { iban = iban }).FirstOrDefault();
-            if(response.TIPO_SINPE == 1 && response.SINPE_PRODUCTO == 1)
+            if(response!.TIPO_SINPE == 1 && response.SINPE_PRODUCTO == 1)
             {
                 return true;
             }
@@ -1890,7 +1891,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                 TransacDesc = solicitud.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4,
                 RegistroFecha = DateTime.Now,
                 RegistroUsuario = usuario ,
-                ComprobanteInterno = resPIN.PINSendingResult.SINPEReference,
+                ComprobanteInterno = resPIN.PINSendingResult!.SINPEReference,
                 RechazoCodigo = resPIN.Errors[0].Code ,
                 RechazoDesc = resPIN.Errors[0].Message,
                 Estado = resPIN.PINSendingResult.State,
@@ -1948,7 +1949,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                 RegistroUsuario = usuario,
                 ComprobanteInterno = resPIN.PINSendingResult.SINPEReference,
                 RechazoCodigo = resPIN.Errors[0].Code,
-                RechazoDesc = resPIN?.Errors[0].Message,
+                RechazoDesc = resPIN!.Errors[0].Message,
                 Estado = resPIN.PINSendingResult.State,
                 FechaActualiza = DateTime.Now,
                 Servicio = Convert.ToInt32(Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo)

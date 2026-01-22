@@ -73,13 +73,13 @@ namespace Galileo_API.DataBaseTier
                                         nombre de {cuenta.Account!.Holder} cédula: {cuenta.Account.HolderId} Tipo Id: {_infoSinpe.vInfo.tipoID} 
                                         Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCode}-{cuenta.Account.EntityName}";
                         //guarda el mensaje de error de la emision:
-                        fxGuardaID_RespuestaSinpe(CodEmpresa, (int)cuenta.Account.State!, null!, solicitud);
+                        fxGuardaID_RespuestaSinpe(CodEmpresa, (int)cuenta.Account.State!, solicitud);
                         return DbHelper.OkResponse(response.Description);
                     }
                     else
                     {
                         //guarda el mensaje de error de la emision:
-                        fxGuardaID_RespuestaSinpe(CodEmpresa, (int)cuenta.Account.State!, null!, solicitud);
+                        fxGuardaID_RespuestaSinpe(CodEmpresa, (int)cuenta.Account.State!, solicitud);
                         var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, (int)cuenta.Account.State!).Result!;
                         return DbHelper.ErrorResponse(rechazo, (int)cuenta.Account.State!);
                     } 
@@ -177,7 +177,7 @@ namespace Galileo_API.DataBaseTier
                         
                         rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
                         response.Description = rechazo;
-                        fxGuardaID_RespuestaSinpe(CodEmpresa, idRechazo, null!, Nsolicitud.ToString());
+                        fxGuardaID_RespuestaSinpe(CodEmpresa, idRechazo, Nsolicitud.ToString());
                         return DbHelper.ErrorResponse("N°: " + Nsolicitud.ToString() + " - " +rechazo);
                     }
                     else
@@ -311,7 +311,7 @@ namespace Galileo_API.DataBaseTier
                 {
                     var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, response.Errors[0].Code).Result!;
                     var description = rechazo;
-                    fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, null, Nsolicitud.ToString());
+                    fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, Nsolicitud.ToString());
 
                     var updateNSolicitud = _mKindo.RegistraDibitoCuenta(CodEmpresa, Nsolicitud, response).Result;
 
@@ -348,7 +348,7 @@ namespace Galileo_API.DataBaseTier
                 {
                     var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, response.Errors[0].Code).Result!;
                     var description = rechazo;
-                    fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, null, Nsolicitud.ToString());
+                    fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, Nsolicitud.ToString());
 
                     return new ErrorDto<RespuestaRegistro>
                     {
@@ -373,7 +373,7 @@ namespace Galileo_API.DataBaseTier
             return resp;
         }
 
-        private ErrorDto fxGuardaID_RespuestaSinpe(int CodEmpresa, int codigo,string referenciaSinpe,string nsolicitud)
+        private ErrorDto fxGuardaID_RespuestaSinpe(int CodEmpresa, int codigo,string nsolicitud, string? referenciaSinpe = null)
         {
             const string query = @"UPDATE TES_TRANSACCIONES SET 
                             ID_RECHAZO = @codigo, REFERENCIA_SINPE = @referenciaSinpe 
