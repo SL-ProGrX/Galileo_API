@@ -2,7 +2,7 @@
 {
     public class ExcedentesPeriodoValidaResult
     {
-        public int Resultado { get; set; }
+        public int? Resultado { get; set; }
     }
 
     public class ExcedentesCasosEspecialesResult
@@ -36,7 +36,7 @@
         public string? Nombre { get; set; }
         public string? Salida { get; set; }
         public string? Detalle { get; set; }
-        public int Adjunto { get; set; }
+        public int? Adjunto { get; set; }
     }
 
     public class ExcedentesCasosEspecialSalidasCambioResult
@@ -52,8 +52,8 @@
 
     public class ExcedentesCasoEspecialAddParams
     {
-        public int Id { get; set; }
-        public int PeriodoId { get; set; }
+        public int? Id { get; set; }
+        public int? PeriodoId { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Detalle { get; set; } = string.Empty;
         public decimal Porcentaje { get; set; }
@@ -63,59 +63,59 @@
 
     public class ExcedentesCasoEspecialAddResult
     {
-        public int Caso_Id { get; set; }
-        public int Pass { get; set; }
+        public int? Caso_Id { get; set; }
+        public int? Pass { get; set; }
     }
 
     public class ExcedentesCasoEspecialDeleteParams
     {
-        public int Id { get; set; }
-        public int PeriodoId { get; set; }
+        public int? Id { get; set; }
+        public int? PeriodoId { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
 
     public class ExcedentesCasoEspecialDeleteResult
     {
-        public int Caso_Id { get; set; }
-        public int Pass { get; set; }
+        public int? Caso_Id { get; set; }
+        public int? Pass { get; set; }
     }
 
     public class ExcedentesMassCESubeParams
     {
-        public int PeriodoId { get; set; }
+        public int? PeriodoId { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
         public string Salida { get; set; } = string.Empty;
         public decimal Porcentaje { get; set; }
         public string Detalle { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
-        public int Primero { get; set; }
+        public int? Primero { get; set; }
     }
 
     public class ExcedentesMassCSSubeParams
     {
-        public int PeriodoId { get; set; }
+        public int? PeriodoId { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
         public string Salida { get; set; } = string.Empty;
         public string Detalle { get; set; } = string.Empty;
-        public int Autoriza_Ind { get; set; }
+        public int? Autoriza_Ind { get; set; }
         public string Autoriza_Usuario { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
-        public int Primero { get; set; }
+        public int? Primero { get; set; }
     }
 
     public class ExcedentesMassValidaResult
     {
-        public int Total { get; set; }
-        public int Aplica { get; set; }
-        public int Inco { get; set; }
+        public int? Total { get; set; }
+        public int? Aplica { get; set; }
+        public int? Inco { get; set; }
     }
 
     public class ExcedentesMassCEConsultaResult
     {
-        public int Id_Periodo { get; set; }
+        public int? Id_Periodo { get; set; }
         public string Tipo { get; set; } = string.Empty;
         public string Cedula { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
@@ -123,15 +123,15 @@
         public decimal Porcentaje { get; set; }
         public string Detalle { get; set; } = string.Empty;
         public string Inconsistencia { get; set; } = string.Empty;
-        public int Aplica { get; set; }
-        public int Procesado { get; set; }
+        public int? Aplica { get; set; }
+        public int? Procesado { get; set; }
         public DateTime Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
     }
 
     public class ExcedentesMassCSConsultaResult
     {
-        public int Id_Periodo { get; set; }
+        public int? Id_Periodo { get; set; }
         public string Tipo { get; set; } = string.Empty;
         public string Cedula { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
@@ -139,9 +139,9 @@
         public decimal Porcentaje { get; set; }
         public string Detalle { get; set; } = string.Empty;
         public string Inconsistencia { get; set; } = string.Empty;
-        public int Aplica { get; set; }
-        public int Procesado { get; set; }
-        public int Autoriza_Ind { get; set; }
+        public int? Aplica { get; set; }
+        public int? Procesado { get; set; }
+        public int? Autoriza_Ind { get; set; }
         public string Autoriza_Usuario { get; set; } = string.Empty;
         public DateTime Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
@@ -149,7 +149,7 @@
 
     public class ExcedentesCasosEspecialesAplicadosParams
     {
-        public int PeriodoId { get; set; }
+        public int? PeriodoId { get; set; }
         public string Salida { get; set; } = string.Empty;
         public string Cedula { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
@@ -162,7 +162,7 @@
         public decimal Consec { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
-        public int Id_Periodo { get; set; }
+        public int? Id_Periodo { get; set; }
         public string Salida { get; set; } = string.Empty;
         public string Detalle { get; set; } = string.Empty;
         public string Doc_Adjunto { get; set; } = string.Empty;
@@ -170,26 +170,26 @@
         public DateTime? Registro_Fecha { get; set; }
         public string Modifica_Usuario { get; set; } = string.Empty;
         public DateTime? Modifica_Fecha { get; set; }
-        public int Consec_Apl { get; set; }
+        public int? Consec_Apl { get; set; }
         public decimal Porcentaje { get; set; }
     }
 
     public class ExcedentesCambioSalidaListaParams
     {
-        public int PeriodoId { get; set; }
+        public int? PeriodoId { get; set; }
         public string Filtro { get; set; } = string.Empty;
-        public int Autorizado { get; set; }
+        public int? Autorizado { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
     public class ExcedentesCambioSalidaListaResult
     {
-        public int Consec { get; set; }
-        public int Id_Periodo { get; set; }
+        public int? Consec { get; set; }
+        public int? Id_Periodo { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Detalle { get; set; } = string.Empty;
         public string Nueva_Salida { get; set; } = string.Empty;
-        public int Ind_Autorizado { get; set; }
+        public int? Ind_Autorizado { get; set; }
         public DateTime? Registro_Fecha { get; set; }
         public string Registro_Usuario { get; set; } = string.Empty;
         public string? Modifica_Usuario { get; set; }
@@ -203,8 +203,8 @@
 
     public class ExcedentesCambioSalidaAddParams
     {
-        public int Id { get; set; }
-        public int PeriodoId { get; set; }
+        public int? Id { get; set; }
+        public int? PeriodoId { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Detalle { get; set; } = string.Empty;
         public string Salida { get; set; } = string.Empty;
@@ -213,14 +213,14 @@
 
     public class ExcedentesCambioSalidaAddResult
     {
-        public int Caso_Id { get; set; }
-        public int Pass { get; set; }
+        public int? Caso_Id { get; set; }
+        public int? Pass { get; set; }
     }
 
     public class ExcedentesCambioSalidaDeleteParams
     {
-        public int Id { get; set; }
-        public int PeriodoId { get; set; }
+        public int? Id { get; set; }
+        public int? PeriodoId { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Salida { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
@@ -228,21 +228,21 @@
 
     public class ExcedentesCambioSalidaDeleteResult
     {
-        public int Caso_Id { get; set; }
-        public int Pass { get; set; }
+        public int? Caso_Id { get; set; }
+        public int? Pass { get; set; }
     }
 
     public class ExcedentesCambioSalidaAutorizaParams
     {
-        public int Id { get; set; }
-        public int PeriodoId { get; set; }
+        public int? Id { get; set; }
+        public int? PeriodoId { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
     }
 
     public class ExcedentesCambioSalidaAutorizaResult
     {
-        public int Caso_Id { get; set; }
-        public int Pass { get; set; }
+        public int? Caso_Id { get; set; }
+        public int? Pass { get; set; }
     }
 }
