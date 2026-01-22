@@ -66,6 +66,24 @@ namespace Galileo_API.BusinessLogic.ProGrX_Activos_Fijos
             return DbActivosExplorador.Periodos(codEmpresa, estado);
         }
 
+        public ErrorDto<List<ActivosExploradorAsientoDto>> Asientos(int codEmpresa,DateTime fechaPeriodo)
+        {
+            return DbActivosExplorador.Asientos(codEmpresa, fechaPeriodo);
+        }
+
+        public ErrorDto<List<ActivosExploradorAsientoDetalleDto>> AsientoDetalle(int codEmpresa,string numAsiento,DateTime fechaPeriodo)
+        {
+            return DbActivosExplorador.AsientoDetalle(codEmpresa,numAsiento,fechaPeriodo
+            );
+        }
+
+        public ErrorDto<List<ActivosExploradorModificacionDto>> AdicionesRetiros(int codEmpresa,DateTime fechaPeriodo)
+        {
+            return DbActivosExplorador.AdicionesRetiros(codEmpresa,fechaPeriodo
+            );
+        }
+
+
 
 
     }

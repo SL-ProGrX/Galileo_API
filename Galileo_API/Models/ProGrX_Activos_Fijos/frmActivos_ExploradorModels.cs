@@ -28,22 +28,21 @@
 
     public class ActivoExploradorDto
     {
-        public string num_placa { get; set; }
+        public string? num_placa { get; set; }
         public string? placa_alterna { get; set; }
-        public string nombre { get; set; }
+        public string? nombre { get; set; }
 
-        public DateTime fecha_adquisicion { get; set; }
+        public DateTime? fecha_adquisicion { get; set; }
         public DateTime? fecha_instalacion { get; set; }
 
-        public string tipo_activo { get; set; }
-        public string tipo_activo_desc { get; set; }
+        public string? tipo_activo { get; set; }
+        public string? tipo_activo_desc { get; set; }
 
-        public decimal valor_historico { get; set; }
-        public decimal valor_desecho { get; set; }
+        public decimal? valor_historico { get; set; }
+        public decimal? valor_desecho { get; set; }
 
-        public string estado { get; set; }
+        public string? estado { get; set; }
 
-        // SOLO si infoAdicional = true
         public string? responsable { get; set; }
         public string? departamento { get; set; }
         public string? seccion { get; set; }
@@ -53,11 +52,48 @@
 
     public class PeriodoExploradorDto
     {
-        public int anio { get; set; }
-        public int mes { get; set; }
-        public DateTime fecha_periodo { get; set; }
-        public string periodo { get; set; } = string.Empty;
+        public int? anio { get; set; }
+        public int? mes { get; set; }
+        public DateTime? fecha_periodo { get; set; }
+        public string? periodo { get; set; } = string.Empty;
     }
+
+
+    public class ActivosExploradorAsientoDto
+    {
+        public string? num_asiento { get; set; } = string.Empty;
+        public string? tipo_asiento { get; set; } = string.Empty;
+        public DateTime? fecha_asiento { get; set; }
+        public string? descripcion { get; set; } = string.Empty;
+        public decimal? debe { get; set; }
+        public decimal? haber { get; set; }
+        public string? aplicado { get; set; } = string.Empty;
+        public string? notas { get; set; } = string.Empty;
+    }
+
+    public class ActivosExploradorAsientoDetalleDto
+    {
+        public string? cuenta { get; set; } = string.Empty;
+        public string? descripcion { get; set; } = string.Empty;
+        public decimal? debito { get; set; }
+        public decimal? credito { get; set; }
+        public string? detalle { get; set; } = string.Empty;
+        public string? referencia { get; set; } = string.Empty;
+        public string? num_documento { get; set; } = string.Empty;
+    }
+
+    public class ActivosExploradorModificacionDto
+    {
+        public string? nombre { get; set; } = string.Empty;
+        public string? num_placa { get; set; } = string.Empty;
+        public string?    tipo { get; set; } = string.Empty;
+        public string? justificacion { get; set; } = string.Empty;
+        public DateTime? fecha { get; set; }
+        public decimal? monto { get; set; }
+        public string? descripcion { get; set; } = string.Empty;
+    }
+
+
 
 
 
