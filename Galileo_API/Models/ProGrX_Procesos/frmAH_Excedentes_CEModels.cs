@@ -83,29 +83,27 @@
         public string Salida { get; set; } = string.Empty;
     }
 
-    public class ExcedentesMassCESubeParams
+    // MODELOS BASE PARA MASIVOS
+    public class ExcedentesMassSubeBaseParams
     {
         public int? PeriodoId { get; set; }
         public string Cedula { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
         public string Salida { get; set; } = string.Empty;
-        public decimal? Porcentaje { get; set; }
         public string Detalle { get; set; } = string.Empty;
         public string Usuario { get; set; } = string.Empty;
         public int? Primero { get; set; }
     }
 
-    public class ExcedentesMassCSSubeParams
+    public class ExcedentesMassCESubeParams : ExcedentesMassSubeBaseParams
     {
-        public int? PeriodoId { get; set; }
-        public string Cedula { get; set; } = string.Empty;
-        public string Nombre { get; set; } = string.Empty;
-        public string Salida { get; set; } = string.Empty;
-        public string Detalle { get; set; } = string.Empty;
+        public decimal? Porcentaje { get; set; }
+    }
+
+    public class ExcedentesMassCSSubeParams : ExcedentesMassSubeBaseParams
+    {
         public int? Autoriza_Ind { get; set; }
         public string Autoriza_Usuario { get; set; } = string.Empty;
-        public string Usuario { get; set; } = string.Empty;
-        public int? Primero { get; set; }
     }
 
     public class ExcedentesMassValidaResult
@@ -115,7 +113,8 @@
         public int? Inco { get; set; }
     }
 
-    public class ExcedentesMassCEConsultaResult
+    // MODELOS BASE PARA CONSULTA MASIVA
+    public class ExcedentesMassConsultaBaseResult
     {
         public int? Id_Periodo { get; set; }
         public string Tipo { get; set; } = string.Empty;
@@ -131,22 +130,15 @@
         public string Registro_Usuario { get; set; } = string.Empty;
     }
 
-    public class ExcedentesMassCSConsultaResult
+    public class ExcedentesMassCEConsultaResult : ExcedentesMassConsultaBaseResult
     {
-        public int? Id_Periodo { get; set; }
-        public string Tipo { get; set; } = string.Empty;
-        public string Cedula { get; set; } = string.Empty;
-        public string Nombre { get; set; } = string.Empty;
-        public string Salida { get; set; } = string.Empty;
-        public decimal? Porcentaje { get; set; }
-        public string Detalle { get; set; } = string.Empty;
-        public string Inconsistencia { get; set; } = string.Empty;
-        public int? Aplica { get; set; }
-        public int? Procesado { get; set; }
+        // No campos adicionales
+    }
+
+    public class ExcedentesMassCSConsultaResult : ExcedentesMassConsultaBaseResult
+    {
         public int? Autoriza_Ind { get; set; }
         public string Autoriza_Usuario { get; set; } = string.Empty;
-        public DateTime Registro_Fecha { get; set; }
-        public string Registro_Usuario { get; set; } = string.Empty;
     }
 
     public class ExcedentesCasosEspecialesAplicadosParams
