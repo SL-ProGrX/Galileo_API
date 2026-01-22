@@ -150,84 +150,97 @@ namespace Galileo_API.DataBaseTier
         /// <param name="doc_base"></param>
         /// <param name="contador"></param>
         /// <returns></returns>
-        public ErrorDto fxTesEmisionSinpeCreditoDirecto(int CodEmpresa,
-            int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
+        public ErrorDto fxTesEmisionSinpeCreditoDirecto(
+    int CodEmpresa,
+    int Nsolicitud,
+    DateTime vfecha,
+    string vUsuario,
+    int doc_base,
+    int contador)
         {
-            //(Realiza el proceso de envio y recibido de SINPE)
-            var response = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var response = new ErrorDto { Code = 0, Description = "Ok" };
+
             var respuesta = new RespuestaRegistro();
             var datos = new TesTransaccion();
+
             bool estadoSinpe = true;
             int idRechazo = 0;
             string rechazo = "";
+
             try
             {
-                if (Nsolicitud > 0)
-                {
-                    var servicioDisponible = fxValidacionSinpe(CodEmpresa, Nsolicitud.ToString(), vUsuario);
-                    if (servicioDisponible.Code != 0 && servicioDisponible.Code != 1)
-                    {
-                        estadoSinpe = false;
-                        idRechazo = servicioDisponible.Code!.Value;
-                        response.Code = -1;
-                        
-                        rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
-                        response.Description = rechazo;
-                        fxGuardaID_RespuestaSinpe(CodEmpresa, idRechazo, Nsolicitud.ToString());
-                        return DbHelper.ErrorResponse("N°: " + Nsolicitud.ToString() + " - " +rechazo);
-                    }
-                    else
-                    {
-                        respuesta = fxTesEnvioSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vUsuario).Result;
-
-                        if (respuesta!.MotivoError != 0)
-                        {
-                            estadoSinpe = false;
-                            idRechazo = respuesta!.MotivoError;
-                            rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
-
-                            return DbHelper.ErrorResponse(rechazo);
-                        }
-                        else
-                        {
-                            estadoSinpe = true;
-                        }
-
-                    }
-
-                    //Guardar la respuesta en la transacción
-                    datos.NumeroSolicitud = Nsolicitud;
-                    datos.FechaEmision = vfecha;
-                    datos.FechaTraslado = vfecha;
-                    datos.UsuarioGenera = vUsuario;
-                    datos.estadoSinpe = estadoSinpe;
-                    datos.IdMotivoRechazo = idRechazo;
-                    datos.CodigoReferencia = respuesta.CodigoReferencia;
-                    datos.DocumentoBase = doc_base.ToString();
-                    datos.contador = contador.ToString();
-
-                    if (!_mKindo.fxTesRespuestaSinpe(CodEmpresa, datos).Result)
-                    {
-                        _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Se produjo un error al actualizar la transacción", vUsuario);
-                    }
-
-                    if (estadoSinpe)
-                    {
-                        _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", "Emisión Transferencia Sinpe: Exitosa", vUsuario);
-                    }
-                    else
-                    {
-                        _mTesoreria.sbTesBitacoraEspecial(CodEmpresa, Nsolicitud, "10", $"Transferencia Sinpe rechazada: {rechazo} ", vUsuario);
-                    }
-                }
-                else
+                if (Nsolicitud <= 0)
                 {
                     response.Code = -1;
                     response.Description = "No se ha indicado una solicitud válida.";
+                    return response;
+                }
+
+                // 1) Validación disponibilidad SINPE
+                var servicioDisponible = fxValidacionSinpe(CodEmpresa, Nsolicitud.ToString(), vUsuario);
+
+                if (servicioDisponible.Code != 0 && servicioDisponible.Code != 1)
+                {
+                    estadoSinpe = false;
+                    idRechazo = servicioDisponible.Code!.Value;
+
+                    rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
+                    response = DbHelper.ErrorResponse("N°: " + Nsolicitud + " - " + rechazo);
+
+                    fxGuardaID_RespuestaSinpe(CodEmpresa, idRechazo, Nsolicitud.ToString());
+                }
+                else
+                {
+                    // 2) Envío a SINPE
+                    respuesta = fxTesEnvioSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vUsuario).Result;
+
+                    if (respuesta != null && respuesta.MotivoError != 0)
+                    {
+                        estadoSinpe = false;
+                        idRechazo = respuesta.MotivoError;
+
+                        rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
+                        response = DbHelper.ErrorResponse(rechazo);
+                    }
+                    else
+                    {
+                        estadoSinpe = true;
+                    }
+                }
+
+                // 3) Guardar la respuesta en la transacción (tanto éxito como rechazo)
+                datos.NumeroSolicitud = Nsolicitud;
+                datos.FechaEmision = vfecha;
+                datos.FechaTraslado = vfecha;
+                datos.UsuarioGenera = vUsuario;
+                datos.estadoSinpe = estadoSinpe;
+                datos.IdMotivoRechazo = idRechazo;
+                datos.CodigoReferencia = respuesta?.CodigoReferencia; // <- evita NRE si no hubo envío
+                datos.DocumentoBase = doc_base.ToString();
+                datos.contador = contador.ToString();
+
+                if (!_mKindo.fxTesRespuestaSinpe(CodEmpresa, datos).Result)
+                {
+                    _mTesoreria.sbTesBitacoraEspecial(
+                        CodEmpresa, Nsolicitud, "10",
+                        "Se produjo un error al actualizar la transacción",
+                        vUsuario);
+                }
+
+                // 4) Bitácora final: aquí ahora sí hay caminos donde estadoSinpe=false
+                if (estadoSinpe)
+                {
+                    _mTesoreria.sbTesBitacoraEspecial(
+                        CodEmpresa, Nsolicitud, "10",
+                        "Emisión Transferencia Sinpe: Exitosa",
+                        vUsuario);
+                }
+                else
+                {
+                    _mTesoreria.sbTesBitacoraEspecial(
+                        CodEmpresa, Nsolicitud, "10",
+                        $"Transferencia Sinpe rechazada: {rechazo} ",
+                        vUsuario);
                 }
             }
             catch (Exception ex)
@@ -274,7 +287,7 @@ namespace Galileo_API.DataBaseTier
                 pinData.Transfer = new Galileo.Models.KindoSinpe.PINTransfer()
                 {
                     ChannelReference = cod_referencia,
-                    Amount = solicitud.Monto,
+                    Amount = solicitud!.Monto,
                     CurrencyCode = _mKindo.GetCurrencyCodeDes(solicitud.Divisa!),
                     Description = solicitud.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4,
                     OriginEntityIBAN = solicitud.CuentaOrigen!,
@@ -309,8 +322,7 @@ namespace Galileo_API.DataBaseTier
                 var response = _sinpePIN.SendPIN(parametrosSinpe.Result?.UrlCGP_PIN!, pinData);
                 if (response.IsSuccessful)
                 {
-                    var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, response.Errors[0].Code).Result!;
-                    var description = rechazo;
+
                     fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, Nsolicitud.ToString());
 
                     var updateNSolicitud = _mKindo.RegistraDibitoCuenta(CodEmpresa, Nsolicitud, response).Result;
@@ -318,7 +330,7 @@ namespace Galileo_API.DataBaseTier
                     if (updateNSolicitud)
                     {
 
-                        _mKindo.RegistraMovTransito(CodEmpresa, cod_referencia, context.UserCode, response, solicitud);
+                        _mKindo.RegistraMovTransito(CodEmpresa, cod_referencia, context.UserCode!, response, solicitud);
                         return new ErrorDto<RespuestaRegistro>
                         {
                             Code = 0,
@@ -346,8 +358,6 @@ namespace Galileo_API.DataBaseTier
                 }
                 else
                 {
-                    var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, response.Errors[0].Code).Result!;
-                    var description = rechazo;
                     fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, Nsolicitud.ToString());
 
                     return new ErrorDto<RespuestaRegistro>
@@ -373,7 +383,7 @@ namespace Galileo_API.DataBaseTier
             return resp;
         }
 
-        private ErrorDto fxGuardaID_RespuestaSinpe(int CodEmpresa, int codigo,string nsolicitud, string? referenciaSinpe = null)
+        private void fxGuardaID_RespuestaSinpe(int CodEmpresa, int codigo,string nsolicitud, string? referenciaSinpe = null)
         {
             const string query = @"UPDATE TES_TRANSACCIONES SET 
                             ID_RECHAZO = @codigo, REFERENCIA_SINPE = @referenciaSinpe 
@@ -386,7 +396,7 @@ namespace Galileo_API.DataBaseTier
                 nsolicitud = nsolicitud
             };
 
-            return DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, parametros);
+            DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, parametros);
         }
 
 

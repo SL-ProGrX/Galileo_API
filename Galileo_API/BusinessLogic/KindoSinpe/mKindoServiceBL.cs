@@ -5,13 +5,11 @@ namespace PgxAPI.BusinessLogic.KindoSinpe
 {
     public class MKindoServiceBL
     {
-        private readonly IConfiguration? _config;
         private readonly MKindoServiceDb _DB;
 
         public MKindoServiceBL(IConfiguration config)
         {
-            _config = config;
-            _DB = new MKindoServiceDb(_config);
+            _DB = new MKindoServiceDb(config);
         }
 
         #region Métodos de integración de uso general
