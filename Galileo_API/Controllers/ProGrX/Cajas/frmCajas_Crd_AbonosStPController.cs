@@ -78,13 +78,6 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         [HttpPost("CajasCrdAbonosSt_SimularCuotas")]
         public ErrorDto<SimularCuotasResponse> CajasCrdAbonosSt_SimularCuotas(int CodEmpresa,SimularCuotasRequest req)
         {
-            if (req == null)
-                return DbHelper.CreateErrorResponse<SimularCuotasResponse>("Request inválido.");
-
-            const int MAX_CUOTAS = 480;
-            if (req.CantidadCuotas < 0 || req.CantidadCuotas > MAX_CUOTAS)
-                return DbHelper.CreateErrorResponse<SimularCuotasResponse>($"CantidadCuotas fuera de rango (0..{MAX_CUOTAS}).");
-
             return _bl.CajasCrdAbonosSt_SimularCuotas(CodEmpresa, req);
         }
 
