@@ -67,7 +67,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 const string query = @"
                     SELECT 
-                        R.id_solicitud,
+                        R.id_solicitud ,
                         R.codigo,
                         S.cedula,
                         S.nombre,

@@ -93,6 +93,28 @@ namespace Galileo_API.Controllers.ProGrX_Activos_Fijos
             return BL_ActivosExplorador.Periodos(codEmpresa, estado);
         }
 
+        [Authorize]
+        [HttpGet("Asientos")]
+        public ErrorDto<List<ActivosExploradorAsientoDto>> Asientos(int codEmpresa,DateTime fechaPeriodo)
+        {
+            return BL_ActivosExplorador.Asientos(codEmpresa,fechaPeriodo);
+        }
+
+        [Authorize]
+        [HttpGet("AsientoDetalle")]
+        public ErrorDto<List<ActivosExploradorAsientoDetalleDto>> AsientoDetalle(int codEmpresa,string numAsiento,DateTime fechaPeriodo)
+        {
+            return BL_ActivosExplorador.AsientoDetalle(codEmpresa,numAsiento,fechaPeriodo);
+        }
+
+        [Authorize]
+        [HttpGet("AdicionesRetiros")]
+        public ErrorDto<List<ActivosExploradorModificacionDto>> AdicionesRetiros(int codEmpresa,DateTime fechaPeriodo)
+        {
+            return BL_ActivosExplorador.AdicionesRetiros(codEmpresa,fechaPeriodo);
+        }
+
+
 
     }
 }
