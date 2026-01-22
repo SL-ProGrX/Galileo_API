@@ -24,7 +24,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private const string MSG_ELIMINADO_OK = "Eliminado satisfactoriamente.";
         private const string MSG_ACTUALIZADO_OK = "Actualizado satisfactoriamente.";
 
-
         public FrmCOCausasYArreglosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -51,16 +50,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-            var response = new ErrorDto<COCausaMorosidadListaResult>
+            var response = DbHelper.CreateOkResponse(new COCausaMorosidadListaResult
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new COCausaMorosidadListaResult
-                {
-                    total = 0,
-                    lista = new List<COCausaMorosidadData>()
-                }
-            };
+                total = 0,
+                lista = new List<COCausaMorosidadData>()
+            });
+            response.Result ??= new COCausaMorosidadListaResult { total = 0, lista = new List<COCausaMorosidadData>() };
 
             try
             {
@@ -91,7 +86,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<COCausaMorosidadListaResult>(ex.Message);
             }
         }
-
         /// <summary>
         /// Exporta la lista de Causas de Morosidad (CBR_CAUSAS_MOROSIDAD).
         /// </summary>
@@ -100,13 +94,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto<COCausaMorosidadListaResult> Co_CausasMorosidad_Lista_Export(int CodEmpresa, string jfiltros)
         {
-            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
+            FiltrosLazyLoadData filtros;
+            try
+            {
+                filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
+            }
+            catch (JsonException ex)
+            {
+                return DbHelper.CreateErrorResponse<COCausaMorosidadListaResult>(ex.Message);
+            }
+
             filtros.pagina = 0;
             filtros.paginacion = 0;
 
             return Co_CausasMorosidad_Lista_Obtener(CodEmpresa, JsonConvert.SerializeObject(filtros));
         }
-
         /// <summary>
         /// Inserta o actualiza una Causa de Morosidad según isNew y existencia del código.
         /// </summary>
@@ -147,7 +149,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
         /// Elimina una Causa de Morosidad por su código.
         /// </summary>
@@ -166,30 +167,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     return DbHelper.ErrorResponse("Código de causa inválido.", -2);
 
                 const string q = @"DELETE FROM dbo.CBR_CAUSAS_MOROSIDAD WHERE UPPER(RTRIM(COD_CAUSA)) = @cod;";
-                var rows = conn.Execute(q, new { cod });
 
-                if (rows <= 0)
-                    return DbHelper.ErrorResponse("No existe el registro a eliminar.", -2);
-
-                DBBitacora.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
-                    DetalleMovimiento = $"Causa de Morosidad: {cod}",
-                    Movimiento = "ELIMINA - WEB",
-                    Modulo = vModulo
-                });
-
-                return DbHelper.OkResponse(MSG_ELIMINADO_OK);
+                return EjecutarEliminarConBitacora(
+                    conn,
+                    CodEmpresa,
+                    usuario,
+                    cod,
+                    q,
+                    $"Causa de Morosidad: {cod}");
             }
             catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
-        /// Obtiene la lista de Tipos de Arreglos (CBR_TIPOS_ARREGLOS) con lazyload (paginación en memoria).
+        /// Obtiene la lista de Tipos de Arreglos (CBR_TIPOS_ARREGLOS).
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="jfiltros"></param>
@@ -208,16 +201,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-            var response = new ErrorDto<COArregloPagoTipoListaResult>
+            var response = DbHelper.CreateOkResponse(new COArregloPagoTipoListaResult
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new COArregloPagoTipoListaResult
-                {
-                    total = 0,
-                    lista = new List<COArregloPagoTipoData>()
-                }
-            };
+                total = 0,
+                lista = new List<COArregloPagoTipoData>()
+            });
+            response.Result ??= new COArregloPagoTipoListaResult { total = 0, lista = new List<COArregloPagoTipoData>() };
 
             try
             {
@@ -248,7 +237,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<COArregloPagoTipoListaResult>(ex.Message);
             }
         }
-
         /// <summary>
         /// Exporta la lista de Tipos de Arreglos (CBR_TIPOS_ARREGLOS).
         /// </summary>
@@ -257,13 +245,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto<COArregloPagoTipoListaResult> Co_TiposArreglos_Lista_Export(int CodEmpresa, string jfiltros)
         {
-            var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
+            FiltrosLazyLoadData filtros;
+            try
+            {
+                filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
+            }
+            catch (JsonException ex)
+            {
+                return DbHelper.CreateErrorResponse<COArregloPagoTipoListaResult>(ex.Message);
+            }
+
             filtros.pagina = 0;
             filtros.paginacion = 0;
 
             return Co_TiposArreglos_Lista_Obtener(CodEmpresa, JsonConvert.SerializeObject(filtros));
         }
-
         /// <summary>
         /// Inserta o actualiza un Tipo de Arreglo según isNew y existencia del código.
         /// </summary>
@@ -304,7 +300,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
         /// Elimina un Tipo de Arreglo por su código.
         /// </summary>
@@ -323,28 +318,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     return DbHelper.ErrorResponse("Código de arreglo inválido.", -2);
 
                 const string q = @"DELETE FROM dbo.CBR_TIPOS_ARREGLOS WHERE UPPER(RTRIM(COD_ARREGLO)) = @cod;";
-                var rows = conn.Execute(q, new { cod });
 
-                if (rows <= 0)
-                    return DbHelper.ErrorResponse("No existe el registro a eliminar.", -2);
-
-                DBBitacora.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
-                    DetalleMovimiento = $"Tipo de Arreglo: {cod}",
-                    Movimiento = "ELIMINA - WEB",
-                    Modulo = vModulo
-                });
-
-                return DbHelper.OkResponse(MSG_ELIMINADO_OK);
+                return EjecutarEliminarConBitacora(
+                    conn,
+                    CodEmpresa,
+                    usuario,
+                    cod,
+                    q,
+                    $"Tipo de Arreglo: {cod}");
             }
             catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
         /// Inserta una Causa de Morosidad.
         /// </summary>
@@ -390,6 +377,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     Movimiento = "REGISTRA - WEB",
                     Modulo = vModulo
                 });
+
                 return DbHelper.OkResponse(MSG_GUARDADO_OK);
             }
             catch (SqlException ex)
@@ -397,7 +385,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
         /// Actualiza una Causa de Morosidad.
         /// </summary>
@@ -439,7 +426,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
         /// Inserta un Tipo de Arreglo.
         /// </summary>
@@ -455,6 +441,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 string cod = (tipo.cod_arreglo ?? "").Trim().ToUpperInvariant();
                 string desc = (tipo.descripcion ?? "").Trim().ToUpperInvariant();
                 int activo = tipo.activo ? 1 : 0;
+
                 string user = (usuario ?? "").Trim();
 
                 const string q = @"
@@ -493,7 +480,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
         /// Actualiza un Tipo de Arreglo.
         /// </summary>
@@ -528,29 +514,54 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     Modulo = vModulo
                 });
 
-                return DbHelper.OkResponse(MSG_GUARDADO_OK);
+                return DbHelper.OkResponse(MSG_ACTUALIZADO_OK);
             }
             catch (SqlException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+        /// <summary>
+        /// Ejecuta DELETE parametrizado, valida filas afectadas y registra bitácora.
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codigo"></param>
+        /// <param name="sqlDelete"></param>
+        /// <param name="detalleMovimiento"></param>
+        /// <returns></returns>
+        private ErrorDto EjecutarEliminarConBitacora(SqlConnection conn,int CodEmpresa, string usuario,string codigo,string sqlDelete,string detalleMovimiento)
+        {
+            var rows = conn.Execute(sqlDelete, new { cod = codigo });
 
+            if (rows <= 0)
+                return DbHelper.ErrorResponse("No existe el registro a eliminar.", -2);
+
+            DBBitacora.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
+                DetalleMovimiento = detalleMovimiento,
+                Movimiento = "ELIMINA - WEB",
+                Modulo = vModulo
+            });
+
+            return DbHelper.OkResponse(MSG_ELIMINADO_OK);
+        }
         private static bool ExisteCausa(SqlConnection conn, string codCausa)
         {
             const string q = @"SELECT ISNULL(COUNT(1),0) FROM dbo.CBR_CAUSAS_MOROSIDAD WHERE UPPER(RTRIM(COD_CAUSA)) = @cod;";
             int existe = conn.QueryFirstOrDefault<int>(q, new { cod = codCausa });
             return existe > 0;
         }
-
         private static bool ExisteArreglo(SqlConnection conn, string codArreglo)
         {
             const string q = @"SELECT ISNULL(COUNT(1),0) FROM dbo.CBR_TIPOS_ARREGLOS WHERE UPPER(RTRIM(COD_ARREGLO)) = @cod;";
             int existe = conn.QueryFirstOrDefault<int>(q, new { cod = codArreglo });
             return existe > 0;
         }
-
-        private static List<COCausaMorosidadData> AplicarFiltroCausas(List<COCausaMorosidadData> lista,string? filtroIn)
+        private static List<COCausaMorosidadData> AplicarFiltroCausas(List<COCausaMorosidadData> lista, string? filtroIn)
         {
             string filtro = (filtroIn ?? "").Trim();
             if (string.IsNullOrWhiteSpace(filtro)) return lista;
@@ -563,7 +574,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var it = lista[i];
                 string c = (it.cod_causa ?? "").Trim().ToUpperInvariant();
                 string d = (it.descripcion ?? "").Trim().ToUpperInvariant();
-                string a = (it.activa ? "SI" : "NO").ToUpperInvariant();
+                string a = (it.activa ? "SI" : "NO");
 
                 if (c.Contains(qf) || d.Contains(qf) || a.Contains(qf))
                     filtrada.Add(it);
@@ -571,7 +582,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return filtrada;
         }
-
         private static List<COArregloPagoTipoData> AplicarFiltroArreglos(List<COArregloPagoTipoData> lista, string? filtroIn)
         {
             string filtro = (filtroIn ?? "").Trim();
@@ -585,7 +595,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var it = lista[i];
                 string c = (it.cod_arreglo ?? "").Trim().ToUpperInvariant();
                 string d = (it.descripcion ?? "").Trim().ToUpperInvariant();
-                string a = it.activo ? "SI" : "NO";
+                string a = (it.activo ? "SI" : "NO");
 
                 if (c.Contains(qf) || d.Contains(qf) || a.Contains(qf))
                     filtrada.Add(it);
@@ -593,7 +603,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return filtrada;
         }
-
         private static List<COCausaMorosidadData> AplicarSortCausas(List<COCausaMorosidadData> lista, string? sortFieldIn, int sortOrder)
         {
             string sortField = (sortFieldIn ?? "").Trim() switch
@@ -614,7 +623,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return lista;
         }
-
         private static int CompararCampoCausa(COCausaMorosidadData a, COCausaMorosidadData b, string sortField)
         {
             if (sortField == SF_CAUSA_COD)
@@ -626,7 +634,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (a.activa == b.activa) return 0;
             return a.activa ? 1 : -1;
         }
-
         private static List<COArregloPagoTipoData> AplicarSortArreglos(List<COArregloPagoTipoData> lista, string? sortFieldIn, int sortOrder)
         {
             string sortField = (sortFieldIn ?? "").Trim() switch
@@ -647,7 +654,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             return lista;
         }
-
         private static int CompararCampoArreglo(COArregloPagoTipoData a, COArregloPagoTipoData b, string sortField)
         {
             if (sortField == SF_ARREGLO_COD)
@@ -659,7 +665,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (a.activo == b.activo) return 0;
             return a.activo ? 1 : -1;
         }
-
         private static List<T> AplicarPaginacion<T>(List<T> lista, int pagina, int paginacion)
         {
             var paged = new List<T>();
