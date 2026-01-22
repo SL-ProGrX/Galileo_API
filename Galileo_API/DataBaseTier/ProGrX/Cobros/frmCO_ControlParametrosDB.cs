@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cobros;
 using Newtonsoft.Json;
+using System.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
@@ -71,7 +72,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 return response;
             }
-            catch (Exception ex)
+            catch (SqlException ex)
             {
                 return DbHelper.CreateErrorResponse<CoControlParametrosListaResult>(ex.Message);
             }
