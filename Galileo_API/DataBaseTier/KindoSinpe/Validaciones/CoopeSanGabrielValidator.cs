@@ -1,6 +1,12 @@
-﻿using Galileo.DataBaseTier;
+﻿using Dapper;
+using Galileo.DataBaseTier;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
+using Galileo.Models.ProGrX.Bancos;
+using Galileo.Models.Security;
+using Org.BouncyCastle.Ocsp;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -8,7 +14,7 @@ namespace Galileo_API.DataBaseTier
 #pragma warning disable S2589 // Quitar despues de implementar resto de metodos con CSG
     public class CoopeSanGabrielValidator
     {
-
+        private readonly PortalDB _portalDB;
         private readonly InfoSinpeRequest _infoSinpe = new InfoSinpeRequest();
         private readonly SinpeGalileoPin _sinpePIN;
 
@@ -21,6 +27,7 @@ namespace Galileo_API.DataBaseTier
             _mKindo = new MKindoServiceDb(config);
             _sinpePIN = new SinpeGalileoPin(config);
             _mTesoreria = new MTesoreria(config);
+            _portalDB = new PortalDB(config);
         }
 
         #region Validación de Solicitud SINPE
@@ -53,15 +60,31 @@ namespace Galileo_API.DataBaseTier
                 var cuenta = ConsultarCuenta(parametrosSinpe!, context, _infoSinpe.vInfo.CuentaIBAN!);
                 if (!cuenta.IsSuccessful)
                 {
-                    // tu código no hace nada aquí (comentado), así que mantenemos el comportamiento.
+                    response.Code = cuenta.Errors[0].Code;
+                    response.Description = cuenta.Errors[0].Message;
                     return response;
                 }
-
-                // aquí irían validaciones futuras (divisa, cédula, etc.)
-                response.Description = $@"La cuenta IBAN {_infoSinpe.vInfo.CuentaIBAN} registrada a 
+                else
+                {
+                    if(cuenta.Account!.State == 0 || cuenta.Account!.State == 1)
+                    {
+                        // aquí irían validaciones futuras (divisa, cédula, etc.)
+                        response.Description = $@"La cuenta IBAN {_infoSinpe.vInfo.CuentaIBAN} registrada a 
                                         nombre de {cuenta.Account!.Holder} cédula: {cuenta.Account.HolderId} Tipo Id: {_infoSinpe.vInfo.tipoID} 
                                         Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCode}-{cuenta.Account.EntityName}";
-                return response;
+                        //guarda el mensaje de error de la emision:
+                        fxGuardaID_RespuestaSinpe(CodEmpresa, (int)cuenta.Account.State!, null!, solicitud);
+                        return DbHelper.OkResponse(response.Description);
+                    }
+                    else
+                    {
+                        //guarda el mensaje de error de la emision:
+                        fxGuardaID_RespuestaSinpe(CodEmpresa, (int)cuenta.Account.State!, null!, solicitud);
+                        var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, (int)cuenta.Account.State!).Result!;
+                        return DbHelper.ErrorResponse(rechazo, (int)cuenta.Account.State!);
+                    } 
+                    
+                }
             }
             catch (Exception ex)
             {
@@ -146,11 +169,16 @@ namespace Galileo_API.DataBaseTier
                 if (Nsolicitud > 0)
                 {
                     var servicioDisponible = fxValidacionSinpe(CodEmpresa, Nsolicitud.ToString(), vUsuario);
-                    if (servicioDisponible.Code == -1)
+                    if (servicioDisponible.Code != 0 && servicioDisponible.Code != 1)
                     {
                         estadoSinpe = false;
-                        idRechazo = 83;
+                        idRechazo = servicioDisponible.Code!.Value;
+                        response.Code = -1;
+                        
                         rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
+                        response.Description = rechazo;
+                        fxGuardaID_RespuestaSinpe(CodEmpresa, idRechazo, null!, Nsolicitud.ToString());
+                        return DbHelper.ErrorResponse("N°: " + Nsolicitud.ToString() + " - " +rechazo);
                     }
                     else
                     {
@@ -159,8 +187,10 @@ namespace Galileo_API.DataBaseTier
                         if (respuesta!.MotivoError != 0)
                         {
                             estadoSinpe = false;
-                            idRechazo = 83;
+                            idRechazo = respuesta!.MotivoError;
                             rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, idRechazo).Result!;
+
+                            return DbHelper.ErrorResponse(rechazo);
                         }
                         else
                         {
@@ -222,7 +252,7 @@ namespace Galileo_API.DataBaseTier
 
 
             
-            var pinData = new Galileo.Models.KindoSinpe.ReqPINSending();
+            var pinData = new ReqPINSending();
 
             try
             {
@@ -232,52 +262,63 @@ namespace Galileo_API.DataBaseTier
 
                 var context = CrearContexto(parametrosSinpe);
 
-                pinData.HostId = context.HostId;
+                var cod_referencia = _mKindo.IsValidTransactionNumber(CodEmpresa, solicitud?.CuentaOrigen!);
+
+                pinData.HostId = context.HostId; 
                 pinData.OperationId = context.OperationId;
                 pinData.ClientIPAddress = context.ClientIPAddress;
                 pinData.CultureCode = context.CultureCode;
                 pinData.UserCode = context.UserCode;
-                pinData.PINData = new Galileo.Models.KindoSinpe.PINTransfer()
+                pinData.CoreIntegrationPoint = 1;
+                pinData.CostCenter = 1;
+                pinData.Transfer = new Galileo.Models.KindoSinpe.PINTransfer()
                 {
-                    ChannelReference = solicitud!.NDocumento!.PadLeft(10, '0'),
+                    ChannelReference = cod_referencia,
                     Amount = solicitud.Monto,
-                    TransactionDate = DateTime.Now,
-                    Origin = new Galileo.Models.KindoSinpe.OriginCustomer()
+                    CurrencyCode = _mKindo.GetCurrencyCodeDes(solicitud.Divisa!),
+                    Description = solicitud.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4,
+                    OriginEntityIBAN = solicitud.CuentaOrigen!,
+                    OriginCustomer = new Galileo.Models.KindoSinpe.OriginCustomer()
                     {
-                        Id = solicitud.CedulaOrigen!.Replace("-", ""),
+                        Id = _mKindo.MaskSinpeId(Convert.ToInt32(_mKindo.Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo), solicitud.CedulaOrigen!.Replace("-", ""))  ,
+                        IdType = Convert.ToInt32(_mKindo.Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo),
                         Name = solicitud.NombreOrigen!,
-                        IBAN1 = solicitud.CuentaOrigen!,
-                        CreditIBAN = false,
+                        IBAN = solicitud.CuentaOrigen!,
+                        DebitIBAN = _mKindo.fxSinpe_Valida_MovimientosPermitidos(CodEmpresa, solicitud.CuentaOrigen!),
                         Email = solicitud.CorreoNotifica!.Trim()
                     },
-                    Destination = new Galileo.Models.KindoSinpe.DestinationCustomer()
+                    DestinationCustomer = new Galileo.Models.KindoSinpe.DestinationCustomer()
                     {
-                        Id = solicitud.Codigo!.Replace("-", ""),
+                        Id = _mKindo.MaskSinpeId(Convert.ToInt32(_mKindo.Inferir(solicitud.Codigo!.Replace("-", "")).Codigo), solicitud.Codigo!.Replace("-", "")) ,
+                        IdType = Convert.ToInt32(_mKindo.Inferir(solicitud.Codigo!.Replace("-", "")).Codigo),
                         Name = solicitud.Beneficiario!,
-                        IBAN = solicitud.Cuenta!
+                        IBAN = solicitud.Cuenta!,
+                        Email = solicitud.CorreoNotifica
                     },
-                    CustomFields = new List<Galileo.Models.KindoSinpe.CustomField>()
+
+                };
+                pinData.CustomData = new List<Galileo.Models.KindoSinpe.CustomField>()
                     {
                         new Galileo.Models.KindoSinpe.CustomField()
                         {
-                            Name = "Email",
-                            Value = solicitud.CorreoNotifica!.Trim()
-                        },
-                        new Galileo.Models.KindoSinpe.CustomField()
-                        {
-                            Name = "Servicio",
-                            Value = "CCD"
+                            Name = "Galileo",
+                            Value = "CSG"
                         }
-                    }
-                };
+                    };
 
                 var response = _sinpePIN.SendPIN(parametrosSinpe.Result?.UrlCGP_PIN!, pinData);
                 if (response.IsSuccessful)
                 {
+                    var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, response.Errors[0].Code).Result!;
+                    var description = rechazo;
+                    fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, null, Nsolicitud.ToString());
+
                     var updateNSolicitud = _mKindo.RegistraDibitoCuenta(CodEmpresa, Nsolicitud, response).Result;
 
                     if (updateNSolicitud)
                     {
+
+                        _mKindo.RegistraMovTransito(CodEmpresa, cod_referencia, context.UserCode, response, solicitud);
                         return new ErrorDto<RespuestaRegistro>
                         {
                             Code = 0,
@@ -301,10 +342,14 @@ namespace Galileo_API.DataBaseTier
                                 CodigoReferencia = ""
                             }
                         };
-                    } 
+                    }
                 }
                 else
                 {
+                    var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, response.Errors[0].Code).Result!;
+                    var description = rechazo;
+                    fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, null, Nsolicitud.ToString());
+
                     return new ErrorDto<RespuestaRegistro>
                     {
                         Code = -1,
@@ -327,6 +372,23 @@ namespace Galileo_API.DataBaseTier
 
             return resp;
         }
+
+        private ErrorDto fxGuardaID_RespuestaSinpe(int CodEmpresa, int codigo,string referenciaSinpe,string nsolicitud)
+        {
+            const string query = @"UPDATE TES_TRANSACCIONES SET 
+                            ID_RECHAZO = @codigo, REFERENCIA_SINPE = @referenciaSinpe 
+                                WHERE NSOLICITUD = @nsolicitud";
+
+            var parametros = new
+            {
+                codigo = codigo,
+                referenciaSinpe = referenciaSinpe,
+                nsolicitud = nsolicitud
+            };
+
+            return DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, parametros);
+        }
+
 
 
         #endregion

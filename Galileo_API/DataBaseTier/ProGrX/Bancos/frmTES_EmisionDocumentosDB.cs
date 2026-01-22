@@ -241,18 +241,19 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
 
                 // Sonar: evitar TOP interpolado
                 var query = @"
-Select TOP (@top) *,
+Select TOP (@top) t.*,
+        (select descripcion from SINPE_MOTIVOS where cod_motivo = t.id_rechazo ) as estadoSinpe,
        dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass
-From Tes_Transacciones
-Where Estado='P' And Tipo = @tipoDoc
-  And Id_Banco=@banco And Autoriza = 'S' and fecha_hold is null";
+From Tes_Transacciones t
+Where t.Estado='P' And t.Tipo = @tipoDoc
+  And t.Id_Banco=@banco And t.Autoriza = 'S' and t.fecha_hold is null";
 
                 if (string.Equals(filtro.generarPor, nSolicitudes, StringComparison.OrdinalIgnoreCase))
-                    query += " And NSolicitud Between @minimo And @maximo";
+                    query += " And t.NSolicitud Between @minimo And @maximo";
                 else if (string.Equals(filtro.generarPor, nFechas, StringComparison.OrdinalIgnoreCase))
-                    query += " And Fecha_Solicitud Between @fechaInicio And @fechaCorte";
+                    query += " And t.Fecha_Solicitud Between @fechaInicio And @fechaCorte";
 
-                query += " Order by NSolicitud";
+                query += " Order by t.NSolicitud";
 
                 var result = conn.Query<TesSolicitudesGenData>(
                         query,
@@ -1417,10 +1418,7 @@ where nsolicitud in ";
 
                 foreach (var trx in transaccionesList)
                 {
-                    if (!TryValidarSinpe(servicio, codEmpresa, filtro.usuario, trx, results))
-                        continue;
-
-                    EmitirSinpe(servicio, codEmpresa, filtro.usuario, trx);
+                    results.Add(EmitirSinpe(servicio, codEmpresa, filtro.usuario, trx));
                 }
 
                 return OkJson(new { results });
@@ -1448,7 +1446,7 @@ where nsolicitud in ";
             return valida.Code != -1;
         }
 
-        private static void EmitirSinpe(IWfcSinpe servicio, int codEmpresa, string usuario, TesTransaccionDto trx)
+        private ErrorDto EmitirSinpe(IWfcSinpe servicio, int codEmpresa, string usuario, TesTransaccionDto trx)
         {
             var now = DateTime.Now;
 
@@ -1457,19 +1455,33 @@ where nsolicitud in ";
                 switch (trx.tipo_girosinpe)
                 {
                     case "CD":
-                        servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                        break;
+                       return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
                     case "TR":
-                        servicio.fxTesEmisionSinpeTiempoReal(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                        break;
+                        return servicio.fxTesEmisionSinpeTiempoReal(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
                     default:
                         break;
                 }
-
-                return;
+            }
+            else
+            {
+                switch (trx.tipo_girosinpe)
+                {
+                    case "CD":
+                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
+                       
+                    case "TR":
+                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
+                        //servicio.fxTesEmisionSinpeTiempoReal(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
+                    default:
+                        break;
+                }
             }
 
-            servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
+            return new ErrorDto
+            {
+                Code = -1,
+                Description = "Emision No Valida."
+            };
         }
 
         #endregion

@@ -295,7 +295,7 @@ namespace Galileo.DataBaseTier
         public ErrorDto<string> fxTesTipoDocExtraeDato(int CodEmpresa, int Banco, string TipoDoc, string Campo)
         {
             string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var resp = new ErrorDto<string> { Code = 0, Description = "", Result = "" };
+            var resp = new ErrorDto<string> { Code = 0, Description = TipoDoc, Result = "" };
 
             try
             {

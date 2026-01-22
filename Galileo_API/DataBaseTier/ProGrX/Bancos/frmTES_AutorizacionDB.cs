@@ -2,7 +2,9 @@ using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
+using Galileo.Models.Security;
 using Galileo.Models.TES;
+using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.Data.SqlClient;
 using Microsoft.ReportingServices.Diagnostics.Internal;
 using Newtonsoft.Json;
@@ -12,7 +14,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesAutorizacionDb
     {
-
+        private readonly VerificadorCoreFactory _factory;
         private readonly MTesoreria _mTesoreria;
         private readonly PortalDB _portalDB;
 
@@ -39,6 +41,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             _mTesoreria = new MTesoreria(config);
             _portalDB = new PortalDB(config);
+            _factory = new VerificadorCoreFactory(config);
         }
 
         /// <summary>
@@ -80,6 +83,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 response.Result.solicitudes = conn
                     .Query<Galileo.Models.TES.TesSolicitudesData>(query, sqlParams)
                     .ToList();
+
+                if(filtro.tipo_doc == "TS")
+                {
+                    if(filtro.activaCuentaSinpe)
+                    {
+                        foreach (var solicitud in response.Result.solicitudes)
+                        {
+                            var valida = _factory.CrearServicio(CodEmpresa, filtro.usuario)
+                               .fxValidacionSinpe(CodEmpresa, solicitud.nsolicitud.ToString(), filtro.usuario);
+                            if(valida.Code != 0 && valida.Code != 1)
+                            {
+                                solicitud.bloqueo = true;
+                                solicitud.detalle = valida.Description;
+                            }                     
+                        }
+                    }
+                    
+                }
 
                 return response;
             }
