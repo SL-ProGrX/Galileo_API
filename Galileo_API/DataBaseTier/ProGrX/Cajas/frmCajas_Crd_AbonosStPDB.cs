@@ -562,34 +562,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             try
             {
-                // Sanitización defensiva de procesos y rangos
                 long lngFecha = req.FecUltMovR;
                 if (lngFecha < req.PriDeduc) lngFecha = req.PriDeduc;
 
-                // Si el proceso viene inválido, corta temprano
                 if (!EsProcesoValido(req.PriDeduc) || !EsProcesoValido(lngFecha))
                     return DbHelper.CreateErrorResponse<RecalculaCuotaResponse>("Proceso inválido (se espera yyyymm).");
 
-                // Límite defensivo absoluto (DoS)
                 const int MAX_ITER_FECHAS = 1500;
 
-                long procesosTmp = req.PriDeduc;
+                // Calcula “pasos” sin loop
+                int pasos = DiffMeses(req.PriDeduc, lngFecha);
+                pasos = Clamp(pasos, 0, MAX_ITER_FECHAS);
 
-                // Bound derivado y clamped: Sonar suele “entender” esto mejor
-                // Diferencia aproximada en meses entre yyyymm (sin loop)
-                int diffMeses = DiffMeses(req.PriDeduc, lngFecha);
-                int maxSteps = Clamp(diffMeses, 0, MAX_ITER_FECHAS);
-
-                int pasos = 0;
-
-                while (procesosTmp < lngFecha && pasos < maxSteps)
-                {
-                    procesosTmp = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, procesosTmp);
-                    pasos++;
-                }
-
-                // Si no alcanzó lngFecha dentro del bound permitido, protege contra datos raros
-                if (procesosTmp < lngFecha)
+                // Si excede límite, se considera inválido
+                if (DiffMeses(req.PriDeduc, lngFecha) > MAX_ITER_FECHAS)
                     return DbHelper.CreateErrorResponse<RecalculaCuotaResponse>(
                         "Rango de fechas inválido o excede el límite de iteraciones permitido.");
 
