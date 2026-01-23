@@ -5,6 +5,7 @@ using Galileo.Models.ERROR;
 using System.Data;
 using System.Text;
 using System.Data.Common;
+using Galileo.Models.ProGrX.Cobros;
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoAdvertenciasControlDB
