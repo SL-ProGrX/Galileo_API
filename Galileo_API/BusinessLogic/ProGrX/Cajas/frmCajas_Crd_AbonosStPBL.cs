@@ -118,8 +118,8 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         private static SimularCuotasRequest CreateSafeSimularCuotasRequest(SimularCuotasRequest req)
         {
             // Clamp de los campos que típicamente definen tamaño de loops/listas
-            var safeCantidadCuotas = Clamp(req.CantidadCuotas, 1, MaxCantidadCuotas);
-            var safePlazo = Clamp(req.Plazo, 1, MaxPlazo);
+            var safeCantidadCuotas = Clamp((int)req.CantidadCuotas!, 1, MaxCantidadCuotas);
+            var safePlazo = Clamp((int)req.Plazo!, 1, MaxPlazo);
 
             // Si hay relación lógica, normalízala aquí (opcional, pero coherente)
             if (safeCantidadCuotas > safePlazo)

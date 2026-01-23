@@ -225,7 +225,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
     {
         public int id_moro { get; set; }                 // rs!id_moro
         public int id_solicitud { get; set; }            // rs!Id_Solicitud
-        public string fechap { get; set; }               // rs!fechap (formato "####-##")
+        public string? fechap { get; set; }               // rs!fechap (formato "####-##")
         public decimal intc { get; set; }                // rs!IntC
         public decimal intm { get; set; }                // rs!IntM
         public decimal amortiza { get; set; }            // rs!Amortiza
