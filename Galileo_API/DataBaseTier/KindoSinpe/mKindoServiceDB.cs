@@ -1822,7 +1822,6 @@ FROM dbo.fxSinpe_ValidaCredito(
 
         private void IngresaMovTransito(int CodEmpresa, string cod_referencia,string usuario, ResPINSending resPIN, TesTransaccion solicitud)
         {
-            var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             string Query = @"INSERT INTO SINPE_MOV_TRANSITO
                             (
                                 COD_TRANSITO,
@@ -1904,7 +1903,6 @@ FROM dbo.fxSinpe_ValidaCredito(
 
         private void UpdateMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResPINSending resPIN, TesTransaccion solicitud)
         {
-            var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             string Query = @"UPDATE SINPE_MOV_TRANSITO
                                 SET
                                     CEDULA               = @Cedula,
@@ -1961,7 +1959,6 @@ FROM dbo.fxSinpe_ValidaCredito(
 
         private long ConsecutivoMovTransito(int CodEmpresa)
         {
-            var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             string Query = @"SELECT ISNULL(MAX(COD_TRANSITO), 0) + 1 AS SiguienteConsecutivo
                                 FROM SINPE_MOV_TRANSITO";
 

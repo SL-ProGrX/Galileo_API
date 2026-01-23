@@ -15,6 +15,11 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
     {
         private readonly FrmCajasCrdAbonosStpBL _bl;
 
+        // Límites defensivos (ajústalos según reglas de negocio)
+        private const int MaxCantidadCuotas = 600;     // evita listas gigantes por input del usuario
+        private const int MaxPlazo = 600;              // idem (si el BL usa Plazo para generar)
+        private const long MaxBodyBytes = 1_000_000;   // 1MB de JSON body (ajusta)
+
         public FrmCajasCrdAbonosStPController(IConfiguration config)
         {
             _bl = new FrmCajasCrdAbonosStpBL(config);
@@ -76,17 +81,49 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         /// Simula cuotas/proyección (equivalente a txtCuotas_Change VB6), recomendado como POST por el tamaño del request.
         /// </summary>
         [HttpPost("CajasCrdAbonosSt_SimularCuotas")]
-        public ErrorDto<SimularCuotasResponse> CajasCrdAbonosSt_SimularCuotas(int CodEmpresa,SimularCuotasRequest req)
+        [RequestSizeLimit(MaxBodyBytes)]
+        public ErrorDto<SimularCuotasResponse> CajasCrdAbonosSt_SimularCuotas(int CodEmpresa, [FromBody] SimularCuotasRequest req)
         {
-            return _bl.CajasCrdAbonosSt_SimularCuotas(CodEmpresa, req);
+            if (req is null)
+                return DbHelper.CreateErrorResponse<SimularCuotasResponse>("Request inválido.");
+
+            // Validaciones anti-DoS: evitan alocación de memoria por tamaños controlados por el usuario
+            if (req.CantidadCuotas <= 0 || req.CantidadCuotas > MaxCantidadCuotas)
+                return DbHelper.CreateErrorResponse<SimularCuotasResponse>(
+                    $"CantidadCuotas fuera de rango (1..{MaxCantidadCuotas}).");
+
+            if (req.Plazo <= 0 || req.Plazo > MaxPlazo)
+                return DbHelper.CreateErrorResponse<SimularCuotasResponse>(
+                    $"Plazo fuera de rango (1..{MaxPlazo}).");
+
+            // Validaciones básicas de sanidad (opcional, pero ayuda a evitar casos absurdos)
+            if (req.OperacionId <= 0)
+                return DbHelper.CreateErrorResponse<SimularCuotasResponse>("OperacionId inválido.");
+
+            if (req.Interes < 0 || req.Interes > 200) // ajusta si aplica
+                return DbHelper.CreateErrorResponse<SimularCuotasResponse>("Interes fuera de rango.");
+
+            var result = _bl.CajasCrdAbonosSt_SimularCuotas(CodEmpresa, req);
+
+            // Capa extra defensiva por si el BL genera más de lo permitido
+            if (result?.Result?.Proyeccion != null && result.Result.Proyeccion.Count > MaxCantidadCuotas)
+            {
+                result.Result.Proyeccion = result.Result.Proyeccion.Take(MaxCantidadCuotas).ToList();
+            }
+
+            return result;
         }
 
         /// <summary>
         /// Recalcula cuota (equivalente a txtCompromiso_Change cuando chkRecalculaCuota=True).
         /// </summary>
         [HttpPost("CajasCrdAbonosSt_RecalcularCuota")]
-        public ErrorDto<RecalculaCuotaResponse> CajasCrdAbonosSt_RecalcularCuota( int CodEmpresa,  RecalculaCuotaRequest req)
+        [RequestSizeLimit(MaxBodyBytes)]
+        public ErrorDto<RecalculaCuotaResponse> CajasCrdAbonosSt_RecalcularCuota(int CodEmpresa, [FromBody] RecalculaCuotaRequest req)
         {
+            if (req is null)
+                return DbHelper.CreateErrorResponse<RecalculaCuotaResponse>("Request inválido.");
+
             return _bl.CajasCrdAbonosSt_RecalcularCuota(CodEmpresa, req);
         }
 
@@ -95,8 +132,12 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         #region Aplicar abono
 
         [HttpPost("CajasCrdAbonosSt_Abono_Aplica")]
-        public ErrorDto CajasCrdAbonosSt_Abono_Aplica(int CodEmpresa,CajasCrdAbonoRequest request)
+        [RequestSizeLimit(MaxBodyBytes)]
+        public ErrorDto CajasCrdAbonosSt_Abono_Aplica(int CodEmpresa, [FromBody] CajasCrdAbonoRequest request)
         {
+            if (request is null)
+                return DbHelper.ErrorResponse("Request inválido.");
+
             return _bl.CajasCrdAbonosSt_Abono_Aplica(CodEmpresa, request);
         }
 
@@ -105,14 +146,19 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         #region Bitácora + Documento (si se usan desde UI)
 
         [HttpPost("Bitacora")]
-        public ErrorDto Bitacora(int CodEmpresa, string usuario,string detalle)
+        [RequestSizeLimit(MaxBodyBytes)]
+        public ErrorDto Bitacora(int CodEmpresa, string usuario, string detalle)
         {
             return _bl.Bitacora(CodEmpresa, usuario, detalle);
         }
 
         [HttpPost("sbDocumentoAbono")]
-        public ErrorDto sbDocumentoAbono( int CodEmpresa, DocumentoAbonoRequest req)
+        [RequestSizeLimit(MaxBodyBytes)]
+        public ErrorDto sbDocumentoAbono(int CodEmpresa, [FromBody] DocumentoAbonoRequest req)
         {
+            if (req is null)
+                return DbHelper.ErrorResponse("Request inválido.");
+
             return _bl.sbDocumentoAbono(CodEmpresa, req.Solicitud, req.Variables);
         }
 
@@ -135,6 +181,10 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         [HttpGet("fxCalcula_Cuota")]
         public ErrorDto<decimal> fxCalcula_Cuota(int CodEmpresa, decimal monto, int plazo, object interes, string? frecuencia = "M")
         {
+            // También conviene capar "plazo" aquí si es user input
+            if (plazo <= 0 || plazo > MaxPlazo)
+                return DbHelper.CreateErrorResponse<decimal>($"Plazo fuera de rango (1..{MaxPlazo}).");
+
             return _bl.fxCalcula_Cuota(CodEmpresa, monto, plazo, interes, frecuencia);
         }
 
