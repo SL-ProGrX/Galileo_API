@@ -8,12 +8,10 @@ namespace Galileo_API.Controllers.KindoSinpe
     [ApiController]
     public class MKindoServiceController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly MKindoServiceBL _BL;
         public MKindoServiceController(IConfiguration config)
         {
-            _config = config;
-            _BL = new MKindoServiceBL(_config);
+            _BL = new MKindoServiceBL(config);
         }
 
         #region Métodos de integración de uso general
@@ -79,38 +77,38 @@ namespace Galileo_API.Controllers.KindoSinpe
         [HttpPost("AplicaDebitosCongelados/{CodEmpresa}")]
         public CoreInterno.CL_RespuestaTransaccion[] AplicaDebitosCongelados(int CodEmpresa, [FromBody] ValidaTransaccionRequest request)
         {
-            return _BL.AplicaDebitosCongelados(CodEmpresa, request.Rastro, request.Transacciones);
+            return _BL.AplicaDebitosCongelados(CodEmpresa, request.Rastro!, request.Transacciones!);
         }
 
         [HttpPost("AplicaCreditosCongelados/{CodEmpresa}")]
         public CoreInterno.CL_RespuestaTransaccion[] AplicaCreditosCongelados(int CodEmpresa, [FromBody] ValidaTransaccionRequest request)
         {
-            return _BL.AplicaCreditosCongelados(CodEmpresa, request.Rastro, request.Transacciones);
+            return _BL.AplicaCreditosCongelados(CodEmpresa, request.Rastro!, request.Transacciones!);
         }
 
 
         [HttpPost("ConfirmaDebitosCongelados/{CodEmpresa}")]
         public CoreInterno.CL_ResultadoActualizacion[] ConfirmaDebitosCongelados(int CodEmpresa, [FromBody] ValidaActualizaTransaccionRequest request)
         {
-            return _BL.ConfirmaDebitosCongelados(CodEmpresa, request.Rastro, request.Transacciones);
+            return _BL.ConfirmaDebitosCongelados(CodEmpresa, request.Rastro!, request.Transacciones!);
         }
 
         [HttpPost("ConfirmaCreditosCongelados/{CodEmpresa}")]
         public CoreInterno.CL_ResultadoActualizacion[] ConfirmaCreditosCongelados(int CodEmpresa, [FromBody] ValidaActualizaTransaccionRequest request)
         {
-            return _BL.ConfirmaCreditosCongelados(CodEmpresa, request.Rastro, request.Transacciones);
+            return _BL.ConfirmaCreditosCongelados(CodEmpresa, request.Rastro!, request.Transacciones!);
         }
 
         [HttpPost("ReversaCreditos/{CodEmpresa}")]
         public CoreInterno.CL_ResultadoActualizacion[] ReversaCreditos(int CodEmpresa, ValidaTransaccionRechazoRequest request)
         {
-            return _BL.ReversaCreditos(CodEmpresa, request.Rastro, request.Transacciones);
+            return _BL.ReversaCreditos(CodEmpresa, request.Rastro!, request.Transacciones!);
         }
 
         [HttpPost("ReversaDebitos/{CodEmpresa}")]
         public CoreInterno.CL_ResultadoActualizacion[] ReversaDebitos(int CodEmpresa, ValidaTransaccionRechazoRequest request)
         {
-            return _BL.ReversaDebitos(CodEmpresa, request.Rastro, request.Transacciones);
+            return _BL.ReversaDebitos(CodEmpresa, request.Rastro!, request.Transacciones!);
         }
 
         [HttpPost("ObtieneEstadoTransaccion/{CodEmpresa}")]

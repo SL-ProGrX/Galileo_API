@@ -85,7 +85,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         public ErrorDto<SimularCuotasResponse> CajasCrdAbonosSt_SimularCuotas(int CodEmpresa, [FromBody] SimularCuotasRequest req)
         {
             if (req is null)
-                return DbHelper.CreateErrorResponse<SimularCuotasResponse>("Request inválido.");
+                return DbHelper.CreateErrorResponse<SimularCuotasResponse>("Request SimularCuotas inválido.");
 
             // Validaciones anti-DoS: evitan alocación de memoria por tamaños controlados por el usuario
             if (req.CantidadCuotas <= 0 || req.CantidadCuotas > MaxCantidadCuotas)
@@ -122,7 +122,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         public ErrorDto<RecalculaCuotaResponse> CajasCrdAbonosSt_RecalcularCuota(int CodEmpresa, [FromBody] RecalculaCuotaRequest req)
         {
             if (req is null)
-                return DbHelper.CreateErrorResponse<RecalculaCuotaResponse>("Request inválido.");
+                return DbHelper.CreateErrorResponse<RecalculaCuotaResponse>("Request RecalcularCuota inválido.");
 
             return _bl.CajasCrdAbonosSt_RecalcularCuota(CodEmpresa, req);
         }
@@ -136,7 +136,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         public ErrorDto CajasCrdAbonosSt_Abono_Aplica(int CodEmpresa, [FromBody] CajasCrdAbonoRequest request)
         {
             if (request is null)
-                return DbHelper.ErrorResponse("Request inválido.");
+                return DbHelper.ErrorResponse("Request Abono_Aplica inválido.");
 
             return _bl.CajasCrdAbonosSt_Abono_Aplica(CodEmpresa, request);
         }
@@ -157,7 +157,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         public ErrorDto sbDocumentoAbono(int CodEmpresa, [FromBody] DocumentoAbonoRequest req)
         {
             if (req is null)
-                return DbHelper.ErrorResponse("Request inválido.");
+                return DbHelper.ErrorResponse("Request  DocumentoAbono inválido.");
 
             return _bl.sbDocumentoAbono(CodEmpresa, req.Solicitud, req.Variables);
         }

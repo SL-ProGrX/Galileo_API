@@ -1181,7 +1181,7 @@ FROM dbo.fxSinpe_ValidaCredito(
         {
 
             string fecha = DateTime.Now.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
-            string canal = ObtenerCanal(iban);
+            string? canal = ObtenerCanal(iban);
             string consecutivo = ConsecutivoTransSinpe(CodCliente);
 
             return fecha + canal + consecutivo;
@@ -1704,7 +1704,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                 {
                     refSinpe = resPIN.PINSendingResult?.SINPEReference ?? string.Empty,
                     idRechazo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
-                    estadoSinpe = resPIN.PINSendingResult.State,
+                    estadoSinpe = resPIN.PINSendingResult!.State,
                     solicitud = Nsolicitud
                 }) > 0;
             }
@@ -1943,10 +1943,10 @@ FROM dbo.fxSinpe_ValidaCredito(
                 TransacDesc = solicitud.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4,
                 RegistroFecha = DateTime.Now,
                 RegistroUsuario = usuario,
-                ComprobanteInterno = resPIN.PINSendingResult.SINPEReference,
-                RechazoCodigo = resPIN.Errors[0].Code,
-                RechazoDesc = resPIN!.Errors[0].Message,
-                Estado = resPIN.PINSendingResult.State,
+                ComprobanteInterno = resPIN.PINSendingResult?.SINPEReference ?? string.Empty,
+                RechazoCodigo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
+                RechazoDesc = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Message : string.Empty,
+                Estado = resPIN.PINSendingResult!.State,
                 FechaActualiza = DateTime.Now,
                 Servicio = Convert.ToInt32(Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo)
             };

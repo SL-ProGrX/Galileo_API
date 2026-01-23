@@ -57,7 +57,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
         public ErrorDto<SimularCuotasResponse> CajasCrdAbonosSt_SimularCuotas(int codEmpresa, SimularCuotasRequest req)
         {
             if (req is null)
-                return DbHelper.CreateErrorResponse<SimularCuotasResponse>("Request inválido.");
+                return DbHelper.CreateErrorResponse<SimularCuotasResponse>("Request SimularCuotas inválido.");
 
             // Sanitizar aquí (misma capa) para que Sonar deje de ver límites de loops “directos” desde user input.
             // Aunque el loop esté en DB, al menos no le mandas valores ilimitados.
@@ -71,7 +71,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cajas
                 result.Result.Proyeccion = result.Result.Proyeccion.Take(MaxCantidadCuotas).ToList();
             }
 
-            return result;
+            return result!;
         }
 
         public ErrorDto<RecalculaCuotaResponse> CajasCrdAbonosSt_RecalcularCuota(int codEmpresa, RecalculaCuotaRequest req)
