@@ -1,4 +1,5 @@
 ﻿using Galileo_API.Controllers.WFCSinpe;
+using System.Reflection;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -20,15 +21,18 @@ namespace Galileo_API.DataBaseTier
                             ?.ServiciosSinpe
                             ?? throw new NotSupportedException(
                                 $"No se encontró configuración para la empresa {CodEmpresa}");
+            var assemblyName = Assembly.GetExecutingAssembly().GetName().Name;
+            string nInstancia = assemblyName + "." + nombreTipo;
 
-            if (string.IsNullOrWhiteSpace(nombreTipo))
+            if (string.IsNullOrWhiteSpace(nInstancia))
                 throw new NotSupportedException($"No se encontró configuración para la empresa {CodEmpresa}");
 
             // Busca el tipo (debe incluir el namespace completo y estar cargado en el assembly actual)
-            var tipo = Type.GetType(nombreTipo);
+            var tipo = Type.GetType(nInstancia);
 
             if (tipo == null)
                 throw new InvalidOperationException($"No se encontró el tipo '{nombreTipo}' en el contexto actual.");
+
 
             // Crea la instancia pasando _config al constructor
             var instancia = Activator.CreateInstance(tipo, _config);

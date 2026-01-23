@@ -42,6 +42,7 @@ namespace Galileo.Models.TES
         public DateTime? firmas_autoriza_fecha { get; set; }
         public string? firmas { get; set; } = string.Empty;
         public bool? pass { get; set; }
+        public string? estadoSinpe { get; set; }
     }
 
     public class TesBancoDocsData

@@ -53,7 +53,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 
             if (comprobante.Result != null && comprobante.Result.Trim() == "04")
             {
-                comprobante.Result = "TE"; // Transferencia
+                comprobante.Result = comprobante.Description; // Transferencia
             }
             else
             {
@@ -89,7 +89,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 
         public ErrorDto<object> TES_EmisionDocumento_Generar(int CodEmpresa, string filtros)
         {
-            return new ErrorDto<object>() { Result = new object() };
+            return _db.TES_EmisionDocumento_Generar(CodEmpresa, filtros);
         }
     }
 }
