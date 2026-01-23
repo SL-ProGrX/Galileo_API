@@ -12,15 +12,14 @@ namespace PgxAPI.Controllers.ProGrX.Cobros
 
     public class FrmCoAdvertenciasControlController : ControllerBase
     {
-        private readonly IConfiguration? _config;
+        
         private readonly FrmCoAdvertenciasControlBL _bl;
 
         public FrmCoAdvertenciasControlController(IConfiguration config)
-        {
-            _config = config;
-            _bl = new FrmCoAdvertenciasControlBL(_config);
-        }
+            => _bl = new FrmCoAdvertenciasControlBL(config);
 
+
+       
         [Authorize]
         [HttpGet("TiposAdvertiencia_Consultar")]
         public ErrorDto<List<DropDownListaGenericaModel>> TiposAdvertiencia_Consultar(int CodEmpresa)

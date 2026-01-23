@@ -6,6 +6,8 @@ using System.Data;
 using System.Text;
 using System.Data.Common;
 using Galileo.Models.ProGrX.Cobros;
+using System.Diagnostics;
+
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoAdvertenciasControlDB
@@ -145,6 +147,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             }
             catch (Exception ex)
             {
+                Trace.TraceError("Error no controlado al buscar control de advertencias. Detalles: {0}", ex.ToString());
+
                 return DbHelper.CreateErrorResponse<CoAdvertenciasControlLista>(
                     $"Error al buscar control de advertencias: {ex.Message}"
                 );

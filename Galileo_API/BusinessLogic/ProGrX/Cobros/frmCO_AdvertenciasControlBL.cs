@@ -8,16 +8,13 @@ namespace PgxAPI.BusinessLogic.ProGrX.Cobros
 {
     public class FrmCoAdvertenciasControlBL
     {
-
-        private readonly IConfiguration? _config;
+         
         private readonly FrmCoAdvertenciasControlDB _db;
 
-        public FrmCoAdvertenciasControlBL(IConfiguration config)
-        {
-            _config = config;
-            _db = new FrmCoAdvertenciasControlDB(_config);
-        }
+        public FrmCoAdvertenciasControlBL(IConfiguration config) => _db = new FrmCoAdvertenciasControlDB(config);
 
+
+       
         public ErrorDto<List<DropDownListaGenericaModel>> TiposAdvertiencia_Consultar(int CodEmpresa)
         {         
             return _db.TiposAdvertiencia_Consultar(CodEmpresa);
