@@ -4,7 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using System.Data;
 using System.Text;
-
+using System.Data.Common;
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoAdvertenciasControlDB
@@ -45,7 +45,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
 
             }
-            catch (Exception ex)
+            catch (DbException ex)
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
             }
@@ -67,7 +67,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
 
-
         public ErrorDto<CoAdvertenciasControlLista> CoAdvertenciasControlBuscar(
             int CodEmpresa,
             CoAdvertenciasControlFiltros filtros,
@@ -77,19 +76,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             {
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-                // 1) Normalizar y validar entradas
-                NormalizarEntradas(filtros, out var sortField, out var sortDir, out var offset, out var fetch,
-                                   out var fechaInicio, out var fechaCorte);
+                NormalizarEntradas(
+                    filtros,
+                    out var sortField,
+                    out var sortDir,
+                    out var offset,
+                    out var fetch,
+                    out var fechaInicio,
+                    out var fechaCorte);
 
-                // 2) Construir WHERE y parámetros
+
                 var p = new DynamicParameters();
                 var whereSql = ConstruirWhere(filtros, fechaInicio, fechaCorte, p);
 
-                // 3) Armar SELECT/COUNT base
+
                 var fromSql = ConstruirFrom(whereSql);
                 var selectSql = ConstruirSelect(fromSql);
 
-                // 4) Orden y paginación
+
+
                 var sqlDatos = new StringBuilder()
                     .Append(selectSql)
                     .Append(FormarOrderBy(sortField, sortDir));
@@ -101,14 +106,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     sqlDatos.Append(" OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY");
                 }
 
-                // 5) Ejecutar totales y datos
-                var totalRegistros = conn.ExecuteScalar<int>($"SELECT COUNT(1) {fromSql};", p);
+                var sqlCount = new StringBuilder()
+                    .Append("SELECT COUNT(1) ")
+                    .Append(fromSql);
+
+                if (!string.IsNullOrWhiteSpace(whereSql))
+                    sqlCount.Append(' ').Append(whereSql);
+
+                var totalRegistros = conn.ExecuteScalar<int>(sqlCount.ToString(), p);
 
                 var montoTotal = 0m;
 
                 var lista = conn.Query<CoAdvertenciasControlData>(sqlDatos.ToString(), p).ToList();
 
-                // 6) Respuesta
+
                 return new ErrorDto<CoAdvertenciasControlLista>
                 {
                     Code = 0,
@@ -123,6 +134,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         lista = lista
                     }
                 };
+            }
+            catch (DbException dbEx)
+            {
+
+                return DbHelper.CreateErrorResponse<CoAdvertenciasControlLista>(
+                    $"Error de base de datos al buscar control de advertencias: {dbEx.Message}"
+                );
             }
             catch (Exception ex)
             {
@@ -145,19 +163,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             out DateTime fechaInicio,
             out DateTime fechaCorte)
         {
-            // ORDER BY seguro con lista blanca
+         
             sortField = string.IsNullOrWhiteSpace(filtros.sortField) ? "Linea" : filtros.sortField;
             var allowedSort = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-                {
-                    "Linea", "COD_ADVERTENCIA", "cedula", "nombre", "estado",
-                    "AdvTipo", "FECHA_VENCE", "REGISTRO_FECHA", "REGISTRO_USUARIO",
-                    "RESOLUCION_FECHA", "RESOLUCION_USUARIO"
-                };
+        {
+            "Linea", "COD_ADVERTENCIA", "cedula", "nombre", "estado",
+            "AdvTipo", "FECHA_VENCE", "REGISTRO_FECHA", "REGISTRO_USUARIO",
+            "RESOLUCION_FECHA", "RESOLUCION_USUARIO"
+        };
             if (!allowedSort.Contains(sortField))
                 sortField = "Linea";
 
             sortDir = filtros.sortOrder == 0 ? "DESC" : "ASC";
-
 
             offset = Math.Max(0, filtros.pagina ?? 0);
             fetch = Math.Max(1, filtros.paginacion ?? 50);
@@ -177,7 +194,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             var where = new List<string>();
 
-            // Cedula (siempre en tu implementación original)
             p.Add("@cedula", filtros.cedula ?? string.Empty);
             where.Add("Soc.Cedula LIKE '%' + @cedula + '%'");
 
@@ -205,16 +221,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             where.Add(WherePorEstado(filtros.estado));
 
-            // Texto libre seguro (reemplaza concatenación de filtros.filtro)
             if (!string.IsNullOrWhiteSpace(filtros.filtro))
             {
                 p.Add("@q", filtros.filtro);
                 where.Add(@"(
-                        Adv.COD_ADVERTENCIA LIKE '%' + @q + '%'
-                        OR RTRIM(Adv.CEDULA) LIKE '%' + @q + '%'
-                        OR RTRIM(Soc.NOMBRE) LIKE '%' + @q + '%'
-                        OR Tip.DESCRIPCION   LIKE '%' + @q + '%'
-                            )");
+                Adv.COD_ADVERTENCIA LIKE '%' + @q + '%'
+                OR RTRIM(Adv.CEDULA) LIKE '%' + @q + '%'
+                OR RTRIM(Soc.NOMBRE) LIKE '%' + @q + '%'
+                OR Tip.DESCRIPCION   LIKE '%' + @q + '%'
+                    )");
             }
 
             return ToWhereClause(where);
@@ -236,12 +251,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (arr.Length == 0) return;
 
             p.Add(paramName, arr);
-            where.Add($"{columnName} IN {paramName}");
+            where.Add($"{columnName} IN {paramName}"); 
         }
 
         private static string WherePorEstado(string? estado)
         {
-            // Usamos un switch expression para bajar complejidad
+       
             return estado switch
             {
                 "Activa" => "Adv.Estado = 'A' AND Adv.Registro_Fecha    BETWEEN @fecha_inicio AND @fecha_corte",
@@ -252,41 +267,39 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
         private static string ConstruirFrom(string whereSql) => $@"
-                FROM CBR_ADVERTENCIAS_CASOS Adv
-                INNER JOIN Socios                Soc ON Adv.CEDULA = Soc.Cedula
-                INNER JOIN CBR_ADVERTENCIAS_TIPO Tip ON Adv.COD_ADVERTENCIA = Tip.COD_ADVERTENCIA
-                INNER JOIN AFI_ESTADOS_PERSONA   Est ON Soc.ESTADOACTUAL = Est.COD_ESTADO
-                {whereSql}";
+        FROM CBR_ADVERTENCIAS_CASOS Adv
+        INNER JOIN Socios                Soc ON Adv.CEDULA = Soc.Cedula
+        INNER JOIN CBR_ADVERTENCIAS_TIPO Tip ON Adv.COD_ADVERTENCIA = Tip.COD_ADVERTENCIA
+        INNER JOIN AFI_ESTADOS_PERSONA   Est ON Soc.ESTADOACTUAL = Est.COD_ESTADO
+        {whereSql}";
 
         private static string ConstruirSelect(string fromSql) => $@"
-                SELECT
-                    Adv.Linea,
-                    Adv.COD_ADVERTENCIA,
-                    RTRIM(Adv.CEDULA)           AS cedula,
-                    RTRIM(Soc.NOMBRE)           AS nombre,
-                    CASE 
-                        WHEN Adv.ESTADO = 'A' THEN 'Activa'
-                        WHEN Adv.ESTADO = 'R' THEN 'Resuelta'
-                        WHEN Adv.ESTADO = 'D' THEN 'Descargada'
-                        ELSE 'Activa'
-                    END                          AS estado,
-                    Tip.DESCRIPCION              AS AdvTipo,
-                    Adv.FECHA_VENCE,
-                    Adv.REGISTRO_FECHA,
-                    Adv.REGISTRO_USUARIO,
-                    Adv.RESOLUCION_FECHA,
-                    Adv.RESOLUCION_USUARIO
-                {fromSql}";
+        SELECT
+            Adv.Linea,
+            Adv.COD_ADVERTENCIA,
+            RTRIM(Adv.CEDULA)           AS cedula,
+            RTRIM(Soc.NOMBRE)           AS nombre,
+            CASE 
+                WHEN Adv.ESTADO = 'A' THEN 'Activa'
+                WHEN Adv.ESTADO = 'R' THEN 'Resuelta'
+                WHEN Adv.ESTADO = 'D' THEN 'Descargada'
+                ELSE 'Activa'
+            END                          AS estado,
+            Tip.DESCRIPCION              AS AdvTipo,
+            Adv.FECHA_VENCE,
+            Adv.REGISTRO_FECHA,
+            Adv.REGISTRO_USUARIO,
+            Adv.RESOLUCION_FECHA,
+            Adv.RESOLUCION_USUARIO
+        {fromSql}";
 
         private static string FormarOrderBy(string sortField, string sortDir)
             => $" ORDER BY {sortField} {sortDir}";
-
 
         private static string ToWhereClause(List<string> conditions)
         {
             return conditions.Count == 0 ? string.Empty : "WHERE " + string.Join(" AND ", conditions);
         }
-
 
 
     }
