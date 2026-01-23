@@ -481,16 +481,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         private int CalcularPlazoRestante(int codEmpresa, SimularCuotasRequest req, long fechaProceso)
         {
-            long procesosTmp = (long)req.PriDeduc!;
-            int plazoRst = 0;
+            // Límite defensivo para evitar DoS / datos corruptos.
+            // 2400 = 200 años en meses. Ajusta a tu negocio (por ejemplo 1200 = 100 años).
+            const int MAX_ITER = 2400;
 
-            while (procesosTmp < fechaProceso)
+            long procesosTmp = (long)req.PriDeduc!;
+            int pasos = 0;
+
+            // Si fechaProceso es inválida o está "antes", no iteres.
+            if (fechaProceso <= 0 || procesosTmp <= 0)
+                return 1;
+
+            // Si ya estamos al día o adelante, no hay que avanzar.
+            if (procesosTmp >= fechaProceso)
+                return Math.Max(1, (int)req.Plazo!);
+
+            while (procesosTmp < fechaProceso && pasos < MAX_ITER)
             {
                 procesosTmp = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, procesosTmp);
-                plazoRst++;
+                pasos++;
             }
 
-            return (int)req.Plazo! - plazoRst;
+            // Si no logramos alcanzar fechaProceso dentro del límite,
+            // asumimos que los datos vienen fuera de rango -> devolvemos un mínimo seguro.
+            if (procesosTmp < fechaProceso)
+                return 1;
+
+            // req.Plazo es int no-nullable en tu modelo, no uses !
+            var plazoRst = req.Plazo - pasos;
+            return Math.Max(1, (int)plazoRst!);
         }
 
         private static int CalcularDiasPeriodo(SimularCuotasRequest req, int plazoRst, DateTime baseDate)
