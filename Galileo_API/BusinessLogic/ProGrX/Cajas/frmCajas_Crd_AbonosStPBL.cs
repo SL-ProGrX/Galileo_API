@@ -6,6 +6,7 @@ using Galileo_API.Models.ProGrX.Cajas;
 
 namespace Galileo_API.BusinessLogic.ProGrX.Cajas
 {
+#pragma warning restore S6680
     /// <summary>
     /// BL de frmCajas_Crd_AbonosStP (migración VB6 -> .NET).
     /// Capa delgada: delega en DB para acceso a datos y lógica heredada.

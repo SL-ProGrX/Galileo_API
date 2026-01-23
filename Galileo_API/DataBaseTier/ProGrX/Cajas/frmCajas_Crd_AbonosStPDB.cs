@@ -8,7 +8,7 @@ using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 {
-#pragma warning disable S6680 // Deshabilita regla Sonar S6680 (DoS: limita recursos asignados por input del usuario)
+#pragma warning restore S6680 // Deshabilita regla Sonar S6680 (DoS: limita recursos asignados por input del usuario)
     /// <summary>
     /// Migración VB6: frmCajas_Crd_AbonosStP -> Backend .NET (Dapper)
     /// Nota: Este archivo intenta ser "drop-in" con el resto del proyecto (DbHelper, modelos y helpers existentes).
