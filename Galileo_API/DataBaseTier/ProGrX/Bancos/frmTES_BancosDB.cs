@@ -27,7 +27,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             DBBitacora = new MSecurityMainDb(config);
             mCntLink = new MCntLinkDB(config);
             _portalDB = new PortalDB(config);
-            dirRDLC = config.GetSection("AppSettings").GetSection("RutaRDLC").Value!.ToString();
+            dirRDLC = "C:\\FileServer";
         }
 
         public ErrorDto Bitacora(BitacoraInsertarDto data)
@@ -55,7 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     , ISNULL(Ud.COD_UNIDAD,'') AS 'UNIDAD', ISNULL(Ud.DESCRIPCION,'') AS 'UNIDAD_DESC'
                     , ISNULL(Ccr.COD_CENTRO_COSTO,'') AS 'CENTRO', ISNULL(Ccr.DESCRIPCION,'') AS 'CENTRO_DESC'
                     , ISNULL(Cct.COD_CENTRO_COSTO,'') AS 'CENTRO_COM', ISNULL(Cct.DESCRIPCION,'') AS 'CENTRO_COM_DESC'
-                    , ISNULL(Tc.COD_CONCEPTO,'') AS 'CONCEPTO', ISNULL(Tc.DESCRIPCION,'') AS 'CONCEPTO_DESC'
+                    , ISNULL(Tc.COD_CONCEPTO,'') AS 'CONCEPTO', ISNULL(Tc.DESCRIPCION,'') AS 'CONCEPTO_DESC', TS_APLICA
                      from Tes_Bancos B left join TES_BANCOS_GRUPOS G on B.cod_Grupo = G.cod_Grupo
                      left join CntX_Divisas Dv on B.cod_divisa = Dv.Cod_Divisa and Dv.cod_Contabilidad = @contabilidad
                      left join vCNTX_CUENTAS_LOCAL Cb on B.ctaConta = Cb.Cod_Cuenta
@@ -416,13 +416,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 banco = param.id_banco,
                 ilocalizable = param.ilocalizable == true ? 1 : 0,
                 int_grupos_asociados = param.int_grupos_asociados == true ? 1 : 0,
-                int_requiere_cuenta_destino = param.int_requiere_cuenta_destino == true ? 1 : 0
+                int_requiere_cuenta_destino = param.int_requiere_cuenta_destino == true ? 1 : 0,
+                ts_aplica = param.ts_aplica == true ? 1 : 0
             };
         }
 
         private static int UpdateBanco(SqlConnection conn, int idBanco, object sqlParams)
         {
-            string SqlUpdateBanco =  @"update Tes_Bancos set Descripcion = @nombre, Puente = @cuentaBancariaPuente
+            string SqlUpdateBanco = @"update Tes_Bancos set Descripcion = @nombre, Puente = @cuentaBancariaPuente
                         ,estado = @estado, Utiliza_Plan = @utilizaPlan, formato_transferencia = @formato
                         ,formato_transferencias_N2 = @formatoN2, cta = @cuentaBancaria, CtaConta = @cuentaContable
                         ,Desc_Corta = @descCorta, cta_regional = @regional, monitoreo = @monitoreo, cod_grupo = @grupo
@@ -433,7 +434,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         ,cod_divisa = @divisa, UTILIZA_AUTOGESTION = @autoGestion, CONCILIA_AR_COMISION = @con_ComisionSINPEMnt
                         , CONCILIA_AR_COMISION_CTA = @con_ComisionSINPECta, CONCILIA_AR_UNIDAD = @con_Unidad
                         , CONCILIA_AR_CENTRO = @con_Centro, CONCILIA_AR_CENTRO_COM = @con_Centro_Comision, CONCILIA_AR_CONCEPTO = @con_Concepto
-                        , ILOCALIZABLE = @ilocalizable , INT_GRUPOS_ASOCIADOS = @int_grupos_asociados, INT_REQUIERE_CUENTA_DESTINO = @int_requiere_cuenta_destino
+                        , ILOCALIZABLE = @ilocalizable , INT_GRUPOS_ASOCIADOS = @int_grupos_asociados, INT_REQUIERE_CUENTA_DESTINO = @int_requiere_cuenta_destino,
+                        TS_APLICA = ISNULL(@ts_aplica, 0)
                         Where Id_Banco = @banco";
             conn.Execute(SqlUpdateBanco, sqlParams);
             return idBanco;
@@ -449,7 +451,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                             archivo_cheques_firmas,archivo_cheques_sin_firmas,utiliza_formato_especial,lugar_emision,
                                             SUPERVISION,SUPERVISION_DIAS,SINPE_INTERNA,SINPE_EMPRESA,CODIGO_CLIENTE,cod_divisa,UTILIZA_AUTOGESTION,
                                             CONCILIA_AR_COMISION,CONCILIA_AR_COMISION_CTA,CONCILIA_AR_UNIDAD,CONCILIA_AR_CENTRO,CONCILIA_AR_CENTRO_COM,CONCILIA_AR_CONCEPTO,
-                                            ILOCALIZABLE, INT_GRUPOS_ASOCIADOS, INT_REQUIERE_CUENTA_DESTINO
+                                            ILOCALIZABLE, INT_GRUPOS_ASOCIADOS, INT_REQUIERE_CUENTA_DESTINO, TS_APLICA 
                                         )
                                         VALUES
                                         (
@@ -459,7 +461,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                             @chequeEspecialFirma, @chequeEspecialNoFirma, @formatoEspecial, @lugarEmision,
                                             @supervisa, @dias, @SINPE_CtaInterna, @SINPE_Codigo, @codigoCliente, @divisa, @autoGestion,
                                             @con_ComisionSINPEMnt, @con_ComisionSINPECta, @con_Unidad, @con_Centro, @con_Centro_Comision, @con_Concepto,
-                                            @ilocalizable, @int_grupos_asociados, @int_requiere_cuenta_destino
+                                            @ilocalizable, @int_grupos_asociados, @int_requiere_cuenta_destino, ISNULL(@ts_aplica, 0)
                                         );
 
                                         SELECT CAST(SCOPE_IDENTITY() AS int);";

@@ -76,7 +76,7 @@ namespace Galileo_API.Controllers
 
         [Authorize]
         [HttpGet("Tes_AutoRegistroConceptos_Obtener")]
-        public ErrorDto<List<TesAutoregistroConceptos>> Tes_AutoRegistroConceptos_Obtener(int CodEmpresa, string concepto)
+        public ErrorDto<List<TesAutoregistroConceptos>> Tes_AutoRegistroConceptos_Obtener(int CodEmpresa, string? concepto = null)
         {
             return _AutoRegistroBL.Tes_AutoRegistroConceptos_Obtener(CodEmpresa, concepto);
         }
