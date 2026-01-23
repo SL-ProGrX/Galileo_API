@@ -102,12 +102,12 @@ namespace PgxAPI.BusinessLogic.KindoSinpe
 
         #region Métodos para la integración de la liquidación de la cámara
 
-        public bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
+        public static bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
         {
             return MKindoServiceDb.ActualizarFechaCiclo(CodEmpresa, request);
         }
 
-        public bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
+        public static bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
         {
             return MKindoServiceDb.LiquidarCiclo(CodEmpresa, request);
         }

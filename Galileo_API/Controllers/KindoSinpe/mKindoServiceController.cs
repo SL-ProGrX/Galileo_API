@@ -125,13 +125,13 @@ namespace Galileo_API.Controllers.KindoSinpe
         [HttpPost("ActualizarFechaCiclo/{CodEmpresa}")]
         public bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
         {
-            return _BL.ActualizarFechaCiclo(CodEmpresa,request);
+            return MKindoServiceBL.ActualizarFechaCiclo(CodEmpresa,request);
         }
 
         [HttpPost("LiquidarCiclo/{CodEmpresa}")]
         public bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
         {
-            return _BL.LiquidarCiclo(CodEmpresa, request);
+            return MKindoServiceBL.LiquidarCiclo(CodEmpresa, request);
         }
 
         #endregion
