@@ -42,11 +42,11 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
     public class RecalculaCuotaRequest
     {
-        public decimal SaldoR { get; set; }
-        public int Plazo { get; set; }
-        public long PriDeduc { get; set; }
-        public long FecUltMovR { get; set; }
-        public decimal Interes { get; set; }
+        public decimal SaldoR { get; set; } = 0;
+        public int Plazo { get; set; } = 0;
+        public long PriDeduc { get; set; } = 0;
+        public long FecUltMovR { get; set; } = 0;
+        public decimal Interes { get; set; } = 0;
     }
 
     public class RecalculaCuotaResponse

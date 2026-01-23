@@ -1,4 +1,6 @@
-﻿namespace Galileo.Models.ProGrX.Bancos
+﻿using Newtonsoft.Json;
+
+namespace Galileo.Models.ProGrX.Bancos
 {
     public class TesMotivosSinpeLista
     {
@@ -8,7 +10,7 @@
 
     public class TesMotivosSinpeDto
     {
-        public int cod_motivo { get; set; }
+        public int cod_motivo { get; set; } = 0;
         public string descripcion { get; set; } = string.Empty;
         public string usuario_registro { get; set; } = string.Empty;
         public DateTime fecha_registro { get; set; } = DateTime.Now;

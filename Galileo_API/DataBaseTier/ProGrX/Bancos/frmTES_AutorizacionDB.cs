@@ -84,22 +84,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     .Query<Galileo.Models.TES.TesSolicitudesData>(query, sqlParams)
                     .ToList();
 
-                if(filtro.tipo_doc == "TS")
+                if(filtro.tipo_doc == "TS" && filtro.activaCuentaSinpe)
                 {
-                    if(filtro.activaCuentaSinpe)
+                    foreach (var solicitud in response.Result.solicitudes)
                     {
-                        foreach (var solicitud in response.Result.solicitudes)
+                        var valida = _factory.CrearServicio(CodEmpresa, filtro.usuario)
+                           .fxValidacionSinpe(CodEmpresa, solicitud.nsolicitud.ToString(), filtro.usuario);
+                        if (valida.Code != 0 && valida.Code != 1)
                         {
-                            var valida = _factory.CrearServicio(CodEmpresa, filtro.usuario)
-                               .fxValidacionSinpe(CodEmpresa, solicitud.nsolicitud.ToString(), filtro.usuario);
-                            if(valida.Code != 0 && valida.Code != 1)
-                            {
-                                solicitud.bloqueo = true;
-                                solicitud.detalle = valida.Description;
-                            }                     
+                            solicitud.bloqueo = true;
+                            solicitud.detalle = valida.Description;
                         }
                     }
-                    
+
                 }
 
                 return response;
