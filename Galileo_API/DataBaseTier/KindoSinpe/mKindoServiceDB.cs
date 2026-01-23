@@ -1702,9 +1702,9 @@ FROM dbo.fxSinpe_ValidaCredito(
                                     WHERE Nsolicitud = @solicitud ";
                 response.Result = connection.Execute(query, new
                 {
-                    refSinpe = resPIN.PINSendingResult!.SINPEReference,
-                    idRechazo = (resPIN.Errors!.Length > 0) ? resPIN.Errors[0].Code : 0,
-                    estadoSinpe = resPIN.PINSendingResult.IsApproved,
+                    refSinpe = resPIN.PINSendingResult?.SINPEReference ?? string.Empty,
+                    idRechazo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
+                    estadoSinpe = resPIN.PINSendingResult.State,
                     solicitud = Nsolicitud
                 }) > 0;
             }
@@ -1778,9 +1778,8 @@ FROM dbo.fxSinpe_ValidaCredito(
                 response.Result = false;
             }
             return response;
-        
         }
-        
+
         public bool fxSinpe_Valida_MovimientosPermitidos(int CodEmpresa, string iban)
         {
             var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
@@ -1890,10 +1889,9 @@ FROM dbo.fxSinpe_ValidaCredito(
                 TransacDesc = solicitud.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4,
                 RegistroFecha = DateTime.Now,
                 RegistroUsuario = usuario ,
-                ComprobanteInterno = resPIN.PINSendingResult!.SINPEReference,
-                RechazoCodigo = resPIN.Errors[0].Code ,
-                RechazoDesc = resPIN.Errors[0].Message,
-                Estado = resPIN.PINSendingResult.State,
+                ComprobanteInterno = resPIN.PINSendingResult?.SINPEReference ?? string.Empty,
+                RechazoCodigo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
+                Estado = resPIN.PINSendingResult!.State,
                 Servicio = Convert.ToInt32(Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo)
 
             };

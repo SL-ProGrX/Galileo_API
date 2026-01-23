@@ -507,8 +507,8 @@
         #region 7.1.26 ReqDTRSending
         public class ReqDTRSending : ReqBase
         {
-            public int CoreIntegrationPoint { get; set; } = 0;
-            public int CostCenter { get; set; } = 0;
+            public new int CoreIntegrationPoint { get; set; } = 0;
+            public new int CostCenter { get; set; } = 0;
             public DTR? Debit { get; set; }
             public List<CustomField>? CustomData { get; set; }
         }
