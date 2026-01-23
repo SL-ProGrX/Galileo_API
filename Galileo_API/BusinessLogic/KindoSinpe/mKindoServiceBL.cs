@@ -104,12 +104,12 @@ namespace PgxAPI.BusinessLogic.KindoSinpe
 
         public bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
         {
-            return _DB.ActualizarFechaCiclo(CodEmpresa, request);
+            return MKindoServiceDb.ActualizarFechaCiclo(CodEmpresa, request);
         }
 
         public bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
         {
-            return _DB.LiquidarCiclo(CodEmpresa, request);
+            return MKindoServiceDb.LiquidarCiclo(CodEmpresa, request);
         }
 
         #endregion

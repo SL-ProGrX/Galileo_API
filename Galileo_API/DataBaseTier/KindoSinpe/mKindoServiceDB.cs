@@ -879,7 +879,7 @@ FROM dbo.fxSinpe_ValidaCredito(
         /// <param name="CodigoReferenciaAnterior"> Código de referencia generado anteriormente. </param>
         /// <param name="CodigoReferenciaNuevo"> Código de referencia generado. </param>
         /// <returns> Objeto con un Boolean que indica si la actualización se realizó correctamente. </returns>
-        public bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
+        public static bool ActualizarFechaCiclo(int CodEmpresa, CL_ActualizaFechaRequest request)
         {
             try
             {
@@ -906,7 +906,7 @@ FROM dbo.fxSinpe_ValidaCredito(
         /// <param name="Modalidad"> Modalidad del servicio (S=Saliente, E = Entrante). </param>
         /// <param name="FechaCiclo"> Fecha de ciclo hasta la cual se deben liquidar las transacciones. </param>
         /// <returns> Objeto con un Boolean que indica si la liquidación de las transacciones fue correcta. </returns>
-        public bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
+        public static bool LiquidarCiclo(int CodEmpresa, CLCierraCiclo request)
         {
             try
             {
@@ -1117,7 +1117,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             return 0;
         }
 
-        public string GetCurrencyCodeDes(string currency)
+        public static string GetCurrencyCodeDes(string currency)
         {
             if (string.IsNullOrWhiteSpace(currency))
                 return "CRC";
@@ -1232,7 +1232,7 @@ FROM dbo.fxSinpe_ValidaCredito(
         private static TipoId FisicaResidente() => new TipoId("1", "Persona Física Residente");
         private static TipoId BancoInterna() => new TipoId("3", "Banco Interna");
 
-        public TipoId Inferir(string cedula)
+        public static TipoId Inferir(string cedula)
         {
             var id = PrepararId(cedula);
             if (id == null) return Desconocido();
@@ -1284,7 +1284,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                 .Replace("\r", "")
                 .Replace("\n", "");
 
-        public string MaskSinpeId(int tipo, string id)
+        public static string MaskSinpeId(int tipo, string id)
         {
             if (string.IsNullOrWhiteSpace(id))
                 return id;

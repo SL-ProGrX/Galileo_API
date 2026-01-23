@@ -58,10 +58,22 @@ namespace Galileo_API.DataBaseTier
                     return ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
 
                 var cuenta = ConsultarCuenta(parametrosSinpe!, context, _infoSinpe.vInfo.CuentaIBAN!);
+
+                var ErrorVal = cuenta.Errors;
+
                 if (!cuenta.IsSuccessful)
                 {
-                    response.Code = cuenta.Errors[0].Code;
-                    response.Description = cuenta.Errors[0].Message;
+                    if(ErrorVal!.Length > 0)
+                    {
+                        response.Code = ErrorVal[0].Code;
+                        response.Description = ErrorVal[0].Message;
+                    }
+                    else
+                    {
+                        response.Code = -1;
+                        response.Description = "Error desconocido al consultar la cuenta.";
+                    }
+                     
                     return response;
                 }
                 else
@@ -288,13 +300,13 @@ namespace Galileo_API.DataBaseTier
                 {
                     ChannelReference = cod_referencia,
                     Amount = solicitud!.Monto,
-                    CurrencyCode = _mKindo.GetCurrencyCodeDes(solicitud.Divisa!),
+                    CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa!),
                     Description = solicitud.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4,
                     OriginEntityIBAN = solicitud.CuentaOrigen!,
                     OriginCustomer = new Galileo.Models.KindoSinpe.OriginCustomer()
                     {
-                        Id = _mKindo.MaskSinpeId(Convert.ToInt32(_mKindo.Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo), solicitud.CedulaOrigen!.Replace("-", ""))  ,
-                        IdType = Convert.ToInt32(_mKindo.Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo),
+                        Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo), solicitud.CedulaOrigen!.Replace("-", ""))  ,
+                        IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo),
                         Name = solicitud.NombreOrigen!,
                         IBAN = solicitud.CuentaOrigen!,
                         DebitIBAN = _mKindo.fxSinpe_Valida_MovimientosPermitidos(CodEmpresa, solicitud.CuentaOrigen!),
@@ -302,8 +314,8 @@ namespace Galileo_API.DataBaseTier
                     },
                     DestinationCustomer = new Galileo.Models.KindoSinpe.DestinationCustomer()
                     {
-                        Id = _mKindo.MaskSinpeId(Convert.ToInt32(_mKindo.Inferir(solicitud.Codigo!.Replace("-", "")).Codigo), solicitud.Codigo!.Replace("-", "")) ,
-                        IdType = Convert.ToInt32(_mKindo.Inferir(solicitud.Codigo!.Replace("-", "")).Codigo),
+                        Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Replace("-", "")).Codigo), solicitud.Codigo!.Replace("-", "")) ,
+                        IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Replace("-", "")).Codigo),
                         Name = solicitud.Beneficiario!,
                         IBAN = solicitud.Cuenta!,
                         Email = solicitud.CorreoNotifica
@@ -323,7 +335,10 @@ namespace Galileo_API.DataBaseTier
                 if (response.IsSuccessful)
                 {
 
-                    fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, Nsolicitud.ToString());
+                    if (response.Errors != null && response.Errors.Length > 0)
+                    {
+                        fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, Nsolicitud.ToString());
+                    }
 
                     var updateNSolicitud = _mKindo.RegistraDibitoCuenta(CodEmpresa, Nsolicitud, response).Result;
 
@@ -358,7 +373,10 @@ namespace Galileo_API.DataBaseTier
                 }
                 else
                 {
-                    fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, Nsolicitud.ToString());
+                    if (response.Errors != null && response.Errors.Length > 0)
+                    {
+                        fxGuardaID_RespuestaSinpe(CodEmpresa, response.Errors[0].Code, Nsolicitud.ToString());
+                    }
 
                     return new ErrorDto<RespuestaRegistro>
                     {

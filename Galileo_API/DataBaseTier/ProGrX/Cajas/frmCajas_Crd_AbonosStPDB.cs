@@ -264,7 +264,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 if (v.Code != 0)
                     return DbHelper.CreateErrorResponse<SimularCuotasResponse>(v.Description!);
 
-                if (req.CantidadCuotas <= 0)
+                // ✅ Sanitización local (Sonar S6680): NO usar req.CantidadCuotas directo en loops/capacidades
+                var cuotas = Clamp(req.CantidadCuotas, 0, MAX_CUOTAS);
+
+                if (cuotas == 0)
                     return DbHelper.CreateOkResponse(new SimularCuotasResponse());
 
                 var lngFecha = AjustarFechaInicial(codEmpresa, req);
@@ -277,7 +280,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                         FecUltMovR = lngFecha
                     });
 
-                var proy = CrearListaProyeccion(req.CantidadCuotas);
+                // ✅ Capacidad basada en valor ya limitado
+                var proy = CrearListaProyeccion(cuotas);
 
                 var estado = new SimulacionEstado
                 {
@@ -290,11 +294,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 int cuotaMax;
                 if (EsBase360(req.BaseCalculo))
-                    cuotaMax = SimularBase360(codEmpresa, req, proy, estado, totales);
+                    cuotaMax = SimularBase360(codEmpresa, req, cuotas, proy, estado, totales);
                 else
-                    cuotaMax = SimularBase365(codEmpresa, req, proy, estado, totales);
+                    cuotaMax = SimularBase365(codEmpresa, req, cuotas, proy, estado, totales);
 
                 var resp = ConstruirRespuesta(req, proy, estado, totales, cuotaMax);
+
+                // Defensa final: por si algo agregara más de lo permitido
+                if (resp.Proyeccion != null && resp.Proyeccion.Count > MAX_CUOTAS)
+                    resp.Proyeccion = resp.Proyeccion.Take(MAX_CUOTAS).ToList();
 
                 return DbHelper.CreateOkResponse(resp);
             }
@@ -304,21 +312,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             }
         }
 
-        private const int MAX_CUOTAS = 480; // ajusta al negocio
+        private const int MAX_CUOTAS = 480; 
+        private const int MAX_PLAZO = 1200;
+
+        private static int Clamp(int value, int min, int max)
+        {
+            if (value < min) return min;
+            if (value > max) return max;
+            return value;
+        }
 
         private static ErrorDto ValidarSimulacion(SimularCuotasRequest req)
         {
             if (req == null)
                 return DbHelper.ErrorResponse("Request inválido.");
 
+            // Permites 0 => respuesta vacía (mantiene tu comportamiento)
             if (req.CantidadCuotas < 0 || req.CantidadCuotas > MAX_CUOTAS)
                 return DbHelper.ErrorResponse($"CantidadCuotas fuera de rango (0..{MAX_CUOTAS}).");
 
-            if (req.Interes < 0m || req.Interes > 200m) // ejemplo de rango defensivo
+            if (req.Interes < 0m || req.Interes > 200m)
                 return DbHelper.ErrorResponse("Interés fuera de rango.");
 
-            if (req.Plazo < 0 || req.Plazo > 1200) // defensivo
-                return DbHelper.ErrorResponse("Plazo fuera de rango.");
+            if (req.Plazo < 0 || req.Plazo > MAX_PLAZO)
+                return DbHelper.ErrorResponse($"Plazo fuera de rango (0..{MAX_PLAZO}).");
 
             return DbHelper.CreateOkResponse();
         }
@@ -348,22 +365,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         private static bool EsBase360(string? baseCalculo) =>
             string.Equals(baseCalculo, "01", StringComparison.OrdinalIgnoreCase);
 
-        private static List<ProyeccionCuotaDto> CrearListaProyeccion(int cantidadCuotas)
+        private static List<ProyeccionCuotaDto> CrearListaProyeccion(int cantidadCuotasSafe)
         {
-            // S6639: no reservar basado en input sin límite (ya validado arriba)
-            return new List<ProyeccionCuotaDto>(cantidadCuotas);
+            // ✅ Capar otra vez por defensa y para que Sonar no discuta capacidades
+            var capacidad = Clamp(cantidadCuotasSafe, 0, MAX_CUOTAS);
+            return new List<ProyeccionCuotaDto>(capacidad);
         }
 
         private int SimularBase360(
-            int codEmpresa,
-            SimularCuotasRequest req,
-            List<ProyeccionCuotaDto> proy,
-            SimulacionEstado estado,
-            TotalesSimulacion totales)
+    int codEmpresa,
+    SimularCuotasRequest req,
+    int cuotas, // ✅ límite sanitizado
+    List<ProyeccionCuotaDto> proy,
+    SimulacionEstado estado,
+    TotalesSimulacion totales)
         {
             int cuotaMax = 0;
 
-            for (int i = 1; i <= req.CantidadCuotas; i++)
+            // ✅ Loop bound NO viene directo de req.*
+            for (int i = 1; i <= cuotas; i++)
             {
                 if (estado.Saldo <= 0) break;
 
@@ -391,18 +411,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         private int SimularBase365(
-            int codEmpresa,
-            SimularCuotasRequest req,
-            List<ProyeccionCuotaDto> proy,
-            SimulacionEstado estado,
-            TotalesSimulacion totales)
+    int codEmpresa,
+    SimularCuotasRequest req,
+    int cuotas, // ✅ límite sanitizado
+    List<ProyeccionCuotaDto> proy,
+    SimulacionEstado estado,
+    TotalesSimulacion totales)
         {
             int cuotaMax = 0;
 
             var plazoRst = CalcularPlazoRestante(codEmpresa, req, estado.FechaProceso);
             var baseDate = ParseProcesoToFirstDay(estado.FechaProceso);
 
-            for (int i = 1; i <= req.CantidadCuotas; i++)
+            // ✅ Loop bound NO viene directo de req.*
+            for (int i = 1; i <= cuotas; i++)
             {
                 cuotaMax = i;
 

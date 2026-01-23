@@ -111,7 +111,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
                 result.Result.Proyeccion = result.Result.Proyeccion.Take(MaxCantidadCuotas).ToList();
             }
 
-            return result;
+            return result!;
         }
 
         /// <summary>
