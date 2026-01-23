@@ -265,7 +265,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 if (v.Code != 0)
                     return DbHelper.CreateErrorResponse<SimularCuotasResponse>(v.Description!);
 
-                // ✅ Sanitización local (Sonar S6680): NO usar req.CantidadCuotas directo en loops/capacidades
+               
                 var cuotas = Clamp((int)req.CantidadCuotas!, 0, MAX_CUOTAS);
 
                 if (cuotas == 0)
@@ -562,25 +562,36 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         {
             try
             {
+                // Sanitización defensiva de procesos y rangos
                 long lngFecha = req.FecUltMovR;
                 if (lngFecha < req.PriDeduc) lngFecha = req.PriDeduc;
 
-                const int MAX_ITER_FECHAS = 1500; // defensivo, ajusta a tu negocio
+                // Si el proceso viene inválido, corta temprano
+                if (!EsProcesoValido(req.PriDeduc) || !EsProcesoValido(lngFecha))
+                    return DbHelper.CreateErrorResponse<RecalculaCuotaResponse>("Proceso inválido (se espera yyyymm).");
+
+                // Límite defensivo absoluto (DoS)
+                const int MAX_ITER_FECHAS = 1500;
 
                 long procesosTmp = req.PriDeduc;
+
+                // Bound derivado y clamped: Sonar suele “entender” esto mejor
+                // Diferencia aproximada en meses entre yyyymm (sin loop)
+                int diffMeses = DiffMeses(req.PriDeduc, lngFecha);
+                int maxSteps = Clamp(diffMeses, 0, MAX_ITER_FECHAS);
+
                 int pasos = 0;
 
-                while (procesosTmp < lngFecha && pasos < MAX_ITER_FECHAS)
+                while (procesosTmp < lngFecha && pasos < maxSteps)
                 {
                     procesosTmp = (long)_mCobro.fxFechaProcesoSiguiente(codEmpresa, procesosTmp);
                     pasos++;
                 }
 
+                // Si no alcanzó lngFecha dentro del bound permitido, protege contra datos raros
                 if (procesosTmp < lngFecha)
-                {
-                    // No logró alcanzar lngFecha dentro del límite: protege contra DoS / datos corruptos
-                    return DbHelper.CreateErrorResponse<RecalculaCuotaResponse>("Rango de fechas inválido o excede el límite de iteraciones permitido.");
-                }
+                    return DbHelper.CreateErrorResponse<RecalculaCuotaResponse>(
+                        "Rango de fechas inválido o excede el límite de iteraciones permitido.");
 
                 var plazoRst = req.Plazo - pasos;
                 if (plazoRst <= 0) plazoRst = 1;
@@ -593,6 +604,34 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             {
                 return DbHelper.CreateErrorResponse<RecalculaCuotaResponse>("Error recalculando cuota: " + ex.Message);
             }
+        }
+
+        // yyyymm válido: mes 01..12, año razonable
+        private static bool EsProcesoValido(long yyyymm)
+        {
+            if (yyyymm <= 0) return false;
+
+            int year = (int)(yyyymm / 100);
+            int month = (int)(yyyymm % 100);
+
+            if (month < 1 || month > 12) return false;
+            if (year < 1900 || year > 3000) return false;
+
+            return true;
+        }
+
+        // Diferencia aproximada en meses entre dos yyyymm (si b>=a)
+        private static int DiffMeses(long aYyyymm, long bYyyymm)
+        {
+            int aYear = (int)(aYyyymm / 100);
+            int aMonth = (int)(aYyyymm % 100);
+            int bYear = (int)(bYyyymm / 100);
+            int bMonth = (int)(bYyyymm % 100);
+
+            int aTotal = aYear * 12 + (aMonth - 1);
+            int bTotal = bYear * 12 + (bMonth - 1);
+
+            return Math.Max(0, bTotal - aTotal);
         }
 
         private static DateTime ParseProcesoToFirstDay(long yyyymm)
