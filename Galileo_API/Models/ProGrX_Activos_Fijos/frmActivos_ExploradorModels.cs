@@ -48,6 +48,10 @@
         public string? seccion { get; set; }
         public string? localizacion { get; set; }
         public string? proveedor { get; set; }
+
+        public string? vida_util { get; set; }
+
+
     }
 
     public class PeriodoExploradorDto
