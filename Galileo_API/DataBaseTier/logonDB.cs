@@ -53,26 +53,24 @@ namespace Galileo.DataBaseTier
             ErrorDto resp = new ErrorDto();
             try
             {
-                using (var connection = new SqlConnection(_config.GetConnectionString(connectionStringName)))
-                {
-                    int existe = connection.Query<int>("spSEG_Logon", req, commandType: CommandType.StoredProcedure).FirstOrDefault();
+                using var connection = new SqlConnection(_config.GetConnectionString(connectionStringName));
+                int existe = connection.Query<int>("spSEG_Logon", req, commandType: CommandType.StoredProcedure).FirstOrDefault();
 
-                    if (existe == 0)
-                    {
-                        resp.Code = 2;
-                        resp.Description = "El Usuario o Contraseña no fueron encontrados, verifique...";
-                    }
-                    else if (existe == 1)
-                    {
-                        resp.Code = 0;
-                        resp.Description = "ok";
-                    }
+                if (existe == 0)
+                {
+                    resp.Code = 2;
+                    resp.Description = "El Usuario o Contraseña no fueron encontrados, verifique...";
+                }
+                else if (existe == 1)
+                {
+                    resp.Code = 0;
+                    resp.Description = "ok";
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 resp.Code = 1;
-                resp.Description = "No se pudo establecer la conexión con el servidor de la Aplicación...";
+                resp.Description =$"[LoginObtener] Usuario={req.Usuario} Error: {ex.Message}";
             }
             return resp;
         }
