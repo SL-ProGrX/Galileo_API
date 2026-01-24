@@ -7,7 +7,7 @@
 
     public class SugefRomMonitorConsultaResult
     {
-        public DateTime Corte { get; set; }
+        public DateTime? Corte { get; set; }
         public string? NumerdoIdentificacion { get; set; }
         public string? PrimerApellidoCliente { get; set; }
         public string? SegundoApellidoCliente { get; set; }
@@ -54,14 +54,14 @@
 
     public class SugefRomMonitorParams
     {
-        public DateTime Corte { get; set; }
-        public decimal BaseDol { get; set; }
+        public DateTime? Corte { get; set; }
+        public decimal? BaseDol { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
     public class SugefRomMonitorFormaPagoActualizaParams
     {
-        public int LineaId { get; set; }
+        public int? LineaId { get; set; }
         public string TipoDoc { get; set; } = string.Empty;
         public string NumDoc { get; set; } = string.Empty;
         public string PagadorId { get; set; } = string.Empty;
