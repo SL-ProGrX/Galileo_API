@@ -43,7 +43,7 @@
 
     public class CajasRoeImprimeParams
     {
-        public int Roe { get; set; }
+        public int? Roe { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
