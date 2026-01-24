@@ -107,7 +107,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cobros
         }
 
    
-        private enum CCASortKey
+        private enum SortKey
         {
             CedulaAsc, CedulaDesc,
             NombreAsc, NombreDesc,
@@ -118,23 +118,23 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cobros
         }
 
         
-        private static readonly Dictionary<string, (CCASortKey Asc, CCASortKey Desc)> CcaSortMap =
+        private static readonly Dictionary<string, (SortKey Asc, SortKey Desc)> CcaSortMap =
             new(StringComparer.OrdinalIgnoreCase)
             {
-                ["cedula"] = (CCASortKey.CedulaAsc, CCASortKey.CedulaDesc),
-                ["nombre"] = (CCASortKey.NombreAsc, CCASortKey.NombreDesc),
-                ["fecha_asignacion"] = (CCASortKey.FechaAsignacionAsc, CCASortKey.FechaAsignacionDesc),
-                ["mora"] = (CCASortKey.MoraAsc, CCASortKey.MoraDesc),
-                ["cuotamora"] = (CCASortKey.CuotaMoraAsc, CCASortKey.CuotaMoraDesc),
-                ["mantener"] = (CCASortKey.MantenerAsc, CCASortKey.MantenerDesc),
+                ["cedula"] = (SortKey.CedulaAsc, SortKey.CedulaDesc),
+                ["nombre"] = (SortKey.NombreAsc, SortKey.NombreDesc),
+                ["fecha_asignacion"] = (SortKey.FechaAsignacionAsc, SortKey.FechaAsignacionDesc),
+                ["mora"] = (SortKey.MoraAsc, SortKey.MoraDesc),
+                ["cuotamora"] = (SortKey.CuotaMoraAsc, SortKey.CuotaMoraDesc),
+                ["mantener"] = (SortKey.MantenerAsc, SortKey.MantenerDesc),
             };
 
-        private static CCASortKey GetSortKeyCartas(FiltrosLazyLoadData filtros)
+        private static SortKey GetSortKeyCartas(FiltrosLazyLoadData filtros)
         {
             var field = string.IsNullOrWhiteSpace(filtros.sortField) ? "cedula" : filtros.sortField.Trim();
             var asc = filtros.sortOrder != 0;
 
-            CCASortKey key;
+            SortKey key;
 
             if (CcaSortMap.TryGetValue(field, out var pair))
             {
@@ -142,28 +142,28 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cobros
             }
             else
             {
-                key = CCASortKey.CedulaAsc;
+                key = SortKey.CedulaAsc;
             }
 
             return key;
 
         }
 
-        private static string BuildOrderBySqlCartas(CCASortKey key) =>
+        private static string BuildOrderBySqlCartas(SortKey key) =>
             key switch
             {
-                CCASortKey.CedulaAsc => " ORDER BY cedula ASC",
-                CCASortKey.CedulaDesc => " ORDER BY cedula DESC",
-                CCASortKey.NombreAsc => " ORDER BY nombre ASC",
-                CCASortKey.NombreDesc => " ORDER BY nombre DESC",
-                CCASortKey.FechaAsignacionAsc => " ORDER BY fecha_asignacion ASC",
-                CCASortKey.FechaAsignacionDesc => " ORDER BY fecha_asignacion DESC",
-                CCASortKey.MoraAsc => " ORDER BY mora ASC",
-                CCASortKey.MoraDesc => " ORDER BY mora DESC",
-                CCASortKey.CuotaMoraAsc => " ORDER BY CuotaMora ASC",
-                CCASortKey.CuotaMoraDesc => " ORDER BY CuotaMora DESC",
-                CCASortKey.MantenerAsc => " ORDER BY mantener ASC",
-                CCASortKey.MantenerDesc => " ORDER BY mantener DESC",
+                SortKey.CedulaAsc => " ORDER BY cedula ASC",
+                SortKey.CedulaDesc => " ORDER BY cedula DESC",
+                SortKey.NombreAsc => " ORDER BY nombre ASC",
+                SortKey.NombreDesc => " ORDER BY nombre DESC",
+                SortKey.FechaAsignacionAsc => " ORDER BY fecha_asignacion ASC",
+                SortKey.FechaAsignacionDesc => " ORDER BY fecha_asignacion DESC",
+                SortKey.MoraAsc => " ORDER BY mora ASC",
+                SortKey.MoraDesc => " ORDER BY mora DESC",
+                SortKey.CuotaMoraAsc => " ORDER BY CuotaMora ASC",
+                SortKey.CuotaMoraDesc => " ORDER BY CuotaMora DESC",
+                SortKey.MantenerAsc => " ORDER BY mantener ASC",
+                SortKey.MantenerDesc => " ORDER BY mantener DESC",
                 _ => " ORDER BY cedula ASC"
             };
 
