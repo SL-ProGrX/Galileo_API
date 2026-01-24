@@ -7,6 +7,7 @@ using System.Text;
 using System.Data.Common;
 using Galileo.Models.ProGrX.Cobros;
 using System.Diagnostics;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
@@ -70,240 +71,231 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
 
 
+
+
         public ErrorDto<CoAdvertenciasControlLista> CoAdvertenciasControlBuscar(
-            int CodEmpresa,
+            int codEmpresa,
             CoAdvertenciasControlFiltros filtros,
             bool esExportar)
         {
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            // 1) Validaciones rápidas (guard clauses)
+            if (filtros is null)
+                return DbHelper.CreateErrorResponse<CoAdvertenciasControlLista>("El parámetro 'filtros' es obligatorio.");
+            if (!filtros.fecha_inicio.HasValue || !filtros.fecha_corte.HasValue)
+                return DbHelper.CreateErrorResponse<CoAdvertenciasControlLista>("El rango de fechas es obligatorio (fecha_inicio/fecha_corte).");
 
-                NormalizarEntradas(
-                    filtros,
-                    out var sortField,
-                    out var sortDir,
-                    out var offset,
-                    out var fetch,
-                    out var fechaInicio,
-                    out var fechaCorte);
+            // 2) Normalizaciones de datos
+            NormalizeDates(filtros, out var fi, out var fc);
+            var (advertencias, estadosP) = ParseLists(filtros);
+            var (sortField, sortOrder) = GetSorting(filtros);
+            var (offset, pageSize) = GetPaging(filtros, esExportar);
 
+            // 3) WHERE seguro (parametrizado)
+            var whereSql = BuildWhereSql(filtros, advertencias, estadosP);
 
-                var p = new DynamicParameters();
-                var whereSql = ConstruirWhere(filtros, fechaInicio, fechaCorte, p);
-
-
-                var fromSql = ConstruirFrom(whereSql);
-                var selectSql = ConstruirSelect(fromSql);
-
-
-
-                var sqlDatos = new StringBuilder()
-                    .Append(selectSql)
-                    .Append(FormarOrderBy(sortField, sortDir));
-
-                if (!esExportar)
-                {
-                    p.Add("@offset", offset);
-                    p.Add("@fetch", fetch);
-                    sqlDatos.Append(" OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY");
-                }
-
-                var sqlCount = new StringBuilder()
-                    .Append("SELECT COUNT(1) ")
-                    .Append(fromSql);
-
-                if (!string.IsNullOrWhiteSpace(whereSql))
-                    sqlCount.Append(' ').Append(whereSql);
-
-                var totalRegistros = conn.ExecuteScalar<int>(sqlCount.ToString(), p);
-
-                var montoTotal = 0m;
-
-                var lista = conn.Query<CoAdvertenciasControlData>(sqlDatos.ToString(), p).ToList();
-
-
-                return new ErrorDto<CoAdvertenciasControlLista>
-                {
-                    Code = 0,
-                    Description = "OK",
-                    Result = new CoAdvertenciasControlLista
-                    {
-                        totales = new CoAdvertenciasControlTotales
-                        {
-                            total = totalRegistros,
-                            montototal = montoTotal
-                        },
-                        lista = lista
-                    }
-                };
-            }
-            catch (DbException dbEx)
-            {
-
-                return DbHelper.CreateErrorResponse<CoAdvertenciasControlLista>(
-                    $"Error de base de datos al buscar control de advertencias: {dbEx.Message}"
-                );
-            }
-            catch (Exception ex)
-            {
-                Trace.TraceError("Error no controlado al buscar control de advertencias. Detalles: {0}", ex.ToString());
-
-                return DbHelper.CreateErrorResponse<CoAdvertenciasControlLista>(
-                    $"Error al buscar control de advertencias: {ex.Message}"
-                );
-            }
-        }
-
-        /* ===========================
-         *      Helpers privados
-         * =========================== */
-
-        private static void NormalizarEntradas(
-            CoAdvertenciasControlFiltros filtros,
-            out string sortField,
-            out string sortDir,
-            out int offset,
-            out int fetch,
-            out DateTime fechaInicio,
-            out DateTime fechaCorte)
-        {
-         
-            sortField = string.IsNullOrWhiteSpace(filtros.sortField) ? "Linea" : filtros.sortField;
-            var allowedSort = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            "Linea", "COD_ADVERTENCIA", "cedula", "nombre", "estado",
-            "AdvTipo", "FECHA_VENCE", "REGISTRO_FECHA", "REGISTRO_USUARIO",
-            "RESOLUCION_FECHA", "RESOLUCION_USUARIO"
-        };
-            if (!allowedSort.Contains(sortField))
-                sortField = "Linea";
-
-            sortDir = filtros.sortOrder == 0 ? "DESC" : "ASC";
-
-            offset = Math.Max(0, filtros.pagina ?? 0);
-            fetch = Math.Max(1, filtros.paginacion ?? 50);
-
-            var inicioUser = filtros.fecha_inicio?.Date ?? DateTime.Today;
-            var corteUser = filtros.fecha_corte?.Date ?? DateTime.Today;
-
-            fechaCorte = new DateTime(corteUser.Year, corteUser.Month, corteUser.Day, 23, 59, 59, DateTimeKind.Local);
-            fechaInicio = new DateTime(inicioUser.Year, inicioUser.Month, inicioUser.Day, 0, 0, 0, DateTimeKind.Local);
-        }
-
-        private static string ConstruirWhere(
-            CoAdvertenciasControlFiltros filtros,
-            DateTime fechaInicio,
-            DateTime fechaCorte,
-            DynamicParameters p)
-        {
-            var where = new List<string>();
-
-            p.Add("@cedula", filtros.cedula ?? string.Empty);
-            where.Add("Soc.Cedula LIKE '%' + @cedula + '%'");
-
-            if (!string.IsNullOrWhiteSpace(filtros.nombre))
-            {
-                p.Add("@nombre", filtros.nombre);
-                where.Add("Soc.Nombre LIKE '%' + @nombre + '%'");
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtros.usuario))
-            {
-                p.Add("@usuario", filtros.usuario);
-                where.Add("Adv.Registro_Usuario LIKE '%' + @usuario + '%'");
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtros.lista_advertencias))
-                AgregarInList(filtros.lista_advertencias, "@lista_advertencias", "Adv.Cod_Advertencia", where, p);
-
-            if (!string.IsNullOrWhiteSpace(filtros.lista_estados_personas))
-                AgregarInList(filtros.lista_estados_personas, "@ListaEstadosP", "Soc.EstadoActual", where, p);
-
-            // Fechas por estado
-            p.Add("@fecha_inicio", fechaInicio);
-            p.Add("@fecha_corte", fechaCorte);
-
-            where.Add(WherePorEstado(filtros.estado));
-
-            if (!string.IsNullOrWhiteSpace(filtros.filtro))
-            {
-                p.Add("@q", filtros.filtro);
-                where.Add(@"(
-                Adv.COD_ADVERTENCIA LIKE '%' + @q + '%'
-                OR RTRIM(Adv.CEDULA) LIKE '%' + @q + '%'
-                OR RTRIM(Soc.NOMBRE) LIKE '%' + @q + '%'
-                OR Tip.DESCRIPCION   LIKE '%' + @q + '%'
-                    )");
-            }
-
-            return ToWhereClause(where);
-        }
-
-        private static void AgregarInList(
-            string listaCsv,
-            string paramName,
-            string columnName,
-            List<string> where,
-            DynamicParameters p)
-        {
-            var arr = listaCsv
-                .Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(s => s.Trim())
-                .Distinct()
-                .ToArray();
-
-            if (arr.Length == 0) return;
-
-            p.Add(paramName, arr);
-            where.Add($"{columnName} IN {paramName}"); 
-        }
-
-        private static string WherePorEstado(string? estado)
-        {
-       
-            return estado switch
-            {
-                "Activa" => "Adv.Estado = 'A' AND Adv.Registro_Fecha    BETWEEN @fecha_inicio AND @fecha_corte",
-                "Resuelta" => "Adv.Estado = 'R' AND Adv.RESOLUCION_FECHA   BETWEEN @fecha_inicio AND @fecha_corte",
-                "Descartada" => "Adv.Estado = 'D' AND Adv.RESOLUCION_FECHA   BETWEEN @fecha_inicio AND @fecha_corte",
-                _ => "Adv.Registro_Fecha BETWEEN @fecha_inicio AND @fecha_corte"
-            };
-        }
-
-        private static string ConstruirFrom(string whereSql) => $@"
-        FROM CBR_ADVERTENCIAS_CASOS Adv
-        INNER JOIN Socios                Soc ON Adv.CEDULA = Soc.Cedula
-        INNER JOIN CBR_ADVERTENCIAS_TIPO Tip ON Adv.COD_ADVERTENCIA = Tip.COD_ADVERTENCIA
-        INNER JOIN AFI_ESTADOS_PERSONA   Est ON Soc.ESTADOACTUAL = Est.COD_ESTADO
-        {whereSql}";
-
-        private static string ConstruirSelect(string fromSql) => $@"
+            // 4) SQL (base + count + list)
+            const string selectBase = @"
         SELECT
             Adv.Linea,
             Adv.COD_ADVERTENCIA,
-            RTRIM(Adv.CEDULA)           AS cedula,
-            RTRIM(Soc.NOMBRE)           AS nombre,
-            CASE 
+            RTRIM(Adv.CEDULA) AS cedula,
+            RTRIM(Soc.NOMBRE) AS nombre,
+            CASE
                 WHEN Adv.ESTADO = 'A' THEN 'Activa'
                 WHEN Adv.ESTADO = 'R' THEN 'Resuelta'
                 WHEN Adv.ESTADO = 'D' THEN 'Descargada'
                 ELSE 'Activa'
-            END                          AS estado,
-            Tip.DESCRIPCION              AS AdvTipo,
+            END AS estado,
+            Tip.DESCRIPCION AS AdvTipo,
             Adv.FECHA_VENCE,
             Adv.REGISTRO_FECHA,
             Adv.REGISTRO_USUARIO,
             Adv.RESOLUCION_FECHA,
             Adv.RESOLUCION_USUARIO
-        {fromSql}";
+        FROM CBR_ADVERTENCIAS_CASOS Adv
+        INNER JOIN Socios Soc ON Adv.CEDULA = Soc.Cedula
+        INNER JOIN CBR_ADVERTENCIAS_TIPO Tip ON Adv.COD_ADVERTENCIA = Tip.COD_ADVERTENCIA
+        INNER JOIN AFI_ESTADOS_PERSONA Est ON Soc.ESTADOACTUAL = Est.COD_ESTADO";
 
-        private static string FormarOrderBy(string sortField, string sortDir)
-            => $" ORDER BY {sortField} {sortDir}";
+            var orderBySql = $" ORDER BY {sortField} {sortOrder}";
+            var pagingSql = esExportar ? string.Empty : " OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY";
 
-        private static string ToWhereClause(List<string> conditions)
+            var listSql = $"{selectBase}{whereSql}{orderBySql}{pagingSql}";
+            var countSql = $@"SELECT COUNT(1)
+                      FROM CBR_ADVERTENCIAS_CASOS Adv
+                      INNER JOIN Socios Soc ON Adv.CEDULA = Soc.Cedula
+                      INNER JOIN CBR_ADVERTENCIAS_TIPO Tip ON Adv.COD_ADVERTENCIA = Tip.COD_ADVERTENCIA
+                      INNER JOIN AFI_ESTADOS_PERSONA Est ON Soc.ESTADOACTUAL = Est.COD_ESTADO
+                      {whereSql}";
+
+
+            var ctx = new QueryContext(
+                Filtros: filtros,
+                FechaInicio: fi,
+                FechaCorte: fc,
+                Advertencias: advertencias,
+                EstadosPersona: estadosP,
+                EsExportar: esExportar,
+                Offset: offset,
+                PageSize: pageSize
+            );
+             
+            var p = BuildParameters(ctx);
+
+            // 6) Ejecutar con DbHelper (usa tu PortalDB que depende de _config)
+
+
+            var totalResp = DbHelper.ExecuteSingleQuery<int>(_portalDB, codEmpresa, countSql, defaultValue: 0, parameters: p);
+
+
+            var listResp = DbHelper.ExecuteListQuery<CoAdvertenciasControlData>(_portalDB, codEmpresa, listSql, parameters: p);
+
+
+            // 7) Mapear respuesta final
+            var result = new CoAdvertenciasControlLista
+            {
+                totales = new CoAdvertenciasControlTotales
+                {
+                    total = totalResp.Result,
+                    montototal = 0 // tu SELECT no devuelve 'monto'; ajústalo si corresponde
+                },
+                lista = listResp.Result ?? new List<CoAdvertenciasControlData>()
+            };
+
+            return DbHelper.CreateOkResponse(result);
+        }
+
+
+        private static void NormalizeDates(
+            CoAdvertenciasControlFiltros filtros,
+            out DateTime fi,
+            out DateTime fc)
         {
-            return conditions.Count == 0 ? string.Empty : "WHERE " + string.Join(" AND ", conditions);
+
+            fi = DateTime.SpecifyKind(filtros.fecha_inicio!.Value.Date, DateTimeKind.Unspecified);
+            fc = DateTime.SpecifyKind(filtros.fecha_corte!.Value.Date.AddDays(1).AddTicks(-1), DateTimeKind.Unspecified);
+        }
+
+        private static (string[] advertencias, string[] estadosP) ParseLists(CoAdvertenciasControlFiltros filtros)
+        {
+            var advertencias = (filtros.lista_advertencias ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            var estadosP = (filtros.lista_estados_personas ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            return (advertencias, estadosP);
+        }
+
+        private static (string sortField, string sortOrder) GetSorting(CoAdvertenciasControlFiltros filtros)
+        {
+            var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+    {
+        "Linea","COD_ADVERTENCIA","cedula","nombre","estado","AdvTipo",
+        "FECHA_VENCE","REGISTRO_FECHA","REGISTRO_USUARIO","RESOLUCION_FECHA","RESOLUCION_USUARIO"
+    };
+
+            var sortFieldRaw = string.IsNullOrWhiteSpace(filtros.sortField) ? "Linea" : filtros.sortField.Trim();
+            var sortField = allowed.Contains(sortFieldRaw) ? sortFieldRaw : "Linea";
+            var sortOrder = filtros.sortOrder == 0 ? "DESC" : "ASC";
+            return (sortField, sortOrder);
+        }
+
+        private static (int offset, int pageSize) GetPaging(CoAdvertenciasControlFiltros filtros, bool esExportar)
+        {
+            if (esExportar) return (0, 0);
+            var pageSize = Math.Max(1, filtros.paginacion.GetValueOrDefault(30));
+            var offsetRaw = filtros.pagina.GetValueOrDefault(0);
+            var offset = Math.Max(0, offsetRaw);
+
+            return (offset, pageSize);
+        }
+
+        private static string BuildWhereSql(CoAdvertenciasControlFiltros filtros, string[] advertencias, string[] estadosP)
+        {
+            var where = new List<string>();
+
+
+            if (!string.IsNullOrWhiteSpace(filtros.cedula))
+                where.Add("Soc.Cedula LIKE '%' + @cedula + '%'");
+
+            if (!string.IsNullOrWhiteSpace(filtros.nombre))
+                where.Add("Soc.Nombre LIKE '%' + @nombre + '%'");
+            if (!string.IsNullOrWhiteSpace(filtros.usuario))
+                where.Add("Adv.Registro_Usuario LIKE '%' + @usuario + '%'");
+            if (!string.IsNullOrWhiteSpace(filtros.filtro))
+                where.Add("(Adv.COD_ADVERTENCIA LIKE '%' + @term + '%' OR Soc.Cedula LIKE '%' + @term + '%' OR Soc.Nombre LIKE '%' + @term + '%' OR Tip.DESCRIPCION LIKE '%' + @term + '%')");
+
+            if (advertencias.Length > 0)
+                where.Add("Adv.Cod_Advertencia IN @lista_advertencias");
+            if (estadosP.Length > 0)
+                where.Add("Soc.EstadoActual IN @ListaEstadosP");
+
+            switch (filtros.estado)
+            {
+                case "Activa":
+                    where.Add("Adv.Estado = 'A'");
+                    where.Add("Adv.Registro_Fecha BETWEEN @fecha_inicio AND @fecha_corte");
+                    break;
+                case "Resuelta":
+                    where.Add("Adv.Estado = 'R'");
+                    where.Add("Adv.RESOLUCION_FECHA BETWEEN @fecha_inicio AND @fecha_corte");
+                    break;
+                case "Descartada":
+                    where.Add("Adv.Estado = 'D'");
+                    where.Add("Adv.RESOLUCION_FECHA BETWEEN @fecha_inicio AND @fecha_corte");
+                    break;
+                default:
+                    where.Add("Adv.Registro_Fecha BETWEEN @fecha_inicio AND @fecha_corte");
+                    break;
+            }
+
+            return " WHERE " + string.Join(" AND ", where) ;
+        }
+
+        private sealed record QueryContext(
+            CoAdvertenciasControlFiltros Filtros,
+            DateTime FechaInicio,
+            DateTime FechaCorte,
+            string[] Advertencias,
+            string[] EstadosPersona,
+            bool EsExportar,
+            int Offset,
+            int PageSize
+        );
+
+
+        private static DynamicParameters BuildParameters(QueryContext ctx)
+        {
+            var p = new Dapper.DynamicParameters();
+
+            p.Add("@cedula", ctx.Filtros.cedula ?? string.Empty);
+            p.Add("@nombre", ctx.Filtros.nombre ?? string.Empty);
+            p.Add("@usuario", ctx.Filtros.usuario ?? string.Empty);
+            p.Add("@term", ctx.Filtros.filtro ?? string.Empty);
+
+            if (ctx.Advertencias.Length > 0)
+                p.Add("@lista_advertencias", ctx.Advertencias);
+
+            if (ctx.EstadosPersona.Length > 0)
+                p.Add("@ListaEstadosP", ctx.EstadosPersona);
+
+            p.Add("@fecha_inicio", ctx.FechaInicio);
+            p.Add("@fecha_corte", ctx.FechaCorte);
+
+            if (!ctx.EsExportar)
+            {
+                p.Add("@offset", ctx.Offset);
+                p.Add("@pageSize", ctx.PageSize);
+            }
+
+            return p;
         }
 
 
