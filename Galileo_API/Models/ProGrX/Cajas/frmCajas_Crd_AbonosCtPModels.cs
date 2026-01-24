@@ -97,4 +97,147 @@
         public int dias_calculo { get; set; }
         public DateTime fecha_corte { get; set; }
     }
+
+    public class CajasCrdAbonoTipoRequest
+    {
+        public int operacion_id { get; set; }
+        public DateTime fecha_cancelacion { get; set; }
+    }
+
+    public class CajasCrdAbonosInfoCancelacionData
+    {
+        public decimal intcor { get; set; }
+        public decimal intmor { get; set; }
+        public decimal cargos { get; set; }
+        public decimal principal { get; set; }
+        public decimal cargoanticipo { get; set; }
+        public decimal cuota { get; set; }
+        public decimal poliza { get; set; }
+        public decimal iva { get; set; }
+    }
+
+    public class CajasCrdAbonosCtPRegistrarAbonoRequest
+    {
+        public string mcaja { get; set; } = "";
+        public int mapertura { get; set; }
+        public int msesionid { get; set; }
+        public string mtiquete { get; set; } = "";
+        public string munidad { get; set; } = "";
+        public int operacionid { get; set; }
+
+        public string tipodoc { get; set; } = "";
+
+        public DateTime? fechacancelacion { get; set; }
+
+        public bool fechacancelacion_enabled { get; set; } = false;
+
+        public decimal totalcajas { get; set; }
+        public decimal totalcancela { get; set; }
+        public decimal diferencia { get; set; }
+        public decimal datosanticipo { get; set; }
+        public decimal datosinteres { get; set; }
+        public decimal datosamortiza { get; set; }
+        public decimal iva { get; set; }
+        public decimal totalpagar { get; set; }
+        public decimal control { get; set; }
+        public string proceso { get; set; } = "";
+        public int plazo { get; set; }
+
+        public int diasactivo { get; set; }
+        public bool recalculacuota { get; set; }
+
+        public TipoAbono tipoabono { get; set; }
+        public bool diferenciaaplenabled { get; set; }
+        public string diferenciaapltexto { get; set; } = "";
+
+        public string usuario { get; set; } = "";
+        public string oficinaunidad { get; set; } = "";
+        public string oficinacentrocosto { get; set; } = "";
+        public string divisa { get; set; } = "";
+        public string cedula { get; set; } = "";
+        public string nombre { get; set; } = "";
+        public string codigo { get; set; } = "";
+        public string descripcion { get; set; } = "";
+        public string notas { get; set; } = "";
+        public decimal saldo_anterior { get; set; }
+        public decimal saldo_nuevo { get; set; }
+        public bool retencion { get; set; } = false;
+
+        public bool factura_visible { get; set; } = false;
+        public string tiquete_electronico { get; set; } = "";
+        public bool recibo_digital { get; set; } = false;
+    }
+
+    public enum TipoAbono
+    {
+        Ordinario = 0,
+        Extraordinario = 1,
+        Cancelacion = 2,
+        AdelantoCuotas = 3
+    }
+
+    public class CajasCrdAbonosCtPRegistrarAbonoResponse
+    {
+        public bool extraordinario { get; set; }
+        public string mensaje { get; set; } = "";
+        public string tipodoc { get; set; } = "";
+        public string numdoc { get; set; } = "";
+    }
+
+    public class CajasCrdInfoExtraordinarioData
+    {
+        public int dias { get; set; }
+        public decimal intereses { get; set; }
+        public decimal principal { get; set; }
+        public decimal cargos { get; set; }
+    }
+
+    public class CajasCrdDocumentoAfectacionData
+    {
+        public decimal intcor { get; set; }
+        public decimal intmor { get; set; }
+        public decimal principal { get; set; }
+        public decimal cargos { get; set; }
+        public decimal polizas { get; set; }
+        public decimal iva { get; set; }
+    }
+
+    public class CajasCrdOperacionProxPagoData
+    {
+        public DateTime? fecha_pago { get; set; }
+        public int? num_cuota { get; set; }
+        public decimal? cuota { get; set; }
+        public string notas { get; set; } = "";
+    }
+
+    public class CajasCrdDocAfectacionCargoRow
+    {
+        public decimal? mov_monto { get; set; }
+        public string cod_unidad { get; set; } = "";
+        public string cod_centro_costo { get; set; } = "";
+        public string cod_cuenta { get; set; } = "";
+        public int id_solicitud { get; set; }
+        public string codigo { get; set; } = "";
+    }
+
+    public class CajasCrdDocAfectacionPolizaRow
+    {
+        public decimal mov_monto { get; set; }
+        public string cod_cuenta { get; set; } = "";
+    }
+
+    public class CajasCrdOperacionCtasData
+    {
+        public string cod_divisa { get; set; } = "COL";
+        public string cod_unidad { get; set; } = "";
+        public string cod_centro_costo { get; set; } = "";
+
+        public string ctaintc { get; set; } = "";
+        public string ctaintm { get; set; } = "";
+        public string ctaiva { get; set; } = "";
+        public string ctaamortiza { get; set; } = "";
+
+        public int id_solicitud { get; set; }
+        public string codigo { get; set; } = "";
+    }
 }

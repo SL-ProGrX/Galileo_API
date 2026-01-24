@@ -49,5 +49,39 @@ namespace Galileo.DataBaseTier
             }
             return result;
         }
+
+        public bool fxgCongelamiento(int CodEmpresa, string vCedula, string vParametro)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            bool result = false;
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+
+                var query = $@"
+                select isnull(count(*),0)
+                from afi_congelar
+                where estado = 'A'
+                  and @parametro = 0
+                  and cedula = @cedula
+                  and GETDATE() between fecha_inicia and fecha_finaliza";
+
+                var existe = connection.QueryFirstOrDefault<int>(
+                    query,
+                    new { cedula = vCedula, parametro = vParametro }
+                );
+
+                result = existe > 0;
+            }
+            catch
+            {
+                result = false;
+            }
+
+            return result;
+        }
+
+
     }
 }
