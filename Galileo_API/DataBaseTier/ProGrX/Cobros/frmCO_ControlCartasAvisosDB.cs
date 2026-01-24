@@ -143,7 +143,7 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cobros
             else
             {
                 key = SortKey.CedulaAsc;
-            }
+            } 
 
             return key;
 
