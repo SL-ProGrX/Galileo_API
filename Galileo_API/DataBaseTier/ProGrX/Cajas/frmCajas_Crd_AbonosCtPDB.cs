@@ -133,78 +133,85 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return result!;
         }
 
-        public ErrorDto CajasCrdAbonosCtP_Abono_Registrar(int CodEmpresa, CajasCrdAbonosCtPRegistrarAbonoRequest req)
+        public ErrorDto CajasCrdAbonosCtP_Abono_Registrar(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req)
         {
             try
             {
                 req.notas = MProGrxMain.sbSIFCleanTxtInject(req.notas);
 
-                var vVerifica = fxVerifica(CodEmpresa, req);
-                if (vVerifica?.Code.HasValue == true && vVerifica.Code != 0)
-                    return vVerifica;
+                var ver = fxVerifica(codempresa, req);
+                if (FailIfError(ver, out var e)) return e;
+
+                var vNumDoc = _mRecibos.fxDocumentoConsecutivo(codempresa, req.tipodoc).ToString();
 
                 var extraordinario = false;
-                long numDoc = _mRecibos.fxDocumentoConsecutivo(CodEmpresa, req.tipodoc);
-                string vNumDoc = numDoc.ToString();
-                var r = ProcesarRegistroAbono(CodEmpresa, req, vNumDoc, ref extraordinario);
+                var r = ProcesarRegistroAbono(codempresa, req, vNumDoc, ref extraordinario);
+                if (FailIfError(r, out e)) return e;
 
-                if (r?.Code.HasValue == true && r.Code != 0)
-                    return r;
-
-                //Indica si debe reprocesar el Plan de Pagos por registro de Abonos Extraordinario
+                // Reproceso por extraordinario
                 if (extraordinario)
                 {
-                    var rp = exec(CodEmpresa,
+                    var rp = exec(codempresa,
                         @"exec spCrdPlanPagos @operacionid;
-                        exec spCrdPlanPagosActivaCuota @operacionid,0;
-                        exec spCrdPlanPagosMoraActualizaOp @operacionid;",
+                  exec spCrdPlanPagosActivaCuota @operacionid,0;
+                  exec spCrdPlanPagosMoraActualizaOp @operacionid;",
                         new { operacionid = req.operacionid });
 
-                    if (rp?.Code.HasValue == true && rp.Code != 0)
-                        return rp;
+                    if (FailIfError(rp, out e)) return e;
                 }
 
                 var (bitacoraDesc, comprobanteTitulo, comprobanteConcepto) = ObtenerDescripcionComprobante(req);
 
                 DBBitacora.Bitacora(new BitacoraInsertarDto
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = req.usuario.ToUpper(),
+                    EmpresaId = codempresa,
+                    Usuario = (req.usuario ?? "").ToUpper(),
                     DetalleMovimiento = bitacoraDesc,
                     Movimiento = "Registra - WEB",
                     Modulo = vModulo
                 });
 
-                var resp = CajasCrdAbonosCtP_DocumentoAbono_Generar(CodEmpresa, comprobanteTitulo, comprobanteConcepto, req, vNumDoc);
-                if (resp?.Code.HasValue == true && resp.Code != 0)
-                    return resp;
+                var resp = CajasCrdAbonosCtP_DocumentoAbono_Generar(
+                    codempresa, comprobanteTitulo, comprobanteConcepto, req, vNumDoc);
 
-                string pDocumentoElectronico = string.Empty;
+                if (FailIfError(resp, out e)) return e;
 
+                // Documento electrónico (si aplica)
+                var docElectronico = "";
                 if (req.factura_visible)
                 {
-                    pDocumentoElectronico = ProcesarDocumentoElectronico(CodEmpresa, req, vNumDoc);
+                    docElectronico = ProcesarDocumentoElectronico(codempresa, req, vNumDoc) ?? "";
                 }
 
-                var mensajeFinal = ProcesarRecibo(CodEmpresa, req,pDocumentoElectronico, vNumDoc);
+                var mensajeFinal = ProcesarRecibo(codempresa, req, docElectronico, vNumDoc);
 
+                // Trazabilidad
                 var codDoc = req.tipodoc == "CA" ? "07" : "05";
                 var consecutivo = req.tipodoc == "CA" ? vNumDoc : $"{vNumDoc}-{req.tipodoc}";
 
-                var rt = _mProGrxMain.sbTrazabilidad_Inserta(CodEmpresa, codDoc, consecutivo, vNumDoc, req.usuario, nuevo: true);
-                if (rt?.Code.HasValue == true && rt.Code != 0)
-                    return rt;
+                var rt = _mProGrxMain.sbTrazabilidad_Inserta(
+                    codempresa, codDoc, consecutivo, vNumDoc, req.usuario ?? "", nuevo: true);
 
-                return new ErrorDto
-                {
-                    Code = 0,
-                    Description = mensajeFinal
-                };
+                if (FailIfError(rt, out e)) return e;
+
+                return new ErrorDto { Code = 0, Description = mensajeFinal };
             }
             catch (Exception ex)
             {
                 return new ErrorDto { Code = -1, Description = ex.Message };
             }
+        }
+
+        private static bool FailIfError(ErrorDto? r, out ErrorDto err)
+        {
+            if (r?.Code.HasValue == true && r.Code != 0)
+            {
+                err = r;
+                return true;
+            }
+
+            err = new ErrorDto { Code = 0, Description = "" };
+            return false;
         }
 
         private ErrorDto ProcesarRegistroAbono(int CodEmpresa, CajasCrdAbonosCtPRegistrarAbonoRequest req, string vNumDoc, ref bool extraordinario)
@@ -319,132 +326,149 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
         #region helpers CajasCrdAbonosCtP_Abono_Registrar 
 
-        public ErrorDto fxVerifica(int CodEmpresa, CajasCrdAbonosCtPRegistrarAbonoRequest req)
+        public ErrorDto fxVerifica(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req)
         {
-            var mensajes = new List<string>();
-
             try
             {
-                const string sqlControl = @"
-                select 
-                  dbo.fxCrd_Operacion_Control(@operacionid) as control,
-                  dbo.fxCrd_Operacion_Movimientos_Cajas_Acepta(@operacionid) as cajamov;";
+                var mensajes = new List<string>();
 
-                var data = DbHelper.ExecuteSingleQuery<dynamic>(
-                    _portalDb,
-                    CodEmpresa,
-                    sqlControl,
-                    null,
-                    new { operacionid = req.operacionid }
-                ).Result;
+                agregar_validaciones_control_y_cajamov(codempresa, req, mensajes);
+                agregar_validaciones_negocio(req, mensajes);
+                agregar_validaciones_montos(req, mensajes);
+                agregar_validacion_cajas(codempresa, req, mensajes);
 
-                var vcontrol = data?.control == null ? 0m : (decimal)data.control;
-                var vcajasmov = data?.cajamov != null && Convert.ToInt32(data.cajamov) == 1;
-
-                // Control de cambios
-                if (vcontrol != req.control)
-                    mensajes.Add("Esta Operación ha sido cambiada por otro proceso, vuelva a consultarla!");
-
-                if (!vcajasmov)
-                    mensajes.Add("Esta Operación -> No Permite Movimientos en Cajas! Puede que sea recaudo de ahorros o porque el código de linea no lo admite, revise!");
-
-                // Verifica el proceso
-                if (req.proceso == "J" && !_mCajas.fxCajasAbonosCbrJud(CodEmpresa, req.mcaja, req.usuario))
-                    mensajes.Add("Esta CAJA no cuenta con permisos para realizar abonos a Creditos en Cobro Judicial, verifique...");
-
-                // Verifica que la diferencia del Monto a Cancelar no supere el Saldo
-                if (req.diferencia < 0 && (req.saldo_nuevo + req.diferencia) < 0)
-                    mensajes.Add("La diferencia supera el saldo!, verifique...");
-
-                // Verificar Congelamiento
-                if (_mAfiliacion.fxgCongelamiento(CodEmpresa, req.cedula, "per_abono_cajas"))
-                    mensajes.Add("Esta Persona se encuentra CONGELADA, verifique...");
-
-       
-                if (req.operacionid == 0)
-                    mensajes.Add("Número de Operacion no es válido...");
-
-                // Verifica Saldo Actual
-                if (!MCredito.fxCrdSaldoVerifica(DbHelper.OpenConnection(_portalDb, CodEmpresa), req.operacionid, req.saldo_anterior))
-                    mensajes.Add("Esta Operación ha sido modificada, actualice los datos nuevamente antes de realizar el abono...");
-
-                if (!req.retencion)
-                {
-                    if (req.datosamortiza > req.saldo_anterior)
-                        mensajes.Add("La Amortización es mayor al Saldo Actual...");
-                }
-                else if (req.plazo < 999 && req.datosamortiza > req.saldo_anterior)
-                {
-                    mensajes.Add($"La Amortización es mayor que el Remanente a Recaudar : {req.saldo_anterior:N2}");
-                }
-
-                if (req.totalpagar <= 0)
-                    mensajes.Add("El total a pagar no es un dato válido...verifique...!");
-
-                if (req.totalcajas <= 0)
-                    mensajes.Add("Los valores Recibidos en Cajas no son válidos...verifique...!");
-
-                if (!mensajes.Any() && req.totalcajas != req.totalpagar)
-                    mensajes.Add("Los valores Recibidos en Cajas son diferentes al monto a Pagar establecido para el Abono...!");
-
-                // Validacion para Abonos Extraordinarios
-                if (!mensajes.Any() && req.tipoabono == TipoAbono.Extraordinario && req.diferencia != 0)
-                    mensajes.Add("El Monto detallado en formas de pago no cubre el compromiso de pago. SOLUCION: Copie el Monto detallado en el monto del abono extraordinario...!");
-                
-                //Validacion para Cancelacion de Deudas
-                if (!mensajes.Any() && req.tipoabono == TipoAbono.Cancelacion && req.diferencia != 0)
-                    mensajes.Add("El Monto detallado en formas de pago no cubre el compromiso de cancelación...!");
-
-                string estadoCaja = _mCajas.fxCajasAperturaEstado(CodEmpresa, req.mcaja, req.mapertura);
-                if (estadoCaja == "C")
-                    mensajes.Add($"La apertura ..:{req.mapertura} de esta caja ha sido cerrada!");
-
-                // Cajas: Validación General sobre el Estado de la Caja, Aperturas, Sesiones, y Accesos
-                const string sqlVal = @"
-                exec spCajas_Transac_Validacion 
-                  @caja, @usuario, @apertura, @sesionid, 
-                  'Crd', @codigo, @monto, @tiquete;";
-
-                var val = DbHelper.ExecuteSingleQuery<dynamic>(
-                    _portalDb,
-                    CodEmpresa,
-                    sqlVal,
-                    null,
-                    new
-                    {
-                        caja = req.mcaja,
-                        usuario = req.usuario,
-                        apertura = req.mapertura,
-                        sesionid = req.msesionid,
-                        codigo = (req.codigo ?? "").Trim(),
-                        monto = req.totalcajas,
-                        tiquete = req.mtiquete
-                    }
-                ).Result;
-
-                var validacion = (val?.Validacion as string) ?? (val?.validacion as string);
-                if (!string.IsNullOrWhiteSpace(validacion))
-                    mensajes.Add(validacion);
-
-                // === Resultado final ===
-                if (mensajes.Any())
-                {
-                    return new ErrorDto
+                return mensajes.Count > 0
+                    ? new ErrorDto
                     {
                         Code = -2,
-                        Description = string.Join(
-                            Environment.NewLine,
-                            mensajes.Select(m => $"- {m}")
-                        )
-                    };
-                }
-
-                return new ErrorDto { Code = 0, Description = "" };
+                        Description = string.Join(Environment.NewLine, mensajes.Select(m => $"- {m}"))
+                    }
+                    : new ErrorDto { Code = 0, Description = "" };
             }
             catch (Exception ex)
             {
                 return new ErrorDto { Code = -1, Description = ex.Message };
             }
+        }
+
+        private void agregar_validaciones_control_y_cajamov(
+            int codempresa,
+            CajasCrdAbonosCtPRegistrarAbonoRequest req,
+            List<string> mensajes)
+        {
+            const string sqlControl = @"
+                select 
+                  dbo.fxCrd_Operacion_Control(@operacionid) as control,
+                  dbo.fxCrd_Operacion_Movimientos_Cajas_Acepta(@operacionid) as cajamov;";
+
+            var data = DbHelper.ExecuteSingleQuery<dynamic>(
+                _portalDb,
+                codempresa,
+                sqlControl,
+                null,
+                new { operacionid = req.operacionid }
+            ).Result;
+
+            decimal vcontrol = data?.control == null ? 0m : (decimal)data.control;
+            bool vcajasmov = data?.cajamov != null && Convert.ToInt32(data.cajamov) == 1;
+
+            if (vcontrol != req.control)
+                mensajes.Add("Esta Operación ha sido cambiada por otro proceso, vuelva a consultarla!");
+
+            if (!vcajasmov)
+                mensajes.Add("Esta Operación -> No Permite Movimientos en Cajas! Puede que sea recaudo de ahorros o porque el código de linea no lo admite, revise!");
+
+            if (req.proceso == "J" && !_mCajas.fxCajasAbonosCbrJud(codempresa, req.mcaja, req.usuario))
+                mensajes.Add("Esta CAJA no cuenta con permisos para realizar abonos a Creditos en Cobro Judicial, verifique...");
+
+            if (req.diferencia < 0 && (req.saldo_nuevo + req.diferencia) < 0)
+                mensajes.Add("La diferencia supera el saldo!, verifique...");
+
+            if (_mAfiliacion.fxgCongelamiento(codempresa, req.cedula, "per_abono_cajas"))
+                mensajes.Add("Esta Persona se encuentra CONGELADA, verifique...");
+
+            if (req.operacionid == 0)
+                mensajes.Add("Número de Operacion no es válido...");
+
+            using (var conn = DbHelper.OpenConnection(_portalDb, codempresa))
+            {
+                if (!MCredito.fxCrdSaldoVerifica(conn, req.operacionid, req.saldo_anterior))
+                    mensajes.Add("Esta Operación ha sido modificada, actualice los datos nuevamente antes de realizar el abono...");
+            }
+        }
+
+        private static void agregar_validaciones_negocio(
+            CajasCrdAbonosCtPRegistrarAbonoRequest req,
+            List<string> mensajes)
+        {
+            if (!req.retencion)
+            {
+                if (req.datosamortiza > req.saldo_anterior)
+                    mensajes.Add("La Amortización es mayor al Saldo Actual...");
+            }
+            else if (req.plazo < 999 && req.datosamortiza > req.saldo_anterior)
+            {
+                mensajes.Add($"La Amortización es mayor que el Remanente a Recaudar : {req.saldo_anterior:N2}");
+            }
+
+            if (mensajes.Count > 0)
+                return;
+
+            if (req.tipoabono == TipoAbono.Extraordinario && req.diferencia != 0)
+                mensajes.Add("El Monto detallado en formas de pago no cubre el compromiso de pago. SOLUCION: Copie el Monto detallado en el monto del abono extraordinario...!");
+
+            if (req.tipoabono == TipoAbono.Cancelacion && req.diferencia != 0)
+                mensajes.Add("El Monto detallado en formas de pago no cubre el compromiso de cancelación...!");
+        }
+
+        private static void agregar_validaciones_montos(
+            CajasCrdAbonosCtPRegistrarAbonoRequest req,
+            List<string> mensajes)
+        {
+            if (req.totalpagar <= 0)
+                mensajes.Add("El total a pagar no es un dato válido...verifique...!");
+
+            if (req.totalcajas <= 0)
+                mensajes.Add("Los valores Recibidos en Cajas no son válidos...verifique...!");
+
+            if (mensajes.Count == 0 && req.totalcajas != req.totalpagar)
+                mensajes.Add("Los valores Recibidos en Cajas son diferentes al monto a Pagar establecido para el Abono...!");
+        }
+
+        private void agregar_validacion_cajas(
+            int codempresa,
+            CajasCrdAbonosCtPRegistrarAbonoRequest req,
+            List<string> mensajes)
+        {
+            string estadoCaja = _mCajas.fxCajasAperturaEstado(codempresa, req.mcaja, req.mapertura);
+            if (estadoCaja == "C")
+                mensajes.Add($"La apertura ..:{req.mapertura} de esta caja ha sido cerrada!");
+
+            const string sqlVal = @"
+            exec spCajas_Transac_Validacion 
+              @caja, @usuario, @apertura, @sesionid, 
+              'Crd', @codigo, @monto, @tiquete;";
+
+            var val = DbHelper.ExecuteSingleQuery<dynamic>(
+                _portalDb,
+                codempresa,
+                sqlVal,
+                null,
+                new
+                {
+                    caja = req.mcaja,
+                    usuario = req.usuario,
+                    apertura = req.mapertura,
+                    sesionid = req.msesionid,
+                    codigo = (req.codigo ?? "").Trim(),
+                    monto = req.totalcajas,
+                    tiquete = req.mtiquete
+                }
+            ).Result;
+
+            string? validacion = (val?.Validacion as string) ?? (val?.validacion as string);
+            if (!string.IsNullOrWhiteSpace(validacion))
+                mensajes.Add(validacion);
         }
 
         private ErrorDto registrar_ordinario(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req, string vNumDoc, ref bool extraordinario)
