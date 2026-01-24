@@ -134,19 +134,9 @@ namespace PgxAPI.DataBaseTier.ProGrX.Cobros
             var field = string.IsNullOrWhiteSpace(filtros.sortField) ? "cedula" : filtros.sortField.Trim();
             var asc = filtros.sortOrder != 0;
 
-            SortKey key;
-
-            if (CcaSortMap.TryGetValue(field, out var pair))
-            {
-                key = asc ? pair.Asc : pair.Desc;
-            }
-            else
-            {
-                key = SortKey.CedulaAsc;
-            }
-
-            return key;
-
+            return CcaSortMap.TryGetValue(field, out var pair)
+                ? (asc ? pair.Asc : pair.Desc)
+                : SortKey.CedulaAsc;
         }
 
         private static string BuildOrderBySqlCartas(SortKey key) =>
