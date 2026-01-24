@@ -56,6 +56,7 @@
         public bool? ilocalizable { get; set; }
         public bool? int_grupos_asociados { get; set; }
         public bool? int_requiere_cuenta_destino { get; set; }
+        public bool? ts_aplica { get; set; }
     }
 
     public class DropDownListaDivisas

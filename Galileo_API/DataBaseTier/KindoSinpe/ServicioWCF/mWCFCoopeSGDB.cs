@@ -62,6 +62,15 @@ namespace Galileo_API.DataBaseTier
             );
         }
 
+        public ErrorDto fxTesEmisionSinpeTiempoReal(
+            int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
+        {
+            return EjecutarOperacion(
+                () => _cliente.fxTesEmisionSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador),
+                "Error al fxTesEmisionSinpeTiempoReal"
+            );
+        }
+
         #endregion
     }
 }

@@ -2000,24 +2000,24 @@ namespace CoreInterno
     public partial class ComisionRespectivaRequest
     {
         
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=0)]
-        public CoreInterno.SI_Rastro rastro;
+        [System.ServiceModel.MessageBodyMemberAttribute(Namespace = "http://prosoft.CGPbackOffice/", Order = 0)]
+        public CoreInterno.SI_Rastro rastro { get; set; }
         
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=1)]
-        public string cuentaIBAN;
-        
+        public string cuentaIBAN { get; set; }
+
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=2)]
-        public string identificacion;
-        
+        public string identificacion { get; set; }
+
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=3)]
-        public int codigoMoneda;
-        
+        public int codigoMoneda { get; set; }
+
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=4)]
-        public decimal monto;
-        
+        public decimal monto { get; set; }
+
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=5)]
-        public int codigoServicio;
-        
+        public int codigoServicio { get; set; }
+
         public ComisionRespectivaRequest()
         {
         }
@@ -2039,15 +2039,15 @@ namespace CoreInterno
     public partial class ComisionRespectivaResponse
     {
         
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=0)]
-        public CoreInterno.E_Resultado ComisionRespectivaResult;
+        [System.ServiceModel.MessageBodyMemberAttribute(Namespace = "http://prosoft.CGPbackOffice/", Order = 0)]
+        public CoreInterno.E_Resultado ComisionRespectivaResult { get; set; }
         
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=1)]
-        public decimal comision;
-        
+        public decimal comision { get; set; }
+
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=2)]
-        public int codigoMonedaComision;
-        
+        public int codigoMonedaComision { get; set; }
+
         public ComisionRespectivaResponse()
         {
         }
