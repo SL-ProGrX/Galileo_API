@@ -72,6 +72,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
 
 
+        private enum SortKey
+        {
+            LineaAsc, LineaDesc,
+            CodAdvertenciaAsc, CodAdvertenciaDesc,
+            CedulaAsc, CedulaDesc,
+            NombreAsc, NombreDesc,
+            EstadoAsc, EstadoDesc,
+            AdvTipoAsc, AdvTipoDesc,
+            FechaVenceAsc, FechaVenceDesc,
+            RegistroFechaAsc, RegistroFechaDesc,
+            RegistroUsuarioAsc, RegistroUsuarioDesc,
+            ResolucionFechaAsc, ResolucionFechaDesc,
+            ResolucionUsuarioAsc, ResolucionUsuarioDesc
+        }
+
 
         public ErrorDto<CoAdvertenciasControlLista> CoAdvertenciasControlBuscar(
             int codEmpresa,
@@ -87,7 +102,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             // 2) Normalizaciones de datos
             NormalizeDates(filtros, out var fi, out var fc);
             var (advertencias, estadosP) = ParseLists(filtros);
-            var (sortField, sortOrder) = GetSorting(filtros);
+            var sortKey = GetSortKey(filtros);
             var (offset, pageSize) = GetPaging(filtros, esExportar);
 
             // 3) WHERE seguro (parametrizado)
@@ -117,7 +132,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         INNER JOIN CBR_ADVERTENCIAS_TIPO Tip ON Adv.COD_ADVERTENCIA = Tip.COD_ADVERTENCIA
         INNER JOIN AFI_ESTADOS_PERSONA Est ON Soc.ESTADOACTUAL = Est.COD_ESTADO";
 
-            var orderBySql = $" ORDER BY {sortField} {sortOrder}";
+            var orderBySql = BuildOrderBySql(sortKey);
             var pagingSql = esExportar ? string.Empty : " OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY";
 
             var listSql = $"{selectBase}{whereSql}{orderBySql}{pagingSql}";
@@ -193,19 +208,67 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             return (advertencias, estadosP);
         }
 
-        private static (string sortField, string sortOrder) GetSorting(CoAdvertenciasControlFiltros filtros)
-        {
-            var allowed = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-    {
-        "Linea","COD_ADVERTENCIA","cedula","nombre","estado","AdvTipo",
-        "FECHA_VENCE","REGISTRO_FECHA","REGISTRO_USUARIO","RESOLUCION_FECHA","RESOLUCION_USUARIO"
-    };
+        private static readonly Dictionary<string, (SortKey Asc, SortKey Desc)> SortMap =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                ["linea"] = (SortKey.LineaAsc, SortKey.LineaDesc),
+                ["cod_advertencia"] = (SortKey.CodAdvertenciaAsc, SortKey.CodAdvertenciaDesc),
+                ["cedula"] = (SortKey.CedulaAsc, SortKey.CedulaDesc),
+                ["nombre"] = (SortKey.NombreAsc, SortKey.NombreDesc),
+                ["estado"] = (SortKey.EstadoAsc, SortKey.EstadoDesc),
+                ["advtipo"] = (SortKey.AdvTipoAsc, SortKey.AdvTipoDesc),
+                ["fecha_vence"] = (SortKey.FechaVenceAsc, SortKey.FechaVenceDesc),
+                ["registro_fecha"] = (SortKey.RegistroFechaAsc, SortKey.RegistroFechaDesc),
+                ["registro_usuario"] = (SortKey.RegistroUsuarioAsc, SortKey.RegistroUsuarioDesc),
+                ["resolucion_fecha"] = (SortKey.ResolucionFechaAsc, SortKey.ResolucionFechaDesc),
+                ["resolucion_usuario"] = (SortKey.ResolucionUsuarioAsc, SortKey.ResolucionUsuarioDesc),
+            };
 
-            var sortFieldRaw = string.IsNullOrWhiteSpace(filtros.sortField) ? "Linea" : filtros.sortField.Trim();
-            var sortField = allowed.Contains(sortFieldRaw) ? sortFieldRaw : "Linea";
-            var sortOrder = filtros.sortOrder == 0 ? "DESC" : "ASC";
-            return (sortField, sortOrder);
+        private static SortKey GetSortKey(CoAdvertenciasControlFiltros filtros)
+        {
+            var field = string.IsNullOrWhiteSpace(filtros.sortField)
+                ? "Linea"
+                : filtros.sortField.Trim();
+
+            var asc = filtros.sortOrder != 0; // 1=ASC, 0=DESC
+
+            if (SortMap.TryGetValue(field, out var pair))
+                return asc ? pair.Asc : pair.Desc;
+
+            // Predeterminado seguro
+            return SortKey.LineaDesc;
         }
+
+        private static string BuildOrderBySql(SortKey key)
+        {
+            return key switch
+            {
+                SortKey.LineaAsc => " ORDER BY Adv.Linea ASC",
+                SortKey.LineaDesc => " ORDER BY Adv.Linea DESC",
+                SortKey.CodAdvertenciaAsc => " ORDER BY Adv.COD_ADVERTENCIA ASC",
+                SortKey.CodAdvertenciaDesc => " ORDER BY Adv.COD_ADVERTENCIA DESC",
+                SortKey.CedulaAsc => " ORDER BY Soc.Cedula ASC",
+                SortKey.CedulaDesc => " ORDER BY Soc.Cedula DESC",
+                SortKey.NombreAsc => " ORDER BY Soc.Nombre ASC",
+                SortKey.NombreDesc => " ORDER BY Soc.Nombre DESC",
+                SortKey.EstadoAsc => " ORDER BY estado ASC",
+                SortKey.EstadoDesc => " ORDER BY estado DESC",
+                SortKey.AdvTipoAsc => " ORDER BY Tip.DESCRIPCION ASC",
+                SortKey.AdvTipoDesc => " ORDER BY Tip.DESCRIPCION DESC",
+                SortKey.FechaVenceAsc => " ORDER BY Adv.FECHA_VENCE ASC",
+                SortKey.FechaVenceDesc => " ORDER BY Adv.FECHA_VENCE DESC",
+                SortKey.RegistroFechaAsc => " ORDER BY Adv.REGISTRO_FECHA ASC",
+                SortKey.RegistroFechaDesc => " ORDER BY Adv.REGISTRO_FECHA DESC",
+                SortKey.RegistroUsuarioAsc => " ORDER BY Adv.REGISTRO_USUARIO ASC",
+                SortKey.RegistroUsuarioDesc => " ORDER BY Adv.REGISTRO_USUARIO DESC",
+                SortKey.ResolucionFechaAsc => " ORDER BY Adv.RESOLUCION_FECHA ASC",
+                SortKey.ResolucionFechaDesc => " ORDER BY Adv.RESOLUCION_FECHA DESC",
+                SortKey.ResolucionUsuarioAsc => " ORDER BY Adv.RESOLUCION_USUARIO ASC",
+                SortKey.ResolucionUsuarioDesc => " ORDER BY Adv.RESOLUCION_USUARIO DESC",
+                _ => " ORDER BY Adv.Linea DESC"
+            };
+        }
+
 
         private static (int offset, int pageSize) GetPaging(CoAdvertenciasControlFiltros filtros, bool esExportar)
         {
