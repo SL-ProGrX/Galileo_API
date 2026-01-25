@@ -24,10 +24,10 @@
     {
         public string Tipo { get; set; }
         public string Grupo { get; set; } = string.Empty;
-        public int Inicializa { get; set; }
-        public int MantenerNuevos { get; set; }
-        public int CasosMorosos { get; set; }
-        public int CasosAlDia { get; set; }
+        public int? Inicializa { get; set; }
+        public int? MantenerNuevos { get; set; }
+        public int? CasosMorosos { get; set; }
+        public int? CasosAlDia { get; set; }
     }
 
     public class CbrControlDistribucionResult
