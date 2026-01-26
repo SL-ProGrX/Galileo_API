@@ -36,12 +36,19 @@ namespace Galileo_API.DataBaseTier
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
+                // Evitar ejecutar SQL arbitrario proveniente de la petición.
+                if (string.IsNullOrWhiteSpace(transferencia.gstrQuery))
+                {
+                    return DbHelper.ErrorResponse("Consulta de transferencia inválida o no especificada.");
+                }
+
                 long consc = 0;
                 decimal curMonto = 0;
                 DateTime vFecha = DateTime.Now;
                 string fecha = MProGrXAuxiliarDB.validaFechaGlobal(vFecha, "yyyy-MM-dd HH:mm:ss") ?? string.Empty;
 
-                var query = transferencia.gstrQuery ?? string.Empty;
+                // NOTA: gstrQuery no debe construirse con datos de usuario sin validación previa.
+                var query = transferencia.gstrQuery;
                 var result = conn.Query<TransferenciasData>(query,
                     new
                     {
