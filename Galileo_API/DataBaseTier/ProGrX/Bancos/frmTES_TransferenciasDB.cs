@@ -34,59 +34,56 @@ namespace Galileo_API.DataBaseTier
         public ErrorDto TES_Transferencia_Aceptar(int CodEmpresa, TesTransferenciasInfo transferencia)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
             try
             {
-                // Evitar ejecutar SQL arbitrario proveniente de la petición.
                 if (string.IsNullOrWhiteSpace(transferencia.gstrQuery))
-                {
                     return DbHelper.ErrorResponse("Consulta de transferencia inválida o no especificada.");
-                }
+
+                // 1) Resolver la consulta a una plantilla permitida (servidor)
+                var allowedSql = ResolveAllowedTransferQuery(transferencia.gstrQuery);
+                if (allowedSql is null)
+                    return DbHelper.ErrorResponse("Consulta de transferencia no permitida.");
 
                 long consc = 0;
-                decimal curMonto = 0;
-                DateTime vFecha = DateTime.Now;
-                string fecha = MProGrXAuxiliarDB.validaFechaGlobal(vFecha, "yyyy-MM-dd HH:mm:ss") ?? string.Empty;
+                decimal curMonto = 0m;
+                var vFecha = DateTime.Now;
 
-                // NOTA: gstrQuery no debe construirse con datos de usuario sin validación previa.
-                var query = transferencia.gstrQuery;
-                var result = conn.Query<TransferenciasData>(query,
-                    new
-                    {
-                        banco = transferencia.parametros.banco,
-                        tipoDoc = transferencia.parametros.tipoDoc,
-                        minimo = transferencia.parametros.minimo,
-                        maximo = transferencia.parametros.maximo,
-                        fechaInicio = transferencia.parametros.fechaInicio,
-                        fechaCorte = transferencia.parametros.fechaCorte
-                    }).ToList();
+                // 2) Ejecutar SOLO SQL permitido
+                var result = conn.Query<TransferenciasData>(allowedSql, new
+                {
+                    banco = transferencia.parametros.banco,
+                    tipoDoc = transferencia.parametros.tipoDoc,
+                    minimo = transferencia.parametros.minimo,
+                    maximo = transferencia.parametros.maximo,
+                    fechaInicio = transferencia.parametros.fechaInicio,
+                    fechaCorte = transferencia.parametros.fechaCorte
+                }).ToList();
 
                 if (result.Count > 0)
                 {
                     foreach (var item in result)
                     {
-                        consc = consc == 0
-                        ? _mTesoreria.fxTesTipoDocConsecInterno(
-                              CodEmpresa, transferencia.id_Banco, transferencia.tipoDoc!, "+", transferencia.plan!
-                          ).Result
-                        : consc + 1;
+                        consc = NextConsecutivo(CodEmpresa, transferencia, consc);
+                        var vDocumento = consc.ToString("D4");
 
-                        string vDocumento = consc.ToString("D4");
+                        curMonto += item.monto;
 
-                        curMonto = curMonto + item.monto;// falta el modelo de la consulta principal
-
-                        var queryUpdate = $@"Update Tes_Transacciones Set Estado='T' , 
-                                                Fecha_Emision = @fechaEmision,
-                                                Ubicacion_Actual = 'T',
-                                                FECHA_TRASLADO = @fechaEmision,
-                                                NDocumento = @nDocumento,
-                                                user_genera = @usuario,
-                                                documento_base = @bancoConsec,
-                                                COD_PLAN = @plan
-                                                 Where NSolicitud= @nSolicitud";
+                        const string queryUpdate = @"
+UPDATE Tes_Transacciones
+SET Estado = 'T',
+    Fecha_Emision = @fechaEmision,
+    Ubicacion_Actual = 'T',
+    FECHA_TRASLADO = @fechaEmision,
+    NDocumento = @nDocumento,
+    user_genera = @usuario,
+    documento_base = @bancoConsec,
+    COD_PLAN = @plan
+WHERE NSolicitud = @nSolicitud;";
 
                         conn.Execute(queryUpdate, new
                         {
-                            fechaEmision = fecha,
+                            fechaEmision = vFecha, // DateTime, no string
                             nDocumento = vDocumento,
                             usuario = transferencia.usuario,
                             bancoConsec = transferencia.bancoConsec,
@@ -94,9 +91,7 @@ namespace Galileo_API.DataBaseTier
                             nSolicitud = item.nSolicitud
                         });
 
-                        //Bitacora Especial
-                        var qryBitacora = $"exec spTesBitacora @Solicitud, '10', @Detalle ,@Usuario ";
-                       
+                        const string qryBitacora = @"EXEC spTesBitacora @Solicitud, '10', @Detalle, @Usuario;";
                         conn.Execute(qryBitacora, new
                         {
                             Solicitud = item.nSolicitud,
@@ -104,22 +99,17 @@ namespace Galileo_API.DataBaseTier
                             Usuario = transferencia.usuario
                         });
 
-                        //'Afecta Saldo en Bancos
-                        var qrySaldos = $"exec spTESAfectaBancos @NSOLICITUD , 'E'";
+                        const string qrySaldos = @"EXEC spTESAfectaBancos @NSOLICITUD, 'E';";
                         conn.Execute(qrySaldos, new { NSOLICITUD = item.nSolicitud });
 
-                        //Actualiza Cuentas Corrientes
                         if (item.modulo == "CC" && item.subModulo == "C")
                         {
                             ActualizaReferencia(conn, vDocumento, item);
                         }
-
                     }
 
                     ActualizaTesBancosDocsConse(conn, consc, transferencia);
                 }
-
-                //sale con reportes
 
                 return DbHelper.OkResponse("Transferencias Aceptadas Correctamente");
             }
@@ -129,7 +119,98 @@ namespace Galileo_API.DataBaseTier
             }
         }
 
+        private static class TransferSql
+        {
+            // SIN FILTRO
+            public const string QueryTransac_Base = @"
+Select TOP (@top) *
+From Tes_Transacciones
+Where Estado = 'P' And Tipo = @tipoDoc
+  And ID_Banco= @banco And Autoriza='S' and fecha_hold is null
+Order by Nsolicitud";
 
+            public const string BaseQuery_Base = @"
+(SELECT TOP (@top) nsolicitud
+ FROM Tes_Transacciones
+ WHERE Estado = 'P' AND Tipo = @tipoDoc
+   AND ID_Banco = @banco AND Autoriza = 'S' AND fecha_hold IS NULL
+ Order by Nsolicitud)";
+
+            // POR SOLICITUDES
+            public const string QueryTransac_Solicitudes = @"
+Select TOP (@top) *
+From Tes_Transacciones
+Where Estado = 'P' And Tipo = @tipoDoc
+  And ID_Banco= @banco And Autoriza='S' and fecha_hold is null
+  And NSolicitud Between @minimo And @maximo
+Order by Nsolicitud";
+
+            public const string BaseQuery_Solicitudes = @"
+(SELECT TOP (@top) nsolicitud
+ FROM Tes_Transacciones
+ WHERE Estado = 'P' AND Tipo = @tipoDoc
+   AND ID_Banco = @banco AND Autoriza = 'S' AND fecha_hold IS NULL
+   And NSolicitud Between @minimo And @maximo
+ Order by Nsolicitud)";
+
+            // POR FECHAS
+            public const string QueryTransac_Fechas = @"
+Select TOP (@top) *
+From Tes_Transacciones
+Where Estado = 'P' And Tipo = @tipoDoc
+  And ID_Banco= @banco And Autoriza='S' and fecha_hold is null
+  And Fecha_Solicitud Between @fechaInicio And @fechaCorte
+Order by Nsolicitud";
+
+            public const string BaseQuery_Fechas = @"
+(SELECT TOP (@top) nsolicitud
+ FROM Tes_Transacciones
+ WHERE Estado = 'P' AND Tipo = @tipoDoc
+   AND ID_Banco = @banco AND Autoriza = 'S' AND fecha_hold IS NULL
+   And Fecha_Solicitud Between @fechaInicio And @fechaCorte
+ Order by Nsolicitud)";
+        }
+
+        private static string NormalizeSql(string sql)
+        {
+            if (string.IsNullOrWhiteSpace(sql)) return string.Empty;
+            return string.Join(" ", sql.Split(default(string[]), StringSplitOptions.RemoveEmptyEntries));
+        }
+
+        private static string? ResolveAllowedTransferQuery(string incomingSql)
+        {
+            var inc = NormalizeSql(incomingSql);
+
+            if (inc == NormalizeSql(TransferSql.QueryTransac_Base)) return TransferSql.QueryTransac_Base;
+            if (inc == NormalizeSql(TransferSql.QueryTransac_Solicitudes)) return TransferSql.QueryTransac_Solicitudes;
+            if (inc == NormalizeSql(TransferSql.QueryTransac_Fechas)) return TransferSql.QueryTransac_Fechas;
+
+            return null;
+        }
+        private long NextConsecutivo(int CodEmpresa, TesTransferenciasInfo transferencia, long actual)
+        {
+            if (actual > 0) return actual + 1;
+
+            var conseR = _mTesoreria.fxTesTipoDocConsecInterno(
+                CodEmpresa,
+                transferencia.id_Banco,
+                transferencia.tipoDoc ?? string.Empty,
+                "+",
+                transferencia.plan ?? string.Empty);
+
+            if (conseR.Code == -1)
+                throw new InvalidOperationException("No fue posible obtener el consecutivo interno.");
+
+            return conseR.Result;
+        }
+
+
+        /// <summary>
+        /// Método para actualizar la referencia de una transferencia en la base de datos.
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="vDocumento"></param>
+        /// <param name="item"></param>
         private void ActualizaReferencia(SqlConnection conn, string vDocumento,  TransferenciasData item)
         {
             var QueryCC = "";
