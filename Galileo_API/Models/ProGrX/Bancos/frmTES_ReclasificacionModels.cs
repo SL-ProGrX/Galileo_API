@@ -2,7 +2,7 @@
 {
     public class TesReclasificacionDto
     {
-        public int nsolicitud { get; set; }
+        public int nsolicitud { get; set; } = 0;
         public int? id_banco { get; set; }
         public string? tipo { get; set; }
         public string? codigo { get; set; }
@@ -78,7 +78,7 @@
 
     public class TesReclasificaBancoModel
     {
-        public int nsolicitud { get; set; }
+        public int nsolicitud { get; set; } = 0;
         public string? bancoDestino { get; set; }
         public string? tipo { get; set; }
         public string? usuario { get; set; }
@@ -87,9 +87,9 @@
 
     public class TesReclasificaDocumentoModel
     {
-        public int nsolicitud { get; set; }
+        public int nsolicitud { get; set; } = 0;
         public string? ndocumento { get; set; }
-        public int id_banco { get; set; }
+        public int id_banco { get; set; } = 0;
         public string? tipo { get; set; }
         public string? usuario { get; set; }
         public string? nota { get; set; }
@@ -97,23 +97,23 @@
 
     public class TesReclasificaSolicitudModel
     {
-        public int nsolicitud { get; set; }
+        public int nsolicitud { get; set; } = 0;
         public string? ndocumento { get; set; }
-        public int id_banco { get; set; }
+        public int id_banco { get; set; } = 0;
         public string? tipo { get; set; }
         public string? usuario { get; set; }
         public string? nota { get; set; }
-        public int tipoId { get; set; }
-        public bool permiteReqId { get; set; }
+        public int tipoId { get; set; } = 0;
+        public bool permiteReqId { get; set; } = false;
     }
 
     public class TesSolicitudesData
     {
-        public int nsolicitud { get; set; }
+        public int nsolicitud { get; set; } = 0;
         public string? tipo { get; set; }
         public string? codigo { get; set; }
         public string? beneficiario { get; set; }
-        public float monto { get; set; }
+        public float monto { get; set; } = 0;
         public string? estado { get; set; }
         public string? cod_unidad { get; set; }
     }
