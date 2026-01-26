@@ -133,7 +133,7 @@ ORDER BY cod_Plan DESC;";
         /// <summary>
         /// Obtener información de grupos bancarios
         /// </summary>
-        public ErrorDto<TesBancosGruposData> TES_Planes_BancosGrupos_Obtener(int CodEmpresa, int banco)
+        public ErrorDto<Galileo.Models.ProGrX.Bancos.TesBancosGruposData> TES_Planes_BancosGrupos_Obtener(int CodEmpresa, int banco)
         {
             return WithConn(CodEmpresa, conn =>
             {
@@ -144,8 +144,8 @@ FROM TES_BANCOS B
 INNER JOIN TES_BANCOS_GRUPOS Bg ON B.COD_GRUPO = Bg.COD_GRUPO
 WHERE B.ID_Banco = @banco;";
 
-                return conn.QueryFirstOrDefault<TesBancosGruposData>(sql, new { banco })
-                       ?? new TesBancosGruposData();
+                return conn.QueryFirstOrDefault<Galileo.Models.ProGrX.Bancos.TesBancosGruposData>(sql, new { banco })
+                       ?? new Galileo.Models.ProGrX.Bancos.TesBancosGruposData();
             });
         }
 

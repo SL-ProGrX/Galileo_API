@@ -23,7 +23,7 @@ namespace Galileo_API.BusinessLogic
             return PlanesDb.TES_PlanesConsulta_Obtener(CodEmpresa, banco, codPlan);
         }
 
-        public ErrorDto<TesBancosGruposData> TES_Planes_BancosGrupos_Obtener(int CodEmpresa, int banco)
+        public ErrorDto<Galileo.Models.ProGrX.Bancos.TesBancosGruposData> TES_Planes_BancosGrupos_Obtener(int CodEmpresa, int banco)
         {
             return PlanesDb.TES_Planes_BancosGrupos_Obtener(CodEmpresa, banco);
         }
