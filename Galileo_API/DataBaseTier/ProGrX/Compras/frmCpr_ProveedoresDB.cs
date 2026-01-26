@@ -152,12 +152,12 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
                 {
                     const string sql = @"SELECT P.* FROM CPR_PROVEEDORES_TEMPO P WHERE P.PROVEEDOR_CODIGO = @Codigo;";
                     var result = conn.QueryFirstOrDefault<CprProveedoresDto>(sql, new { Codigo = codigo });
-                    return result ?? new CprProveedoresDto();
+                    return result ?? new CprProveedoresDto { proveedor_codigo = 0, registro_fecha = DateTime.MinValue };
                 });
             }
             catch (Exception ex)
             {
-                return Fail(ex, new CprProveedoresDto());
+                return Fail(ex, new CprProveedoresDto { proveedor_codigo = 0, registro_fecha = DateTime.MinValue });
             }
         }
 

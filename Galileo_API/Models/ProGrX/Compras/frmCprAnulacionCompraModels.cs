@@ -12,21 +12,21 @@
     public class CompraAnulacionDto
     {
         public string Cod_Factura { get; set; } = string.Empty;
-        public int Cod_Proveedor { get; set; }
+        public required int Cod_Proveedor { get; set; }
         public string Cod_Orden { get; set; } = string.Empty;
         public string Cod_Compra { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
         public string Forma_Pago { get; set; } = string.Empty;
         public string Cxp_Estado { get; set; } = string.Empty;
-        public DateTime Fecha { get; set; }
-        public decimal Sub_Total { get; set; }
+        public required DateTime Fecha { get; set; }
+        public required decimal Sub_Total { get; set; }
         public string Notas { get; set; } = string.Empty;
-        public decimal Descuento { get; set; }
-        public decimal Imp_Ventas { get; set; }
-        public decimal Imp_Consumo { get; set; }
-        public decimal Total { get; set; }
+        public required decimal Descuento { get; set; }
+        public required decimal Imp_Ventas { get; set; }
+        public required decimal Imp_Consumo { get; set; }
+        public required decimal Total { get; set; }
         public string Asiento_Estado { get; set; } = string.Empty;
-        public DateTime Asiento_Fecha { get; set; }
+        public required DateTime Asiento_Fecha { get; set; }
     }
 
     public class CompraDetalleDto

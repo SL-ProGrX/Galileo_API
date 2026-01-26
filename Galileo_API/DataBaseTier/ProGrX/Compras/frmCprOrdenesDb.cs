@@ -266,7 +266,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 var jsonString = jOrdenes?.ToString() ?? "{}";
-                var ordenes = JsonConvert.DeserializeObject<OrdenDatosAcciones>(jsonString) ?? new OrdenDatosAcciones();
+                var ordenes = JsonConvert.DeserializeObject<OrdenDatosAcciones>(jsonString) ?? new OrdenDatosAcciones { edita = false };
                 return OrdenesGuardar(CodEmpresa, ordenes);
             }
             catch (Exception ex)

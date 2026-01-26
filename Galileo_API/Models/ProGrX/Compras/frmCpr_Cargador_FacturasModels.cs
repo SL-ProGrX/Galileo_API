@@ -15,18 +15,18 @@ namespace Galileo.Models.CPR
 
     public class CprFacturasXmlDto
     {
-        public int id { get; set; }
+        public required int id { get; set; }
         public string cod_uen { get; set; } = string.Empty;
         public string cod_documento { get; set; } = string.Empty;
         public string clave { get; set; } = string.Empty;
         public string ced_jur_prov { get; set; } = string.Empty;
         public string nombre_prov { get; set; } = string.Empty;
-        public decimal monto_total { get; set; } 
+        public required decimal monto_total { get; set; } 
         public string cod_divisa { get; set; } = string.Empty;
-        public DateTime fecha { get; set; }
+        public required DateTime fecha { get; set; }
         public string estado { get; set; } = string.Empty;
-        public string registro_usuario { get; set; } = string.Empty;
-        public DateTime registro_fecha { get; set; }
+        public  string registro_usuario { get; set; } = string.Empty;
+        public required DateTime registro_fecha { get; set; }
         public string cod_proveedor { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
         public List<CprFacturasLineasXmlData>? lineas { get; set; }

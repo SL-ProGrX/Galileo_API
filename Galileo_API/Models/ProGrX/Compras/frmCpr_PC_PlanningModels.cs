@@ -2,8 +2,8 @@ namespace Galileo.Models.CPR
 {
     public class CprPlanComprasDto
     {
-        public int id_pc { get; set; }
-        public int id_periodo { get; set; }
+        public required int id_pc { get; set; }
+        public required int id_periodo { get; set; }
         public string cod_unidad { get; set; } = string.Empty;
         public string? cod_unidad_destino { get; set; }
         public string? estado { get; set; }
@@ -41,9 +41,9 @@ namespace Galileo.Models.CPR
 
     public class CprPlanDTCortesDto
     {
-        public DateTime corte { get; set; }
-        public int cantidad { get; set; }
-        public decimal monto { get; set; }
+        public required DateTime corte { get; set; }
+        public required int cantidad { get; set; }
+        public required decimal monto { get; set; }
     }
 
     public class CprPlanDTUpsert

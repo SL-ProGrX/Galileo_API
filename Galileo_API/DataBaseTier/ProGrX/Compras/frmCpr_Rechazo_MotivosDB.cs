@@ -225,7 +225,7 @@ OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
 
                 var count = existsResp.Result;
 
-                if (motivo.isNew)
+                if (motivo.isNew ?? false)
                 {
                     if (count > 0)
                         return DbHelper.ErrorResponse($"El motivo de rechazo con el código {cod} ya existe.", -2);
