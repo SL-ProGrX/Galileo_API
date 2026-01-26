@@ -41,8 +41,8 @@ namespace Galileo_API.DataBaseTier
                 DateTime vFecha = DateTime.Now;
                 string fecha = MProGrXAuxiliarDB.validaFechaGlobal(vFecha, "yyyy-MM-dd HH:mm:ss") ?? string.Empty;
 
-                var query = transferencia.gstrQuery;
-                var result = conn.Query<TransferenciasData>(query!,
+                var query = transferencia.gstrQuery!;
+                var result = conn.Query<TransferenciasData>(query,
                     new
                     {
                         banco = transferencia.parametros!.banco,
