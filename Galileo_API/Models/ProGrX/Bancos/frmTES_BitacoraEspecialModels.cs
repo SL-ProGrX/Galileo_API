@@ -6,11 +6,11 @@ namespace Galileo.Models.TES
         public List<DropDownListaGenericaModel<string>>? tipos_documento { get; set; }
         public string? estado { get; set; }
         public string? tipo_fecha { get; set; }
-        public DateTime? fecha_inicio { get; set; } 
-        public DateTime? fecha_corte { get; set; }
+        public Nullable<DateTime> fecha_inicio { get; set; } = DateTime.Now.AddMonths(-1);
+        public Nullable<DateTime> fecha_corte { get; set; } = DateTime.Now;
         public List<DropDownListaGenericaModel<string>>? movimientos { get; set; }
-        public DateTime? mov_fecha_inicio { get; set; }
-        public DateTime? mov_fecha_corte { get; set; }
+        public Nullable<DateTime> mov_fecha_inicio { get; set; } = DateTime.Now.AddMonths(-1);
+        public Nullable<DateTime> mov_fecha_corte { get; set; } = DateTime.Now;
         public bool chk_revision { get; set; }
         public string? usuario { get; set; }
         public string? revision { get; set; }
