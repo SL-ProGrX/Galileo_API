@@ -15,22 +15,22 @@
 
     public class TesTransferenciasInfo
     {
-        public int id_Banco { get; set; }
+        public int id_Banco { get; set; } = 0;
         public string? tipoDoc { get; set; }
         public string? plan { get; set; }
         public string? usuario { get; set; }
         public string? bancoConsec { get; set; }
-        public string? gstrQuery { get; set; }
-        public TesTransferenciasParametros? parametros { get; set; }
+        public string gstrQuery { get; set; } = string.Empty;
+        public TesTransferenciasParametros parametros { get; set; } = new TesTransferenciasParametros();
     }
 
     public class TesTransferenciasParametros
     {
-        public int banco { get; set; }
+        public int banco { get; set; } = 0;
         public string tipoDoc { get; set; } = string.Empty;
-        public int minimo { get; set; }
-        public int maximo { get; set; }
-        public DateTime? fechaInicio { get; set; }
-        public DateTime? fechaCorte { get; set; }
+        public int minimo { get; set; } = 0;
+        public int maximo { get; set; } = 0;
+        public DateTime? fechaInicio { get; set; } = null;
+        public DateTime? fechaCorte { get; set; } = null;
     }
 }

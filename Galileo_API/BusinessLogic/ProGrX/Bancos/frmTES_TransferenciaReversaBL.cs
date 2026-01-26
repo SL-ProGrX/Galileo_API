@@ -32,7 +32,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 
         public ErrorDto<List<TransferenciaSolicitudData>> TES_TransferenciaReversa_Obtener(int CodEmpresa, string solicitud)
         {
-            var solicitaData = JsonConvert.DeserializeObject<TransferenciaSolicitudData>(solicitud);
+            var solicitaData = JsonConvert.DeserializeObject<TransferenciaSolicitudData>(solicitud) ?? new TransferenciaSolicitudData();
             return _TransferenciaReversaDB.TES_TransferenciaReversa_Obtener(CodEmpresa, solicitaData);
         }
 
