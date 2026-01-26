@@ -56,9 +56,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public ErrorDto<List<CbrIncobrableGeneral>> CoIncobrablesListGeneral_Obtener(int CodEmpresa, CbrIncobrableFiltros filtros)
         {
 
-            var inicio = DateTime.SpecifyKind(filtros.Inicio, DateTimeKind.Utc);
-            var corte = DateTime.SpecifyKind(filtros.Corte, DateTimeKind.Utc);
-            var auxiliar = DateTime.SpecifyKind(filtros.Auxiliar, DateTimeKind.Utc);
+            DateTime? inicio = filtros.Inicio.HasValue
+                ? DateTime.SpecifyKind(filtros.Inicio.Value, DateTimeKind.Utc)
+                : null;
+
+            DateTime? corte = filtros.Corte.HasValue
+               ? DateTime.SpecifyKind(filtros.Corte.Value, DateTimeKind.Utc)
+               : null;
+            DateTime? auxiliar = filtros.Auxiliar.HasValue
+              ? DateTime.SpecifyKind(filtros.Auxiliar.Value, DateTimeKind.Utc)
+              : null;
+           
 
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
