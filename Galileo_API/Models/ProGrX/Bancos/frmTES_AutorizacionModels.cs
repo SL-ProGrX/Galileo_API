@@ -66,10 +66,10 @@ namespace Galileo.Models.TES
 
     public class TesAutorizaParametros
     {
-        public int codEmpresa { get; set; }
+        public int codEmpresa { get; set; } = 0;
         public string? clave { get; set; }
         public string? usuario { get; set; }
-        public int tipo_autorizacion { get; set; }
+        public int tipo_autorizacion { get; set; } = 0;
         public bool? estadoSinpe { get; set; }
         public string? tipoGiroSinpe { get; set; }
         public string? tipoDocumento { get; set; }
