@@ -15,7 +15,7 @@ namespace Galileo.Models.CPR
 
     public class CprProveedoresDto
     {
-        public int proveedor_codigo { get; set; }
+        public required int proveedor_codigo { get; set; }
         public string tipo { get; set; } = string.Empty;
         public string cedjur { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
@@ -24,9 +24,9 @@ namespace Galileo.Models.CPR
         public string? email { get; set; }
         public string estado { get; set; } = string.Empty;
         public int? cod_proveedor { get; set; }
-        public DateTime registro_fecha { get; set; }
+        public required DateTime registro_fecha { get; set; }
         public string? registro_usuario { get; set; }
-        public DateTime modifica_fecha { get; set; }
+        public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
     }
 

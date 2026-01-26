@@ -17,7 +17,7 @@
 
     public class TesAnulacionAnulaModel
     {
-        public int nsolicitud { get; set; }
+        public int nsolicitud { get; set; } = 0;
         public string? notas { get; set; }
         public string? usuario { get; set; }
         public bool? copia { get; set; }
