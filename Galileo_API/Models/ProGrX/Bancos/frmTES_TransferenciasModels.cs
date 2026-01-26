@@ -21,7 +21,7 @@
         public string? usuario { get; set; }
         public string? bancoConsec { get; set; }
         public string gstrQuery { get; set; } = string.Empty;
-        public TesTransferenciasParametros? parametros { get; set; }
+        public TesTransferenciasParametros parametros { get; set; } = new TesTransferenciasParametros();
     }
 
     public class TesTransferenciasParametros

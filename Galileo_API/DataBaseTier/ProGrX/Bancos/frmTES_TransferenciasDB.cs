@@ -52,7 +52,7 @@ namespace Galileo_API.DataBaseTier
                 var result = conn.Query<TransferenciasData>(query,
                     new
                     {
-                        banco = transferencia.parametros!.banco,
+                        banco = transferencia.parametros.banco,
                         tipoDoc = transferencia.parametros.tipoDoc,
                         minimo = transferencia.parametros.minimo,
                         maximo = transferencia.parametros.maximo,
