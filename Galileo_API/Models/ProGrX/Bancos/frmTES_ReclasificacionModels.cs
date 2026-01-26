@@ -76,36 +76,49 @@
         public string? tipoDesc { get; set; }
     }
 
-    public class TesReclasificaBancoModel
+    // =========================
+    // Reclasificación (modelos)
+    // =========================
+
+    /// <summary>
+    /// Base con propiedades comunes (evita duplicación Sonar)
+    /// </summary>
+    public class TesReclasificaBaseModel
     {
         public int nsolicitud { get; set; } = 0;
+        public string? tipo { get; set; }
+        public string? usuario { get; set; }
+        public string? nota { get; set; }
+    }
+
+    public class TesReclasificaBancoModel : TesReclasificaBaseModel
+    {
         public string? bancoDestino { get; set; }
-        public string? tipo { get; set; }
-        public string? usuario { get; set; }
-        public string? nota { get; set; }
     }
 
-    public class TesReclasificaDocumentoModel
+    /// <summary>
+    /// Base para reclasificar por documento/solicitud
+    /// </summary>
+    public class TesReclasificaDocBaseModel : TesReclasificaBaseModel
     {
-        public int nsolicitud { get; set; } = 0;
         public string? ndocumento { get; set; }
         public int id_banco { get; set; } = 0;
-        public string? tipo { get; set; }
-        public string? usuario { get; set; }
-        public string? nota { get; set; }
     }
 
-    public class TesReclasificaSolicitudModel
+    public class TesReclasificaDocumentoModel : TesReclasificaDocBaseModel
     {
-        public int nsolicitud { get; set; } = 0;
-        public string? ndocumento { get; set; }
-        public int id_banco { get; set; } = 0;
-        public string? tipo { get; set; }
-        public string? usuario { get; set; }
-        public string? nota { get; set; }
+        public bool DocBase { get; set; } = false;
+    }
+
+    public class TesReclasificaSolicitudModel : TesReclasificaDocBaseModel
+    {
         public int tipoId { get; set; } = 0;
         public bool permiteReqId { get; set; } = false;
     }
+
+    // =========================
+    // Solicitudes
+    // =========================
 
     public class TesSolicitudesData
     {
