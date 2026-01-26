@@ -53,10 +53,10 @@
     {
         public string Estado { get; set; } = string.Empty;
         public string? Usuario { get; set; } = string.Empty;
-        public DateTime Inicio { get; set; }
-        public DateTime Corte { get; set; }
+        public DateTime? Inicio { get; set; }
+        public DateTime? Corte { get; set; }
         public string? Filtro { get; set; } = string.Empty;
-        public DateTime Auxiliar { get; set; }
+        public DateTime? Auxiliar { get; set; }
     }
         
 }
