@@ -78,10 +78,12 @@
 
     public class TesConciliaResultados : TesConciliaMovimientoBase
     {
+        public bool mov { get; set; } = false;
     }
 
     public class TesConciliaAsigna : TesConciliaMovimientoBase
     {
+        public bool mov { get; set; } = false;
     }
 
     // =========================
@@ -180,9 +182,11 @@
 
     public class TesConciliacionDetallesData : TesConciliacionDetallesBase
     {
+        public bool detalle { get; set; } = false;
     }
 
     public class TesConciliacionDetallesLoteData : TesConciliacionDetallesBase
     {
+        public bool detalle { get; set; } = false;
     }
 }
