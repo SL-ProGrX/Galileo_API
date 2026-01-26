@@ -20,7 +20,7 @@
         public string? plan { get; set; }
         public string? usuario { get; set; }
         public string? bancoConsec { get; set; }
-        public string? gstrQuery { get; set; }
+        public string gstrQuery { get; set; } = string.Empty;
         public TesTransferenciasParametros? parametros { get; set; }
     }
 
