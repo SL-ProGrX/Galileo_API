@@ -94,7 +94,7 @@
         public string fecha { get; set; } = string.Empty;
         public required long cod_proveedor { get; set; }
         public List<FacturaDetalleDto> lineas { get; set; } = new List<FacturaDetalleDto>();
-        public float total { get; set; }
+        public required float total { get; set; }
         public string? notas { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string cargo { get; set; } = string.Empty;
