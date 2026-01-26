@@ -17,7 +17,7 @@ namespace Galileo.Models.CPR
     {
         public string cod_contrato { get; set; } = string.Empty;
         public string? descripcion { get; set; } = string.Empty;
-        public int cod_proveedor { get; set; }
+        public required int cod_proveedor { get; set; }
         public string? proveedor { get; set; } = string.Empty;
         public string? estado { get; set; } = string.Empty;
         public int? periodo_garantia { get; set; }
@@ -55,7 +55,7 @@ namespace Galileo.Models.CPR
 
     public class CprContratosEstadosDto
     {
-        public int linea_id { get; set; }
+        public required int linea_id { get; set; }
         public string cod_contrato { get; set; } = string.Empty;
         public string estado { get; set; } = string.Empty;
         public Nullable<DateTime> fecha_inicio { get; set; }
@@ -66,7 +66,7 @@ namespace Galileo.Models.CPR
 
     public class CprContratosProductosDto
     {
-        public int linea_id { get; set; }
+        public required int linea_id { get; set; }
         public string cod_contrato { get; set; } = string.Empty;
         public string cod_producto { get; set; } = string.Empty;
         public string? descripcion { get; set; } = string.Empty;
@@ -76,7 +76,7 @@ namespace Galileo.Models.CPR
 
     public class CprContratosProrrogasDto
     {
-        public int id_prorroga { get; set; }
+        public required int id_prorroga { get; set; }
         public string cod_contrato { get; set; } = string.Empty;
         public Nullable<DateTime> fecha { get; set; }
         public string? motivos { get; set; } = string.Empty;

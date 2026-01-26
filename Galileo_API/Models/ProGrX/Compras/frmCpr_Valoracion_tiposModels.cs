@@ -10,7 +10,7 @@ namespace Galileo.Models.CPR
     {
         public string val_id { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public bool activo { get; set; }
+        public required bool activo { get; set; }
     }
 
     public class CprValoraItemsDtoList
@@ -23,6 +23,6 @@ namespace Galileo.Models.CPR
     {
         public string val_item { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
-        public decimal peso { get; set; }
+        public required decimal peso { get; set; }
     }
 }
