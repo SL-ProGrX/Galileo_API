@@ -70,7 +70,7 @@ namespace Galileo.Models.CPR
 
     public class CprSolicitudBsDto
     {
-        public int cpr_id { get; set; }
+        public required int cpr_id { get; set; }
         public string cod_producto { get; set; } = string.Empty;
         public string cod_unidad { get; set; } = string.Empty;
         public float monto { get; set; } = 0;
@@ -112,8 +112,8 @@ namespace Galileo.Models.CPR
 
     public class CprSolicitudProvDto
     {
-        public int cpr_id { get; set; }
-        public int proveedor_codigo { get; set; }
+        public required int cpr_id { get; set; }
+        public required int proveedor_codigo { get; set; }
         public string? proveedor_estado { get; set; }
         public string? estado { get; set; }
         public string? notas { get; set; }
@@ -145,7 +145,7 @@ namespace Galileo.Models.CPR
 
     public class CprSolicitudPrvBs
     {
-        public int cpr_id { get; set; }
+        public required int cpr_id { get; set; }
         public string cod_producto { get; set; } = string.Empty;
         public int proveedor_codigo { get; set; } = 0;
         public string? codigo { get; set; }
@@ -263,7 +263,7 @@ namespace Galileo.Models.CPR
     {
         public List<CprSolicitudPrvBs> productos { get; set; } = new List<CprSolicitudPrvBs>();
         public List<CprSolicitudProvValItemData> valoracion { get; set; } = new List<CprSolicitudProvValItemData>();
-        public CprSolicitudPrvBs cotizacion { get; set; } = new CprSolicitudPrvBs();
+        public CprSolicitudPrvBs cotizacion { get; set; } = new CprSolicitudPrvBs { cpr_id = 0 };
     }
 
     public class CprParametrosValBusqueda
@@ -289,18 +289,18 @@ namespace Galileo.Models.CPR
     public class CprSolicitusCotizacionGuardar
     {
         public List<CprSolicitudCotizacionPrvBs> listacotizacion { get; set; } = new List<CprSolicitudCotizacionPrvBs>();
-        public int proveedor_codigo { get; set; }
+        public required int proveedor_codigo { get; set; }
         public string? cotiza_numero { get; set; }
         public string? no_cotizacion { get; set; }
         public int? garantia { get; set; }
-        public decimal tipo_cambio { get; set; }
+        public required decimal tipo_cambio { get; set; }
         public Nullable<DateTime> plazo { get; set; }
     }
 
     public class CprSolicitusCotizacionGuardarDetalle
     {
         public List<CprSolicitudCotizacionPrvBs> listacotizacion { get; set; } = new List<CprSolicitudCotizacionPrvBs>();
-        public CprSolicitudPrvBs cotizacion { get; set; } = new CprSolicitudPrvBs();
+        public CprSolicitudPrvBs cotizacion { get; set; } = new CprSolicitudPrvBs { cpr_id = 0 };
         public List<CprSolicitudCotizacionItemData> cotizaciond { get; set; } = new List<CprSolicitudCotizacionItemData>();
         public int proveedor_codigo { get; set; }
         public string? no_cotizacion { get; set; }

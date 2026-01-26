@@ -66,7 +66,8 @@ namespace Galileo.DataBaseTier
                     Cod_Suspension = r.COD_SUSPENSION,
                     Descripcion = r.descripcion,
                     // Mantiene el contrato del DTO: Activa como bool
-                    Activa = r.ACTIVA == 1
+                    Activa = r.ACTIVA == 1,
+                    Registro_Fecha = DateTime.UtcNow // Set to current UTC time or replace as needed
                 }).ToList()
             };
 
