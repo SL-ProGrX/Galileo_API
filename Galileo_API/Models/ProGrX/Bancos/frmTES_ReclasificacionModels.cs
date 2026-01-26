@@ -1,6 +1,6 @@
 ﻿namespace Galileo.Models.ProGrX.Bancos
 {
-    public class TesReclasificacionDto
+    public class TesTransaccionBaseDto
     {
         public int nsolicitud { get; set; } = 0;
         public int? id_banco { get; set; }
@@ -71,6 +71,14 @@
         public string? concilia_usuario { get; set; }
         public string? cod_plan { get; set; }
         public string? modo_protegido { get; set; }
+    }
+
+    // =========================================================
+    // DTO específico de reclasificación
+    // (solo deja aquí lo que realmente es “extra”)
+    // =========================================================
+    public class TesReclasificacionDto : TesTransaccionBaseDto
+    {
         public string? bancoDesc { get; set; }
         public string? bancoCta { get; set; }
         public string? tipoDesc { get; set; }
@@ -80,9 +88,6 @@
     // Reclasificación (modelos)
     // =========================
 
-    /// <summary>
-    /// Base con propiedades comunes (evita duplicación Sonar)
-    /// </summary>
     public class TesReclasificaBaseModel
     {
         public int nsolicitud { get; set; } = 0;
@@ -96,9 +101,6 @@
         public string? bancoDestino { get; set; }
     }
 
-    /// <summary>
-    /// Base para reclasificar por documento/solicitud
-    /// </summary>
     public class TesReclasificaDocBaseModel : TesReclasificaBaseModel
     {
         public string? ndocumento { get; set; }
