@@ -45,7 +45,7 @@ namespace Galileo.Models.CPR
 
     public class CprContratosAdendumsDto
     {
-        public int id_addendum { get; set; }
+        public required int id_addendum { get; set; }
         public string cod_contrato { get; set; } = string.Empty;
         public string cod_contrato_madre { get; set; } = string.Empty;
         public string? notas { get; set; } = string.Empty;
