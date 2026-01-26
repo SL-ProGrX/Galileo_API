@@ -92,14 +92,14 @@
     {
         public string cod_factura { get; set; } = string.Empty;
         public string fecha { get; set; } = string.Empty;
-        public long cod_proveedor { get; set; }
+        public required long cod_proveedor { get; set; }
         public List<FacturaDetalleDto> lineas { get; set; } = new List<FacturaDetalleDto>();
         public float total { get; set; }
         public string? notas { get; set; }
         public string usuario { get; set; } = string.Empty;
         public string cargo { get; set; } = string.Empty;
-        public float sub_total { get; set; }
-        public float descuento { get; set; }
-        public float imp_ventas { get; set; }
+        public required float sub_total { get; set; }
+        public required float descuento { get; set; }
+        public required float imp_ventas { get; set; }
     }
 }

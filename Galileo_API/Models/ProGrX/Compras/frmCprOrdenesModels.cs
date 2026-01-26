@@ -88,7 +88,7 @@
 
     public class OrdenDatosAcciones
     {
-        public bool edita { get; set; }
+        public required bool edita { get; set; }
         public string cod_orden { get; set; } = string.Empty;
         public string nota { get; set; } = string.Empty;
         public string tipo_orden { get; set; } = string.Empty;
@@ -109,7 +109,7 @@
         public string cod_orden { get; set; } = string.Empty;
         public string cod_producto { get; set; } = string.Empty;
         public string cod_unidad { get; set; } = string.Empty;
-        public int cantidad { get; set; }
+        public required int cantidad { get; set; }
         public string tipo_producto { get; set; } = string.Empty;
         public string? registro_usuario { get; set; } = string.Empty;
         public Nullable<DateTime> registro_fecha { get; set; }
