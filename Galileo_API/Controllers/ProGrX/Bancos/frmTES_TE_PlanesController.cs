@@ -1,4 +1,5 @@
 using Galileo.Models.ERROR;
+using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.TES;
 using Galileo_API.BusinessLogic;
 using Microsoft.AspNetCore.Authorization;
@@ -31,7 +32,7 @@ namespace PGalileo_API.Controllers
         }
 
         [HttpGet("TES_Planes_BancosGrupos_Obtener")]
-        public ErrorDto<TesBancosGruposData> TES_Planes_BancosGrupos_Obtener(int CodEmpresa, int banco)
+        public ErrorDto<Galileo.Models.ProGrX.Bancos.TesBancosGruposData> TES_Planes_BancosGrupos_Obtener(int CodEmpresa, int banco)
         {
             return PlanesBL.TES_Planes_BancosGrupos_Obtener(CodEmpresa, banco);
         }
