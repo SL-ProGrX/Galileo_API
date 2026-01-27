@@ -1,4 +1,8 @@
-﻿namespace Galileo.Models
+﻿using Galileo.Models.TES;
+using Microsoft.Data.SqlClient;
+using System.Data;
+
+namespace Galileo.Models
 {
     public class TesoreriaMaestroModel
     {
@@ -107,4 +111,18 @@
         public string COD_PLAN { get; set; } = string.Empty;
         public short? MODO_PROTEGIDO { get; set; }
     }
+
+    public class FormatoBCRRequest
+    {
+       public SqlConnection conn { get; set; } = new SqlConnection();
+       public int codEmpresa { get; set; } = 0;
+       public int bancoId { get; set; } = 0;
+       public string tipoDoc { get; set; } = string.Empty;
+       public List<TesTransaccionDto> transaccionesList { get; set; } = new List<TesTransaccionDto>();
+       public long vTestKey { get; set; } = 0;
+       public decimal vMontoTotal { get; set; } = 0;
+       public Func<IDbConnection, int, DateTime, int> resolveConsecutivoArchivoDelDia { get; set; } = null!;
+       public Func<long> resolveBancoConsec { get; set; } = null!;
+    }
+
 }

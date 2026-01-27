@@ -7,7 +7,9 @@ using Galileo.Models.FSL;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
+using Microsoft.ReportingServices.Diagnostics.Internal;
 using Newtonsoft.Json;
+using PdfSharp.Pdf.Filters;
 using System.Globalization;
 using System.Text;
 
@@ -16,22 +18,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
     public class FrmTesTransferenciaRepControlDB
     {
         private readonly PortalDB _portalDB;
-        private readonly SeguridadPortalDb _seguridadPortal;
         private readonly MTesoreria mTesoreria;
+        private readonly MTesFuncionesDb mTesFunciones;
 
-        // Defaults (si esto debería venir de parámetros/tabla, se puede mover después)
-        private const string NumNegocio = "003002185187";
-        private const string CedulaReg = "000000155810";
-        private const string Razon = "DEPOSITO GENERAL";
-        private const string zero6Append = "000000";
-        private const string zero12Append = "000000000000";
-        private const string fechaFormat2 = "ddMMyyyy";
 
         public FrmTesTransferenciaRepControlDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
-            _seguridadPortal = new SeguridadPortalDb(config);
             mTesoreria = new MTesoreria(config);
+            mTesFunciones = new MTesFuncionesDb(config);
         }
 
         #region ===== Helpers (anti-duplicidad / Sonar-friendly) =====
@@ -197,7 +192,12 @@ Order by Nsolicitud";
                     "A" => // Banco Nacional
                         ProcesarFormatoA(CodEmpresa, Banco, TipoDoc, NTransac, conn, parametros, LoadTransacciones()),
                     "B" => // Banco Popular
-                        sbTeBancoPopular(CodEmpresa, Banco, TipoDoc, NTransac, LoadTransacciones()),
+                    MTesFuncionesDb.SbTeBancoPopularCore(
+                        codEmpresa: CodEmpresa,
+                        bancoId: Banco,
+                        tipoDoc: TipoDoc,
+                        transaccionesList: LoadTransacciones(),
+                        resolveConsecutivo: () => NTransac),
                     "C" => // BCR Planilla
                         ProcesarFormatoC(CodEmpresa, Banco, TipoDoc, NTransac, conn, parametros, LoadTransacciones()),
                     "D" => sbTeBCR_Empresarial(CodEmpresa, Banco, TipoDoc, NTransac),
@@ -235,7 +235,15 @@ Where Estado = 'T'
 
             int vMonto = conn.QueryFirstOrDefault<int?>(queryA, parametros) ?? 0;
 
-            return sbTeBancoNacional(CodEmpresa, Banco, TipoDoc, NTransac, transacciones, vMonto);
+            return mTesFunciones.SbTeBancoNacionalCore(
+                        conn: conn,
+                        codEmpresa: CodEmpresa,
+                        bancoId: Banco,
+                        tipoDoc: TipoDoc,
+                        transaccionesList: transacciones,
+                        curPlanilla: vMonto,
+                        resolveConsecutivo: () => NTransac
+                    );
         }
 
         private ErrorDto<object> ProcesarFormatoC(
@@ -269,311 +277,36 @@ Where Estado = 'T'
                 totalMonto = (decimal?)resultC.Monto ?? 0m;
             }
 
-            return sbTeBCR(CodEmpresa, Banco, TipoDoc, NTransac, transacciones, xTestKey, totalMonto);
+            FormatoBCRRequest request = new()
+            {
+                conn = conn,
+                codEmpresa = CodEmpresa,
+                bancoId = Banco,
+                tipoDoc = TipoDoc,
+                transaccionesList = transacciones,
+                vTestKey = (int)xTestKey,
+                vMontoTotal = totalMonto,
+                resolveConsecutivoArchivoDelDia = (conn, banco, fecha) =>
+                {
+                    const string q = @"
+                            select count(distinct documento_base)
+                            from Tes_Transacciones
+                            where id_banco = @banco
+                              and fecha_emision = @fecha
+                              and estado = 'T'";
+                    return conn.QueryFirstOrDefault<int>(q, new { banco, fecha }) + 1;
+                },
+                resolveBancoConsec = () => NTransac
+            };
+
+            return mTesFunciones.SbTeBcrCore(
+                       request
+                    );
         }
 
         #endregion
 
         #region ===== Implementaciones (mismas, pero usando helpers) =====
-
-        public ErrorDto<object> sbTeBancoNacional(
-            int CodEmpresa,
-            int vBanco,
-            string vTipoDoc,
-            int vNTransac,
-            List<TesTransaccionDto> transaccionesList,
-            int? curPlanilla)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            int bancoId = vBanco;
-            DateTime vFecha = DateTime.Now;
-
-            decimal curMonto1 = curPlanilla ?? 0m;
-            string strMonto = curMonto1.ToString("0000000000.00", CultureInfo.InvariantCulture).Replace(".", "");
-
-            string vCuentaEmpresa = "";
-            string vNumCliente = "";
-            decimal curMonto2 = 0m;
-            long curCuentas = 0;
-
-            try
-            {
-                string empresaName = "TF " + _seguridadPortal.SeleccionarPgxClientePorCodEmpresa(CodEmpresa).PGX_CORE_DB;
-                string vConcepto = empresaName.PadRight(30, ' ');
-
-                const string qBanco = "select Cta,codigo_Cliente from tes_Bancos Where id_Banco = @banco";
-                var bancoData = conn.QueryFirstOrDefault(qBanco, new { banco = bancoId });
-
-                if (bancoData != null)
-                {
-                    vCuentaEmpresa = (bancoData.Cta ?? "").ToString().Trim().Replace("-", "");
-                    vNumCliente = (bancoData.codigo_Cliente ?? "").ToString().PadLeft(6, '0');
-                }
-
-                long bancoConsec = vNTransac;
-
-                var sb = new StringBuilder();
-
-                // Header
-                var header = new StringBuilder(120);
-                header.Append('1');
-                header.Append(vNumCliente);
-                header.Append(vFecha.Day.ToString("00", CultureInfo.InvariantCulture));
-                header.Append(vFecha.Month.ToString("00", CultureInfo.InvariantCulture));
-                header.Append(vFecha.Year.ToString("0000", CultureInfo.InvariantCulture));
-                header.Append(bancoId.ToString("D12", CultureInfo.InvariantCulture));
-                header.Append("10000");
-                header.Append(strMonto);
-                header.Append("000000000000000000000000");
-                sb.AppendLine(header.ToString());
-
-                int i = 0;
-
-                foreach (var item in transaccionesList)
-                {
-                    i++;
-                    string cuenta = (item.cta_ahorros ?? "").Replace("-", "").Trim();
-                    if (cuenta.Length < 12)
-                        return Err($"Cuenta inválida en solicitud {item.nsolicitud}.");
-
-                    decimal monto = item.monto ?? 0m;
-                    curMonto2 += monto;
-
-                    // sumatoria cuentas (sin dígito verificador)
-                    if (cuenta.Length >= 7)
-                        curCuentas += long.Parse(cuenta.Substring(cuenta.Length - 7, 6), CultureInfo.InvariantCulture);
-
-                    var linea = new StringBuilder(160);
-                    linea.Append('3');
-                    linea.Append(cuenta.Substring(5, 3));
-                    linea.Append(cuenta.Substring(0, 3));
-                    linea.Append("01");
-                    linea.Append(cuenta.Substring(cuenta.Length - 7));
-                    linea.Append(i.ToString("D8", CultureInfo.InvariantCulture));
-
-                    string strMontoDet = monto.ToString("0000000000.00", CultureInfo.InvariantCulture).Replace(".", "");
-                    linea.Append(strMontoDet);
-                    linea.Append(vConcepto);
-                    linea.Append("00");
-
-                    sb.AppendLine(linea.ToString());
-                }
-
-                // Débito empresa
-                if (string.IsNullOrWhiteSpace(vCuentaEmpresa) || vCuentaEmpresa.Length < 8)
-                    return Err("Cuenta empresa inválida o no configurada.");
-
-                var deb = new StringBuilder(160);
-                deb.Append('2');
-                deb.Append(vCuentaEmpresa.Substring(0, 3));
-                deb.Append("10001");
-                deb.Append(vCuentaEmpresa.Substring(vCuentaEmpresa.Length - 7));
-                deb.Append((i + 1).ToString("D8", CultureInfo.InvariantCulture));
-
-                string strMontoEmpresa = curMonto2.ToString("0000000000.00", CultureInfo.InvariantCulture).Replace(".", "");
-                deb.Append(strMontoEmpresa);
-                deb.Append(vConcepto);
-                deb.Append("00");
-                sb.AppendLine(deb.ToString());
-
-                curCuentas += long.Parse(vCuentaEmpresa.Substring(vCuentaEmpresa.Length - 7, 6), CultureInfo.InvariantCulture);
-
-                // Registro control
-                var linea4 = new StringBuilder(200);
-                linea4.Append('4');
-                decimal montoControl = curMonto1 + curMonto2;
-                string strMontoControl = montoControl.ToString("0000000000000.00", CultureInfo.InvariantCulture).Replace(".", "");
-                linea4.Append(strMontoControl);
-                linea4.Append(curCuentas.ToString("D10", CultureInfo.InvariantCulture));
-                linea4.Append("0000000000");
-                linea4.Append(zero12Append);
-                linea4.Append(zero12Append);
-                linea4.Append("00000000");
-                sb.AppendLine(linea4.ToString());
-
-                return ArchivoResponse(bancoConsec, "ENV", sb);
-            }
-            catch (Exception ex)
-            {
-                return Err(ex.Message);
-            }
-        }
-
-        public static ErrorDto<object> sbTeBancoPopular(
-            int CodEmpresa,
-            int vBanco,
-            string vTipoDoc,
-            int vNTransac,
-            List<TesTransaccionDto> transaccionesList)
-        {
-            DateTime vFecha = DateTime.Now;
-
-            try
-            {
-                long bancoConsec = vNTransac;
-                var sb = new StringBuilder();
-
-                foreach (var item in transaccionesList)
-                {
-                    string codigoTrim = item.codigo?.Trim() ?? string.Empty;
-
-                    string codigo10 = codigoTrim.Length switch
-                    {
-                        8 => "0" + codigoTrim.Substring(0, 1) + "0" + codigoTrim.Substring(1, 7),
-                        9 => "0" + codigoTrim,
-                        < 8 => Convert.ToInt64(string.IsNullOrWhiteSpace(codigoTrim) ? "0" : codigoTrim, CultureInfo.InvariantCulture)
-                                    .ToString("D10", CultureInfo.InvariantCulture),
-                        > 10 when codigoTrim.Length >= 10 => codigoTrim.Substring(0, 4) + "0" + codigoTrim.Substring(5, 5),
-                        _ => codigoTrim.PadLeft(10, '0').Substring(0, 10)
-                    };
-
-                    string nombre = (item.beneficiario ?? string.Empty).Trim();
-                    nombre = nombre.Length > 30 ? nombre.Substring(0, 30) : nombre.PadRight(30, ' ');
-
-                    string cuenta = (item.cta_ahorros ?? "0").Trim();
-                    cuenta = cuenta.Length > 13 ? cuenta.Substring(0, 13) : cuenta.PadLeft(13, '0');
-
-                    decimal monto = item.monto ?? 0m;
-                    string strMonto = monto.ToString("000000000.00", CultureInfo.InvariantCulture).Replace(".", "");
-
-                    string strFecha = vFecha.ToString(fechaFormat2, CultureInfo.InvariantCulture);
-
-                    var line = new StringBuilder(140);
-                    line.Append(codigo10);
-                    line.Append(nombre);
-                    line.Append(cuenta);
-                    line.Append(' ');
-                    line.Append(strMonto);
-                    line.Append(strFecha);
-                    line.Append('A');
-                    line.Append("06");
-                    line.Append('P');
-                    line.Append(strFecha);
-                    line.Append(strMonto);
-
-                    sb.AppendLine(line.ToString());
-                }
-
-                return ArchivoResponse(bancoConsec, "txt", sb);
-            }
-            catch (Exception ex)
-            {
-                return Err(ex.Message);
-            }
-        }
-
-        public ErrorDto<object> sbTeBCR(
-            int CodEmpresa,
-            int vBanco,
-            string vTipoDoc,
-            int vNTransac,
-            List<TesTransaccionDto> transaccionesList,
-            long vTestKey,
-            decimal vMontoTotal)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            DateTime vFecha = DateTime.Now;
-
-            try
-            {
-                string vRazon = Razon.PadRight(30, ' ');
-                string vNumNegocio = NumNegocio;
-                string vCedulaReg = CedulaReg;
-
-                // consecutivo diario (ojo: tu query original estaba rara; aquí simplifico a COUNT)
-                const string qCount = @"
-select count(distinct documento_base)
-from Tes_Transacciones
-where id_banco = @banco and fecha_emision = @fecha and estado = 'T'";
-                int i = conn.QueryFirstOrDefault<int>(qCount, new { banco = vBanco, fecha = vFecha }) + 1;
-                string vConArchivo = i.ToString("D3", CultureInfo.InvariantCulture);
-
-                // cuenta banco
-                const string qCuenta = "select Cta from Tes_Bancos where id_Banco = @banco";
-                string vCuentaBancoRaw = conn.QueryFirstOrDefault<string>(qCuenta, new { banco = vBanco }) ?? "0";
-                _ = int.TryParse(vCuentaBancoRaw, out var cuentaN);
-                string vCuentaBanco = "001" + cuentaN.ToString("D8", CultureInfo.InvariantCulture);
-
-                // testkey complementario
-                const string qTestKey = @"select dbo.fxTESBCRTestkey(@cuentaBanco, @montoTotal) as TestKey";
-                int xTestKey = conn.QueryFirstOrDefault<int>(qTestKey, new { cuentaBanco = vCuentaBanco, montoTotal = vMontoTotal });
-                vTestKey = Math.Min(vTestKey + xTestKey, 2147483468);
-
-                string vTesKeyCh = vTestKey.ToString(CultureInfo.InvariantCulture).Trim();
-                if (vTesKeyCh.Length > 12)
-                    vTestKey = long.Parse(vTesKeyCh[^12..], CultureInfo.InvariantCulture);
-
-                long bancoConsec = vNTransac;
-
-                var sb = new StringBuilder();
-
-                // Encabezado
-                var header = new StringBuilder(220);
-                header.Append("000");
-                header.Append(vNumNegocio);
-                header.Append(vConArchivo);
-                header.Append(zero6Append);
-                header.Append(vCedulaReg);
-                header.Append(Convert.ToInt64(vTestKey).ToString("D12", CultureInfo.InvariantCulture));
-                header.Append(zero6Append);
-                header.Append(vFecha.ToString(fechaFormat2, CultureInfo.InvariantCulture));
-                header.Append(new string(' ', 21));
-                header.Append('Y');
-                sb.AppendLine(header.ToString());
-
-                // Línea 1 débito
-                int lineaIndex = 1;
-
-                var debito = new StringBuilder(220);
-                debito.Append("000");
-                debito.Append('1');
-                debito.Append("00000");
-                debito.Append(vCuentaBanco.Trim().PadRight(11).Substring(0, 11));
-                debito.Append('1');
-                debito.Append('4');
-                debito.Append("0000");
-                debito.Append(bancoConsec.ToString("D4", CultureInfo.InvariantCulture));
-                debito.Append(lineaIndex.ToString("D4", CultureInfo.InvariantCulture));
-                debito.Append(((long)(vMontoTotal * 100m)).ToString("D12", CultureInfo.InvariantCulture));
-                debito.Append(vFecha.ToString(fechaFormat2, CultureInfo.InvariantCulture));
-                debito.Append('0');
-                debito.Append(vRazon);
-                sb.AppendLine(debito.ToString());
-
-                foreach (var item in transaccionesList)
-                {
-                    lineaIndex++;
-
-                    string cuenta = (item.cta_ahorros ?? string.Empty).PadRight(11).Substring(0, 11).Trim();
-                    long montoCents = (long)Math.Round(((item.monto ?? 0m) * 100m), 0, MidpointRounding.AwayFromZero);
-
-                    var credito = new StringBuilder(220);
-                    credito.Append("000");
-                    credito.Append('2');
-                    credito.Append("00000");
-                    credito.Append(cuenta);
-                    credito.Append('1');
-                    credito.Append('2');
-                    credito.Append("0000");
-                    credito.Append(bancoConsec.ToString("D4", CultureInfo.InvariantCulture));
-                    credito.Append(lineaIndex.ToString("D4", CultureInfo.InvariantCulture));
-                    credito.Append(montoCents.ToString("D12", CultureInfo.InvariantCulture));
-                    credito.Append(vFecha.ToString(fechaFormat2, CultureInfo.InvariantCulture));
-                    credito.Append('0');
-                    credito.Append(vRazon);
-
-                    sb.AppendLine(credito.ToString());
-                }
-
-                return ArchivoResponse(bancoConsec, "BCR", sb);
-            }
-            catch (Exception ex)
-            {
-                return Err(ex.Message);
-            }
-        }
 
         private ErrorDto<object> sbTeBCR_Empresarial(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
         {
@@ -602,10 +335,10 @@ where id_banco = @banco and fecha_emision = @fecha and estado = 'T'";
                 control.Append("000");
                 control.Append((cedulaReg ?? string.Empty).Trim().PadLeft(12, '0'));
                 control.Append(conArchivo);
-                control.Append(fecha.ToString(fechaFormat2, CultureInfo.InvariantCulture));
-                control.Append(zero12Append);
-                control.Append(zero12Append);
-                control.Append(zero6Append);
+                control.Append(fecha.ToString(MTesFuncionesDb.fechaFormat2, CultureInfo.InvariantCulture));
+                control.Append(MTesFuncionesDb.zero12Append);
+                control.Append(MTesFuncionesDb.zero12Append);
+                control.Append(MTesFuncionesDb.zero6Append);
                 control.Append(new string(' ', 6));
                 control.Append("TLB");
                 control.Append(new string(' ', 128));
@@ -656,10 +389,10 @@ where id_banco = @banco and fecha_emision = @fecha and estado = 'T'";
                 control.Append("000");
                 control.Append((cedulaReg ?? string.Empty).Trim().PadLeft(12, '0'));
                 control.Append(conArchivo);
-                control.Append(fecha.ToString(fechaFormat2, CultureInfo.InvariantCulture));
-                control.Append(zero12Append);
-                control.Append(zero12Append);
-                control.Append(zero6Append);
+                control.Append(fecha.ToString(MTesFuncionesDb.fechaFormat2, CultureInfo.InvariantCulture));
+                control.Append(MTesFuncionesDb.zero12Append);
+                control.Append(MTesFuncionesDb.zero12Append);
+                control.Append(MTesFuncionesDb.zero6Append);
                 control.Append(new string('0', 138));
                 sb.AppendLine(control.ToString());
 
