@@ -146,8 +146,8 @@
         public int diasactivo { get; set; } = 0;
         public bool recalculacuota { get; set; } = false;
 
-        public TipoAbono tipoabono { get; set; }
-        public bool diferenciaaplenabled { get; set; }
+        public TipoAbono tipoabono { get; set; } = TipoAbono.Ordinario;
+        public bool diferenciaaplenabled { get; set; } = false;
         public string diferenciaapltexto { get; set; } = "";
 
         public string usuario { get; set; } = "";

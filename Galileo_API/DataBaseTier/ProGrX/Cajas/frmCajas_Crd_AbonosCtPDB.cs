@@ -166,7 +166,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                     if (FailIfError(rp, out e)) return e;
                 }
 
-                var (bitacoraDesc, comprobanteTitulo, comprobanteConcepto) = ObtenerDescripcionComprobante(req);
+                var(bitacoraDesc, comprobanteConcepto) = ObtenerDescripcionComprobante(req);
 
                 DBBitacora.Bitacora(new BitacoraInsertarDto
                 {
@@ -232,33 +232,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             };
         }
 
-        private static (string bitacoraDesc, string comprobanteTitulo, string comprobanteConcepto) ObtenerDescripcionComprobante(CajasCrdAbonosCtPRegistrarAbonoRequest req)
+        private static (string bitacoraDesc, string comprobanteConcepto) ObtenerDescripcionComprobante(CajasCrdAbonosCtPRegistrarAbonoRequest req)
         {
             return req.tipoabono switch
             {
                 TipoAbono.Ordinario => (
                     $"Abono Ordinario a la Operacion : {req.operacionid}",
-                    "ABONO ORDINARIO",
                     "CRD001"
                 ),
                 TipoAbono.Extraordinario => (
                     $"Abono ExtraOrd. {(req.recalculacuota ? "Con Recal." : "Sin Recal")} a la Op.: {req.operacionid}",
-                    "ABONO EXTRAORDINARIO",
                     "CRD002"
                 ),
                 TipoAbono.Cancelacion => (
                     $"Cancelación de la Operacion : {req.operacionid}",
-                    "CANCELACION DE DEUDA",
                     "CRD003"
                 ),
                 TipoAbono.AdelantoCuotas => (
                     $"Adelanto de Cuotas de la Operacion : {req.operacionid}",
-                    "ADELANTO DE CUOTAS",
                     "CRD004"
                 ),
                 _ => (
                     $"Movimiento no identificado para la Operacion : {req.operacionid}",
-                    string.Empty,
                     string.Empty
                 )
             };
