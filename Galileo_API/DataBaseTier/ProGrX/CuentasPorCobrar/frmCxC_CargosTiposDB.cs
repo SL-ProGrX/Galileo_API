@@ -210,14 +210,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
 
                 return DbHelper.OkResponse("Tipo de Cargo de CxC insertado correctamente.");
             }
-           
-             catch (DbException ex)
+
+            catch (DbException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
+
             catch (Exception)
             {
-                throw;
+                return DbHelper.ErrorResponse("Error inesperado.");
             }
 
         }
@@ -267,9 +268,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
+
             catch (Exception)
             {
-                throw;
+                return DbHelper.ErrorResponse("Error inesperado.");
+
             }
         }
 
