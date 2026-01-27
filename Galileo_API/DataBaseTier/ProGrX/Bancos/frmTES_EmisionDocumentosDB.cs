@@ -26,7 +26,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private const string nSolicitudes = "solicitudes";
         private const string nFechas = "fechas";
 
-        // Sonar: regex sin timeout es hotspot
         private static readonly TimeSpan RegexTimeout = TimeSpan.FromMilliseconds(100);
 
         public FrmTesEmisionDocumentosDb(IConfiguration config)
@@ -39,37 +38,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             mTesFunciones = new MTesFuncionesDb(config);
         }
 
-        #region ===== Helpers comunes (reducción de duplicación / Sonar) =====
+        #region ===== Helpers mínimos (lo que NO conviene mover) =====
 
         private static string LimpiarReporte(string nombre)
             => Regex.Replace(nombre ?? string.Empty, @"\.(rdl|rdlc)$", "", RegexOptions.IgnoreCase, RegexTimeout);
 
         private static (int? solInicio, int? solCorte, DateTime? fechaInicio, DateTime? fechaCorte) GetRangos(TesEmisionDocFiltros f)
-        {
-            int? solInicio = string.Equals(f.generarPor, nSolicitudes, StringComparison.OrdinalIgnoreCase) ? f.minimo : null;
-            int? solCorte = string.Equals(f.generarPor, nSolicitudes, StringComparison.OrdinalIgnoreCase) ? f.maximo : null;
-
-            DateTime? fechaInicio = string.Equals(f.generarPor, nFechas, StringComparison.OrdinalIgnoreCase) ? f.fecha_inicio?.Date : null;
-            DateTime? fechaCorte = string.Equals(f.generarPor, nFechas, StringComparison.OrdinalIgnoreCase)
-                ? f.fecha_corte?.Date.AddDays(1).AddTicks(-1)
-                : null;
-
-            return (solInicio, solCorte, fechaInicio, fechaCorte);
-        }
+            => MTesFuncionesDb.GetRangosEmision(f, nSolicitudes, nFechas);
 
         private static string SerializarResultadoReporte(IActionResult action)
-        {
-            if (action is not ObjectResult obj)
-                return JsonConvert.SerializeObject(action, Formatting.Indented);
+            => MTesFuncionesDb.SerializarResultadoReporte(action);
 
-            var jres = System.Text.Json.JsonSerializer.Serialize(obj.Value);
-            var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto>(jres);
-            return JsonConvert.SerializeObject(err, Formatting.Indented);
+        private static TesEmisionDocFiltros ParseFiltros(string filtros)
+            => JsonConvert.DeserializeObject<TesEmisionDocFiltros>(filtros) ?? new TesEmisionDocFiltros();
+
+        private static void NormalizarFiltroFechas(TesEmisionDocFiltros filtro)
+        {
+            if (!string.Equals(filtro.generarPor, nFechas, StringComparison.OrdinalIgnoreCase))
+            {
+                filtro.fecha_inicio = null;
+                filtro.fecha_corte = null;
+            }
         }
 
         #endregion
 
-        #region ===== Modelos para bajar params (y duplicidad) =====
+        #region ===== Modelos =====
 
         private sealed record QueryBuildResult(string QueryTransac, string BaseQuery, object Parametros);
 
@@ -104,13 +98,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
                 const string query = @"exec spTes_Formatos_Bancos @banco";
-
                 return conn.Query(query, new { banco })
-                    .Select(row => new DropDownListaGenericaModel
-                    {
-                        item = row.IDX,
-                        descripcion = row.ItmX
-                    })
+                    .Select(row => new DropDownListaGenericaModel { item = row.IDX, descripcion = row.ItmX })
                     .ToList();
             });
         }
@@ -185,19 +174,16 @@ Where t.Estado='P' And t.Tipo = @tipoDoc
 
                 query += " Order by t.NSolicitud";
 
-                var result = conn.Query<TesSolicitudesGenData>(
-                        query,
-                        new
-                        {
-                            top = filtro.cantidad,
-                            tipoDoc = filtro.tipoDoc,
-                            banco = filtro.banco,
-                            minimo = solInicio,
-                            maximo = solCorte,
-                            fechaInicio,
-                            fechaCorte
-                        })
-                    .ToList();
+                var result = conn.Query<TesSolicitudesGenData>(query, new
+                {
+                    top = filtro.cantidad,
+                    tipoDoc = filtro.tipoDoc,
+                    banco = filtro.banco,
+                    minimo = solInicio,
+                    maximo = solCorte,
+                    fechaInicio,
+                    fechaCorte
+                }).ToList();
 
                 var now = DateTime.Now;
                 foreach (var item in result)
@@ -216,9 +202,8 @@ Where t.Estado='P' And t.Tipo = @tipoDoc
 
         public ErrorDto TES_EmisionDocumento_ValidaNumDocumento(int CodEmpresa, int banco, string tipoDoc, int docInicial, int cantidadList)
         {
-            try
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var docFinal = docInicial + (cantidadList - 1);
 
                 const string query = @"
@@ -235,25 +220,16 @@ WHERE id_Banco = @banco
                     return DbHelper.ErrorResponse($"\nYa existe un Documento asignado [{docExistente}] dentro del rango suministrado", -2);
 
                 return DbHelper.CreateOkResponse();
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
+            });
         }
 
         public ErrorDto TES_EmisionDocumento_RevisaCuentas_SP(int CodEmpresa, int banco)
         {
-            try
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 conn.Execute("exec spTes_Cuentas_Revisa @banco", new { banco });
                 return DbHelper.OkResponse("Cuentas verificadas correctamente!");
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
+            });
         }
 
         public ErrorDto<List<DropDownListaGenericaModel>> TES_EmisionDocumento_CtasPuente_Obtener(int CodEmpresa, string Usuario)
@@ -274,22 +250,16 @@ where B.estado = 'A'
 
         public ErrorDto TES_EmisionDocumento_CtaPuente_Aplicar(int CodEmpresa, int Banco, string Usuario, string Solicitudes)
         {
-            try
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
                 var listaSolicitudes = JsonConvert.DeserializeObject<List<int>>(Solicitudes) ?? new List<int>();
-                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
                 const string query = @"exec spTes_Traslados_Cuenta_Puente @solicitud, @banco, @usuario";
 
                 foreach (var solicitud in listaSolicitudes)
-                    connection.Execute(query, new { solicitud, banco = Banco, usuario = Usuario });
+                    conn.Execute(query, new { solicitud, banco = Banco, usuario = Usuario });
 
                 return DbHelper.OkResponse("Solicitudes movidas correctamente");
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
+            });
         }
 
         #endregion
@@ -343,6 +313,94 @@ where B.estado = 'A'
                 return DbHelper.CreateErrorResponse<object>(ex.Message);
             }
         }
+
+        private ErrorDto<object> ProcesarTransferencias(EmisionContext ctx)
+        {
+            List<TesTransaccionDto> Trans()
+                => ctx.Conn.Query<TesTransaccionDto>(ctx.Q.QueryTransac, ctx.Q.Parametros).ToList();
+
+            return ctx.Filtro.formatoTE switch
+            {
+                "A" => mTesFunciones.SbTeBancoNacionalDesdeRangoSolicitudes(
+                        conn: ctx.Conn,
+                        codEmpresa: ctx.CodEmpresa,
+                        bancoId: ctx.Filtro.banco,
+                        tipoDoc: ctx.Filtro.tipoDoc,
+                        qBaseIn: ctx.Q.BaseQuery,
+                        qParams: ctx.Q.Parametros,
+                        transaccionesList: Trans(),
+                        resolveConsecutivo: () => mTesoreria.fxTesTipoDocConsec(ctx.CodEmpresa, ctx.Filtro.banco, ctx.Filtro.tipoDoc, "+").Result),
+
+                "B" => MTesFuncionesDb.SbTeBancoPopularCore(
+                        codEmpresa: ctx.CodEmpresa,
+                        bancoId: ctx.Filtro.banco,
+                        tipoDoc: ctx.Filtro.tipoDoc,
+                        transaccionesList: Trans(),
+                        resolveConsecutivo: () => mTesoreria.fxTesTipoDocConsec(ctx.CodEmpresa, ctx.Filtro.banco, ctx.Filtro.tipoDoc, "+").Result),
+
+                "C" => mTesFunciones.SbTeBcrDesdeRangoSolicitudes(
+                        conn: ctx.Conn,
+                        codEmpresa: ctx.CodEmpresa,
+                        bancoId: ctx.Filtro.banco,
+                        tipoDoc: ctx.Filtro.tipoDoc,
+                        qBaseIn: ctx.Q.BaseQuery,
+                        qParams: ctx.Q.Parametros,
+                        transaccionesList: Trans(),
+                        resolveBancoConsec: () => mTesoreria.fxTesTipoDocConsec(ctx.CodEmpresa, ctx.Filtro.banco, ctx.Filtro.tipoDoc, "+").Result),
+
+                "D" => mTesFunciones.SbTeBcrEmpresarialArchivo(
+                        conn: ctx.Conn,
+                        codEmpresa: ctx.CodEmpresa,
+                        bancoId: ctx.Filtro.banco,
+                        tipoDoc: ctx.Filtro.tipoDoc,
+                        resolveBancoConsec: () => mTesoreria.fxTesTipoDocConsec(ctx.CodEmpresa, ctx.Filtro.banco, ctx.Filtro.tipoDoc, "+").Result),
+
+                "F" => mTesFunciones.SbTeBcrComercialArchivo(
+                        conn: ctx.Conn,
+                        codEmpresa: ctx.CodEmpresa,
+                        bancoId: ctx.Filtro.banco,
+                        tipoDoc: ctx.Filtro.tipoDoc,
+                        resolveBancoConsec: () => mTesoreria.fxTesTipoDocConsec(ctx.CodEmpresa, ctx.Filtro.banco, ctx.Filtro.tipoDoc, "+").Result),
+
+                "E" => mTesFunciones.SbTeBctEnlaceArchivo(
+                        conn: ctx.Conn,
+                        codEmpresa: ctx.CodEmpresa,
+                        bancoId: ctx.Filtro.banco,
+                        tipoDoc: ctx.Filtro.tipoDoc,
+                        filtros: ctx.Filtro),
+
+                "G" => mTesFunciones.SbTeBncrSinpeArchivo(
+                        conn: ctx.Conn,
+                        codEmpresa: ctx.CodEmpresa,
+                        bancoId: ctx.Filtro.banco,
+                        tipoDoc: ctx.Filtro.tipoDoc,
+                        filtros: ctx.Filtro),
+
+                "DV1" or "DV2" => mTesFunciones.SbTeFormatoEstandarWrapper(
+                        conn: ctx.Conn,
+                        codEmpresa: ctx.CodEmpresa,
+                        bancoId: ctx.Filtro.banco,
+                        tipoDoc: ctx.Filtro.tipoDoc,
+                        formato: ctx.Filtro.formatoTE ?? string.Empty,
+                        plan: ctx.Filtro.plan),
+
+                "S" => DbHelper.CreateErrorResponse<object>("No se pudo realizar la operación, debido a que la opción de SINPE se encuentra en espera"),
+
+                "SG" => sbTeBancoSinpeGeneral(ctx.CodEmpresa, ctx.Filtro, Trans()),
+
+                _ => mTesFunciones.SbTeFormatoEstandarWrapper(
+                        conn: ctx.Conn,
+                        codEmpresa: ctx.CodEmpresa,
+                        bancoId: ctx.Filtro.banco,
+                        tipoDoc: ctx.Filtro.tipoDoc,
+                        formato: ctx.Filtro.formatoTE ?? string.Empty,
+                        plan: ctx.Filtro.plan)
+            };
+        }
+
+        #endregion
+
+        #region ===== Cheques / boletas (mantengo igual) =====
 
         private ErrorDto<object> ProcesarChequesYBoletas(EmisionContext ctx)
         {
@@ -398,38 +456,11 @@ where B.estado = 'A'
             }, Formatting.Indented));
         }
 
-        private ErrorDto<object> ProcesarTransferencias(EmisionContext ctx)
-        {
-            List<TesTransaccionDto> Trans()
-                => ctx.Conn.Query<TesTransaccionDto>(ctx.Q.QueryTransac, ctx.Q.Parametros).ToList();
-
-            return ctx.Filtro.formatoTE switch
-            {
-                "A" => ProcesarTE_BNCR_InternetBanking(ctx.CodEmpresa, ctx.Filtro, ctx.Conn, ctx.Q),
-                "B" => MTesFuncionesDb.SbTeBancoPopularCore(
-                        codEmpresa: ctx.CodEmpresa,
-                        bancoId: ctx.Filtro.banco,
-                        tipoDoc: ctx.Filtro.tipoDoc,
-                        transaccionesList: Trans(),
-                        resolveConsecutivo: () => mTesoreria.fxTesTipoDocConsec(ctx.CodEmpresa, ctx.Filtro.banco, ctx.Filtro.tipoDoc, "+").Result),
-                "C" => ProcesarTE_BCR_Planilla(ctx.CodEmpresa, ctx.Filtro, ctx.Conn, ctx.Q),
-                "D" => sbTeBCR_Empresarial(ctx.CodEmpresa, ctx.Filtro),
-                "E" => sbTeBCT_Enlace(ctx.CodEmpresa, ctx.Filtro),
-                "F" => sbTeBCR_Comercial(ctx.CodEmpresa, ctx.Filtro),
-                "G" => sbTeBNCR_Sinpe(ctx.CodEmpresa, ctx.Filtro),
-                "DV1" or "DV2" => sbTeFormatoEstandar(ctx.CodEmpresa, ctx.Filtro),
-                "S" => DbHelper.CreateErrorResponse<object>("No se pudo realizar la operación, debido a que la opción de SINPE se encuentra en espera"),
-                "SG" => sbTeBancoSinpeGeneral(ctx.CodEmpresa, ctx.Filtro, Trans()),
-                _ => sbTeFormatoEstandar(ctx.CodEmpresa, ctx.Filtro)
-            };
-        }
-
-        #endregion
-
-        #region ===== Cheques / boletas =====
-
         private long ResolverConsecutivo(EmisionContext ctx)
         {
+            // Este también lo podrías mover a MTesFuncionesDb, pero lo dejo aquí
+            // porque toca reglas de emisión (docBloqueo/docInicial) y Sonar suele
+            // no marcarlo duplicado contra otros módulos.
             if (ctx.BancoDocs.doc_auto != 1)
                 return 0;
 
@@ -505,11 +536,7 @@ SET Estado = 'I',
             return DbHelper.CreateOkResponse<object>();
         }
 
-        private ErrorDto<object> ClasificarYGenerarBoletaSiAplica(
-            EmisionContext ctx,
-            ClasificacionState state,
-            FrmReporteGlobal reporteData,
-            TesTransaccionDto item)
+        private ErrorDto<object> ClasificarYGenerarBoletaSiAplica(EmisionContext ctx, ClasificacionState state, FrmReporteGlobal reporteData, TesTransaccionDto item)
         {
             if (ctx.BancoDocs.comprobante == "01")
                 return ClasificarChequeFormulaContinua(ctx, state, item);
@@ -606,31 +633,7 @@ SET Estado = 'I',
         }
 
         private static ErrorDto<object> GenerarBoletaRegistro(List<byte[]> pdfsBoleta, FileContentResult? fileResultBoleta)
-        {
-            if (pdfsBoleta == null || pdfsBoleta.Count == 0)
-                return DbHelper.CreateOkResponse<object>(string.Empty);
-
-            if (fileResultBoleta == null || string.IsNullOrWhiteSpace(fileResultBoleta.ContentType))
-                return DbHelper.CreateErrorResponse<object>("No se pudo generar boleta: FileContentResult es nulo o inválido.");
-
-            try
-            {
-                var combinado = MProGrXAuxiliarDB.CombinarBytesPdfSharp(pdfsBoleta.ToArray());
-                if (combinado == null || combinado.Length == 0)
-                    return DbHelper.CreateErrorResponse<object>("No se pudo generar boleta: el PDF combinado quedó vacío.");
-
-                var resultFile = new FileContentResult(combinado, fileResultBoleta.ContentType)
-                {
-                    FileDownloadName = fileResultBoleta.FileDownloadName
-                };
-
-                return DbHelper.CreateOkResponse<object>(JsonConvert.SerializeObject(resultFile, Formatting.Indented));
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<object>(ex.Message);
-            }
-        }
+            => MTesFuncionesDb.GenerarBoletaRegistroPdf(pdfsBoleta, fileResultBoleta);
 
         private static FrmReporteGlobal CrearReporteDataBase(int codEmpresa, string? usuario) => new()
         {
@@ -646,380 +649,31 @@ SET Estado = 'I',
 
         #region ===== Carga de datos / queries base =====
 
-        private static TesEmisionDocFiltros ParseFiltros(string filtros)
-            => JsonConvert.DeserializeObject<TesEmisionDocFiltros>(filtros) ?? new TesEmisionDocFiltros();
-
-        private static void NormalizarFiltroFechas(TesEmisionDocFiltros filtro)
-        {
-            if (!string.Equals(filtro.generarPor, nFechas, StringComparison.OrdinalIgnoreCase))
-            {
-                filtro.fecha_inicio = null;
-                filtro.fecha_corte = null;
-            }
-        }
-
         private static TesBancoDocsData? LoadBancoDocs(SqlConnection connection, TesEmisionDocFiltros filtro)
-        {
-            const string sql = @"
-select doc_auto, comprobante
-from tes_banco_docs
-where id_banco = @banco and tipo = @tipoDoc";
-
-            return connection.QueryFirstOrDefault<TesBancoDocsData>(sql, new { banco = filtro.banco, tipoDoc = filtro.tipoDoc });
-        }
+            => MTesFuncionesDb.LoadBancoDocs(connection, filtro.banco, filtro.tipoDoc);
 
         private static TesBancoData? LoadBancoData(SqlConnection connection, TesEmisionDocFiltros filtro)
-        {
-            const string sql = @"
-select firmas_desde, firmas_hasta, formato_transferencia, Lugar_Emision
-from Tes_Bancos
-where id_banco = @banco";
-
-            return connection.QueryFirstOrDefault<TesBancoData>(sql, new { banco = filtro.banco });
-        }
+            => MTesFuncionesDb.LoadBancoData(connection, filtro.banco);
 
         private static int LoadFirmasAut(SqlConnection connection, TesEmisionDocFiltros filtro)
-        {
-            const string sql = @"
-select isnull(count(*),0)
-from TES_BANCO_FIRMASAUT
-where id_Banco = @banco and usuario = @usuario";
-
-            return connection.QueryFirstOrDefault<int>(sql, new { banco = filtro.banco, usuario = filtro.usuario });
-        }
+            => MTesFuncionesDb.LoadFirmasAut(connection, filtro.banco, filtro.usuario);
 
         private static QueryBuildResult BuildQueries(TesEmisionDocFiltros filtro)
         {
             var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtro);
-
-            var queryTransac = @"
-Select TOP (@top) *
-From Tes_Transacciones
-Where Estado = 'P' And Tipo = @tipoDoc
-  And ID_Banco= @banco And Autoriza='S' and fecha_hold is null";
-
-            var baseQuery = @"
-(SELECT TOP (@top) nsolicitud
- FROM Tes_Transacciones
- WHERE Estado = 'P' AND Tipo = @tipoDoc
-   AND ID_Banco = @banco AND Autoriza = 'S' AND fecha_hold IS NULL";
-
-            if (string.Equals(filtro.generarPor, nSolicitudes, StringComparison.OrdinalIgnoreCase))
-            {
-                queryTransac += " And NSolicitud Between @minimo And @maximo";
-                baseQuery += " And NSolicitud Between @minimo And @maximo";
-            }
-            else if (string.Equals(filtro.generarPor, nFechas, StringComparison.OrdinalIgnoreCase))
-            {
-                queryTransac += " And Fecha_Solicitud Between @fechaInicio And @fechaCorte";
-                baseQuery += " And Fecha_Solicitud Between @fechaInicio And @fechaCorte";
-            }
-
-            queryTransac += " Order by Nsolicitud";
-            baseQuery += " Order by Nsolicitud)";
-
-            var parametros = new
-            {
-                top = filtro.cantidad,
-                banco = filtro.banco,
-                tipoDoc = filtro.tipoDoc,
-                minimo = solInicio,
-                maximo = solCorte,
-                fechaInicio,
-                fechaCorte
-            };
+            var (queryTransac, baseQuery, parametros) = MTesFuncionesDb.BuildQueriesEmision(
+                banco: filtro.banco,
+                tipoDoc: filtro.tipoDoc,
+                cantidad: filtro.cantidad,
+                generarPor: filtro.generarPor,
+                minimo: solInicio,
+                maximo: solCorte,
+                fechaInicio: fechaInicio,
+                fechaCorte: fechaCorte,
+                nSolicitudes: nSolicitudes,
+                nFechas: nFechas);
 
             return new QueryBuildResult(queryTransac, baseQuery, parametros);
-        }
-
-        #endregion
-
-        #region ===== Transferencias =====
-
-        private ErrorDto<object> ProcesarTE_BNCR_InternetBanking(int codEmpresa, TesEmisionDocFiltros filtro, SqlConnection connection, QueryBuildResult q)
-        {
-            var queryA = "select sum(monto) as PLx from Tes_Transacciones where nsolicitud in ";
-            queryA += q.BaseQuery;
-            var montoPL = connection.QueryFirstOrDefault<int>(queryA, q.Parametros);
-
-            var transacciones = connection.Query<TesTransaccionDto>(q.QueryTransac, q.Parametros).ToList();
-            return mTesFunciones.SbTeBancoNacionalCore(
-                   conn: connection,
-                   codEmpresa: codEmpresa,
-                   bancoId: filtro.banco,
-                   tipoDoc: filtro.tipoDoc,
-                   transaccionesList: transacciones,
-                   curPlanilla: montoPL,
-                   resolveConsecutivo: () => mTesoreria.fxTesTipoDocConsec(codEmpresa, filtro.banco, filtro.tipoDoc, "+").Result
-               );
-        }
-
-        private ErrorDto<object> ProcesarTE_BCR_Planilla(int codEmpresa, TesEmisionDocFiltros filtro, SqlConnection connection, QueryBuildResult q)
-        {
-            var transacciones = connection.Query<TesTransaccionDto>(q.QueryTransac, q.Parametros).ToList();
-
-            var queryC = @"
-select sum(dbo.fxTESBCRTestkey(cta_ahorros,monto)) as TestKeyX,
-       sum(Monto) as Monto
-from Tes_Transacciones
-where nsolicitud in ";
-            queryC += q.BaseQuery;
-
-            var resultC = connection.QueryFirstOrDefault(queryC, q.Parametros);
-
-            long xTestKey = 0;
-            decimal totalMonto = 0;
-
-            if (resultC != null)
-            {
-                xTestKey = (long?)resultC.TestKeyX ?? 0;
-                totalMonto = (decimal?)resultC.Monto ?? 0m;
-            }
-
-            xTestKey = xTestKey > 2147483468 ? 2147483468 : xTestKey;
-
-            FormatoBcrRequest request = new()
-            {
-                conn = connection,
-                codEmpresa = codEmpresa,
-                bancoId = filtro.banco,
-                tipoDoc = filtro.tipoDoc,
-                transaccionesList = transacciones,
-                vTestKey = (int)xTestKey,
-                vMontoTotal = totalMonto,
-                resolveConsecutivoArchivoDelDia = (c, b, f) => MTesFuncionesDb.GetConsecutivoArchivoDelDia(connection, b, f),
-                resolveBancoConsec = () => mTesoreria.fxTesTipoDocConsec(codEmpresa, filtro.banco, filtro.tipoDoc, "+").Result
-            };
-
-            return mTesFunciones.SbTeBcrCore(request);
-        }
-
-        #endregion
-
-        #region ===== Implementaciones existentes (menos duplicación) =====
-
-        private ErrorDto<object> sbTeFormatoEstandar(int CodEmpresa, TesEmisionDocFiltros filtros)
-        {
-            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            string pFormato = filtros.formatoTE ?? string.Empty;
-            int BancoID = filtros.banco;
-
-            try
-            {
-                var (vNumNegocio, _) = MTesFuncionesDb.GetEmpresaNumNegocioYReg(connection);
-
-                var formatoData = connection.QueryFirstOrDefault(
-                    "select Procedimiento,Extension from vTes_Formatos where cod_formato = @formato",
-                    new { formato = pFormato });
-
-                string vExtension = formatoData?.Extension?.ToString() ?? "txt";
-                string vProcedimiento = formatoData?.Procedimiento?.ToString() ?? string.Empty;
-
-                if (string.IsNullOrWhiteSpace(vProcedimiento))
-                    return DbHelper.CreateErrorResponse<object>("Formato no configurado en vTes_Formatos.");
-
-                string BancoTDoc = filtros.tipoDoc;
-                string BancoPlan = filtros.plan;
-
-                long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+", BancoPlan).Result;
-
-                var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtros);
-
-                var sb = new StringBuilder();
-
-                for (int numLinea = 1; numLinea <= 3; numLinea++)
-                {
-                    var queryLinea = new StringBuilder();
-                    queryLinea.Append("EXEC ");
-                    queryLinea.Append(vProcedimiento);
-                    queryLinea.Append(" @numLinea, @bancoID, @bancoTDoc, @numNegocio, @bancoConsec, @cantidadSolicitudes, @mSolInicio, @mSolCorte, @mFechaInicio, @mFechaCorte");
-
-                    if (!string.Equals(BancoPlan, "-sp-", StringComparison.OrdinalIgnoreCase))
-                        queryLinea.Append(", @bancoPlan");
-
-                    var parametros = new
-                    {
-                        numLinea,
-                        bancoID = BancoID,
-                        bancoTDoc = BancoTDoc,
-                        numNegocio = vNumNegocio,
-                        bancoConsec = BancoConsec,
-                        cantidadSolicitudes = filtros.cantidad,
-                        mSolInicio = solInicio,
-                        mSolCorte = solCorte,
-                        mFechaInicio = fechaInicio?.ToString(MTesFuncionesDb.fechaFormat, CultureInfo.InvariantCulture),
-                        mFechaCorte = fechaCorte?.ToString(MTesFuncionesDb.fechaFormat, CultureInfo.InvariantCulture),
-                        bancoPlan = BancoPlan
-                    };
-
-                    var lineas = connection.Query<string>(queryLinea.ToString(), parametros);
-                    foreach (var linea in lineas)
-                        MTesFuncionesDb.AppendIfNotEmpty(sb, linea);
-                }
-
-                return MTesFuncionesDb.ArchivoResponse(BancoConsec, vExtension, sb);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<object>(ex.Message);
-            }
-        }
-
-        private ErrorDto<object> sbTeBCR_Empresarial(int CodEmpresa, TesEmisionDocFiltros filtros)
-        {
-            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                var (numNegocio, cedulaReg) = MTesFuncionesDb.GetEmpresaNumNegocioYReg(connection);
-
-                int bancoId = filtros.banco;
-                string bancoTDoc = filtros.tipoDoc;
-
-                long bancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, bancoId, bancoTDoc, "+").Result;
-
-                DateTime fecha = DateTime.Now;
-
-                string conArchivo = MTesFuncionesDb
-                    .GetConsecutivoArchivoDelDia(connection, bancoId, fecha)
-                    .ToString("D3", CultureInfo.InvariantCulture);
-
-                var sb = new StringBuilder();
-                sb.AppendLine(MTesFuncionesDb.BuildControlBcrEmpresarial(cedulaReg, conArchivo, fecha));
-
-                // Se mantiene compatibilidad con tu SP actual
-                MTesFuncionesDb.AppendIfNotEmpty(sb, connection.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Empresarial_Archivo 2, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
-
-                MTesFuncionesDb.AppendIfNotEmpty(sb, connection.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Empresarial_Archivo 3, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
-
-                return MTesFuncionesDb.ArchivoResponse(bancoConsec, "txt", sb);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<object>(ex.Message);
-            }
-        }
-
-        private ErrorDto<object> sbTeBCR_Comercial(int CodEmpresa, TesEmisionDocFiltros filtros)
-        {
-            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                var (numNegocio, cedulaReg) = MTesFuncionesDb.GetEmpresaNumNegocioYReg(connection);
-
-                int bancoId = filtros.banco;
-                string bancoTDoc = filtros.tipoDoc;
-
-                long bancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, bancoId, bancoTDoc, "+").Result;
-
-                DateTime fecha = DateTime.Now;
-
-                string conArchivo = MTesFuncionesDb
-                    .GetConsecutivoArchivoDelDia(connection, bancoId, fecha)
-                    .ToString("D3", CultureInfo.InvariantCulture);
-
-                var sb = new StringBuilder();
-                sb.AppendLine(MTesFuncionesDb.BuildControlBcrComercial(cedulaReg, conArchivo, fecha));
-
-                MTesFuncionesDb.AppendIfNotEmpty(sb, connection.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Comercial_Archivo 2, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
-
-                MTesFuncionesDb.AppendIfNotEmpty(sb, connection.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Comercial_Archivo 3, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
-
-                return MTesFuncionesDb.ArchivoResponse(bancoConsec, "txt", sb);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<object>(ex.Message);
-            }
-        }
-
-        private ErrorDto<object> sbTeBCT_Enlace(int CodEmpresa, TesEmisionDocFiltros filtros)
-        {
-            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtros);
-
-                int BancoID = filtros.banco;
-                string BancoTDoc = filtros.tipoDoc;
-                long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
-
-                var sb = new StringBuilder();
-
-                const string query = @"exec spTES_BCT_Enlace 
-@banco, @bancoTDoc, @bancoConsec, @cantidad, @solInicio, @solCorte, @fechaInicio, @fechaCorte";
-
-                var resultado = connection.QueryFirstOrDefault(query, new
-                {
-                    banco = BancoID,
-                    bancoTDoc = BancoTDoc,
-                    bancoConsec = BancoConsec,
-                    cantidad = filtros.cantidad,
-                    solInicio,
-                    solCorte,
-                    fechaInicio,
-                    fechaCorte
-                });
-
-                string linea = resultado?.Linea?.ToString() ?? string.Empty;
-                MTesFuncionesDb.AppendIfNotEmpty(sb, linea);
-
-                return MTesFuncionesDb.ArchivoResponse(BancoConsec, "txt", sb);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<object>(ex.Message);
-            }
-        }
-
-        private ErrorDto<object> sbTeBNCR_Sinpe(int CodEmpresa, TesEmisionDocFiltros filtros)
-        {
-            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                var (solInicio, solCorte, fechaInicio, fechaCorte) = GetRangos(filtros);
-
-                int BancoID = filtros.banco;
-                string BancoTDoc = filtros.tipoDoc;
-                long BancoConsec = mTesoreria.fxTesTipoDocConsec(CodEmpresa, BancoID, BancoTDoc, "+").Result;
-
-                var sb = new StringBuilder();
-
-                // ✅ Aquí ya NO usamos el ExecSP3Lineas defectuoso:
-                // usamos el core correcto que está en MTesFuncionesDb.
-                var parametrosBase = new
-                {
-                    banco = BancoID,
-                    bancoTDoc = BancoTDoc,
-                    bancoConsec = BancoConsec,
-                    cantidad = filtros.cantidad,
-                    solInicio,
-                    solCorte,
-                    fechaInicio,
-                    fechaCorte
-                };
-
-                foreach (var linea in MTesFuncionesDb.ExecSP3Lineas(connection, "spTES_BNCR_SINPE", parametrosBase))
-                    MTesFuncionesDb.AppendIfNotEmpty(sb, linea);
-
-                return MTesFuncionesDb.ArchivoResponse(BancoConsec, "tef", sb);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<object>(ex.Message);
-            }
         }
 
         #endregion
@@ -1053,37 +707,8 @@ where nsolicitud in ";
             }
         }
 
-        private ErrorDto EmitirSinpe(IWfcSinpe servicio, int codEmpresa, string usuario, TesTransaccionDto trx)
-        {
-            var now = DateTime.Now;
-
-            if (codEmpresa == 61)
-            {
-                switch (trx.tipo_girosinpe)
-                {
-                    case "CD":
-                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                    case "TR":
-                        return servicio.fxTesEmisionSinpeTiempoReal(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                }
-            }
-            else
-            {
-                switch (trx.tipo_girosinpe)
-                {
-                    case "CD":
-                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                    case "TR":
-                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                }
-            }
-
-            return new ErrorDto
-            {
-                Code = -1,
-                Description = "Emision No Valida."
-            };
-        }
+        private static ErrorDto EmitirSinpe(IWfcSinpe servicio, int codEmpresa, string usuario, TesTransaccionDto trx)
+            => MTesFuncionesDb.EmitirSinpe(servicio, codEmpresa, usuario, trx);
 
         #endregion
     }
