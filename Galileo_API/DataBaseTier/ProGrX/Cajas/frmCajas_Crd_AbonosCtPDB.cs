@@ -852,7 +852,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             (
               @numdoc, @tipoDoc, GetDate(), @Usuario,
               @cedula, @nombre, @Concepto, @monto_total, 'P',
-              @operacionid, @codigo, @ase_doc_deposito, @oficina_titular,
+              @operacionid, @Codigo, @ase_doc_deposito, @oficina_titular,
               @linea1,@linea2,@linea3,@linea4,@linea5,@linea6,@linea7,@linea8,@linea9,@linea10,@linea11,
               @detalle, @documento, @caja, @apertura, @sesionid
             );";
@@ -867,20 +867,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 Concepto = concepto,
                 monto_total,
                 operacionid = req.operacionid.ToString(),
-                codigo = req.codigo,
+                Codigo = req.codigo,
                 ase_doc_deposito = "",
                 oficina_titular = "", // GLOBALES.gOficinaTitular
-                linea1 = lineas.linea1,
-                linea2 = lineas.linea2,
-                linea3 = lineas.linea3,
-                linea4 = lineas.linea4,
-                linea5 = lineas.linea5,
-                linea6 = lineas.linea6,
-                linea7 = lineas.linea7,
-                linea8 = lineas.linea8,
-                linea9 = lineas.linea9,
-                linea10 = lineas.linea10,
-                linea11 = lineas.linea11,
+                lineas.linea1,
+                lineas.linea2,
+                lineas.linea3,
+                lineas.linea4,
+                lineas.linea5,
+                lineas.linea6,
+                lineas.linea7,
+                lineas.linea8,
+                lineas.linea9,
+                lineas.linea10,
+                lineas.linea11,
                 detalle = req.notas ?? "",
                 documento = "",
                 caja = req.mcaja,
@@ -932,22 +932,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 return new ErrorDto { Code = 0, Description = string.Empty };
 
             const string sql = @"exec spSIFDocsAsiento
-                         @tipodoc,@numdoc,@monto,'C',@cod_divisa,
-                         @tipocambio,@enlace,@cod_unidad,@cod_centro_costo,@cuenta,
-                         @id_solicitud,@codigo_cta,@ase_doc_deposito";
+                         @tipoDoc,@numdoc,@monto,'C',@codDivisa,
+                         @tipocambio,@enlace,@codUnidad,@codCentroCosto,@cuenta,
+                         @idSolicitud,@codigo_cta,@ase_doc_deposito";
 
             var param = new
             {
-                tipodoc = req.tipodoc,
+                tipoDoc = req.tipodoc,
                 numdoc = vNumDoc,
                 monto,
-                cod_divisa = ctas.cod_divisa,
+                codDivisa = ctas.cod_divisa,
                 tipocambio,
                 enlace = 0, // GLOBALES.gEnlace
-                cod_unidad = ctas.cod_unidad,
-                cod_centro_costo = ctas.cod_centro_costo,
+                codUnidad = ctas.cod_unidad,
+                codCentroCosto = ctas.cod_centro_costo,
                 cuenta,
-                id_solicitud = ctas.id_solicitud,
+                idSolicitud = ctas.id_solicitud,
                 codigo_cta = ctas.codigo,
                 ase_doc_deposito = ""
             };
@@ -970,8 +970,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             var cargos = DbHelper.ExecuteListQuery<CajasCrdDocAfectacionCargoRow>(
                 _portalDb,
                 codempresa,
-                @"exec spCrdDocumentoAfectacionCargos @tipodoc,@numdoc",
-                new { tipodoc = req.tipodoc, numdoc = vNumDoc }
+                @"exec spCrdDocumentoAfectacionCargos @tipoDoc,@numDoc",
+                new { tipoDoc = req.tipodoc, numDoc = vNumDoc }
             ).Result ?? new List<CajasCrdDocAfectacionCargoRow>();
 
             foreach (var c in cargos)
@@ -995,22 +995,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             string vNumDoc)
         {
             const string sql = @"exec spSIFDocsAsiento
-                         @tipodoc,@numdoc,@monto,'C',@cod_divisa,
-                         @tipocambio,@enlace,@cod_unidad,@cod_centro_costo,@cuenta,
-                         @id_solicitud,@codigo_cta,@ase_doc_deposito";
+                         @tipoDoc,@numdoc,@monto,'C',@codDivisa,
+                         @tipocambio,@enlace,@codUnidad,@codCentroCosto,@cuenta,
+                         @idSolicitud,@codigo_cta,@ase_doc_deposito";
 
             var param = new
             {
-                tipodoc = req.tipodoc,
+                tipoDoc = req.tipodoc,
                 numdoc = vNumDoc,
                 monto,
-                cod_divisa = ctas.cod_divisa,
+                codDivisa = ctas.cod_divisa,
                 tipocambio,
                 enlace = 0, // GLOBALES.gEnlace
-                cod_unidad = cargo.cod_unidad,
-                cod_centro_costo = cargo.cod_centro_costo,
+                codUnidad = cargo.cod_unidad,
+                codCentroCosto = cargo.cod_centro_costo,
                 cuenta = cargo.cod_cuenta,
-                id_solicitud = cargo.id_solicitud,
+                idSolicitud = cargo.id_solicitud,
                 codigo_cta = cargo.codigo,
                 ase_doc_deposito = ""
             };
@@ -1033,8 +1033,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             var polizas = DbHelper.ExecuteListQuery<CajasCrdDocAfectacionPolizaRow>(
                 _portalDb,
                 codempresa,
-                @"exec spCrdDocumentoAfectacionPolizas @tipodoc,@numdoc",
-                new { tipodoc = req.tipodoc, numdoc = vNumDoc }
+                @"exec spCrdDocumentoAfectacionPolizas @tipoDoc,@numDoc",
+                new { tipoDoc = req.tipodoc, numDoc = vNumDoc }
             ).Result ?? new List<CajasCrdDocAfectacionPolizaRow>();
 
             foreach (var p in polizas)
@@ -1058,22 +1058,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             string vNumDoc)
         {
             const string sql = @"exec spSIFDocsAsiento
-                         @tipodoc,@numdoc,@monto,'C',@cod_divisa,
-                         @tipocambio,@enlace,@cod_unidad,@cod_centro_costo,@cuenta,
-                         @id_solicitud,@codigo_cta,@ase_doc_deposito";
+                         @tipoDoc,@numdoc,@monto,'C',@codDivisa,
+                         @tipocambio,@enlace,@codUnidad,@codCentroCosto,@cuenta,
+                         @idSolicitud,@codigo_cta,@ase_doc_deposito";
 
             var param = new
             {
-                tipodoc = req.tipodoc,
+                tipoDoc = req.tipodoc,
                 numdoc = vNumDoc,
                 monto,
-                cod_divisa = ctas.cod_divisa,
+                codDivisa = ctas.cod_divisa,
                 tipocambio,
                 enlace = 0, // GLOBALES.gEnlace
-                cod_unidad = ctas.cod_unidad,
-                cod_centro_costo = ctas.cod_centro_costo,
+                codUnidad = ctas.cod_unidad,
+                codCentroCosto = ctas.cod_centro_costo,
                 cuenta,
-                id_solicitud = ctas.id_solicitud,
+                idSolicitud = ctas.id_solicitud,
                 codigo_cta = ctas.codigo,
                 ase_doc_deposito = ""
             };
@@ -1092,18 +1092,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 return new ErrorDto { Code = 0, Description = string.Empty };
 
             const string sql = @"exec spCajas_DesglocePagosDocFinal
-                         @caja,@apertura,@tiquete,@usuario,@tipodoc,@numdoc,@unidad,@id_solicitud,@codigo_cta";
+                         @caja,@apertura,@tiquete,@Usuario,@tipoDoc,@numdoc,@unidad,@idSolicitud,@codigo_cta";
 
             var param = new
             {
                 caja = req.mcaja,
                 apertura = req.mapertura,
                 tiquete = req.mtiquete,
-                usuario = req.usuario,
-                tipodoc = req.tipodoc,
+                Usuario = req.usuario,
+                tipoDoc = req.tipodoc,
                 numdoc = vNumDoc,
                 unidad = req.munidad,
-                id_solicitud = ctas.id_solicitud,
+                idSolicitud = ctas.id_solicitud,
                 codigo_cta = ctas.codigo
             };
 
