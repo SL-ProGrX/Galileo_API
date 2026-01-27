@@ -13,7 +13,7 @@
         public string? Tipo { get; set; } = string.Empty;
         public string? Cod_cuenta { get; set; } = string.Empty;
         public string? cod_cuenta_mask { get; set; } = string.Empty;
-        public bool Activo { get; set; }
-        public bool IsNew { get; set; }
+        public bool? Activo { get; set; }
+        public bool? IsNew { get; set; }
     }
 }
