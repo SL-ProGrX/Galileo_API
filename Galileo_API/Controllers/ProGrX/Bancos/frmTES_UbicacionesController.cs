@@ -12,13 +12,11 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
     [Authorize]
     public class FrmTesUbicacionesController : ControllerBase
     {
-        private readonly IConfiguration? _config;
         private readonly FrmTesUbicacionesBL _bl;
 
         public FrmTesUbicacionesController(IConfiguration config)
         {
-            _config = config;
-            _bl = new FrmTesUbicacionesBL(_config);
+            _bl = new FrmTesUbicacionesBL(config);
         }
 
        
