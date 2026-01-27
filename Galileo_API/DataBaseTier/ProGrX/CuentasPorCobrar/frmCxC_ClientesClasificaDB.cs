@@ -17,7 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
         private const int ModuloCxC = 31;
         private const string Tabla = "dbo.CxC_Categoria_Clientes";
 
-        // Movimientos de bitácora centralizados (evita duplicados de strings)
+       
         private const string MovRegistra = "REGISTRA - WEB";
         private const string MovModifica = "MODIFICA - WEB";
         private const string MovElimina = "ELIMINAR - WEB";
@@ -32,7 +32,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
 
         private void LogBitacora(int empresaId, string usuario, string detalle, string movimiento)
         {
-            // No atrapar ex aquí: si la bitácora falla, no debe esconder el resultado principal.
+        
             _securityMainDb.Bitacora(new BitacoraInsertarDto
             {
                 EmpresaId = empresaId,
@@ -45,7 +45,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
 
         private static (string OrderByField, string Direction) OrderByFrom(string? sortField, int? sortOrder)
         {
-            // Whitelist estricta con escapado mediante corchetes []
+        
             var field = (sortField ?? string.Empty).Trim().ToLowerInvariant();
             var orderByField = field switch
             {
@@ -57,13 +57,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
             var direction = sortOrder == 1 ? "DESC" : "ASC";
             return (orderByField, direction);
         }
-
-        private static string BuildWhereClause() => @"
-                WHERE
-                    (@filtro IS NULL)
-                    OR (CAST(cod_categoria AS NVARCHAR(50)) LIKE @like)
-                    OR (descripcion LIKE @like)
-                ";
+ 
 
         private static string BuildPaging(bool usarPaginacion) =>
             usarPaginacion ? " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY " : string.Empty;
@@ -89,9 +83,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
             return (p, usarPaginacion);
         }
 
-        private static ErrorDto<T> Ok<T>(T data) => DbHelper.CreateOkResponse(data);
         private static ErrorDto Ok() => DbHelper.CreateOkResponse();
         private static ErrorDto Error(string msg) => DbHelper.ErrorResponse(msg);
+
+        private const string WhereClause = @"
+                        WHERE
+                            (@filtro IS NULL)
+                            OR (CAST(cod_categoria AS NVARCHAR(50)) LIKE @like)
+                            OR (descripcion LIKE @like)
+                        ";
+
+        private const string SqlCount = "SELECT COUNT(1) FROM dbo.CxC_Categoria_Clientes " + WhereClause + ";";
+
 
         #endregion
 
@@ -104,22 +107,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
             return DbHelper.WithConn(_portalDB, codEmpresa, (SqlConnection conn) =>
             {
                 var (orderByField, direction) = OrderByFrom(filtros?.sortField, filtros?.sortOrder);
-                var where = BuildWhereClause();
+              
                 var (param, usarPaginacion) = BuildParams(filtros ?? new FiltrosLazyLoadData(), esExportar);
 
-                var sqlCount = $@"SELECT COUNT(1) FROM {Tabla} {where};";
-                var sqlList = $@"
+              
+                    var sqlList = $@"
                                 SELECT
                                     cod_categoria,
                                     descripcion,
                                     activa AS Activo
                                 FROM {Tabla}
-                                {where}
+                                {WhereClause}
                                 ORDER BY {orderByField} {direction}
                                 {BuildPaging(usarPaginacion)}
                                 ;";
 
-                var total = conn.QuerySingle<int>(sqlCount, param);
+                var total = conn.QuerySingle<int>(SqlCount, param);
                 var lista = conn.Query<CxCClientesClasificaData>(sqlList, param).ToList();
 
                 return new CxCClientesClasificaLista { total = total, lista = lista };
@@ -159,7 +162,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                         SELECT @accion AS accion;
                         ";
 
-            // Nota: devolvemos mensaje genérico si falla; el detalle técnico se loguea aparte (ver DbHelper recomendado abajo).
+        
             var upsert = DbHelper.ExecuteSingleQuery<string>(
                 _portalDB, codEmpresa, sqlUpsert, defaultValue: "", parameters: new
                 {
@@ -184,7 +187,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                 return Ok();
             }
 
-            return Ok(); // Fallback idempotente
+            return Ok(); 
         }
 
         /// <summary>
@@ -207,7 +210,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                 return Ok();
             }
 
-            // Idempotente si ya no existe
             return Ok();
         }
     }
