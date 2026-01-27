@@ -175,22 +175,28 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         inner join TES_Tipos_Doc T on C.Tipo = T.tipo
                         where D.cod_remesa = @codigo";
 
-                if (filtros.filtro != null && filtros.filtro != "")
+                var parameters = new DynamicParameters();
+                parameters.Add("codigo", Remesa);
+
+                if (!string.IsNullOrEmpty(filtros.filtro))
                 {
-                    filtros.filtro = $@" and (C.nsolicitud like '%{filtros.filtro}%' 
-                            OR C.ndocumento like '%{filtros.filtro}%' OR C.tipo like '%{filtros.filtro}%' 
-                            OR D.observa_rec like '%{filtros.filtro}%' OR D.usuario_rec like '%{filtros.filtro}%'
-                            OR C.id_banco like '%{filtros.filtro}%') ";
+                    query += @" and (C.nsolicitud like @textoFiltro 
+                            OR C.ndocumento like @textoFiltro OR C.tipo like @textoFiltro 
+                            OR D.observa_rec like @textoFiltro OR D.usuario_rec like @textoFiltro
+                            OR C.id_banco like @textoFiltro) ";
+                    parameters.Add("textoFiltro", "%" + filtros.filtro + "%");
                 }
+
                 if (filtros.pagina >= 0)
                 {
-                    query = query + $@" {filtros.filtro} 
-                            ORDER BY C.nsolicitud desc
-                            OFFSET {filtros.pagina} ROWS
-                            FETCH NEXT {filtros.paginacion} ROWS ONLY ";
+                    query += @" ORDER BY C.nsolicitud desc
+                            OFFSET @offset ROWS
+                            FETCH NEXT @fetch ROWS ONLY ";
+                    parameters.Add("offset", filtros.pagina);
+                    parameters.Add("fetch", filtros.paginacion);
                 }
-                var vLista = conn.Query<TesTrasladoDocumentoDto>(query,
-                new { codigo = Remesa }).ToList();
+
+                var vLista = conn.Query<TesTrasladoDocumentoDto>(query, parameters).ToList();
 
                 foreach (var item in vLista)
                 {
