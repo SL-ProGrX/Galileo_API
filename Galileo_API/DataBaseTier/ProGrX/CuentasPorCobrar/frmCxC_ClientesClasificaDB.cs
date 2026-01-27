@@ -42,47 +42,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                 Modulo = ModuloCxC
             });
         }
-
-        private static (string OrderByField, string Direction) OrderByFrom(string? sortField, int? sortOrder)
-        {
-        
-            var field = (sortField ?? string.Empty).Trim().ToLowerInvariant();
-            var orderByField = field switch
-            {
-                "cod_categoria" => "[cod_categoria]",
-                "descripcion" => "[descripcion]",
-                "activa" => "[activa]",
-                _ => "[cod_categoria]"
-            };
-            var direction = sortOrder == 1 ? "DESC" : "ASC";
-            return (orderByField, direction);
-        }
- 
-
-        private static string BuildPaging(bool usarPaginacion) =>
-            usarPaginacion ? " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY " : string.Empty;
-
-        private static (object Params, bool UsarPaginacion) BuildParams(FiltrosLazyLoadData filtros, bool esExportar)
-        {
-            filtros ??= new FiltrosLazyLoadData();
-
-            var texto = filtros.filtro?.Trim();
-            var hasFiltro = !string.IsNullOrWhiteSpace(texto);
-
-            var fetch = filtros.paginacion ;
-            var offset = filtros.pagina;
-            var usarPaginacion = fetch > 0 && !esExportar;
-
-            var p = new
-            {
-                filtro = hasFiltro ? texto : null,
-                like = hasFiltro ? $"%{texto}%" : null,
-                offset,
-                fetch
-            };
-            return (p, usarPaginacion);
-        }
-
+               
         private static ErrorDto Ok() => DbHelper.CreateOkResponse();
         private static ErrorDto Error(string msg) => DbHelper.ErrorResponse(msg);
 
@@ -93,7 +53,49 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                             OR (descripcion LIKE @like)
                         ";
 
+
+        private const string SqlListAsc = @"
+                    SELECT
+                        cod_categoria,
+                        descripcion,
+                        activa AS Activo
+                    FROM dbo.CxC_Categoria_Clientes
+                    " + WhereClause + @"
+                    ORDER BY
+                        CASE WHEN @orderBy = 'cod_categoria' THEN cod_categoria END,
+                        CASE WHEN @orderBy = 'descripcion'   THEN descripcion   END,
+                        CASE WHEN @orderBy = 'activa'        THEN activa        END
+                    ";
+
+
+        private const string SqlListDesc = @"
+                    SELECT
+                        cod_categoria,
+                        descripcion,
+                        activa AS Activo
+                    FROM dbo.CxC_Categoria_Clientes
+                    " + WhereClause + @"
+                    ORDER BY
+                        CASE WHEN @orderBy = 'cod_categoria' THEN cod_categoria END DESC,
+                        CASE WHEN @orderBy = 'descripcion'   THEN descripcion   END DESC,
+                        CASE WHEN @orderBy = 'activa'        THEN activa        END DESC
+                    ";
+
         private const string SqlCount = "SELECT COUNT(1) FROM dbo.CxC_Categoria_Clientes " + WhereClause + ";";
+
+        private static (string OrderBy, bool Desc) SanitizeOrderBy(string? sortField, int? sortOrder)
+        {
+            var field = (sortField ?? string.Empty).Trim().ToLowerInvariant();
+            var orderBy = field switch
+            {
+                "cod_categoria" => "cod_categoria",
+                "descripcion" => "descripcion",
+                "activa" => "activa",
+                _ => "cod_categoria"
+            };
+            var desc = sortOrder == 1; // 1 = DESC; cualquier otro = ASC
+            return (orderBy, desc);
+        }
 
 
         #endregion
@@ -104,29 +106,50 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
         public ErrorDto<CxCClientesClasificaLista> CxCClientesClasificaLista_Obtener(
             int codEmpresa, FiltrosLazyLoadData filtros, bool esExportar)
         {
+
             return DbHelper.WithConn(_portalDB, codEmpresa, (SqlConnection conn) =>
             {
-                var (orderByField, direction) = OrderByFrom(filtros?.sortField, filtros?.sortOrder);
-              
-                var (param, usarPaginacion) = BuildParams(filtros ?? new FiltrosLazyLoadData(), esExportar);
+                filtros ??= new FiltrosLazyLoadData();
 
-              
-                    var sqlList = $@"
-                                SELECT
-                                    cod_categoria,
-                                    descripcion,
-                                    activa AS Activo
-                                FROM {Tabla}
-                                {WhereClause}
-                                ORDER BY {orderByField} {direction}
-                                {BuildPaging(usarPaginacion)}
-                                ;";
+                var texto = filtros.filtro?.Trim();
+                var hasFiltro = !string.IsNullOrWhiteSpace(texto);
 
-                var total = conn.QuerySingle<int>(SqlCount, param);
-                var lista = conn.Query<CxCClientesClasificaData>(sqlList, param).ToList();
+                var offset = filtros.pagina;
+                var fetch = filtros.paginacion;
+                var usarPaginacion = fetch > 0 && !esExportar;
 
-                return new CxCClientesClasificaLista { total = total, lista = lista };
+                // Sanitiza el ORDER BY (whitelist: cod_categoria, descripcion, actica)
+                var (orderBy, desc) = SanitizeOrderBy(filtros.sortField, filtros.sortOrder);
+
+                // Parámetros base (todos parametrizados)
+                var baseParams = new
+                {
+                    filtro = hasFiltro ? texto : null,
+                    like = hasFiltro ? $"%{texto}%" : null,
+                    orderBy,
+                    offset,
+                    fetch
+                };
+
+                // COUNT seguro (sin interpolación)
+                var total = conn.QuerySingle<int>(SqlCount, baseParams);
+
+                // SELECT seguro (elige ASC/DESC por constante, y agrega paginación por parámetros)
+                var sqlListCore = desc ? SqlListDesc : SqlListAsc;
+                var sqlList = usarPaginacion
+                    ? sqlListCore + " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;"
+                    : sqlListCore + ";";
+
+                // Ejecución sin interpolación
+                var lista = conn.Query<CxCClientesClasificaData>(sqlList, baseParams).ToList();
+
+                return new CxCClientesClasificaLista
+                {
+                    total = total,
+                    lista = lista
+                };
             });
+
         }
 
         /// <summary>
