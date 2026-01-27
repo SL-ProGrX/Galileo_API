@@ -277,7 +277,7 @@ Where Estado = 'T'
                 totalMonto = (decimal?)resultC.Monto ?? 0m;
             }
 
-            FormatoBCRRequest request = new()
+            FormatoBcrRequest request = new()
             {
                 conn = conn,
                 codEmpresa = CodEmpresa,

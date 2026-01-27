@@ -837,7 +837,7 @@ where nsolicitud in ";
 
             xTestKey = xTestKey > 2147483468 ? 2147483468 : xTestKey;
 
-            FormatoBCRRequest request = new()
+            FormatoBcrRequest request = new()
             {
                 conn = connection,
                 codEmpresa = codEmpresa,

@@ -571,7 +571,7 @@ ORDER BY COD_CENTRO_COSTO;",
 
 
         public ErrorDto<object> SbTeBcrCore(
-             FormatoBCRRequest request
+             FormatoBcrRequest request
         )
                 {
                

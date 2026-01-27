@@ -112,7 +112,7 @@ namespace Galileo.Models
         public short? MODO_PROTEGIDO { get; set; }
     }
 
-    public class FormatoBCRRequest
+    public class FormatoBcrRequest
     {
        public SqlConnection conn { get; set; } = new SqlConnection();
        public int codEmpresa { get; set; } = 0;
