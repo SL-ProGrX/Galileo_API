@@ -18,7 +18,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         private readonly int vModulo = 5;
 
         public FrmCajasCrdAbonosCtPDb(IConfiguration config)
-            : this(new PortalDB(config), new MSecurityMainDb(config), new MCajas(config), new MProGrxMain(config), new MRecibos(config), new MAfilicacionDB(config))
+            : this(
+                new PortalDB(config),
+                new MSecurityMainDb(config),
+                new MCajas(config),
+                new MProGrxMain(config),
+                new MRecibos(config),
+                new MAfilicacionDB(config))
         {
         }
 
@@ -59,7 +65,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 if (op.Saldo_mes == 0)
                 {
                     var updateSQl = "update reg_creditos set saldo_mes = saldo where id_solicitud = @id_solicitud";
-                    conn.Execute(updateSQl, new { Saldo_mes = op.Saldo_mes, id_solicitud = op.id_solicitud });
+                    conn.Execute(updateSQl, new { saldo_mes = op.Saldo_mes, id_solicitud = op.id_solicitud });
 
                     op.Saldo_mes = op.saldo;
                 }
@@ -194,7 +200,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 if (FailIfError(rt, out e)) return e;
 
-                return new ErrorDto { Code = 0, Description = mensajeFinal };
+                return new ErrorDto { Code = 0, Description = mensajeFinal + vNumDoc };
             }
             catch (Exception ex)
             {
@@ -370,7 +376,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             ).Result;
 
             decimal vcontrol = data?.control == null ? 0m : (decimal)data.control;
-            bool vcajasmov = data?.cajamov != null && Convert.ToInt32(data.cajamov) == 1;
+            bool vcajasmov = (data?.cajamov is not null) && Convert.ToInt32(data.cajamov) == 1;
 
             if (vcontrol != req.control)
                 mensajes.Add("Esta Operación ha sido cambiada por otro proceso, vuelva a consultarla!");

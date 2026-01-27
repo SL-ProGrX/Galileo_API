@@ -119,11 +119,11 @@
     public class CajasCrdAbonosCtPRegistrarAbonoRequest
     {
         public string mcaja { get; set; } = "";
-        public int mapertura { get; set; }
-        public int msesionid { get; set; }
+        public int mapertura { get; set; } = 0;
+        public int msesionid { get; set; } = 0;
         public string mtiquete { get; set; } = "";
         public string munidad { get; set; } = "";
-        public int operacionid { get; set; }
+        public int operacionid { get; set; } = 0;
 
         public string tipodoc { get; set; } = "";
 
@@ -131,20 +131,20 @@
 
         public bool fechacancelacion_enabled { get; set; } = false;
 
-        public decimal totalcajas { get; set; }
-        public decimal totalcancela { get; set; }
-        public decimal diferencia { get; set; }
-        public decimal datosanticipo { get; set; }
-        public decimal datosinteres { get; set; }
-        public decimal datosamortiza { get; set; }
-        public decimal iva { get; set; }
-        public decimal totalpagar { get; set; }
-        public decimal control { get; set; }
+        public decimal totalcajas { get; set; } = 0;
+        public decimal totalcancela { get; set; } = 0;
+        public decimal diferencia { get; set; } = 0;
+        public decimal datosanticipo { get; set; } = 0;
+        public decimal datosinteres { get; set; } = 0;
+        public decimal datosamortiza { get; set; } = 0;
+        public decimal iva { get; set; } = 0;
+        public decimal totalpagar { get; set; } = 0;
+        public decimal control { get; set; } = 0;
         public string proceso { get; set; } = "";
-        public int plazo { get; set; }
+        public int plazo { get; set; } = 0;
 
-        public int diasactivo { get; set; }
-        public bool recalculacuota { get; set; }
+        public int diasactivo { get; set; } = 0;
+        public bool recalculacuota { get; set; } = false;
 
         public TipoAbono tipoabono { get; set; }
         public bool diferenciaaplenabled { get; set; }
@@ -159,8 +159,8 @@
         public string codigo { get; set; } = "";
         public string descripcion { get; set; } = "";
         public string notas { get; set; } = "";
-        public decimal saldo_anterior { get; set; }
-        public decimal saldo_nuevo { get; set; }
+        public decimal saldo_anterior { get; set; } = 0;
+        public decimal saldo_nuevo { get; set; } = 0;
         public bool retencion { get; set; } = false;
 
         public bool factura_visible { get; set; } = false;
@@ -178,7 +178,7 @@
 
     public class CajasCrdAbonosCtPRegistrarAbonoResponse
     {
-        public bool extraordinario { get; set; }
+        public bool extraordinario { get; set; } = false;
         public string mensaje { get; set; } = "";
         public string tipodoc { get; set; } = "";
         public string numdoc { get; set; } = "";
@@ -186,20 +186,20 @@
 
     public class CajasCrdInfoExtraordinarioData
     {
-        public int dias { get; set; }
-        public decimal intereses { get; set; }
-        public decimal principal { get; set; }
-        public decimal cargos { get; set; }
+        public int dias { get; set; } = 0;
+        public decimal intereses { get; set; } = 0;
+        public decimal principal { get; set; } = 0;
+        public decimal cargos { get; set; } = 0;
     }
 
     public class CajasCrdDocumentoAfectacionData
     {
-        public decimal intcor { get; set; }
-        public decimal intmor { get; set; }
-        public decimal principal { get; set; }
-        public decimal cargos { get; set; }
-        public decimal polizas { get; set; }
-        public decimal iva { get; set; }
+        public decimal intcor { get; set; } = 0;
+        public decimal intmor { get; set; } = 0;
+        public decimal principal { get; set; } = 0;
+        public decimal cargos { get; set; } = 0;
+        public decimal polizas { get; set; } = 0;
+        public decimal iva { get; set; } = 0;
     }
 
     public class CajasCrdOperacionProxPagoData
@@ -222,7 +222,7 @@
 
     public class CajasCrdDocAfectacionPolizaRow
     {
-        public decimal mov_monto { get; set; }
+        public decimal mov_monto { get; set; } = 0;
         public string cod_cuenta { get; set; } = "";
     }
 
@@ -237,7 +237,7 @@
         public string ctaiva { get; set; } = "";
         public string ctaamortiza { get; set; } = "";
 
-        public int id_solicitud { get; set; }
+        public int id_solicitud { get; set; } = 0;
         public string codigo { get; set; } = "";
     }
 }
