@@ -972,7 +972,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 codempresa,
                 @"exec spCrdDocumentoAfectacionCargos @tipoDoc,@numDoc",
                 new { tipoDoc = req.tipodoc, numDoc = vNumDoc }
-            ).Result ?? new List<CajasCrdDocAfectacionCargoRow>();
+            ).Result ?? [];
 
             foreach (var c in cargos)
             {
@@ -1035,7 +1035,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 codempresa,
                 @"exec spCrdDocumentoAfectacionPolizas @tipoDoc,@numDoc",
                 new { tipoDoc = req.tipodoc, numDoc = vNumDoc }
-            ).Result ?? new List<CajasCrdDocAfectacionPolizaRow>();
+            ).Result ?? [];
 
             foreach (var p in polizas)
             {
