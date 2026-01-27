@@ -74,5 +74,58 @@ namespace Galileo.DataBaseTier
             return DateTime.DaysInMonth(pAnio, pMes);
         }
 
+        public static bool fxCrdSaldoVerifica(SqlConnection conn, long pOperacion, decimal pSaldo)
+        {
+            try
+            {
+                const string query = @"
+                    select
+                      case when C.poliza = 'S' or C.retencion = 'S' then 'S' else 'N' end as retencion,
+                      R.saldo,
+                      R.montoapr,
+                      R.plazo,
+                      R.amortiza
+                    from reg_creditos R
+                    inner join Catalogo C on R.codigo = C.codigo
+                    where R.id_solicitud = @operacion;";
+
+                var rs = conn.QueryFirstOrDefault<dynamic>(
+                    query,
+                    new { operacion = pOperacion }
+                );
+
+                if (rs == null)
+                    return false;
+
+                string retencion = rs.retencion;
+                decimal saldo = rs.saldo;
+                int plazo = rs.plazo;
+
+                decimal curSaldo;
+
+                if (retencion == "S")
+                {
+                    if (plazo > 900)
+                    {
+                        curSaldo = pSaldo;
+                    }
+                    else
+                    {
+                        curSaldo = saldo;
+                    }
+                }
+                else
+                {
+                    curSaldo = saldo;
+                }
+
+                return curSaldo == pSaldo;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
     }
 }
