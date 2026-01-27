@@ -1,9 +1,10 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
-using Galileo.Models.ERROR; 
+using Galileo.Models.ERROR;
 using Galileo.Models;
 using Galileo_API.Models.ProGrX.CuentasPorCobrar;
-using Galileo.Models.Security; 
+using Galileo.Models.Security;
+using System.Data.Common;
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
 {
@@ -14,6 +15,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
         private readonly MSecurityMainDb _Security_MainDB;
         private readonly int vModulo = 31;
         private readonly MCntLinkDB mCntLink;
+        private const string Tabla = "dbo.cxc_cargos";
 
         public FrmCxCCargosTiposDB(IConfiguration config)
         {
@@ -22,6 +24,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
             mCntLink = new MCntLinkDB(config);
         }
 
+        private static ErrorDto Err(string msg) => DbHelper.ErrorResponse(msg);
+
         /// <summary>
         /// Obtiene la lista de tipos de cargos .
         /// </summary>
@@ -29,33 +33,31 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
         /// <param name="filtros"></param>
         /// <param name="esExportar"></param>
         /// <returns></returns>
-        public ErrorDto<CxCCargosTiposLista> CxCCargosTiposLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros, bool esExportar)
+        public ErrorDto<CxCCargosTiposLista> CxCCargosTiposLista_Obtener(int codEmpresa, FiltrosLazyLoadData filtros, bool esExportar)
         {
             filtros ??= new FiltrosLazyLoadData();
-
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
             var result = new ErrorDto<CxCCargosTiposLista>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = new CxCCargosTiposLista
-                {
-                    total = 0,
-                    lista = new List<CxCCargosTiposData>()
-                }
+                Result = new CxCCargosTiposLista { total = 0, lista = new List<CxCCargosTiposData>() }
             };
 
             try
             {
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+                // Filtros
                 var texto = filtros.filtro?.Trim();
                 var hasFiltro = !string.IsNullOrWhiteSpace(texto);
                 var like = hasFiltro ? $"%{texto}%" : null;
 
                 var offset = filtros.pagina!;
                 var fetch = filtros.paginacion!;
-                var usarPaginacion = fetch > 0;
+                var usarPaginacion = fetch > 0 && !esExportar;
 
+                // Whitelist de columnas ordenables (evita inyección en ORDER BY)
                 var sortField = (filtros.sortField ?? string.Empty).Trim();
                 var orderByField = sortField switch
                 {
@@ -65,63 +67,76 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                     "cod_cuenta" => "cod_cuenta",
                     _ => "cod_cargo"
                 };
-
                 var direction = filtros.sortOrder == 1 ? "DESC" : "ASC";
 
-                const string sqlCount = @"
-                        SELECT COUNT(1)
-                        FROM cxc_cargos";
+                // WHERE compartido para COUNT y SELECT (corrige bug: antes el COUNT no filtraba)
+                const string where = @"
+                    WHERE
+                        (@filtro IS NULL)
+                        OR (CAST(cod_cargo AS NVARCHAR(50)) LIKE @like)
+                        OR (descripcion LIKE @like)
+                        OR (cod_cuenta LIKE @like)";
 
-                result.Result.total = conn.QuerySingle<int>(sqlCount);
+                var sqlCount = $@"SELECT COUNT(1) FROM {Tabla} {where};";
 
                 var sqlList = $@"
-                        SELECT
-                            cod_cargo,
-                            descripcion,
-                            Tipo,
-                            cod_cuenta,
-                            activo                             
-                        FROM cxc_cargos
-                        WHERE
-                            (@filtro IS NULL)
-                         OR (CAST(cod_cargo AS NVARCHAR(50)) LIKE @like)
-                         OR (descripcion LIKE @like)
-                         OR (cod_cuenta LIKE @like)
-                        ORDER BY {orderByField} {direction}";
+                    SELECT
+                        cod_cargo,
+                        descripcion,
+                        Tipo,
+                        cod_cuenta,
+                        activo
+                    FROM {Tabla}
+                    {where}
+                    ORDER BY {orderByField} {direction}";
 
-
-                if (!esExportar && usarPaginacion)
+                if (usarPaginacion)
                 {
                     sqlList += @"
                         OFFSET @offset ROWS
                         FETCH NEXT @fetch ROWS ONLY;";
-                    
                 }
-                result.Result.lista = conn.Query<CxCCargosTiposData>(sqlList, new
+
+                var @params = new
                 {
                     filtro = hasFiltro ? texto : null,
                     like,
                     offset,
                     fetch
-                }).ToList();
+                };
 
+                // Total filtrado
+                result.Result.total = conn.QuerySingle<int>(sqlCount, @params);
+
+                // Lista filtrada/paginada
+                result.Result.lista = conn.Query<CxCCargosTiposData>(sqlList, @params).ToList();
+
+                // Formateo de cuenta (null-safe)
                 foreach (var item in result.Result.lista)
                 {
-                    item.cod_cuenta_mask = mCntLink.fxgCntCuentaFormato(CodEmpresa, true, pCuenta: item.Cod_cuenta, 1);
-
+                    item.cod_cuenta_mask = string.IsNullOrWhiteSpace(item.Cod_cuenta)
+                        ? null
+                        : mCntLink.fxgCntCuentaFormato(codEmpresa, blnMascara: true, pCuenta: item.Cod_cuenta, optMensaje: 1);
                 }
-
             }
-            catch (Exception ex)
+            catch (DbException)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = "No fue posible consultar los datos.";
+                result.Result.total = 0;
+                result.Result.lista = new List<CxCCargosTiposData>();
+            }
+            catch (Exception)
+            {
+                result.Code = -1;
+                result.Description = "Error inesperado al consultar los datos.";
                 result.Result.total = 0;
                 result.Result.lista = new List<CxCCargosTiposData>();
             }
 
             return result;
         }
+
 
         /// <summary>
         /// Guarda o actualiza un tipo de cargo.
@@ -130,37 +145,33 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
         /// <param name="usuario"></param>
         /// <param name="datos"></param>
         /// <returns></returns>
-        public ErrorDto CxCCargosTipos_Guardar(int CodEmpresa, string usuario, CxCCargosTiposData datos)
+        public ErrorDto CxCCargosTipos_Guardar(int codEmpresa, string usuario, CxCCargosTiposData datos)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            if (datos is null) return Err("Datos requeridos.");
+            if (string.IsNullOrWhiteSpace(datos.Cod_cargo)) return Err("El campo 'Cod_cargo' es requerido.");
+            if (string.IsNullOrWhiteSpace(usuario)) return Err("El usuario es requerido.");
+
             try
             {
-                var query = $@"select isnull(count(*),0) as Existe from cxc_cargos 
-                              where cod_cargo = @Cod_cargo";
-                var existe = conn.QueryFirstOrDefault<int>(query, new { datos.Cod_cargo });
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
-                //string vCuenta = _mCnt.fxgCntCuentaFormato(CodEmpresa, false, concepto.cod_cuenta_mask, 0);
-                //bool cuentaValida = _mCnt.fxgCntCuentaValida(CodEmpresa, vCuenta);
-                //if (!cuentaValida)
-                //{
-                //    return DbHelper.ErrorResponse("La cuenta contable no es válida.");
-                //}
+                const string sqlExiste = $"SELECT ISNULL(COUNT(*),0) FROM {Tabla} WHERE cod_cargo = @Cod_cargo;";
+                var existe = conn.QueryFirstOrDefault<int>(sqlExiste, new { datos.Cod_cargo });
 
-                if (existe > 0)
-                {
-                    return CxCCargosTipos_Actualizar(CodEmpresa, usuario, datos);
-                }
-                else
-                {
-                    return CxCCargosTipos_Insertar(CodEmpresa, usuario, datos);
-                }
+                return existe > 0
+                    ? CxCCargosTipos_Actualizar(codEmpresa, usuario, datos)
+                    : CxCCargosTipos_Insertar(codEmpresa, usuario, datos);
             }
-            catch (Exception ex)
+            catch (DbException)
             {
-                return DbHelper.ErrorResponse(ex.Message);
+                return Err("No fue posible guardar el Tipo de Cargo de CxC.");
+            }
+            catch (Exception)
+            {
+                return Err("Error inesperado al guardar el Tipo de Cargo de CxC.");
             }
         }
-       
+
         /// <summary>
         /// Inserta un nuevo registro
         /// </summary>
