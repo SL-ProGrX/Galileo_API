@@ -216,11 +216,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                 return DbHelper.ErrorResponse(ex.Message);
             }
 
-            catch (Exception)
-            {
-                return DbHelper.ErrorResponse("Error inesperado.");
-            }
-
         }
 
         /// <summary>
@@ -269,11 +264,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                 return DbHelper.ErrorResponse(ex.Message);
             }
 
-            catch (Exception)
-            {
-                return DbHelper.ErrorResponse("Error inesperado.");
-
-            }
         }
 
         /// <summary>
@@ -306,10 +296,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                     });
             }
             catch (DbException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-            catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
