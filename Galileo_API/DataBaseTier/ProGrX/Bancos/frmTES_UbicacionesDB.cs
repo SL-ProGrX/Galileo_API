@@ -66,7 +66,7 @@ WHERE
             return (sortField, sortOrder);
         }
 
-        private List<TesUbicacionesData> QueryUbicaciones(
+        private static List<TesUbicacionesData> QueryUbicaciones(
             SqlConnection conn,
             FiltrosLazyLoadData filtros,
             bool usarPaginacion,
