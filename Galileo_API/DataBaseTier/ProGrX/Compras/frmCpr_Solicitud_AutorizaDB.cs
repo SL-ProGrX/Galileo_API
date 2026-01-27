@@ -845,26 +845,13 @@ WHERE BS.CPR_ID = @cpr_id;";
 
                 var compraDirectaDB = new FrmCprCompraDirectaDB(_config);
 
-                var directaInsert = new CompraDirectaInsert
-                {
-                    cod_factura = solicitud.documento ?? string.Empty,
-                    fecha = MProGrXAuxiliarDB.validaFechaGlobal(DateTime.Now, "yyyy-MM-dd") ?? DateTime.Now.ToString("yyyy-MM-dd"),
-                    usuario = usuario,
-                    causa = solicitud.tipo_orden ?? string.Empty,
-                    notas = solicitud.detalle,
-                    cod_proveedor = solicitud.com_dir_cod_proveedor ?? 0,
-                    forma_pago = string.IsNullOrEmpty(solicitud.int_tipo_pago) ? "0" : solicitud.int_tipo_pago,
-                    divisa = solicitud.divisa ?? string.Empty,
-                    tipo_pago = string.IsNullOrEmpty(solicitud.int_forma_pago) ? "0" : solicitud.int_forma_pago,
-                    lineas = new List<CompraDirectaDetalle>()
-                };
-
                 float impVenta = 0;
                 float descuento = 0;
+                var lineas = new List<CompraDirectaDetalle>();
 
                 foreach (var item in detalle)
                 {
-                    directaInsert.lineas.Add(new CompraDirectaDetalle
+                    lineas.Add(new CompraDirectaDetalle
                     {
                         cod_producto = item.cod_producto,
                         cantidad = item.cantidad,
@@ -879,10 +866,23 @@ WHERE BS.CPR_ID = @cpr_id;";
                     descuento += item.desc_monto ?? 0;
                 }
 
-                directaInsert.sub_total = directaInsert.lineas.Sum(x => x.precio * x.cantidad);
-                directaInsert.imp_ventas = impVenta;
-                directaInsert.descuento = descuento;
-                directaInsert.total = directaInsert.lineas.Sum(x => x.total);
+                var directaInsert = new CompraDirectaInsert
+                {
+                    cod_factura = solicitud.documento ?? string.Empty,
+                    fecha = MProGrXAuxiliarDB.validaFechaGlobal(DateTime.Now, "yyyy-MM-dd") ?? DateTime.Now.ToString("yyyy-MM-dd"),
+                    usuario = usuario,
+                    causa = solicitud.tipo_orden ?? string.Empty,
+                    notas = solicitud.detalle,
+                    cod_proveedor = solicitud.com_dir_cod_proveedor ?? 0,
+                    forma_pago = string.IsNullOrEmpty(solicitud.int_tipo_pago) ? "0" : solicitud.int_tipo_pago,
+                    divisa = solicitud.divisa ?? string.Empty,
+                    tipo_pago = string.IsNullOrEmpty(solicitud.int_forma_pago) ? "0" : solicitud.int_forma_pago,
+                    lineas = lineas,
+                    sub_total = lineas.Sum(x => x.precio * x.cantidad),
+                    imp_ventas = impVenta,
+                    descuento = descuento,
+                    total = lineas.Sum(x => x.total)
+                };
 
                 var info = compraDirectaDB.CompraDirecta_Insertar(CodEmpresa, directaInsert);
 

@@ -191,6 +191,9 @@
             public string? ClientIPAddress { get; set; }   // Opcional, máx. 40 caracteres
             public string? CultureCode { get; set; }       // 5 caracteres (ej: "ES-CR")
             public string? UserCode { get; set; }          // Opcional, máx. 50 caracteres
+
+            public int? CoreIntegrationPoint { get; set; } = null;
+            public int? CostCenter { get; set; }
         }
 
         public class ParametrosSinpe
@@ -253,9 +256,10 @@
         public class OriginCustomer
         {
             public string? Id { get; set; }                 // 5–30 caracteres
+            public int? IdType { get; set; }
             public string? Name { get; set; }               // 8–150 caracteres
-            public string? IBAN1 { get; set; }              // Opcional, 22 caracteres
-            public bool CreditIBAN { get; set; }           // True = acredita cuenta
+            public string? IBAN { get; set; }              // Opcional, 22 caracteres
+            public bool DebitIBAN { get; set; }           // True = acredita cuenta
             public string? Email { get; set; }              // Opcional, 320 caracteres
         }
         #endregion
@@ -267,8 +271,10 @@
         public class DestinationCustomer
         {
             public string? Id { get; set; }                 // 5–30 caracteres
+            public int? IdType { get; set; }
             public string? Name { get; set; }               // 8–150 caracteres
             public string? IBAN { get; set; }               // 22 caracteres
+            public string? Email { get; set; }
         }
         #endregion
 
@@ -287,7 +293,9 @@
             public string? EntityName { get; set; }         // 255 caracteres
             public int RejectCode { get; set; }
             public string? RejectDescription { get; set; }  // 255 caracteres
-        }
+            public int? State { get; set; }
+            public string? Name { get; set; }
+    }
         #endregion
 
         #region 7.1.8 DTR
@@ -415,8 +423,8 @@
         {
             public string? ChannelBatchNumber { get; set; }
             public string? Description { get; set; }
-            public int CoreIntegrationPoint { get; set; }
-            public int CostCenter { get; set; }
+            public new int? CoreIntegrationPoint { get; set; }
+            public new int? CostCenter { get; set; }
             public List<DTR>? Debits { get; set; }
             public List<CustomField>? CustomData { get; set; }
         }
@@ -499,8 +507,8 @@
         #region 7.1.26 ReqDTRSending
         public class ReqDTRSending : ReqBase
         {
-            public int CoreIntegrationPoint { get; set; }
-            public int CostCenter { get; set; }
+            public new int CoreIntegrationPoint { get; set; } = 0;
+            public new int CostCenter { get; set; } = 0;
             public DTR? Debit { get; set; }
             public List<CustomField>? CustomData { get; set; }
         }
@@ -612,6 +620,12 @@
             /// </summary>
             public decimal Amount { get; set; }
 
+            public string CurrencyCode { get; set; } = "CRC";
+
+            public string? Description { get; set; }
+
+            public string OriginEntityIBAN { get; set; } = String.Empty;
+
             /// <summary>
             /// Fecha y hora en que se generó la transacción.
             /// </summary>
@@ -620,60 +634,87 @@
             /// <summary>
             /// Información del cliente que origina la transacción.
             /// </summary>
-            public OriginCustomer? Origin { get; set; }
+            public OriginCustomer? OriginCustomer { get; set; }
 
             /// <summary>
             /// Información del cliente que recibe la transacción.
             /// </summary>
-            public DestinationCustomer? Destination { get; set; }
+            public DestinationCustomer? DestinationCustomer { get; set; }
+    }
 
-            /// <summary>
-            /// Campos personalizados adicionales asociados a la transacción.
-            /// </summary>
-            public List<CustomField>? CustomFields { get; set; }
-        }
+    /// <summary>
+    /// Clase que representa el resultado de una solicitud de envío de PIN.
+    /// </summary>
+    public class PINSendingResult
+    {
+        /// <summary>
+        /// Identificador único de la operación asignado por KINDO.
+        /// </summary>
+        public string? OperationId { get; set; }
 
         /// <summary>
-        /// Clase que representa el resultado de una solicitud de envío de PIN.
+        /// Código de referencia de SINPE asignado a la transacción.
         /// </summary>
-        public class PINSendingResult
-        {
-            /// <summary>
-            /// Identificador único de la operación asignado por KINDO.
-            /// </summary>
-            public string? OperationId { get; set; }
-
-            /// <summary>
-            /// Código de referencia de SINPE asignado a la transacción.
-            /// </summary>
-            public string? SINPEReference { get; set; }
-
-            /// <summary>
-            /// Fecha y hora en que se procesó la transacción.
-            /// </summary>
-            public DateTime ProcessDate { get; set; }
-
-            /// <summary>
-            /// Indica si la transacción fue exitosa.
-            /// </summary>
-            public bool IsApproved { get; set; }
-
-            /// <summary>
-            /// Mensaje o detalle del resultado.
-            /// </summary>
-            public string? Message { get; set; }
-        }
+        public string? SINPEReference { get; set; }
 
         /// <summary>
-        /// Request para solicitar el envío de una transacción PIN.
+        /// Fecha y hora en que se procesó la transacción.
         /// </summary>
-        public class ReqPINSending : ReqBase
+        public DateTime ProcessDate { get; set; }
+
+        /// <summary>
+        /// Indica si la transacción fue exitosa.
+        /// </summary>
+        public bool IsApproved { get; set; }
+
+        /// <summary>
+        /// Mensaje o detalle del resultado.
+        /// </summary>
+        public string? Message { get; set; }
+
+        public string? ChannelRefNumber { get; set; }
+
+        public long? CGPRefNumber { get; set; }
+
+        public string? SINPERefNumber { get; set; }
+
+        public string? CBTrxNumber { get; set; }
+
+        public decimal? DebitedAmount { get; set; }
+
+        public decimal?  ComissionAmount { get; set; }
+
+        public string? CurrencyComissionAmount { get; set; }
+
+        public decimal? ExchangeRate { get; set; }
+
+        public string? DebitCurrencyCode { get; set; }
+
+        public short? State { get; set; }
+
+        public short? RejectCode { get; set; }
+
+        public string? RejectDescription { get; set; }
+
+        public DateTime? RegistrationDate { get; set; }
+
+        public DateTime? ProcessingDate { get; set; }
+    }
+
+    /// <summary>
+    /// Request para solicitar el envío de una transacción PIN.
+    /// </summary>
+    public class ReqPINSending : ReqBase
         {
             /// <summary>
             /// Información de la transacción PIN a enviar.
             /// </summary>
-            public PINTransfer? PINData { get; set; }
-        }
+            public PINTransfer? Transfer { get; set; }
+            /// <summary>
+            /// Campos personalizados adicionales asociados a la transacción.
+            /// </summary>
+            public List<CustomField>? CustomData { get; set; }
+    }
 
         /// <summary>
         /// Response para el envío de una transacción PIN.

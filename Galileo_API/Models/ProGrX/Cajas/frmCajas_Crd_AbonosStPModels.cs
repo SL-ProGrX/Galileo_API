@@ -3,37 +3,100 @@ using System;
 
 namespace Galileo_API.Models.ProGrX.Cajas
 {
-    public sealed class CajasCrdAbonosStPDData
+    #region Simulación (migración de lógica VB6 a backend)
+
+    public class ProyeccionCuotaDto
+    {
+        public decimal Interes { get; set; }
+        public decimal Amortiza { get; set; }
+        public long FechaProceso { get; set; }
+        public decimal Saldo { get; set; }
+        public decimal Cuota { get; set; }
+    }
+
+    public class SimularCuotasRequest
+    {
+        public long? OperacionId { get; set; }
+        public int? CantidadCuotas { get; set; }
+        public long? FecUltMov { get; set; }          // yyyymm
+        public long? PriDeduc { get; set; }           // yyyymm
+        public int? Plazo { get; set; }
+        public decimal? Interes { get; set; }         // tasa anual (ej: 12.5)
+        public decimal? SaldoMes { get; set; }
+        public decimal? Cuota { get; set; }           // cuota base
+        public decimal? AmortizaActual { get; set; }  // amortiza actual (estado)
+        public string? BaseCalculo { get; set; } = "01";
+        public bool? EsRetencion { get; set; }
+    }
+
+    public class SimularCuotasResponse
+    {
+        public List<ProyeccionCuotaDto>? Proyeccion { get; set; }
+        public decimal TotalInteres { get; set; }
+        public decimal TotalAmortiza { get; set; }
+        public long FecUltMovR { get; set; }
+        public decimal CuotaR { get; set; }
+        public decimal SaldoR { get; set; }
+        public int CuotasMaximas { get; set; }
+    }
+
+    public class RecalculaCuotaRequest
+    {
+        public decimal SaldoR { get; set; } = 0;
+        public int Plazo { get; set; } = 0;
+        public long PriDeduc { get; set; } = 0;
+        public long FecUltMovR { get; set; } = 0;
+        public decimal Interes { get; set; } = 0;
+    }
+
+    public class RecalculaCuotaResponse
+    {
+        public decimal CuotaR { get; set; }
+    }
+
+    public class MoraConsultaResponse
+    {
+        public List<CajasCrdAbonoMorosidadData> Items { get; set; } = new();
+        public int Cuotas { get; set; }
+        public decimal Amortiza { get; set; }
+        public decimal Interes { get; set; }
+        public decimal Cargos { get; set; }
+        public decimal Total { get; set; }
+        public bool PermiteExtraordinario { get; set; }
+    }
+
+
+    public class CajasCrdAbonosStPDData
     {
         // reg_creditos
-        public long id_solicitud { get; set; }
+        public long? id_solicitud { get; set; }
 
-        public decimal saldo { get; set; }
+        public decimal? saldo { get; set; }
 
-        public decimal Saldo_mes { get; set; }
+        public decimal? saldo_mes { get; set; }
 
         public string proceso { get; set; } = string.Empty;
 
-        public string Divisa { get; set; } = "COL";
+        public string divisa { get; set; } = "COL";
 
         public decimal? interesv { get; set; }
 
         // Use @ to escape the reserved keyword 'int'
-        public int @int { get; set; }   
+        public int? @int { get; set; }   
 
-        public int plazo { get; set; }
+        public int? plazo { get; set; }
 
-        public decimal interesc { get; set; }
+        public decimal? interesc { get; set; }
 
-        public decimal amortiza { get; set; }
+        public decimal? amortiza { get; set; }
 
         public decimal? fecult { get; set; }  // yyyymm (VB6 lo trata como Long)
 
-        public long Prideduc { get; set; }
+        public long? prideduc { get; set; }
 
         public int? opex { get; set; }
 
-        public decimal cuota { get; set; }
+        public decimal? cuota { get; set; }
 
         public string codigo { get; set; } = string.Empty;
 
@@ -43,11 +106,11 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
         public int? cuotas_directas { get; set; }
 
-        public decimal montoApr { get; set; }
+        public decimal? montoApr { get; set; }
 
         public DateTime? fechaforp { get; set; }
 
-        public string Base_Calculo { get; set; } = string.Empty;
+        public string base_calculo { get; set; } = string.Empty;
 
         // socios
         public string nombre { get; set; } = string.Empty;
@@ -59,13 +122,15 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
         public string poliza { get; set; } = "N";    // 'S' / 'N'
 
-        public decimal PORC_CARGO_CANCELACION { get; set; }
+        public decimal? porc_cargo_cancelacion { get; set; }
 
         // función
-        public int Caja_Valida_Concepto { get; set; }
+        public int? caja_valida_concepto { get; set; }
+
+        public decimal? glngFechaCR { get; set; }
     }
 
-    public sealed class CajasCrdAbonosStpVariables
+    public class CajasCrdAbonosStpVariables
     {
         public string? detalle { get; set; }
         public string? vTipoDoc { get; set; }
@@ -92,8 +157,8 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public decimal? vCompromiso { get; set; }
 
         public decimal? vPoliza { get; set; }
-        public DateTime FechaCancelacion { get; set; }
-        public bool FechaCancelacionEnable { get; set; }
+        public DateTime? FechaCancelacion { get; set; }
+        public bool? FechaCancelacionEnable { get; set; }
         public decimal? vCompromisoPoliza { get; set; }
         public decimal? vDiferencia { get; set; }
 
@@ -135,19 +200,19 @@ namespace Galileo_API.Models.ProGrX.Cajas
 
     public class CajasCrdAbonoRequest
     {
-        public long id_solicitud { get; set; }
-        public int totalCajs { get; set; }
-        public string tipoDoc { get; set; }
-        public string numDoc { get; set; }
-        public int concepto { get; set; }
-        public string mUsuario { get; set; }
-        public string mCaja { get; set; }
-        public int mApertura { get; set; }
-        public int chkRecalculaCuota { get; set; }
-        public int datosAnticipo { get; set; }
-        public string tipo { get; set; }
-        public int datosInteres { get; set; }
-        public DateTime FechaCancelacion { get; set; }
+        public long? id_solicitud { get; set; }
+        public int? totalCajs { get; set; }
+        public string? tipoDoc { get; set; }
+        public string? numDoc { get; set; }
+        public int? concepto { get; set; }
+        public string? mUsuario { get; set; }
+        public string? mCaja { get; set; }
+        public int? mApertura { get; set; }
+        public int? chkRecalculaCuota { get; set; }
+        public int? datosAnticipo { get; set; }
+        public string? tipo { get; set; }
+        public int? datosInteres { get; set; }
+        public DateTime? FechaCancelacion { get; set; }
 
         public string vNotas { get; set; } = string.Empty;
 
@@ -160,7 +225,7 @@ namespace Galileo_API.Models.ProGrX.Cajas
     {
         public int id_moro { get; set; }                 // rs!id_moro
         public int id_solicitud { get; set; }            // rs!Id_Solicitud
-        public string fechap { get; set; }               // rs!fechap (formato "####-##")
+        public string? fechap { get; set; }               // rs!fechap (formato "####-##")
         public decimal intc { get; set; }                // rs!IntC
         public decimal intm { get; set; }                // rs!IntM
         public decimal amortiza { get; set; }            // rs!Amortiza
@@ -219,3 +284,4 @@ namespace Galileo_API.Models.ProGrX.Cajas
         public string? cta_iva { get; set; }
     }
 }
+#endregion

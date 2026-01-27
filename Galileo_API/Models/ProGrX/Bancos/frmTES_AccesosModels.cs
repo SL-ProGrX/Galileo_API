@@ -53,8 +53,8 @@
         public string usuario { get; set; } = string.Empty;
         public bool utiliza_firmas_autoriza { get; set; } = false;
         public bool aplica_rango_autorizacion { get; set; } = false;
-        public float firmas_autoriza_inicio { get; set; }
-        public float firmas_autoriza_corte { get; set; } 
+        public float? firmas_autoriza_inicio { get; set; }
+        public float? firmas_autoriza_corte { get; set; } 
 
     }
 }

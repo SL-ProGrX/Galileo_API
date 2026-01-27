@@ -49,39 +49,46 @@ namespace Galileo.DataBaseTier
             }
             return result;
         }
-
+    
         public bool fxgCongelamiento(int CodEmpresa, string vCedula, string vParametro)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            bool result = false;
-
             try
             {
                 using var connection = new SqlConnection(stringConn);
-
-                var query = $@"
-                select isnull(count(*),0)
-                from afi_congelar
-                where estado = 'A'
-                  and @parametro = 0
-                  and cedula = @cedula
-                  and GETDATE() between fecha_inicia and fecha_finaliza";
-
-                var existe = connection.QueryFirstOrDefault<int>(
-                    query,
-                    new { cedula = vCedula, parametro = vParametro }
-                );
-
-                result = existe > 0;
+                var query = "";
+                switch (vParametro)
+                {
+                    case "per_abono_cajas":
+                        query = $@"select isnull(count(*),0) as Existe
+                                       from afi_congelar where estado = 'A'
+                                       and per_abono_cajas = 0 and cedula = @vCedula and dbo.MyGetdate() 
+                                between fecha_inicia and fecha_finaliza";
+                        break;
+                    case "VALOR_CUOTA":
+                        query = $@"select isnull(count(*),0) as Existe
+                                       from afi_congelar where estado = 'A'
+                                       and VALOR_CUOTA = 0 and cedula = @vCedula and dbo.MyGetdate() 
+                                between fecha_inicia and fecha_finaliza";
+                        break;
+                    default:
+                        return false;
+                }
+                var existe = connection.QueryFirstOrDefault<int>(query, new {vCedula = vCedula });
+                if (existe > 0)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
-            catch
+            catch (Exception)
             {
-                result = false;
+                return false;
             }
-
-            return result;
         }
-
 
     }
 }

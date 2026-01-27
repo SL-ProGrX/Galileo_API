@@ -81,3 +81,7 @@ appsettings.Development.json.backup
 # Ignorar archivos del sistema macOS
 .DS_Store
 
+# Ignorar carpetas de publish (por nombre)
+**/publish/
+**/Publish/
+

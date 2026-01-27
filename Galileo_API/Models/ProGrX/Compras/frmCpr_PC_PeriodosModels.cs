@@ -15,10 +15,10 @@ namespace Galileo.Models.CPR
 
     public class CprPlanPeriodosDto
     {
-        public int id_periodo { get; set; }
-        public int cod_contabilidad { get; set; }
-        public DateTime inicio { get; set; }
-        public DateTime corte { get; set; }
+        public required int id_periodo { get; set; }
+        public required int cod_contabilidad { get; set; }
+        public required DateTime inicio { get; set; }
+        public required DateTime corte { get; set; }
         public string? estado { get; set; }
         public string? notas { get; set; }
         public DateTime? registro_fecha { get; set; }

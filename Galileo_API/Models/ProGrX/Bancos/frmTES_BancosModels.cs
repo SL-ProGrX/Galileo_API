@@ -2,7 +2,7 @@
 {
     public class TesBancoDto
     {
-        public int id_banco { get; set; }
+        public int id_banco { get; set; } = 0;
         public string descripcion { get; set; } = string.Empty;
         public string desc_corta { get; set; } = string.Empty;
         public string? ctaconta { get; set; }
@@ -12,9 +12,9 @@
         public decimal? firmas_desde { get; set; }
         public decimal? firmas_hasta { get; set; }
         public string? estado { get; set; }
-        public DateTime fecha_envia { get; set; }
-        public bool monitoreo { get; set; }
-        public bool cta_regional { get; set; }
+        public DateTime fecha_envia { get; set; } = DateTime.Now;
+        public bool monitoreo { get; set; } = false;
+        public bool cta_regional { get; set; } = false;
         public string? archivo_especial_ck { get; set; }
         public string? cod_grupo { get; set; }
         public bool? puente { get; set; }
@@ -56,6 +56,7 @@
         public bool? ilocalizable { get; set; }
         public bool? int_grupos_asociados { get; set; }
         public bool? int_requiere_cuenta_destino { get; set; }
+        public bool? ts_aplica { get; set; }
     }
 
     public class DropDownListaDivisas
