@@ -31,23 +31,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private static ErrorDto<object> Err(string msg, int code = -1)
             => DbHelper.CreateErrorResponse<object>(msg, code, default!);
 
-        /// <summary>
-        /// Whitelist para evitar ejecutar cualquier cosa por “procedimiento” (S2077 hardening).
-        /// Ajusta esta lista a los procedimientos reales que existen para formatos estándar.
-        /// </summary>
-        private static bool IsFormatoProcPermitido(string procedimientoBase)
-        {
-            if (string.IsNullOrWhiteSpace(procedimientoBase))
-                return false;
-
-            // OJO: aquí debes meter los nombres base reales que vienen en vTes_Formatos.Procedimiento
-            // Si tu vTes_Formatos guarda "spTES_DV1" entonces el SP final sería "spTES_DV1_Archivo".
-            return procedimientoBase is
-                "spTES_DV1" or
-                "spTES_DV2" or
-                "spTES_FormatoEstandar"; // agrega lo que aplique
-        }
-
         #endregion
 
         #region ===== Catálogos =====
@@ -126,6 +109,12 @@ Order by Nsolicitud";
                 List<TesTransaccionDto> LoadTransacciones()
                     => conn.Query<TesTransaccionDto>(queryTransac, parametros).ToList();
 
+                TesEmisionDocFiltros filtro = new()
+                {
+                    tipoDoc = TipoDoc,
+                    usuario = "sinpe"
+                };
+
                 return Formato switch
                 {
                     "A" => // Banco Nacional
@@ -139,12 +128,16 @@ Order by Nsolicitud";
                             resolveConsecutivo: () => NTransac),
                     "C" => // BCR Planilla
                         ProcesarFormatoC(CodEmpresa, Banco, TipoDoc, NTransac, conn, parametros, LoadTransacciones()),
-                    "D" => sbTeBCR_Empresarial(CodEmpresa, Banco, TipoDoc, NTransac),
+                    
+                    "D" => MTesFuncionesDb.SbTeBcrEmpresarialCore(conn,CodEmpresa, Banco, TipoDoc, resolveConsecutivo: () => NTransac),
+                    
                     "E" => sbTeBCT_Enlace(CodEmpresa, Banco, TipoDoc, NTransac),
-                    "F" => sbTeBCR_Comercial(CodEmpresa, Banco, TipoDoc, NTransac),
+                    "F" => mTesFunciones.SbTeBcrComercial(conn, CodEmpresa, Banco, TipoDoc, resolveConsecutivo: () => NTransac),
+                   
                     "G" => sbTeBNCR_Sinpe(CodEmpresa, Banco, TipoDoc, NTransac),
                     "DV1" or "DV2" => sbTeFormatoEstandar(CodEmpresa, Banco, TipoDoc, NTransac, Formato, Plan),
                     "S" => Err("SINPE está en espera / no implementado."),
+                    "SG" => mTesFunciones.SbTesBancoSinpeGeneralCore(CodEmpresa, filtro, LoadTransacciones()),
                     _ => sbTeFormatoEstandar(CodEmpresa, Banco, TipoDoc, NTransac, Formato, Plan)
                 };
             }
@@ -236,81 +229,7 @@ Where Estado = 'T'
         #endregion
 
         #region ===== Implementaciones =====
-
-        private ErrorDto<object> sbTeBCR_Empresarial(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                var (numNegocio, cedulaReg) = MTesFuncionesDb.GetEmpresaNumNegocioYReg(conn);
-
-                int bancoId = vBanco;
-                string bancoTDoc = vTipoDoc;
-                long bancoConsec = vNTransac;
-                DateTime fecha = DateTime.Now;
-
-                // consecutivo diario
-                string conArchivo = MTesFuncionesDb
-                    .GetConsecutivoArchivoDelDia(conn, bancoId, fecha)
-                    .ToString("D3", CultureInfo.InvariantCulture);
-
-                var sb = new StringBuilder();
-                sb.AppendLine(MTesFuncionesDb.BuildControlBcrEmpresarial(cedulaReg, conArchivo, fecha));
-
-                // líneas 2 y 3 (se mantiene SP actual por compatibilidad)
-                MTesFuncionesDb.AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Empresarial_Archivo 2, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
-
-                MTesFuncionesDb.AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Empresarial_Archivo 3, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
-
-                return MTesFuncionesDb.ArchivoResponse(bancoConsec, "txt", sb);
-            }
-            catch (Exception ex)
-            {
-                return Err(ex.Message);
-            }
-        }
-
-        private ErrorDto<object> sbTeBCR_Comercial(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                var (numNegocio, cedulaReg) = MTesFuncionesDb.GetEmpresaNumNegocioYReg(conn);
-
-                int bancoId = vBanco;
-                string bancoTDoc = vTipoDoc;
-                long bancoConsec = vNTransac;
-                DateTime fecha = DateTime.Now;
-
-                // consecutivo diario
-                string conArchivo = MTesFuncionesDb
-                    .GetConsecutivoArchivoDelDia(conn, bancoId, fecha)
-                    .ToString("D3", CultureInfo.InvariantCulture);
-
-                var sb = new StringBuilder();
-                sb.AppendLine(MTesFuncionesDb.BuildControlBcrComercial(cedulaReg, conArchivo, fecha));
-
-                MTesFuncionesDb.AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Comercial_Archivo 2, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
-
-                MTesFuncionesDb.AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
-                    "exec spTES_BCR_Comercial_Archivo 3, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
-                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
-
-                return MTesFuncionesDb.ArchivoResponse(bancoConsec, "txt", sb);
-            }
-            catch (Exception ex)
-            {
-                return Err(ex.Message);
-            }
-        }
+        
 
         private ErrorDto<object> sbTeBCT_Enlace(int CodEmpresa, int vBanco, string vTipoDoc, int vNTransac)
         {
@@ -376,18 +295,18 @@ Where Estado = 'T'
             try
             {
                 int bancoId = vBanco;
-                string pFormato = vFormato;
-
                 var (numNegocio, _) = MTesFuncionesDb.GetEmpresaNumNegocioYReg(conn);
 
-                const string qFormato = "select Procedimiento,Extension from vTes_Formatos where cod_formato = @formato";
-                var formatoData = conn.QueryFirstOrDefault(qFormato, new { formato = pFormato });
+               
+                var formatoData = mTesFunciones.vTesFormatos(conn, vFormato);
+                if(formatoData.Code == -1)
+                {
+                    return DbHelper.CreateErrorResponse<object>($"Error al obtener configuración del formato");
+                }
 
-                string vExtension = formatoData?.Extension?.ToString() ?? "txt";
-                string vProcedimientoBase = formatoData?.Procedimiento?.ToString() ?? string.Empty;
+                string vExtension = formatoData.Result?.Extension?.ToString() ?? "txt";
+                string vProcedimientoBase = formatoData.Result?.Procedimiento?.ToString() ?? string.Empty;
 
-                if (!IsFormatoProcPermitido(vProcedimientoBase))
-                    return Err($"Procedimiento no permitido o no configurado: '{vProcedimientoBase}'");
 
                 const string wrapperSp = "spTES_EjecutarFormatoArchivo";
 

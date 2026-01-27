@@ -2,6 +2,8 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.TES;
+using Galileo_API.Controllers.WFCSinpe;
+using Galileo_API.DataBaseTier;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System.Data;
@@ -15,6 +17,7 @@ namespace Galileo.DataBaseTier
         private readonly IConfiguration _config;
         private readonly SeguridadPortalDb _seguridadPortal;
         private readonly MTesoreria mTesoreria;
+        private readonly VerificadorCoreFactory _factory;
         public const string zero6Append = "000000";
         public const string zero12Append = "000000000000";
         public const string fechaFormat = "yyyy/MM/dd";
@@ -25,6 +28,7 @@ namespace Galileo.DataBaseTier
             _config = config;
             _seguridadPortal = new SeguridadPortalDb(config);
             mTesoreria = new MTesoreria(config);
+            _factory = new VerificadorCoreFactory(config);
         }
 
         private string GetEmpresaConn(int codEmpresa) =>
@@ -748,6 +752,151 @@ where id_banco = @banco
             {
                 return DbHelper.CreateErrorResponse<object>(ex.Message);
             }
+        }
+
+        public ErrorDto<object> SbTeBcrComercial(SqlConnection conn, int CodEmpresa, int vBanco, string vTipoDoc, Func<long> resolveConsecutivo)
+        {
+            try
+            {
+                var (numNegocio, cedulaReg) = GetEmpresaNumNegocioYReg(conn);
+
+                int bancoId = vBanco;
+                string bancoTDoc = vTipoDoc;
+                long bancoConsec = resolveConsecutivo();
+                DateTime fecha = DateTime.Now;
+
+                // consecutivo diario
+                string conArchivo = GetConsecutivoArchivoDelDia(conn, bancoId, fecha)
+                    .ToString("D3", CultureInfo.InvariantCulture);
+
+                var sb = new StringBuilder();
+                sb.AppendLine(BuildControlBcrComercial(cedulaReg, conArchivo, fecha));
+
+                AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
+                    "exec spTES_BCR_Comercial_Archivo 2, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
+                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
+
+                AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
+                    "exec spTES_BCR_Comercial_Archivo 3, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
+                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
+
+                return ArchivoResponse(bancoConsec, "txt", sb);
+            }
+            catch (Exception ex)
+            {
+                return Err(ex.Message);
+            }
+        }
+
+        public static ErrorDto<object> SbTeBcrEmpresarialCore(SqlConnection conn, int CodEmpresa, int vBanco, string vTipoDoc, Func<long> resolveConsecutivo)
+        {
+
+            try
+            {
+                var (numNegocio, cedulaReg) = MTesFuncionesDb.GetEmpresaNumNegocioYReg(conn);
+
+                int bancoId = vBanco;
+                string bancoTDoc = vTipoDoc;
+                long bancoConsec = resolveConsecutivo();
+                DateTime fecha = DateTime.Now;
+
+                // consecutivo diario
+                string conArchivo = MTesFuncionesDb
+                    .GetConsecutivoArchivoDelDia(conn, bancoId, fecha)
+                    .ToString("D3", CultureInfo.InvariantCulture);
+
+                var sb = new StringBuilder();
+                sb.AppendLine(MTesFuncionesDb.BuildControlBcrEmpresarial(cedulaReg, conArchivo, fecha));
+
+                // líneas 2 y 3 (se mantiene SP actual por compatibilidad)
+                AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
+                    "exec spTES_BCR_Empresarial_Archivo 2, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
+                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
+
+                AppendIfNotEmpty(sb, conn.QueryFirstOrDefault<string>(
+                    "exec spTES_BCR_Empresarial_Archivo 3, @banco, @bancoTDoc, @numNegocio, @bancoConsec, 100000",
+                    new { banco = bancoId, bancoTDoc, numNegocio, bancoConsec }));
+
+                return ArchivoResponse(bancoConsec, "txt", sb);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<object>(ex.Message);
+            }
+        }
+
+        #region ===== SINPE General =====
+
+        public ErrorDto<object> SbTesBancoSinpeGeneralCore(int codEmpresa, TesEmisionDocFiltros filtro, List<TesTransaccionDto> transaccionesList)
+        {
+            if (!string.Equals(filtro.tipoDoc, "TS", StringComparison.OrdinalIgnoreCase))
+                return DbHelper.CreateOkResponse<object>(JsonConvert.SerializeObject(new { results = Array.Empty<ErrorDto>() }, Formatting.Indented));
+
+            if (transaccionesList == null || transaccionesList.Count == 0)
+                return DbHelper.CreateOkResponse<object>(JsonConvert.SerializeObject(new { results = Array.Empty<ErrorDto>() }, Formatting.Indented));
+
+            if (string.IsNullOrWhiteSpace(filtro.usuario))
+                return DbHelper.CreateErrorResponse<object>("Usuario requerido para procesar SINPE.");
+
+            try
+            {
+                var servicio = _factory.CrearServicio(codEmpresa, filtro.usuario);
+                var results = new List<ErrorDto>(capacity: transaccionesList.Count);
+
+                foreach (var trx in transaccionesList)
+                    results.Add(EmitirSinpe(servicio, codEmpresa, filtro.usuario, trx));
+
+                return DbHelper.CreateOkResponse<object>(JsonConvert.SerializeObject(new { results }, Formatting.Indented));
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<object>(ex.Message);
+            }
+        }
+
+        private ErrorDto EmitirSinpe(IWfcSinpe servicio, int codEmpresa, string usuario, TesTransaccionDto trx)
+        {
+            var now = DateTime.Now;
+
+            if (codEmpresa == 61)
+            {
+                switch (trx.tipo_girosinpe)
+                {
+                    case "CD":
+                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
+                    case "TR":
+                        return servicio.fxTesEmisionSinpeTiempoReal(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
+                }
+            }
+            else
+            {
+                switch (trx.tipo_girosinpe)
+                {
+                    case "CD":
+                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
+                    case "TR":
+                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
+                }
+            }
+
+            return new ErrorDto
+            {
+                Code = -1,
+                Description = "Emision No Valida."
+            };
+        }
+
+        #endregion
+
+        public ErrorDto<dynamic> vTesFormatos(SqlConnection conn, string pFormato)
+        {
+            const string qFormato = "select Procedimiento,Extension from vTes_Formatos where cod_formato = @formato";
+            var formatoData = conn.QueryFirstOrDefault(qFormato, new { formato = pFormato });
+
+            if (formatoData == null)
+                return DbHelper.CreateErrorResponse<dynamic>("Formato no encontrado.");
+
+            return DbHelper.CreateOkResponse<dynamic>(formatoData);
         }
 
         #endregion
