@@ -210,9 +210,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
 
                 return DbHelper.OkResponse("Tipo de Cargo de CxC insertado correctamente.");
             }
-            catch (Exception ex)
+           
+             catch (DbException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (Exception)
+            {
+                throw;
             }
 
         }
@@ -258,9 +263,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
 
                 return DbHelper.OkResponse("Tipo de Cargo de CxC actualizado correctamente.");
             }
-            catch (Exception ex)
+            catch (DbException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (Exception)
+            {
+                throw;
             }
         }
 
@@ -292,6 +301,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                         Movimiento = "ELIMINAR - WEB",
                         Modulo = vModulo
                     });
+            }
+            catch (DbException ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
             }
             catch (Exception ex)
             {
