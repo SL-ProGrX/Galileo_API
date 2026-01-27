@@ -5,6 +5,7 @@ using Galileo.Models;
 using Galileo_API.Models.ProGrX.CuentasPorCobrar;
 using Galileo.Models.Security;
 using System.Data.Common;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
 {
@@ -12,17 +13,57 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
     {
 
         private readonly PortalDB _portalDB;
-        private readonly MSecurityMainDb _Security_MainDB;
+        private readonly MSecurityMainDb _securityMainDb;
         private readonly int vModulo = 31;
         private const string Tabla = "dbo.CxC_Categoria_Clientes";
 
         public FrmCxCClientesClasificaDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
-            _Security_MainDB = new MSecurityMainDb(config!);
+            _securityMainDb = new MSecurityMainDb(config!);
         }
 
-        private static ErrorDto Err(string msg) => DbHelper.ErrorResponse(msg);
+
+        #region Helpers DRY
+        private void LogBitacora(int empresaId, string usuario, string detalle, string movimiento)
+        {
+            _securityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = empresaId,
+                Usuario = usuario,
+                DetalleMovimiento = detalle,
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
+        }
+ 
+
+
+        private static (string orderByField, string direction) OrderByFrom(string? sortField, int? sortOrder)
+        {
+            var field = (sortField ?? string.Empty).Trim().ToLowerInvariant();
+            var orderByField = field switch
+            {
+                "cod_categoria" => "cod_categoria",
+                "descripcion" => "descripcion",
+                "activa" => "activa",
+                _ => "cod_categoria"
+            };
+            var direction = sortOrder == 1 ? "DESC" : "ASC";
+            return (orderByField, direction);
+        }
+
+        private static string BuildWhereClause() => @"
+            WHERE
+                (@filtro IS NULL)
+                OR (CAST(cod_categoria AS NVARCHAR(50)) LIKE @like)
+                OR (descripcion LIKE @like)
+            ";
+
+        private static string BuildPaging(bool usarPaginacion) =>
+            usarPaginacion ? " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY " : string.Empty;
+#endregion
+
 
         /// <summary>
         /// Obtiene la lista de clasificación de clientes.
@@ -33,92 +74,41 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
         /// <returns></returns>
         public ErrorDto<CxCClientesClasificaLista> CxCClientesClasificaLista_Obtener(int codEmpresa, FiltrosLazyLoadData filtros, bool esExportar)
         {
-            filtros ??= new FiltrosLazyLoadData();
-
-            var result = new ErrorDto<CxCClientesClasificaLista>
+            return DbHelper.WithConn(_portalDB, codEmpresa, (SqlConnection conn) =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new CxCClientesClasificaLista { total = 0, lista = new List<CxCClientesClasificaData>() }
-            };
+                filtros ??= new FiltrosLazyLoadData();
 
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
-
-                // Filtros
                 var texto = filtros.filtro?.Trim();
                 var hasFiltro = !string.IsNullOrWhiteSpace(texto);
-                var like = hasFiltro ? $"%{texto}%" : null;
-
-                var offset = filtros.pagina!;
-                var fetch = filtros.paginacion!;
-                var usarPaginacion = fetch > 0 && !esExportar;
-
-                // Whitelist de columnas ordenables (evita inyección en ORDER BY)
-                var sortField = (filtros.sortField ?? string.Empty).Trim();
-                var orderByField = sortField switch
-                {
-                    "cod_categoria" => "cod_categoria",
-                    "descripcion" => "descripcion",
-                    "activa" => "activa", 
-                    _ => "cod_categoria"
-                };
-                var direction = filtros.sortOrder == 1 ? "DESC" : "ASC";
-
-                // WHERE compartido para COUNT y SELECT (corrige bug: antes el COUNT no filtraba)
-                const string where = @"
-                    WHERE
-                        (@filtro IS NULL)
-                        OR (CAST(cod_categoria AS NVARCHAR(50)) LIKE @like)
-                        OR (descripcion LIKE @like) ";
-
-                var sqlCount = $@"SELECT COUNT(1) FROM {Tabla} {where};";
-
-                var sqlList = $@"
-                    SELECT
-                        cod_categoria,
-                        descripcion, 
-                        activa as  Activo
-                    FROM {Tabla}
-                    {where}
-                    ORDER BY {orderByField} {direction}";
-
-                if (usarPaginacion)
-                {
-                    sqlList += @"
-                        OFFSET @offset ROWS
-                        FETCH NEXT @fetch ROWS ONLY;";
-                }
-
                 var @params = new
                 {
                     filtro = hasFiltro ? texto : null,
-                    like,
-                    offset,
-                    fetch
+                    like = hasFiltro ? $"%{texto}%" : null,
+                    offset = filtros.pagina,
+                    fetch = filtros.paginacion 
                 };
+                bool usarPaginacion = (filtros.paginacion) > 0 && !esExportar;
 
-                result.Result.total = conn.QuerySingle<int>(sqlCount, @params);
-                result.Result.lista = conn.Query<CxCClientesClasificaData>(sqlList, @params).ToList();
+                var (orderByField, direction) = OrderByFrom(filtros.sortField, filtros.sortOrder);
+                var where = BuildWhereClause();
 
-            }
-            catch (DbException)
-            {
-                result.Code = -1;
-                result.Description = "No fue posible consultar los datos.";
-                result.Result.total = 0;
-                result.Result.lista = new List<CxCClientesClasificaData>();
-            }
-            catch (Exception)
-            {
-                result.Code = -1;
-                result.Description = "Error inesperado al consultar los datos.";
-                result.Result.total = 0;
-                result.Result.lista = new List<CxCClientesClasificaData>();
-            }
+                var sqlCount = $@"SELECT COUNT(1) FROM {Tabla} {where};";
+                var sqlList = $@"
+                                SELECT
+                                    cod_categoria,
+                                    descripcion,
+                                    activa AS Activo
+                                FROM {Tabla}
+                                {where}
+                                ORDER BY {orderByField} {direction}
+                                {BuildPaging(usarPaginacion)}
+                                ;";
 
-            return result;
+                var total = conn.QuerySingle<int>(sqlCount, @params);
+                var lista = conn.Query<CxCClientesClasificaData>(sqlList, @params).ToList();
+
+                return new CxCClientesClasificaLista { total = total, lista = lista };
+            });
         }
 
         /// <summary>
@@ -130,119 +120,62 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
         /// <returns></returns>
         public ErrorDto CxCClientesClasifica_Guardar(int codEmpresa, string usuario, CxCClientesClasificaData datos)
         {
-            if (datos is null) return Err("Datos requeridos.");
-            if (string.IsNullOrWhiteSpace(datos.Cod_categoria)) return Err("El campo 'cod_categoria' es requerido.");
-            if (string.IsNullOrWhiteSpace(usuario)) return Err("El usuario es requerido.");
+            if (datos is null) return DbHelper.ErrorResponse("Datos requeridos.");
+            if (string.IsNullOrWhiteSpace(datos.Cod_categoria)) return DbHelper.ErrorResponse("El campo 'cod_categoria' es requerido.");
+            if (string.IsNullOrWhiteSpace(usuario)) return DbHelper.ErrorResponse("El usuario es requerido.");
 
-            try
+            // Batch T-SQL: UPDATE; si no hay filas afectadas → INSERT. Retorna 'update' o 'insert'
+            const string sqlUpsert = @"
+                        DECLARE @accion NVARCHAR(10);
+
+                        UPDATE CxC_Categoria_Clientes
+                        SET descripcion = @Descripcion,
+                            activa      = @Activo
+                        WHERE cod_categoria = @Cod_categoria;
+
+                        IF @@ROWCOUNT = 0
+                        BEGIN
+                            INSERT INTO CxC_Categoria_Clientes
+                                (cod_categoria, descripcion, activa, registro_fecha, registro_usuario)
+                            VALUES
+                                (@Cod_categoria, @Descripcion, @Activo, dbo.MyGetdate(), @usuario);
+                            SET @accion = N'insert';
+                        END
+                        ELSE
+                        BEGIN
+                            SET @accion = N'update';
+                        END
+
+                        SELECT @accion AS accion;
+                        ";
+
+            var upsert = DbHelper.ExecuteSingleQuery<string>(_portalDB, codEmpresa, sqlUpsert, defaultValue: "", parameters: new
             {
-                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+                datos.Cod_categoria,
+                datos.Descripcion,
+                datos.Activo,
+                usuario
+            });
 
-                const string sqlExiste = $"SELECT ISNULL(COUNT(*),0) FROM {Tabla} WHERE cod_categoria = @cod_categoria;";
-                var existe = conn.QueryFirstOrDefault<int>(sqlExiste, new { datos.Cod_categoria });
+            if (upsert.Code != 0)
+                return DbHelper.ErrorResponse("No fue posible guardar la clasificación de CxC.");
 
-                return existe > 0
-                    ? CxCClientesClasifica_Actualizar(codEmpresa, usuario, datos)
-                    : CxCClientesClasifica_Insertar(codEmpresa, usuario, datos);
-            }
-            catch (DbException)
+            var accion = (upsert.Result ?? "").ToLowerInvariant();
+            if (accion == "insert")
             {
-                return Err("No fue posible guardar la clasificacion de CxC.");
-            }
-            catch (Exception)
-            {
-                return Err("Error inesperado al guardar la clasificacion de CxC.");
-            }
-        }
-
-        /// <summary>
-        /// Inserta un nuevo registro
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
-        private ErrorDto CxCClientesClasifica_Insertar(int CodEmpresa, string usuario, CxCClientesClasificaData datos)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            try
-            {
-                string query = @"
-                            INSERT INTO CxC_Categoria_Clientes (cod_categoria,descripcion,activa,registro_fecha,registro_usuario)
-                            VALUES (
-                                @Cod_categoria, @Descripcion,@Activo,dbo.MyGetdate(),@usuario)";
-
-                conn.Execute(query, new
-                {
-                    datos.Cod_categoria,
-                    datos.Descripcion, 
-                     datos.Activo,
-                    usuario
-                });
-
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Categoria de Cliente : {datos.Cod_categoria}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
-
+                LogBitacora(codEmpresa, usuario, $"Categoria de Cliente : {datos.Cod_categoria}", "Registra - WEB");
                 return DbHelper.OkResponse("Categoria de Cliente insertado correctamente.");
             }
-
-            catch (DbException ex)
+            else if (accion == "update")
             {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-
-        }
-
-        /// <summary>
-        /// Actualiza un registro existente
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="datos"></param>
-        /// <returns></returns>
-        private ErrorDto CxCClientesClasifica_Actualizar(int CodEmpresa, string usuario, CxCClientesClasificaData datos)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            try
-            {
-                string query = @"
-                            UPDATE CxC_Categoria_Clientes
-                            SET 
-                                descripcion = @Descripcion,                              
-                                activa = @Activo                                 
-                            WHERE cod_categoria = @cod_categoria";
-
-                conn.Execute(query, new
-                {
-                    datos.Descripcion, 
-                    datos.Activo,
-                    datos.Cod_categoria
-                });
-
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Categoria de Cliente :  {datos.Cod_categoria}",
-                    Movimiento = "MODIFICA - WEB",
-                    Modulo = vModulo
-                });
-
+                LogBitacora(codEmpresa, usuario, $"Categoria de Cliente : {datos.Cod_categoria}", "MODIFICA - WEB");
                 return DbHelper.OkResponse("Categoria de Cliente actualizado correctamente.");
             }
-            catch (DbException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
 
+             
+            return DbHelper.OkResponse("Operación completada.");
         }
-
+ 
         /// <summary>
         /// Elimina una clasificación.
         /// </summary>
@@ -250,33 +183,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
         /// <param name="usuario"></param>
         /// <param name="CodCargo"></param>
         /// <returns></returns>
-        public ErrorDto CxCClientesClasifica_Eliminar(int CodEmpresa, string usuario, string CodCategoria)
+        public ErrorDto CxCClientesClasifica_Eliminar(int codEmpresa, string usuario, string codCategoria)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-            var result = new ErrorDto()
+
+            if (string.IsNullOrWhiteSpace(codCategoria))
+                return DbHelper.ErrorResponse("El 'cod_categoria' es requerido.");
+
+            const string sql = @"DELETE FROM CxC_Categoria_Clientes WHERE cod_categoria = @CodCategoria;";
+            var result = DbHelper.ExecuteNonQueryWithResult(_portalDB, codEmpresa, sql, new { CodCategoria = codCategoria });
+
+            if (result.Code != 0)
+                return DbHelper.ErrorResponse("No fue posible eliminar la clasificación de CxC.");
+
+            // Si afectó filas, registramos bitácora
+            if (result.Result > 0)
             {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                string query = $@"delete CxC_Categoria_Clientes where cod_categoria = @CodCategoria";
-                conn.Execute(query, new { CodCategoria });
-                _Security_MainDB.Bitacora(
-                    new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = usuario,
-                        DetalleMovimiento = $"Categoria de Cliente : {CodCategoria}",
-                        Movimiento = "ELIMINAR - WEB",
-                        Modulo = vModulo
-                    });
+                LogBitacora(
+                    empresaId: codEmpresa,
+                    usuario: usuario,
+                    detalle: $"Categoria de Cliente : {codCategoria}",
+                    movimiento: "ELIMINAR - WEB"
+                );
+                return DbHelper.OkResponse("Categoria de Cliente eliminado correctamente.");
             }
-            catch (DbException ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message);
-            }
-            return result;
+
+            // No existía el registro; devolvemos OK para mantener idempotencia (puedes cambiar el mensaje si prefieres).
+            return DbHelper.OkResponse("No se encontró la categoría solicitada.");
         }
 
     }
