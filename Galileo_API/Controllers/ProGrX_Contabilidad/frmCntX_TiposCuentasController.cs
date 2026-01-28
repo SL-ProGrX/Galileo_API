@@ -27,7 +27,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
             return _bl.CntXTiposCuentas_Guardar(codEmpresa, codConta, usuario, request);
         }
 
-        [HttpPost("CntXTiposCuentas_Eliminar")]
+        [HttpDelete("CntXTiposCuentas_Eliminar")]
         public ErrorDto CntXTiposCuentas_Eliminar(int codEmpresa, int codConta, string usuario, string tipoCuenta)
         {
             return _bl.CntXTiposCuentas_Eliminar(codEmpresa, codConta, usuario, tipoCuenta);
