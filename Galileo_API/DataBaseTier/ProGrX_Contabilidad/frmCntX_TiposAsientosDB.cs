@@ -26,9 +26,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codConta"></param>
-        /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<CntXTiposAsientosData>> CntXTiposAsientos_Obtener(int codEmpresa, int codConta, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<CntXTiposAsientosData>> CntXTiposAsientos_Obtener(int codEmpresa, int codConta)
         {
             const string query = @"select tipo_asiento,descripcion,activo,consecutivo from CntX_Tipos_Asientos
                 where COD_CONTABILIDAD = @codConta order by descripcion";
