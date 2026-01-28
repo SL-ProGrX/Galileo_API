@@ -415,63 +415,61 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
 
             try
             {
-                var cedula = ExtractKeyFromFiltro(filtros.filtro, FiltroCedula);
-                cedula = (cedula ?? string.Empty).Trim();
+                var sortField = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros.sortOrder == 1 ? 1 : 0;
 
-                if (string.IsNullOrWhiteSpace(cedula))
+                var fx = ParseFiltrosBasicos(filtros);
+
+                if (string.IsNullOrWhiteSpace(fx.Cedula))
                 {
                     response.Result.total = 0;
                     response.Result.lista = new List<CoControlSegHistOficialDto>();
                     return response;
                 }
 
-                var texto = ExtractKeyFromFiltro(filtros.filtro, FiltroTexto);
-                texto = (texto ?? string.Empty).Trim();
-                var hasTexto = !string.IsNullOrWhiteSpace(texto);
-                var like = hasTexto ? $"%{texto}%" : null;
+                var cedula = fx.Cedula;
+                var texto = fx.Texto;
+                var like = fx.Like;
 
-                var sortField = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var sortOrder = filtros.sortOrder == 1 ? 1 : 0;
-
-                var offset = filtros.pagina;
-                var fetch = filtros.paginacion;
+                var offset = fx.Offset;
+                var fetch = fx.Fetch;
                 var usarPaginacion = fetch > 0;
 
                 const string sqlCount = @"
-                    select count(1)
-                    from cbr_asignacion_h
-                    where cedula = @cedula
-                      and (
-                           @texto is null
-                        or usuario like @like
-                      );";
+            select count(1)
+            from cbr_asignacion_h
+            where cedula = @cedula
+              and (
+                   @texto is null
+                or usuario like @like
+              );";
 
                 response.Result.total = conn.QuerySingle<int>(sqlCount, new
                 {
                     cedula,
-                    texto = hasTexto ? texto : null,
+                    texto,
                     like
                 });
 
                 var sql = @"
-                    select 
-                        fecha_asignacion,
-                        rtrim(usuario) as usuario,
-                        isnull(mantener,0) as mantener,
-                        isnull(rebajo_doble,0) as rebajo_doble,
-                        isnull(aplica_mora,0) as aplica_mora
-                    from cbr_asignacion_h
-                    where cedula = @cedula
-                      and (
-                           @texto is null
-                        or usuario like @like
-                      )
-                    order by
-                        case when @sortField = 'fecha_asignacion' and @sortOrder = 1 then fecha_asignacion end asc,
-                        case when @sortField = 'fecha_asignacion' and @sortOrder = 0 then fecha_asignacion end desc,
-                        case when @sortField = 'usuario' and @sortOrder = 1 then usuario end asc,
-                        case when @sortField = 'usuario' and @sortOrder = 0 then usuario end desc,
-                        fecha_asignacion desc";
+            select 
+                fecha_asignacion,
+                rtrim(usuario) as usuario,
+                isnull(mantener,0) as mantener,
+                isnull(rebajo_doble,0) as rebajo_doble,
+                isnull(aplica_mora,0) as aplica_mora
+            from cbr_asignacion_h
+            where cedula = @cedula
+              and (
+                   @texto is null
+                or usuario like @like
+              )
+            order by
+                case when @sortField = 'fecha_asignacion' and @sortOrder = 1 then fecha_asignacion end asc,
+                case when @sortField = 'fecha_asignacion' and @sortOrder = 0 then fecha_asignacion end desc,
+                case when @sortField = 'usuario' and @sortOrder = 1 then usuario end asc,
+                case when @sortField = 'usuario' and @sortOrder = 0 then usuario end desc,
+                fecha_asignacion desc";
 
                 if (usarPaginacion)
                 {
@@ -481,7 +479,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 response.Result.lista = conn.Query<CoControlSegHistOficialDto>(sql, new
                 {
                     cedula,
-                    texto = hasTexto ? texto : null,
+                    texto,
                     like,
                     sortField,
                     sortOrder,
@@ -496,6 +494,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(ex.Message);
             }
         }
+
 
         /// <summary>
         /// Exporta historial de oficiales.
@@ -590,7 +589,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
         /// <param name="parametros"></param>
         /// <param name="soloOperacionesAtrasadas"></param>
         /// <returns></returns>
-        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_Fiadores_Lista_Obtener(int CodEmpresa,string parametros, bool soloOperacionesAtrasadas)
+        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_Fiadores_Lista_Obtener(int CodEmpresa, string parametros, bool soloOperacionesAtrasadas)
         {
             FiltrosLazyLoadData filtros;
             try
@@ -617,27 +616,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
 
             try
             {
-                var cedula = ExtractKeyFromFiltro(filtros.filtro, FiltroCedula);
-                cedula = (cedula ?? string.Empty).Trim();
+                var fx = ParseFiltrosBasicos(filtros);
 
-                if (string.IsNullOrWhiteSpace(cedula))
+                if (string.IsNullOrWhiteSpace(fx.Cedula))
                 {
                     response.Result.total = 0;
                     response.Result.lista = new List<CoControlSegFiadorDto>();
                     return response;
                 }
 
-                var texto = ExtractKeyFromFiltro(filtros.filtro, FiltroTexto);
-                texto = (texto ?? string.Empty).Trim();
-                var hasTexto = !string.IsNullOrWhiteSpace(texto);
-                var like = hasTexto ? $"%{texto}%" : null;
+                var cedula = fx.Cedula;
+                var texto = fx.Texto;
+                var like = fx.Like;
 
-                int pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
-                int fetch = filtros.paginacion < 0 ? 0 : filtros.paginacion;
-                bool usarPaginacion = fetch > 0;
-                int offset = usarPaginacion ? (pagina * fetch) : 0;
-
-                string sf = (filtros.sortField ?? string.Empty).Trim();
+                var offset = fx.Offset;
+                var fetch = fx.Fetch;
+                var usarPaginacion = fetch > 0;
+                string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
                 string orderByCol = sf switch
                 {
                     "id_solicitud" => "id_solicitud",
@@ -650,70 +645,73 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 };
 
                 string orderDir = (filtros.sortOrder == 1) ? "ASC" : "DESC";
+
                 const string sqlGrouped = @"
-                    select
-                        isnull(M.ESTADO,'') as estado_mora,
-                        F.Id_Solicitud as id_solicitud,
-                        S.cedula as cedula,
-                        S.nombre as nombre,
-                        E.descripcion as estado_persona,
-                        I.descripcion as institucion
-                    from fiadores F
-                    inner join Socios S on F.cedulaf = S.cedula
-                    inner join Instituciones I on S.cod_institucion = I.cod_institucion
-                    inner join Reg_Creditos R on F.Id_Solicitud = R.Id_Solicitud
-                    inner join AFI_ESTADOS_PERSONA E on E.cod_estado = S.estadoActual
-                    left join MOROSIDAD M on F.Id_Solicitud = M.Id_Solicitud and M.Estado = 'A'
-                    where F.estado = 'A'
-                      and R.cedula = @cedula
-                      and R.estado = 'A'
-                      and (@soloOperacionesAtrasadas = 0 or M.ESTADO = 'A')
-                      and (
-                           @texto is null
-                        or S.cedula like @like
-                        or S.nombre like @like
-                        or E.descripcion like @like
-                        or I.descripcion like @like
-                        or cast(F.Id_Solicitud as nvarchar(50)) like @like
-                      )
-                    group by
-                        F.Id_Solicitud,
-                        S.cedula,
-                        M.ESTADO,
-                        S.nombre,
-                        E.descripcion,
-                        I.descripcion";
-                                    var sqlCount = @"
-                    select count(1)
-                    from (
-                    " + sqlGrouped + @"
-                    ) x;";
+            select
+                isnull(M.ESTADO,'') as estado_mora,
+                F.Id_Solicitud as id_solicitud,
+                S.cedula as cedula,
+                S.nombre as nombre,
+                E.descripcion as estado_persona,
+                I.descripcion as institucion
+            from fiadores F
+            inner join Socios S on F.cedulaf = S.cedula
+            inner join Instituciones I on S.cod_institucion = I.cod_institucion
+            inner join Reg_Creditos R on F.Id_Solicitud = R.Id_Solicitud
+            inner join AFI_ESTADOS_PERSONA E on E.cod_estado = S.estadoActual
+            left join MOROSIDAD M on F.Id_Solicitud = M.Id_Solicitud and M.Estado = 'A'
+            where F.estado = 'A'
+              and R.cedula = @cedula
+              and R.estado = 'A'
+              and (@soloOperacionesAtrasadas = 0 or M.ESTADO = 'A')
+              and (
+                   @texto is null
+                or S.cedula like @like
+                or S.nombre like @like
+                or E.descripcion like @like
+                or I.descripcion like @like
+                or cast(F.Id_Solicitud as nvarchar(50)) like @like
+              )
+            group by
+                F.Id_Solicitud,
+                S.cedula,
+                M.ESTADO,
+                S.nombre,
+                E.descripcion,
+                I.descripcion";
+
+                var sqlCount = @"
+            select count(1)
+            from (
+            " + sqlGrouped + @"
+            ) x;";
 
                 response.Result.total = conn.QuerySingle<int>(sqlCount, new
                 {
                     cedula,
                     soloOperacionesAtrasadas = soloOperacionesAtrasadas ? 1 : 0,
-                    texto = hasTexto ? texto : null,
+                    texto,
                     like
                 });
-                var sqlLista = @"
-                select *
-                from (
-                " + sqlGrouped + @"
-                ) t
-                order by " + orderByCol + " " + orderDir;
 
-                                if (usarPaginacion)
-                                {
-                                    sqlLista += @"
-                offset @offset rows fetch next @fetch rows only";
-                                }
+                var sqlLista = @"
+            select *
+            from (
+            " + sqlGrouped + @"
+            ) t
+            order by " + orderByCol + " " + orderDir;
+
+                if (usarPaginacion)
+                {
+                    sqlLista += @"
+            offset @offset rows fetch next @fetch rows only";
+                }
 
                 response.Result.lista = conn.Query<CoControlSegFiadorDto>(sqlLista, new
                 {
                     cedula,
                     soloOperacionesAtrasadas = soloOperacionesAtrasadas ? 1 : 0,
-                    texto = hasTexto ? texto : null,
+                    texto,
                     like,
                     offset,
                     fetch
@@ -955,7 +953,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 p.Add("@Cedula", cedula);
                 p.Add("@Usuario", usuario);
                 p.Add("@CodGestion", codGestion);
-                p.Add("@Vence", data.vence.Date);
+                if (!data.vence.HasValue)
+                    return DbHelper.ErrorResponse("Debe indicar la fecha de vencimiento.");
+
+                p.Add("@Vence", data.vence.Value.Date);
                 p.Add("@Notas", notas);
                 p.Add("@Oficina", oficina);
                 p.Add("@Monto", data.monto);
@@ -1082,25 +1083,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
 
             try
             {
-                var cedula = ExtractKeyFromFiltro(filtros.filtro, FiltroCedula);
-                cedula = (cedula ?? string.Empty).Trim();
+                var fx = ParseFiltrosBasicos(filtros);
 
-                if (string.IsNullOrWhiteSpace(cedula))
+                if (string.IsNullOrWhiteSpace(fx.Cedula))
                 {
                     response.Result.total = 0;
                     response.Result.lista = new List<CoControlSegHistDetalleDto>();
                     return response;
                 }
 
-                var texto = ExtractKeyFromFiltro(filtros.filtro, FiltroTexto);
-                texto = (texto ?? string.Empty).Trim();
-                var hasTexto = !string.IsNullOrWhiteSpace(texto);
-                var like = hasTexto ? $"%{texto}%" : null;
+                var cedula = fx.Cedula;
+                var texto = fx.Texto;
+                var like = fx.Like;
 
-                int pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
-                int fetch = filtros.paginacion < 0 ? 0 : filtros.paginacion;
-                bool usarPaginacion = fetch > 0;
-                int offset = usarPaginacion ? (pagina * fetch) : 0;
+                var offset = fx.Offset;
+                var fetch = fx.Fetch;
+                var usarPaginacion = fetch > 0;
                 string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
                 string orderByCol = sf switch
                 {
@@ -1143,7 +1141,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 response.Result.total = conn.QuerySingle<int>(sqlCount, new
                 {
                     cedula,
-                    texto = hasTexto ? texto : null,
+                    texto,
                     like
                 });
 
@@ -1182,7 +1180,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 response.Result.lista = conn.Query<CoControlSegHistDetalleDto>(sql, new
                 {
                     cedula,
-                    texto = hasTexto ? texto : null,
+                    texto,
                     like,
                     offset,
                     fetch
@@ -1195,7 +1193,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(ex.Message);
             }
         }
-
         /// <summary>
         /// Exporta historial - detalle de operaciones.
         /// </summary>
@@ -1251,5 +1248,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 return null;
             }
         }
+        /// <summary>
+        /// Extrea e interpreta los filtros básicos comunes.
+        /// </summary>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+
+        private static (string Cedula, string? Texto, string? Like, int Pagina, int Fetch, int Offset) ParseFiltrosBasicos(FiltrosLazyLoadData filtros)
+        {
+            var cedula = (ExtractKeyFromFiltro(filtros.filtro, FiltroCedula) ?? string.Empty).Trim();
+
+            var texto = (ExtractKeyFromFiltro(filtros.filtro, FiltroTexto) ?? string.Empty).Trim();
+            var hasTexto = !string.IsNullOrWhiteSpace(texto);
+            var like = hasTexto ? $"%{texto}%" : null;
+
+            var pagina = filtros.pagina < 0 ? 0 : filtros.pagina;
+            var fetch = filtros.paginacion < 0 ? 0 : filtros.paginacion;
+            var offset = (fetch > 0) ? (pagina * fetch) : 0;
+
+            return (cedula, hasTexto ? texto : null, like, pagina, fetch, offset);
+        }
+
     }
 }

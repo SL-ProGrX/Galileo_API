@@ -1,4 +1,6 @@
 ﻿
+using System.ComponentModel.DataAnnotations;
+
 namespace Galileo.Models.ProGrX.Cobros.ControlSeguimiento
 {
     public class CoControlSegHistGestionDto
@@ -29,12 +31,15 @@ namespace Galileo.Models.ProGrX.Cobros.ControlSeguimiento
     public class CoControlSegHistOficialActualizarDto
     {
         public string cedula { get; set; } = string.Empty;
-        public DateTime fecha_asignacion { get; set; }
+        [Required]
+        public DateTime? fecha_asignacion { get; set; }
         public string usuario_asignado { get; set; } = string.Empty;
-
-        public int mantener { get; set; }
-        public int rebajo_doble { get; set; }
-        public int aplica_mora { get; set; }
+        [Required]
+        public int? mantener { get; set; }
+        [Required]
+        public int? rebajo_doble { get; set; }
+        [Required]
+        public int? aplica_mora { get; set; }
 
         public string usuario { get; set; } = string.Empty;
     }
@@ -62,11 +67,13 @@ namespace Galileo.Models.ProGrX.Cobros.ControlSeguimiento
         public string usuario { get; set; } = string.Empty;
 
         public string cod_gestion { get; set; } = string.Empty;
-        public DateTime vence { get; set; }
+        [Required]
+        public DateTime? vence { get; set; }
         public string notas { get; set; } = string.Empty;
 
         public string oficina { get; set; } = string.Empty;
-        public decimal monto { get; set; }
+        [Required]
+        public decimal? monto { get; set; }
         public int operacion { get; set; } = 0;
 
         public string cod_causa { get; set; } = string.Empty;
