@@ -9,7 +9,6 @@
         public decimal? monto { get; set; }
         public DateTime? fechaNacimiento { get; set; }
         public string? genero { get; set; } = string.Empty;
-        public string? nacionalidad { get; set; } = string.Empty;
         public string? movimiento { get; set; } = string.Empty;
     }
 
