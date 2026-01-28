@@ -594,6 +594,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
             var response = PrepareListaConCedula<CoControlSegFiadorDto>(
                 CodEmpresa, parametros,
                 out var conn, out var filtros, out var fx);
+
             if (response.Code != 0 || string.IsNullOrWhiteSpace(fx.Cedula))
                 return response;
 
@@ -601,13 +602,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
             {
                 try
                 {
-                    var cedula = fx.Cedula;
-                    var texto = fx.Texto;
-                    var like = fx.Like;
+                    var common = GetCommonFx(filtros);
 
-                    var offset = fx.Offset;
-                    var fetch = fx.Fetch;
-                    var usarPaginacion = fetch > 0;
+                    var cedula = common.Cedula;
+                    var texto = common.Texto;
+                    var like = common.Like;
+                    var offset = common.Offset;
+                    var fetch = common.Fetch;
+                    var usarPaginacion = common.UsarPaginacion;
 
                     string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
                     string orderByCol = sf switch
@@ -624,45 +626,50 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                     string orderDir = (filtros.sortOrder == 1) ? "ASC" : "DESC";
 
                     const string sqlGrouped = @"
-            select
-                isnull(M.ESTADO,'') as estado_mora,
-                F.Id_Solicitud as id_solicitud,
-                S.cedula as cedula,
-                S.nombre as nombre,
-                E.descripcion as estado_persona,
-                I.descripcion as institucion
-            from fiadores F
-            inner join Socios S on F.cedulaf = S.cedula
-            inner join Instituciones I on S.cod_institucion = I.cod_institucion
-            inner join Reg_Creditos R on F.Id_Solicitud = R.Id_Solicitud
-            inner join AFI_ESTADOS_PERSONA E on E.cod_estado = S.estadoActual
-            left join MOROSIDAD M on F.Id_Solicitud = M.Id_Solicitud and M.Estado = 'A'
-            where F.estado = 'A'
-              and R.cedula = @cedula
-              and R.estado = 'A'
-              and (@soloOperacionesAtrasadas = 0 or M.ESTADO = 'A')
-              and (
-                   @texto is null
-                or S.cedula like @like
-                or S.nombre like @like
-                or E.descripcion like @like
-                or I.descripcion like @like
-                or cast(F.Id_Solicitud as nvarchar(50)) like @like
-              )
-            group by
-                F.Id_Solicitud,
-                S.cedula,
-                M.ESTADO,
-                S.nombre,
-                E.descripcion,
-                I.descripcion";
+                select
+                    isnull(M.ESTADO,'') as estado_mora,
+                    F.Id_Solicitud as id_solicitud,
+                    S.cedula as cedula,
+                    S.nombre as nombre,
+                    E.descripcion as estado_persona,
+                    I.descripcion as institucion
+                from fiadores F
+                inner join Socios S on F.cedulaf = S.cedula
+                inner join Instituciones I on S.cod_institucion = I.cod_institucion
+                inner join Reg_Creditos R on F.Id_Solicitud = R.Id_Solicitud
+                inner join AFI_ESTADOS_PERSONA E on E.cod_estado = S.estadoActual
+                left join MOROSIDAD M on F.Id_Solicitud = M.Id_Solicitud and M.Estado = 'A'
+                where F.estado = 'A'
+                  and R.cedula = @cedula
+                  and R.estado = 'A'
+                  and (@soloOperacionesAtrasadas = 0 or M.ESTADO = 'A')
+                  and (
+                       @texto is null
+                    or S.cedula like @like
+                    or S.nombre like @like
+                    or E.descripcion like @like
+                    or I.descripcion like @like
+                    or cast(F.Id_Solicitud as nvarchar(50)) like @like
+                  )
+                group by
+                    F.Id_Solicitud,
+                    S.cedula,
+                    M.ESTADO,
+                    S.nombre,
+                    E.descripcion,
+                    I.descripcion";
 
                     var sqlCount = @"
-            select count(1)
-            from (
-            " + sqlGrouped + @"
-            ) x;";
-                    response.Result ??= new TablasListaGenericaModel { total = 0, lista = new List<CoControlSegFiadorDto>() };
+                select count(1)
+                from (
+                " + sqlGrouped + @"
+                ) x;";
+
+                    response.Result ??= new TablasListaGenericaModel
+                    {
+                        total = 0,
+                        lista = new List<CoControlSegFiadorDto>()
+                    };
 
                     response.Result.total = conn.QuerySingle<int>(sqlCount, new
                     {
@@ -673,16 +680,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                     });
 
                     var sqlLista = @"
-            select *
-            from (
-            " + sqlGrouped + @"
-            ) t
-            order by " + orderByCol + " " + orderDir;
+                select *
+                from (
+                " + sqlGrouped + @"
+                ) t
+                order by " + orderByCol + " " + orderDir;
 
                     if (usarPaginacion)
                     {
                         sqlLista += @"
-            offset @offset rows fetch next @fetch rows only";
+                    offset @offset rows fetch next @fetch rows only";
                     }
 
                     response.Result.lista = conn.Query<CoControlSegFiadorDto>(sqlLista, new
@@ -1060,6 +1067,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                     lista = new List<CoControlSegHistDetalleDto>()
                 }
             };
+
             response.Result ??= new TablasListaGenericaModel
             {
                 total = 0,
@@ -1068,22 +1076,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
 
             try
             {
-                var fx = ParseFiltrosBasicos(filtros);
+                var common = GetCommonFx(filtros);
 
-                if (string.IsNullOrWhiteSpace(fx.Cedula))
+                if (string.IsNullOrWhiteSpace(common.Cedula))
                 {
                     response.Result.total = 0;
                     response.Result.lista = new List<CoControlSegHistDetalleDto>();
                     return response;
                 }
 
-                var cedula = fx.Cedula;
-                var texto = fx.Texto;
-                var like = fx.Like;
-
-                var offset = fx.Offset;
-                var fetch = fx.Fetch;
-                var usarPaginacion = fetch > 0;
+                var cedula = common.Cedula;
+                var texto = common.Texto;
+                var like = common.Like;
+                var offset = common.Offset;
+                var fetch = common.Fetch;
+                var usarPaginacion = common.UsarPaginacion;
 
                 string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
                 string orderByCol = sf switch
@@ -1180,6 +1187,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(ex.Message);
             }
         }
+
 
         /// <summary>
         /// Exporta historial - detalle de operaciones.
@@ -1306,6 +1314,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
 
             return response;
         }
+        private static (string Cedula, string? Texto, string? Like, int Offset, int Fetch, bool UsarPaginacion) GetCommonFx(FiltrosLazyLoadData filtros)
+        {
+            var fx = ParseFiltrosBasicos(filtros);
+            var fetch = fx.Fetch;
+            var offset = fx.Offset;
+            var usarPaginacion = fetch > 0;
+
+            return (fx.Cedula, fx.Texto, fx.Like, offset, fetch, usarPaginacion);
+        }
+
 
     }
 }
