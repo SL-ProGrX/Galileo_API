@@ -6,6 +6,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX.CuentasPorCobrar;
 using Galileo.Models.Security;
 using Galileo.Models;
+using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
 {
@@ -20,104 +21,109 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
         private const string MovRegistra = "Registra - WEB";
         private const string MovModifica = "MODIFICA - WEB";
         private const string MovElimina = "ELIMINAR - WEB";
+        private const string Tabla = "dbo.CXC_FACTURAS_ESTADOS";
 
         public FrmCxCFacturaEstadosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _securityMainDb = new MSecurityMainDb(config!);
         }
-
-        #region SQL seguros (sin interpolación)
-
-
-        private const string WhereClause = @"
-            WHERE
-                (@filtro IS NULL)
-                OR (CAST(Factura_Estado AS NVARCHAR(50)) LIKE @like)
-                OR (descripcion LIKE @like)
-                OR (proceso LIKE @like)
-                OR (accion LIKE @like)
-            ";
-
-
-        private const string SqlCount = "SELECT COUNT(1) FROM dbo.CXC_FACTURAS_ESTADOS " + WhereClause + ";";
-
-
-        private const string SqlListAsc = @"
-                        SELECT
-                            Factura_Estado,
-                            descripcion,
-                            Proceso,
-                            Accion,
-                            activo
-                        FROM dbo.CXC_FACTURAS_ESTADOS
-                        " + WhereClause + @"
-                        ORDER BY
-                            CASE WHEN @orderBy = 'Factura_Estado' THEN Factura_Estado END,
-                            CASE WHEN @orderBy = 'descripcion'    THEN descripcion    END,
-                            CASE WHEN @orderBy = 'proceso'        THEN Proceso        END,
-                            CASE WHEN @orderBy = 'accion'         THEN Accion         END,
-                            CASE WHEN @orderBy = 'activo'         THEN activo         END
-                        ";
-
-
-        private const string SqlListDesc = @"
-                    SELECT
-                        Factura_Estado,
-                        descripcion,
-                        Proceso,
-                        Accion,
-                        activo
-                    FROM dbo.CXC_FACTURAS_ESTADOS
-                    " + WhereClause + @"
-                    ORDER BY
-                        CASE WHEN @orderBy = 'Factura_Estado' THEN Factura_Estado END DESC,
-                        CASE WHEN @orderBy = 'descripcion'    THEN descripcion    END DESC,
-                        CASE WHEN @orderBy = 'proceso'        THEN Proceso        END DESC,
-                        CASE WHEN @orderBy = 'accion'         THEN Accion         END DESC,
-                        CASE WHEN @orderBy = 'activo'         THEN activo         END DESC
-                    ";
-
-        #endregion
-
-        #region Helpers
-
-        private void LogBitacora(int empresaId, string usuario, string detalle, string movimiento)
+        internal static class SqlFragments
         {
-
-            _securityMainDb.Bitacora(new BitacoraInsertarDto
+            /// <summary>
+            /// Construye un WHERE con búsqueda LIKE parametrizada sobre varias columnas.
+            /// </summary>
+            public static string BuildWhereLike(params string[] columns)
             {
-                EmpresaId = empresaId,
-                Usuario = usuario,
-                DetalleMovimiento = detalle,
-                Movimiento = movimiento,
-                Modulo = ModuloCxC
-            });
+                var sb = new StringBuilder();
+                sb.AppendLine("WHERE");
+                sb.AppendLine("    (@filtro IS NULL)");
+
+                bool first = true;
+                foreach (var col in columns)
+                {
+                    if (first)
+                    {
+                        // Primer columna con CAST para soportar numérico -> texto si aplica.
+                        sb.AppendLine($"    OR (CAST({col} AS NVARCHAR(50)) LIKE @like)");
+                        first = false;
+                    }
+                    else
+                    {
+                        sb.AppendLine($"    OR ({col} LIKE @like)");
+                    }
+                }
+                return sb.ToString();
+            }
+
+            /// <summary>
+            /// Genera ORDER BY con CASE (parametrizado por @orderBy). Sin interpolar valores del usuario.
+            /// </summary>
+            public static string BuildOrderByCase(string orderByParamName, bool desc, params string[] columns)
+            {
+                var sb = new StringBuilder();
+                sb.AppendLine("ORDER BY");
+                for (int i = 0; i < columns.Length; i++)
+                {
+                    var col = columns[i];
+                    var comma = (i < columns.Length - 1) ? "," : string.Empty;
+                    if (desc)
+                    {
+                        sb.AppendLine($"    CASE WHEN @{orderByParamName} = '{col}' THEN {col} END DESC{comma}");
+                    }
+                    else
+                    {
+                        sb.AppendLine($"    CASE WHEN @{orderByParamName} = '{col}' THEN {col} END{comma}");
+                    }
+                }
+                return sb.ToString();
+            }
+
+            /// <summary>
+            /// Construye el fragmento de paginación OFFSET/FETCH si aplica.
+            /// </summary>
+            public static string BuildPaging(bool usarPaginacion)
+                => usarPaginacion ? " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY" : string.Empty;
         }
-
-
-        private static (string OrderBy, bool Desc) SanitizeOrderBy(string? sortField, int? sortOrder)
+        /// <summary>
+        /// Sanitiza campos de ordenamiento usando whitelist.
+        /// </summary>
+        internal static class QuerySafeHelpers
         {
+            public static (string OrderBy, bool Desc) SanitizeOrderBy(
+                string? sortField, int? sortOrder, string defaultColumn, params string[] allowedColumns)
+            {
+                var desc = sortOrder == 1; // 1 => DESC
+                var candidate = (sortField ?? string.Empty).Trim();
 
-            var field = (sortField ?? string.Empty).Trim();
-
-
-            string orderBy = field.Equals("Factura_Estado", StringComparison.OrdinalIgnoreCase) ? "Factura_Estado" :
-                             field.Equals("Descripcion", StringComparison.OrdinalIgnoreCase) ? "Descripcion" :
-                             field.Equals("Proceso", StringComparison.OrdinalIgnoreCase) ? "Proceso" :
-                             field.Equals("Accion", StringComparison.OrdinalIgnoreCase) ? "Accion" :
-                             field.Equals("activo", StringComparison.OrdinalIgnoreCase) ? "activo" :
-                             "Factura_Estado";
-
-            var desc = sortOrder == 1;
-            return (orderBy, desc);
+                foreach (var allowed in allowedColumns)
+                {
+                    if (candidate.Equals(allowed, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return (allowed, desc);
+                    }
+                }
+                return (defaultColumn, desc);
+            }
         }
 
-        private static ErrorDto<T> Ok<T>(T data) => DbHelper.CreateOkResponse(data);
-        private static ErrorDto Ok() => DbHelper.CreateOkResponse();
-        private static ErrorDto Error(string msg) => DbHelper.ErrorResponse(msg);
+        internal static class BitacoraHelper
+        {
+            public static void Registrar(MSecurityMainDb securityDb, int empresaId, string usuario, int modulo,
+                string detalle, string movimiento)
+            {
+                securityDb.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = empresaId,
+                    Usuario = usuario,
+                    DetalleMovimiento = detalle,
+                    Movimiento = movimiento,
+                    Modulo = modulo
+                });
+            }
+        }
 
-        #endregion
+        private static ErrorDto Error(string msg) => DbHelper.ErrorResponse(msg);
 
         /// <summary>
         /// Consulta de listado de estado de factura
@@ -128,7 +134,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
         /// <returns></returns>
         public ErrorDto<CxCFacturaEstadosLista> CxCFacturaEstadosLista_Obtener(int codEmpresa, FiltrosLazyLoadData filtros, bool esExportar)
         {
-            return DbHelper.WithConn(_portalDB, codEmpresa, (SqlConnection conn) =>
+            var dto = DbHelper.WithConn(_portalDB, codEmpresa, (SqlConnection conn) =>
             {
                 filtros ??= new FiltrosLazyLoadData();
 
@@ -139,9 +145,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                 var fetch = filtros.paginacion;
                 var usarPaginacion = fetch > 0 && !esExportar;
 
-                var (orderBy, desc) = SanitizeOrderBy(filtros.sortField, filtros.sortOrder);
+           
+                var (orderBy, desc) = QuerySafeHelpers.SanitizeOrderBy(
+                    filtros.sortField, filtros.sortOrder, defaultColumn: "Factura_Estado",
+                    allowedColumns: new[] { "Factura_Estado", "descripcion", "proceso", "accion", "activo" }
+                );
 
-                var baseParams = new
+             
+                var where = SqlFragments.BuildWhereLike("Factura_Estado", "descripcion", "proceso", "accion");
+                var order = SqlFragments.BuildOrderByCase(orderByParamName: "orderBy", desc: desc,
+                    columns: new[] { "Factura_Estado", "descripcion", "proceso", "accion", "activo" });
+                var paging = SqlFragments.BuildPaging(usarPaginacion);
+
+               
+                var sqlCount = "SELECT COUNT(1) FROM " + Tabla + "\n" + where + ";";
+
+              
+                var sqlList = @"
+                        SELECT
+                            Factura_Estado,
+                            descripcion,
+                            Proceso,
+                            Accion,
+                            activo
+                        FROM " + Tabla + "\n" + where + "\n" + order + paging + ";";
+
+                var @params = new
                 {
                     filtro = hasFiltro ? texto : null,
                     like = hasFiltro ? $"%{texto}%" : null,
@@ -150,23 +179,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                     fetch
                 };
 
+                var total = conn.QuerySingle<int>(sqlCount, @params);
+                var lista = conn.Query<CxCFacturaEstadosData>(sqlList, @params).ToList();
 
-                var total = conn.QuerySingle<int>(SqlCount, baseParams);
-
-
-                var core = desc ? SqlListDesc : SqlListAsc;
-                var sqlList = usarPaginacion
-                    ? core + " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;"
-                    : core + ";";
-
-                var lista = conn.Query<CxCFacturaEstadosData>(sqlList, baseParams).ToList();
-
-                return new CxCFacturaEstadosLista
-                {
-                    total = total,
-                    lista = lista
-                };
+                return new CxCFacturaEstadosLista { total = total, lista = lista };
             });
+ 
+            // Si WithConn atrapó un error, devolvemos mensaje genérico y lista vacía
+            if (dto.Code != 0)
+            {
+                dto.Description = "No fue posible consultar los datos.";
+                dto.Result = new CxCFacturaEstadosLista { total = 0, lista = new List<CxCFacturaEstadosData>() };
+            }
+            return dto;
         }
 
         /// <summary>
@@ -182,32 +207,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
             if (string.IsNullOrWhiteSpace(datos.Factura_Estado)) return Error("El campo 'Factura_Estado' es requerido.");
             if (string.IsNullOrWhiteSpace(usuario)) return Error("El usuario es requerido.");
 
-          
             const string sqlUpsert = @"
-                    DECLARE @accion NVARCHAR(10);
+                        DECLARE @accion NVARCHAR(10);
 
-                    UPDATE dbo.CXC_FACTURAS_ESTADOS
-                    SET descripcion = @Descripcion,
-                        Proceso     = @Proceso,
-                        Accion      = @Accion,
-                        Activo      = @Activo
-                    WHERE Factura_Estado = @Factura_Estado;
+                        UPDATE dbo.CXC_FACTURAS_ESTADOS
+                        SET descripcion = @Descripcion,
+                            Proceso     = @Proceso,
+                            Accion      = @Accion,
+                            Activo      = @Activo
+                        WHERE Factura_Estado = @Factura_Estado;
 
-                    IF @@ROWCOUNT = 0
-                    BEGIN
-                        INSERT INTO dbo.CXC_FACTURAS_ESTADOS
-                            (Factura_Estado, descripcion, Proceso, Accion, Activo, registro_fecha, registro_usuario)
-                        VALUES
-                            (@Factura_Estado, @Descripcion, @Proceso, @Accion, @Activo, dbo.MyGetdate(), @usuario);
-                        SET @accion = N'insert';
-                    END
-                    ELSE
-                    BEGIN
-                        SET @accion = N'update';
-                    END
+                        IF @@ROWCOUNT = 0
+                        BEGIN
+                            INSERT INTO dbo.CXC_FACTURAS_ESTADOS
+                                (Factura_Estado, descripcion, Proceso, Accion, Activo, registro_fecha, registro_usuario)
+                            VALUES
+                                (@Factura_Estado, @Descripcion, @Proceso, @Accion, @Activo, dbo.MyGetdate(), @usuario);
+                            SET @accion = N'insert';
+                        END
+                        ELSE
+                        BEGIN
+                            SET @accion = N'update';
+                        END
 
-                    SELECT @accion AS accion;
-                    ";
+                        SELECT @accion AS accion;";
 
             var upsert = DbHelper.ExecuteSingleQuery<string>(_portalDB, codEmpresa, sqlUpsert, defaultValue: "", parameters: new
             {
@@ -225,16 +248,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
             var accion = (upsert.Result ?? string.Empty).ToLowerInvariant();
             if (accion == "insert")
             {
-                LogBitacora(codEmpresa, usuario, $"Estado de Factura CxC: {datos.Factura_Estado}", MovRegistra);
-                return Ok();
-            }
-            if (accion == "update")
-            {
-                LogBitacora(codEmpresa, usuario, $"Estado de Factura CxC: {datos.Factura_Estado}", MovModifica);
-                return Ok();
+                BitacoraHelper.Registrar(_securityMainDb, codEmpresa, usuario, ModuloCxC,
+                    $"Estado de Factura CxC: {datos.Factura_Estado}", MovRegistra);
+                return DbHelper.CreateOkResponse();
             }
 
-            return Ok();  
+            if (accion == "update")
+            {
+                BitacoraHelper.Registrar(_securityMainDb, codEmpresa, usuario, ModuloCxC,
+                    $"Estado de Factura CxC: {datos.Factura_Estado}", MovModifica);
+                return DbHelper.CreateOkResponse();
+            }
+
+            return DbHelper.CreateOkResponse();
         }
 
         /// <summary>
@@ -257,11 +283,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
 
             if (result.Result > 0)
             {
-                LogBitacora(codEmpresa, usuario, $"Estado de Factura CxC: {codFactura}", MovElimina);
-                return Ok();
+                BitacoraHelper.Registrar(_securityMainDb, codEmpresa, usuario, ModuloCxC,
+                    $"Estado de Factura CxC: {codFactura}", MovElimina);
+                return DbHelper.CreateOkResponse();
             }
 
-            return Ok(); 
+            return DbHelper.CreateOkResponse();
         }
     }
 }
