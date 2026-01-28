@@ -14,7 +14,7 @@ namespace Galileo.Models.ProGrX.Bancos
         public string codigo { get; set; } = string.Empty;
         public string beneficiario { get; set; } = string.Empty;
         public float monto { get; set; } = 0;
-        public DateTime fecha_Solicitud  { get; set; }
+        public Nullable<DateTime> fecha_Solicitud  { get; set; }
         public string tipo  { get; set; } = string.Empty;
         public int id_Banco  { get; set; } = 0;
         public string cod_unidad { get; set; } = string.Empty;

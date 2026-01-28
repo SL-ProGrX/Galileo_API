@@ -2,6 +2,9 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.CxP;
 using Microsoft.CodeAnalysis;
+using Microsoft.Data.SqlClient;
+using System.IO.Pipelines;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 {
@@ -72,5 +75,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 return tipoCambio ?? 1m;
             }).Result;
         }
+
+        public bool fxCajasAbonosCbrJud(int CodEmpresa, string pCaja, string pUsuario)
+        {
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
+            {
+                const string sql = @"
+                    select dbo.fxCajas_AbonoCbrJudAutorizada(@caja, @usuario)";
+
+                var valor = conn.QueryFirstOrDefault<int?>(
+                    sql,
+                    new
+                    {
+                        caja = pCaja,
+                        usuario = pUsuario
+                    }
+                );
+
+                return valor.HasValue && valor.Value == 1;
+            }).Result;
+        }
+
+        public string fxCajasAperturaEstado(int CodEmpresa, string caja, int apertura)
+        {
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
+            {
+                const string sql = @" select Estado from cajas_aperturas_main 
+                    where cod_caja = @caja and cod_apertura = @apertura";
+
+                var estado = conn.QueryFirstOrDefault<string>(
+                    sql,
+                    new
+                    {
+                        caja,
+                        apertura
+                    }
+                );
+
+                return string.IsNullOrWhiteSpace(estado) ? "C" : estado.Trim();
+            }).Result ?? "";
+        }
+
     }
 }

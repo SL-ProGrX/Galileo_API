@@ -93,7 +93,8 @@ namespace Galileo_API.DataBaseTier
                     {
                         IsSuccessful = result!.IsSuccessful,
                         OperationId = result.OperationId,
-                        Account = result.Account
+                        Account = result.Account,
+                        Errors = result.Errors
                     };
                 }
                 else
@@ -135,33 +136,26 @@ namespace Galileo_API.DataBaseTier
                 var json = JsonConvert.SerializeObject(pinData);
                 var content = new StringContent(json, Encoding.UTF8, strMediaType);
 
-                var response = _client.PostAsync(UrlCGP_PIN + "/SendPIN", content).Result;
+                var response = _client.PostAsync(UrlCGP_PIN + "/SendTransfer", content).Result;
 
                 if (response.IsSuccessStatusCode)
                 {
                     var jsonResponse = response.Content.ReadAsStringAsync().Result;
                     var result = JsonConvert.DeserializeObject<ResPINSending>(jsonResponse);
 
-                    return new ResPINSending
-                    {
-                        IsSuccessful = true,
-                        OperationId = result!.OperationId,
-                        PINSendingResult = result.PINSendingResult
-                    };
+                    return result!;
                 }
 
                 return new ResPINSending
                 {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo enviar la transacción PIN." } }
+                    IsSuccessful = false
                 };
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return new ResPINSending
                 {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en SendPIN: {ex.Message}" } }
+                    IsSuccessful = false
                 };
             }
         }

@@ -1,4 +1,5 @@
-﻿using Galileo.Models.ERROR;
+﻿using Galileo.Models;
+using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX.Cajas;
 using Galileo_API.Models.ProGrX.Cajas;
 using Microsoft.AspNetCore.Authorization;
@@ -30,10 +31,34 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             return _bl.CajasCrdAbonosCtP_Operaciones_Obtener(CodEmpresa);
         }
 
+        [HttpGet("CajasCrdAbonosCtP_TipoDoc_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> CajasCrdAbonosCtP_TipoDoc_Obtener(int CodEmpresa, string Caja)
+        {
+            return _bl.CajasCrdAbonosCtP_TipoDoc_Obtener(CodEmpresa, Caja);
+        }
+
         [HttpGet("CajasCrdAbonosCtP_OperacionTransac_Obtener")]
         public ErrorDto<List<CajasCrdOperacionTransacData>> CajasCrdAbonosCtP_OperacionTransac_Obtener(int CodEmpresa, int IdSolicitud)
         {
             return _bl.CajasCrdAbonosCtP_OperacionTransac_Obtener(CodEmpresa, IdSolicitud);
+        }
+
+        [HttpGet("CajasCrdAbonosCtP_DiasActivoFecha_Obtener")]
+        public ErrorDto<long> CajasCrdAbonosCtP_DiasActivoFecha_Obtener(int CodEmpresa, string Request)
+        {
+            return _bl.CajasCrdAbonosCtP_DiasActivoFecha_Obtener(CodEmpresa, Request);
+        }
+
+        [HttpGet("CajasCrdAbonosCtP_InfoCancelacion_Obtener")]
+        public ErrorDto<CajasCrdAbonosInfoCancelacionData> CajasCrdAbonosCtP_InfoCancelacion_Obtener(int CodEmpresa, string Request)
+        {
+            return _bl.CajasCrdAbonosCtP_InfoCancelacion_Obtener(CodEmpresa, Request);
+        }
+
+        [HttpPost("CajasCrdAbonosCtP_Abono_Registrar")]
+        public ErrorDto CajasCrdAbonosCtP_Abono_Registrar(int CodEmpresa, CajasCrdAbonosCtPRegistrarAbonoRequest Request)
+        {
+            return _bl.CajasCrdAbonosCtP_Abono_Registrar(CodEmpresa, Request);
         }
     }
 }

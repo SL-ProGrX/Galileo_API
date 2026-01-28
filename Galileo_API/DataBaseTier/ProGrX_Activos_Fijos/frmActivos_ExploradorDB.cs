@@ -18,12 +18,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
         }
 
        
-        private ErrorDto<List<T>> EjecutarLista<T>(
-            int codEmpresa,
-            Func<SqlConnection, List<T>> query)
+        private ErrorDto<List<T>> EjecutarLista<T>(int codEmpresa,Func<SqlConnection, List<T>> query)
         {
-            string connString =
-                _portalDB.ObtenerDbConnStringEmpresa(codEmpresa);
+            string connString = _portalDB.ObtenerDbConnStringEmpresa(codEmpresa);
 
             var response = new ErrorDto<List<T>>
             {
@@ -79,13 +76,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             return EjecutarLista<DropDownListaGenericaModel>(
                 codEmpresa,
                 cn => cn.Query<DropDownListaGenericaModel>(@"
-                    SELECT
-                        cod_seccion AS item,
-                        descripcion
+                    SELECT cod_seccion AS item, descripcion
                     FROM Activos_Secciones
                     WHERE cod_departamento = @codDepartamento
-                    ORDER BY cod_seccion
-                ", new { codDepartamento }).ToList()
+                    ORDER BY cod_seccion", new { codDepartamento }).ToList()
             );
         }
 
@@ -99,9 +93,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             return EjecutarLista<DropDownListaGenericaModel>(
                 codEmpresa,
                 cn => cn.Query<DropDownListaGenericaModel>(@"
-                    SELECT
-                        TIPO_ACTIVO AS item,
-                        descripcion
+                    SELECT TIPO_ACTIVO AS item, descripcion
                     FROM Activos_TIPO_ACTIVO
                     ORDER BY TIPO_ACTIVO
                 ").ToList()
@@ -118,12 +110,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             return EjecutarLista<DropDownListaGenericaModel>(
                 codEmpresa,
                 cn => cn.Query<DropDownListaGenericaModel>(@"
-                    SELECT
-                        COD_JUSTIFICACION AS item,
-                        descripcion
+                    SELECT COD_JUSTIFICACION AS item, descripcion
                     FROM Activos_JUSTIFICACIONES
-                    ORDER BY COD_JUSTIFICACION
-                ").ToList()
+                    ORDER BY COD_JUSTIFICACION").ToList()
             );
         }
 
@@ -137,9 +126,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             return EjecutarLista<DropDownListaGenericaModel>(
                 codEmpresa,
                 cn => cn.Query<DropDownListaGenericaModel>(@"
-                    SELECT
-                        RTRIM(COD_LOCALIZA) AS item,
-                        RTRIM(descripcion) AS descripcion
+                    SELECT RTRIM(COD_LOCALIZA) AS item,RTRIM(descripcion) AS descripcion
                     FROM ACTIVOS_LOCALIZACIONES
                     WHERE Activa = 1
                     ORDER BY descripcion
@@ -157,9 +144,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             return EjecutarLista<DropDownListaGenericaModel>(
                 codEmpresa,
                 cn => cn.Query<DropDownListaGenericaModel>(@"
-                    SELECT
-                        RTRIM(Identificacion) AS item,
-                        RTRIM(Nombre) AS descripcion
+                    SELECT RTRIM(Identificacion) AS item, RTRIM(Nombre) AS descripcion
                     FROM Activos_Personas
                     ORDER BY Nombre
                 ").ToList()
@@ -176,15 +161,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
             return EjecutarLista<DropDownListaGenericaModel>(
                 codEmpresa,
                 cn => cn.Query<DropDownListaGenericaModel>(@"
-                    SELECT
-                        RTRIM(cod_proveedor) AS item,
-                        RTRIM(descripcion) AS descripcion
+                    SELECT RTRIM(cod_proveedor) AS item, RTRIM(descripcion) AS descripcion
                     FROM Activos_proveedores
                     ORDER BY descripcion
                 ").ToList()
             );
         }
-
 
         /// <summary>
         /// Obtiene los periodos
@@ -193,9 +175,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
         /// <param name="estado"></param>
         /// <returns></returns>
 
-        public ErrorDto<List<PeriodoExploradorDto>> Periodos(
-            int codEmpresa,
-            string estado)
+        public ErrorDto<List<PeriodoExploradorDto>> Periodos(int codEmpresa,string estado)
         {
             return EjecutarLista<PeriodoExploradorDto>(
                 codEmpresa,
@@ -347,6 +327,91 @@ namespace Galileo_API.DataBaseTier.ProGrX_Activos_Fijos
                         param
                     ).ToList();
                 }
+            );
+        }
+
+
+        /// <summary>
+        /// Lista asientos por período (año/mes de fechaPeriodo)
+        /// </summary>
+        /// <param name="codEmpresa"
+        /// <param name="fechaPeriodo"
+        ///  <returns></returns>
+        public ErrorDto<List<ActivosExploradorAsientoDto>> Asientos(int codEmpresa,DateTime fechaPeriodo)
+        {
+            return EjecutarLista<ActivosExploradorAsientoDto>(
+                codEmpresa,
+                cn => cn.Query<ActivosExploradorAsientoDto>(@"
+            SELECT
+                RTRIM(num_asiento)     AS num_asiento,
+                RTRIM(tipo_asiento)    AS tipo_asiento,
+                fecha_asiento          AS fecha_asiento,
+                RTRIM(descripcion)     AS descripcion,
+                ISNULL(debe,0)         AS debe,
+                ISNULL(haber,0)        AS haber,
+                RTRIM(aplicado)        AS aplicado,
+                RTRIM(notas)           AS notas
+            FROM dbo.vActivos_Asientos
+            WHERE anio = YEAR(@fechaPeriodo)
+              AND mes  = MONTH(@fechaPeriodo)
+            ORDER BY fecha_asiento DESC, num_asiento DESC
+        ", new { fechaPeriodo }).ToList()
+            );
+        }
+
+        /// <summary>
+        /// Lista detalle de un asiento por período
+        /// </summary>
+        /// <param name="codEmpresa"
+        /// <param name="numAsiento"
+        /// <param name="fechaPeriodo"
+        ///  <returns></returns>
+        public ErrorDto<List<ActivosExploradorAsientoDetalleDto>> AsientoDetalle(int codEmpresa,string numAsiento,DateTime fechaPeriodo)
+        {
+            return EjecutarLista<ActivosExploradorAsientoDetalleDto>(
+                codEmpresa,
+                cn => cn.Query<ActivosExploradorAsientoDetalleDto>(@"
+            SELECT
+                RTRIM(cuenta)       AS cuenta,
+                RTRIM(descripcion)  AS descripcion,
+                ISNULL(debito,0)    AS debito,
+                ISNULL(credito,0)   AS credito,
+                RTRIM(detalle)      AS detalle,
+                RTRIM(referencia)   AS referencia,
+                RTRIM(num_documento)AS num_documento
+            FROM dbo.vActivos_Asientos_Detalle
+            WHERE anio = YEAR(@fechaPeriodo)
+              AND mes  = MONTH(@fechaPeriodo)
+              AND RTRIM(num_asiento) = RTRIM(@numAsiento)
+            ORDER BY cuenta
+        ", new { numAsiento, fechaPeriodo }).ToList()
+            );
+        }
+
+        /// <summary>
+        /// Lista adiciones/retiros (modificaciones) por período
+        /// </summary>
+        /// <param name="codEmpresa"
+        /// <param name="fechaPeriodo"
+        ///  <returns></returns>
+        public ErrorDto<List<ActivosExploradorModificacionDto>> AdicionesRetiros(int codEmpresa,DateTime fechaPeriodo)
+        {
+            return EjecutarLista<ActivosExploradorModificacionDto>(
+                codEmpresa,
+                cn => cn.Query<ActivosExploradorModificacionDto>(@"
+            SELECT
+                RTRIM(nombre)          AS nombre,
+                RTRIM(num_placa)       AS num_placa,
+                RTRIM(tipo)            AS tipo,
+                RTRIM(justificacion)   AS justificacion,
+                fecha                  AS fecha,
+                ISNULL(monto,0)        AS monto,
+                RTRIM(descripcion)     AS descripcion
+            FROM dbo.vActivos_Modificaciones
+            WHERE anio = YEAR(@fechaPeriodo)
+              AND mes  = MONTH(@fechaPeriodo)
+            ORDER BY fecha DESC, num_placa
+        ", new { fechaPeriodo }).ToList()
             );
         }
 

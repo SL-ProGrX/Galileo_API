@@ -203,7 +203,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
                 const string query = @"exec spTes_Auto_Registro_Ctas @AutoId , @Descripcion";
-                string? valCodigo = (codigo == null || codigo == 0) ? "NULL" : codigo.ToString();
+                string? valCodigo = (codigo == null || codigo == 0) ? "0" : codigo.ToString();
 
                 return conn.Query<TesAutoRegCtaBancariasData>(query, new { AutoId = valCodigo, Descripcion = FiltraCtas }).ToList();
             });

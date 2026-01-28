@@ -17,7 +17,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 
         public ErrorDto<TesAutorizadoresLista> Tes_AutorizadoresUsuarioLista_Obtener(int CodEmpresa, string parametros)
         {
-            FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(parametros);
+            FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(parametros) ?? new FiltrosLazyLoadData();
             return _Db.Tes_AutorizadoresUsuarioLista_Obtener(CodEmpresa, filtros);
         }
 

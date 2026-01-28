@@ -8,8 +8,8 @@ namespace Galileo.Models.TES
         public List<DropDownListaGenericaModel<string>>? TiposDocumento { get; set; }
         public string? Estado { get; set; }
         public string? TipoFecha { get; set; }
-        public DateTime FechaInicio { get; set; }
-        public DateTime FechaCorte { get; set; }
+        public DateTime? FechaInicio { get; set; }
+        public DateTime? FechaCorte { get; set; }
         public string? Codigo { get; set; }
         public string? NoDocumento { get; set; }
         public string? Transferencia { get; set; }
