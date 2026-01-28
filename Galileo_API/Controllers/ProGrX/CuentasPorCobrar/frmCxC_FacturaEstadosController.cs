@@ -34,7 +34,7 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
         [HttpDelete("CxCFacturaEstados_Eliminar")]
         public ErrorDto CxCFacturaEstados_Eliminar(int CodEmpresa, string usuario, string codFactura)
         {
-            return _bl.CxCFacturaEstados_Eliminar(CodEmpresa, usuario, CodCargo);
+            return _bl.CxCFacturaEstados_Eliminar(CodEmpresa, usuario, codFactura);
         }
     }
 }
