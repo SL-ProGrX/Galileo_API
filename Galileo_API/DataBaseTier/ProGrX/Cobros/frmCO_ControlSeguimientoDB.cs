@@ -589,7 +589,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
         /// <param name="parametros"></param>
         /// <param name="soloOperacionesAtrasadas"></param>
         /// <returns></returns>
-        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_Fiadores_Lista_Obtener(int CodEmpresa, string parametros, bool soloOperacionesAtrasadas)
+        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_Fiadores_Lista_Obtener(int CodEmpresa,string parametros,bool soloOperacionesAtrasadas)
         {
             var response = PrepareListaConCedula<CoControlSegFiadorDto>(
                 CodEmpresa, parametros,
@@ -602,28 +602,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
             {
                 try
                 {
-                    var common = GetCommonFx(filtros);
+                    var fx2 = ResolveCommonBlock(
+                        filtros,
+                        new Dictionary<string, string>
+                        {
+                            ["id_solicitud"] = "id_solicitud",
+                            ["cedula"] = "cedula",
+                            ["nombre"] = "nombre",
+                            ["estado_persona"] = "estado_persona",
+                            ["institucion"] = "institucion",
+                            ["estado_mora"] = "estado_mora"
+                        },
+                        "id_solicitud");
 
-                    var cedula = common.Cedula;
-                    var texto = common.Texto;
-                    var like = common.Like;
-                    var offset = common.Offset;
-                    var fetch = common.Fetch;
-                    var usarPaginacion = common.UsarPaginacion;
-
-                    string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                    string orderByCol = sf switch
-                    {
-                        "id_solicitud" => "id_solicitud",
-                        "cedula" => "cedula",
-                        "nombre" => "nombre",
-                        "estado_persona" => "estado_persona",
-                        "institucion" => "institucion",
-                        "estado_mora" => "estado_mora",
-                        _ => "id_solicitud"
-                    };
-
-                    string orderDir = (filtros.sortOrder == 1) ? "ASC" : "DESC";
+                    var cedula = fx2.Cedula;
+                    var texto = fx2.Texto;
+                    var like = fx2.Like;
+                    var offset = fx2.Offset;
+                    var fetch = fx2.Fetch;
+                    var usarPaginacion = fx2.UsarPaginacion;
+                    var orderByCol = fx2.OrderByCol;
+                    var orderDir = fx2.OrderDir;
 
                     const string sqlGrouped = @"
                 select
@@ -710,6 +709,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 }
             }
         }
+
 
         /// <summary>
         /// Exporta lista de fiadores.
@@ -1042,7 +1042,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_HistDetalle_Lista_Obtener(int CodEmpresa, string parametros)
+        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_HistDetalle_Lista_Obtener(int CodEmpresa,string parametros)
         {
             FiltrosLazyLoadData filtros;
             try
@@ -1076,36 +1076,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
 
             try
             {
-                var common = GetCommonFx(filtros);
+                var fx2 = ResolveCommonBlock(
+                    filtros,
+                    new Dictionary<string, string>
+                    {
+                        ["operacion"] = "operacion",
+                        ["codigo"] = "codigo",
+                        ["cuotas"] = "cuotas",
+                        ["mora"] = "mora",
+                        ["saldo"] = "saldo",
+                        ["abono"] = "abono",
+                        ["estado_actual"] = "estado_actual"
+                    },
+                    "operacion");
 
-                if (string.IsNullOrWhiteSpace(common.Cedula))
+                if (string.IsNullOrWhiteSpace(fx2.Cedula))
                 {
                     response.Result.total = 0;
                     response.Result.lista = new List<CoControlSegHistDetalleDto>();
                     return response;
                 }
 
-                var cedula = common.Cedula;
-                var texto = common.Texto;
-                var like = common.Like;
-                var offset = common.Offset;
-                var fetch = common.Fetch;
-                var usarPaginacion = common.UsarPaginacion;
-
-                string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                string orderByCol = sf switch
-                {
-                    "operacion" => "operacion",
-                    "codigo" => "codigo",
-                    "cuotas" => "cuotas",
-                    "mora" => "mora",
-                    "saldo" => "saldo",
-                    "abono" => "abono",
-                    "estado_actual" => "estado_actual",
-                    _ => "operacion"
-                };
-
-                string orderDir = (filtros.sortOrder == 1) ? "ASC" : "DESC";
+                var cedula = fx2.Cedula;
+                var texto = fx2.Texto;
+                var like = fx2.Like;
+                var offset = fx2.Offset;
+                var fetch = fx2.Fetch;
+                var usarPaginacion = fx2.UsarPaginacion;
+                var orderByCol = fx2.OrderByCol;
+                var orderDir = fx2.OrderDir;
 
                 const string sqlCount = @"
             select count(1)
@@ -1187,6 +1186,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(ex.Message);
             }
         }
+
 
 
         /// <summary>
@@ -1322,6 +1322,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
             var usarPaginacion = fetch > 0;
 
             return (fx.Cedula, fx.Texto, fx.Like, offset, fetch, usarPaginacion);
+        }
+        private static (string Cedula,string? Texto,string? Like,int Offset,int Fetch,bool UsarPaginacion,string OrderByCol,string OrderDir) ResolveCommonBlock(FiltrosLazyLoadData filtros,IReadOnlyDictionary<string, string> sortWhitelist,string defaultSortCol)
+        {
+            var common = GetCommonFx(filtros);
+
+            var cedula = common.Cedula;
+            var texto = common.Texto;
+            var like = common.Like;
+            var offset = common.Offset;
+            var fetch = common.Fetch;
+            var usarPaginacion = common.UsarPaginacion;
+
+            var sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
+
+            var orderByCol = sortWhitelist.TryGetValue(sf, out var col)
+                ? col
+                : defaultSortCol;
+
+            var orderDir = (filtros.sortOrder == 1) ? "ASC" : "DESC";
+
+            return (cedula, texto, like, offset, fetch, usarPaginacion, orderByCol, orderDir);
         }
 
 
