@@ -591,62 +591,39 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
         /// <returns></returns>
         public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_Fiadores_Lista_Obtener(int CodEmpresa, string parametros, bool soloOperacionesAtrasadas)
         {
-            FiltrosLazyLoadData filtros;
-            try
-            {
-                filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(parametros) ?? new FiltrosLazyLoadData();
-            }
-            catch (JsonException jex)
-            {
-                return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(jex.Message);
-            }
+            var response = PrepareListaConCedula<CoControlSegFiadorDto>(
+                CodEmpresa, parametros,
+                out var conn, out var filtros, out var fx);
+            if (response.Code != 0 || string.IsNullOrWhiteSpace(fx.Cedula))
+                return response;
 
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            var response = new ErrorDto<TablasListaGenericaModel>
+            using (conn)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new TablasListaGenericaModel
+                try
                 {
-                    total = 0,
-                    lista = new List<CoControlSegFiadorDto>()
-                }
-            };
+                    var cedula = fx.Cedula;
+                    var texto = fx.Texto;
+                    var like = fx.Like;
 
-            try
-            {
-                var fx = ParseFiltrosBasicos(filtros);
+                    var offset = fx.Offset;
+                    var fetch = fx.Fetch;
+                    var usarPaginacion = fetch > 0;
 
-                if (string.IsNullOrWhiteSpace(fx.Cedula))
-                {
-                    response.Result.total = 0;
-                    response.Result.lista = new List<CoControlSegFiadorDto>();
-                    return response;
-                }
+                    string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                    string orderByCol = sf switch
+                    {
+                        "id_solicitud" => "id_solicitud",
+                        "cedula" => "cedula",
+                        "nombre" => "nombre",
+                        "estado_persona" => "estado_persona",
+                        "institucion" => "institucion",
+                        "estado_mora" => "estado_mora",
+                        _ => "id_solicitud"
+                    };
 
-                var cedula = fx.Cedula;
-                var texto = fx.Texto;
-                var like = fx.Like;
+                    string orderDir = (filtros.sortOrder == 1) ? "ASC" : "DESC";
 
-                var offset = fx.Offset;
-                var fetch = fx.Fetch;
-                var usarPaginacion = fetch > 0;
-                string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                string orderByCol = sf switch
-                {
-                    "id_solicitud" => "id_solicitud",
-                    "cedula" => "cedula",
-                    "nombre" => "nombre",
-                    "estado_persona" => "estado_persona",
-                    "institucion" => "institucion",
-                    "estado_mora" => "estado_mora",
-                    _ => "id_solicitud"
-                };
-
-                string orderDir = (filtros.sortOrder == 1) ? "ASC" : "DESC";
-
-                const string sqlGrouped = @"
+                    const string sqlGrouped = @"
             select
                 isnull(M.ESTADO,'') as estado_mora,
                 F.Id_Solicitud as id_solicitud,
@@ -680,50 +657,53 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 E.descripcion,
                 I.descripcion";
 
-                var sqlCount = @"
+                    var sqlCount = @"
             select count(1)
             from (
             " + sqlGrouped + @"
             ) x;";
+                    response.Result ??= new TablasListaGenericaModel { total = 0, lista = new List<CoControlSegFiadorDto>() };
 
-                response.Result.total = conn.QuerySingle<int>(sqlCount, new
-                {
-                    cedula,
-                    soloOperacionesAtrasadas = soloOperacionesAtrasadas ? 1 : 0,
-                    texto,
-                    like
-                });
+                    response.Result.total = conn.QuerySingle<int>(sqlCount, new
+                    {
+                        cedula,
+                        soloOperacionesAtrasadas = soloOperacionesAtrasadas ? 1 : 0,
+                        texto,
+                        like
+                    });
 
-                var sqlLista = @"
+                    var sqlLista = @"
             select *
             from (
             " + sqlGrouped + @"
             ) t
             order by " + orderByCol + " " + orderDir;
 
-                if (usarPaginacion)
-                {
-                    sqlLista += @"
+                    if (usarPaginacion)
+                    {
+                        sqlLista += @"
             offset @offset rows fetch next @fetch rows only";
+                    }
+
+                    response.Result.lista = conn.Query<CoControlSegFiadorDto>(sqlLista, new
+                    {
+                        cedula,
+                        soloOperacionesAtrasadas = soloOperacionesAtrasadas ? 1 : 0,
+                        texto,
+                        like,
+                        offset,
+                        fetch
+                    }).ToList();
+
+                    return response;
                 }
-
-                response.Result.lista = conn.Query<CoControlSegFiadorDto>(sqlLista, new
+                catch (SqlException ex)
                 {
-                    cedula,
-                    soloOperacionesAtrasadas = soloOperacionesAtrasadas ? 1 : 0,
-                    texto,
-                    like,
-                    offset,
-                    fetch
-                }).ToList();
-
-                return response;
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(ex.Message);
+                    return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(ex.Message);
+                }
             }
         }
+
         /// <summary>
         /// Exporta lista de fiadores.
         /// </summary>
@@ -1080,6 +1060,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                     lista = new List<CoControlSegHistDetalleDto>()
                 }
             };
+            response.Result ??= new TablasListaGenericaModel
+            {
+                total = 0,
+                lista = new List<CoControlSegHistDetalleDto>()
+            };
 
             try
             {
@@ -1099,6 +1084,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 var offset = fx.Offset;
                 var fetch = fx.Fetch;
                 var usarPaginacion = fetch > 0;
+
                 string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
                 string orderByCol = sf switch
                 {
@@ -1111,6 +1097,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                     "estado_actual" => "estado_actual",
                     _ => "operacion"
                 };
+
                 string orderDir = (filtros.sortOrder == 1) ? "ASC" : "DESC";
 
                 const string sqlCount = @"
@@ -1174,7 +1161,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 if (usarPaginacion)
                 {
                     sql += @"
-            offset @offset rows fetch next @fetch rows only";
+                offset @offset rows fetch next @fetch rows only";
                 }
 
                 response.Result.lista = conn.Query<CoControlSegHistDetalleDto>(sql, new
@@ -1193,6 +1180,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(ex.Message);
             }
         }
+
         /// <summary>
         /// Exporta historial - detalle de operaciones.
         /// </summary>
@@ -1267,6 +1255,56 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
             var offset = (fetch > 0) ? (pagina * fetch) : 0;
 
             return (cedula, hasTexto ? texto : null, like, pagina, fetch, offset);
+        }
+        private ErrorDto<TablasListaGenericaModel> PrepareListaConCedula<TDto>(
+            int codEmpresa,
+            string parametros,
+            out SqlConnection conn,
+            out FiltrosLazyLoadData filtros,
+            out (string Cedula, string? Texto, string? Like, int Pagina, int Fetch, int Offset) fx)
+        {
+            conn = null!;
+            filtros = new FiltrosLazyLoadData();
+            fx = default;
+
+            try
+            {
+                filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(parametros) ?? new FiltrosLazyLoadData();
+            }
+            catch (JsonException jex)
+            {
+                return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(jex.Message);
+            }
+
+            conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
+            var response = new ErrorDto<TablasListaGenericaModel>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new TablasListaGenericaModel
+                {
+                    total = 0,
+                    lista = new List<TDto>()
+                }
+            };
+            response.Result ??= new TablasListaGenericaModel
+            {
+                total = 0,
+                lista = new List<TDto>()
+            };
+
+            fx = ParseFiltrosBasicos(filtros);
+
+            if (string.IsNullOrWhiteSpace(fx.Cedula))
+            {
+                response.Result.total = 0;
+                response.Result.lista = new List<TDto>();
+                conn.Dispose();
+                return response;
+            }
+
+            return response;
         }
 
     }
