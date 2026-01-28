@@ -7,8 +7,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
     public class FrmCntXTiposAsientosDb
     {
-        private readonly PortalDB _portalDb;
-        private readonly MSecurityMainDb _mSecurityMainDb;
+        private readonly PortalDB _portalDB;
+        private readonly MSecurityMainDb _mSecurityMain;
 
         public FrmCntXTiposAsientosDb(IConfiguration config)
             : this(
@@ -19,8 +19,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         public FrmCntXTiposAsientosDb(PortalDB portalDb, MSecurityMainDb mProGrxMain)
         {
-            _portalDb = portalDb;
-            _mSecurityMainDb = mProGrxMain;
+            _portalDB = portalDb;
+            _mSecurityMain = mProGrxMain;
         }
 
         /// <summary>
@@ -33,7 +33,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         {
             const string query = @"select tipo_asiento,descripcion,activo,consecutivo 
                 from CntX_Tipos_Asientos where COD_CONTABILIDAD = @codConta order by descripcion";
-            return DbHelper.ExecuteListQuery<CntXTiposAsientosData>(_portalDb, codEmpresa, query, new { codConta });
+            return DbHelper.ExecuteListQuery<CntXTiposAsientosData>(_portalDB, codEmpresa, query, new { codConta });
         }
 
         /// <summary>
@@ -51,10 +51,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 where tipo_asiento = @TipoAsiento and COD_CONTABILIDAD = @CodConta;";
 
             int total = DbHelper.ExecuteSingleQuery(
-                _portalDb,
-                codEmpresa,
-                sqlExists,
-                0,
+                _portalDB, codEmpresa, sqlExists, 0,
                 new
                 {
                     TipoAsiento = request.tipo_asiento,
@@ -69,9 +66,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 values (@TipoAsiento, @CodConta, @Descripcion, @Activo, @Consecutivo);";
 
                 var respInsert = DbHelper.ExecuteNonQuery(
-                    _portalDb,
-                    codEmpresa,
-                    sqlInsert,
+                    _portalDB, codEmpresa, sqlInsert,
                     new
                     {
                         TipoAsiento = (request.tipo_asiento ?? string.Empty).ToUpperInvariant(),
@@ -82,10 +77,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     }
                 );
 
-                if (respInsert != null && respInsert.Code < 0)
-                    return respInsert;
+                if (respInsert != null && respInsert.Code < 0) { return respInsert; }
 
-                _mSecurityMainDb.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
+                _mSecurityMain.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
                 {
                     EmpresaId = codEmpresa,
                     Usuario = usuario,
@@ -103,7 +97,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                  where COD_CONTABILIDAD = @CodContabilidad and tipo_asiento = @TipoAsiento;";
 
                 var respUpdate = DbHelper.ExecuteNonQuery(
-                    _portalDb,
+                    _portalDB,
                     codEmpresa,
                     sqlUpdate,
                     new
@@ -116,8 +110,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     }
                 );
 
-                if (respUpdate != null && respUpdate.Code < 0)
-                    return respUpdate;
+                if (respUpdate != null && respUpdate.Code < 0) { return respUpdate; }
 
                 return new ErrorDto { Code = 0, Description = "Tipo de asiento actualizado satisfactoriamente." };
             }
@@ -137,9 +130,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 tipo_asiento = @TipoAsiento and COD_CONTABILIDAD = @CodConta;";
 
             var respDelete = DbHelper.ExecuteNonQuery(
-                _portalDb,
-                codEmpresa,
-                sqlDelete,
+                _portalDB, codEmpresa,  sqlDelete,
                 new
                 {
                     TipoAsiento = tipoAsiento,
@@ -147,10 +138,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 }
             );
 
-            if (respDelete != null && respDelete.Code < 0)
-                return respDelete;
+            if (respDelete != null && respDelete.Code < 0) { return respDelete; }
 
-            _mSecurityMainDb.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
+            _mSecurityMain.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
             {
                 EmpresaId = codEmpresa,
                 Usuario = usuario,
@@ -174,9 +164,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             const string sqlDelete = @"exec spCntX_Tipos_Asientos_Default @CodConta, @Usuario;";
 
             var respDelete = DbHelper.ExecuteNonQuery(
-                _portalDb,
-                codEmpresa,
-                sqlDelete,
+                _portalDB, codEmpresa, sqlDelete,
                 new
                 {
                     Usuario = usuario,
@@ -187,7 +175,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (respDelete != null && respDelete.Code < 0)
                 return respDelete;
 
-            _mSecurityMainDb.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
+            _mSecurityMain.Bitacora(new Galileo.Models.Security.BitacoraInsertarDto
             {
                 EmpresaId = codEmpresa,
                 Usuario = usuario,
