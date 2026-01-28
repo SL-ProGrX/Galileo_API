@@ -8,6 +8,7 @@ namespace Galileo.DataBaseTier
     public class EmpresaAccessFilter : IAsyncActionFilter
     {
         private readonly PerfilUsuarioDB _seguridad;
+        private const string CodEmpresaKey = "CodEmpresa";
 
         public EmpresaAccessFilter(IConfiguration config)
         {
@@ -58,7 +59,7 @@ namespace Galileo.DataBaseTier
             }
 
             // Persistir el valor validado para uso en controllers/servicios
-            context.HttpContext.Items["CodEmpresa"] = codEmpresa.Value;
+            context.HttpContext.Items[CodEmpresaKey] = codEmpresa.Value;
             context.HttpContext.Items["UserId"] = userId;
 
             // Opcional pero recomendado: sobreescribir argumentos para evitar que se use el valor original del request
@@ -87,15 +88,14 @@ namespace Galileo.DataBaseTier
         private static void OverwriteEmpresaArgument(ActionExecutingContext context, int codEmpresa)
         {
             // Keys comunes en actions
-            var keys = new[] { "empresaCod", "codEmpresa", "CodEmpresa" };
+            var keys = new[] { "empresaCod", "codEmpresa", CodEmpresaKey };
 
-            foreach (var key in keys)
-            {
-                if (context.ActionArguments.ContainsKey(key))
-                    context.ActionArguments[key] = codEmpresa;
-            }
+            keys
+                .Where(key => context.ActionArguments.ContainsKey(key))
+                .ToList()
+                .ForEach(key => context.ActionArguments[key] = codEmpresa);
 
-            // Si viene dentro de un DTO, no lo reescribimos (evitamos reflection set). En ese caso usa HttpContext.Items["CodEmpresa"].
+            // Si viene dentro de un DTO, no lo reescribimos (evitamos reflection set). En ese caso usa HttpContext.Items[CodEmpresaKey].
         }
 
         private static bool TryGetIntFromArguments(ActionExecutingContext context, string key, out int value)
