@@ -61,41 +61,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
             FROM dbo.CXC_FACTURAS_ESTADOS
         " + SqlWhereFilters + ";";
 
-        private static (string OrderBy, bool Desc) SanitizeOrderBy(string? sortField, int? sortOrder)
+        private static readonly IReadOnlyDictionary<string, string> OrderMap =
+           new Dictionary<string, string>
+           {
+               ["factura_estado"] = "Factura_Estado",
+               ["descripcion"] = "descripcion",
+               ["proceso"] = "Proceso",
+               ["accion"] = "Accion",
+               ["activo"] = "Activo"
+           };
+
+        private static string BuildSafeOrderBy(string? sortField, int? sortOrder)
         {
-            var field = (sortField ?? string.Empty).Trim().ToLowerInvariant();
-
-            // Mapear SIEMPRE a nombres REALES de columnas para ORDER BY seguro
-            var orderBy = field switch
-            {
-                "factura_estado" => "Factura_Estado",
-                "descripcion" => "descripcion",
-                "proceso" => "Proceso",
-                "accion" => "Accion",
-                "activo" => "Activo",     // corregido: no "activa"
-                _ => "Factura_Estado"
-            };
-
-            // Verifica tu UI: aquí se asume 1 = DESC (por lo que ya usabas).
-            var desc = (sortOrder == 1);
-            return (orderBy, desc);
+            var key = (sortField ?? string.Empty).Trim().ToLowerInvariant();
+            var column = OrderMap.TryGetValue(key, out var mapped) ? mapped : "Factura_Estado";
+            var direction = (sortOrder == 1) ? "DESC" : "ASC"; // Ajusta si tu UI usa otro convenio
+            return $" ORDER BY {column} {direction}";
         }
 
-        private static string BuildOrderBy(string orderBy, bool desc)
-        {
-            // `orderBy` ya viene del whitelist de SanitizeOrderBy
-            var direction = desc ? "DESC" : "ASC";
-            return orderBy switch
-            {
-                "Factura_Estado" => $" ORDER BY Factura_Estado {direction}",
-                "descripcion" => $" ORDER BY descripcion {direction}",
-                "Proceso" => $" ORDER BY Proceso {direction}",
-                "Accion" => $" ORDER BY Accion {direction}",
-                "Activo" => $" ORDER BY Activo {direction}",
-                _ => $" ORDER BY Factura_Estado {direction}"
-            };
-        }
-         
 
         /// <summary>
         /// Consulta de listado de estado de factura
@@ -118,7 +101,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                 var fetch = filtros.paginacion;
                 var usarPaginacion = fetch > 0 && !esExportar;
 
-                var (orderBy, desc) = SanitizeOrderBy(filtros.sortField, filtros.sortOrder);
+                var orderClause = BuildSafeOrderBy(filtros.sortField, filtros.sortOrder);
 
                 var baseParams = new
                 {
@@ -131,19 +114,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
               
                 var total = conn.QuerySingle<int>(SqlCount, baseParams);
 
-                 
                 var sqlList = new StringBuilder(SqlSelectBase)
-                    .Append(BuildOrderBy(orderBy, desc))
+                    .Append(orderClause)
                     .Append(usarPaginacion ? " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;" : ";")
                     .ToString();
 
                 var lista = conn.Query<CxCFacturaEstadosData>(sqlList, baseParams).ToList();
 
-                return new CxCFacturaEstadosLista
-                {
-                    total = total,
-                    lista = lista
-                };
+                return new CxCFacturaEstadosLista { total = total, lista = lista };
             });
 
         }
