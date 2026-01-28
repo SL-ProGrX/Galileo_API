@@ -13,10 +13,14 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
         {
         }
 
-        public ErrorDto<List<CajasUserDto>> Cajas_Usuario_Obtener(int codEmpresa, string usuario)
+        public ErrorDto<List<PolizaPsdDto>> Poliza_PSD_Consulta(int codEmpresa,DateTime fechaCorte, string usuario,string tipo)
         {
-            return DbfrmCR_PolizasPSDDb.Cajas_Usuario_Obtener(codEmpresa, usuario
-            );
+            return DbfrmCR_PolizasPSDDb.Poliza_PSD_Consulta(codEmpresa,fechaCorte,usuario,tipo);
+        }
+
+        public ErrorDto<bool> Poliza_PSD_Genera(int codEmpresa,DateTime fechaCorte,string usuario)
+        {
+            return DbfrmCR_PolizasPSDDb.Poliza_PSD_Genera(codEmpresa,fechaCorte,usuario);
         }
 
     }
