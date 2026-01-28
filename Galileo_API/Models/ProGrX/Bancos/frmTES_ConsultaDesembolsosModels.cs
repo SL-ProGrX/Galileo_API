@@ -19,7 +19,7 @@ namespace Galileo.Models.TES
         public string? Ref01 { get; set; }
         public string? Ref02 { get; set; }
         public string? Ref03 { get; set; }
-        public bool ChkProtegido { get; set; }
+        public bool ChkProtegido { get; set; } = false;
         public string? Usuario { get; set; }
         public string? TipoUsuario { get; set; }
         //Apuntando a tabla
