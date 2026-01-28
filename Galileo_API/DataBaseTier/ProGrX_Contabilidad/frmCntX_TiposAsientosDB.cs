@@ -11,9 +11,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         private readonly MSecurityMainDb _mSecurityMainDb;
 
         public FrmCntXTiposAsientosDb(IConfiguration config)
-            : this(new PortalDB(config), new MSecurityMainDb(config))
-        {
-        }
+            : this(
+                  new PortalDB(config), 
+                  new MSecurityMainDb(config)
+            )
+        { }
 
         public FrmCntXTiposAsientosDb(PortalDB portalDb, MSecurityMainDb mProGrxMain)
         {
@@ -29,8 +31,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto<List<CntXTiposAsientosData>> CntXTiposAsientos_Obtener(int codEmpresa, int codConta)
         {
-            const string query = @"select tipo_asiento,descripcion,activo,consecutivo from CntX_Tipos_Asientos
-                where COD_CONTABILIDAD = @codConta order by descripcion";
+            const string query = @"select tipo_asiento,descripcion,activo,consecutivo 
+                from CntX_Tipos_Asientos where COD_CONTABILIDAD = @codConta order by descripcion";
             return DbHelper.ExecuteListQuery<CntXTiposAsientosData>(_portalDb, codEmpresa, query, new { codConta });
         }
 
@@ -64,8 +66,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             {
                 const string sqlInsert = @"
                 insert into CntX_Tipos_Asientos(tipo_asiento,COD_CONTABILIDAD,descripcion,activo,consecutivo) 
-                values
-                (@TipoAsiento, @CodConta, @Descripcion, @Activo, @Consecutivo);";
+                values (@TipoAsiento, @CodConta, @Descripcion, @Activo, @Consecutivo);";
 
                 var respInsert = DbHelper.ExecuteNonQuery(
                     _portalDb,
@@ -97,13 +98,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
             else //Actualizar
             {
-                const string sqlUpdate = @"
-                update CntX_Tipos_Asientos
-                   set descripcion = @Descripcion,
-                       activo = @Activo,
-                       consecutivo = @Consecutivo
-                 where COD_CONTABILIDAD = @CodContabilidad
-                   and tipo_asiento = @TipoAsiento;";
+                const string sqlUpdate = @"update CntX_Tipos_Asientos
+                   set descripcion = @Descripcion, activo = @Activo, consecutivo = @Consecutivo
+                 where COD_CONTABILIDAD = @CodContabilidad and tipo_asiento = @TipoAsiento;";
 
                 var respUpdate = DbHelper.ExecuteNonQuery(
                     _portalDb,
@@ -136,8 +133,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto CntXTiposAsientos_Eliminar(int codEmpresa, int codConta, string usuario, string tipoAsiento)
         {
-            const string sqlDelete = @"delete from CntX_Tipos_Asientos
-                where tipo_asiento = @TipoAsiento and COD_CONTABILIDAD = @CodConta;";
+            const string sqlDelete = @"delete from CntX_Tipos_Asientos where 
+                tipo_asiento = @TipoAsiento and COD_CONTABILIDAD = @CodConta;";
 
             var respDelete = DbHelper.ExecuteNonQuery(
                 _portalDb,
