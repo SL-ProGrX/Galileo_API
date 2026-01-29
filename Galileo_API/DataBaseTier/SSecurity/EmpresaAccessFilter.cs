@@ -8,6 +8,7 @@ namespace Galileo.DataBaseTier
     public class EmpresaAccessFilter : IAsyncActionFilter
     {
         private readonly PerfilUsuarioDB _seguridad;
+        private const string CodEmpresaKey = "CodEmpresa";
 
         public EmpresaAccessFilter(IConfiguration config)
         {
@@ -16,14 +17,9 @@ namespace Galileo.DataBaseTier
 
         public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
         {
-            // si no está autenticado, lo gestiona [Authorize]
-            if (!(context.HttpContext.User?.Identity?.IsAuthenticated ?? false))
-            {
-                await next();
-                return;
-            }
+            var isAuthenticated = context.HttpContext.User?.Identity?.IsAuthenticated ?? false;
 
-            // sacar CodEmpresa del request
+            // sacar CodEmpresa del request (query/route/body)
             var codEmpresa = TryGetCodEmpresa(context);
             if (codEmpresa is null)
             {
@@ -31,9 +27,21 @@ namespace Galileo.DataBaseTier
                 return;
             }
 
+            // Si el endpoint usa empresa, no permitas acceso sin autenticación
+            if (!isAuthenticated)
+            {
+                context.Result = new UnauthorizedResult();
+                return;
+            }
+
             // sacar userId del token (sub)
-            var userIdStr = context.HttpContext.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
-                         ?? context.HttpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? userIdStr = null;
+            var user = context.HttpContext.User;
+            if (user != null)
+            {
+                userIdStr = user.FindFirst(JwtRegisteredClaimNames.Sub)?.Value
+                         ?? user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            }
 
             Console.WriteLine($"EmpresaAccessFilter -> sub={userIdStr}, codEmpresa={codEmpresa}");
 
@@ -49,6 +57,13 @@ namespace Galileo.DataBaseTier
                 context.Result = new ForbidResult();
                 return;
             }
+
+            // Persistir el valor validado para uso en controllers/servicios
+            context.HttpContext.Items[CodEmpresaKey] = codEmpresa.Value;
+            context.HttpContext.Items["UserId"] = userId;
+
+            // Opcional pero recomendado: sobreescribir argumentos para evitar que se use el valor original del request
+            OverwriteEmpresaArgument(context, codEmpresa.Value);
 
             await next();
         }
@@ -70,13 +85,31 @@ namespace Galileo.DataBaseTier
             return null;
         }
 
+        private static void OverwriteEmpresaArgument(ActionExecutingContext context, int codEmpresa)
+        {
+            // Keys comunes en actions
+            var keys = new[] { "empresaCod", "codEmpresa", CodEmpresaKey };
+
+            keys
+                .Where(key => context.ActionArguments.ContainsKey(key))
+                .ToList()
+                .ForEach(key => context.ActionArguments[key] = codEmpresa);
+
+            // Si viene dentro de un DTO, no lo reescribimos (evitamos reflection set). En ese caso usa HttpContext.Items[CodEmpresaKey].
+        }
+
         private static bool TryGetIntFromArguments(ActionExecutingContext context, string key, out int value)
         {
-            if (context.ActionArguments.TryGetValue(key, out var v) && v is int i)
+            if (context.ActionArguments.TryGetValue(key, out var v) && v is not null)
             {
-                value = i;
-                return true;
+                var converted = TryConvertToInt(v);
+                if (converted.HasValue)
+                {
+                    value = converted.Value;
+                    return true;
+                }
             }
+
             value = 0;
             return false;
         }
