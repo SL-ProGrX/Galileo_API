@@ -423,7 +423,6 @@ namespace Galileo_API.DataBaseTier
 
         public ErrorDto ConsultaCuentaSinpe(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta)
         {
-            var response = new ErrorDto();
             var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, cuenta.usuario);
 
             var context = CrearContexto(parametrosSinpe);
@@ -439,8 +438,8 @@ namespace Galileo_API.DataBaseTier
 
                 if(cuentaSinpe.Errors != null && cuentaSinpe.Errors.Length > 0)
                 {
-                    var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, (int)cuentaSinpe.Errors[0].Code!).Result!;
-                    return DbHelper.ErrorResponse(rechazo, (int)cuentaSinpe.Errors[0].Code!);
+                    var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, cuentaSinpe.Errors[0].Code!).Result!;
+                    return DbHelper.ErrorResponse(rechazo, cuentaSinpe.Errors[0].Code!);
                 }
 
                 if (cuentaSinpe.Account != null && cuentaSinpe.Account.State != null)
