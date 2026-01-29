@@ -102,7 +102,7 @@
     public class CxcConceptoIncobrableParams
     {
         public string Cod_Concepto { get; set; } = string.Empty;
-        public short Indicador { get; set; }
+        public short? Indicador { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string Cod_Unidad { get; set; } = string.Empty;
         public string Cod_Centro_Costo { get; set; } = string.Empty;
