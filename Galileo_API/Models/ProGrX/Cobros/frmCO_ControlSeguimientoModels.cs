@@ -8,6 +8,7 @@ namespace Galileo.Models.ProGrX.Cobros.ControlSeguimiento
         public int cod_seg { get; set; }
         public DateTime? fecha { get; set; }
         public int? tiempo_resolucion { get; set; }
+        public DateTime? vence { get; set; }
         public string? cod_gestion { get; set; }
         public string? gestion { get; set; }
         public string? notas { get; set; }

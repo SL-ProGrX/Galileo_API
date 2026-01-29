@@ -144,7 +144,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
             try
             {
                 cod_gestion = (cod_gestion ?? string.Empty).Trim();
-                usuario = (usuario ?? string.Empty).Trim();
+                usuario = (usuario ?? string.Empty).Trim().ToUpperInvariant();
 
                 const string sql = @"
                     select 
@@ -190,7 +190,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
 
             try
             {
-                usuario = (usuario ?? string.Empty).Trim();
+                usuario = (usuario ?? string.Empty).Trim().ToUpperInvariant();
 
                 int dias = 30;
 
@@ -224,7 +224,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_HistGestiones_Lista_Obtener(int CodEmpresa,string parametros)
+        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_HistGestiones_Lista_Obtener(int CodEmpresa, string parametros)
         {
             FiltrosLazyLoadData filtros;
             try
@@ -261,6 +261,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                     response.Result.lista = new List<CoControlSegHistGestionDto>();
                     return response;
                 }
+
                 var texto = ExtractKeyFromFiltro(filtros.filtro, FiltroTexto);
                 texto = (texto ?? string.Empty).Trim();
                 bool hasTexto = !string.IsNullOrWhiteSpace(texto);
@@ -270,8 +271,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 int fetch = filtros.paginacion < 0 ? 0 : filtros.paginacion;
                 bool usarPaginacion = fetch > 0;
                 int offset = usarPaginacion ? (pagina * fetch) : 0;
+
                 string sf = (filtros.sortField ?? string.Empty).Trim().ToLowerInvariant();
                 int sortOrder = filtros.sortOrder == 1 ? 1 : 0;
+
                 const string sqlCount = @"
             select count(1)
             from CBR_Seguimiento S
@@ -289,11 +292,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                     texto = hasTexto ? texto : null,
                     like
                 });
+
                 var sql = @"
             select
                 S.cod_seg,
                 S.fecha,
                 S.tiempo_resolucion,
+
+                dateadd(day, isnull(S.tiempo_resolucion,0), S.fecha) as vence,
+
                 rtrim(S.cod_gestion) as cod_gestion,
                 isnull(rtrim(G.descripcion),'') as gestion,
                 S.notas,
@@ -325,11 +332,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 case when @sf = 'fecha'    and @so = 1 then S.fecha    end asc,
                 case when @sf = 'fecha'    and @so = 0 then S.fecha    end desc,
 
+                case when @sf = 'vence'    and @so = 1 then dateadd(day, isnull(S.tiempo_resolucion,0), S.fecha) end asc,
+                case when @sf = 'vence'    and @so = 0 then dateadd(day, isnull(S.tiempo_resolucion,0), S.fecha) end desc,
+
                 case when @sf = 'usuario'  and @so = 1 then S.usuario  end asc,
                 case when @sf = 'usuario'  and @so = 0 then S.usuario  end desc,
 
                 case when @sf = 'monto'    and @so = 1 then S.monto    end asc,
                 case when @sf = 'monto'    and @so = 0 then S.monto    end desc,
+
+                case when @sf = 'notas'    and @so = 1 then S.notas    end asc,
+                case when @sf = 'notas'    and @so = 0 then S.notas    end desc,
 
                 S.cod_seg desc";
 
@@ -358,6 +371,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(ex.Message);
             }
         }
+
         /// <summary>
         /// Exporta historial de gestiones.
         /// </summary>
@@ -887,6 +901,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
         /// <param name="CodEmpresa"></param>
         /// <param name="data"></param>
         /// <returns></returns>
+        /// <summary>
         public ErrorDto CO_ControlSeguimiento_Registrar(int CodEmpresa, CoControlSegRegistrarDto data)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
@@ -894,7 +909,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
             try
             {
                 var cedula = (data.cedula ?? string.Empty).Trim();
-                var usuario = (data.usuario ?? string.Empty).Trim();
+                var usuario = (data.usuario ?? string.Empty).Trim().ToUpperInvariant();
                 var codGestion = (data.cod_gestion ?? string.Empty).Trim();
                 var notas = (data.notas ?? string.Empty).Trim();
                 var oficina = (data.oficina ?? string.Empty).Trim();
@@ -911,42 +926,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 if (string.IsNullOrWhiteSpace(notas))
                     return DbHelper.ErrorResponse("No se especificó ninguna observación...");
 
-                const string sqlUsr = @"select isnull(count(*),0) from cbr_usuarios where usuario = @usuario and estado = 1;";
-                var usrOk = conn.QueryFirstOrDefault<int>(sqlUsr, new { usuario });
-                if (usrOk <= 0)
-                    return DbHelper.ErrorResponse("El usuario actual no se encuentra activo...");
+                if (!data.vence.HasValue)
+                    return DbHelper.ErrorResponse("Debe indicar la fecha de vencimiento.");
 
-                const string sqlGest = @"select isnull(count(*),0) from cbr_gestiones where cod_gestion = @cod and estado = 1 and nivel_gestion = 'U';";
-                var gestOk = conn.QueryFirstOrDefault<int>(sqlGest, new { cod = codGestion });
-                if (gestOk <= 0)
-                    return DbHelper.ErrorResponse("La gestión actual no se encuentra activa...");
+                var pre = ValidarPrecondicionesRegistro(conn, cedula, usuario, codGestion);
+                if (pre != null) return pre;
 
-                const string sqlP05 = @"select valor from cbr_parametros where cod_parametro = '05';";
-                var p05 = (conn.QueryFirstOrDefault<string>(sqlP05) ?? string.Empty).Trim();
-                if (p05.Length == 0 || p05.Substring(0, 1).ToUpperInvariant() != "S")
-                {
-                    const string sqlAsg = @"select isnull(count(*),0) from cbr_asignacion where usuario = @usuario and cedula = @cedula;";
-                    var asgOk = conn.QueryFirstOrDefault<int>(sqlAsg, new { usuario, cedula });
-                    if (asgOk <= 0)
-                        return DbHelper.ErrorResponse("Este expediente no se encuentra asignado al usuario actual, verifique...");
-                }
+                var montoResult = ResolverMontoGestion(conn, codGestion, data.monto, out var montoFinal);
+                if (montoResult != null) return montoResult;
 
-                const string sqlAcc = @"select dbo.fxCBRGestionUsuario(@cod, @usuario) as acceso;";
-                var acceso = conn.QueryFirstOrDefault<int>(sqlAcc, new { cod = codGestion, usuario });
-                if (acceso == 0)
-                    return DbHelper.ErrorResponse("El usuario no tiene acceso a esta gestión");
-
+                var venceError = ValidarRangoVencimiento(conn, usuario, data.vence.Value.Date);
+                if (venceError != null) return venceError;
                 var p = new DynamicParameters();
                 p.Add("@Cedula", cedula);
                 p.Add("@Usuario", usuario);
                 p.Add("@CodGestion", codGestion);
-                if (!data.vence.HasValue)
-                    return DbHelper.ErrorResponse("Debe indicar la fecha de vencimiento.");
-
                 p.Add("@Vence", data.vence.Value.Date);
                 p.Add("@Notas", notas);
-                p.Add("@Oficina", oficina);
-                p.Add("@Monto", data.monto);
+                p.Add("@Oficina", string.IsNullOrWhiteSpace(oficina) ? null : oficina);
+                p.Add("@Monto", montoFinal);
                 p.Add("@Operacion", data.operacion);
                 p.Add("@Causa", (data.cod_causa ?? string.Empty).Trim());
                 p.Add("@Arreglo", (data.cod_arreglo ?? string.Empty).Trim());
@@ -956,8 +954,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
-                    Usuario = usuario.ToUpperInvariant(),
-                    DetalleMovimiento = $"SGT Registrar: {cedula} / Gestion {codGestion} / Vence {data.vence:yyyy-MM-dd} / Oper {data.operacion}",
+                    Usuario = usuario,
+                    DetalleMovimiento = $"SGT Registrar: {cedula} / Gestion {codGestion} / Vence {data.vence:yyyy-MM-dd}",
                     Movimiento = "REGISTRA-WEB",
                     Modulo = vModulo
                 });
@@ -991,19 +989,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 {
                     response.Result.texto = "";
                     response.Result.estado_tag = "N";
+                    response.Result.operaciones_activas = 0;
+                    response.Result.operaciones_mora_activa = 0;
                     return response;
                 }
 
                 const string sql = @"
-            select
-                isnull(count(distinct R.Id_Solicitud),0) as operaciones_activas,
-                isnull(sum(case when M.ESTADO = 'A' then 1 else 0 end),0) as operaciones_mora_activa
-            from Reg_Creditos R
-            left join MOROSIDAD M
-                   on R.Id_Solicitud = M.Id_Solicitud
-                  and M.Estado = 'A'
-            where R.cedula = @cedula
-              and R.estado = 'A';";
+                select
+                    isnull(count(distinct R.Id_Solicitud), 0) as operaciones_activas,
+                    isnull(count(distinct M.Id_Solicitud), 0) as operaciones_mora_activa
+                from Reg_Creditos R
+                left join MOROSIDAD M
+                       on M.Id_Solicitud = R.Id_Solicitud
+                      and M.Estado = 'A'
+                where R.cedula = @cedula
+                  and R.estado = 'A';";
 
                 var r = conn.QueryFirstOrDefault<dynamic>(sql, new { cedula });
 
@@ -1042,13 +1042,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
         /// <returns></returns>
-        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_HistDetalle_Lista_Obtener(int CodEmpresa,string parametros)
+        public ErrorDto<TablasListaGenericaModel> CO_ControlSeguimiento_HistDetalle_Lista_Obtener(int CodEmpresa, string parametros)
         {
             FiltrosLazyLoadData filtros;
             try
             {
-                filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(parametros)
-                          ?? new FiltrosLazyLoadData();
+                filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(parametros) ?? new FiltrosLazyLoadData();
             }
             catch (JsonException jex)
             {
@@ -1105,30 +1104,32 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 var usarPaginacion = fx2.UsarPaginacion;
                 var orderByCol = fx2.OrderByCol;
                 var orderDir = fx2.OrderDir;
+                const string sqlBase = @"
+            select
+                R.Id_Solicitud                 as operacion,
+                rtrim(isnull(R.CODIGO,''))     as codigo,
+                isnull(R.CUOTA,0)              as cuotas,
+                isnull(M.mora,0)               as mora,
+                isnull(R.SALDO,0)              as saldo,
+                isnull(R.AMORTIZA,0)           as abono,
+                rtrim(isnull(R.ESTADO,''))     as estado_actual
+            from Reg_Creditos R
+            left join MOROSIDAD M
+                   on R.Id_Solicitud = M.Id_Solicitud
+                  and M.Estado = 'A'
+            where R.CEDULA = @cedula
+              and R.ESTADO = 'A'
+              and (
+                   @texto is null
+                or cast(R.Id_Solicitud as nvarchar(50)) like @like
+                or isnull(R.CODIGO,'') like @like
+                or isnull(R.ESTADO,'') like @like
+              )";
 
-                const string sqlCount = @"
+                var sqlCount = @"
             select count(1)
             from (
-                select
-                    R.Id_Solicitud as operacion,
-                    rtrim(isnull(R.cod_linea,'')) as codigo,
-                    isnull(R.cuotas,0) as cuotas,
-                    isnull(M.mora,0) as mora,
-                    isnull(R.saldo,0) as saldo,
-                    isnull(R.abono,0) as abono,
-                    rtrim(isnull(R.estado,'')) as estado_actual
-                from Reg_Creditos R
-                left join MOROSIDAD M
-                       on R.Id_Solicitud = M.Id_Solicitud
-                      and M.Estado = 'A'
-                where R.cedula = @cedula
-                  and R.estado = 'A'
-                  and (
-                       @texto is null
-                    or cast(R.Id_Solicitud as nvarchar(50)) like @like
-                    or isnull(R.cod_linea,'') like @like
-                    or isnull(R.estado,'') like @like
-                  )
+            " + sqlBase + @"
             ) X;";
 
                 response.Result.total = conn.QuerySingle<int>(sqlCount, new
@@ -1141,33 +1142,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 var sql = @"
             select *
             from (
-                select
-                    R.Id_Solicitud as operacion,
-                    rtrim(isnull(R.cod_linea,'')) as codigo,
-                    isnull(R.cuotas,0) as cuotas,
-                    isnull(M.mora,0) as mora,
-                    isnull(R.saldo,0) as saldo,
-                    isnull(R.abono,0) as abono,
-                    rtrim(isnull(R.estado,'')) as estado_actual
-                from Reg_Creditos R
-                left join MOROSIDAD M
-                       on R.Id_Solicitud = M.Id_Solicitud
-                      and M.Estado = 'A'
-                where R.cedula = @cedula
-                  and R.estado = 'A'
-                  and (
-                       @texto is null
-                    or cast(R.Id_Solicitud as nvarchar(50)) like @like
-                    or isnull(R.cod_linea,'') like @like
-                    or isnull(R.estado,'') like @like
-                  )
+            " + sqlBase + @"
             ) T
             order by " + orderByCol + " " + orderDir;
 
                 if (usarPaginacion)
                 {
                     sql += @"
-                offset @offset rows fetch next @fetch rows only";
+            offset @offset rows fetch next @fetch rows only";
                 }
 
                 response.Result.lista = conn.Query<CoControlSegHistDetalleDto>(sql, new
@@ -1186,9 +1168,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
                 return DbHelper.CreateErrorResponse<TablasListaGenericaModel>(ex.Message);
             }
         }
-
-
-
         /// <summary>
         /// Exporta historial - detalle de operaciones.
         /// </summary>
@@ -1344,6 +1323,85 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
 
             return (cedula, texto, like, offset, fetch, usarPaginacion, orderByCol, orderDir);
         }
+        private ErrorDto? ValidarPrecondicionesRegistro(SqlConnection conn,string cedula,string usuario,string codGestion)
+        {
+            const string sqlUsr = @"select isnull(count(*),0) from cbr_usuarios where usuario=@usuario and estado=1;";
+            if (conn.QueryFirstOrDefault<int>(sqlUsr, new { usuario }) <= 0)
+                return DbHelper.ErrorResponse("El usuario actual no se encuentra activo...");
+
+            const string sqlGest = @"select isnull(count(*),0) from cbr_gestiones where cod_gestion=@cod and estado=1 and nivel_gestion='U';";
+            if (conn.QueryFirstOrDefault<int>(sqlGest, new { cod = codGestion }) <= 0)
+                return DbHelper.ErrorResponse("La gestión actual no se encuentra activa...");
+
+            const string sqlP05 = @"select valor from cbr_parametros where cod_parametro='05';";
+            var p05 = (conn.QueryFirstOrDefault<string>(sqlP05) ?? "").Trim();
+            if (p05.Length == 0 || p05[0] != 'S')
+            {
+                const string sqlAsg = @"select isnull(count(*),0) from cbr_asignacion where usuario=@usuario and cedula=@cedula;";
+                if (conn.QueryFirstOrDefault<int>(sqlAsg, new { usuario, cedula }) <= 0)
+                    return DbHelper.ErrorResponse("Este expediente no se encuentra asignado al usuario actual, verifique...");
+            }
+
+            const string sqlAcc = @"select dbo.fxCBRGestionUsuario(@cod,@usuario);";
+            if (conn.QueryFirstOrDefault<int>(sqlAcc, new { cod = codGestion, usuario }) == 0)
+                return DbHelper.ErrorResponse("El usuario no tiene acceso a esta gestión");
+
+            return null;
+        }
+        private ErrorDto? ResolverMontoGestion(SqlConnection conn,string codGestion,decimal? montoInput,out decimal montoFinal)
+        {
+            montoFinal = 0;
+
+            const string sql = @"
+            select 
+                isnull(monto,0) as monto,
+                isnull(modifica_usuario,0) as modifica_usuario,
+                isnull(modifica_desviacion,0) as modifica_desviacion
+            from cbr_gestiones
+            where estado = 1 and nivel_gestion = 'U' and cod_gestion = @cod;";
+
+            var g = conn.QueryFirstOrDefault<dynamic>(sql, new { cod = codGestion });
+
+            decimal baseMonto = Convert.ToDecimal(g?.monto ?? 0);
+            int modUsr = Convert.ToInt32(g?.modifica_usuario ?? 0);
+            decimal desv = Math.Abs(Convert.ToDecimal(g?.modifica_desviacion ?? 0));
+
+            if (modUsr == 0)
+            {
+                montoFinal = baseMonto;
+                return null;
+            }
+            if (!montoInput.HasValue)
+                return DbHelper.ErrorResponse("Debe indicar el monto.");
+
+            montoFinal = montoInput.Value;
+
+            if (montoFinal < baseMonto - desv)
+                return DbHelper.ErrorResponse("El monto es menor que la desviación mínima");
+
+            if (montoFinal > baseMonto + desv)
+                return DbHelper.ErrorResponse("El monto es mayor que la desviación máxima");
+
+            return null;
+        }
+        private static ErrorDto? ValidarRangoVencimiento( SqlConnection conn,string usuario,DateTime vence)
+        {
+            int dias = 30;
+
+            const string sqlP01 = @"select valor from cbr_parametros where cod_parametro='01';";
+            var p01 = (conn.QueryFirstOrDefault<string>(sqlP01) ?? string.Empty).Trim();
+            if (int.TryParse(p01, out var d) && d > 0) dias = d;
+            const string sqlUsr = @"select isnull(tiempo_resolucion_com,0) from cbr_usuarios where usuario=@usuario;";
+            var usrDias = conn.QueryFirstOrDefault<int>(sqlUsr, new { usuario });
+            if (usrDias > 0 && usrDias <= dias) dias = usrDias;
+            const string sqlHoy = @"select dbo.MyGetdate();";
+            var hoy = conn.QueryFirstOrDefault<DateTime>(sqlHoy).Date;
+            if (vence < hoy || vence > hoy.AddDays(dias))
+                return DbHelper.ErrorResponse($"La fecha de vencimiento debe estar entre {hoy:yyyy-MM-dd} y {hoy.AddDays(dias):yyyy-MM-dd}.");
+
+            return null;
+        }
+
 
 
     }
