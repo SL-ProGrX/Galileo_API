@@ -39,12 +39,12 @@
         public string Descripcion { get; set; } = string.Empty;
         public string? Cod_Cuenta { get; set; }
         public string? Cod_Cuenta_Salida { get; set; }
-        public short Requiere_Contrato { get; set; }
-        public short Requiere_Documento { get; set; }
-        public short Genera_Desembolso { get; set; }
-        public short Proceso_Descuento { get; set; }
+        public short? Requiere_Contrato { get; set; }
+        public short? Requiere_Documento { get; set; }
+        public short? Genera_Desembolso { get; set; }
+        public short? Proceso_Descuento { get; set; }
         public decimal? Monto_Max { get; set; }
-        public short Activo { get; set; }
+        public short? Activo { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
