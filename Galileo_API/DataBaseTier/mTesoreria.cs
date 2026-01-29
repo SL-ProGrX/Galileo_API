@@ -6,6 +6,7 @@ using Galileo.Models.ProGrX.Clientes;
 using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
+using Microsoft.ReportingServices.Diagnostics.Internal;
 using System.Data;
 using System.Text;
 
@@ -1117,6 +1118,139 @@ namespace Galileo.DataBaseTier
         private static ErrorDto Ok() => new ErrorDto { Code = 0, Description = "" };
         private static ErrorDto Error(int code, string description) =>
     new ErrorDto { Code = code, Description = description };
+
+
+        public ErrorDto<TesReporteTransferenciaDto> sbTesReporteTransferencia(SqlConnection connection, int CodEmpresa, int vBanco, long vTransac, string? vTipo = "C", string? vDocumento = "TE", string? vPlan = "-sp-")
+        {
+            
+            var resp = new ErrorDto<TesReporteTransferenciaDto>()
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new TesReporteTransferenciaDto()
+            };
+            decimal curMonto = 0;
+            long lngCasos = 0;
+            string strDivisa = "", vLetra = "";
+            try
+            {
+                string query = "";
+                query = $@"select cta as item,descripcion from Tes_Bancos where id_banco = @vBanco";
+                var banco = connection.QueryFirstOrDefault(query, new { vBanco });
+
+                if (banco != null)
+                {
+                    vLetra = "Sirva la Presente para saludarlo y a la vez solicitarle debitar de nuestra cuenta corriente"
+                        + " # " + banco.item + " la suma de ¢ ";
+                }
+
+
+                if (vTipo == "C")
+                {
+                    string strSQL = @"select sum(Monto) as Monto,Count(*) as Casos,cod_divisa from Tes_Transacciones 
+                            where tipo = @vDocumento and id_banco = @vBanco and documento_Base = @vTransac";
+                    if (vPlan != "-sp-")
+                    {
+                        strSQL += " and Cod_Plan = @vPlan";
+                    }
+                    strSQL += " group by cod_divisa";
+
+                    var rs = connection.QueryFirstOrDefault(strSQL,
+                        new
+                        {
+                            vDocumento,
+                            vBanco,
+                            vTransac,
+                            vPlan
+                        });
+                    if (rs != null)
+                    {
+                        curMonto = rs.Monto;
+                        lngCasos = rs.Casos;
+                        strDivisa = rs.cod_divisa;
+                    }
+
+                    string vMontoLetras = MProGrXAuxiliarDB.NumeroALetras(curMonto).Result + fxDescDivisa(connection,CodEmpresa, strDivisa).Result;
+
+                    resp.Result.registros = lngCasos;
+                    resp.Result.montoLetras = vMontoLetras;
+                    resp.Result.totalMonto = curMonto;
+                    resp.Result.fxNombre = fxTesParametro(CodEmpresa, "01");
+                    resp.Result.fxPuesto = fxTesParametro(CodEmpresa, "02");
+                    resp.Result.fxDepartamento = fxTesParametro(CodEmpresa, "03");
+                    resp.Result.letras1 = vLetra;
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = new TesReporteTransferenciaDto();
+            }
+            return resp;
+        }
+
+        public ErrorDto<string> fxDescDivisa(SqlConnection connection, int CodEmpresa, string vDivisa)
+        {
+            
+            var resp = new ErrorDto<string>()
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = ""
+            };
+            string descripcion = "";
+            try
+            {
+                string query = "";
+                query = $@"select top 1 descripcion from CNTX_DIVISAS where cod_divisa = @vDivisa";
+                descripcion = connection.QueryFirstOrDefault<string>(query, new { vDivisa }) ?? "";
+
+                if (!string.IsNullOrEmpty(descripcion))
+                {
+                    string strDescripcion = descripcion.Trim().ToLower();
+
+                    // Tomar la primera palabra
+                    string fxCodText = strDescripcion.Split(' ')[0].Trim();
+
+                    if (string.IsNullOrEmpty(fxCodText))
+                    {
+                        fxCodText = strDescripcion;
+                    }
+
+                    // Normalizar capitalización
+                    fxCodText = char.ToUpper(fxCodText[0]) + fxCodText.Substring(1);
+
+                    // Normalizar capitalización
+                    fxCodText = char.ToUpper(fxCodText[0]) + fxCodText.Substring(1);
+                    fxCodText = fxCodText.Trim();
+
+                    char ultima = fxCodText[fxCodText.Length - 1];
+                    // Regla básica: vocal → "s", consonante → "es" (pluralización)
+                    if ("aeiouáéíóú".Contains(char.ToLower(ultima)))
+                    {
+                        fxCodText += "s";
+                    }
+                    else
+                    {
+                        fxCodText += "es";
+                    }
+
+                    resp.Result = string.IsNullOrEmpty(fxCodText) ? strDescripcion : fxCodText;
+                }
+                else
+                {
+                    resp.Result = " Colones";
+                }
+            }
+            catch (Exception ex)
+            {
+                resp.Code = -1;
+                resp.Description = ex.Message;
+                resp.Result = "";
+            }
+            return resp;
+        }
 
     }
 }

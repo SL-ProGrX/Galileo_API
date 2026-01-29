@@ -15,12 +15,22 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         {
             BL_CR_PolizasPSD = new FrmCRPolizasPsdBl(config);
         }
+
+
+
         [Authorize]
-        [HttpGet("Cajas_Usuario_Obtener")]
-        public ErrorDto<List<CajasUserDto>> Cajas_Usuario_Obtener(int codEmpresa, string usuario)
+        [HttpGet("Poliza_PSD_Consulta")]
+        public ErrorDto<List<PolizaPsdDto>> Poliza_PSD_Consulta(int codEmpresa,DateTime fechaCorte,string usuario,string tipo)
         {
-            return BL_CR_PolizasPSD.Cajas_Usuario_Obtener(codEmpresa, usuario);
+            return BL_CR_PolizasPSD.Poliza_PSD_Consulta(codEmpresa,fechaCorte,usuario,tipo);
         }
-        
+
+        [Authorize]
+        [HttpPost("Poliza_PSD_Genera")]
+        public ErrorDto<bool> Poliza_PSD_Genera(int codEmpresa,DateTime fechaCorte,string usuario)
+        {
+            return BL_CR_PolizasPSD.Poliza_PSD_Genera(codEmpresa,fechaCorte,usuario
+            );
+        }
     }
 }
