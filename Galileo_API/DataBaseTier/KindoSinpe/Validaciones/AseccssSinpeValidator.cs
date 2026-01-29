@@ -1,7 +1,9 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Galileo_API.Controllers.WFCSinpe;
+using Galileo_API.Models.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
 using Sinpe_CCD;
 using Sinpe_PIN;
@@ -94,7 +96,7 @@ namespace Galileo_API.DataBaseTier
                             LaInformacionDeLaCuentaPIN.Errors = new Errores[0];
                             LaInformacionDeLaCuentaPIN = ConsultarAccountInfo(info.CuentaIBAN).Result ?? new ResAccountInfo();
 
-                            if (LaInformacionDeLaCuentaPIN.IsSuccessful == false ||
+                            if (!LaInformacionDeLaCuentaPIN.IsSuccessful ||
                                 LaInformacionDeLaCuentaPIN.Errors.Length > 0 ||
                                 LaInformacionDeLaCuentaPIN.Account.State != "1")
                             {
@@ -1864,6 +1866,62 @@ namespace Galileo_API.DataBaseTier
                 resp.Description = $"Error al enviar notificaciones a las cajas: {ex.Message}";
             }
             return resp;
+        }
+
+
+        public ErrorDto ConsultaCuentaSinpe(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta)
+        {
+            var response = new ErrorDto();
+            if (!ConsultarIsServiceAvailable(cuenta.usuario).Result)
+            {
+                response.Code = -1;
+                response.Description = "No se ha podido establecer comunicación con el servidor de forma adecuada, intente de nuevo o más tarde.";
+            }
+            else
+            {
+                ResAccountInfo LaInformacionDeLaCuentaPIN = new ResAccountInfo();
+                LaInformacionDeLaCuentaPIN.Errors = new Errores[0];
+                LaInformacionDeLaCuentaPIN = ConsultarAccountInfo(cuenta.cuentaIban).Result ?? new ResAccountInfo();
+
+                if (!LaInformacionDeLaCuentaPIN.IsSuccessful ||
+                    LaInformacionDeLaCuentaPIN.Errors.Length > 0 ||
+                    LaInformacionDeLaCuentaPIN.Account.State != "1")
+                {
+                    if (LaInformacionDeLaCuentaPIN.Errors.Length > 0)
+                    {
+                        response.Code = -1;
+                        response.Description = LaInformacionDeLaCuentaPIN.Errors[0].Message;
+                    }
+                    else
+                    {
+                        response.Code = -1;
+                        response.Description = "Error de estado " + LaInformacionDeLaCuentaPIN.Account.State;
+                    }
+
+                    if (!string.IsNullOrEmpty(response.Description))
+                    {
+                        response.Code = -1;
+                    }
+                }
+                else
+                {
+                    var cedulaFormateada = fxFormatoIdentificacionSinpe(cuenta.cedula.Trim(), cuenta.tipoId).Result;
+                    if (cedulaFormateada != LaInformacionDeLaCuentaPIN.Account.HolderId)
+                    {
+                        response.Code = -1;
+                        response.Description = "La cédula obtenida no corresponde con la cédula de la cuenta.";
+                    }
+                    else
+                    {
+                        response.Code = 0;
+                        response.Description = $@"La cuenta IBAN {cuenta.cuentaIban} registrada a 
+                                        nombre de {LaInformacionDeLaCuentaPIN.Account.Holder} cédula: {LaInformacionDeLaCuentaPIN.Account.HolderId} Tipo Id: {cuenta.tipoId} Tipo de Moneda: @moneda";
+                    }
+                }
+            }
+
+
+            return response;
         }
 
         #endregion

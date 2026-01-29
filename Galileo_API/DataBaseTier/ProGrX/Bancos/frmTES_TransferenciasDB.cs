@@ -3,8 +3,6 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
-using Microsoft.ReportingServices.Diagnostics.Internal;
-using Sinpe_TFT;
 
 namespace Galileo_API.DataBaseTier
 {
