@@ -10,7 +10,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
     {
         private readonly PortalDB _portalDB;
 
-
         public FrmTesDesAutorizacionesDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);

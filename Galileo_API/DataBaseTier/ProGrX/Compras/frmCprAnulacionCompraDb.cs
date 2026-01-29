@@ -88,7 +88,7 @@ namespace Galileo.DataBaseTier
                       FROM cpr_compras
                       WHERE cod_compra = @CodCompra",
                     new { CodCompra = codCompra }
-                ) ?? new CompraAnulacionDto()
+                ) ?? new CompraAnulacionDto { Cod_Proveedor = 0, Total = 0, Sub_Total = 0, Imp_Ventas = 0, Imp_Consumo = 0, Descuento = 0, Fecha = DateTime.MinValue, Asiento_Fecha = DateTime.MinValue }
             );
         }
 

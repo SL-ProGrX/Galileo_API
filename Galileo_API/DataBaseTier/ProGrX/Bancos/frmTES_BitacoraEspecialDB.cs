@@ -134,8 +134,8 @@ namespace Galileo_API.DataBaseTier.TES
                 };
                 if (!string.IsNullOrEmpty(filtroTipoFecha))
                 {
-                    parameters.Add("@FechaInicio", filtros.fecha_inicio.Date);
-                    parameters.Add("@FechaCorte", filtros.fecha_corte.Date.AddDays(1).AddTicks(-1));
+                    parameters.Add("@FechaInicio", filtros.fecha_inicio!.Value);
+                    parameters.Add("@FechaCorte", filtros.fecha_corte!.Value.AddDays(1).AddTicks(-1));
                 }
 
 
@@ -220,8 +220,8 @@ namespace Galileo_API.DataBaseTier.TES
                 if (filtros.movimientos?.Count > 0)
                     parameters.Add("@Movimientos", filtros.movimientos.Select(x => x.item).ToList());
 
-                parameters.Add("@MovFecInicio", filtros.mov_fecha_inicio.Date);
-                parameters.Add("@MovFecCorte", filtros.mov_fecha_corte.Date.AddDays(1).AddTicks(-1));
+                parameters.Add("@MovFecInicio", filtros.mov_fecha_inicio!.Value);
+                parameters.Add("@MovFecCorte", filtros.mov_fecha_corte!.Value.AddDays(1).AddTicks(-1));
 
                 if (!string.IsNullOrWhiteSpace(filtros.usuario))
                     parameters.Add("@Usuario", filtros.usuario);

@@ -23,7 +23,7 @@
     {
         public string tipo { get; set; } = string.Empty;
         public string usuario { get; set; } = string.Empty;
-        public bool todosPendientes { get; set; }
+        public required bool todosPendientes { get; set; }
         public string fechaInicio { get; set; } = string.Empty;
         public string fechaCorte { get; set; } = string.Empty;
     }

@@ -2,7 +2,7 @@
 {
     public class TesCambioFechasData
     {
-        public int nsolicitud { get; set; }
+        public int nsolicitud { get; set; } = 0;
         public string? tipo { get; set; }
         public string? estado { get; set; }
         public string? ndocumento { get; set; }
@@ -18,7 +18,7 @@
 
     public class TesCambioFechasModel
     {
-        public int nsolicitud { get; set; }
+        public int nsolicitud { get; set; } = 0;
         public string? fecha { get; set; }
         public Nullable<DateTime> fechaActual { get; set; }
         public Nullable<DateTime> fechaNueva { get; set; }
