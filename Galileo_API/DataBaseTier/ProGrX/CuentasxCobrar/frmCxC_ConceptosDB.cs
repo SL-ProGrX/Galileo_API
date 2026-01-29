@@ -295,5 +295,103 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 return rows > 0;
             });
         }
+
+        /// <summary>
+        /// Consulta los pagadores disponibles en el sistema.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Lista de pagadores.</returns>
+        public ErrorDto<List<CxcPersonaDto>> CxcPersonas_Pagadores(int codEmpresa)
+        {
+            var query = @"SELECT cedula AS Cedula, nombre AS Nombre
+                          FROM CxC_Personas
+                          WHERE Rol_Pagador = 1
+                          ORDER BY cedula";
+            return DbHelper.ExecuteListQuery<CxcPersonaDto>(_portalDb, codEmpresa, query);
+        }
+
+        /// <summary>
+        /// Actualiza el pagador por defecto de un concepto.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros con el nuevo pagador por defecto.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
+        public ErrorDto<bool> CxcConceptos_ActualizarPagadorDefault(int codEmpresa, CxcConceptoPagadorDefaultParams param)
+        {
+            const string sql = @"
+                UPDATE CxC_Conceptos
+                SET Pagador_Default = @Pagador_Default,
+                    Modifica_Usuario = @Usuario,
+                    Modifica_Fecha = GETDATE()
+                WHERE Cod_Concepto = @Cod_Concepto";
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+        }
+
+        /// <summary>
+        /// Consulta las unidades asignadas a una contabilidad específica.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad.</param>
+        /// <returns>Lista de unidades asignadas.</returns>
+        public ErrorDto<List<UnidadDto>> Unidades_ListaPorContabilidad(int codEmpresa, string codContabilidad)
+        {
+            var query = @"
+                SELECT cod_unidad AS Unidad, Descripcion
+                FROM CntX_Unidades
+                WHERE cod_contabilidad = @CodContabilidad
+                ORDER BY cod_unidad";
+            return DbHelper.ExecuteListQuery<UnidadDto>(_portalDb, codEmpresa, query, new { CodContabilidad = codContabilidad });
+        }
+
+        /// <summary>
+        /// Consulta los centros de costo asignados a una contabilidad específica.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codContabilidad">Código de la contabilidad.</param>
+        /// <returns>Lista de centros de costo asignados.</returns>
+        public ErrorDto<List<CentrosCostoDto>> CentrosCosto_ListaPorContabilidad(int codEmpresa, string codContabilidad)
+        {
+            var query = @"
+                SELECT cod_centro_Costo AS Centro, Descripcion
+                FROM cntx_centro_costos
+                WHERE cod_contabilidad = @CodContabilidad
+                  AND Activo = 1
+                ORDER BY cod_centro_Costo";
+            return DbHelper.ExecuteListQuery<CentrosCostoDto>(_portalDb, codEmpresa, query, new { CodContabilidad = codContabilidad });
+        }
+
+        /// <summary>
+        /// Marca un concepto como incobrable o rehabilita un concepto cobrable.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros para la actualización.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
+        public ErrorDto<bool> CxcConceptos_Incobrable(int codEmpresa, CxcConceptoIncobrableParams param)
+        {
+            const string sp = "spCxC_Concepto_Incobrable";
+            var parameters = new
+            {
+                Concepto = param.Cod_Concepto,
+                Indicador = param.Indicador,
+                Usuario = param.Usuario,
+                Unidad = param.Cod_Unidad,
+                CentroCosto = param.Cod_Centro_Costo,
+                CtaDeterioro = param.Cta_Deterioro,
+                CtaEstimacion = param.Cta_Estimacion,
+                CtaIngreso = param.Cta_Ingreso,
+                CtaOrdenDebe = param.Cta_Orden_Debe,
+                CtaOrdenHaber = param.Cta_Orden_Haber
+            };
+
+            return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                conn.Execute(sp, parameters, commandType: System.Data.CommandType.StoredProcedure);
+                return true;
+            });
+        }
     }
 }
