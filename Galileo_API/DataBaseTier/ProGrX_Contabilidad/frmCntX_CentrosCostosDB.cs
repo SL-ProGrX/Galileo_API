@@ -140,14 +140,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         public ErrorDto<List<CntXCentroCostosUnidadesDto>> CntXCentrosCostos_Unidades_Obtener(
             int codEmpresa, int codConta, string codCentroCosto)
         {
-            const string query = @"select C.*,A.cod_unidad as existeX
-                from CntX_Unidades C
-                left join CntX_Unidades_CC A on C.cod_unidad = A.cod_unidad
-                   and C.cod_contabilidad = A.cod_contabilidad
-                   and A.cod_centro_costo = @codCentroCosto
-                   and A.cod_contabilidad = @codConta
-                where C.cod_contabilidad = @codConta
-                order by ExisteX desc, C.cod_unidad;";
+            const string query = @"select C.cod_unidad, C.descripcion, 
+                    case when A.cod_unidad is null then cast(0 as bit) else cast(1 as bit) end as existeX 
+                 from CntX_Unidades C left join CntX_Unidades_CC A on C.cod_unidad = A.cod_unidad 
+                 and C.cod_contabilidad = A.cod_contabilidad and A.cod_centro_costo =  @codCentroCosto 
+                 and A.cod_contabilidad = @codConta where C.cod_contabilidad = @codConta 
+                 order by ExisteX desc, C.cod_unidad;";
 
             return DbHelper.ExecuteListQuery<CntXCentroCostosUnidadesDto>(
                 _portalDb, codEmpresa, query, new { codCentroCosto, codConta }
