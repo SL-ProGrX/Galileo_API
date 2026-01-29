@@ -96,7 +96,7 @@ namespace Galileo_API.DataBaseTier
                             LaInformacionDeLaCuentaPIN.Errors = new Errores[0];
                             LaInformacionDeLaCuentaPIN = ConsultarAccountInfo(info.CuentaIBAN).Result ?? new ResAccountInfo();
 
-                            if (LaInformacionDeLaCuentaPIN.IsSuccessful == false ||
+                            if (!LaInformacionDeLaCuentaPIN.IsSuccessful ||
                                 LaInformacionDeLaCuentaPIN.Errors.Length > 0 ||
                                 LaInformacionDeLaCuentaPIN.Account.State != "1")
                             {
@@ -1901,7 +1901,6 @@ namespace Galileo_API.DataBaseTier
                     if (!string.IsNullOrEmpty(response.Description))
                     {
                         response.Code = -1;
-                        response.Description = response.Description;
                     }
                 }
                 else
