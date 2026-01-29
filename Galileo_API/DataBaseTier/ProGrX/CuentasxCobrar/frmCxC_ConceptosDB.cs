@@ -56,10 +56,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         public ErrorDto<bool> CxcConceptos_Guardar(int codEmpresa, CxcConceptoSaveParams param)
         {
             var existe = CxcConceptos_Existe(codEmpresa, param.Cod_Concepto).Result?.Existe ?? 0;
-            if (existe == 0)
-                return CxcConceptos_Insertar(codEmpresa, param);
-            else
-                return CxcConceptos_Actualizar(codEmpresa, param);
+            return existe == 0
+                ? CxcConceptos_Insertar(codEmpresa, param)
+                : CxcConceptos_Actualizar(codEmpresa, param);
         }
 
         /// <summary>
