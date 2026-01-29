@@ -693,7 +693,83 @@ namespace Galileo.DataBaseTier
 
         }
 
-       
+        public ErrorDto sbTrazabilidad_Inserta(int CodEmpresa, string coddocumento, 
+            string consecutivo, string codbarras, string usuario, bool nuevo = true)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto
+            {
+                Code = 0,
+                Description = "Ok",
+            };
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                // Solo para ASECCSS (empresa 61)
+                if (CodEmpresa != 61)
+                    return new ErrorDto { Code = 0, Description = string.Empty };
+
+                const int idestado = 1;
+                const int confirmarecepcion = 2;
+
+                if (coddocumento == "04" && !nuevo)
+                {
+                    const string sqlConsec = @"
+                        select cast(count(*) + 1 as int) as consec
+                        from TrdDocumentos
+                        where CodDocumento = '04'
+                          and Consecutivo like @pref + '%'";
+
+                    var consec = connection.QueryFirstOrDefault<int>(sqlConsec,
+                        new { pref = consecutivo }
+                    );
+
+                    consecutivo = $"{consecutivo}-{consec:00}";
+                }
+
+                const string sqlFecha = @"select GetDate()";
+                var fechaServer = connection.QueryFirstOrDefault<DateTime>(sqlFecha);
+
+                // spTrdDocumentosIns
+                const string sqlIns = @"
+                exec spTrdDocumentosIns
+                    @coddocumento,
+                    @consecutivo,
+                    @idsobre,
+                    @idestado,
+                    @confirmarecepcion,
+                    @fechaactualiza,
+                    @usuarioactualiza,
+                    @fechainserta,
+                    @usuarioinserta,
+                    @codbarras,
+                    @descripcion";
+
+                connection.Execute(
+                    sqlIns,
+                    new
+                    {
+                        coddocumento,
+                        consecutivo,
+                        idsobre = (int?)null,
+                        idestado,
+                        confirmarecepcion,
+                        fechaactualiza = (DateTime?)null,
+                        usuarioactualiza = (string?)null,
+                        fechainserta = fechaServer,
+                        usuarioinserta = usuario,
+                        codbarras,
+                        descripcion = (string?)null
+                    });
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+            return response;
+        }
+
     }
 
 }
