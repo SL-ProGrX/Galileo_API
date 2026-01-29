@@ -1,11 +1,14 @@
 ﻿using Dapper;
+using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
+using Galileo_API.Models.ProGrX.Bancos;
 using Org.BouncyCastle.Ocsp;
+using Sinpe_PIN;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Galileo_API.DataBaseTier
@@ -277,7 +280,7 @@ namespace Galileo_API.DataBaseTier
 
 
             
-            var pinData = new ReqPINSending();
+            var pinData = new Galileo.Models.KindoSinpe.ReqPINSending();
 
             try
             {
@@ -415,6 +418,37 @@ namespace Galileo_API.DataBaseTier
             };
 
             DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, parametros);
+        }
+
+
+        public ErrorDto ConsultaCuentaSinpe(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta)
+        {
+            var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, cuenta.usuario);
+
+            var context = CrearContexto(parametrosSinpe);
+
+            var servicio = _sinpePIN.IsServiceAvailable(parametrosSinpe?.Result?.UrlCGP_PIN!, context);
+            if (!servicio.ServiceAvailable)
+            {
+                return ErrorResponse(servicio.Errors?[0]?.Message ?? "Servicio no disponible");
+            }
+            else
+            {
+                var cuentaSinpe = ConsultarCuenta(parametrosSinpe!, context, cuenta.cuentaIban);
+
+                if(cuentaSinpe.Errors != null && cuentaSinpe.Errors.Length > 0)
+                {
+                    var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, cuentaSinpe.Errors[0].Code!).Result!;
+                    return DbHelper.ErrorResponse(rechazo, cuentaSinpe.Errors[0].Code!);
+                }
+
+                if (cuentaSinpe.Account != null && cuentaSinpe.Account.State != null)
+                {
+                    var rechazo = _mKindo.fxTesConsultaMotivo(CodEmpresa, (int)cuentaSinpe.Account.State!).Result!;
+                    return DbHelper.ErrorResponse(rechazo, (int)cuentaSinpe.Account.State!);
+                }
+            }
+           return new ErrorDto();
         }
 
 
