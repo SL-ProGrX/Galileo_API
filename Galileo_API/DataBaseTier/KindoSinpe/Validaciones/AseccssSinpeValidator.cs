@@ -1872,7 +1872,7 @@ namespace Galileo_API.DataBaseTier
         public ErrorDto ConsultaCuentaSinpe(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta)
         {
             var response = new ErrorDto();
-            if (ConsultarIsServiceAvailable(cuenta.usuario).Result == false)
+            if (!ConsultarIsServiceAvailable(cuenta.usuario).Result)
             {
                 response.Code = -1;
                 response.Description = "No se ha podido establecer comunicación con el servidor de forma adecuada, intente de nuevo o más tarde.";
