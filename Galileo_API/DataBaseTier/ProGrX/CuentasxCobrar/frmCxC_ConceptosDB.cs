@@ -2,9 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models;
-using Galileo_API.Models.ProGrX.CuentasxCobrar;
-using System.Collections.Generic;
-using System.Text;
+using Galileo_API.Models.ProGrX.CuentasxCobrar; 
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 {

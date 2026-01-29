@@ -1,15 +1,15 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar;
-using Galileo_API.Models.ProGrX.CuentasPorCobrar;
+using Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar;
+using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using Newtonsoft.Json;
 
 
-namespace PgxAPI.BusinessLogic.ProGrX.Cobros
+namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
 {
     public class FrmCxCFacturaEstadosBL
     {
-         
+
         private readonly FrmCxCFacturaEstadosDB _db;
 
         public FrmCxCFacturaEstadosBL(IConfiguration config) => _db = new FrmCxCFacturaEstadosDB(config);
@@ -28,6 +28,6 @@ namespace PgxAPI.BusinessLogic.ProGrX.Cobros
         {
             return _db.CxCFacturaEstados_Eliminar(codEmpresa, usuario, codFactura);
         }
-        
+
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace Galileo_API.Models.ProGrX.CuentasPorCobrar
+﻿namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
 
     public class CxCCargosTiposLista
@@ -6,7 +6,7 @@
         public int total { get; set; }
         public List<CxCCargosTiposData> lista { get; set; } = new List<CxCCargosTiposData>();
     }
-    public class CxCCargosTiposData 
+    public class CxCCargosTiposData
     {
         public string? Cod_cargo { get; set; } = string.Empty;
         public string? Descripcion { get; set; } = string.Empty;
