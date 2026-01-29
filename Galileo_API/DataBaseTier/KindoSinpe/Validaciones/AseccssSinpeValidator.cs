@@ -1883,7 +1883,7 @@ namespace Galileo_API.DataBaseTier
                 LaInformacionDeLaCuentaPIN.Errors = new Errores[0];
                 LaInformacionDeLaCuentaPIN = ConsultarAccountInfo(cuenta.cuentaIban).Result ?? new ResAccountInfo();
 
-                if (LaInformacionDeLaCuentaPIN.IsSuccessful == false ||
+                if (!LaInformacionDeLaCuentaPIN.IsSuccessful ||
                     LaInformacionDeLaCuentaPIN.Errors.Length > 0 ||
                     LaInformacionDeLaCuentaPIN.Account.State != "1")
                 {
