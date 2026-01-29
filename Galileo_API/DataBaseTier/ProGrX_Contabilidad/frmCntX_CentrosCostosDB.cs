@@ -18,6 +18,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _mSecurityMainDb = mProGrxMain;
         }
 
+        /// <summary>
+        /// Obtener los centros de costos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="activo"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXCentroCostosData>> CntXCentrosCostos_Obtener(int codEmpresa, int codConta, bool activo)
         {
             string query = @"select cod_centro_costo,descripcion,activo 
@@ -30,6 +37,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<CntXCentroCostosData>(_portalDb, codEmpresa, query, new { codConta });
         }
 
+        /// <summary>
+        /// Guardar centro de costo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntXCentrosCostos_Guardar(int codEmpresa, int codConta, string usuario, CntXCentroCostosData request)
         {
             const string sqlExists = @"
@@ -109,6 +124,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
+        /// <summary>
+        /// Eliminar centro de costo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codCentroCosto"></param>
+        /// <returns></returns>
         public ErrorDto CntXCentrosCostos_Eliminar(int codEmpresa, int codConta, string usuario, string codCentroCosto)
         {
             const string sqlDelete = @"delete CntX_Centro_Costos
@@ -137,6 +160,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return new ErrorDto { Code = 0, Description = "Centro de costo eliminado satisfactoriamente." };
         }
 
+        /// <summary>
+        /// Obtener las unidades asignadas a un centro de costo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="codCentroCosto"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXCentroCostosUnidadesDto>> CntXCentrosCostos_Unidades_Obtener(
             int codEmpresa, int codConta, string codCentroCosto)
         {
@@ -152,6 +182,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             );
         }
 
+        /// <summary>
+        /// Asignar o desasignar una unidad a un centro de costo
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="codCentroCosto"></param>
+        /// <param name="codUnidad"></param>
+        /// <param name="itemChecked"></param>
+        /// <returns></returns>
         public ErrorDto CntXCentrosCostos_Unidades_Asignar(int codEmpresa, int codConta, string codCentroCosto, string codUnidad, bool itemChecked)
         {
             string sql = itemChecked
