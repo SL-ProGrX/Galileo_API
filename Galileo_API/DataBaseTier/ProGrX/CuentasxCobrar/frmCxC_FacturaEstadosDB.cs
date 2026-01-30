@@ -3,12 +3,12 @@ using Dapper;
 using Microsoft.Data.SqlClient; // Necesario para WithConn
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
-using Galileo_API.Models.ProGrX.CuentasPorCobrar;
 using Galileo.Models.Security;
 using Galileo.Models;
 using System.Text;
+using Galileo_API.Models.ProGrX.CuentasxCobrar;
 
-namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
+namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 {
     public class FrmCxCFacturaEstadosDB
     {
@@ -140,7 +140,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
             if (string.IsNullOrWhiteSpace(usuario)) return DbHelper.ErrorResponse("El usuario es requerido.");
 
             const string sqlUpsert = @"
-                DECLARE @accion NVARCHAR(10);
+                DECLARE @accion_result NVARCHAR(10);
 
                 UPDATE dbo.CXC_FACTURAS_ESTADOS
                 SET descripcion = @Descripcion,
@@ -155,14 +155,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                         (Factura_Estado, descripcion, Proceso, Accion, Activo, registro_fecha, registro_usuario)
                     VALUES
                         (@Factura_Estado, @Descripcion, @Proceso, @Accion, @Activo, dbo.MyGetdate(), @usuario);
-                    SET @accion = N'insert';
+                    SET @accion_result = N'insert';
                 END
                 ELSE
                 BEGIN
-                    SET @accion = N'update';
+                    SET @accion_result = N'update';
                 END
 
-                SELECT @accion AS accion;
+                SELECT @accion_result AS accion;
             ";
 
             var upsert = DbHelper.ExecuteSingleQuery<string>(

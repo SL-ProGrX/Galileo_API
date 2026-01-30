@@ -1,4 +1,4 @@
-﻿namespace Galileo_API.Models.ProGrX.CuentasPorCobrar
+﻿namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
 
     public class CxCFacturaEstadosLista
@@ -11,7 +11,7 @@
         public string? Factura_Estado { get; set; } = string.Empty;
         public string? Descripcion { get; set; } = string.Empty;
         public string? Proceso { get; set; } = string.Empty;
-        public string? Accion { get; set; } = string.Empty; 
+        public string? Accion { get; set; } = string.Empty;
         public bool? Activo { get; set; }
         public bool? IsNew { get; set; }
     }
