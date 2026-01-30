@@ -23,7 +23,7 @@
 
         public string? nombre_contacto { get; set; }
 
-        public bool activo { get; set; }
+        public bool? activo { get; set; }
 
         public string? codigo_retencion { get; set; }
         public string? retencion_desc { get; set; }
