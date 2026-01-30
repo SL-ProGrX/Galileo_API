@@ -17,8 +17,7 @@ namespace Galileo_API.Models.ProGrX_Polizas
 
     public class PolizaGrupoSaveParams
     {
-        [Required]
-        public int Id_Poliza_Grupo { get; set; } 
+        public required int Id_Poliza_Grupo { get; set; } 
         public string Descripcion { get; set; } = string.Empty;
         public string Tipo_Aplicacion { get; set; } = string.Empty;
         public bool? Activo { get; set; }
@@ -27,8 +26,7 @@ namespace Galileo_API.Models.ProGrX_Polizas
 
     public class PolizaGrupoDeleteParams
     {
-        [Required] 
-        public int Id_Poliza_Grupo { get; set; }  
+        public required int Id_Poliza_Grupo { get; set; }  
         public string Usuario { get; set; } = string.Empty;
     }
 }
