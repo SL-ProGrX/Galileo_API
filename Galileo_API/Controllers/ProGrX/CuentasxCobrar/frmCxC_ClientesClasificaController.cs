@@ -1,11 +1,11 @@
- 
-using Galileo.Models.ERROR; 
-using Galileo_API.Models.ProGrX.CuentasPorCobrar;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using PgxAPI.BusinessLogic.ProGrX.Cobros;
 
-namespace Galileo_API.Controllers.ProGrX.Cajas
+using Galileo.Models.ERROR;
+using Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar;
+using Galileo_API.Models.ProGrX.CuentasxCobrar;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc; 
+
+namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 {
     [Route("api/[controller]")]
     [ApiController]

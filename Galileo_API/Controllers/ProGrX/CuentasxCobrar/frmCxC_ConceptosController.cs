@@ -95,5 +95,40 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _bl.CxcConceptos_FacturaEstado_Eliminar(codEmpresa, param);
         }
+
+        [Authorize]
+        [HttpGet("CxcPersonas_Pagadores")]
+        public ErrorDto<List<CxcPersonaDto>> CxcPersonas_Pagadores(int codEmpresa)
+        {
+            return _bl.CxcPersonas_Pagadores(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpPost("CxcConceptos_ActualizarPagadorDefault")]
+        public ErrorDto<bool> CxcConceptos_ActualizarPagadorDefault(int codEmpresa, [FromBody] CxcConceptoPagadorDefaultParams param)
+        {
+            return _bl.CxcConceptos_ActualizarPagadorDefault(codEmpresa, param);
+        }
+
+        [Authorize]
+        [HttpGet("Unidades_ListaPorContabilidad")]
+        public ErrorDto<List<UnidadDto>> Unidades_ListaPorContabilidad(int codEmpresa, [FromQuery] string codContabilidad)
+        {
+            return _bl.Unidades_ListaPorContabilidad(codEmpresa, codContabilidad);
+        }
+
+        [Authorize]
+        [HttpGet("CentrosCosto_ListaPorContabilidad")]
+        public ErrorDto<List<CentrosCostoDto>> CentrosCosto_ListaPorContabilidad(int codEmpresa, [FromQuery] string codContabilidad)
+        {
+            return _bl.CentrosCosto_ListaPorContabilidad(codEmpresa, codContabilidad);
+        }
+
+        [Authorize]
+        [HttpPost("CxcConceptos_Incobrable")]
+        public ErrorDto<bool> CxcConceptos_Incobrable(int codEmpresa, [FromBody] CxcConceptoIncobrableParams param)
+        {
+            return _bl.CxcConceptos_Incobrable(codEmpresa, param);
+        }
     }
 }

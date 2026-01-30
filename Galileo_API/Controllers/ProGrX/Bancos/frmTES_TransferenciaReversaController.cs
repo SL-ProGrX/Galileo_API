@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using Galileo_API.BusinessLogic.ProGrX.Bancos;
+﻿using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models;
 using Galileo.Models.ProGrX.Bancos;
+using Galileo_API.BusinessLogic.ProGrX.Bancos;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace Galileo_API.Controllers
 {
@@ -63,6 +64,18 @@ namespace Galileo_API.Controllers
         public ErrorDto<List<TransferenciaDetalleModel>> TES_TransferenciaReversa_Detalle(int CodEmpresa, string id_reversion)
         {
             return _TransferenciaReversaBL.TES_TransferenciaReversa_Detalle(CodEmpresa, id_reversion);
+        }
+
+        [HttpGet("TES_TransferenciaRevSinpe_Obtener")]
+        public ErrorDto<List<TransferenciaSolicitudData>> TES_TransferenciaRevSinpe_Obtener(string reversa)
+        {
+            return _TransferenciaReversaBL.TES_TransferenciaRevSinpe_Obtener(reversa);
+        }
+
+        [HttpPost("TES_TransferenciaRevSinpe_Aplicar")]
+        public ErrorDto TES_TransferenciaRevSinpe_Aplicar(TesReversaSinpeModel reversa)
+        {
+            return _TransferenciaReversaBL.TES_TransferenciaRevSinpe_Aplicar(reversa);
         }
 
     }

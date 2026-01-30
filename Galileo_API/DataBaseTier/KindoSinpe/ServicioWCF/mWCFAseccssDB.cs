@@ -1,5 +1,7 @@
 ﻿using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Galileo_API.Controllers.WFCSinpe;
+using Galileo_API.Models.ProGrX.Bancos;
 
 
 namespace Galileo_API.DataBaseTier
@@ -147,6 +149,28 @@ namespace Galileo_API.DataBaseTier
                 return new ErrorDto<bool>
                 {
                     Result = false,
+                    Code = -1,
+                    Description = $"Error al fxTesEmisionSinpeTiempoReal: {ex.Message}"
+                };
+            }
+        }
+
+
+        public ErrorDto ConsultaCuentaSinpe(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta)
+        {
+            try
+            {
+                var request = _cliente.ConsultaCuentaSinpe(CodEmpresa, cuenta);
+                return new ErrorDto
+                {
+                    Code = request.Code,
+                    Description = request.Description
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ErrorDto
+                {
                     Code = -1,
                     Description = $"Error al fxTesEmisionSinpeTiempoReal: {ex.Message}"
                 };

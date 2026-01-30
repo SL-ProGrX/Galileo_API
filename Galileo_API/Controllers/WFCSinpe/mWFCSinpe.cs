@@ -1,4 +1,6 @@
 ﻿using Galileo.Models.ERROR;
+using Galileo.Models.KindoSinpe;
+using Galileo_API.Models.ProGrX.Bancos;
 
 namespace Galileo_API.Controllers.WFCSinpe
 {
@@ -105,6 +107,16 @@ namespace Galileo_API.Controllers.WFCSinpe
                 Code = 0,
                 Description = "No implementado",
                 Result = false
+            };
+        }
+
+        ErrorDto ConsultaCuentaSinpe(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta)
+        {
+            // Implementación por defecto
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "No implementado",
             };
         }
 

@@ -1,7 +1,7 @@
 ﻿using Galileo.Models.KindoSinpe;
 using Galileo_API.DataBaseTier;
 
-namespace PgxAPI.BusinessLogic.KindoSinpe
+namespace Galileo_API.BusinessLogic.KindoSinpe
 {
     public class MKindoServiceBL
     {

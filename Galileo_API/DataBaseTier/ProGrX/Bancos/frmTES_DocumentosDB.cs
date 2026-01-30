@@ -7,7 +7,7 @@ using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 using Microsoft.ReportingServices.Diagnostics.Internal;
 
-namespace PgxAPI.DataBaseTier.ProGrX.Bancos
+namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
     public class FrmTesDocumentosDB
     {

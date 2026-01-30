@@ -47,5 +47,20 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
 
         public ErrorDto<bool> CxcConceptos_FacturaEstado_Eliminar(int codEmpresa, CxcConceptoFacturaEstadoParams param)
             => _db.CxcConceptos_FacturaEstado_Eliminar(codEmpresa, param);
+
+        public ErrorDto<List<CxcPersonaDto>> CxcPersonas_Pagadores(int codEmpresa)
+            => _db.CxcPersonas_Pagadores(codEmpresa);
+
+        public ErrorDto<bool> CxcConceptos_ActualizarPagadorDefault(int codEmpresa, CxcConceptoPagadorDefaultParams param)
+            => _db.CxcConceptos_ActualizarPagadorDefault(codEmpresa, param);
+
+        public ErrorDto<List<UnidadDto>> Unidades_ListaPorContabilidad(int codEmpresa, string codContabilidad)
+            => _db.Unidades_ListaPorContabilidad(codEmpresa, codContabilidad);
+
+        public ErrorDto<List<CentrosCostoDto>> CentrosCosto_ListaPorContabilidad(int codEmpresa, string codContabilidad)
+            => _db.CentrosCosto_ListaPorContabilidad(codEmpresa, codContabilidad);
+
+        public ErrorDto<bool> CxcConceptos_Incobrable(int codEmpresa, CxcConceptoIncobrableParams param)
+            => _db.CxcConceptos_Incobrable(codEmpresa, param);
     }
 }

@@ -4,7 +4,7 @@ using Galileo.Models.ProGrX.Bancos;
 using Galileo_API.DataBaseTier.ProGrX.Bancos;
 using Newtonsoft.Json;
 
-namespace PgxAPI.BusinessLogic.ProGrX.Bancos
+namespace Galileo_API.BusinessLogic.ProGrX.Bancos
 {
     public class FrmTesMotivosSinpeBL
     {

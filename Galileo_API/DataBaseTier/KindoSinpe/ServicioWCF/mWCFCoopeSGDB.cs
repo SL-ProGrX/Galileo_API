@@ -1,5 +1,6 @@
 ﻿using Galileo.Models.ERROR;
 using Galileo_API.Controllers.WFCSinpe;
+using Galileo_API.Models.ProGrX.Bancos;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -68,6 +69,14 @@ namespace Galileo_API.DataBaseTier
             return EjecutarOperacion(
                 () => _cliente.fxTesEmisionSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador),
                 "Error al fxTesEmisionSinpeTiempoReal"
+            );
+        }
+
+        public ErrorDto ConsultaCuentaSinpe(int CodEmpresa, TesConsultaCuentaSinpeModels cuenta)
+        {
+           return EjecutarOperacion(
+                () => _cliente.ConsultaCuentaSinpe(CodEmpresa, cuenta),
+                "Error al consultar cuenta Sinpe"
             );
         }
 

@@ -3,7 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 
-namespace PgxAPI.DataBaseTier
+namespace Galileo_API.DataBaseTier
 {
     public class FrmTesImpresorasDb
     {
