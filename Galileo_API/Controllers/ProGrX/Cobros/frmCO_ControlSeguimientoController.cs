@@ -1,11 +1,11 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Cobros.ControlSeguimiento;
-using Galileo_API.BusinessLogic.ProGrX.Cobros.ControlSeguimiento;
+using Galileo.Models.ProGrX.Cobros;
+using Galileo_API.BusinessLogic.ProGrX.Cobros;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Galileo_API.Controllers.ProGrX.Cobros.ControlSeguimiento
+namespace Galileo_API.Controllers.ProGrX.Cobros
 {
     [Route("api/[controller]")]
     [ApiController]
