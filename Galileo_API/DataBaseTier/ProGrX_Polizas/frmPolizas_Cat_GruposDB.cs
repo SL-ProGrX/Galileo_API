@@ -72,10 +72,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         public ErrorDto<bool> PolizaGrupos_Guardar(int codEmpresa, PolizaGrupoSaveParams param)
         {
             var existe = PolizaGrupos_Existe(codEmpresa, param.Id_Poliza_Grupo).Result?.Existe ?? 0;
-            if (existe == 0)
-                return PolizaGrupos_Insertar(codEmpresa, param);
-            else
-                return PolizaGrupos_Actualizar(codEmpresa, param);
+            return existe == 0
+                ? PolizaGrupos_Insertar(codEmpresa, param)
+                : PolizaGrupos_Actualizar(codEmpresa, param);
         }
 
         /// <summary>
