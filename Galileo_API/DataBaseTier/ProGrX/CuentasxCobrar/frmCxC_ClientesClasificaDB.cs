@@ -3,11 +3,10 @@ using Microsoft.Data.SqlClient;
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models;
-using Galileo_API.Models.ProGrX.CuentasPorCobrar;
-using Galileo.Models.Security;
-using System.Data.Common;
+using Galileo.Models.Security; 
+using Galileo_API.Models.ProGrX.CuentasxCobrar;
 
-namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
+namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 {
     public class FrmCxCClientesClasificaDB
     {
@@ -118,10 +117,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                 var fetch = filtros.paginacion;
                 var usarPaginacion = fetch > 0 && !esExportar;
 
-                // Sanitiza el ORDER BY (whitelist: cod_categoria, descripcion, actica)
                 var (orderBy, desc) = SanitizeOrderBy(filtros.sortField, filtros.sortOrder);
 
-                // Parámetros base (todos parametrizados)
                 var baseParams = new
                 {
                     filtro = hasFiltro ? texto : null,
@@ -131,16 +128,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasPorCobrar
                     fetch
                 };
 
-                // COUNT seguro (sin interpolación)
                 var total = conn.QuerySingle<int>(SqlCount, baseParams);
 
-                // SELECT seguro (elige ASC/DESC por constante, y agrega paginación por parámetros)
+               
                 var sqlListCore = desc ? SqlListDesc : SqlListAsc;
                 var sqlList = usarPaginacion
                     ? sqlListCore + " OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;"
                     : sqlListCore + ";";
 
-                // Ejecución sin interpolación
                 var lista = conn.Query<CxCClientesClasificaData>(sqlList, baseParams).ToList();
 
                 return new CxCClientesClasificaLista

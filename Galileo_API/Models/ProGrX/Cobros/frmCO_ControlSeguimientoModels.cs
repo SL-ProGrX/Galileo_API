@@ -1,13 +1,14 @@
 ﻿
 using System.ComponentModel.DataAnnotations;
 
-namespace Galileo.Models.ProGrX.Cobros.ControlSeguimiento
+namespace Galileo.Models.ProGrX.Cobros
 {
     public class CoControlSegHistGestionDto
     {
         public int cod_seg { get; set; }
         public DateTime? fecha { get; set; }
         public int? tiempo_resolucion { get; set; }
+        public DateTime? vence { get; set; }
         public string? cod_gestion { get; set; }
         public string? gestion { get; set; }
         public string? notas { get; set; }
