@@ -1,9 +1,9 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Cobros.ControlSeguimiento;
-using Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento;
+using Galileo.Models.ProGrX.Cobros;
+using Galileo_API.DataBaseTier.ProGrX.Cobros;
 
-namespace Galileo_API.BusinessLogic.ProGrX.Cobros.ControlSeguimiento
+namespace Galileo_API.BusinessLogic.ProGrX.Cobros
 {
     public class FrmCoControlSeguimientoBL
     {

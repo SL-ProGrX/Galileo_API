@@ -5,7 +5,7 @@ using Galileo_API.BusinessLogic.ProGrX.Cobros;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace PgxAPI.Controllers.ProGrX.Cobros
+namespace Galileo_API.Controllers.ProGrX.Cobros
 {
     [Route("api/[controller]")]
     [ApiController]
