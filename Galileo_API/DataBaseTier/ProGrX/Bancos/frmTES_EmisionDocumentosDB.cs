@@ -1,7 +1,9 @@
 ﻿using Dapper;
+using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.FSL;
 using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Galileo_API.Controllers.WFCSinpe;
@@ -9,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using PdfSharp.Pdf.Filters;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -171,34 +174,55 @@ Where Estado='P' And Tipo = @tipoDoc and ID_Banco = @banco";
             {
                 var consecInt = mTesoreria.fxTesTipoDocConsecInterno(CodEmpresa, filtro.banco, filtro.tipoDoc, "/", filtro.plan).Result;
 
-                var query = @"
-Select TOP (@top) t.*,
-        (select descripcion from SINPE_MOTIVOS where cod_motivo = t.id_rechazo ) as estadoSinpe,
-       dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass
-From Tes_Transacciones t
-Where t.Estado='P' And t.Tipo = @tipoDoc
-  And t.Id_Banco=@banco And t.Autoriza = 'S' and t.fecha_hold is null";
+                string queryUsuario = $@"select COUNT(t.USUARIO_AUTORIZA_ESPECIAL) From Tes_Transacciones t 
+where UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario 
+AND t.Estado='P' 
+And t.Autoriza = 'S' and t.fecha_hold is null";
+
+                int especial = conn.Query<int>(queryUsuario, new { usuario = filtro.usuario.ToUpper() }).FirstOrDefault();
+
+                var query = "";
+
+                if (especial == 0)
+                {
+                    query = @" Select TOP (@top) t.*, (select descripcion from SINPE_MOTIVOS 
+where cod_motivo = t.id_rechazo ) as estadoSinpe,
+ dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass From Tes_Transacciones t 
+ Where t.Estado='P' And t.Tipo = @tipoDoc And t.Id_Banco=@banco And t.Autoriza = 'S' 
+ and t.fecha_hold is null and  t.USUARIO_AUTORIZA_ESPECIAL is null ";
+
+                }
+                else
+                {
+
+                    query = @" Select TOP (@top) t.*, 
+ (select descripcion from SINPE_MOTIVOS where cod_motivo = t.id_rechazo ) as estadoSinpe, 
+ dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass From Tes_Transacciones t 
+ Where t.Estado='P' And t.Autoriza = 'S' and t.fecha_hold is null and  UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario ";
+                }
 
                 if (string.Equals(filtro.generarPor, nSolicitudes, StringComparison.OrdinalIgnoreCase))
+                {
                     query += " And t.NSolicitud Between @minimo And @maximo";
-                else if (string.Equals(filtro.generarPor, nFechas, StringComparison.OrdinalIgnoreCase))
+                } else if (string.Equals(filtro.generarPor, nFechas, StringComparison.OrdinalIgnoreCase))
+                {
                     query += " And t.Fecha_Solicitud Between @fechaInicio And @fechaCorte";
-
+                }
+                    
                 query += " Order by t.NSolicitud";
 
-                var result = conn.Query<TesSolicitudesGenData>(
-                        query,
-                        new
-                        {
-                            top = filtro.cantidad,
-                            tipoDoc = filtro.tipoDoc,
-                            banco = filtro.banco,
-                            minimo = solInicio,
-                            maximo = solCorte,
-                            fechaInicio,
-                            fechaCorte
-                        })
-                    .ToList();
+                var result = conn.Query<TesSolicitudesGenData>(query,
+                new
+                {
+                    top = filtro.cantidad,
+                    tipoDoc = filtro.tipoDoc,
+                    banco = filtro.banco,
+                    minimo = solInicio,
+                    maximo = solCorte,
+                    fechaInicio,
+                    fechaCorte,
+                    usuario = filtro.usuario.ToUpper()
+                }).ToList();
 
                 var now = DateTime.Now;
                 foreach (var item in result)
@@ -302,6 +326,62 @@ where B.estado = 'A'
             try
             {
                 var filtro = ParseFiltros(filtros);
+
+                var responses = new List<object>();
+
+                if (filtro.especial)
+                {
+                    var solicitudes = TES_EmisionDocumento_Solicitudes_Obtener(codEmpresa, filtros).Result;
+                    foreach (var item in solicitudes)
+                    {
+                        filtro.minimo = item.nsolicitud;
+                        filtro.maximo = item.nsolicitud;
+                        filtro.banco = (int)item.id_banco!;
+                        filtro.tipoDoc = item.tipo;
+
+                        var documento = TES_EmisionDocumento_Buscar(codEmpresa, filtro.tipoDoc, filtro.banco, "-sp-").Result;
+
+                        filtro.cantidad = documento.total;
+                        filtro.docBloqueo = documento.docBloqueo;
+                        filtro.docInicial = (int)documento.docInicial;
+                        filtro.generarPor = "solicitudes";
+
+                        var formato = TES_EmisionDocumento_Formato_Obtener(codEmpresa, filtro.banco).Result;
+                        if (item.tipo == "TS")
+                        {
+                            filtro.formatoTE = "SG";
+                        }
+                        else
+                        {
+                            filtro.formatoTE = (string)formato[0].item!;
+                        }
+
+                        var pross = ProcesoDocumentos(codEmpresa, filtro);
+
+                        responses.Add(pross);
+                    }
+
+                    return new ErrorDto<object> { 
+                        Code = 0,
+                        Description = "OK",
+                        Result = responses
+                    };
+                }
+                else
+                {
+                    return ProcesoDocumentos(codEmpresa, filtro);
+                }
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<object>(ex.Message);
+            }
+        }
+
+        private ErrorDto<object> ProcesoDocumentos(int codEmpresa, TesEmisionDocFiltros filtro)
+        {
+            try
+            {
                 NormalizarFiltroFechas(filtro);
 
                 using var conn = _portalDB.CreateConnection(codEmpresa);
@@ -993,6 +1073,38 @@ where nsolicitud in ";
             }
 
             return resp;
+        }
+
+        public ErrorDto<int> ValidaUsuarioEspecial(int CodEmpresa, string usuario)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            try
+            {
+                string query = $@"select COUNT(*) FROM Tes_Transacciones where Autoriza='S' 
+                             AND Fecha_Autorizacion is not null AND USUARIO_AUTORIZA_ESPECIAL = @usuario";
+
+                var parametros = new { usuario = usuario };
+
+                int especial = connection.Query<int>(query, parametros).FirstOrDefault();
+
+                return new ErrorDto<int>
+                {
+                    Code = 0,
+                    Description = "OK",
+                    Result = especial
+                };
+            }
+            catch (Exception)
+            {
+
+                return new ErrorDto<int>
+                {
+                    Code = 0,
+                    Description = "OK",
+                    Result = 0
+                };
+            }
+            
         }
 
         #endregion

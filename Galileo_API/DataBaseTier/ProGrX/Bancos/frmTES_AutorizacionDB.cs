@@ -1,5 +1,6 @@
 using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
@@ -8,6 +9,7 @@ using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.Data.SqlClient;
 using Microsoft.ReportingServices.Diagnostics.Internal;
 using Newtonsoft.Json;
+using System.Data;
 using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
@@ -24,7 +26,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 Fecha_Autorizacion = dbo.MyGetdate(), 
                 User_Autoriza = @usuario,
                 ESTADO_SINPE = @estado_sinpe,
-                TIPO_GIROSINPE = @tipo_giro_sinpe
+                TIPO_GIROSINPE = @tipo_giro_sinpe,
+                USUARIO_AUTORIZA_ESPECIAL = @usuarioEspecial
           WHERE Nsolicitud = @nsolicitud";
 
         private const string SQL_UPDATE_FIRMAS =
@@ -431,7 +434,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 usuario = p.usuario,
                 nsolicitud,
                 estado_sinpe = estadoSinpeDb,
-                tipo_giro_sinpe = tipoGiroSinpeDb
+                tipo_giro_sinpe = tipoGiroSinpeDb,
+                usuarioEspecial = p.autorizacionEspecialUsuario
             };
 
             conn.Execute(updateSql, parametros);
@@ -497,5 +501,112 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 return conn.Query<TesFirmasAutData>(query, new { usuario, banco }).FirstOrDefault() ?? new TesFirmasAutData();
             });
         }
+
+
+        /// <summary>
+        /// Método para buscar y obtener los usuarios activos de la empresa especificada, con paginación y filtros.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+        public ErrorDto<TesAccesosUsuariosLista> TES_AutorizacionBuscar_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            var result = new ErrorDto<TesAccesosUsuariosLista>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new TesAccesosUsuariosLista
+                {
+                    total = 0,
+                    lista = new List<DropDownListaGenericaModel>()
+                }
+            };
+
+            try
+            {
+                filtros ??= new FiltrosLazyLoadData();
+
+                // --- Parámetros y saneo ---
+                var hasFilter = !string.IsNullOrWhiteSpace(filtros.filtro);
+                var filtroValor = hasFilter ? $"%{filtros.filtro}%" : null;
+
+                // Whitelist: solo columnas permitidas
+                var sortField = (filtros.sortField ?? "item").Trim();
+                var sortMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    // codificamos la columna a un entero para usar CASE en ORDER BY
+                    ["item"] = 1,          // t.item
+                    ["descripcion"] = 2,   // t.descripcion
+                    ["nombre"] = 1         // "nombre" mapea a 'item'
+                };
+                if (!sortMap.TryGetValue(sortField, out var sortCode))
+                    sortCode = 1; // default seguro
+
+                var isAsc = filtros.sortOrder != 0; // true=ASC, false=DESC
+
+                // Paginación (ajusta si 'pagina' es número de página y no offset)
+                var pageSize = Math.Max(1, filtros.paginacion);
+                var offset = Math.Max(0, filtros.pagina);
+
+                var p = new DynamicParameters();
+                p.Add("@hasFilter", hasFilter ? 1 : 0, DbType.Int32);
+                p.Add("@filtro", filtroValor, DbType.String);
+                p.Add("@sortCode", sortCode, DbType.Int32);
+                p.Add("@isAsc", isAsc ? 1 : 0, DbType.Int32);
+                p.Add("@offset", offset, DbType.Int32);
+                p.Add("@pageSize", pageSize, DbType.Int32);
+
+                // --- COUNT: SQL 100% estático ---
+                var sqlCount = @"
+            SELECT COUNT(1)
+            FROM usuarios
+            WHERE Estado = 'A'
+              AND (
+                    @hasFilter = 0
+                 OR  Nombre      LIKE @filtro
+                 OR  descripcion LIKE @filtro
+              );";
+                result.Result.total = conn.ExecuteScalar<int>(sqlCount, p);
+
+                // --- DATA: SQL 100% estático; ORDER BY con CASE + flags ---
+                var sqlData = @"
+            WITH base AS (
+                SELECT
+                    Nombre       AS item,
+                    RTRIM(descripcion) AS descripcion
+                FROM usuarios
+                WHERE Estado = 'A'
+                  AND (
+                        @hasFilter = 0
+                     OR  Nombre      LIKE @filtro
+                     OR  descripcion LIKE @filtro
+                  )
+            )
+            SELECT item, descripcion
+            FROM base t
+            ORDER BY
+                -- item ASC/DESC
+                CASE WHEN @sortCode = 1 AND @isAsc = 1 THEN t.item END ASC,
+                CASE WHEN @sortCode = 1 AND @isAsc = 0 THEN t.item END DESC,
+                -- descripcion ASC/DESC
+                CASE WHEN @sortCode = 2 AND @isAsc = 1 THEN t.descripcion END ASC,
+                CASE WHEN @sortCode = 2 AND @isAsc = 0 THEN t.descripcion END DESC
+            OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
+
+                result.Result.lista = conn.Query<DropDownListaGenericaModel>(sqlData, p).ToList();
+            }
+            catch (Exception ex)
+            {
+                result.Code = -1;
+                result.Description = ex.Message;
+                result.Result.total = 0;
+                result.Result.lista = new List<DropDownListaGenericaModel>();
+            }
+
+            return result;
+        }
+
     }
 }

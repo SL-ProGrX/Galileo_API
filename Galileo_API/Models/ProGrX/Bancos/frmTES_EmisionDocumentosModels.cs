@@ -28,6 +28,7 @@ namespace Galileo.Models.TES
         public string? formatoTE { get; set; }
         public string usuario { get; set; } = string.Empty;
         public bool? docBloqueo { get; set; }
+        public bool especial { get; set; } = false;
     }
 
     public class TesSolicitudesGenData
@@ -43,6 +44,7 @@ namespace Galileo.Models.TES
         public string? firmas { get; set; } = string.Empty;
         public bool? pass { get; set; }
         public string? estadoSinpe { get; set; }
+        public int? id_banco { get; set; }
     }
 
     public class TesBancoDocsData
