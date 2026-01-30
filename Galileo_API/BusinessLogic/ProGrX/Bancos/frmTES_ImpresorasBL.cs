@@ -1,8 +1,8 @@
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
-using PgxAPI.DataBaseTier;
+using Galileo_API.DataBaseTier;
 
-namespace PgxAPI.BusinessLogic
+namespace Galileo_API.BusinessLogic
 {
     public class FrmTesImpresorasBL
     {

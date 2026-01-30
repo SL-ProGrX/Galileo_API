@@ -1,6 +1,6 @@
 ﻿using Galileo.Models.KindoSinpe;
 using Microsoft.AspNetCore.Mvc;
-using PgxAPI.BusinessLogic.KindoSinpe;
+using Galileo_API.BusinessLogic.KindoSinpe;
 
 namespace Galileo_API.Controllers.KindoSinpe
 {

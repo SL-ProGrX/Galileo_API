@@ -1,11 +1,14 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
+using Galileo.Models.AF;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 using Microsoft.ReportingServices.Diagnostics.Internal;
+using Sinpe_TFT;
+using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -23,6 +26,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             _portalDB = new PortalDB(config);
         }
 
+     
+        public ErrorDto<long> sbNTrasnferencia(int CodEmpresa, int id_banco, string tipo, string avance, string plan)
+        {
+            return mTesoreria.fxTesTipoDocConsec(CodEmpresa, id_banco, tipo, avance, plan);
+        }
+
+        
+       
+        /// <summary>
+        /// Carga el combo de acceso a la gestión de transferencias bancarias.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="gestion"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
+        {
+            return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
+        }
+
+        #region Reversa Transferencia
         /// <summary>
         /// Obtiene las solicitudes de transferencia reversa según los criterios especificados.
         /// </summary>
@@ -73,7 +97,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             AND (@CtaAhorros IS NULL OR Cta_Ahorros LIKE @CtaAhorrosLike)
 
                             -- Mantengo tu lógica: si no viene cod_plan, usar '-sp-' y comparar con ISNULL(cod_Plan,'-sp-')
-                            AND (ISNULL(cod_Plan,'-sp-') = @CodPlan);";
+                            AND (ISNULL(cod_Plan,'-sp-') = @CodPlan)
+                            AND REFERENCIA_SINPE NOT IN (
+    	                            SELECT COD_REFERENCIA FROM SINPE_MOV_TRANSITO
+                                );";
 
                 var parameters = new
                 {
@@ -139,11 +166,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
             }
-        }
-
-        public ErrorDto<long> sbNTrasnferencia(int CodEmpresa, int id_banco, string tipo, string avance, string plan)
-        {
-            return mTesoreria.fxTesTipoDocConsec(CodEmpresa, id_banco, tipo, avance, plan);
         }
 
         /// <summary>
@@ -251,6 +273,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
         }
 
+        #endregion
+
+        #region Consulta Reversa Transferencia
         /// <summary>
         /// Metodo para obtener las reversas de transferencias según los criterios especificados.
         /// </summary>
@@ -311,16 +336,173 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             });
         }
 
+        #endregion
+
+        #region Transferencia SINPE
         /// <summary>
-        /// Carga el combo de acceso a la gestión de transferencias bancarias.
+        /// Metodo para obtener las transferencias SINPE para reversa según los criterios especificados.
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="gestion"></param>
+        /// <param name="reversa"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> sbTesBancoCargaCboAccesoGestion(int CodEmpresa, string usuario, string gestion)
+        public ErrorDto<List<TransferenciaSolicitudData>> TES_TransferenciaRevSinpe_Obtener(TesReversaSinpeRequest reversa)
         {
-            return mTesoreria.sbTesBancoCargaCboAccesoGestion(CodEmpresa, usuario, gestion);
+            using var conn = DbHelper.OpenConnection(_portalDB, reversa.codEmpresa);
+            try
+            {
+
+                // Normalizo textos
+                var documento = reversa.documento?.Trim();
+              
+                const string query = @"
+                        SELECT
+                                nsolicitud,
+                                codigo,
+                                beneficiario,
+                                monto,
+                                fecha_emision,
+                                cta_ahorros,
+                                Ndocumento
+                            FROM Tes_Transacciones
+                            WHERE
+                                id_banco = @id_banco
+                                AND (@Ndocumento IS NULL OR Ndocumento LIKE @NdocumentoLike)
+                                AND (@NSolicitud IS NULL OR NSOLICITUD LIKE @NSolicitudLike)
+                                AND REFERENCIA_SINPE IN (
+    	                            SELECT COD_REFERENCIA FROM SINPE_MOV_TRANSITO
+                                ) AND ESRADO = 4";
+
+                var parameters = new
+                {
+                    id_banco = reversa.id_banco,
+
+                    Ndocumento = string.IsNullOrWhiteSpace(documento) ? null : documento,
+                    NdocumentoLike = string.IsNullOrWhiteSpace(documento) ? null : $"%{documento}%",
+
+                    NSolicitud = string.IsNullOrWhiteSpace(documento) ? null : documento,
+                    NSolicitudLike = string.IsNullOrWhiteSpace(documento) ? null : $"%{documento}%",
+                };
+
+                var response = conn.Query<TransferenciaSolicitudData>(query, parameters).ToList();
+
+                if (response.Count == 0)
+                    return DbHelper.CreateErrorResponse<List<TransferenciaSolicitudData>>(
+                        "No se encontraron datos para la solicitud especificada.");
+
+                return DbHelper.CreateOkResponse(response);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<List<TransferenciaSolicitudData>>(ex.Message);
+            }
         }
+
+        /// <summary>
+        /// Metodo para aplicar la reversa de una transferencia SINPE.
+        /// </summary>
+        /// <param name="reversa"></param>
+        /// <returns></returns>
+        public ErrorDto TES_TransferenciaRevSinpe_Aplicar(TesReversaSinpeModel reversa)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, reversa.codEmpresa);
+
+            try
+            {
+                //calculo los días entre dos fechas
+                if (reversa.lista == null || reversa.lista.Count == 0)
+                {
+                    return DbHelper.ErrorResponse("No existen registros para reversar.");
+                }
+
+                var query = $@"Select * From Tes_Autorizaciones Where Clave= @clave and nombre = @usuario and estado = 'A'";
+                var autorizacion = conn.QueryFirstOrDefault<TesAutorizacionesDto>(query,
+                    new { reversa.clave, reversa.usuario });
+
+                if (autorizacion == null)
+                {
+                    return DbHelper.ErrorResponse("Contraseña Incorrecta, o no Existe Nivel de Autorización", -1);
+                }
+
+                query = $@"select count(*) as Existe from TES_SINPE_REVERSA where
+                                     id_Banco = @id_banco and NDOCUMENTO = @documento ";
+                var existe = conn.QueryFirstOrDefault<int>(query,
+                    new { reversa.id_banco, documento = reversa.documento!.Trim() });
+
+                if (existe == 1)
+                {
+                    return DbHelper.ErrorResponse($"La transferencia No.{reversa.documento}, ya fue reversada anteriormente!", -2);
+                }
+
+
+                query = $@"exec spTES_TE_Reversion_Main @id_banco, @tipo, @documento, @observaciones, @usuario ";
+                var ReversionId = conn.QueryFirstOrDefault<int>(query,
+                    new
+                    {
+                        reversa.id_banco,
+                        tipo = "TS",
+                        documento = reversa.documento.Trim(),
+                        observaciones = reversa.observaciones ?? string.Empty,
+                        usuario = reversa.usuario!.ToUpper()
+                    });
+
+                if (reversa.lista.Count > 0)
+                {
+                    foreach (var item in reversa.lista)
+                    {
+                        query = $@"select SUBSTRING(@CuentaIBAN,9,2)";
+                        var tipoCuenta = conn.QueryFirstOrDefault<int>(query);
+
+                       
+
+                        query = $@"SELECT M.RECHAZO_CODIGO , M.COD_REFERENCIA, 0 as 'COMPTOBANTE_CGP' ,M.COMPROBANTE_INTERNO , M.RECHAZO_DESC, FROM Tes_Transacciones T INNER JOIN SINPE_MOV_TRANSITO M
+                                    ON T.REFERENCIA_SINPE = M.COD_REFERENCIA
+                                    WHERE M.COD_REFERENCIA = @Cod_Referencia";
+                        var infoTrans = conn.QueryFirstOrDefault<dynamic>(query,
+                            new {
+                                Cod_Referencia = item.nsolicitud
+                            });
+
+                        var parametros = new
+                        {
+                            CODIGO_RECHAZO_SINPE = infoTrans!.RECHAZO_CODIGO,
+                            CODIGO_REFERENCIA = infoTrans.COD_REFERENCIA,
+                            COMPTOBANTE_CGP = infoTrans.COMPTOBANTE_CGP,
+                            COMPROBANTE_INTERNO = infoTrans.COMPROBANTE_INTERNO,
+                            DESCRIPCION_RECHAZO = infoTrans.RECHAZO_DESC
+                        };
+
+                        var procedimiento = tipoCuenta == 1
+                            ? "sp_Sinpe_ReversaDebitos"
+                            : "sp_Sinpe_ReversaCreditos";
+
+                        conn.Execute(
+                            procedimiento,
+                            parametros,
+                            commandType: CommandType.StoredProcedure
+                        );
+
+                    }
+                }
+
+                //bitacora
+                _mSecurity.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = reversa.codEmpresa,
+                    Usuario = reversa.usuario,
+                    Modulo = module, // Tesoreria
+                    Movimiento = "Aplica",
+                    DetalleMovimiento = "Reversion Transferencia = " + ReversionId + " Id.Cuenta:" + reversa.id_banco + ", Tipo: TS",
+                });
+
+                return DbHelper.OkResponse(ReversionId.ToString());
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+
+        }
+
+        #endregion
+
     }
 }
