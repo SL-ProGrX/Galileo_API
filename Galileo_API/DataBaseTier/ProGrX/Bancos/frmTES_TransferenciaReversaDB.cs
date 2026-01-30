@@ -469,24 +469,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             DESCRIPCION_RECHAZO = infoTrans.RECHAZO_DESC
                         };
 
-                        if (tipoCuenta == 1) // fondos
-                        {
-                            query = $@"EXEC sp_Sinpe_ReversaDebitos 
-                                            @CODIGO_RECHAZO_SINPE,
-	                                        @CODIGO_REFERENCIA, 
-	                                        @COMPTOBANTE_CGP,
-	                                        @COMPROBANTE_INTERNO , 	
-	                                        @DESCRIPCION_RECHAZO ";
-                        }
-                        else
-                        {
-                            query = $@"EXEC sp_Sinpe_ReversaCreditos
+                        var procedimiento = tipoCuenta == 1 ? "sp_Sinpe_ReversaDebitos" : "sp_Sinpe_ReversaCreditos"; // fondos
+                        query = $@"EXEC {procedimiento} 
                                             @CODIGO_RECHAZO_SINPE,
 	                                        @CODIGO_REFERENCIA, 
 	                                        @COMPTOBANTE_CGP,
 	                                        @COMPROBANTE_INTERNO , 	
 	                                        @DESCRIPCION_RECHAZO";
-                        }
                             
                         conn.Execute(query, parametros);
 
