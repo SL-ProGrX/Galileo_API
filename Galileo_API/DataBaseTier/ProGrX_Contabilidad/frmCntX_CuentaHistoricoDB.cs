@@ -17,6 +17,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _portalDb = portalDb;
         }
 
+        /// <summary>
+        /// Obtiene las unidades de negocio para el historico de cuentas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCuentaHistorico_Unidades_Obtener(int codEmpresa, int codConta)
         {
             string query = @"select rtrim(cod_unidad) as item, rtrim(descripcion) as descripcion 
@@ -24,6 +30,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, new { codConta });
         }
 
+        /// <summary>
+        /// Obtiene los centros de costos para el historico de cuentas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="codUnidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CntXCuentaHistorico_CentroCostos_Obtener(int codEmpresa, int codConta, string codUnidad)
         {
             string query = @"select rtrim(cod_centro_costo) as item, rtrim(descripcion) as descripcion 
@@ -42,110 +55,47 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, param);
         }
 
+        /// <summary>
+        /// Obtiene el historico de una cuenta
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="cuenta"></param>
+        /// <param name="codUnidad"></param>
+        /// <param name="codCentroCosto"></param>
+        /// <param name="rbOpcion"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXCuentaHistoricoData>> CntXCuentaHistorico_Obtener(
-    int codEmpresa, int codConta, string cuenta, string codUnidad, string codCentroCosto)
+            int codEmpresa, int codConta, string cuenta, string codUnidad, string codCentroCosto, int rbOpcion)
         {
             bool consolidado = codUnidad == "[CONSOLIDADO]";
             bool ccTodos = codCentroCosto == "TODOS";
 
-            string qFecha = @"select dbo.fxSys_FechaAnioMesToDatetime(@anio, @mes) as Fecha";
+            int periodoAnio = DateTime.Now.Year;
+            int periodoMes = DateTime.Now.Month;
 
-            var fechaDto = DbHelper.ExecuteSingleQuery(
-                _portalDb,
-                codEmpresa,
-                qFecha,
-                DateTime.Now,
-                new
-                {
-                    anio = DateTime.Now.Year,
-                    mes = DateTime.Now.Month
-                });
-
-            if (fechaDto != null && fechaDto.Code < 0)
+            var fechaDto = ObtenerFechaActual(_portalDb, codEmpresa, periodoAnio, periodoMes);
+            if (fechaDto == null || (fechaDto.Code < 0))
             {
-                var error = new ErrorDto<List<CntXCuentaHistoricoData>>
+                return new ErrorDto<List<CntXCuentaHistoricoData>>
                 {
-                    Code = fechaDto.Code,
-                    Description = fechaDto.Description,
+                    Code = fechaDto?.Code,
+                    Description = fechaDto?.Description ?? "Error al obtener la fecha.",
                     Result = null
                 };
-                return error;
             }
-                
+
             DateTime pFecha = fechaDto.Result;
+            string fromSql = ObtenerFromSql(consolidado, ccTodos);
+            string query = GenerarQuery(consolidado, ccTodos, fromSql);
 
-            string fromSql =
-                (consolidado && ccTodos) ? "vCntX_Mov_Cuentas_General" :
-                (consolidado && !ccTodos) ? "vCntX_Mov_Cuentas_CentroCosto" :
-                (!consolidado && ccTodos) ? "vCntX_Mov_Cuentas_Unidad" :
-                "CntX_Mov_Cuentas_Detallado";
-
-            string query;
-
-            if (!consolidado && !ccTodos)
-            {
-                query = $@"
-            select 
-                M.Anio as anio,
-                M.Mes as mes,
-                C.cod_Cuenta_Mask as cod_cuenta_mask,
-                M.cod_unidad as cod_unidad,
-                M.cod_Centro_Costo as cod_centro_costo,
-                M.Saldo_Inicial as saldo_inicial,
-                abs(M.Total_Debitos) as debitos,
-                abs(M.Total_Creditos) as creditos,
-                (M.Total_Debitos + M.Total_Creditos) as neto_mes,
-                (M.SALDO_Inicial + M.Total_Debitos + M.Total_Creditos) as saldofinal
-            from {fromSql} M
-            inner join CntX_Cuentas C
-                on M.cod_Contabilidad = C.cod_Contabilidad
-               and M.cod_Cuenta = C.cod_Cuenta
-            inner join CntX_Periodos P
-                on M.cod_Contabilidad = P.cod_Contabilidad
-               and M.Anio = P.Anio
-               and M.Mes = P.Mes
-            where M.cod_cuenta = @cuenta
-              and M.cod_contabilidad = @codConta
-        ";
-            }
-            else
-            {
-                query = $@"
-            select 
-                M.Anio as anio,
-                M.Mes as mes,
-                C.cod_Cuenta_Mask as cod_cuenta_mask,
-                {(consolidado ? (ccTodos ? "''" : "M.cod_unidad") : "M.cod_unidad")} as cod_unidad,
-                {(ccTodos ? "''" : "M.cod_Centro_Costo")} as cod_centro_costo,
-                M.Saldo_Inicial as saldo_inicial,
-                abs(M.Total_Debitos) as debitos,
-                abs(M.Total_Creditos) as creditos,
-                M.Neto_Mes as neto_mes,
-                M.SALDO_Final as saldofinal
-            from {fromSql} M
-            inner join CntX_Cuentas C
-                on M.cod_Contabilidad = C.cod_Contabilidad
-               and M.cod_Cuenta = C.cod_Cuenta
-            inner join CntX_Periodos P
-                on M.cod_Contabilidad = P.cod_Contabilidad
-               and M.Anio = P.Anio
-               and M.Mes = P.Mes
-            where M.cod_cuenta = @cuenta
-              and M.cod_contabilidad = @codConta
-        ";
-            }
-
-            if (consolidado && !ccTodos)
-                query += " and M.cod_centro_costo = @codCentroCosto";
-            else if (!consolidado && ccTodos)
-                query += " and M.cod_unidad = @codUnidad";
-            else if (!consolidado && !ccTodos)
-                query += " and M.cod_unidad = @codUnidad and M.cod_centro_costo = @codCentroCosto";
+            AgregarFiltros(ref query, consolidado, ccTodos);
 
             DateTime desde = pFecha.AddMonths(-24);
             DateTime hasta = pFecha.Date.AddDays(1).AddTicks(-1);
 
-            query += " and P.PERIODO_CORTE between @desde and @hasta";
+            AgregarFiltroPeriodo(ref query, rbOpcion);
+
             query += " order by M.anio DESC, M.mes DESC";
 
             return DbHelper.ExecuteListQuery<CntXCuentaHistoricoData>(
@@ -159,9 +109,126 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     codUnidad,
                     codCentroCosto,
                     desde,
-                    hasta
+                    hasta,
+                    periodoMes
                 });
         }
-        
+
+        private static ErrorDto<DateTime> ObtenerFechaActual(PortalDB portalDb, int codEmpresa, int anio, int mes)
+        {
+            string qFecha = @"select dbo.fxSys_FechaAnioMesToDatetime(@anio, @mes) as Fecha";
+            return DbHelper.ExecuteSingleQuery<DateTime>(
+                portalDb,
+                codEmpresa,
+                qFecha,
+                DateTime.Now,
+                new { anio, mes });
+        }
+
+        private static string ObtenerFromSql(bool consolidado, bool ccTodos) =>
+        (consolidado, ccTodos) switch
+        {
+            (true, true) => "vCntX_Mov_Cuentas_General",
+            (true, false) => "vCntX_Mov_Cuentas_CentroCosto",
+            (false, true) => "vCntX_Mov_Cuentas_Unidad",
+            _ => "CntX_Mov_Cuentas_Detallado"
+        };
+
+        private static string GenerarQuery(bool consolidado, bool ccTodos, string fromSql)
+        {
+            string codUnidadSelect;
+            if (consolidado)
+            {
+                codUnidadSelect = ccTodos ? "''" : "M.cod_unidad";
+            }
+            else
+            {
+                codUnidadSelect = "M.cod_unidad";
+            }
+
+            if (!consolidado && !ccTodos)
+            {
+                return $@"
+                select 
+                    M.Anio as anio,
+                    M.Mes as mes,
+                    C.cod_Cuenta_Mask as cod_cuenta_mask,
+                    M.cod_unidad as cod_unidad,
+                    M.cod_Centro_Costo as cod_centro_costo,
+                    M.Saldo_Inicial as saldo_inicial,
+                    abs(M.Total_Debitos) as debitos,
+                    abs(M.Total_Creditos) as creditos,
+                    (M.Total_Debitos + M.Total_Creditos) as neto_mes,
+                    (M.SALDO_Inicial + M.Total_Debitos + M.Total_Creditos) as saldofinal
+                from {fromSql} M
+                inner join CntX_Cuentas C
+                    on M.cod_Contabilidad = C.cod_Contabilidad
+                   and M.cod_Cuenta = C.cod_Cuenta
+                inner join CntX_Periodos P
+                    on M.cod_Contabilidad = P.cod_Contabilidad
+                   and M.Anio = P.Anio
+                   and M.Mes = P.Mes
+                where M.cod_cuenta = @cuenta
+                  and M.cod_contabilidad = @codConta
+            ";
+            }
+            else
+            {
+                string codCentroCostoSelect = ccTodos ? "''" : "M.cod_Centro_Costo";
+                return $@"
+                select 
+                    M.Anio as anio,
+                    M.Mes as mes,
+                    C.cod_Cuenta_Mask as cod_cuenta_mask,
+                    {codUnidadSelect} as cod_unidad,
+                    {codCentroCostoSelect} as cod_centro_costo,
+                    M.Saldo_Inicial as saldo_inicial,
+                    abs(M.Total_Debitos) as debitos,
+                    abs(M.Total_Creditos) as creditos,
+                    M.Neto_Mes as neto_mes,
+                    M.SALDO_Final as saldofinal
+                from {fromSql} M
+                inner join CntX_Cuentas C
+                    on M.cod_Contabilidad = C.cod_Contabilidad
+                   and M.cod_Cuenta = C.cod_Cuenta
+                inner join CntX_Periodos P
+                    on M.cod_Contabilidad = P.cod_Contabilidad
+                   and M.Anio = P.Anio
+                   and M.Mes = P.Mes
+                where M.cod_cuenta = @cuenta
+                  and M.cod_contabilidad = @codConta
+            ";
+            }
+        }
+
+        private static void AgregarFiltros(ref string query, bool consolidado, bool ccTodos)
+        {
+            switch (consolidado, ccTodos)
+            {
+                case (true, false):
+                    query += " and M.cod_centro_costo = @codCentroCosto";
+                    break;
+
+                case (false, true):
+                    query += " and M.cod_unidad = @codUnidad";
+                    break;
+
+                case (false, false):
+                    query += " and M.cod_unidad = @codUnidad and M.cod_centro_costo = @codCentroCosto";
+                    break;
+            }
+        }
+
+        private static void AgregarFiltroPeriodo(ref string query, int rbOpcion)
+        {
+            if (rbOpcion == 0) // Últimos 24 meses
+            {
+                query += " and P.PERIODO_CORTE between @desde and @hasta";
+            }
+            else if (rbOpcion == 1) // Histórico
+            {
+                query += " and M.mes = @periodoMes";
+            }
+        }
     }
 }

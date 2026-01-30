@@ -30,9 +30,9 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         [HttpGet("CntXCuentaHistorico_Obtener")]
         public ErrorDto<List<CntXCuentaHistoricoData>> CntXCuentaHistorico_Obtener(
-            int codEmpresa, int codConta, string cuenta, string codUnidad, string codCentroCosto)
+            int codEmpresa, int codConta, string cuenta, string codUnidad, string codCentroCosto, int rbOpcion)
         {
-            return _bl.CntXCuentaHistorico_Obtener(codEmpresa, codConta, cuenta, codUnidad, codCentroCosto);
+            return _bl.CntXCuentaHistorico_Obtener(codEmpresa, codConta, cuenta, codUnidad, codCentroCosto, rbOpcion);
         }
     }
 }

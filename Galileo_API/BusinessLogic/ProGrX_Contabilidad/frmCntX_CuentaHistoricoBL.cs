@@ -22,9 +22,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
         }
 
         public ErrorDto<List<CntXCuentaHistoricoData>> CntXCuentaHistorico_Obtener(
-            int codEmpresa, int codConta, string cuenta, string codUnidad, string codCentroCosto)
+            int codEmpresa, int codConta, string cuenta, string codUnidad, string codCentroCosto, int rbOpcion)
         {
-            return _db.CntXCuentaHistorico_Obtener(codEmpresa, codConta, cuenta, codUnidad, codCentroCosto);
+            return _db.CntXCuentaHistorico_Obtener(codEmpresa, codConta, cuenta, codUnidad, codCentroCosto, rbOpcion);
         }
     }
 }
