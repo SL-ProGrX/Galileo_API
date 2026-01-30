@@ -22,7 +22,7 @@
 
     public class CbrControlDistribucionParams
     {
-        public string Tipo { get; set; }
+        public string Tipo { get; set; } = string.Empty;
         public string Grupo { get; set; } = string.Empty;
         public int? Inicializa { get; set; }
         public int? MantenerNuevos { get; set; }
