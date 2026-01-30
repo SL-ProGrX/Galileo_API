@@ -4,7 +4,7 @@ using Galileo_API.BusinessLogic.ProGrX.Bancos;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
 
-namespace PgxAPI.Controllers.ProGrX.Bancos
+namespace Galileo_API.Controllers.ProGrX.Bancos
 {
     [Route("api/[controller]")]
     [ApiController]
