@@ -2,13 +2,13 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX.Cobros.ControlSeguimiento;
+using Galileo.Models.ProGrX.Cobros;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System.Data;
 
-namespace Galileo_API.DataBaseTier.ProGrX.Cobros.ControlSeguimiento
+namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoControlSeguimientoDB
     {

@@ -1,7 +1,7 @@
 ﻿
 using System.ComponentModel.DataAnnotations;
 
-namespace Galileo.Models.ProGrX.Cobros.ControlSeguimiento
+namespace Galileo.Models.ProGrX.Cobros
 {
     public class CoControlSegHistGestionDto
     {
