@@ -136,15 +136,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         private static string GenerarQuery(bool consolidado, bool ccTodos, string fromSql)
         {
-            string codUnidadSelect;
-            if (consolidado)
-            {
-                codUnidadSelect = ccTodos ? "''" : "M.cod_unidad";
-            }
-            else
-            {
-                codUnidadSelect = "M.cod_unidad";
-            }
+            string codUnidadSelect = (consolidado && ccTodos) ? "''" : "M.cod_unidad";
 
             if (!consolidado && !ccTodos)
             {
