@@ -8,7 +8,7 @@ using System.Data.Common;
 using Galileo.Models.ProGrX.Cobros;
 using static Org.BouncyCastle.Math.EC.ECCurve;
 
-namespace PgxAPI.DataBaseTier.ProGrX.Cobros
+namespace Galileo.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCoControlCartasAvisosDB
     {
