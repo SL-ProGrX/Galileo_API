@@ -16,15 +16,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         }
 
-    
-        public static ErrorDto CxCClientesClasifica_Guardar(int codEmpresa, string usuario, CxCConsultaData datos)
-        {
-       
 
-            return Ok(); 
-        }
-
-        private static ErrorDto Ok() => DbHelper.CreateOkResponse();
 
     }
 }

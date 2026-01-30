@@ -15,10 +15,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         public FrmCxCConsultaBL(IConfiguration config) => _db = new FrmCxCConsultaDB(config);
 
 
-        public ErrorDto CxCClientesClasifica_Guardar(int CodEmpresa, string usuario, CxCConsultaData datos)
-        {
-            return _db.CxCClientesClasifica_Guardar(CodEmpresa, usuario, datos);
-        }
+ 
 
 
     }

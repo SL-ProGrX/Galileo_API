@@ -16,11 +16,5 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         public FrmCxCConsultaController(IConfiguration config)
             => _bl = new FrmCxCConsultaBL(config);
 
-        [Authorize]
-        [HttpPost("CxCClientesClasifica_Guardar")]
-        public ErrorDto CxCCargosTCxCClientesClasifica_Guardaripos_Guardar(int CodEmpresa, string usuario, [FromBody] CxCConsultaData datos)
-        {
-            return _bl.CxCClientesClasifica_Guardar(CodEmpresa, usuario, datos);
-        }
     }
 }
