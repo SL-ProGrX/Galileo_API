@@ -3,9 +3,9 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cobros;
 using Galileo_API.DataBaseTier.ProGrX.Cobros;
 using Newtonsoft.Json;
-using PgxAPI.DataBaseTier.ProGrX.Cobros;
+using Galileo.DataBaseTier.ProGrX.Cobros;
 
-namespace PgxAPI.BusinessLogic.ProGrX.Cobros
+namespace Galileo.BusinessLogic.ProGrX.Cobros
 {
     public class FrmCoControlCartasAvisosBL
     {
