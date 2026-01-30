@@ -3,10 +3,10 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Cobros;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PgxAPI.BusinessLogic.ProGrX.Cobros;
+using Galileo.BusinessLogic.ProGrX.Cobros;
 
 
-namespace PgxAPI.Controllers.ProGrX.Cobros
+namespace Galileo.Controllers.ProGrX.Cobros
 {
     [Route("api/[controller]")]
     [ApiController]
