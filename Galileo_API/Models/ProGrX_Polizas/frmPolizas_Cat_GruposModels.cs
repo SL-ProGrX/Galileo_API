@@ -1,4 +1,6 @@
-﻿namespace Galileo_API.Models.ProGrX_Polizas
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Galileo_API.Models.ProGrX_Polizas
 {
     public class PolizaGrupoDto
     {
@@ -15,7 +17,8 @@
 
     public class PolizaGrupoSaveParams
     {
-        public int Id_Poliza_Grupo { get; set; } required
+        [Required]
+        public int Id_Poliza_Grupo { get; set; } 
         public string Descripcion { get; set; } = string.Empty;
         public string Tipo_Aplicacion { get; set; } = string.Empty;
         public bool? Activo { get; set; }
@@ -24,7 +27,8 @@
 
     public class PolizaGrupoDeleteParams
     {
-        public int Id_Poliza_Grupo { get; set; } required
+        [Required] 
+        public int Id_Poliza_Grupo { get; set; }  
         public string Usuario { get; set; } = string.Empty;
     }
 }
