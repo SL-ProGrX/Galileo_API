@@ -73,4 +73,21 @@
         public int id_banco { get; set; }
         public string? tipo { get; set; }
     }
+
+    public class TesReversaSinpeRequest
+    {
+        public int codEmpresa { get; set; } = 0;
+        public string id_banco { get; set; } = string.Empty;
+        public string? documento { get; set; } = null;
+        public string tipoDocumento { get; set; } = string.Empty;
+    }
+
+    public class TesReversaSinpeModel : TesReversaSinpeRequest
+    {
+        public string? clave { get; set; }
+        public string? observaciones { get; set; }
+        public string? usuario { get; set; }
+        public List<TransferenciaSolicitudData> lista { get; set; } = new List<TransferenciaSolicitudData>();
+    }
+
 }
