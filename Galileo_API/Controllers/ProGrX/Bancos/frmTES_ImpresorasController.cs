@@ -2,9 +2,9 @@
 using Galileo.Models.ProGrX.Bancos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using PgxAPI.BusinessLogic;
+using Galileo_API.BusinessLogic;
 
-namespace PgxAPI.Controllers.ProGrX.Bancos
+namespace Galileo_API.Controllers.ProGrX.Bancos
 {
     [Route("api/[controller]")]
     [ApiController]

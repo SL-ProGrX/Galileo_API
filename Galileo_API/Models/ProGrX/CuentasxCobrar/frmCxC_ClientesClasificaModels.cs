@@ -1,4 +1,4 @@
-﻿namespace Galileo_API.Models.ProGrX.CuentasPorCobrar
+﻿namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
 
     public class CxCClientesClasificaLista
@@ -9,7 +9,7 @@
     public class CxCClientesClasificaData
     {
         public string? Cod_categoria { get; set; } = string.Empty;
-        public string? Descripcion { get; set; } = string.Empty;  
+        public string? Descripcion { get; set; } = string.Empty;
         public bool? Activo { get; set; }
         public bool? IsNew { get; set; }
     }
