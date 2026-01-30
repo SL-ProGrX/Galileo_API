@@ -31,10 +31,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var query = "exec spCBR_Fondos_Apl_Config_Prioridades_Add @Codigo, @Orden, @Activo, @Usuario";
             var parameters = new
             {
-                Codigo = param.Codigo,
-                Orden = param.Orden,
-                Activo = param.Activo,
-                Usuario = param.Usuario
+                param.Codigo,
+                param.Orden,
+                param.Activo,
+                param.Usuario
             };
             return DbHelper.ExecuteSingleQuery<FondosAplConfigPrioridadAddResult>(_portalDb, codEmpresa, query, default, parameters);
         }
@@ -44,8 +44,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var query = "exec spCBR_Fondos_Apl_Config_Prioridades_Del @Codigo, @Usuario";
             var parameters = new
             {
-                Codigo = param.Codigo,
-                Usuario = param.Usuario
+                param.Codigo,
+                param.Usuario
             };
             return DbHelper.ExecuteSingleQuery<FondosAplConfigPrioridadDelResult>(_portalDb, codEmpresa, query, default, parameters);
         }
