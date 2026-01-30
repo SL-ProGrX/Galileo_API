@@ -17,7 +17,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         }
 
     
-        public ErrorDto CxCClientesClasifica_Guardar(int codEmpresa, string usuario, CxCConsultaData datos)
+        public static ErrorDto CxCClientesClasifica_Guardar(int codEmpresa, string usuario, CxCConsultaData datos)
         {
        
 
