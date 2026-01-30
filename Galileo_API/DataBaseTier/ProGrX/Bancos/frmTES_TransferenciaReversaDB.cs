@@ -462,7 +462,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                         var parametros = new
                         {
-                            CODIGO_RECHAZO_SINPE = infoTrans.RECHAZO_CODIGO,
+                            CODIGO_RECHAZO_SINPE = infoTrans!.RECHAZO_CODIGO,
                             CODIGO_REFERENCIA = infoTrans.COD_REFERENCIA,
                             COMPTOBANTE_CGP = infoTrans.COMPTOBANTE_CGP,
                             COMPROBANTE_INTERNO = infoTrans.COMPROBANTE_INTERNO,
