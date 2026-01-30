@@ -4,7 +4,7 @@ using Galileo_API.DataBaseTier.ProGrX.Cobros;
 using Galileo.Models.ProGrX.Cobros;
 using Galileo.Models;
 
-namespace PgxAPI.BusinessLogic.ProGrX.Cobros
+namespace Galileo_API.BusinessLogic.ProGrX.Cobros
 {
     public class FrmCOAplFndInstitucionesBL
     {
