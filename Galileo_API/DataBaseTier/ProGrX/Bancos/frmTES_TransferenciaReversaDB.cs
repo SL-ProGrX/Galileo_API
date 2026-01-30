@@ -8,6 +8,7 @@ using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 using Microsoft.ReportingServices.Diagnostics.Internal;
 using Sinpe_TFT;
+using System.Data;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -469,15 +470,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                             DESCRIPCION_RECHAZO = infoTrans.RECHAZO_DESC
                         };
 
-                        var procedimiento = tipoCuenta == 1 ? "sp_Sinpe_ReversaDebitos" : "sp_Sinpe_ReversaCreditos"; // fondos
-                        query = $@"EXEC {procedimiento} 
-                                            @CODIGO_RECHAZO_SINPE,
-	                                        @CODIGO_REFERENCIA, 
-	                                        @COMPTOBANTE_CGP,
-	                                        @COMPROBANTE_INTERNO , 	
-	                                        @DESCRIPCION_RECHAZO";
-                            
-                        conn.Execute(query, parametros);
+                        var procedimiento = tipoCuenta == 1
+                            ? "sp_Sinpe_ReversaDebitos"
+                            : "sp_Sinpe_ReversaCreditos";
+
+                        conn.Execute(
+                            procedimiento,
+                            parametros,
+                            commandType: CommandType.StoredProcedure
+                        );
 
                     }
                 }
