@@ -116,6 +116,18 @@
         public decimal iva { get; set; }
     }
 
+    public class CajasCrdAbonosCuotasInfoData
+    {
+        public long seqX { get; set; } = 0;
+        public decimal intCor { get; set; } = 0;
+        public decimal iva { get; set; } = 0;
+        public decimal poliza { get; set; } = 0;
+        public decimal principal { get; set; } = 0;
+        public decimal saldo { get; set; } = 0;
+        public decimal fecha_Proceso { get; set; } = 0;
+        public decimal cuota { get; set; } = 0;
+    }
+
     public class CajasCrdAbonosCtPRegistrarAbonoRequest
     {
         public string mcaja { get; set; } = "";
