@@ -70,10 +70,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         public ErrorDto<bool> Enfermedades_Guardar(int codEmpresa, EnfermedadVidaSaveParams param)
         {
             var existe = param.Id.HasValue ? Enfermedades_Existe(codEmpresa, param.Id.Value).Result?.Existe ?? 0 : 0;
-            if (existe == 0)
-                return Enfermedades_Insertar(codEmpresa, param);
-            else
-                return Enfermedades_Actualizar(codEmpresa, param);
+            return existe == 0
+                ? Enfermedades_Insertar(codEmpresa, param)
+                : Enfermedades_Actualizar(codEmpresa, param);
         }
 
         /// <summary>
