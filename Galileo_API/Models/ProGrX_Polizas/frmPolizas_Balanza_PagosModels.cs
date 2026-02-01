@@ -45,7 +45,7 @@
     public class PolizaBalancePagoParams
     {
         public string Poliza { get; set; } = string.Empty;
-        public DateTime Corte { get; set; }
+        public DateTime? Corte { get; set; }
         public string TipoInforme { get; set; } = "R";
         public string Balanza { get; set; } = "T";
         public string? Cedula { get; set; }
