@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
+using Galileo_API.DataBaseTier.ProGrX.Bancos;
 using Microsoft.Data.SqlClient;
 
 namespace Galileo_API.DataBaseTier
@@ -48,14 +49,15 @@ namespace Galileo_API.DataBaseTier
                 var vFecha = DateTime.Now;
 
                 // 2) Ejecutar SOLO SQL permitido
-                var result = conn.Query<TransferenciasData>(allowedSql, new
+                var result = conn.Query<TransferenciasData>(allowedSql.Trim('(', ')'), new
                 {
+                    top = transferencia.parametros.maximo,
                     banco = transferencia.parametros.banco,
                     tipoDoc = transferencia.parametros.tipoDoc,
                     minimo = transferencia.parametros.minimo,
                     maximo = transferencia.parametros.maximo,
-                    fechaInicio = transferencia.parametros.fechaInicio,
-                    fechaCorte = transferencia.parametros.fechaCorte
+                    fechaInicio = transferencia.parametros.fecha_inicio,
+                    fechaCorte = transferencia.parametros.fecha_corte
                 }).ToList();
 
                 if (result.Count > 0)
@@ -67,20 +69,9 @@ namespace Galileo_API.DataBaseTier
 
                         curMonto += item.monto;
 
-                        const string queryUpdate = @"
-UPDATE Tes_Transacciones
-SET Estado = 'T',
-    Fecha_Emision = @fechaEmision,
-    Ubicacion_Actual = 'T',
-    FECHA_TRASLADO = @fechaEmision,
-    NDocumento = @nDocumento,
-    user_genera = @usuario,
-    documento_base = @bancoConsec,
-    COD_PLAN = @plan
-WHERE NSolicitud = @nSolicitud;";
-
-                        conn.Execute(queryUpdate, new
+                        conn.Execute(FrmTesAutorizacionSql.Query_UpdateTransacciones, new
                         {
+                            
                             fechaEmision = vFecha, // DateTime, no string
                             nDocumento = vDocumento,
                             usuario = transferencia.usuario,
@@ -117,71 +108,23 @@ WHERE NSolicitud = @nSolicitud;";
             }
         }
 
-        private static class TransferSql
-        {
-            // SIN FILTRO
-            public const string QueryTransac_Base = @"
-Select TOP (@top) *
-From Tes_Transacciones
-Where Estado = 'P' And Tipo = @tipoDoc
-  And ID_Banco= @banco And Autoriza='S' and fecha_hold is null
-Order by Nsolicitud";
-
-            public const string BaseQuery_Base = @"
-(SELECT TOP (@top) nsolicitud
- FROM Tes_Transacciones
- WHERE Estado = 'P' AND Tipo = @tipoDoc
-   AND ID_Banco = @banco AND Autoriza = 'S' AND fecha_hold IS NULL
- Order by Nsolicitud)";
-
-            // POR SOLICITUDES
-            public const string QueryTransac_Solicitudes = @"
-Select TOP (@top) *
-From Tes_Transacciones
-Where Estado = 'P' And Tipo = @tipoDoc
-  And ID_Banco= @banco And Autoriza='S' and fecha_hold is null
-  And NSolicitud Between @minimo And @maximo
-Order by Nsolicitud";
-
-            public const string BaseQuery_Solicitudes = @"
-(SELECT TOP (@top) nsolicitud
- FROM Tes_Transacciones
- WHERE Estado = 'P' AND Tipo = @tipoDoc
-   AND ID_Banco = @banco AND Autoriza = 'S' AND fecha_hold IS NULL
-   And NSolicitud Between @minimo And @maximo
- Order by Nsolicitud)";
-
-            // POR FECHAS
-            public const string QueryTransac_Fechas = @"
-Select TOP (@top) *
-From Tes_Transacciones
-Where Estado = 'P' And Tipo = @tipoDoc
-  And ID_Banco= @banco And Autoriza='S' and fecha_hold is null
-  And Fecha_Solicitud Between @fechaInicio And @fechaCorte
-Order by Nsolicitud";
-
-            public const string BaseQuery_Fechas = @"
-(SELECT TOP (@top) nsolicitud
- FROM Tes_Transacciones
- WHERE Estado = 'P' AND Tipo = @tipoDoc
-   AND ID_Banco = @banco AND Autoriza = 'S' AND fecha_hold IS NULL
-   And Fecha_Solicitud Between @fechaInicio And @fechaCorte
- Order by Nsolicitud)";
-        }
-
         private static string NormalizeSql(string sql)
         {
             if (string.IsNullOrWhiteSpace(sql)) return string.Empty;
-            return string.Join(" ", sql.Split(default(string[]), StringSplitOptions.RemoveEmptyEntries));
+            // Use StringSplitOptions.RemoveEmptyEntries to split on whitespace, avoiding null argument
+            return string.Join(" ", sql.Trim()                 // elimina \r, \n, tabs, espacios
+                                .Trim('(', ')')         // ahora sí, paréntesis externos
+                                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         }
 
         private static string? ResolveAllowedTransferQuery(string incomingSql)
         {
             var inc = NormalizeSql(incomingSql);
 
-            if (inc == NormalizeSql(TransferSql.QueryTransac_Base)) return TransferSql.QueryTransac_Base;
-            if (inc == NormalizeSql(TransferSql.QueryTransac_Solicitudes)) return TransferSql.QueryTransac_Solicitudes;
-            if (inc == NormalizeSql(TransferSql.QueryTransac_Fechas)) return TransferSql.QueryTransac_Fechas;
+            if (inc == NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Base)) return NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Base);
+            if (inc == NormalizeSql(FrmTesAutorizacionSql.BaseQuery_Base)) return NormalizeSql(FrmTesAutorizacionSql.BaseQuery_Base);
+            if (inc == NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Solicitudes)) return NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Solicitudes);
+            if (inc == NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Fechas)) return NormalizeSql(FrmTesAutorizacionSql.QueryTransac_Fechas);
 
             return null;
         }

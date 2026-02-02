@@ -30,7 +30,8 @@
         public string tipoDoc { get; set; } = string.Empty;
         public int minimo { get; set; } = 0;
         public int maximo { get; set; } = 0;
-        public DateTime? fechaInicio { get; set; } = null;
-        public DateTime? fechaCorte { get; set; } = null;
+        public DateTime? fecha_inicio { get; set; } = null;
+        public DateTime? fecha_corte { get; set; } = null;
+
     }
 }

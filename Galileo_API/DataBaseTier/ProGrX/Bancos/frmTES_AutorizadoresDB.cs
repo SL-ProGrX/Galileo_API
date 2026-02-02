@@ -42,12 +42,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             try
             {
 
-                var filtro = filtros?.filtro?.Trim();
-                var hasFiltro = !string.IsNullOrWhiteSpace(filtro);
+                var sortMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["item"] = 1,
+                    ["descripcion"] = 2,
+                    ["nombre"] = 1
+                };
 
-                var offset = (filtros?.pagina).GetValueOrDefault(0);
-                var fetch = (filtros?.paginacion).GetValueOrDefault(0);
-                var usarPaginacion = fetch > 0; // solo aplico FETCH si tiene sentido
+                var lazy = LazyLoadHelper.Build(filtros, sortMap);
 
                 const string sqlCount = @"
                         SELECT COUNT(1)
@@ -56,11 +58,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 result.Result.total = conn.QuerySingle<int>(
                     sqlCount,
-                    new
-                    {
-                        filtro = hasFiltro ? filtro : null,
-                        filtroLike = hasFiltro ? $"%{filtro}%" : null
-                    });
+                   lazy.Params);
 
                 var sqlList = @"
                             SELECT
@@ -68,24 +66,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                 Nombre AS descripcion
                             FROM tes_autorizaciones
                             WHERE (@filtro IS NULL OR Nombre LIKE @filtroLike)
-                            ORDER BY Nombre ";
-
-                                            if (usarPaginacion)
-                                            {
-                                                sqlList += @"
+                            ORDER BY Nombre  
                             OFFSET @offset ROWS
-                            FETCH NEXT @fetch ROWS ONLY;";
-                }
+                            FETCH NEXT @fetch ROWS ONLY";
+                
 
                 result.Result.lista = conn.Query<DropDownListaGenericaModel>(
                     sqlList,
-                    new
-                    {
-                        filtro = hasFiltro ? filtro : null,
-                        filtroLike = hasFiltro ? $"%{filtro}%" : null,
-                        offset,
-                        fetch
-                    }).ToList();
+                    lazy.Params).ToList();
             }
             catch (Exception ex)
             {

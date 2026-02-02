@@ -720,9 +720,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                         @correo_notifica, @tipo_ced_origen, @cta_iban_origen, @cedula_origen, @tipo_ced_destino
                     );";
 
-                string? vReferencia = (transaccion.referencia != null) ? transaccion.referencia.ToString() : "NULL";
-                string? vOp = (transaccion.op != null) ? transaccion.op.ToString() : "NULL";
-
                 var solicitud = connection.QuerySingle<int>(query, new
                 {
                     id_banco = transaccion.id_banco,
@@ -740,8 +737,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                     detalle3 = transaccion.detalle3,
                     detalle4 = transaccion.detalle4,
                     detalle5 = transaccion.detalle5,
-                    referencia = vReferencia,
-                    op = vOp,
+                    referencia = transaccion.referencia,
+                    op = transaccion.op,
                     entregado = transaccion.entregado,
                     autoriza = transaccion.autoriza,
                     fecha_autorizacion = fechaAutoriza,
