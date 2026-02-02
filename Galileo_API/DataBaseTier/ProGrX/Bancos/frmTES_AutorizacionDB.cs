@@ -1,8 +1,10 @@
 using Dapper;
+using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
+using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
@@ -41,18 +43,12 @@ WHERE NOMBRE = @usuario";
         private const string SQL_BITACORA_EMISION = "EXEC spTesBitacora @nsolicitud,'02','',@usuario";
         private const string SQL_BITACORA_FIRMAS = "EXEC spTesBitacora @nsolicitud,'04','',@usuario";
 
-        private SqlConnection conn = new SqlConnection();
 
         public FrmTesAutorizacionDb(IConfiguration config)
         {
             _mTesoreria = new MTesoreria(config);
             _portalDB = new PortalDB(config);
             _factory = new VerificadorCoreFactory(config);
-        }
-
-        private void CallConnexion(int codEmpresa)
-        {
-            conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
         }
 
         /// <summary>
@@ -63,15 +59,18 @@ WHERE NOMBRE = @usuario";
         /// <returns></returns>
         public ErrorDto<TesSolicitudesLista> TES_SolicitudesPendientes_Obtener(int CodEmpresa, string filtros)
         {
-            CallConnexion(CodEmpresa);
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
+            {
             var filtro = ParseFiltros(filtros);
-            var response = NewOkResponse();
+            var response = new TesSolicitudesLista
+            {
+                solicitudes = new List<Galileo.Models.TES.TesSolicitudesData>(),
+                total = 0
+            };
 
             // Rango de fecha (inicio del día / fin del día)
             var fechaInicio = filtro.fecha_inicio.Date;
             var fechaCorte = filtro.fecha_corte.Date.AddDays(1).AddTicks(-1);
-            try
-            {
                 // 1) Ajustar rangos de montos por usuario (si existen)
                 AjustarRangosPorUsuario(conn, filtro);
 
@@ -82,7 +81,7 @@ WHERE NOMBRE = @usuario";
                 EjecutarRevisionAutomatica(conn, filtro.id_banco);
 
                 // 4) Conteo total
-                response.Result!.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
+                response!.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
 
                 // 5) Construcción de query dinámica
                 var baseQuery = @"
@@ -98,18 +97,18 @@ WHERE NOMBRE = @usuario";
                 FROM Tes_Transacciones T 
                 INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
                 INNER JOIN Socios S ON T.CODIGO = S.CEDULA
-                WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc"; 
+                WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc";
                 var (query, sqlParams) = BuildFinalQueryAndParams(
                     conn, baseQuery, filtro, fechaInicio, fechaCorte, lenInter);
 
                 // 6) Ejecución
-                response.Result.solicitudes = conn
+                response.solicitudes = conn
                     .Query<Galileo.Models.TES.TesSolicitudesData>(query, sqlParams)
                     .ToList();
 
-                if(filtro.tipo_doc == "TS" && filtro.activaCuentaSinpe)
+                if (filtro.tipo_doc == "TS" && filtro.activaCuentaSinpe)
                 {
-                    foreach (var solicitud in response.Result.solicitudes)
+                    foreach (var solicitud in response.solicitudes)
                     {
                         var valida = _factory.CrearServicio(CodEmpresa, filtro.usuario)
                            .fxValidacionSinpe(CodEmpresa, solicitud.nsolicitud.ToString(), filtro.usuario);
@@ -123,29 +122,13 @@ WHERE NOMBRE = @usuario";
                 }
 
                 return response;
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<TesSolicitudesLista>($"Error al obtener las solicitudes pendientes: {ex.Message}");
-            }
-            
+            });            
         }
 
         // ====== Helpers de TES_SolicitudesPendientes_Obtener ======
         private static TesAutorizacionFiltros ParseFiltros(string? json)
             => JsonConvert.DeserializeObject<TesAutorizacionFiltros>(json ?? "{}")
                ?? new TesAutorizacionFiltros();
-
-        private static ErrorDto<TesSolicitudesLista> NewOkResponse() => new()
-        {
-            Result = new TesSolicitudesLista
-            {
-                solicitudes = new List<Galileo.Models.TES.TesSolicitudesData>(),
-                total = 0
-            },
-            Code = 0,
-            Description = "OK"
-        };
 
         private static void AjustarRangosPorUsuario(SqlConnection conn, TesAutorizacionFiltros filtro)
         {
@@ -331,7 +314,8 @@ WHERE NOMBRE = @usuario";
         /// <returns></returns>
         public ErrorDto TES_Autorizacion_Aplicar(TesAutorizaParametros nsolicitud)
         {
-            CallConnexion(nsolicitud.codEmpresa);
+            using var conn = DbHelper.OpenConnection(_portalDB, nsolicitud.codEmpresa);
+
             var solicitudes = DeserializeLista(nsolicitud.solicitudesLista);
             try
             {
@@ -495,21 +479,15 @@ WHERE NOMBRE = @usuario";
         /// <returns></returns>
         public ErrorDto<TesAccesosUsuariosLista> TES_AutorizacionBuscar_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            CallConnexion(CodEmpresa);
-
-            var result = new ErrorDto<TesAccesosUsuariosLista>
+            
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new TesAccesosUsuariosLista
+                var result = new TesAccesosUsuariosLista
                 {
                     total = 0,
                     lista = new List<DropDownListaGenericaModel>()
-                }
-            };
+                };
 
-            try
-            {
                 filtros ??= new FiltrosLazyLoadData();
 
                 // --- Parámetros y saneo ---
@@ -552,7 +530,7 @@ WHERE NOMBRE = @usuario";
                  OR  Nombre      LIKE @filtro
                  OR  descripcion LIKE @filtro
               );";
-                result.Result.total = conn.ExecuteScalar<int>(sqlCount, p);
+                result.total = conn.ExecuteScalar<int>(sqlCount, p);
 
                 // --- DATA: SQL 100% estático; ORDER BY con CASE + flags ---
                 var sqlData = @"
@@ -579,14 +557,9 @@ WHERE NOMBRE = @usuario";
                 CASE WHEN @sortCode = 2 AND @isAsc = 0 THEN t.descripcion END DESC
             OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
-                result.Result.lista = conn.Query<DropDownListaGenericaModel>(sqlData, p).ToList();
+                result.lista = conn.Query<DropDownListaGenericaModel>(sqlData, p).ToList();
                 return result;
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse<TesAccesosUsuariosLista>($"Error al obtener las solicitudes pendientes: {ex.Message}");
-            }
-
+            });
             
         }
 
