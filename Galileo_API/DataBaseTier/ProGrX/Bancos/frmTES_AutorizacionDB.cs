@@ -6,6 +6,7 @@ using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using PdfSharp.Pdf.Filters;
 using System.Data;
 using System.Text;
 
@@ -121,18 +122,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
  DateTime fechaCorte,
  int lenInterbancaria)
         {
-            //var sb = new StringBuilder(baseQuery);
-            //var p = BuildBaseParams(filtro, fechaInicio, fechaCorte);
+            var sb = new StringBuilder(baseQuery);
+            var p = BuildBaseParams(filtro, fechaInicio, fechaCorte);
 
-            //AppendDateFilter(sb, filtro.todas_fechas);
-            //AppendSolicitudFilter(sb, filtro.todas_solicitudes);
-            //AppendBloqueoFilter(sb, filtro.casos_bloqueados);
 
-            //if (EsTransferencia(filtro.tipo_doc))
-            //{
-            //    AppendCuentaTipoFilter(sb, filtro.tipo_cuenta, lenInterbancaria);
-            //    AppendMismoBancoFilter(conn, sb, filtro.mismo_banco, filtro.id_banco, lenInterbancaria);
-            //}
+            if (EsTransferencia(filtro.tipo_doc))
+            {
+                AppendCuentaTipoFilter(sb, filtro.tipo_cuenta, lenInterbancaria);
+                AppendMismoBancoFilter(conn, sb, filtro.mismo_banco, filtro.id_banco, lenInterbancaria);
+            }
 
             //AppendAutorizacionFilter(sb, filtro);
             //AppendDetalleFilter(sb, filtro.detalle);
@@ -145,7 +143,64 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
 
+        private static DynamicParameters BuildBaseParams(TesAutorizacionFiltros f, DateTime ini, DateTime fin)
+        {
+            var p = new DynamicParameters();
+            p.Add("Banco", f.id_banco);
+            p.Add("TipoDoc", f.tipo_doc);
+            p.Add("Usuario", f.usuario);
+            p.Add("FechaInicio", ini);
+            p.Add("FechaFin", fin);
+            p.Add("SolicitudInicio", f.solicitud_inicio);
+            p.Add("SolicitudCorte", f.solicitud_corte);
+            p.Add("MontoInicio", f.monto_inicio);
+            p.Add("MontoFin", f.monto_fin);
+            p.Add("Token", f.token);
+            p.Add("Detalle", $"%{f.detalle}%");
+            p.Add("CodigoApp", $"%{f.appid}%");
+            p.Add("Duplicados", f.duplicados ? 1 : 0);
+            p.Add("TodasFechas", f.todas_fechas ? 1 : 0);
+            p.Add("TodasSolicitudes", f.todas_solicitudes ? 1 : 0);
+            p.Add("IncluirBloqueados", f.casos_bloqueados ? 1 : 0);
+            return p;
+        }
 
+        private static bool EsTransferencia(string? tipoDoc)
+         => string.Equals(tipoDoc, "TE", StringComparison.OrdinalIgnoreCase);
+
+        private static void AppendCuentaTipoFilter(StringBuilder sb, string? tipoCuenta, int lenInter)
+        {
+            if (string.IsNullOrWhiteSpace(tipoCuenta)) return;
+
+            switch (tipoCuenta.ToUpperInvariant())
+            {
+                case "L": // Locales
+                    sb.Append($" AND LEN(RTRIM(T.cta_Ahorros)) <> {lenInter} ");
+                    break;
+                case "I": // Interbancarias
+                    sb.Append($" AND LEN(RTRIM(T.cta_Ahorros)) = {lenInter} ");
+                    break;
+                default:
+                    // Todas: sin filtro
+                    break;
+            }
+        }
+
+        private static void AppendMismoBancoFilter(
+      SqlConnection conn,
+      StringBuilder sb,
+      bool mismoBanco,
+      int idBanco,
+      int lenInter)
+        {
+            if (!mismoBanco) return;
+
+            const string sqlGrupo = "SELECT dbo.fxTes_BancoSFN(@Banco) AS Codigo";
+            var grupo = conn.Query<int?>(sqlGrupo, new { Banco = idBanco }).FirstOrDefault() ?? 0;
+
+            // SUBSTRING(...,1,10) LIKE '%grupo%' y largo interbancario
+            sb.Append($" AND (SUBSTRING(RTRIM(T.cta_Ahorros), 1, 10) LIKE '%{grupo}%' AND LEN(RTRIM(T.cta_Ahorros)) = {lenInter}) ");
+        }
 
 
 

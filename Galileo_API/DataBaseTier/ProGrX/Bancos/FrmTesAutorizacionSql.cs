@@ -29,18 +29,39 @@ WHERE NOMBRE = @usuario";
 
         public const string SP_TRANSACCIONES_PENDIENTES = @"
                 SELECT 
-                    T.nsolicitud, T.codigo, T.beneficiario, T.monto, T.fecha_solicitud, T.cta_Ahorros,
-                    CASE WHEN @Duplicados = 1
-                         THEN dbo.fxTesSupervisa(CODIGO,BENEFICIARIO,monto,0,'T')
-                         ELSE 0
-                    END AS duplicado,
-                    dbo.fxTes_Cuenta_Verifica(T.id_banco,T.codigo,T.cta_ahorros) AS Cta_Verifica,
-                    T.Detalle1 + T.detalle2 AS Detalle, ISNULL(T.cod_App,'') AS AppId,
-                    IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
-                FROM Tes_Transacciones T 
-                INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
-                INNER JOIN Socios S ON T.CODIGO = S.CEDULA
-                WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc";
+                        T.nsolicitud, T.codigo, T.beneficiario, T.monto, T.fecha_solicitud, T.cta_Ahorros,
+                        CASE WHEN @Duplicados = 1
+                             THEN dbo.fxTesSupervisa(CODIGO,BENEFICIARIO,monto,0,'T')
+                             ELSE 0
+                        END AS duplicado,
+                        dbo.fxTes_Cuenta_Verifica(T.id_banco,T.codigo,T.cta_ahorros) AS Cta_Verifica,
+                        T.Detalle1 + T.detalle2 AS Detalle, ISNULL(T.cod_App,'') AS AppId,
+                        IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
+                    FROM Tes_Transacciones T 
+                    INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
+                    INNER JOIN Socios S ON T.CODIGO = S.CEDULA
+                    WHERE T.estado = 'P'
+                      AND B.id_banco = @Banco
+                      AND T.Tipo = @TipoDoc
+
+                      -- Fechas
+                      AND (
+                            @TodasFechas = 1
+                            OR (T.fecha_solicitud BETWEEN @FechaInicio AND @FechaFin)
+                          )
+
+                      -- Solicitudes
+                      AND (
+                            @TodasSolicitudes = 1
+                            OR (T.nsolicitud >= @SolicitudInicio AND T.nsolicitud <= @SolicitudCorte)
+                          )
+
+                      -- Bloqueo
+                      AND (
+                            @IncluirBloqueados = 1
+                            OR T.fecha_hold IS NULL
+                          )
+                    ";
 
         // SIN FILTRO
         public const string QueryTransac_Base = @"
