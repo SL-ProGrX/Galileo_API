@@ -124,7 +124,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             {
                 var query = "";
                 var querySP = "";
-                var queryAuth = @"Select * From Tes_Autorizaciones Where Clave = @clave and nombre = @usuario and estado = 'A'";
+                var queryAuth = FrmTesAutorizacionSql.Query_Autorizaciones;
                 var autorizacion = conn.QueryFirstOrDefault<TesAutorizacionData>(queryAuth, new
                 {
                     clave,

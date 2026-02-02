@@ -122,5 +122,7 @@ WHERE NSolicitud = @nSolicitud;";
             INNER JOIN TES_BANCOS_GRUPOS Bg ON Tb.COD_GRUPO = Bg.COD_GRUPO
             WHERE Tb.ID_BANCO = @Banco";
 
+        public const string Query_Autorizaciones = @"Select * From Tes_Autorizaciones Where Clave = @clave and nombre = @usuario and estado = 'A'";
+
     }
 }

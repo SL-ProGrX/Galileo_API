@@ -132,14 +132,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 AppendMismoBancoFilter(conn, sb, filtro.mismo_banco, filtro.id_banco, lenInterbancaria);
             }
 
-            //AppendAutorizacionFilter(sb, filtro);
-            //AppendDetalleFilter(sb, filtro.detalle);
-            //AppendAppFilter(sb, filtro.appid);
+            AppendAutorizacionFilter(sb, filtro);
+            AppendDetalleFilter(sb, filtro.detalle);
+            AppendAppFilter(sb, filtro.appid);
 
-            //sb.Append(" ORDER BY T.nsolicitud ASC, T.fecha_solicitud ASC");
+            sb.Append(" ORDER BY T.nsolicitud ASC, T.fecha_solicitud ASC");
 
-            //return (sb.ToString(), p);
-            return (null, null);
+            return (sb.ToString(), p);
+        
         }
 
 
@@ -202,6 +202,35 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             sb.Append($" AND (SUBSTRING(RTRIM(T.cta_Ahorros), 1, 10) LIKE '%{grupo}%' AND LEN(RTRIM(T.cta_Ahorros)) = {lenInter}) ");
         }
 
+        private static void AppendAutorizacionFilter(StringBuilder sb, TesAutorizacionFiltros f)
+        {
+            // 0 = Emisión (usa rango y token opcional)
+            if (f.tipo_autorizacion == 0)
+            {
+                sb.Append(" AND T.fecha_autorizacion IS NULL AND T.monto BETWEEN @MontoInicio AND @MontoFin ");
+                if (!string.IsNullOrWhiteSpace(f.token))
+                    sb.Append(" AND T.id_token = @Token ");
+                return;
+            }
+
+            // Firmas
+            sb.Append(@" AND T.FIRMAS_AUTORIZA_FECHA IS NULL 
+                 AND T.monto > B.firmas_hasta 
+                 AND dbo.fxTesAutorizaFirmaAcceso(@Usuario, @Banco, T.monto) = 1 ");
+        }
+
+        private static void AppendDetalleFilter(StringBuilder sb, string? detalle)
+        {
+            if (!string.IsNullOrWhiteSpace(detalle))
+                sb.Append(" AND (T.DETALLE1 + T.DETALLE2) LIKE @Detalle ");
+        }
+
+        private static void AppendAppFilter(StringBuilder sb, string? appId)
+        {
+            if (!string.IsNullOrWhiteSpace(appId))
+                sb.Append(" AND ISNULL(T.COD_APP,'') LIKE @CodigoApp ");
+        }
+
 
 
         /// <summary>
@@ -215,10 +244,98 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto TES_Autorizacion_Aplicar(TesAutorizaParametros nsolicitud)
         {
-            return null;
+            using var conn = DbHelper.OpenConnection(_portalDB, nsolicitud.codEmpresa);
+
+            var solicitudes = DbHelper.DeserializeOrNew<List<int>>(nsolicitud.solicitudesLista);
+            try
+            {
+                if (!UsuarioAutorizado(conn, nsolicitud))
+                    return DbHelper.ErrorResponse("Contrase&ntilde;a Incorrecta, o no Existe Nivel de Autorizaci&oacute;n", -2);
+
+
+                var resultado = ProcesarSolicitudes(conn, nsolicitud, solicitudes);
+
+                var mensaje = resultado.codigo == 0
+                ? "Autorización procesada correctamente!"
+                : $"{resultado.mensaje} - Solicitud(es): {resultado.mensaje} no puede(n) ser autorizada(s) por el mismo usuario";
+
+                return DbHelper.OkResponse(mensaje);
+
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse($"Error al procesar la autorizaci&oacute;n: {ex.Message}");
+            }
         }
 
+        private static bool UsuarioAutorizado(SqlConnection conn, TesAutorizaParametros p)
+        {
+            var SQL_AUTH = FrmTesAutorizacionSql.Query_Autorizaciones;
+            var auth = conn.QueryFirstOrDefault<TesAutorizacionData>(
+                SQL_AUTH, new { p.clave, p.usuario });
+            return auth != null;
+        }
 
+        private (int codigo, string mensaje) ProcesarSolicitudes(
+    SqlConnection conn,
+    TesAutorizaParametros p,
+    IEnumerable<int> solicitudes)
+        {
+            var bloqueadasPorMismoUsuario = new List<int>();
+
+            foreach (var id in solicitudes)
+            {
+                if (BloqueaPorMismoUsuario(conn, p.codEmpresa, id, p.usuario!))
+                {
+                    bloqueadasPorMismoUsuario.Add(id);
+                    continue;
+                }
+
+                EjecutarAutorizacion(conn, id, p);
+            }
+
+            var codigo = bloqueadasPorMismoUsuario.Any() ? -1 : 0;
+            var msg = bloqueadasPorMismoUsuario.Any()
+                ? string.Join(",", bloqueadasPorMismoUsuario)
+                : string.Empty;
+
+            return (codigo, msg);
+        }
+
+        private bool BloqueaPorMismoUsuario(SqlConnection conn, int codEmpresa, int nsolicitud, string usuario)
+        {
+            // Si el parámetro 12 está en "S", no se permite auto-autorización
+            if (_mTesoreria.fxTesParametro(codEmpresa, "12") != "S")
+                return false;
+            var SQL_USER_SOLICITA = "SELECT USER_SOLICITA FROM TES_TRANSACCIONES WHERE NSOLICITUD = @nsolicitud";
+            var userSolicita = conn.QueryFirstOrDefault<string>(
+                SQL_USER_SOLICITA, new { nsolicitud });
+
+            if (string.IsNullOrWhiteSpace(userSolicita))
+                return false;
+
+            return string.Equals(userSolicita, usuario, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static void EjecutarAutorizacion(SqlConnection conn, int nsolicitud, TesAutorizaParametros p)
+        {
+            //var (updateSql, bitacoraSql) = ConstruirQueries(p.tipo_autorizacion);
+            //var (estadoSinpeDb, tipoGiroSinpeDb) = NormalizarSinpe(p.estadoSinpe, p.tipoDocumento, p.tipoGiroSinpe);
+
+            //// Nota: Para Firmas, los parámetros SINPE no se usan por la query,
+            //// pero pasar un objeto único simplifica la firma.
+            //var parametros = new
+            //{
+            //    usuario = p.usuario,
+            //    nsolicitud,
+            //    estado_sinpe = estadoSinpeDb,
+            //    tipo_giro_sinpe = tipoGiroSinpeDb,
+            //    usuarioEspecial = p.autorizacionEspecialUsuario
+            //};
+
+            //conn.Execute(updateSql, parametros);
+            //conn.Execute(bitacoraSql, new { usuario = p.usuario, nsolicitud });
+        }
 
         /// <summary>
         /// Obtener rangos de montos de autorizaci�n de documentos
