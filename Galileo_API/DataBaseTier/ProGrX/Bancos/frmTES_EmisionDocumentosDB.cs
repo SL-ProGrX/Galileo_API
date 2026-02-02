@@ -348,14 +348,7 @@ where B.estado = 'A'
                         filtro.docInicial = (int)documento.docInicial;
 
                         var formato = TES_EmisionDocumento_Formato_Obtener(codEmpresa, filtro.banco).Result;
-                        if (item.tipo == "TS")
-                        {
-                            filtro.formatoTE = "SG";
-                        }
-                        else
-                        {
-                            filtro.formatoTE = (string)formato![0].item!;
-                        }
+                        filtro.formatoTE = item.tipo == "TS" ? "SG" : (string)formato![0].item!;
 
                         var pross = ProcesoDocumentos(codEmpresa, filtro);
 
