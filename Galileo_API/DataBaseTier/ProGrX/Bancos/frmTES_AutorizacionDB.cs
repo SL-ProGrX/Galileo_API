@@ -1,10 +1,8 @@
 using Dapper;
-using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
-using Galileo.Models.Security;
 using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
@@ -18,31 +16,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly VerificadorCoreFactory _factory;
         private readonly MTesoreria _mTesoreria;
         private readonly PortalDB _portalDB;
-
-        private const string SQL_UPDATE_EMISION =
-     @"UPDATE Tes_Transacciones 
-            SET Autoriza='S',
-                Fecha_Autorizacion = dbo.MyGetdate(), 
-                User_Autoriza = @usuario,
-                ESTADO_SINPE = @estado_sinpe,
-                TIPO_GIROSINPE = @tipo_giro_sinpe,
-                USUARIO_AUTORIZA_ESPECIAL = @usuarioEspecial
-          WHERE Nsolicitud = @nsolicitud";
-
-        private const string SQL_UPDATE_FIRMAS =
-            @"UPDATE Tes_Transacciones 
-            SET FIRMAS_AUTORIZA_FECHA = dbo.MyGetdate(),
-                FIRMAS_AUTORIZA_USUARIO = @usuario
-          WHERE Nsolicitud = @nsolicitud";
-
-        private const string SQL_TES_AUTORIZACIONES_RANGOS = @"
-SELECT rango_gen_Inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte
-FROM TES_AUTORIZACIONES
-WHERE NOMBRE = @usuario";
-
-        private const string SQL_BITACORA_EMISION = "EXEC spTesBitacora @nsolicitud,'02','',@usuario";
-        private const string SQL_BITACORA_FIRMAS = "EXEC spTesBitacora @nsolicitud,'04','',@usuario";
-
 
         public FrmTesAutorizacionDb(IConfiguration config)
         {
@@ -84,20 +57,7 @@ WHERE NOMBRE = @usuario";
                 response!.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
 
                 // 5) Construcción de query dinámica
-                var baseQuery = @"
-                SELECT 
-                    T.nsolicitud, T.codigo, T.beneficiario, T.monto, T.fecha_solicitud, T.cta_Ahorros,
-                    CASE WHEN @Duplicados = 1
-                         THEN dbo.fxTesSupervisa(CODIGO,BENEFICIARIO,monto,0,'T')
-                         ELSE 0
-                    END AS duplicado,
-                    dbo.fxTes_Cuenta_Verifica(T.id_banco,T.codigo,T.cta_ahorros) AS Cta_Verifica,
-                    T.Detalle1 + T.detalle2 AS Detalle, ISNULL(T.cod_App,'') AS AppId,
-                    IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
-                FROM Tes_Transacciones T 
-                INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
-                INNER JOIN Socios S ON T.CODIGO = S.CEDULA
-                WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc";
+                var baseQuery = FrmTesAutorizacionSql.SP_TRANSACCIONES_PENDIENTES;
                 var (query, sqlParams) = BuildFinalQueryAndParams(
                     conn, baseQuery, filtro, fechaInicio, fechaCorte, lenInter);
 
@@ -132,7 +92,7 @@ WHERE NOMBRE = @usuario";
 
         private static void AjustarRangosPorUsuario(SqlConnection conn, TesAutorizacionFiltros filtro)
         {
-            const string sql = SQL_TES_AUTORIZACIONES_RANGOS;
+            const string sql = FrmTesAutorizacionSql.SQL_TES_AUTORIZACIONES_RANGOS;
 
             var r = conn.Query<TesAutorizacionData>(sql, new { filtro.usuario }).FirstOrDefault();
             if (r != null)
@@ -144,12 +104,7 @@ WHERE NOMBRE = @usuario";
 
         private static int GetInterbancariaLength(SqlConnection conn, int idBanco)
         {
-            const string sql = @"
-            SELECT Bg.LCTA_INTERBANCARIA 
-            FROM TES_BANCOS Tb 
-            INNER JOIN TES_BANCOS_GRUPOS Bg ON Tb.COD_GRUPO = Bg.COD_GRUPO
-            WHERE Tb.ID_BANCO = @Banco";
-            return conn.Query<int?>(sql, new { Banco = idBanco }).FirstOrDefault() ?? 0;
+            return conn.Query<int?>(FrmTesAutorizacionSql.Query_Interbancaria, new { Banco = idBanco }).FirstOrDefault() ?? 0;
         }
 
         private static void EjecutarRevisionAutomatica(SqlConnection conn, int idBanco)
@@ -160,12 +115,7 @@ WHERE NOMBRE = @usuario";
 
         private static int GetConteoPendientes(SqlConnection conn, int idBanco, string tipoDoc)
         {
-            const string sql = @"
-            SELECT COUNT(T.nsolicitud) 
-            FROM Tes_Transacciones T 
-            INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
-            WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc";
-            return conn.Query<int>(sql, new { Banco = idBanco, TipoDoc = tipoDoc }).FirstOrDefault();
+            return conn.Query<int>(FrmTesAutorizacionSql.Query_ConteoPendientes, new { Banco = idBanco, TipoDoc = tipoDoc }).FirstOrDefault();
         }
 
 
@@ -415,8 +365,8 @@ WHERE NOMBRE = @usuario";
         {
             // 0 = Emisión; distinto de 0 = Firmas
             return tipoAutorizacion == 0
-                ? (SQL_UPDATE_EMISION, SQL_BITACORA_EMISION)
-                : (SQL_UPDATE_FIRMAS, SQL_BITACORA_FIRMAS);
+                ? (FrmTesAutorizacionSql.SQL_UPDATE_EMISION, FrmTesAutorizacionSql.SQL_BITACORA_EMISION)
+                : (FrmTesAutorizacionSql.SQL_UPDATE_FIRMAS, FrmTesAutorizacionSql.SQL_BITACORA_FIRMAS);
         }
 
         private static (int? estadoSinpeDb, string tipoGiroSinpeDb) NormalizarSinpe(bool? estadoSinpe, string? tipoDocumento, string? tipoGiroSinpe)
@@ -446,7 +396,7 @@ WHERE NOMBRE = @usuario";
 
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = SQL_TES_AUTORIZACIONES_RANGOS;
+                const string query = FrmTesAutorizacionSql.SQL_TES_AUTORIZACIONES_RANGOS;
 
                 return conn.Query<TesAutorizacionData>(query, new { usuario }).FirstOrDefault() ?? new TesAutorizacionData();
             });
