@@ -35,9 +35,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             var fechaCorte = filtro.fecha_corte.Date.AddDays(1).AddTicks(-1);
             try
             {
-                var queryR = @"select rango_gen_Inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte 
-                    from TES_AUTORIZACIONES where NOMBRE = @usuario";
-                var Rangos = conn.Query<TesAutorizacionData>(queryR,
+                var Rangos = conn.Query<TesAutorizacionData>(FrmTesAutorizacionSql.SQL_TES_AUTORIZACIONES_RANGOS,
                     new { filtro.usuario }).FirstOrDefault();
 
                 if (Rangos != null)
@@ -140,24 +138,27 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
                 foreach (var solicitud in lista)
                 {
+                    string descBitacora = "";
                     //Valida tipo de autorizacion (Emision Documento o Firma)
                     if (tipo_autorizacion == 0)
                     {
                         //Emision
                         query = "Update Tes_Transacciones set Autoriza='N', Fecha_Autorizacion = Null, User_Autoriza = Null Where Nsolicitud = @nsolicitud ";
 
-                        querySP = "exec spTesBitacora @nsolicitud,'03','Des-Autorización de Tipo Emisión de Documentos',@usuario";
+                        descBitacora = "Des-Autorización de Tipo Emisión de Documentos";
                     }
                     else
                     {
                         //Firmas
                         query = "Update Tes_Transacciones set FIRMAS_AUTORIZA_FECHA = Null, FIRMAS_AUTORIZA_USUARIO = Null Where Nsolicitud = @nsolicitud ";
 
-                        querySP = "exec spTesBitacora @nsolicitud,'03','Des-Autorización de Tipo Firmas Electrónicas',@usuario";
+                        descBitacora = "Des-Autorización de Tipo Firmas Electrónicas";
                     }
 
+                    querySP = "exec spTesBitacora @nsolicitud,'03',@detalle,@usuario";
+
                     conn.Execute(query, new { usuario, nsolicitud = solicitud });
-                    conn.Execute(querySP, new { usuario, nsolicitud = solicitud });
+                    conn.Execute(querySP, new { usuario, nsolicitud = solicitud , detalle = descBitacora });
                 }
 
                 return DbHelper.OkResponse("Des-autorizacion procesada correctamente!");
