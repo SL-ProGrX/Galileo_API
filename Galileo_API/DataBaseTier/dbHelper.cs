@@ -1,8 +1,10 @@
 using Dapper;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using System.Data;
 
 namespace Galileo.DataBaseTier
 {
@@ -164,5 +166,59 @@ namespace Galileo.DataBaseTier
             return JsonConvert.DeserializeObject<T>(json) ?? new T();
         }
 
+        //Helper de paginaciones
+
+
+    }
+
+    public sealed class LazyLoadSpec
+    {
+        public DynamicParameters Params { get; init; } = new();
+        public int Offset { get; init; }
+        public int PageSize { get; init; }
+        public int SortCode { get; init; }
+        public bool IsAsc { get; init; }
+        public bool HasFilter { get; init; }
+    }
+
+    public static class LazyLoadHelper
+    {
+        public static LazyLoadSpec Build(
+            FiltrosLazyLoadData? filtros,
+            IReadOnlyDictionary<string, int> sortMap,
+            string defaultSort = "item")
+        {
+            filtros ??= new FiltrosLazyLoadData();
+
+            var hasFilter = !string.IsNullOrWhiteSpace(filtros.filtro);
+            var filtroValor = hasFilter ? $"%{filtros.filtro}%" : null;
+
+            var sortField = (filtros.sortField ?? defaultSort).Trim();
+            if (!sortMap.TryGetValue(sortField, out var sortCode))
+                sortCode = sortMap[defaultSort];
+
+            var isAsc = filtros.sortOrder != 0;
+
+            var pageSize = Math.Max(1, filtros.paginacion);
+            var offset = Math.Max(0, filtros.pagina);
+
+            var p = new DynamicParameters();
+            p.Add("@hasFilter", hasFilter ? 1 : 0, DbType.Int32);
+            p.Add("@filtro", filtroValor, DbType.String);
+            p.Add("@sortCode", sortCode, DbType.Int32);
+            p.Add("@isAsc", isAsc ? 1 : 0, DbType.Int32);
+            p.Add("@offset", offset, DbType.Int32);
+            p.Add("@pageSize", pageSize, DbType.Int32);
+
+            return new LazyLoadSpec
+            {
+                Params = p,
+                Offset = offset,
+                PageSize = pageSize,
+                SortCode = sortCode,
+                IsAsc = isAsc,
+                HasFilter = hasFilter
+            };
+        }
     }
 }
