@@ -121,12 +121,9 @@ WHERE NOMBRE = @usuario";
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result!.solicitudes = null;
-                response.Result.total = 0;
+                return DbHelper.CreateErrorResponse<TesSolicitudesLista>($"Error al obtener las solicitudes pendientes: {ex.Message}");
             }
-            return response;
+            
         }
 
         // ====== Helpers de TES_SolicitudesPendientes_Obtener ======
@@ -582,10 +579,7 @@ WHERE NOMBRE = @usuario";
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<DropDownListaGenericaModel>();
+                return DbHelper.CreateErrorResponse<TesAccesosUsuariosLista>($"Error al obtener las solicitudes pendientes: {ex.Message}");
             }
 
             return result;
