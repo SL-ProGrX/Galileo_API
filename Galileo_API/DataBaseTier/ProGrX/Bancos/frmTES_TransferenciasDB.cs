@@ -48,14 +48,15 @@ namespace Galileo_API.DataBaseTier
                 var vFecha = DateTime.Now;
 
                 // 2) Ejecutar SOLO SQL permitido
-                var result = conn.Query<TransferenciasData>(allowedSql, new
+                var result = conn.Query<TransferenciasData>(allowedSql.Trim('(', ')'), new
                 {
+                    top = transferencia.parametros.maximo,
                     banco = transferencia.parametros.banco,
                     tipoDoc = transferencia.parametros.tipoDoc,
                     minimo = transferencia.parametros.minimo,
                     maximo = transferencia.parametros.maximo,
-                    fechaInicio = transferencia.parametros.fechaInicio,
-                    fechaCorte = transferencia.parametros.fechaCorte
+                    fechaInicio = transferencia.parametros.fecha_inicio,
+                    fechaCorte = transferencia.parametros.fecha_corte
                 }).ToList();
 
                 if (result.Count > 0)
@@ -81,6 +82,7 @@ WHERE NSolicitud = @nSolicitud;";
 
                         conn.Execute(queryUpdate, new
                         {
+                            
                             fechaEmision = vFecha, // DateTime, no string
                             nDocumento = vDocumento,
                             usuario = transferencia.usuario,
@@ -172,16 +174,19 @@ Order by Nsolicitud";
         private static string NormalizeSql(string sql)
         {
             if (string.IsNullOrWhiteSpace(sql)) return string.Empty;
-            return string.Join(" ", sql.Split(default(string[]), StringSplitOptions.RemoveEmptyEntries));
-        }
+            return string.Join(" ", sql.Trim()                 // elimina \r, \n, tabs, espacios
+                                    .Trim('(', ')')         // ahora sí, paréntesis externos
+                                    .Split((string[])null, StringSplitOptions.RemoveEmptyEntries));
+                                    }
 
         private static string? ResolveAllowedTransferQuery(string incomingSql)
         {
             var inc = NormalizeSql(incomingSql);
 
-            if (inc == NormalizeSql(TransferSql.QueryTransac_Base)) return TransferSql.QueryTransac_Base;
-            if (inc == NormalizeSql(TransferSql.QueryTransac_Solicitudes)) return TransferSql.QueryTransac_Solicitudes;
-            if (inc == NormalizeSql(TransferSql.QueryTransac_Fechas)) return TransferSql.QueryTransac_Fechas;
+            if (inc == NormalizeSql(TransferSql.QueryTransac_Base)) return NormalizeSql(TransferSql.QueryTransac_Base);
+            if (inc == NormalizeSql(TransferSql.BaseQuery_Base)) return NormalizeSql(TransferSql.BaseQuery_Base);
+            if (inc == NormalizeSql(TransferSql.QueryTransac_Solicitudes)) return NormalizeSql(TransferSql.QueryTransac_Solicitudes);
+            if (inc == NormalizeSql(TransferSql.QueryTransac_Fechas)) return NormalizeSql(TransferSql.QueryTransac_Fechas);
 
             return null;
         }

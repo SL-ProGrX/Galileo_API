@@ -9,6 +9,7 @@ using Galileo.Models.TES;
 using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
+using Microsoft.ReportingServices.ReportProcessing.ReportObjectModel;
 using Newtonsoft.Json;
 using PdfSharp.Pdf.Filters;
 using System.Collections;
@@ -332,8 +333,9 @@ where B.estado = 'A'
                 if (filtro.especial)
                 {
                     var solicitudes = TES_EmisionDocumento_Solicitudes_Obtener(codEmpresa, filtros).Result;
-                    foreach (var item in solicitudes)
+                    foreach (var item in solicitudes!)
                     {
+                       
                         filtro.minimo = item.nsolicitud;
                         filtro.maximo = item.nsolicitud;
                         filtro.banco = (int)item.id_banco!;
@@ -341,10 +343,9 @@ where B.estado = 'A'
 
                         var documento = TES_EmisionDocumento_Buscar(codEmpresa, filtro.tipoDoc, filtro.banco, "-sp-").Result;
 
-                        filtro.cantidad = documento.total;
+                        filtro.cantidad = documento!.total;
                         filtro.docBloqueo = documento.docBloqueo;
                         filtro.docInicial = (int)documento.docInicial;
-                        filtro.generarPor = "solicitudes";
 
                         var formato = TES_EmisionDocumento_Formato_Obtener(codEmpresa, filtro.banco).Result;
                         if (item.tipo == "TS")
@@ -353,7 +354,7 @@ where B.estado = 'A'
                         }
                         else
                         {
-                            filtro.formatoTE = (string)formato[0].item!;
+                            filtro.formatoTE = (string)formato![0].item!;
                         }
 
                         var pross = ProcesoDocumentos(codEmpresa, filtro);
@@ -397,9 +398,14 @@ where B.estado = 'A'
                 var usaFirmas = LoadFirmasAut(conn, filtro);
                 var q = BuildQueries(filtro);
 
+                var BancoDesc = LoadBancoDesc(conn, filtro.banco);
+
                 TesArchivosEspecialesData? chequesReport = null;
                 if (bancoDocs.comprobante is "01" or "02" or "03")
                     chequesReport = mTesoreria.sbCargaArchivosEspeciales(codEmpresa, filtro.banco).Result;
+
+                //agrego a filtros bancoDescripcion
+                filtro.bancoDescripcion = BancoDesc;
 
                 var ctx = new EmisionContext(
                     CodEmpresa: codEmpresa,
@@ -412,11 +418,24 @@ where B.estado = 'A'
                     ChequesReport: chequesReport
                 );
 
-                return bancoDocs.comprobante switch
+                var result = bancoDocs.comprobante switch
                 {
                     "01" or "02" or "03" => ProcesarChequesYBoletas(ctx),
                     "04" => ProcesarTransferencias(ctx),
                     _ => DbHelper.CreateErrorResponse<object>($"Comprobante '{bancoDocs.comprobante}' no soportado.")
+                };
+
+                var concatenado = new
+                {
+                    archivo = result,
+                    strQuery = q,
+                    parametros = filtro,
+                    comprobante = bancoDocs.comprobante
+                };
+                return new ErrorDto<object> {
+                    Code = 0,
+                    Description = "OK",
+                    Result = JsonConvert.SerializeObject(concatenado, Formatting.Indented)
                 };
             }
             catch (Exception ex)
@@ -754,6 +773,14 @@ where id_banco = @banco and tipo = @tipoDoc";
             return connection.QueryFirstOrDefault<TesBancoDocsData>(sql, new { banco = filtro.banco, tipoDoc = filtro.tipoDoc });
         }
 
+        private static string? LoadBancoDesc(SqlConnection connection, int bancoId)
+        {
+            const string sql = @"
+select DESCRIPCION from tes_Bancos where ID_BANCO = @banco";
+
+            return connection.QueryFirstOrDefault<string>(sql, new { banco = bancoId });
+        }
+
         private static TesBancoData? LoadBancoData(SqlConnection connection, TesEmisionDocFiltros filtro)
         {
             const string sql = @"
@@ -935,7 +962,8 @@ where nsolicitud in ";
                         mSolCorte = solCorte,
                         mFechaInicio = fechaInicio?.ToString(MTesFuncionesDb.fechaFormat, CultureInfo.InvariantCulture),
                         mFechaCorte = fechaCorte?.ToString(MTesFuncionesDb.fechaFormat, CultureInfo.InvariantCulture),
-                        bancoPlan = BancoPlan
+                        bancoPlan = BancoPlan,
+
                     };
 
                     var lineas = connection.Query<string>(queryLinea.ToString(), parametros);
@@ -1107,8 +1135,9 @@ where nsolicitud in ";
             
         }
 
+
         #endregion
 
-        
+
     }
 }

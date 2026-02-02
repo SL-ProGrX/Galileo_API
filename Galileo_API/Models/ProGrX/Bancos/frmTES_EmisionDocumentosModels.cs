@@ -29,6 +29,8 @@ namespace Galileo.Models.TES
         public string usuario { get; set; } = string.Empty;
         public bool? docBloqueo { get; set; }
         public bool especial { get; set; } = false;
+
+        public string? bancoDescripcion { get; set; } = string.Empty;
     }
 
     public class TesSolicitudesGenData
