@@ -319,22 +319,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static void EjecutarAutorizacion(SqlConnection conn, int nsolicitud, TesAutorizaParametros p)
         {
-            //var (updateSql, bitacoraSql) = ConstruirQueries(p.tipo_autorizacion);
-            //var (estadoSinpeDb, tipoGiroSinpeDb) = NormalizarSinpe(p.estadoSinpe, p.tipoDocumento, p.tipoGiroSinpe);
+            var (updateSql, bitacoraSql) = ConstruirQueries(p.tipo_autorizacion);
+            var (estadoSinpeDb, tipoGiroSinpeDb) = NormalizarSinpe(p.estadoSinpe, p.tipoDocumento, p.tipoGiroSinpe);
 
-            //// Nota: Para Firmas, los parámetros SINPE no se usan por la query,
-            //// pero pasar un objeto único simplifica la firma.
-            //var parametros = new
-            //{
-            //    usuario = p.usuario,
-            //    nsolicitud,
-            //    estado_sinpe = estadoSinpeDb,
-            //    tipo_giro_sinpe = tipoGiroSinpeDb,
-            //    usuarioEspecial = p.autorizacionEspecialUsuario
-            //};
+            // Nota: Para Firmas, los parámetros SINPE no se usan por la query,
+            // pero pasar un objeto único simplifica la firma.
+            var parametros = new
+            {
+                usuario = p.usuario,
+                nsolicitud,
+                estado_sinpe = estadoSinpeDb,
+                tipo_giro_sinpe = tipoGiroSinpeDb,
+                usuarioEspecial = p.autorizacionEspecialUsuario
+            };
 
-            //conn.Execute(updateSql, parametros);
-            //conn.Execute(bitacoraSql, new { usuario = p.usuario, nsolicitud });
+            conn.Execute(updateSql, parametros);
+            conn.Execute(bitacoraSql, new { usuario = p.usuario, nsolicitud });
+        }
+
+        private static (string update, string bitacora) ConstruirQueries(int tipoAutorizacion)
+        {
+            // 0 = Emisión; distinto de 0 = Firmas
+            return tipoAutorizacion == 0
+                ? (FrmTesAutorizacionSql.SQL_UPDATE_EMISION, FrmTesAutorizacionSql.SQL_BITACORA_EMISION)
+                : (FrmTesAutorizacionSql.SQL_UPDATE_FIRMAS, FrmTesAutorizacionSql.SQL_BITACORA_FIRMAS);
+        }
+
+        private static (int? estadoSinpeDb, string tipoGiroSinpeDb) NormalizarSinpe(bool? estadoSinpe, string? tipoDocumento, string? tipoGiroSinpe)
+        {
+            // Si el documento no es "TS", no aplica SINPE
+            if (!string.Equals(tipoDocumento, "TS", StringComparison.OrdinalIgnoreCase))
+                return (null, "NA");
+
+            // Documento TS: mapear bool? a int? (1/0)
+            int? estado = null;
+            if (estadoSinpe != null)
+            {
+                estado = estadoSinpe.Value ? 1 : 0;
+            }
+            var giro = string.IsNullOrWhiteSpace(tipoGiroSinpe) ? "NA" : tipoGiroSinpe!;
+            return (estado, giro);
         }
 
         /// <summary>
