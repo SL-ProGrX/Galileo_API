@@ -1115,13 +1115,12 @@ where nsolicitud in ";
                     Result = especial
                 };
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-
                 return new ErrorDto<int>
                 {
-                    Code = 0,
-                    Description = "OK",
+                    Code = -1,
+                    Description = ex.Message,
                     Result = 0
                 };
             }
