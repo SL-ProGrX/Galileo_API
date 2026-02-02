@@ -33,6 +33,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 FIRMAS_AUTORIZA_USUARIO = @usuario
           WHERE Nsolicitud = @nsolicitud";
 
+        private const string SQL_TES_AUTORIZACIONES_RANGOS = @"
+SELECT rango_gen_Inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte
+FROM TES_AUTORIZACIONES
+WHERE NOMBRE = @usuario";
+
         private const string SQL_BITACORA_EMISION = "EXEC spTesBitacora @nsolicitud,'02','',@usuario";
         private const string SQL_BITACORA_FIRMAS = "EXEC spTesBitacora @nsolicitud,'04','',@usuario";
 
@@ -142,10 +147,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static void AjustarRangosPorUsuario(SqlConnection conn, TesAutorizacionFiltros filtro)
         {
-            const string sql = @"
-            SELECT rango_gen_Inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte 
-            FROM TES_AUTORIZACIONES 
-            WHERE NOMBRE = @usuario";
+            const string sql = SQL_TES_AUTORIZACIONES_RANGOS;
 
             var r = conn.Query<TesAutorizacionData>(sql, new { filtro.usuario }).FirstOrDefault();
             if (r != null)
@@ -459,8 +461,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = @"select rango_gen_Inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte 
-                    from TES_AUTORIZACIONES where NOMBRE = @usuario";
+                const string query = SQL_TES_AUTORIZACIONES_RANGOS;
 
                 return conn.Query<TesAutorizacionData>(query, new { usuario }).FirstOrDefault() ?? new TesAutorizacionData();
             });
