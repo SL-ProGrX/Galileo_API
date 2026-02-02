@@ -3,11 +3,8 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
-using Galileo.Models.Security;
 using Galileo.Models.TES;
-using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.Data.SqlClient;
-using Microsoft.ReportingServices.Diagnostics.Internal;
 using Newtonsoft.Json;
 using System.Data;
 using System.Text;
@@ -78,7 +75,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 response.Result!.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
 
                 // 5) Construcción de query dinámica
-                var baseQuery = BuildBaseQuery(filtro.duplicados);
+                var baseQuery = @"
+                SELECT 
+                    T.nsolicitud, T.codigo, T.beneficiario, T.monto, T.fecha_solicitud, T.cta_Ahorros,
+                    CASE WHEN @Duplicados = 1
+                         THEN dbo.fxTesSupervisa(CODIGO,BENEFICIARIO,monto,0,'T')
+                         ELSE 0
+                    END AS duplicado,
+                    dbo.fxTes_Cuenta_Verifica(T.id_banco,T.codigo,T.cta_ahorros) AS Cta_Verifica,
+                    T.Detalle1 + T.detalle2 AS Detalle, ISNULL(T.cod_App,'') AS AppId,
+                    IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
+                FROM Tes_Transacciones T 
+                INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
+                INNER JOIN Socios S ON T.CODIGO = S.CEDULA
+                WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc"; 
                 var (query, sqlParams) = BuildFinalQueryAndParams(
                     conn, baseQuery, filtro, fechaInicio, fechaCorte, lenInter);
 
@@ -171,35 +181,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return conn.Query<int>(sql, new { Banco = idBanco, TipoDoc = tipoDoc }).FirstOrDefault();
         }
 
-        private static string BuildBaseQuery(bool duplicados)
-        {
-            if (duplicados)
-            {
-                return @"
-                SELECT 
-                    T.nsolicitud, T.codigo, T.beneficiario, T.monto, T.fecha_solicitud, T.cta_Ahorros, 
-                    dbo.fxTesSupervisa(CODIGO,BENEFICIARIO,monto,0,'T') AS duplicado, 
-                    dbo.fxTes_Cuenta_Verifica(T.id_banco,T.codigo,T.cta_ahorros) AS Cta_Verifica,
-                    T.Detalle1 + T.detalle2 AS Detalle, ISNULL(T.cod_App,'') AS AppId,
-                    IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
-                FROM Tes_Transacciones T 
-                INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
-                INNER JOIN Socios S ON T.CODIGO = S.CEDULA
-                WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc";
-            }
-
-            return @"
-            SELECT 
-                T.nsolicitud, T.codigo, T.beneficiario, T.monto, T.fecha_solicitud, T.cta_Ahorros,
-                0 AS duplicado,
-                dbo.fxTes_Cuenta_Verifica(T.id_banco,T.codigo,T.cta_ahorros) AS Cta_Verifica,
-                T.Detalle1 + T.detalle2 AS Detalle, ISNULL(T.cod_App,'') AS AppId,
-                IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
-            FROM Tes_Transacciones T 
-            INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
-            INNER JOIN Socios S ON T.CODIGO = S.CEDULA
-            WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc";
-        }
 
         private static (string sql, DynamicParameters param) BuildFinalQueryAndParams(
         SqlConnection conn,
@@ -246,6 +227,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             p.Add("Token", f.token);
             p.Add("Detalle", $"%{f.detalle}%");
             p.Add("CodigoApp", $"%{f.appid}%");
+            p.Add("Duplicados", f.duplicados ? 1 : 0);
             return p;
         }
 

@@ -145,14 +145,6 @@ Where Estado = 'P' And Tipo = @tipoDoc
   And NSolicitud Between @minimo And @maximo
 Order by Nsolicitud";
 
-            public const string BaseQuery_Solicitudes = @"
-(SELECT TOP (@top) nsolicitud
- FROM Tes_Transacciones
- WHERE Estado = 'P' AND Tipo = @tipoDoc
-   AND ID_Banco = @banco AND Autoriza = 'S' AND fecha_hold IS NULL
-   And NSolicitud Between @minimo And @maximo
- Order by Nsolicitud)";
-
             // POR FECHAS
             public const string QueryTransac_Fechas = @"
 Select TOP (@top) *
@@ -162,13 +154,7 @@ Where Estado = 'P' And Tipo = @tipoDoc
   And Fecha_Solicitud Between @fechaInicio And @fechaCorte
 Order by Nsolicitud";
 
-            public const string BaseQuery_Fechas = @"
-(SELECT TOP (@top) nsolicitud
- FROM Tes_Transacciones
- WHERE Estado = 'P' AND Tipo = @tipoDoc
-   AND ID_Banco = @banco AND Autoriza = 'S' AND fecha_hold IS NULL
-   And Fecha_Solicitud Between @fechaInicio And @fechaCorte
- Order by Nsolicitud)";
+           
         }
 
         private static string NormalizeSql(string sql)
