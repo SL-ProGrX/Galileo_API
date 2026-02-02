@@ -41,12 +41,18 @@ WHERE NOMBRE = @usuario";
         private const string SQL_BITACORA_EMISION = "EXEC spTesBitacora @nsolicitud,'02','',@usuario";
         private const string SQL_BITACORA_FIRMAS = "EXEC spTesBitacora @nsolicitud,'04','',@usuario";
 
+        private SqlConnection conn = new SqlConnection();
 
         public FrmTesAutorizacionDb(IConfiguration config)
         {
             _mTesoreria = new MTesoreria(config);
             _portalDB = new PortalDB(config);
             _factory = new VerificadorCoreFactory(config);
+        }
+
+        private void CallConnexion(int codEmpresa)
+        {
+            conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
         }
 
         /// <summary>
@@ -57,8 +63,7 @@ WHERE NOMBRE = @usuario";
         /// <returns></returns>
         public ErrorDto<TesSolicitudesLista> TES_SolicitudesPendientes_Obtener(int CodEmpresa, string filtros)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
+            CallConnexion(CodEmpresa);
             var filtro = ParseFiltros(filtros);
             var response = NewOkResponse();
 
@@ -326,8 +331,7 @@ WHERE NOMBRE = @usuario";
         /// <returns></returns>
         public ErrorDto TES_Autorizacion_Aplicar(TesAutorizaParametros nsolicitud)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, nsolicitud.codEmpresa);
-
+            CallConnexion(nsolicitud.codEmpresa);
             var solicitudes = DeserializeLista(nsolicitud.solicitudesLista);
             try
             {
@@ -491,7 +495,7 @@ WHERE NOMBRE = @usuario";
         /// <returns></returns>
         public ErrorDto<TesAccesosUsuariosLista> TES_AutorizacionBuscar_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            CallConnexion(CodEmpresa);
 
             var result = new ErrorDto<TesAccesosUsuariosLista>
             {
@@ -576,13 +580,14 @@ WHERE NOMBRE = @usuario";
             OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
                 result.Result.lista = conn.Query<DropDownListaGenericaModel>(sqlData, p).ToList();
+                return result;
             }
             catch (Exception ex)
             {
                 return DbHelper.CreateErrorResponse<TesAccesosUsuariosLista>($"Error al obtener las solicitudes pendientes: {ex.Message}");
             }
 
-            return result;
+            
         }
 
     }
