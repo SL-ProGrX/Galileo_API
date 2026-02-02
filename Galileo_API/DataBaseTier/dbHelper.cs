@@ -1,6 +1,8 @@
 using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
+using Galileo.Models.TES;
+using Microsoft.Data.SqlClient;
+using Newtonsoft.Json;
 
 namespace Galileo.DataBaseTier
 {
@@ -151,6 +153,15 @@ namespace Galileo.DataBaseTier
         {
             var cs = portalDb.ObtenerDbConnStringEmpresa(codEmpresa);
             return new SqlConnection(cs);
+        }
+
+        // ====== Helpers de TES_SolicitudesPendientes_Obtener ======
+        public static T DeserializeOrNew<T>(string? json) where T : new()
+        {
+            if (string.IsNullOrWhiteSpace(json))
+                return new T();
+
+            return JsonConvert.DeserializeObject<T>(json) ?? new T();
         }
 
     }
