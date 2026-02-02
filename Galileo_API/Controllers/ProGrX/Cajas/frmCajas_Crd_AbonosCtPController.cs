@@ -55,6 +55,18 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
             return _bl.CajasCrdAbonosCtP_InfoCancelacion_Obtener(CodEmpresa, Request);
         }
 
+        [HttpGet("CajasCrdAbonosCtP_CuotasInfo_Obtener")]
+        public ErrorDto<CajasCrdAbonosCuotasInfoData> CajasCrdAbonosCtP_CuotasInfo_Obtener(int codEmpresa, int vOperacion, int vCuotas)
+        {
+            return _bl.CajasCrdAbonosCtP_CuotasInfo_Obtener(codEmpresa, vOperacion, vCuotas);
+        }
+
+        [HttpGet("CajasCrdAbonosCtP_FechaProceso_Obtener")]
+        public ErrorDto<int> CajasCrdAbonosCtP_FechaProceso_Obtener(int CodEmpresa, int Proceso, bool Siguiente)
+        {
+            return _bl.CajasCrdAbonosCtP_FechaProceso_Obtener(CodEmpresa, Proceso, Siguiente);
+        }
+
         [HttpPost("CajasCrdAbonosCtP_Abono_Registrar")]
         public ErrorDto CajasCrdAbonosCtP_Abono_Registrar(int CodEmpresa, CajasCrdAbonosCtPRegistrarAbonoRequest Request)
         {

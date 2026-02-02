@@ -4,6 +4,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Cajas;
+using System.Diagnostics;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 {
@@ -38,6 +39,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             _mAfiliacion = mAfiliacion;
         }
 
+        /// <summary>
+        /// Obtiene los datos de la operacion de credito para abonos
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="CodCaja"></param>
+        /// <param name="OperacionId"></param>
+        /// <returns></returns>
         public ErrorDto<CajasCrdAbonosCtPData> CajasCrdAbonosCtP_ConsultaOperacion_Obtener(int CodEmpresa, string CodCaja, int OperacionId)
         {
             return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
@@ -74,6 +82,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             });
         }
 
+        /// <summary>
+        /// Obtiene lista de operaciones de credito para abonos
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CajasCrdAbonosCtPData>> CajasCrdAbonosCtP_Operaciones_Obtener(int CodEmpresa)
         {
             const string query = @"SELECT R.id_solicitud,R.Codigo,S.Cedula,S.Nombre,C.Descripcion 
@@ -84,6 +97,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return DbHelper.ExecuteListQuery<CajasCrdAbonosCtPData>(_portalDb, CodEmpresa, query);
         }
 
+        /// <summary>
+        /// Obtiene los tipos de documento para abonos
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Caja"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CajasCrdAbonosCtP_TipoDoc_Obtener(int CodEmpresa, string Caja)
         {
             const string query = @"select rTrim(C.tipo_documento) as item, rtrim(D.Descripcion) as descripcion
@@ -94,6 +113,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query, new { Caja });
         }
 
+        /// <summary>
+        /// Obtiene las transacciones de la operacion de credito
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="IdSolicitud"></param>
+        /// <returns></returns>
         public ErrorDto<List<CajasCrdOperacionTransacData>> CajasCrdAbonosCtP_OperacionTransac_Obtener(int CodEmpresa, int IdSolicitud)
         {
             const string sql = @"select * from CRD_OPERACION_TRANSAC 
@@ -103,6 +128,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return DbHelper.ExecuteListQuery<CajasCrdOperacionTransacData>(_portalDb, CodEmpresa, sql, new {IdSolicitud});
         }
 
+        /// <summary>
+        /// Obtiene los dias activos hasta una fecha determinada
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<long> CajasCrdAbonosCtP_DiasActivoFecha_Obtener(int CodEmpresa, CajasCrdAbonoTipoRequest request)
         {
             const string sql = @"select dbo.fxCrdPlanPagosDiasActivoFecha(@OperacionId, @FechaCancelacion) as 'Dias'";
@@ -118,6 +149,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             );
         }
 
+        /// <summary>
+        /// Obtiene la informacion de cancelacion de la operacion de credito
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CajasCrdAbonosInfoCancelacionData> CajasCrdAbonosCtP_InfoCancelacion_Obtener(int CodEmpresa, CajasCrdAbonoTipoRequest request)
         {
             const string sql = @"exec spCrdPlanPagosInfoCancelacion @OperacionId, @FechaCancelacion";
@@ -139,6 +176,120 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return result!;
         }
 
+        /// <summary>
+        /// Obtiene la informacion de las cuotas de la operacion de credito
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="vOperacion"></param>
+        /// <param name="vCuotas"></param>
+        /// <returns></returns>
+        public ErrorDto<CajasCrdAbonosCuotasInfoData> CajasCrdAbonosCtP_CuotasInfo_Obtener(int codEmpresa, int vOperacion, int vCuotas)
+        {
+            const string sqlTotales = @"
+            SELECT
+                ISNULL(MAX(id_Seq),0)                AS seqX,
+                ISNULL(SUM(IntCor + IntMor),0)       AS intCor,
+                ISNULL(SUM(Principal),0)             AS principal,
+                ISNULL(MIN(Saldo_Actual),0)          AS saldo,
+                ISNULL(MAX(Fecha_Proceso),0)         AS fecha_Proceso,
+                ISNULL(SUM(Poliza),0)                AS poliza,
+                ISNULL(SUM(IVA),0)                   AS iva
+            FROM CRD_OPERACION_PLAN_PAGOS
+            WHERE id_solicitud = @OperacionId
+              AND Id_Seq IN
+              (
+                  SELECT TOP (@Cuotas) Id_Seq
+                  FROM CRD_OPERACION_PLAN_PAGOS
+                  WHERE estado IN ('A','P')
+                    AND id_solicitud = @OperacionId
+                    AND num_cuota > 0
+                  ORDER BY num_cuota, Id_Seq
+              );
+            ";
+
+
+            var totales = DbHelper.ExecuteSingleQuery<CajasCrdAbonosCuotasInfoData>(
+                _portalDb,
+                codEmpresa,
+                sqlTotales,
+                new CajasCrdAbonosCuotasInfoData(),
+                new
+                {
+                    OperacionId = vOperacion,
+                    Cuotas = vCuotas
+                }
+            );
+
+            if (totales.Result == null)
+                totales.Result = new CajasCrdAbonosCuotasInfoData();
+
+            const string sqlCuota = @"
+                SELECT ISNULL(cuota, 0) AS Cuota
+                FROM CRD_OPERACION_PLAN_PAGOS
+                WHERE id_seq = @IdSeq
+                  AND id_solicitud = @OperacionId;
+            ";
+
+            if (totales.Result.seqX > 0)
+            {
+                var cuotaRs = DbHelper.ExecuteSingleQuery<decimal>(
+                    _portalDb,
+                    codEmpresa,
+                    sqlCuota,
+                    0,
+                    new
+                    {
+                        IdSeq = totales.Result.seqX,
+                        OperacionId = vOperacion
+                    }
+                );
+
+                if (cuotaRs == null || cuotaRs.Code != 0)
+                    return new ErrorDto<CajasCrdAbonosCuotasInfoData>
+                    {
+                        Code = cuotaRs?.Code,
+                        Description = cuotaRs?.Description,
+                        Result = totales.Result
+                    };
+
+                totales.Result.cuota = cuotaRs.Result;
+            }
+
+            return totales!;
+        }
+
+        /// <summary>
+        /// Obtener fecha de proceso siguiente o anterior
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="Proceso"></param>
+        /// <param name="Siguiente"></param>
+        /// <returns></returns>
+        public ErrorDto<int> CajasCrdAbonosCtP_FechaProceso_Obtener(int CodEmpresa, int Proceso, bool Siguiente)
+        {
+            string sql = "select dbo.fxSIFPrmProcesoSig(@Proceso) as 'Result'";
+            if (!Siguiente)
+            {
+                sql = "select dbo.fxSIFPrmProcesoAnt(@Proceso) as 'Result'";
+            }
+
+            return DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                CodEmpresa,
+                sql, 0,
+                new
+                {
+                    Proceso
+                }
+            );
+        }
+
+        /// <summary>
+        /// Registra un abono a la operacion de credito
+        /// </summary>
+        /// <param name="codempresa"></param>
+        /// <param name="req"></param>
+        /// <returns></returns>
         public ErrorDto CajasCrdAbonosCtP_Abono_Registrar(int codempresa, CajasCrdAbonosCtPRegistrarAbonoRequest req)
         {
             try
