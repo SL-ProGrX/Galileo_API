@@ -1,5 +1,8 @@
-﻿using Newtonsoft.Json;
-using Galileo.Models.KindoSinpe;
+﻿using Galileo.Models.KindoSinpe;
+using Galileo_API.DataBaseTier.KindoSinpe;
+using Humanizer;
+using Newtonsoft.Json;
+using System.Drawing.Drawing2D;
 using System.Text;
 
 namespace Galileo_API.DataBaseTier
@@ -7,13 +10,10 @@ namespace Galileo_API.DataBaseTier
 #pragma warning disable S125 // Quitar despues de implementar resto de metodos con CSG
     public class SinpeGalileoPin
     {
-        private readonly HttpClient _client;
-        private readonly string strMediaType = "application/json";
-        private readonly string msjJson = "Respuesta inválida del servicio (null).";
-
+        private readonly MClientHpptCall mClient;
         public SinpeGalileoPin(IConfiguration config)
         {
-            _client = new HttpClient();
+            mClient = new MClientHpptCall();
         }
 
         #region 6.x IsServiceAvailable
@@ -24,47 +24,23 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResServiceAvailable IsServiceAvailable(string UrlCGP_PIN, ReqBase context)
         {
-            try
-            {
-                var json = JsonConvert.SerializeObject(context);
-                var content = new StringContent(json, Encoding.UTF8, strMediaType);
-
-                var response = _client.PostAsync(UrlCGP_PIN + "/IsServiceAvailable", content).Result;
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    var result = JsonConvert.DeserializeObject<ResServiceAvailable>(jsonResponse);
-
-                    return new ResServiceAvailable
-                    {
-                        IsSuccessful = true,
-                        OperationId = result!.OperationId,
-                        ServiceAvailable = result.ServiceAvailable
-                    };
-                }
-                else
-                {
-                    return new ResServiceAvailable
-                    {
-                        IsSuccessful = false,
-                        Errors = new Error[]
-                        {
-                            new Error { Code = (int)response.StatusCode, Message = "Error al verificar la disponibilidad del servicio." }
-                        }
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ResServiceAvailable
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[]
-                    {
-                        new Error { Code = -1, Message = $"Error en IsServiceAvailable: {ex.Message}" }
-                    }
-                };
-            }
+            return mClient.PostJsonAsync<ReqBase, ResServiceAvailable, ResServiceAvailable>(
+                   baseUrl: UrlCGP_PIN,
+                   endpoint: "/IsServiceAvailable",
+                   request: context,
+                   mapOk: serviceRes => new ResServiceAvailable
+                   {
+                       IsSuccessful = true,
+                       OperationId = serviceRes.OperationId,
+                       ServiceAvailable = serviceRes.ServiceAvailable
+                   },
+                   errorFactory: (code, msg) => new ResServiceAvailable
+                   {
+                       IsSuccessful = false,
+                       Errors = new[] { new Error { Code = code, Message = msg } }
+                   },
+                   operationName: nameof(IsServiceAvailable)
+               ).Result;
         }
         #endregion
 
@@ -76,50 +52,27 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResAccountInfo GetAccountInfo(string UrlCGP_PIN, ReqAccountInfo accountData)
         {
-            try
-            {
-                var json = JsonConvert.SerializeObject(accountData);
-                var content = new StringContent(json, Encoding.UTF8, strMediaType);
-
-                var response = _client.PostAsync(UrlCGP_PIN + "/GetAccountInfo", content).Result;
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    var result = JsonConvert.DeserializeObject<ResAccountInfo>(jsonResponse);
-
-                    return
-                    new ResAccountInfo
-                    {
-                        IsSuccessful = result!.IsSuccessful,
-                        OperationId = result.OperationId,
-                        Account = result.Account,
-                        Errors = result.Errors
-                    };
-                }
-                else
-                {
-                    return new ResAccountInfo
-                    {
-                        IsSuccessful = false,
-                        Errors = new Error[]
+            return mClient.PostJsonAsync<ReqAccountInfo, ResAccountInfo, ResAccountInfo>(
+                   baseUrl: UrlCGP_PIN,
+                   endpoint: "/GetAccountInfo",
+                   request: accountData,
+                   mapOk: serviceRes => new ResAccountInfo
+                   {
+                       IsSuccessful = serviceRes!.IsSuccessful,
+                       OperationId = serviceRes.OperationId,
+                       Account = serviceRes.Account,
+                       Errors = serviceRes.Errors
+                   },
+                   errorFactory: (code, msg) => new ResAccountInfo
+                   {
+                       IsSuccessful = false,
+                       Errors = new Error[]
                         {
-                            new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener la información de la cuenta." }
+                            new Error { Code = code, Message = msg}
                         }
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                return new ResAccountInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetAccountInfo: {ex.Message}" }
-                    }
-                };
-            }
+                   },
+                   operationName: nameof(GetAccountInfo)
+               ).Result;
         }
         #endregion
 
@@ -129,35 +82,29 @@ namespace Galileo_API.DataBaseTier
         /// Envía una transacción PIN a una Entidad Financiera participante.
         /// Endpoint: /SendPIN
         /// </summary>
-        public ResPINSending SendPIN(string UrlCGP_PIN, ReqPINSending pinData)
+        public ResSendingDynamic SendPIN(string UrlCGP_PIN, ReqSendingDynamic pinData)
         {
-            try
-            {
-                var json = JsonConvert.SerializeObject(pinData);
-                var content = new StringContent(json, Encoding.UTF8, strMediaType);
-
-                var response = _client.PostAsync(UrlCGP_PIN + "/SendTransfer", content).Result;
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    var result = JsonConvert.DeserializeObject<ResPINSending>(jsonResponse);
-
-                    return result!;
-                }
-
-                return new ResPINSending
-                {
-                    IsSuccessful = false
-                };
-            }
-            catch (Exception)
-            {
-                return new ResPINSending
-                {
-                    IsSuccessful = false
-                };
-            }
+            return mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
+                   baseUrl: UrlCGP_PIN,
+                   endpoint: "/SendPIN",
+                   request: pinData,
+                   mapOk: serviceRes => new ResSendingDynamic
+                   {
+                       Errors = serviceRes.Errors,
+                       IsSuccessful = serviceRes.IsSuccessful,
+                       OperationId = serviceRes.OperationId,
+                       PINSendingResult = serviceRes.PINSendingResult     
+                   },
+                   errorFactory: (code, msg) => new ResSendingDynamic
+                   {
+                       IsSuccessful = false,
+                       Errors = new Error[]
+                        {
+                            new Error { Code = code, Message = msg}
+                        }
+                   },
+                   operationName: nameof(SendPIN)
+               ).Result;
         }
         #endregion
 
@@ -167,35 +114,29 @@ namespace Galileo_API.DataBaseTier
         /// Consulta el resultado de envío de una transacción PIN usando la referencia del canal.
         /// Endpoint: /GetPINResult
         /// </summary>
-        public ResPINSending GetPINResult(string UrlCGP_PIN, ReqTransferInfoChannelRef pinData)
+        public ResSendingDynamic GetPINResult(string UrlCGP_PIN, ReqTransferInfoChannelRef pinData)
         {
-            try
-            {
-                var json = JsonConvert.SerializeObject(pinData);
-                var content = new StringContent(json, Encoding.UTF8, strMediaType);
-
-                var response = _client.PostAsync(UrlCGP_PIN + "/GetPINResult", content).Result;
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResPINSending>(jsonResponse) ?? throw new JsonException(msjJson);
-                }
-
-                return new ResPINSending
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener el resultado de la transacción PIN." } }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ResPINSending
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetPINResult: {ex.Message}" } }
-                };
-            }
+            return mClient.PostJsonAsync<ReqTransferInfoChannelRef, ResSendingDynamic, ResSendingDynamic>(
+                   baseUrl: UrlCGP_PIN,
+                   endpoint: "/GetPINResult",
+                   request: pinData,
+                   mapOk: serviceRes => new ResSendingDynamic
+                   {
+                       Errors = serviceRes.Errors,
+                       IsSuccessful = serviceRes.IsSuccessful,
+                       OperationId = serviceRes.OperationId,
+                       PINSendingResult = serviceRes.PINSendingResult
+                   },
+                   errorFactory: (code, msg) => new ResSendingDynamic
+                   {
+                       IsSuccessful = false,
+                       Errors = new Error[]
+                        {
+                            new Error { Code = code, Message = msg}
+                        }
+                   },
+                   operationName: nameof(GetPINResult)
+               ).Result;
         }
         #endregion
 
@@ -207,33 +148,28 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResTransferInfo GetPINDataByChannelRef(string UrlCGP_PIN, ReqTransferInfoChannelRef pinData)
         {
-            try
-            {
-                var json = JsonConvert.SerializeObject(pinData);
-                var content = new StringContent(json, Encoding.UTF8, strMediaType);
-
-                var response = _client.PostAsync(UrlCGP_PIN + "/GetPINDataByChannelRef", content).Result;
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResTransferInfo>(jsonResponse) ?? throw new JsonException(msjJson); 
-                }
-
-                return new ResTransferInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo consultar la transacción PIN por referencia de canal." } }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ResTransferInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetPINDataByChannelRef: {ex.Message}" } }
-                };
-            }
+            return mClient.PostJsonAsync<ReqTransferInfoChannelRef, ResTransferInfo, ResTransferInfo>(
+                   baseUrl: UrlCGP_PIN,
+                   endpoint: "/GetPINDataByChannelRef",
+                   request: pinData,
+                   mapOk: serviceRes => new ResTransferInfo
+                   {
+                      Errors = serviceRes.Errors,
+                      IsSuccessful = serviceRes.IsSuccessful,
+                      OperationId = serviceRes.OperationId,
+                      Transfer = serviceRes.Transfer
+                      
+                   },
+                   errorFactory: (code, msg) => new ResTransferInfo
+                   {
+                       IsSuccessful = false,
+                       Errors = new Error[]
+                        {
+                            new Error { Code = code, Message = msg}
+                        }
+                   },
+                   operationName: nameof(GetPINDataByChannelRef)
+               ).Result;
         }
         #endregion
 
@@ -245,33 +181,27 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResTransferInfo GetPINDataBySINPERef(string UrlCGP_PIN, ReqTransferInfoSINPERef pinData)
         {
-            try
-            {
-                var json = JsonConvert.SerializeObject(pinData);
-                var content = new StringContent(json, Encoding.UTF8, strMediaType);
-
-                var response = _client.PostAsync(UrlCGP_PIN + "/GetPINDataBySINPERef", content).Result;
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResTransferInfo>(jsonResponse) ?? throw new JsonException(msjJson); 
-                }
-
-                return new ResTransferInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo consultar la transacción PIN por referencia SINPE." } }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ResTransferInfo
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetPINDataBySINPERef: {ex.Message}" } }
-                };
-            }
+            return mClient.PostJsonAsync<ReqTransferInfoSINPERef, ResTransferInfo, ResTransferInfo>(
+                   baseUrl: UrlCGP_PIN,
+                   endpoint: "/GetPINDataBySINPERef",
+                   request: pinData,
+                   mapOk: serviceRes => new ResTransferInfo
+                   {
+                       Errors = serviceRes.Errors,
+                       IsSuccessful = serviceRes.IsSuccessful,
+                       OperationId = serviceRes.OperationId,
+                       Transfer = serviceRes.Transfer
+                   },
+                   errorFactory: (code, msg) => new ResTransferInfo
+                   {
+                       IsSuccessful = false,
+                       Errors = new Error[]
+                        {
+                            new Error { Code = code, Message = msg}
+                        }
+                   },
+                   operationName: nameof(GetPINDataBySINPERef)
+               ).Result;
         }
         #endregion
 
@@ -283,33 +213,29 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResBatchSending SendBatch(string UrlCGP_PIN, ReqBatchSending batchData)
         {
-            try
-            {
-                var json = JsonConvert.SerializeObject(batchData);
-                var content = new StringContent(json, Encoding.UTF8, strMediaType);
-
-                var response = _client.PostAsync(UrlCGP_PIN + "/SendBatch", content).Result;
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResBatchSending>(jsonResponse) ?? throw new JsonException(msjJson); 
-                }
-
-                return new ResBatchSending
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "Error al enviar el lote de transacciones PIN." } }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ResBatchSending
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en SendBatch: {ex.Message}" } }
-                };
-            }
+            return mClient.PostJsonAsync<ReqBatchSending, ResBatchSending, ResBatchSending>(
+                   baseUrl: UrlCGP_PIN,
+                   endpoint: "/SendBatch",
+                   request: batchData,
+                   mapOk: serviceRes => new ResBatchSending
+                   {
+                       Errors = serviceRes.Errors,
+                       IsSuccessful = serviceRes.IsSuccessful,
+                          OperationId = serviceRes.OperationId,
+                          Accepted = serviceRes.Accepted,
+                          ChannelBatchNumber = serviceRes.ChannelBatchNumber,
+                          KINDOBatchNumber = serviceRes.KINDOBatchNumber
+                   },
+                   errorFactory: (code, msg) => new ResBatchSending
+                   {
+                       IsSuccessful = false,
+                       Errors = new Error[]
+                        {
+                            new Error { Code = code, Message = msg}
+                        }
+                   },
+                   operationName: nameof(SendBatch)
+               ).Result;
         }
         #endregion
 
@@ -321,33 +247,28 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResBatchState GetBatchState(string UrlCGP_PIN, ReqBatchState batchData)
         {
-            try
-            {
-                var json = JsonConvert.SerializeObject(batchData);
-                var content = new StringContent(json, Encoding.UTF8, strMediaType);
-
-                var response = _client.PostAsync(UrlCGP_PIN + "/GetBatchState", content).Result;
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResBatchState>(jsonResponse) ?? throw new JsonException(msjJson); 
-                }
-
-                return new ResBatchState
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener el estado del lote." } }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ResBatchState
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[] { new Error { Code = -1, Message = $"Error en GetBatchState: {ex.Message}" } }
-                };
-            }
+            return mClient.PostJsonAsync<ReqBatchState, ResBatchState, ResBatchState>(
+                  baseUrl: UrlCGP_PIN,
+                  endpoint: "/GetBatchState",
+                  request: batchData,
+                  mapOk: serviceRes => new ResBatchState
+                  {
+                      Errors = serviceRes.Errors,
+                      IsSuccessful = serviceRes.IsSuccessful,
+                      OperationId = serviceRes.OperationId,
+                      BatchStateInfo = serviceRes.BatchStateInfo
+                      
+                  },
+                  errorFactory: (code, msg) => new ResBatchState
+                  {
+                      IsSuccessful = false,
+                      Errors = new Error[]
+                       {
+                            new Error { Code = code, Message = msg}
+                       }
+                  },
+                  operationName: nameof(GetBatchState)
+              ).Result;
         }
         #endregion
 
@@ -359,39 +280,27 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResCustomerTransfers GetCustomerTransfers(string UrlCGP_PIN, ReqCustomerTransfers consultData)
         {
-            try
-            {
-                var json = JsonConvert.SerializeObject(consultData);
-                var content = new StringContent(json, Encoding.UTF8, strMediaType);
-
-                var response = _client.PostAsync(UrlCGP_PIN + "/GetCustomerTransfers", content).Result;
-
-                if (response.IsSuccessStatusCode)
-                {
-                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResCustomerTransfers>(jsonResponse) ?? throw new JsonException(msjJson); 
-                }
-
-                return new ResCustomerTransfers
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[]
-                    {
-                        new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener la lista de transferencias del cliente." }
-                    }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ResCustomerTransfers
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetCustomerTransfers: {ex.Message}" }
-                    }
-                };
-            }
+            return mClient.PostJsonAsync<ReqCustomerTransfers, ResCustomerTransfers, ResCustomerTransfers>(
+                 baseUrl: UrlCGP_PIN,
+                 endpoint: "/GetCustomerTransfers",
+                 request: consultData,
+                 mapOk: serviceRes => new ResCustomerTransfers
+                 {
+                     Errors = serviceRes.Errors,
+                     IsSuccessful = serviceRes.IsSuccessful,
+                     OperationId = serviceRes.OperationId,
+                     Transfers = serviceRes.Transfers,
+                 },
+                 errorFactory: (code, msg) => new ResCustomerTransfers
+                 {
+                     IsSuccessful = false,
+                     Errors = new Error[]
+                      {
+                            new Error { Code = code, Message = msg}
+                      }
+                 },
+                 operationName: nameof(GetCustomerTransfers)
+             ).Result;  
         }
         #endregion
 
@@ -403,39 +312,29 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResAllTransfers GetAllTransfers(string UrlCGP_PIN, ReqAllTransfers filterData)
         {
-            try
-            {
-                var json = JsonConvert.SerializeObject(filterData);
-                var content = new StringContent(json, Encoding.UTF8, strMediaType);
-
-                var response = _client.PostAsync(UrlCGP_PIN + "/GetAllTransfers", content).Result;
-
-                if (response.IsSuccessStatusCode)
+            return mClient.PostJsonAsync<ReqAllTransfers, ResAllTransfers, ResAllTransfers>(
+                baseUrl: UrlCGP_PIN,
+                endpoint: "/GetAllTransfers",
+                request: filterData,
+                mapOk: serviceRes => new ResAllTransfers
                 {
-                    var jsonResponse = response.Content.ReadAsStringAsync().Result;
-                    return JsonConvert.DeserializeObject<ResAllTransfers>(jsonResponse) ?? throw new JsonException(msjJson); 
-                }
-
-                return new ResAllTransfers
-                {
-                    IsSuccessful = false,
-                    Errors = new Error[]
-                    {
-                        new Error { Code = (int)response.StatusCode, Message = "No se pudo obtener la lista de todas las transferencias." }
-                    }
-                };
-            }
-            catch (Exception ex)
-            {
-                return new ResAllTransfers
+                    Errors = serviceRes.Errors,
+                    IsSuccessful = serviceRes.IsSuccessful,
+                    OperationId = serviceRes.OperationId,
+                    Transfers = serviceRes.Transfers,
+                    TotalCount = serviceRes.TotalCount,
+                    
+                },
+                errorFactory: (code, msg) => new ResAllTransfers
                 {
                     IsSuccessful = false,
                     Errors = new Error[]
-                    {
-                        new Error { Code = -1, Message = $"Error en GetAllTransfers: {ex.Message}" }
-                    }
-                };
-            }
+                     {
+                            new Error { Code = code, Message = msg}
+                     }
+                },
+                operationName: nameof(GetAllTransfers)
+            ).Result;
         }
         #endregion
     }

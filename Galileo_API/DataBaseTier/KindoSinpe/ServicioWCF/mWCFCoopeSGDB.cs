@@ -43,10 +43,10 @@ namespace Galileo_API.DataBaseTier
         /// <summary>
         /// Servicio para Validación SINPE CSG.
         /// </summary>
-        public ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario)
+        public ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario, string? tipo = "PIN")
         {
             return EjecutarOperacion(
-                () => _cliente.fxValidacionSinpe(CodEmpresa, solicitud, usuario),
+                () => _cliente.fxValidacionSinpe(CodEmpresa, solicitud, usuario,  tipo),
                 "Error al validar Sinpe"
             );
         }
@@ -67,7 +67,7 @@ namespace Galileo_API.DataBaseTier
             int CodEmpresa, int Nsolicitud, DateTime vfecha, string vUsuario, int doc_base, int contador)
         {
             return EjecutarOperacion(
-                () => _cliente.fxTesEmisionSinpeCreditoDirecto(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador),
+                () => _cliente.fxTesEmisionSinpeTiempoReal(CodEmpresa, Nsolicitud, vfecha, vUsuario, doc_base, contador),
                 "Error al fxTesEmisionSinpeTiempoReal"
             );
         }

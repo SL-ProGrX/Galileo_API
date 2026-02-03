@@ -34,7 +34,7 @@ namespace Galileo_API.Controllers.WFCSinpe
         /// <param name="solicitud"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario)
+        ErrorDto fxValidacionSinpe(int CodEmpresa, string solicitud, string usuario, string? tipo = "PIN")
         {
             // Implementación por defecto
             return new ErrorDto
