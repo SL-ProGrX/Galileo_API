@@ -10,7 +10,7 @@ namespace Galileo_API.DataBaseTier
 #pragma warning disable S125 // Quitar despues de implementar resto de metodos con CSG
     public class SinpeGalileoPin
     {
-        private readonly MClientHpptCall mClient = new MClientHpptCall();
+        private readonly MClientHpptCall mClient;
         public SinpeGalileoPin(IConfiguration config)
         {
             mClient = new MClientHpptCall();

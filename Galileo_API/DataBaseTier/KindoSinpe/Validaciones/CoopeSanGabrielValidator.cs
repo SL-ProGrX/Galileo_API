@@ -23,6 +23,8 @@ namespace Galileo_API.DataBaseTier
         private readonly MKindoServiceDb _mKindo;
         private readonly MTesoreria _mTesoreria;
 
+        private const string SinpeRejectionMessage = "Rechazo SINPE";
+
         public CoopeSanGabrielValidator(IConfiguration config)
         {
             _mKindo = new MKindoServiceDb(config);
@@ -85,7 +87,7 @@ namespace Galileo_API.DataBaseTier
                 }
 
                 // Estados 0/1: OK; otros: rechazo con motivo
-                var estado = (int)(cuenta.Account?.State ?? -1);
+                var estado = (cuenta.Account?.State ?? -1);
 
                 fxGuardaID_RespuestaSinpe(codEmpresa, estado, solicitud);
 
@@ -99,7 +101,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 }
                 else
                 {
-                    var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, estado).Result ?? "Rechazo SINPE";
+                    var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, estado).Result ?? SinpeRejectionMessage;
                     return DbHelper.ErrorResponse(rechazo, estado);
                 }
             }
@@ -250,7 +252,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                     estadoSinpe = false;
                     idRechazo = servicioDisponible.Code ?? -1;
 
-                    rechazoTexto = _mKindo.fxTesConsultaMotivo(parametros.codEmpresa, idRechazo).Result ?? "Rechazo SINPE";
+                    rechazoTexto = _mKindo.fxTesConsultaMotivo(parametros.codEmpresa, idRechazo).Result ?? SinpeRejectionMessage;
                     response = DbHelper.ErrorResponse($"N°: {parametros.nSolicitud} - {rechazoTexto}");
 
                     fxGuardaID_RespuestaSinpe(parametros.codEmpresa, idRechazo, parametros.nSolicitud.ToString());
@@ -266,7 +268,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                         estadoSinpe = false;
 
                         idRechazo = respuesta?.MotivoError ?? envio.Code ?? -1;
-                        rechazoTexto = _mKindo.fxTesConsultaMotivo(parametros.codEmpresa, idRechazo).Result ?? "Rechazo SINPE";
+                        rechazoTexto = _mKindo.fxTesConsultaMotivo(parametros.codEmpresa, idRechazo).Result ?? SinpeRejectionMessage;
 
                         response = DbHelper.ErrorResponse(rechazoTexto, idRechazo);
                     }
@@ -374,7 +376,7 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
                 if (resp?.Errors != null && resp!.Errors.Length > 0)
                     fxGuardaID_RespuestaSinpe(parametros.codEmpresa, resp!.Errors[0].Code, parametros.nSolicitud.ToString());
 
-                if (resp == null || resp!.IsSuccessful != true)
+                if (resp == null || !resp!.IsSuccessful)
                 {
                     var code = resp?.Errors != null && resp!.Errors.Length > 0 ? resp!.Errors[0].Code : -1;
                     var msg = resp?.Errors != null && resp!.Errors.Length > 0 ? resp!.Errors[0].Message : "Error al enviar solicitud a SINPE.";
@@ -466,15 +468,15 @@ WHERE NSOLICITUD = @nsolicitud";
             if (cuentaSinpe.Errors != null && cuentaSinpe.Errors.Length > 0)
             {
                 var code = cuentaSinpe.Errors[0].Code;
-                var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, code).Result ?? "Rechazo SINPE";
+                var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, code).Result ?? SinpeRejectionMessage;
                 return DbHelper.ErrorResponse(rechazo, code);
             }
 
             if (cuentaSinpe.Account?.State != null)
             {
-                var estado = (int)cuentaSinpe.Account.State!;
-                var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, estado).Result ?? "Rechazo SINPE";
-                return DbHelper.ErrorResponse(rechazo, estado);
+                var estado = cuentaSinpe.Account.State!;
+                var rechazo = _mKindo.fxTesConsultaMotivo(codEmpresa, estado ?? 0).Result ?? SinpeRejectionMessage;
+                return DbHelper.ErrorResponse(rechazo, estado ?? 0);
             }
 
             return DbHelper.CreateOkResponse();
