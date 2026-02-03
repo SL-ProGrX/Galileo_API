@@ -1,4 +1,5 @@
-﻿using Galileo.Models;
+﻿using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX_Nucleo;
 using Galileo_API.Models.ProGrX_Nucleo;
@@ -28,9 +29,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Nucleo
             return _DB.Sys_MonitorCambiosCfg_Tablas_Obtener(CodEmpresa, filtros);
         }
 
-        public ErrorDto<List<object>> Sys_MonitorCambiosCfg_Bitacora_Obtener(int CodEmpresa, MonitorCambiosCfgFiltros filtros)
+        public ErrorDto<List<object>> Sys_MonitorCambiosCfg_Bitacora_Obtener(int CodEmpresa, string  filtros)
         {
-            return _DB.Sys_MonitorCambiosCfg_Bitacora_Obtener(CodEmpresa, filtros);
+            MonitorCambiosCfgFiltros filtro = DbHelper.DeserializeOrNew<MonitorCambiosCfgFiltros>(filtros);
+            return _DB.Sys_MonitorCambiosCfg_Bitacora_Obtener(CodEmpresa, filtro);
         }
 
     }
