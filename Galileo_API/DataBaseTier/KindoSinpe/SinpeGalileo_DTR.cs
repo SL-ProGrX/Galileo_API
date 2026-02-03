@@ -58,20 +58,20 @@ namespace Galileo_API.DataBaseTier
         }
 
 
-        public ResDTRSending SendDebit(string UrlCGP_DTR, ReqDTRSending data)
+        public ResSendingDynamic SendDebit(string UrlCGP_DTR, ReqSendingDynamic data)
         {
-            return mClient.PostJsonAsync<ReqDTRSending, ResDTRSending, ResDTRSending>(
+            return mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
                  baseUrl: UrlCGP_DTR,
                  endpoint: "/SendDebit",
                  request: data,
-                 mapOk: serviceRes => new ResDTRSending
+                 mapOk: serviceRes => new ResSendingDynamic
                  {
                      IsSuccessful = serviceRes.IsSuccessful,
                      OperationId = serviceRes.OperationId,
                      DTRSendingResult = serviceRes.DTRSendingResult,
                      Errors = serviceRes.Errors
                  },
-                 errorFactory: (code, msg) => new ResDTRSending
+                 errorFactory: (code, msg) => new ResSendingDynamic
                  {
                      IsSuccessful = false,
                      Errors = new[] { new Error { Code = code, Message = msg } }
@@ -81,20 +81,20 @@ namespace Galileo_API.DataBaseTier
         }
 
       
-        public ResDTRSending GetDebitResult(string UrlCGP_DTR, ReqDTRInfoChannelRef data)
+        public ResSendingDynamic GetDebitResult(string UrlCGP_DTR, ReqDTRInfoChannelRef data)
         {
-            return mClient.PostJsonAsync<ReqDTRInfoChannelRef, ResDTRSending, ResDTRSending>(
+            return mClient.PostJsonAsync<ReqDTRInfoChannelRef, ResSendingDynamic, ResSendingDynamic>(
                  baseUrl: UrlCGP_DTR,
                  endpoint: "/GetDebitResult",
                  request: data,
-                 mapOk: serviceRes => new ResDTRSending
+                 mapOk: serviceRes => new ResSendingDynamic
                  {
                      IsSuccessful = serviceRes.IsSuccessful,
                      OperationId = serviceRes.OperationId,
                      DTRSendingResult = serviceRes.DTRSendingResult,
                      Errors = serviceRes.Errors
                  },
-                 errorFactory: (code, msg) => new ResDTRSending
+                 errorFactory: (code, msg) => new ResSendingDynamic
                  {
                      IsSuccessful = false,
                      Errors = new[] { new Error { Code = code, Message = msg } }

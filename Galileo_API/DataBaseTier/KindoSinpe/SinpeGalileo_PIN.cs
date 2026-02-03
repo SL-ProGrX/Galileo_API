@@ -82,20 +82,20 @@ namespace Galileo_API.DataBaseTier
         /// Envía una transacción PIN a una Entidad Financiera participante.
         /// Endpoint: /SendPIN
         /// </summary>
-        public ResPINSending SendPIN(string UrlCGP_PIN, ReqPINSending pinData)
+        public ResSendingDynamic SendPIN(string UrlCGP_PIN, ReqSendingDynamic pinData)
         {
-            return mClient.PostJsonAsync<ReqPINSending, ResPINSending, ResPINSending>(
+            return mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
                    baseUrl: UrlCGP_PIN,
                    endpoint: "/SendPIN",
                    request: pinData,
-                   mapOk: serviceRes => new ResPINSending
+                   mapOk: serviceRes => new ResSendingDynamic
                    {
                        Errors = serviceRes.Errors,
                        IsSuccessful = serviceRes.IsSuccessful,
                        OperationId = serviceRes.OperationId,
                        PINSendingResult = serviceRes.PINSendingResult     
                    },
-                   errorFactory: (code, msg) => new ResPINSending
+                   errorFactory: (code, msg) => new ResSendingDynamic
                    {
                        IsSuccessful = false,
                        Errors = new Error[]
@@ -114,20 +114,20 @@ namespace Galileo_API.DataBaseTier
         /// Consulta el resultado de envío de una transacción PIN usando la referencia del canal.
         /// Endpoint: /GetPINResult
         /// </summary>
-        public ResPINSending GetPINResult(string UrlCGP_PIN, ReqTransferInfoChannelRef pinData)
+        public ResSendingDynamic GetPINResult(string UrlCGP_PIN, ReqTransferInfoChannelRef pinData)
         {
-            return mClient.PostJsonAsync<ReqTransferInfoChannelRef, ResPINSending, ResPINSending>(
+            return mClient.PostJsonAsync<ReqTransferInfoChannelRef, ResSendingDynamic, ResSendingDynamic>(
                    baseUrl: UrlCGP_PIN,
                    endpoint: "/GetPINResult",
                    request: pinData,
-                   mapOk: serviceRes => new ResPINSending
+                   mapOk: serviceRes => new ResSendingDynamic
                    {
                        Errors = serviceRes.Errors,
                        IsSuccessful = serviceRes.IsSuccessful,
                        OperationId = serviceRes.OperationId,
                        PINSendingResult = serviceRes.PINSendingResult
                    },
-                   errorFactory: (code, msg) => new ResPINSending
+                   errorFactory: (code, msg) => new ResSendingDynamic
                    {
                        IsSuccessful = false,
                        Errors = new Error[]

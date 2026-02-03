@@ -111,12 +111,6 @@ namespace Galileo_API.DataBaseTier
             }
         }
 
-        //private static ErrorDto OkResponse() =>
-        //    new ErrorDto { Code = 0, Description = "Ok" };
-
-        //private static ErrorDto ErrorResponse(string description) =>
-        //    new ErrorDto { Code = -1, Description = description };
-
         private ErrorDto<vInfoSinpe> CargarInfoSinpe(int CodEmpresa, string solicitud)
         {
             _infoSinpe.vInfo = new vInfoSinpe();
@@ -282,10 +276,6 @@ namespace Galileo_API.DataBaseTier
                 Result = null
             };
 
-
-            
-            var pinData = new Galileo.Models.KindoSinpe.ReqPINSending();
-
             try
             {
                 var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
@@ -296,49 +286,8 @@ namespace Galileo_API.DataBaseTier
 
                 var cod_referencia = _mKindo.IsValidTransactionNumber(CodEmpresa, solicitud?.CuentaOrigen!);
 
-                pinData.HostId = context.HostId; 
-                pinData.OperationId = context.OperationId;
-                pinData.ClientIPAddress = context.ClientIPAddress;
-                pinData.CultureCode = context.CultureCode;
-                pinData.UserCode = context.UserCode;
-                pinData.CoreIntegrationPoint = 1;
-                pinData.CostCenter = 1;
-                pinData.Transfer = new Galileo.Models.KindoSinpe.PINTransfer()
-                {
-                    ChannelReference = cod_referencia,
-                    Amount = solicitud!.Monto,
-                    CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa!),
-                    Description = solicitud.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4,
-                    OriginEntityIBAN = solicitud.CuentaOrigen!,
-                    OriginCustomer = new Galileo.Models.KindoSinpe.OriginCustomer()
-                    {
-                        Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo), solicitud.CedulaOrigen!.Replace("-", ""))  ,
-                        IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo),
-                        Name = solicitud.NombreOrigen!,
-                        IBAN = solicitud.CuentaOrigen!,
-                        DebitIBAN = _mKindo.fxSinpe_Valida_MovimientosPermitidos(CodEmpresa, solicitud.CuentaOrigen!),
-                        Email = solicitud.CorreoNotifica!.Trim()
-                    },
-                    DestinationCustomer = new Galileo.Models.KindoSinpe.DestinationCustomer()
-                    {
-                        Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Replace("-", "")).Codigo), solicitud.Codigo!.Replace("-", "")) ,
-                        IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Replace("-", "")).Codigo),
-                        Name = solicitud.Beneficiario!,
-                        IBAN = solicitud.Cuenta!,
-                        Email = solicitud.CorreoNotifica
-                    },
-
-                };
-                pinData.CustomData = new List<Galileo.Models.KindoSinpe.CustomField>()
-                    {
-                        new Galileo.Models.KindoSinpe.CustomField()
-                        {
-                            Name = "Galileo",
-                            Value = "CSG"
-                        }
-                    };
-
-                var response = _sinpePIN.SendPIN(parametrosSinpe.Result?.UrlCGP_PIN!, pinData);
+                var reqPin = BuildPinRequest(context, CodEmpresa, solicitud!, cod_referencia);
+                var response = _sinpePIN.SendPIN(parametrosSinpe.Result?.UrlCGP_PIN!, reqPin);
                 if (response.IsSuccessful)
                 {
 
@@ -352,7 +301,7 @@ namespace Galileo_API.DataBaseTier
                     if (updateNSolicitud)
                     {
 
-                        _mKindo.RegistraMovTransito(CodEmpresa, cod_referencia, context.UserCode!, response, solicitud);
+                        _mKindo.RegistraMovTransito(CodEmpresa, cod_referencia, context.UserCode!, response, solicitud!);
                         return new ErrorDto<RespuestaRegistro>
                         {
                             Code = 0,
@@ -572,10 +521,6 @@ namespace Galileo_API.DataBaseTier
                 Result = null
             };
 
-
-
-            var pinData = new Galileo.Models.KindoSinpe.ReqDTRSending();
-
             try
             {
                 var parametrosSinpe = _mKindo.GetUriEmpresa(CodEmpresa, vUsuario);
@@ -586,48 +531,8 @@ namespace Galileo_API.DataBaseTier
 
                 var cod_referencia = _mKindo.IsValidTransactionNumber(CodEmpresa, solicitud?.CuentaOrigen!);
 
-                pinData.HostId = context.HostId;
-                pinData.OperationId = context.OperationId;
-                pinData.ClientIPAddress = context.ClientIPAddress;
-                pinData.CultureCode = context.CultureCode;
-                pinData.UserCode = context.UserCode;
-                pinData.CoreIntegrationPoint = 1;
-                pinData.CostCenter = 1;
-                pinData.Debit = new Galileo.Models.KindoSinpe.DTR()
-                {
-                    ChannelRefNumber = cod_referencia,
-                    Amount = solicitud!.Monto,
-                    CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa!),
-                    Description = solicitud.Detalle1 + solicitud.Detalle2 + solicitud.Detalle3 + solicitud.Detalle4,
-                    OriginCustomer = new Galileo.Models.KindoSinpe.OriginCustomer()
-                    {
-                        Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo), solicitud.CedulaOrigen!.Replace("-", "")),
-                        IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.CedulaOrigen!.Replace("-", "")).Codigo),
-                        Name = solicitud.NombreOrigen!,
-                        IBAN = solicitud.CuentaOrigen!,
-                        DebitIBAN = _mKindo.fxSinpe_Valida_MovimientosPermitidos(CodEmpresa, solicitud.CuentaOrigen!),
-                        Email = solicitud.CorreoNotifica!.Trim()
-                    },
-                    DestinationCustomer = new Galileo.Models.KindoSinpe.DestinationCustomer()
-                    {
-                        Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Replace("-", "")).Codigo), solicitud.Codigo!.Replace("-", "")),
-                        IdType = Convert.ToInt32(MKindoServiceDb.Inferir(solicitud.Codigo!.Replace("-", "")).Codigo),
-                        Name = solicitud.Beneficiario!,
-                        IBAN = solicitud.Cuenta!,
-                        Email = solicitud.CorreoNotifica
-                    },
-
-                };
-                pinData.CustomData = new List<Galileo.Models.KindoSinpe.CustomField>()
-                    {
-                        new Galileo.Models.KindoSinpe.CustomField()
-                        {
-                            Name = "Galileo",
-                            Value = "CSG"
-                        }
-                    };
-
-                var response = _sinpeDTR.SendDebit(parametrosSinpe.Result?.UrlCGP_PIN!, pinData);
+                var reqDtr = BuildDtrRequest(context, CodEmpresa, solicitud!, cod_referencia);
+                var response = _sinpeDTR.SendDebit(parametrosSinpe.Result?.UrlCGP_PIN!, reqDtr);
                 if (response.IsSuccessful)
                 {
 
@@ -641,7 +546,7 @@ namespace Galileo_API.DataBaseTier
                     if (updateNSolicitud)
                     {
 
-                        _mKindo.RegistraDebMovTransito(CodEmpresa, cod_referencia, context.UserCode!, response, solicitud);
+                        _mKindo.RegistraMovTransito(CodEmpresa, cod_referencia, context.UserCode!, response, solicitud!);
                         return new ErrorDto<RespuestaRegistro>
                         {
                             Code = 0,
@@ -698,6 +603,94 @@ namespace Galileo_API.DataBaseTier
         }
 
         #endregion
+
+        private ReqSendingDynamic BuildPinRequest(ReqBase context, int CodEmpresa, dynamic solicitud, string codReferencia)
+        {
+            var req = BuildBaseRequest(context);
+
+            req.Transfer = new Galileo.Models.KindoSinpe.PINTransfer
+            {
+                ChannelReference = codReferencia,
+                Amount = solicitud.Monto,
+                CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa!),
+                Description = BuildDescription(solicitud),
+                OriginEntityIBAN = solicitud.CuentaOrigen!,
+                OriginCustomer = BuildOriginCustomer(CodEmpresa, solicitud),
+                DestinationCustomer = BuildDestinationCustomer(solicitud),
+            };
+
+            return req;
+        }
+
+        private ReqSendingDynamic BuildDtrRequest(ReqBase context, int CodEmpresa, dynamic solicitud, string codReferencia)
+        {
+            var req = BuildBaseRequest(context);
+
+            req.Debit = new DTR
+            {
+                ChannelRefNumber = codReferencia,
+                Amount = solicitud.Monto,
+                CurrencyCode = MKindoServiceDb.GetCurrencyCodeDes(solicitud.Divisa!),
+                Description = BuildDescription(solicitud),
+                OriginCustomer = BuildOriginCustomer(CodEmpresa, solicitud),
+                DestinationCustomer = BuildDestinationCustomer(solicitud),
+            };
+
+            return req;
+        }
+
+        private ReqSendingDynamic BuildBaseRequest(ReqBase context)
+        {
+            return new ReqSendingDynamic
+            {
+                HostId = context.HostId,
+                OperationId = context.OperationId,
+                ClientIPAddress = context.ClientIPAddress,
+                CultureCode = context.CultureCode,
+                UserCode = context.UserCode,
+                CoreIntegrationPoint = 1,
+                CostCenter = 1,
+                CustomData = BuildCustomData()
+            };
+        }
+
+        private static string BuildDescription(dynamic s) =>
+            $"{s.Detalle1}{s.Detalle2}{s.Detalle3}{s.Detalle4}";
+
+        private Galileo.Models.KindoSinpe.OriginCustomer BuildOriginCustomer(int CodEmpresa, dynamic s)
+        {
+            var ced = (s.CedulaOrigen as string ?? "").Replace("-", "");
+            var info = MKindoServiceDb.Inferir(ced);
+
+            return new Galileo.Models.KindoSinpe.OriginCustomer
+            {
+                Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(info.Codigo), ced),
+                IdType = Convert.ToInt32(info.Codigo),
+                Name = s.NombreOrigen!,
+                IBAN = s.CuentaOrigen!,
+                DebitIBAN = _mKindo.fxSinpe_Valida_MovimientosPermitidos(CodEmpresa, s.CuentaOrigen!),
+                Email = (s.CorreoNotifica as string ?? "").Trim()
+            };
+        }
+
+        private static Galileo.Models.KindoSinpe.DestinationCustomer BuildDestinationCustomer(dynamic s)
+        {
+            var ced = (s.Codigo as string ?? "").Replace("-", "");
+            var info = MKindoServiceDb.Inferir(ced);
+
+            return new Galileo.Models.KindoSinpe.DestinationCustomer
+            {
+                Id = MKindoServiceDb.MaskSinpeId(Convert.ToInt32(info.Codigo), ced),
+                IdType = Convert.ToInt32(info.Codigo),
+                Name = s.Beneficiario!,
+                IBAN = s.Cuenta!,
+                Email = s.CorreoNotifica
+            };
+        }
+
+        private static List<Galileo.Models.KindoSinpe.CustomField> BuildCustomData() =>
+            new() { new Galileo.Models.KindoSinpe.CustomField { Name = "Galileo", Value = "CSG" } };
+
 
     }
 }

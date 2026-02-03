@@ -505,20 +505,11 @@
         #endregion
 
         #region 7.1.26 ReqDTRSending
-        public class ReqDTRSending : ReqBase
-        {
-            public new int CoreIntegrationPoint { get; set; } = 0;
-            public new int CostCenter { get; set; } = 0;
-            public DTR? Debit { get; set; }
-            public List<CustomField>? CustomData { get; set; }
-        }
+
         #endregion
 
         #region 7.1.27 ResDTRSending
-        public class ResDTRSending : ResBase
-        {
-            public DTRSendingResult? DTRSendingResult { get; set; }
-        }
+
         #endregion
 
         #region 7.1.28 ReqCustomerDebits
@@ -701,11 +692,15 @@
         public DateTime? ProcessingDate { get; set; }
     }
 
-    /// <summary>
-    /// Request para solicitar el envío de una transacción PIN.
-    /// </summary>
-    public class ReqPINSending : ReqBase
+        /// <summary>
+        /// Request para solicitar el envío de una transacción PIN.
+        /// </summary>
+        public class ReqSendingDynamic : ReqBase
         {
+            public new int? CoreIntegrationPoint { get; set; } = 0;
+            public new int? CostCenter { get; set; } = 0;
+            public DTR? Debit { get; set; }
+
             /// <summary>
             /// Información de la transacción PIN a enviar.
             /// </summary>
@@ -714,17 +709,18 @@
             /// Campos personalizados adicionales asociados a la transacción.
             /// </summary>
             public List<CustomField>? CustomData { get; set; }
-    }
+        }
 
         /// <summary>
         /// Response para el envío de una transacción PIN.
         /// </summary>
-        public class ResPINSending : ResBase
+        public class ResSendingDynamic : ResBase
         {
-            /// <summary>
-            /// Resultado del envío de la transacción PIN.
-            /// </summary>
-            public PINSendingResult? PINSendingResult { get; set; }
+                public DTRSendingResult? DTRSendingResult { get; set; }
+                /// <summary>
+                /// Resultado del envío de la transacción PIN.
+                /// </summary>
+                public PINSendingResult? PINSendingResult { get; set; }
         }
 
         /// <summary>
