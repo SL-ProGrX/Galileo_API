@@ -7,14 +7,13 @@ namespace PgxAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class MReportingServicesController : Controller
+    public class MReportingServicesController : ControllerBase
     {
-        private readonly IConfiguration? _config;
+
         private readonly MReportingServicesBL _reportingServicesBL;
         public MReportingServicesController(IConfiguration config)
         {
-            _config = config;
-            _reportingServicesBL = new MReportingServicesBL(_config);
+            _reportingServicesBL = new MReportingServicesBL(config);
         }
 
         [HttpPost("ReporteRDLC_v2")]
