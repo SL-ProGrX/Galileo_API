@@ -1317,6 +1317,14 @@
 
         [System.Runtime.Serialization.DataMemberAttribute()]
         public string? Usuario { get; set; }
+        }
+
+        public class Parametros
+        {
+        public int codEmpresa { get; set; } = 0;
+        public int nSolicitud { get; set; } = 0;
+            public string? usuario { get; set; } = null;
+        public DateTime? fecha { get; set; } = null;
     }
 
     }
