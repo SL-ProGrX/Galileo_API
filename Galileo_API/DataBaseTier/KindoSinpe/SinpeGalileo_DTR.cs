@@ -7,7 +7,7 @@ namespace Galileo_API.DataBaseTier
 {
     public class SinpeGalileoDtr
     {
-        private readonly MClientHpptCall mClient = new MClientHpptCall();
+        private readonly MClientHpptCall mClient;
 
         public SinpeGalileoDtr(IConfiguration config, HttpClient? client = null)
         {
