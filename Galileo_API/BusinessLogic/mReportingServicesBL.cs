@@ -7,12 +7,11 @@ namespace Galileo.BusinessLogic
 {
     public class MReportingServicesBL
     {
-        private readonly IConfiguration _config;
+
         private readonly MReportingServicesDB _reportingServicesDB;
 
         public MReportingServicesBL(IConfiguration config)
         {
-            _config = config;
             _reportingServicesDB = new MReportingServicesDB(config);
 
         }
