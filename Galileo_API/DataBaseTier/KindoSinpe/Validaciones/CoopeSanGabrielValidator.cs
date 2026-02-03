@@ -451,7 +451,7 @@ namespace Galileo_API.DataBaseTier
                 else
                 {
                     // 2) Envío a SINPE
-                    respuesta = fxTesEmisionSinpeTiempoReal(CodEmpresa, Nsolicitud, vUsuario).Result;
+                    respuesta = EmisionSinpeTiempoReal(CodEmpresa, Nsolicitud, vUsuario).Result;
 
                     if (respuesta != null && respuesta.MotivoError != 0)
                     {
@@ -512,7 +512,7 @@ namespace Galileo_API.DataBaseTier
         }
 
 
-        private ErrorDto<RespuestaRegistro> fxTesEmisionSinpeTiempoReal(int CodEmpresa, int Nsolicitud, string vUsuario)
+        private ErrorDto<RespuestaRegistro> EmisionSinpeTiempoReal(int CodEmpresa, int Nsolicitud, string vUsuario)
         {
             var resp = new ErrorDto<RespuestaRegistro>
             {
