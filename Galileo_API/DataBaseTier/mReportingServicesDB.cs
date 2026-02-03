@@ -1,12 +1,17 @@
 ﻿using Dapper;
+using Galileo.DataBaseTier.ProGrX_Reportes;
+using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.Security;
+using Galileo.Models.TES;
+using Galileo_API.DataBaseTier.ProGrX.Bancos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Reporting.NETCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Galileo.DataBaseTier.ProGrX_Reportes;
-using Galileo.Models;
-using Galileo.Models.ERROR;
+using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Galileo.DataBaseTier
 {
@@ -53,9 +58,9 @@ namespace Galileo.DataBaseTier
 
     public class MReportingServicesDB
     {
+        private readonly PortalDB _portalDB;
         private readonly IConfiguration _config;
         private readonly ILogger<MReportingServicesDB>? _logger;
-        private readonly string _dirRdlc;
 
         private readonly IRdlcPathResolver _path;
         private readonly IRdlcMetaReader _meta;
@@ -64,8 +69,6 @@ namespace Galileo.DataBaseTier
         private readonly IReportParameterBuilder _params;
         private readonly ISubreportCoordinator _subs;
 
-        private readonly string DefaultLogoUrl;
-        private readonly string DefaultEmpresa;
 
         private readonly MReportingServicesDBDependencies deps = new MReportingServicesDBDependencies();
 
@@ -81,18 +84,21 @@ namespace Galileo.DataBaseTier
             _params = deps.ParamBuilder ;
             _subs = deps.Subs ;
 
-            _dirRdlc = _config.GetSection("AppSettings")["RutaRDLC"] ?? string.Empty;
+            _portalDB = new PortalDB(config);
+
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-            DefaultLogoUrl = _config.GetSection("ReporteSrv")["DefaultLogoUrl"] ?? string.Empty;
-            DefaultEmpresa = _config.GetSection("ReporteSrv")["DefaultEmpresa"] ?? string.Empty;
         }
 
         // ================= API PRINCIPAL (V2) =================
         public IActionResult ReporteRDLC_v2(FrmReporteGlobal data)
         {
-            if (data is null)
+            string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
+            if (data.parametros == null)
+            {
                 return ReportRenderer.Error("Datos del reporte no proporcionados.", 400);
+            }
+               
 
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(data.codEmpresa);
 
@@ -191,6 +197,9 @@ namespace Galileo.DataBaseTier
         public ErrorDto<object> ReportesInfo(int codEmpresa)
         {
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+
+            string DefaultLogoUrl = GetParametrerValues(codEmpresa, "Rep02").Result!;
+            string DefaultEmpresa = GetParametrerValues(codEmpresa, "Rep03").Result!;
             var resp = new ErrorDto<object> { Code = 0, Description = "OK", Result = new { LOGO_WEB_SITE = string.Empty, Nombre = string.Empty } };
 
             try
@@ -247,6 +256,7 @@ namespace Galileo.DataBaseTier
 
         private LocalReport CreateReportInstance(FrmReporteGlobal data)
         {
+            string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
             var report = new LocalReport { EnableExternalImages = true };
             var path = Path.Combine(_dirRdlc, data.codEmpresa.ToString(), $"{data.nombreReporte}.rdlc");
             report.ReportPath = path;
@@ -274,6 +284,7 @@ namespace Galileo.DataBaseTier
 
         private IEnumerable<(string ReportName, string DataSetName, string? Query)> LoadSubreportDataSets(System.Xml.Linq.XDocument doc, FrmReporteGlobal data)
         {
+            string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
             var subreportNames = doc.Descendants()
                 .Where(x => x.Name.LocalName == "Subreport")
                 .Select(x => x.Elements().FirstOrDefault(e => e.Name.LocalName == "ReportName")?.Value)
@@ -355,6 +366,15 @@ namespace Galileo.DataBaseTier
             }
 
             return Task.FromResult(result);
+        }
+
+        private ErrorDto<string> GetParametrerValues(int CodEmpresa, string code)
+        {
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
+            {
+                const string query = "SELECT VALOR FROM SIF_PARAMETROS WHERE COD_PARAMETRO = @Code";
+                return conn.Query<string>(query, new { Code = code }).FirstOrDefault() ?? string.Empty;
+            });
         }
     }
 }

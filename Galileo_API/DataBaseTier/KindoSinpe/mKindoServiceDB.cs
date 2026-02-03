@@ -114,6 +114,43 @@ namespace Galileo_API.DataBaseTier
             };
         }
 
+
+        private object BuildDebMovTransitoParams(
+          int codEmpresa,
+          string codReferencia,
+          string usuario,
+          ResDTRSending resPIN,
+          TesTransaccion solicitud,
+          bool incluirFechaActualiza)
+        {
+            return new
+            {
+                CodTransito = ConsecutivoMovTransito(codEmpresa),
+                Cedula = solicitud.Codigo,
+                CuentaCliente = solicitud.Cuenta,
+                BancoOrigen = Convert.ToInt32(Inferir((solicitud.CedulaOrigen ?? "").Replace("-", "")).Codigo),
+                BancoOrigenDesc = solicitud.NombreOrigen,
+                CedulaOrigen = solicitud.CedulaOrigen,
+                CuentaClienteOrigen = solicitud.CuentaOrigen,
+                CodReferencia = codReferencia,
+                CodServicio = 21,
+                CodMoneda = solicitud.Divisa,
+                Monto = solicitud.Monto,
+                MontoComision = "",
+                Accion = "C", // antes no se enviaba en Update; mantiene intención del flujo (ajusta si aplica otro valor)
+                TransacTipo = "C",
+                TransacDesc = (solicitud.Detalle1 ?? "") + (solicitud.Detalle2 ?? "") + (solicitud.Detalle3 ?? "") + (solicitud.Detalle4 ?? ""),
+                RegistroFecha = DateTime.Now,
+                RegistroUsuario = usuario,
+                ComprobanteInterno = resPIN.DTRSendingResult?.SINPERefNumber ?? string.Empty,
+                RechazoCodigo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
+                RechazoDesc = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Message : string.Empty,
+                Estado = resPIN.DTRSendingResult!.State,
+                FechaActualiza = incluirFechaActualiza ? DateTime.Now : (DateTime?)null,
+                Servicio = Convert.ToInt32(Inferir((solicitud.CedulaOrigen ?? "").Replace("-", "")).Codigo)
+            };
+        }
+
         private static readonly IReadOnlyDictionary<string, string> FuncionesSinpeSql =
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
@@ -1600,7 +1637,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             return response;
         }
 
-        public ErrorDto<bool> RegistraDibitoCuenta(int CodEmpresa, int Nsolicitud, ResPINSending resPIN)
+        public ErrorDto<bool> RegistraCreditoCuenta(int CodEmpresa, int Nsolicitud, ResPINSending resPIN)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<bool>
@@ -1623,6 +1660,41 @@ FROM dbo.fxSinpe_ValidaCredito(
                     refSinpe = resPIN.PINSendingResult?.SINPEReference ?? string.Empty,
                     idRechazo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
                     estadoSinpe = resPIN.PINSendingResult!.State,
+                    solicitud = Nsolicitud
+                }) > 0;
+            }
+            catch (Exception)
+            {
+                response.Code = -1;
+                response.Description = "Error al Actualizar Solicitud.";
+                response.Result = false;
+            }
+            return response;
+        }
+
+        public ErrorDto<bool> RegistraDibitoCuenta(int CodEmpresa, int Nsolicitud, ResDTRSending resPIN)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto<bool>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = true
+            };
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                var query = $@"UPDATE TES_TRANSACCIONES SET 
+                                    REFERENCIA_SINPE = @refSinpe ,
+                                    ID_RECHAZO = @idRechazo ,
+                                    ESTADO_SINPE = @estadoSinpe
+                                    WHERE Nsolicitud = @solicitud ";
+                response.Result = connection.Execute(query, new
+                {
+                    refSinpe = resPIN.DTRSendingResult?.SINPERefNumber ?? string.Empty,
+                    idRechazo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
+                    estadoSinpe = resPIN.DTRSendingResult!.State,
                     solicitud = Nsolicitud
                 }) > 0;
             }
@@ -1723,6 +1795,25 @@ FROM dbo.fxSinpe_ValidaCredito(
             }
         }
 
+        public void RegistraDebMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResDTRSending resPIN, TesTransaccion solicitud)
+        {
+            var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            string Query = @"SELECT COUNT(COD_REFERENCIA) existe
+                             FROM SINPE_MOV_TRANSITO WHERE COD_REFERENCIA = @referencia";
+
+            var existe = conn.Query<int>(Query, new { referencia = cod_referencia }).FirstOrDefault();
+
+            if (existe > 0)
+            {
+                UpdateDebMovTransito(CodEmpresa, cod_referencia, usuario, resPIN, solicitud);
+            }
+            else
+            {
+                IngresaDebMovTransito(CodEmpresa, cod_referencia, usuario, resPIN, solicitud);
+            }
+        }
+
         private void IngresaMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResPINSending resPIN, TesTransaccion solicitud)
         {
             const string Query = @"INSERT INTO SINPE_MOV_TRANSITO
@@ -1780,6 +1871,63 @@ FROM dbo.fxSinpe_ValidaCredito(
             DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
         }
 
+        private void IngresaDebMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResDTRSending resPIN, TesTransaccion solicitud)
+        {
+            const string Query = @"INSERT INTO SINPE_MOV_TRANSITO
+                            (
+                                COD_TRANSITO,
+                                CEDULA,
+                                CUENTA_CLIENTE,
+                                BANCO_ORIGEN,
+                                BANCO_ORIGEN_DESC,
+                                CEDULA_ORIGEN,
+                                CUENTA_CLIENTE_ORIGEN,
+                                COD_REFERENCIA,
+                                COD_SERVICIO,
+                                COD_MONEDA,
+                                MONTO,
+                                MONTO_COMISION,
+                                ACCION,
+                                TRANSAC_TIPO,
+                                TRANSAC_DESC,
+                                REGISTRO_FECHA,
+                                REGISTRO_USUARIO,
+                                COMPROBANTE_INTERNO,
+                                RECHAZO_CODIGO,
+                                RECHAZO_DESC,
+                                ESTADO,
+                                SERVICIO
+                            )
+                            VALUES
+                            (
+                                @CodTransito,
+                                @Cedula,
+                                @CuentaCliente,
+                                @BancoOrigen,
+                                @BancoOrigenDesc,
+                                @CedulaOrigen,
+                                @CuentaClienteOrigen,
+                                @CodReferencia,
+                                @CodServicio,
+                                @CodMoneda,
+                                @Monto,
+                                @MontoComision,
+                                @Accion,
+                                @TransacTipo,
+                                @TransacDesc,
+                                @RegistroFecha,
+                                @RegistroUsuario,
+                                @ComprobanteInterno,
+                                @RechazoCodigo,
+                                @RechazoDesc,
+                                @Estado,
+                                @Servicio
+                            );";
+
+            var parametros = BuildDebMovTransitoParams(CodEmpresa, cod_referencia, usuario, resPIN, solicitud, incluirFechaActualiza: false);
+            DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
+        }
+
         private void UpdateMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResPINSending resPIN, TesTransaccion solicitud)
         {
             const string Query = @"UPDATE SINPE_MOV_TRANSITO
@@ -1807,6 +1955,37 @@ FROM dbo.fxSinpe_ValidaCredito(
                                      COD_REFERENCIA = @CodReferencia;";
 
             var parametros = BuildMovTransitoParams(CodEmpresa, cod_referencia, usuario, resPIN, solicitud, incluirFechaActualiza: true);
+            DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
+        }
+
+
+        private void UpdateDebMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResDTRSending resPIN, TesTransaccion solicitud)
+        {
+            const string Query = @"UPDATE SINPE_MOV_TRANSITO
+                                SET
+                                    CEDULA               = @Cedula,
+                                    CUENTA_CLIENTE       = @CuentaCliente,
+                                    BANCO_ORIGEN          = @BancoOrigen,
+                                    BANCO_ORIGEN_DESC     = @BancoOrigenDesc,
+                                    CEDULA_ORIGEN         = @CedulaOrigen,
+                                    CUENTA_CLIENTE_ORIGEN = @CuentaClienteOrigen,
+                                    COD_SERVICIO          = @CodServicio,
+                                    COD_MONEDA            = @CodMoneda,
+                                    MONTO                 = @Monto,
+                                    MONTO_COMISION        = @MontoComision,
+                                    ACCION                = @Accion,
+                                    TRANSAC_TIPO          = @TransacTipo,
+                                    TRANSAC_DESC          = @TransacDesc,
+                                    COMPROBANTE_INTERNO   = @ComprobanteInterno,
+                                    RECHAZO_CODIGO        = @RechazoCodigo,
+                                    RECHAZO_DESC          = @RechazoDesc,
+                                    ESTADO                = @Estado,
+                                    FECHA_ACTUALIZA       = @FechaActualiza,
+                                    SERVICIO              = @Servicio
+                                WHERE
+                                     COD_REFERENCIA = @CodReferencia;";
+
+            var parametros = BuildDebMovTransitoParams(CodEmpresa, cod_referencia, usuario, resPIN, solicitud, incluirFechaActualiza: true);
             DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
         }
 

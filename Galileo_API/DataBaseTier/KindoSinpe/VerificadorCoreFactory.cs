@@ -1,5 +1,8 @@
 ﻿using Galileo_API.Controllers.WFCSinpe;
+using Microsoft.AspNetCore.Mvc.Formatters;
+using Newtonsoft.Json;
 using System.Reflection;
+using System.Text;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -44,5 +47,7 @@ namespace Galileo_API.DataBaseTier
             return servicio;
 
         }
+
+      
     }
 }
