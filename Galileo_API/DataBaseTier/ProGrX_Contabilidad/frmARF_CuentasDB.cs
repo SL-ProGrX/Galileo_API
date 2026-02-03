@@ -17,24 +17,47 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _portalDb = portalDb;
         }
 
+        /// <summary>
+        /// Obtiene las divisas 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> ArfCuentas_Divisas_Obtener(int codEmpresa)
         {
             string query = @"select COD_DIVISA as item, DESCRIPCION from vSys_Divisas";
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Obtiene las unidades
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> ArfCuentas_Unidades_Obtener(int codEmpresa)
         {
             string query = @"select cod_Unidad as item, DESCRIPCION from vARF_UNIDADES";
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Obtiene las cuentas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codDivisa"></param>
+        /// <param name="codUnidad"></param>
+        /// <returns></returns>
         public ErrorDto<List<ArfCuentasDto>> ArfCuentas_Obtener(int codEmpresa, string codDivisa, string codUnidad)
         {
             string query = @"select * from vARF_CUENTAS Where COD_DIVISA = @codDivisa and COD_UNIDAD = @codUnidad";
             return DbHelper.ExecuteListQuery<ArfCuentasDto>(_portalDb, codEmpresa, query, new { codDivisa, codUnidad });
         }
 
+        /// <summary>
+        /// Registra las cuentas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="req"></param>
+        /// <returns></returns>
         public ErrorDto ArfCuentas_Registrar(int codEmpresa, ArfCuentasRegistraRequest req)
         {
             const string sql = @"
@@ -51,7 +74,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 @CtaPuente;
             ";
 
-            var response = DbHelper.ExecuteNonQuery(
+            return DbHelper.ExecuteNonQuery(
                 _portalDb,
                 codEmpresa,
                 sql,
@@ -70,11 +93,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     CtaPuente = req.cta_puente
                 }
             );
-
-            if (response != null && response.Code < 0)
-                return response;
-
-            return new ErrorDto { Code = 0, Description = "Información Actualizada Satisfactoriamente!" };
         }
 
     }
