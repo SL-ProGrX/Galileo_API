@@ -250,8 +250,8 @@
 
     public class SifConsultaDocTrasaccionesDataLista
     {
-        public SifConsultaDocTrasaccionesTotales totales { get; set; }
-        public List<SifConsultaDocTrasaccionesData> lista { get; set; }
+        public SifConsultaDocTrasaccionesTotales? totales { get; set; }
+        public List<SifConsultaDocTrasaccionesData>? lista { get; set; }
     }
     public class SifConsultaDocTrasaccionesTotales
     {
