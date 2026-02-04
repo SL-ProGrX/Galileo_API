@@ -39,13 +39,24 @@ namespace Galileo.DataBaseTier
                 using var connection = new SqlConnection(stringConn);
 
                 var p = new DynamicParameters();
-                string where = BuildObjetivosWhere(filtros, p);
+                bool hasFilter = TryAddObjetivosFiltro(filtros, p);
 
                 int offset = filtros.pagina ?? 0;
                 if (offset < 0) offset = 0;
 
-                string sqlCount = $"SELECT COUNT(1) FROM PE_OBJETIVOS O {where};";
-                response.Result.total = connection.ExecuteScalar<int>(sqlCount, p);
+                const string countNoFilter = "SELECT COUNT(1) FROM PE_OBJETIVOS O;";
+                const string countWithFilter = @"SELECT COUNT(1)
+FROM PE_OBJETIVOS O
+WHERE (
+     CAST(O.objetivo_id AS varchar(50)) LIKE @Q
+  OR O.DESCRIPCION LIKE @Q
+  OR O.nombre LIKE @Q
+  OR O.indicador_clave LIKE @Q
+  OR O.meta LIKE @Q
+  OR O.unidad_medida LIKE @Q
+);";
+
+                response.Result.total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
 
                 var sb = new StringBuilder();
                 sb.Append(@"SELECT  O.[OBJETIVO_ID]
@@ -63,7 +74,19 @@ namespace Galileo.DataBaseTier
                           ,O.[MODIFICA_USUARIO]
                     FROM PE_OBJETIVOS O
                     LEFT JOIN PE_PERSPECTIVAS P ON P.PERSPECTIVA_ID = O.PERSPECTIVA_ID ");
-                sb.Append(where);
+
+                if (hasFilter)
+                {
+                    sb.Append(@" WHERE (
+                 CAST(O.objetivo_id AS varchar(50)) LIKE @Q
+              OR O.DESCRIPCION LIKE @Q
+              OR O.nombre LIKE @Q
+              OR O.indicador_clave LIKE @Q
+              OR O.meta LIKE @Q
+              OR O.unidad_medida LIKE @Q
+            ) ");
+                }
+
                 sb.Append(" ORDER BY O.objetivo_id DESC ");
 
                 // Paginación opcional (solo si viene pagina)
@@ -88,26 +111,14 @@ namespace Galileo.DataBaseTier
             return response;
         }
 
-        private static string BuildObjetivosWhere(PeObjetivosEstrategicosFiltros filtros, DynamicParameters p)
+        private static bool TryAddObjetivosFiltro(PeObjetivosEstrategicosFiltros filtros, DynamicParameters p)
         {
-            if (filtros?.filtro == null)
-                return string.Empty;
-
-            string q = filtros.filtro.Trim();
+            string q = (filtros?.filtro ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(q))
-                return string.Empty;
+                return false;
 
-            // Búsqueda "global" sobre varias columnas. OBJETIVO_ID se castea para permitir LIKE.
             p.Add("@Q", $"%{q}%");
-
-            return @"WHERE (
-                 CAST(O.objetivo_id AS varchar(50)) LIKE @Q
-              OR O.DESCRIPCION LIKE @Q
-              OR O.nombre LIKE @Q
-              OR O.indicador_clave LIKE @Q
-              OR O.meta LIKE @Q
-              OR O.unidad_medida LIKE @Q
-            ) ";
+            return true;
         }
 
         public ErrorDto ObjetivosEstrategicos_Guardar(int CodEmpresa, PeObjetivosEstrategicosDto objetivo)
