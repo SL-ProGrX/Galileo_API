@@ -3,6 +3,7 @@ using Dapper;
 using Galileo.Models.ERROR;
 using Newtonsoft.Json;
 using Microsoft.Data.SqlClient;
+using System.Text;
 
 
 namespace Galileo.DataBaseTier
@@ -18,53 +19,78 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto<PePlanesDatosLista> PePlanesLista_Obtener(int CodEmpresa, string Jfiltros)
         {
-            const string Percent = "%";
             PePlanesFiltros filtros = JsonConvert.DeserializeObject<PePlanesFiltros>(Jfiltros) ?? new PePlanesFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<PePlanesDatosLista>();
-            response.Result = new PePlanesDatosLista
+
+            var response = new ErrorDto<PePlanesDatosLista>
             {
-                total = 0,
-                data = new List<PePlanesDto>()
+                Code = 0,
+                Description = "Ok",
+                Result = new PePlanesDatosLista
+                {
+                    total = 0,
+                    data = new List<PePlanesDto>()
+                }
             };
 
             try
             {
-                var query = "";
-                string where = " ", paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(stringConn);
-                const string OrOperator = " OR ";
-                if (filtros.filtro != null)
+
+                var p = new DynamicParameters();
+                bool hasFilter = TryAddPlanesFiltro(filtros, p);
+
+                int offset = filtros.pagina ?? 0;
+                if (offset < 0) offset = 0;
+
+                const string countNoFilter = "select COUNT(1) from PE_PLANES;";
+                const string countWithFilter = @"select COUNT(1)
+from PE_PLANES
+where CAST(PE_ID AS varchar(50)) LIKE @Q
+   OR DESCRIPCION LIKE @Q
+   OR MISION LIKE @Q
+   OR VISION LIKE @Q
+   OR CAST(FINALIZACION AS varchar(50)) LIKE @Q
+   OR CAST(INICIO AS varchar(50)) LIKE @Q;";
+
+                response.Result.total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
+
+                var sb = new StringBuilder();
+                sb.Append(@"select [PE_ID]
+                          ,[DESCRIPCION]
+                          ,[INICIO]
+                          ,[FINALIZACION]
+                          ,[ESTADO]
+                          ,[MISION]
+                          ,[VISION]
+                          ,[MODIFICA_FECHA]
+                          ,[MODIFICA_USUARIO]
+                          ,[REGISTRO_USUARIO]
+                          ,[REGISTRO_FECHA]
+                   from PE_PLANES ");
+
+                if (hasFilter)
                 {
-                    where = "where PE_ID LIKE '" + Percent + filtros.filtro + Percent + "'" + OrOperator +
-                        "DESCRIPCION LIKE '" + Percent + filtros.filtro + Percent + "'" + OrOperator +
-                        "MISION LIKE '" + Percent + filtros.filtro + Percent + "'" + OrOperator +
-                        "VISION LIKE '" + Percent + filtros.filtro + Percent + "'" + OrOperator +
-                        "FINALIZACION LIKE '" + Percent + filtros.filtro + Percent + "'" + OrOperator +
-                        "INICIO LIKE '" + Percent + filtros.filtro + Percent + "'  ";
+                    sb.Append(@" where CAST(PE_ID AS varchar(50)) LIKE @Q
+                         OR DESCRIPCION LIKE @Q
+                         OR MISION LIKE @Q
+                         OR VISION LIKE @Q
+                         OR CAST(FINALIZACION AS varchar(50)) LIKE @Q
+                         OR CAST(INICIO AS varchar(50)) LIKE @Q ");
                 }
+
+                sb.Append(" order by PE_ID desc ");
 
                 if (filtros.pagina != null)
                 {
-                    paginaActual = " OFFSET " + filtros.pagina + " ROWS ";
-                    paginacionActual = " FETCH NEXT " + filtros.paginacion + " ROWS ONLY ";
+                    int pageFetch = filtros.paginacion ?? 30;
+                    if (pageFetch < 1) pageFetch = 30;
+                    p.Add("@OFFSET", offset);
+                    p.Add("@FETCH", pageFetch);
+                    sb.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
                 }
 
-                query = $"select COUNT(*) from PE_PLANES {where}";
-                response.Result.total = connection.Query<int>(query).FirstOrDefault();
-
-                query = $@"select [PE_ID]
-                                      ,[DESCRIPCION]
-                                      ,[INICIO]
-                                      ,[FINALIZACION]
-                                      ,[ESTADO]
-                                      ,[MISION]
-                                      ,[VISION]
-                                      ,[MODIFICA_FECHA]
-                                      ,[MODIFICA_USUARIO]
-                                      ,[REGISTRO_USUARIO]
-                                      ,[REGISTRO_FECHA] from PE_PLANES {where} order by PE_ID desc {paginaActual} {paginacionActual}";
-                response.Result.data = connection.Query<PePlanesDto>(query).ToList();
+                response.Result.data = connection.Query<PePlanesDto>(sb.ToString(), p).ToList();
             }
             catch (Exception ex)
             {
@@ -74,6 +100,16 @@ namespace Galileo.DataBaseTier
             }
 
             return response;
+        }
+
+        private static bool TryAddPlanesFiltro(PePlanesFiltros filtros, DynamicParameters p)
+        {
+            string q = (filtros?.filtro ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(q))
+                return false;
+
+            p.Add("@Q", $"%{q}%");
+            return true;
         }
 
         public ErrorDto PePlanes_Guardar(int CodEmpresa, PePlanesDto plan)
@@ -119,29 +155,39 @@ namespace Galileo.DataBaseTier
                 var secuencia = connection.Query<int>(queryID).FirstOrDefault();
                 plan.pe_id = secuencia;
 
+                const string insert = @"INSERT INTO [dbo].[PE_PLANES]
+       ([PE_ID]
+       ,[DESCRIPCION]
+       ,[INICIO]
+       ,[FINALIZACION]
+       ,[ESTADO]
+       ,[MISION]
+       ,[VISION]
+       ,[REGISTRO_USUARIO]
+       ,[REGISTRO_FECHA])
+ VALUES
+       (@pe_id
+       ,@descripcion
+       ,@inicio
+       ,@finalizacion
+       ,'A'
+       ,@mision
+       ,@vision
+       ,@registro_usuario
+       ,getDate());";
 
-                var insert = $@"INSERT INTO [dbo].[PE_PLANES]
-                                               ([PE_ID]
-                                               ,[DESCRIPCION]
-                                               ,[INICIO]
-                                               ,[FINALIZACION]
-                                               ,[ESTADO]
-                                               ,[MISION]
-                                               ,[VISION]
-                                               ,[REGISTRO_USUARIO]
-                                               ,[REGISTRO_FECHA])
-                                         VALUES
-                                               ({plan.pe_id}
-                                               ,'{plan.descripcion}'
-                                               ,'{plan.inicio}'
-                                               ,'{plan.finalizacion}'
-                                               ,'A'
-                                               ,'{plan.mision}'
-                                               ,'{plan.vision}'
-                                               ,'{plan.registro_usuario}'
-                                               ,getDate())";
+                var p = new
+                {
+                    pe_id = plan.pe_id,
+                    descripcion = plan.descripcion,
+                    inicio = plan.inicio,
+                    finalizacion = plan.finalizacion,
+                    mision = plan.mision,
+                    vision = plan.vision,
+                    registro_usuario = plan.registro_usuario
+                };
 
-                error.Code = connection.Execute(insert);
+                error.Code = connection.Execute(insert, p);
 
                 error.Description = plan.pe_id.ToString();
             }
@@ -166,19 +212,30 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
 
-                var update = $@"UPDATE [dbo].[PE_PLANES]
-                                       SET 
-                                           [DESCRIPCION] = '{plan.descripcion}'
-                                          ,[INICIO] = '{plan.inicio}'
-                                          ,[FINALIZACION] = '{plan.finalizacion}'
-                                          ,[ESTADO] = '{plan.estado}'
-                                          ,[MISION] = '{plan.mision}'
-                                          ,[VISION] = '{plan.vision}'
-                                          ,[MODIFICA_FECHA] = GetDate()
-                                          ,[MODIFICA_USUARIO] = '{plan.modifica_usuario}'
-                                     WHERE [PE_ID] = {plan.pe_id} ";
+                const string update = @"UPDATE [dbo].[PE_PLANES]
+   SET [DESCRIPCION] = @descripcion
+      ,[INICIO] = @inicio
+      ,[FINALIZACION] = @finalizacion
+      ,[ESTADO] = @estado
+      ,[MISION] = @mision
+      ,[VISION] = @vision
+      ,[MODIFICA_FECHA] = GetDate()
+      ,[MODIFICA_USUARIO] = @modifica_usuario
+ WHERE [PE_ID] = @pe_id;";
 
-                error.Code = connection.Execute(update);
+                var p = new
+                {
+                    pe_id = plan.pe_id,
+                    descripcion = plan.descripcion,
+                    inicio = plan.inicio,
+                    finalizacion = plan.finalizacion,
+                    estado = plan.estado,
+                    mision = plan.mision,
+                    vision = plan.vision,
+                    modifica_usuario = plan.modifica_usuario
+                };
+
+                error.Code = connection.Execute(update, p);
 
                 error.Description = plan.pe_id.ToString();
             }
@@ -203,8 +260,8 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(stringConn);
                 //Busco si el plan tiene registros en la tabla de perpectivas
-                var query = $"SELECT COUNT(*) FROM PE_PERSPECTIVAS WHERE PE_ID = {pe_id}";
-                var respuesta = connection.Query<int>(query).FirstOrDefault();
+                const string qCount = "SELECT COUNT(1) FROM PE_PERSPECTIVAS WHERE PE_ID = @pe_id";
+                var respuesta = connection.ExecuteScalar<int>(qCount, new { pe_id });
 
                 if (respuesta > 0)
                 {
@@ -213,8 +270,8 @@ namespace Galileo.DataBaseTier
                 }
                 else
                 {
-                    var delete = $@"DELETE FROM [dbo].[PE_PLANES] WHERE [PE_ID] = {pe_id}";
-                    error.Code = connection.Execute(delete);
+                    const string qDelete = "DELETE FROM [dbo].[PE_PLANES] WHERE [PE_ID] = @pe_id";
+                    error.Code = connection.Execute(qDelete, new { pe_id });
                 }
             }
             catch (Exception ex)
@@ -232,17 +289,17 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select [PE_ID]
-                                      ,[DESCRIPCION]
-                                      ,[INICIO]
-                                      ,[FINALIZACION]
-                                      ,[ESTADO]
-                                      ,[MISION]
-                                      ,[VISION]
-                                      ,[MODIFICA_FECHA]
-                                      ,[MODIFICA_USUARIO]
-                                      ,[REGISTRO_USUARIO]
-                                      ,[REGISTRO_FECHA] from PE_PLANES order by PE_ID desc ";
+                const string query = @"select [PE_ID]
+                              ,[DESCRIPCION]
+                              ,[INICIO]
+                              ,[FINALIZACION]
+                              ,[ESTADO]
+                              ,[MISION]
+                              ,[VISION]
+                              ,[MODIFICA_FECHA]
+                              ,[MODIFICA_USUARIO]
+                              ,[REGISTRO_USUARIO]
+                              ,[REGISTRO_FECHA] from PE_PLANES order by PE_ID desc ";
                 response.Result = connection.Query<PePlanesDto>(query).ToList();
             }
             catch (Exception ex)
