@@ -100,13 +100,9 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(data.nombreReporte))
                 return ReportRenderer.Error("El nombre del reporte no puede ser nulo o vacío.", 400);
 
-            // Cortafuegos rápido (no reemplaza el blindaje del resolver, pero ayuda)
-            if (Path.IsPathRooted(data.nombreReporte) ||
-                data.nombreReporte.Contains("..", StringComparison.Ordinal) ||
-                data.nombreReporte.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
-            {
+            var reportFile = data.nombreReporte.Trim();
+            if (reportFile.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) >= 0)
                 return ReportRenderer.Error("Nombre de reporte inválido.", 400);
-            }
 
             if (!string.IsNullOrWhiteSpace(data.folder) &&
                 (Path.IsPathRooted(data.folder) ||
@@ -124,9 +120,6 @@ namespace Galileo.DataBaseTier
 
                 var report = new LocalReport { EnableExternalImages = true };
                 var basePath = _path.GetBasePath(data.codEmpresa, _dirRdlc, data.folder ?? null);
-
-                if (string.IsNullOrWhiteSpace(data.nombreReporte))
-                    return ReportRenderer.Error("El nombre del reporte no puede ser nulo o vacío.", 400);
 
                 var mainPath = _path.ResolveReportPath(basePath, data.nombreReporte);
                 if (mainPath == null)

@@ -7,6 +7,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 {
     public sealed class RdlcPathResolver : IRdlcPathResolver
     {
+
         private const string RdlcExt = ".rdlc";
         private const string RdlExt = ".rdl";
 
@@ -29,13 +30,12 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
             var found = BuildCandidates(baseFull, rel, relDir, bare)
                 .Where(p => p is not null)
-                .Cast<string>()
                 .FirstOrDefault(File.Exists);
 
             if (!string.IsNullOrEmpty(found))
                 return found;
 
-            var enumerated = FindByEnumeration(dir, bare);
+            var enumerated = FindByEnumeration(baseFull, dir, bare);
             return !string.IsNullOrEmpty(enumerated) ? enumerated : string.Empty;
         }
 
@@ -58,6 +58,9 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 .Replace('/', Path.DirectorySeparatorChar)
                 .Replace('\\', Path.DirectorySeparatorChar)
                 .Trim();
+            // Extra: bloquea caracteres inválidos
+            if (rel.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+                return false;
 
             // Bloquea rutas absolutas/UNC
             if (Path.IsPathRooted(rel))
@@ -88,19 +91,28 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             yield return CombineUnderBase(baseFull, bareInDir + RdlExt);
         }
 
-        private static string FindByEnumeration(string dir, string bare)
+        private static string FindByEnumeration(string baseFullWithSep, string dir, string bare)
         {
-            if (!Directory.Exists(dir))
+            // Canonicaliza y valida que dir esté bajo base antes de tocar el FS
+            var dirFull = Path.GetFullPath(dir);
+
+            if (!EnsureTrailingSeparator(baseFullWithSep).Equals(baseFullWithSep))
+                baseFullWithSep = EnsureTrailingSeparator(baseFullWithSep);
+
+            if (!IsUnderBase(baseFullWithSep, EnsureTrailingSeparator(dirFull)))
                 return string.Empty;
 
-            var found = Directory.EnumerateFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
-                .FirstOrDefault(f => IsReportMatch(f, bare));
+            if (!Directory.Exists(dirFull))
+                return string.Empty;
+
+            var found = Directory.EnumerateFiles(dirFull, "*.*", SearchOption.TopDirectoryOnly)
+                                 .FirstOrDefault(f => IsReportMatch(f, bare));
 
             if (string.IsNullOrEmpty(found))
                 return string.Empty;
 
             var full = Path.GetFullPath(found);
-            return IsUnderBase(dir, full) ? full : string.Empty;
+            return IsUnderBase(baseFullWithSep, full) ? full : string.Empty;
         }
 
         private static bool IsReportMatch(string filePath, string bare)
