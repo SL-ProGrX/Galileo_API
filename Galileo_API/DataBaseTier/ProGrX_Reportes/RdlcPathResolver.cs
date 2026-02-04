@@ -1,47 +1,167 @@
-﻿namespace Galileo.DataBaseTier.ProGrX_Reportes
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+
+namespace Galileo.DataBaseTier.ProGrX_Reportes
 {
     public sealed class RdlcPathResolver : IRdlcPathResolver
     {
-        public string GetBasePath(int codEmpresa, string? folder, string dirRdlc)
+
+        private const string RdlcExt = ".rdlc";
+        private const string RdlExt = ".rdl";
+
+        public string GetBasePath(int codEmpresa, string dirRdlc, string? folder = null)
         {
+            // Opcional: sanitizar folder si viene de usuario (misma estrategia que reportNameOrRelative)
             return string.IsNullOrWhiteSpace(folder)
                 ? Path.Combine(dirRdlc, codEmpresa.ToString())
                 : Path.Combine(dirRdlc, codEmpresa.ToString(), folder);
         }
 
-        public string? ResolveReportPath(string basePath, string reportNameOrRelative)
+        public string ResolveReportPath(string basePath, string reportNameOrRelative)
         {
-            var rel = reportNameOrRelative
+            if (!TryNormalizeInputs(basePath, reportNameOrRelative, out var baseFull, out var rel, out var relDir, out var bare))
+                return string.Empty;
+
+            var dir = CombineUnderBase(baseFull, relDir);
+            if (dir is null)
+                return string.Empty;
+
+            var found = BuildCandidates(baseFull, rel, relDir, bare)
+                .Where(p => p is not null)
+                .FirstOrDefault(File.Exists);
+
+            if (!string.IsNullOrEmpty(found))
+                return found;
+
+            var enumerated = FindByEnumeration(baseFull, dir, bare);
+            return !string.IsNullOrEmpty(enumerated) ? enumerated : string.Empty;
+        }
+
+        private static bool TryNormalizeInputs(
+            string basePath,
+            string reportNameOrRelative,
+            out string baseFull,
+            out string rel,
+            out string relDir,
+            out string bare)
+        {
+            baseFull = rel = relDir = bare = string.Empty;
+
+            if (string.IsNullOrWhiteSpace(basePath) || string.IsNullOrWhiteSpace(reportNameOrRelative))
+                return false;
+
+            baseFull = EnsureTrailingSeparator(Path.GetFullPath(basePath));
+
+            rel = reportNameOrRelative
                 .Replace('/', Path.DirectorySeparatorChar)
-                .Replace('\\', Path.DirectorySeparatorChar);
+                .Replace('\\', Path.DirectorySeparatorChar)
+                .Trim();
+            // Extra: bloquea caracteres inválidos
+            if (rel.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+                return false;
 
-            var dir = Path.Combine(basePath, Path.GetDirectoryName(rel) ?? string.Empty);
-            var bare = Path.GetFileName(rel);
+            // Bloquea rutas absolutas/UNC
+            if (Path.IsPathRooted(rel))
+                return false;
 
-            var candidates = new[]
-            {
-                Path.Combine(basePath, rel + ".rdlc"),
-                Path.Combine(basePath, rel + ".rdl"),
-                Path.Combine(dir, bare + ".rdlc"),
-                Path.Combine(dir, bare + ".rdl"),
-            };
-            var foundCandidate = candidates.FirstOrDefault(c => File.Exists(c));
-            if (foundCandidate != null)
-                return foundCandidate;
+            relDir = Path.GetDirectoryName(rel) ?? string.Empty;
+            bare = Path.GetFileName(rel);
 
-            if (Directory.Exists(dir))
-            {
-                var foundFile = Directory.EnumerateFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
-                    .FirstOrDefault(f =>
-                        string.Equals(Path.GetFileNameWithoutExtension(f), bare, System.StringComparison.OrdinalIgnoreCase) &&
-                        (string.Equals(Path.GetExtension(f), ".rdlc", System.StringComparison.OrdinalIgnoreCase) ||
-                         string.Equals(Path.GetExtension(f), ".rdl", System.StringComparison.OrdinalIgnoreCase))
-                    );
-                if (foundFile != null)
-                    return foundFile;
-            }
+            // bloquea cosas raras tipo "." ".." o nombre vacío
+            if (string.IsNullOrWhiteSpace(bare) || bare == "." || bare == "..")
+                return false;
 
-            return null;
+            return true;
+        }
+
+        private static IEnumerable<string?> BuildCandidates(string baseFull, string rel, string relDir, string bare)
+        {
+            // 1) "rel" completo (con subcarpetas) + extensiones
+            yield return CombineUnderBase(baseFull, rel + RdlcExt);
+            yield return CombineUnderBase(baseFull, rel + RdlExt);
+
+            // 2) "bare" + extensiones dentro de relDir
+            var bareInDir = string.IsNullOrEmpty(relDir)
+                ? bare
+                : relDir + Path.DirectorySeparatorChar + bare;
+
+            yield return CombineUnderBase(baseFull, bareInDir + RdlcExt);
+            yield return CombineUnderBase(baseFull, bareInDir + RdlExt);
+        }
+
+        private static string FindByEnumeration(string baseFullWithSep, string dir, string bare)
+        {
+            // Canonicaliza y valida que dir esté bajo base antes de tocar el FS
+            var dirFull = Path.GetFullPath(dir);
+
+            if (!EnsureTrailingSeparator(baseFullWithSep).Equals(baseFullWithSep))
+                baseFullWithSep = EnsureTrailingSeparator(baseFullWithSep);
+
+            if (!IsUnderBase(baseFullWithSep, EnsureTrailingSeparator(dirFull)))
+                return string.Empty;
+
+            if (!Directory.Exists(dirFull))
+                return string.Empty;
+
+            var found = Directory.EnumerateFiles(dirFull, "*.*", SearchOption.TopDirectoryOnly)
+                                 .FirstOrDefault(f => IsReportMatch(f, bare));
+
+            if (string.IsNullOrEmpty(found))
+                return string.Empty;
+
+            var full = Path.GetFullPath(found);
+            return IsUnderBase(baseFullWithSep, full) ? full : string.Empty;
+        }
+
+        private static bool IsReportMatch(string filePath, string bare)
+        {
+            if (!string.Equals(Path.GetFileNameWithoutExtension(filePath), bare, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var ext = Path.GetExtension(filePath);
+            return string.Equals(ext, RdlcExt, StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(ext, RdlExt, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string EnsureTrailingSeparator(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return path;
+
+            return path.EndsWith(Path.DirectorySeparatorChar)
+                ? path
+                : path + Path.DirectorySeparatorChar;
+        }
+
+        /// <summary>
+        /// Verifica que candidateFull esté dentro de baseFull (misma raíz),
+        /// usando un check robusto basado en rutas relativas.
+        /// </summary>
+        private static bool IsUnderBase(string baseFullWithSep, string candidateFull)
+        {
+            // Ambos deberían ser absolutos
+            var relative = Path.GetRelativePath(baseFullWithSep, candidateFull);
+
+            // Si empieza con ".." o es rooted, se salió del base
+            return !relative.StartsWith("..", StringComparison.Ordinal) &&
+                   !Path.IsPathRooted(relative);
+        }
+
+        /// <summary>
+        /// Combina y normaliza una ruta relativa bajo un base absoluto. Si se sale del base, retorna null.
+        /// </summary>
+        private static string? CombineUnderBase(string baseFullWithSep, string relative)
+        {
+            relative = (relative ?? string.Empty).Trim()
+                .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            if (string.IsNullOrEmpty(relative) || Path.IsPathRooted(relative))
+                return null;
+
+            var combinedFull = Path.GetFullPath(Path.Combine(baseFullWithSep, relative));
+            return IsUnderBase(baseFullWithSep, combinedFull) ? combinedFull : null;
         }
     }
 }

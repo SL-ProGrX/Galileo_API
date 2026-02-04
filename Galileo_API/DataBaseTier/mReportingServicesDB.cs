@@ -95,27 +95,35 @@ namespace Galileo.DataBaseTier
         {
             string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
             if (data.parametros == null)
-            {
                 return ReportRenderer.Error("Datos del reporte no proporcionados.", 400);
+
+            if (string.IsNullOrWhiteSpace(data.nombreReporte))
+                return ReportRenderer.Error("El nombre del reporte no puede ser nulo o vacío.", 400);
+
+            var reportFile = data.nombreReporte.Trim();
+            if (reportFile.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) >= 0)
+                return ReportRenderer.Error("Nombre de reporte inválido.", 400);
+
+            if (!string.IsNullOrWhiteSpace(data.folder) &&
+                (Path.IsPathRooted(data.folder) ||
+                 data.folder.Contains("..", StringComparison.Ordinal) ||
+                 data.folder.IndexOfAny(Path.GetInvalidPathChars()) >= 0))
+            {
+                return ReportRenderer.Error("Folder inválido.", 400);
             }
-               
 
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(data.codEmpresa);
-
             try
             {
                 using var connection = new SqlConnection(connString);
                 connection.Open();
 
                 var report = new LocalReport { EnableExternalImages = true };
-                var basePath = _path.GetBasePath(data.codEmpresa, data.folder, _dirRdlc);
-
-                if (string.IsNullOrWhiteSpace(data.nombreReporte))
-                    return ReportRenderer.Error("El nombre del reporte no puede ser nulo o vacío.", 400);
+                var basePath = _path.GetBasePath(data.codEmpresa, _dirRdlc, data.folder ?? null);
 
                 var mainPath = _path.ResolveReportPath(basePath, data.nombreReporte);
                 if (mainPath == null)
-                    return ReportRenderer.Error($"No se encontró el reporte principal: {System.IO.Path.Combine(basePath, data.nombreReporte)}");
+                    return ReportRenderer.Error($"No se encontró el reporte principal.", 404);
 
                 using var patched = _patcher.PatchReportCode(mainPath, data.codeSection);
                 report.LoadReportDefinition(patched);

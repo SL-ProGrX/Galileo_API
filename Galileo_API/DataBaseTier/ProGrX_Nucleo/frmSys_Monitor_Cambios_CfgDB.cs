@@ -35,40 +35,51 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
         public ErrorDto<List<DropDownListaGenericaModel>> Sys_MonitorCambiosCfg_Modulos_Obtener(int CodEmpresa)
         {
-            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
+
+            const string query = "exec spSEG_Modulos_Consulta";
+
+            var modulos = connection.Query<MonitorCambiosCfgModulosDto>(query).ToList();
+
+            var response = modulos.Select(m => new DropDownListaGenericaModel
             {
-                const string query = "exec spSEG_Modulos_Consulta";
+                item = m.modulo,
+                descripcion = m.nombre
+                 
+            }).ToList();
 
-                var modulos = conn.Query<MonitorCambiosCfgModulosDto>(query).ToList();
-
-                var response = modulos.Select(m => new DropDownListaGenericaModel
-                {
-                    item = m.nombre,
-                    descripcion = m.modulo
-                }).ToList();
-
-                response.Add(new DropDownListaGenericaModel
-                {
-                    item = "T",
-                    descripcion = "[TODOS]"
-                });
-
-                return response;
+            response.Add(new DropDownListaGenericaModel
+            {
+                item = "T",
+                descripcion = "[TODOS]"
             });
+
+            return new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = response
+            };
         }
 
 
-        public ErrorDto<List<DropDownListaGenericaModel>> Sys_MonitorCambiosCfg_Tablas_Obtener(int CodEmpresa, object filtros)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sys_MonitorCambiosCfg_Tablas_Obtener(int CodEmpresa)
         {
-            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
-            {
-                const string query = "select TableName as 'item', TableDesc as 'descripcion'  From Sys_Conf_Monitor_Tables";
+            using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
 
-                return conn.Query<DropDownListaGenericaModel>(query).ToList();
-            });
+            const string query = "select TableName as 'item', TableDesc as 'descripcion'  From Sys_Conf_Monitor_Tables";
+
+            var response = connection.Query<DropDownListaGenericaModel>(query).ToList();
+
+            return new ErrorDto<List<DropDownListaGenericaModel>>
+            {
+                Code = 0,
+                Description = "OK",
+                Result = response
+            };
         }
 
-        public ErrorDto<List<object>> Sys_MonitorCambiosCfg_Bitacora_Obtener(int CodEmpresa, MonitorCambiosCfgFiltros filtros)
+        public ErrorDto<List<MovimientoLogDto>> Sys_MonitorCambiosCfg_Bitacora_Obtener(int CodEmpresa, MonitorCambiosCfgFiltros filtros)
         {
             using var connection = new SqlConnection(_config.GetConnectionString("DefaultConnString"));
 
@@ -112,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             // === 2) Parámetros opcionales (Null si vacío / [TODOS]) ===
             string? usuario = string.IsNullOrWhiteSpace(filtros.usuario) ? null : filtros.usuario.Trim();
             string? moduloId = (filtros.modulo == "T") ? null : filtros.modulo;
-            string? fuente = (filtros.fuente == "T") ? null : filtros.fuente.Trim();
+            string? fuente = (filtros.fuente == "T") ? null : filtros.fuente!.Trim();
             string? detalle = string.IsNullOrWhiteSpace(filtros.detalle) ? null : filtros.detalle.Trim();
             string? appNombre = string.IsNullOrWhiteSpace(filtros.appNombre) ? null : filtros.appNombre.Trim();
             string? appVersion = string.IsNullOrWhiteSpace(filtros.appVersion) ? null : filtros.appVersion.Trim();
@@ -138,9 +149,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             // Si tu SP espera el orden exacto y no nombres (raro, pero pasa),
             // esto igual funciona en SQL Server porque mapea por nombre.
 
-            var data = connection.Query<object>(query, p, commandType: System.Data.CommandType.StoredProcedure).ToList();
+            var data = connection.Query<MovimientoLogDto>(query, p, commandType: System.Data.CommandType.StoredProcedure).ToList();
 
-            return new ErrorDto<List<object>>
+            return new ErrorDto<List<MovimientoLogDto>>
             {
                 Code = 0,
                 Description = "OK",
