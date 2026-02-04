@@ -18,7 +18,7 @@
         public string canton { get; set; } = string.Empty;
         public string distrito { get; set; } = string.Empty;
         public string direccion { get; set; } = string.Empty;
-        public DateTime registro_fecha { get; set; }
+        public DateTime? registro_fecha { get; set; }
         public string registro_usuario { get; set; } = string.Empty;
         public DateTime? modifica_fecha { get; set; }
         public string? modifica_usuario { get; set; }
