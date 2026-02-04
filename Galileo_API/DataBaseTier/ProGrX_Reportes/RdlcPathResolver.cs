@@ -1,16 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
 namespace Galileo.DataBaseTier.ProGrX_Reportes
 {
-#pragma warning disable S2083 // False positive: we do validate inputs to prevent path traversal
-#pragma warning disable S6549 // False positive: we do validate inputs to prevent path traversal
     public sealed class RdlcPathResolver : IRdlcPathResolver
     {
-        public string GetBasePath(int codEmpresa,  string dirRdlc, string? folder = null)
+        private const string RdlcExt = ".rdlc";
+        private const string RdlExt = ".rdl";
+
+        public string GetBasePath(int codEmpresa, string dirRdlc, string? folder = null)
         {
-            // Opcional: sanitizar también folder (misma idea que reportNameOrRelative)
+            // Opcional: sanitizar folder si viene de usuario (misma estrategia que reportNameOrRelative)
             return string.IsNullOrWhiteSpace(folder)
                 ? Path.Combine(dirRdlc, codEmpresa.ToString())
                 : Path.Combine(dirRdlc, codEmpresa.ToString(), folder);
@@ -18,103 +20,136 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
         public string ResolveReportPath(string basePath, string reportNameOrRelative)
         {
-            if (string.IsNullOrWhiteSpace(basePath) || string.IsNullOrWhiteSpace(reportNameOrRelative))
+            if (!TryNormalizeInputs(basePath, reportNameOrRelative, out var baseFull, out var rel, out var relDir, out var bare))
                 return string.Empty;
 
-            // 1) Canoniza basePath a absoluto (y con separador final para StartsWith seguro)
-            var baseFull = EnsureTrailingSeparator(Path.GetFullPath(basePath));
-
-            // 2) Normaliza separadores
-            var rel = reportNameOrRelative
-                .Replace('/', Path.DirectorySeparatorChar)
-                .Replace('\\', Path.DirectorySeparatorChar)
-                .Trim();
-
-            // 3) Bloquea rutas absolutas/UNC
-            if (Path.IsPathRooted(rel))
-                return string.Empty;
-
-            // 4) Extrae directorio relativo y nombre "bare"
-            var relDir = Path.GetDirectoryName(rel) ?? string.Empty;
-            var bare = Path.GetFileName(rel);
-
-            // (Opcional pero recomendable) bloquea cosas raras tipo "." ".." o nombre vacío
-            if (string.IsNullOrWhiteSpace(bare) || bare == "." || bare == "..")
-                return string.Empty;
-
-            // Construye dir de trabajo, pero validando que quede dentro del base
             var dir = CombineUnderBase(baseFull, relDir);
             if (dir is null)
                 return string.Empty;
 
-            // Candidatos (rel puede incluir subcarpetas; bare solo nombre)
-            var candidates = new[]
-            {
-                CombineUnderBase(baseFull, rel + ".rdlc"),
-                CombineUnderBase(baseFull, rel + ".rdl"),
-                CombineUnderBase(baseFull, string.IsNullOrEmpty(relDir) ? bare + ".rdlc" : relDir + Path.DirectorySeparatorChar + bare + ".rdlc"),
-                CombineUnderBase(baseFull, string.IsNullOrEmpty(relDir) ? bare + ".rdl" : relDir + Path.DirectorySeparatorChar + bare + ".rdl"),
-            }
-            .Where(p => p is not null)!
-            .Cast<string>()
-            .ToArray();
+            var found = BuildCandidates(baseFull, rel, relDir, bare)
+                .Where(p => p is not null)
+                .Cast<string>()
+                .FirstOrDefault(File.Exists);
 
-            var foundCandidate = candidates.FirstOrDefault(File.Exists);
-            if (foundCandidate != null)
-                return foundCandidate;
+            if (!string.IsNullOrEmpty(found))
+                return found;
 
-            if (Directory.Exists(dir))
-            {
-                // Enumeración acotada al directorio validado dentro del base
-                var foundFile = Directory.EnumerateFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
-                    .FirstOrDefault(f =>
-                        string.Equals(Path.GetFileNameWithoutExtension(f), bare, StringComparison.OrdinalIgnoreCase) &&
-                        (string.Equals(Path.GetExtension(f), ".rdlc", StringComparison.OrdinalIgnoreCase) ||
-                         string.Equals(Path.GetExtension(f), ".rdl", StringComparison.OrdinalIgnoreCase))
-                    );
+            var enumerated = FindByEnumeration(dir, bare);
+            return !string.IsNullOrEmpty(enumerated) ? enumerated : string.Empty;
+        }
 
-                if (foundFile != null)
-                {
-                    // Defensa extra por si el FS devuelve algo extraño (symlinks/junctions)
-                    var foundFull = Path.GetFullPath(foundFile);
-                    if (IsUnderBase(baseFull, foundFull))
-                        return foundFull;
-                }
-            }
+        private static bool TryNormalizeInputs(
+            string basePath,
+            string reportNameOrRelative,
+            out string baseFull,
+            out string rel,
+            out string relDir,
+            out string bare)
+        {
+            baseFull = rel = relDir = bare = string.Empty;
 
-            return string.Empty;
+            if (string.IsNullOrWhiteSpace(basePath) || string.IsNullOrWhiteSpace(reportNameOrRelative))
+                return false;
+
+            baseFull = EnsureTrailingSeparator(Path.GetFullPath(basePath));
+
+            rel = reportNameOrRelative
+                .Replace('/', Path.DirectorySeparatorChar)
+                .Replace('\\', Path.DirectorySeparatorChar)
+                .Trim();
+
+            // Bloquea rutas absolutas/UNC
+            if (Path.IsPathRooted(rel))
+                return false;
+
+            relDir = Path.GetDirectoryName(rel) ?? string.Empty;
+            bare = Path.GetFileName(rel);
+
+            // bloquea cosas raras tipo "." ".." o nombre vacío
+            if (string.IsNullOrWhiteSpace(bare) || bare == "." || bare == "..")
+                return false;
+
+            return true;
+        }
+
+        private static IEnumerable<string?> BuildCandidates(string baseFull, string rel, string relDir, string bare)
+        {
+            // 1) "rel" completo (con subcarpetas) + extensiones
+            yield return CombineUnderBase(baseFull, rel + RdlcExt);
+            yield return CombineUnderBase(baseFull, rel + RdlExt);
+
+            // 2) "bare" + extensiones dentro de relDir
+            var bareInDir = string.IsNullOrEmpty(relDir)
+                ? bare
+                : relDir + Path.DirectorySeparatorChar + bare;
+
+            yield return CombineUnderBase(baseFull, bareInDir + RdlcExt);
+            yield return CombineUnderBase(baseFull, bareInDir + RdlExt);
+        }
+
+        private static string FindByEnumeration(string dir, string bare)
+        {
+            if (!Directory.Exists(dir))
+                return string.Empty;
+
+            var found = Directory.EnumerateFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
+                .FirstOrDefault(f => IsReportMatch(f, bare));
+
+            if (string.IsNullOrEmpty(found))
+                return string.Empty;
+
+            var full = Path.GetFullPath(found);
+            return IsUnderBase(dir, full) ? full : string.Empty;
+        }
+
+        private static bool IsReportMatch(string filePath, string bare)
+        {
+            if (!string.Equals(Path.GetFileNameWithoutExtension(filePath), bare, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var ext = Path.GetExtension(filePath);
+            return string.Equals(ext, RdlcExt, StringComparison.OrdinalIgnoreCase) ||
+                   string.Equals(ext, RdlExt, StringComparison.OrdinalIgnoreCase);
         }
 
         private static string EnsureTrailingSeparator(string path)
         {
-            if (string.IsNullOrEmpty(path)) return path;
+            if (string.IsNullOrEmpty(path))
+                return path;
+
             return path.EndsWith(Path.DirectorySeparatorChar)
                 ? path
                 : path + Path.DirectorySeparatorChar;
         }
 
+        /// <summary>
+        /// Verifica que candidateFull esté dentro de baseFull (misma raíz),
+        /// usando un check robusto basado en rutas relativas.
+        /// </summary>
         private static bool IsUnderBase(string baseFullWithSep, string candidateFull)
         {
-            // baseFullWithSep ya trae separador final
-            return candidateFull.StartsWith(baseFullWithSep, StringComparison.OrdinalIgnoreCase);
+            // Ambos deberían ser absolutos
+            var relative = Path.GetRelativePath(baseFullWithSep, candidateFull);
+
+            // Si empieza con ".." o es rooted, se salió del base
+            return !relative.StartsWith("..", StringComparison.Ordinal) &&
+                   !Path.IsPathRooted(relative);
         }
 
+        /// <summary>
+        /// Combina y normaliza una ruta relativa bajo un base absoluto. Si se sale del base, retorna null.
+        /// </summary>
         private static string? CombineUnderBase(string baseFullWithSep, string relative)
         {
-            // baseFullWithSep debe ser full path + separador final
-            // Normalizamos para asegurar que lo que combinamos sea realmente relativo
-            relative = relative.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            relative = (relative ?? string.Empty).Trim()
+                .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
-            // relative NO debe ser rooted (ya lo chequeamos arriba, pero por seguridad):
-            if (Path.IsPathRooted(relative))
+            if (string.IsNullOrEmpty(relative) || Path.IsPathRooted(relative))
                 return null;
 
             var combinedFull = Path.GetFullPath(Path.Combine(baseFullWithSep, relative));
-
-            return IsUnderBase(baseFullWithSep, combinedFull)
-                ? combinedFull
-                : null;
+            return IsUnderBase(baseFullWithSep, combinedFull) ? combinedFull : null;
         }
     }
 }
-
