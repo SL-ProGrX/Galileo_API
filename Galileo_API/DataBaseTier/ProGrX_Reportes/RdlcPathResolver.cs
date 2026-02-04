@@ -52,8 +52,8 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             {
                 CombineUnderBase(baseFull, rel + ".rdlc"),
                 CombineUnderBase(baseFull, rel + ".rdl"),
-                CombineUnderBase(baseFull, Path.Combine(relDir, bare + ".rdlc")),
-                CombineUnderBase(baseFull, Path.Combine(relDir, bare + ".rdl")),
+                CombineUnderBase(baseFull, string.IsNullOrEmpty(relDir) ? bare + ".rdlc" : relDir + Path.DirectorySeparatorChar + bare + ".rdlc"),
+                CombineUnderBase(baseFull, string.IsNullOrEmpty(relDir) ? bare + ".rdl" : relDir + Path.DirectorySeparatorChar + bare + ".rdl"),
             }
             .Where(p => p is not null)!
             .Cast<string>()
