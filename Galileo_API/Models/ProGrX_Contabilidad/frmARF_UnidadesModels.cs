@@ -6,7 +6,7 @@
         public string descripcion { get; set; } = string.Empty;
         public string cod_unidad { get; set; } = string.Empty;
         public string cod_centro_costo { get; set; } = string.Empty;
-        public int activo { get; set; }
+        public bool activo { get; set; }
         public string contacto_nombre { get; set; } = string.Empty;
         public string email_01 { get; set; } = string.Empty;
         public string email_02 { get; set; } = string.Empty;

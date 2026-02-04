@@ -41,15 +41,27 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpGet("ArfUnidades_Scroll_Obtener")]
-        public ErrorDto<ArfUnidadesData> ArfUnidades_Scroll_Obtener(int codEmpresa, string codUnidad, int scrollCode)
+        public ErrorDto<ArfUnidadesData> ArfUnidades_Scroll_Obtener(int codEmpresa, int scrollCode, string? codUnidad)
         {
-            return _bl.ArfUnidades_Scroll_Obtener(codEmpresa, codUnidad, scrollCode);
+            return _bl.ArfUnidades_Scroll_Obtener(codEmpresa, scrollCode, codUnidad);
         }
 
         [HttpGet("ArfUnidades_ConsultaUnidad_Obtener")]
         public ErrorDto<ArfUnidadesData> ArfUnidades_ConsultaUnidad_Obtener(int codEmpresa, string codUnidad)
         {
             return _bl.ArfUnidades_ConsultaUnidad_Obtener(codEmpresa, codUnidad);
+        }
+
+        [HttpPost("ArfUnidades_Guardar")]
+        public ErrorDto ArfUnidades_Guardar(int codEmpresa, bool existe, ArfUnidadesData request)
+        {
+            return _bl.ArfUnidades_Guardar(codEmpresa, existe, request);
+        }
+
+        [HttpDelete("ArfUnidades_Eliminar")]
+        public ErrorDto ArfUnidades_Eliminar(int codEmpresa, string usuario, string codUnidad)
+        {
+            return _bl.ArfUnidades_Eliminar(codEmpresa, usuario, codUnidad);
         }
     }
 }

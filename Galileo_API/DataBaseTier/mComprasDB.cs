@@ -219,7 +219,7 @@ namespace Galileo.DataBaseTier
                 var data = response.Result ??= new CentroCostoDtoList();
 
                 data.Total = connection.QueryFirstOrDefault<int>(sqlCount, parameters);
-                data.CentroCostos = connection
+                data.centrocostos = connection
                     .Query<CentroCostoDto>(sqlData, parameters)
                     .ToList();
             }
@@ -229,7 +229,7 @@ namespace Galileo.DataBaseTier
                 response.Description = ex.Message;
 
                 var data = response.Result ??= new CentroCostoDtoList();
-                data.CentroCostos = new List<CentroCostoDto>();
+                data.centrocostos = new List<CentroCostoDto>();
                 data.Total = 0;
             }
 
