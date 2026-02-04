@@ -82,7 +82,7 @@ namespace Galileo_API.DataBaseTier
             int codEmpresa,
             string codReferencia,
             string usuario,
-            ResPINSending resPIN,
+            ResSendingDynamic resPIN,
             TesTransaccion solicitud,
             bool incluirFechaActualiza)
         {
@@ -1600,7 +1600,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             return response;
         }
 
-        public ErrorDto<bool> RegistraDibitoCuenta(int CodEmpresa, int Nsolicitud, ResPINSending resPIN)
+        public ErrorDto<bool> RegistraCreditoCuenta(int CodEmpresa, int Nsolicitud, ResSendingDynamic resPIN)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<bool>
@@ -1623,6 +1623,41 @@ FROM dbo.fxSinpe_ValidaCredito(
                     refSinpe = resPIN.PINSendingResult?.SINPEReference ?? string.Empty,
                     idRechazo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
                     estadoSinpe = resPIN.PINSendingResult!.State,
+                    solicitud = Nsolicitud
+                }) > 0;
+            }
+            catch (Exception)
+            {
+                response.Code = -1;
+                response.Description = "Error al Actualizar Solicitud.";
+                response.Result = false;
+            }
+            return response;
+        }
+
+        public ErrorDto<bool> RegistraDibitoCuenta(int CodEmpresa, int Nsolicitud, ResSendingDynamic resPIN)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var response = new ErrorDto<bool>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = true
+            };
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                var query = $@"UPDATE TES_TRANSACCIONES SET 
+                                    REFERENCIA_SINPE = @refSinpe ,
+                                    ID_RECHAZO = @idRechazo ,
+                                    ESTADO_SINPE = @estadoSinpe
+                                    WHERE Nsolicitud = @solicitud ";
+                response.Result = connection.Execute(query, new
+                {
+                    refSinpe = resPIN.DTRSendingResult?.SINPERefNumber ?? string.Empty,
+                    idRechazo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
+                    estadoSinpe = resPIN.DTRSendingResult!.State,
                     solicitud = Nsolicitud
                 }) > 0;
             }
@@ -1704,7 +1739,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             return response != null && response!.TIPO_SINPE == 1 && response!.SINPE_PRODUCTO == 1;
         }
 
-        public void RegistraMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResPINSending resPIN, TesTransaccion solicitud)
+        public void RegistraMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResSendingDynamic resPIN, TesTransaccion solicitud)
         {
             var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -1723,7 +1758,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             }
         }
 
-        private void IngresaMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResPINSending resPIN, TesTransaccion solicitud)
+        private void IngresaMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResSendingDynamic resPIN, TesTransaccion solicitud)
         {
             const string Query = @"INSERT INTO SINPE_MOV_TRANSITO
                             (
@@ -1780,7 +1815,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
         }
 
-        private void UpdateMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResPINSending resPIN, TesTransaccion solicitud)
+        private void UpdateMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResSendingDynamic resPIN, TesTransaccion solicitud)
         {
             const string Query = @"UPDATE SINPE_MOV_TRANSITO
                                 SET

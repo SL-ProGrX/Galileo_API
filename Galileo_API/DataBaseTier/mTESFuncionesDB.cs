@@ -858,25 +858,12 @@ where id_banco = @banco
         {
             var now = DateTime.Now;
 
-            if (codEmpresa == 61)
+            switch (trx.tipo_girosinpe)
             {
-                switch (trx.tipo_girosinpe)
-                {
-                    case "CD":
-                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                    case "TR":
-                        return servicio.fxTesEmisionSinpeTiempoReal(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                }
-            }
-            else
-            {
-                switch (trx.tipo_girosinpe)
-                {
-                    case "CD":
-                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                    case "TR":
-                        return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
-                }
+                case "CD":
+                    return servicio.fxTesEmisionSinpeCreditoDirecto(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
+                case "TR":
+                    return servicio.fxTesEmisionSinpeTiempoReal(codEmpresa, trx.nsolicitud, now, usuario, 0, 0);
             }
 
             return new ErrorDto
