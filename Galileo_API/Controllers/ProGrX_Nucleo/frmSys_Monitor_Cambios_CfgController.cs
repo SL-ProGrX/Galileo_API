@@ -29,12 +29,12 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
             return _BL.Sys_MonitorCambiosCfg_Modulos_Obtener(CodEmpresa);
         }
         [HttpGet("Sys_MonitorCambiosCfg_Tablas_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> Sys_MonitorCambiosCfg_Tablas_Obtener(int CodEmpresa, object filtros)
+        public ErrorDto<List<DropDownListaGenericaModel>> Sys_MonitorCambiosCfg_Tablas_Obtener(int CodEmpresa)
         {
-            return _BL.Sys_MonitorCambiosCfg_Tablas_Obtener(CodEmpresa, filtros);
+            return _BL.Sys_MonitorCambiosCfg_Tablas_Obtener(CodEmpresa);
         }
         [HttpGet("Sys_MonitorCambiosCfg_Bitacora_Obtener")]
-        public ErrorDto<List<object>> Sys_MonitorCambiosCfg_Bitacora_Obtener(int CodEmpresa, string filtros)
+        public ErrorDto<List<MovimientoLogDto>> Sys_MonitorCambiosCfg_Bitacora_Obtener(int CodEmpresa, string filtros)
         {
             return _BL.Sys_MonitorCambiosCfg_Bitacora_Obtener(CodEmpresa, filtros);
         }

@@ -1,11 +1,13 @@
 ﻿using Galileo.Models.KindoSinpe;
-using Microsoft.AspNetCore.Mvc;
 using Galileo_API.BusinessLogic.KindoSinpe;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.KindoSinpe
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize]
     public class MKindoServiceController : ControllerBase
     {
         private readonly MKindoServiceBL _BL;
