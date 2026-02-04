@@ -102,12 +102,12 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
         private static string? CombineUnderBase(string baseFullWithSep, string relative)
         {
             // baseFullWithSep debe ser full path + separador final
+            // Normalizamos para asegurar que lo que combinamos sea realmente relativo
+            relative = relative.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
             // relative NO debe ser rooted (ya lo chequeamos arriba, pero por seguridad):
             if (Path.IsPathRooted(relative))
                 return null;
-
-            // Normalizamos para asegurar que lo que combinamos sea realmente relativo
-            relative = relative.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
             var combinedFull = Path.GetFullPath(Path.Combine(baseFullWithSep, relative));
 
