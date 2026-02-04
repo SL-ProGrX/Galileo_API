@@ -95,20 +95,35 @@ namespace Galileo.DataBaseTier
         {
             string _dirRdlc = GetParametrerValues(data.codEmpresa, "Rep01").Result!;
             if (data.parametros == null)
-            {
                 return ReportRenderer.Error("Datos del reporte no proporcionados.", 400);
+
+            if (string.IsNullOrWhiteSpace(data.nombreReporte))
+                return ReportRenderer.Error("El nombre del reporte no puede ser nulo o vacío.", 400);
+
+            // Cortafuegos rápido (no reemplaza el blindaje del resolver, pero ayuda)
+            if (Path.IsPathRooted(data.nombreReporte) ||
+                data.nombreReporte.Contains("..", StringComparison.Ordinal) ||
+                data.nombreReporte.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+            {
+                return ReportRenderer.Error("Nombre de reporte inválido.", 400);
             }
-               
+
+            if (!string.IsNullOrWhiteSpace(data.folder) &&
+                (Path.IsPathRooted(data.folder) ||
+                 data.folder.Contains("..", StringComparison.Ordinal) ||
+                 data.folder.IndexOfAny(Path.GetInvalidPathChars()) >= 0))
+            {
+                return ReportRenderer.Error("Folder inválido.", 400);
+            }
 
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(data.codEmpresa);
-
             try
             {
                 using var connection = new SqlConnection(connString);
                 connection.Open();
 
                 var report = new LocalReport { EnableExternalImages = true };
-                var basePath = _path.GetBasePath(data.codEmpresa, data.folder, _dirRdlc);
+                var basePath = _path.GetBasePath(data.codEmpresa, _dirRdlc, data.folder ?? null);
 
                 if (string.IsNullOrWhiteSpace(data.nombreReporte))
                     return ReportRenderer.Error("El nombre del reporte no puede ser nulo o vacío.", 400);
