@@ -106,6 +106,9 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             if (Path.IsPathRooted(relative))
                 return null;
 
+            // Normalizamos para asegurar que lo que combinamos sea realmente relativo
+            relative = relative.TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
             var combinedFull = Path.GetFullPath(Path.Combine(baseFullWithSep, relative));
 
             return IsUnderBase(baseFullWithSep, combinedFull)
