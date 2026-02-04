@@ -130,7 +130,7 @@ namespace Galileo.DataBaseTier
 
                 var mainPath = _path.ResolveReportPath(basePath, data.nombreReporte);
                 if (mainPath == null)
-                    return ReportRenderer.Error($"No se encontró el reporte principal: {System.IO.Path.Combine(basePath, data.nombreReporte)}");
+                    return ReportRenderer.Error($"No se encontró el reporte principal.", 404);
 
                 using var patched = _patcher.PatchReportCode(mainPath, data.codeSection);
                 report.LoadReportDefinition(patched);
