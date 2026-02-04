@@ -3,6 +3,7 @@ using Dapper;
 using Galileo.Models.ERROR;
 using Newtonsoft.Json;
 using Microsoft.Data.SqlClient;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
@@ -22,7 +23,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select [PERSPECTIVA_ID]
+                const string query = @"select [PERSPECTIVA_ID]
                                           ,[DESCRIPCION]
                                           ,[PE_ID]
                                           ,[OBJETIVO_A_1]
@@ -33,8 +34,10 @@ namespace Galileo.DataBaseTier
                                           ,[REGISTRO_USUARIO]
                                           ,[REGISTRO_FECHA]
                                           ,[MODIFICA_FECHA]
-                                          ,[MODIFICA_USUARIO] from PE_PERSPECTIVAS WHERE PERSPECTIVA_ID = '{perspectiva}' ";
-                response.Result = connection.Query<PePerspectivasDto>(query).FirstOrDefault();
+                                          ,[MODIFICA_USUARIO]
+                                   from PE_PERSPECTIVAS
+                                   WHERE PERSPECTIVA_ID = @perspectiva;";
+                response.Result = connection.Query<PePerspectivasDto>(query, new { perspectiva }).FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -52,20 +55,20 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                string where, orderBy;
-                if (scroll == 1)
-                {
-                    where = $@" where PERSPECTIVA_ID > '{perspectiva}' ";
-                    orderBy = " order by PERSPECTIVA_ID asc";
-                }
-                else
-                {
-                    where = $@" where PERSPECTIVA_ID < '{perspectiva}' ";
-                    orderBy = " order by PERSPECTIVA_ID desc";
-                }
 
-                var query = $@"select top 1 * from PE_PERSPECTIVAS {where} {orderBy}";
-                response.Result = connection.Query<PePerspectivasDto>(query).FirstOrDefault();
+                const string qNext = @"select top 1 *
+from PE_PERSPECTIVAS
+where PERSPECTIVA_ID > @perspectiva
+order by PERSPECTIVA_ID asc;";
+
+                const string qPrev = @"select top 1 *
+from PE_PERSPECTIVAS
+where PERSPECTIVA_ID < @perspectiva
+order by PERSPECTIVA_ID desc;";
+
+                var param = new { perspectiva = perspectiva ?? 0 };
+                var query = (scroll == 1) ? qNext : qPrev;
+                response.Result = connection.Query<PePerspectivasDto>(query, param).FirstOrDefault();
             }
             catch (Exception ex)
             {
@@ -125,7 +128,7 @@ namespace Galileo.DataBaseTier
                 int activa = perspectiva.activa ? 1 : 0;
 
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"INSERT INTO [dbo].[PE_PERSPECTIVAS]
+                const string query = @"INSERT INTO [dbo].[PE_PERSPECTIVAS]
                                        ([PERSPECTIVA_ID]
                                        ,[DESCRIPCION]
                                        ,[PE_ID]
@@ -137,17 +140,31 @@ namespace Galileo.DataBaseTier
                                        ,[REGISTRO_USUARIO]
                                        ,[REGISTRO_FECHA])
                                  VALUES
-                                       ({perspectiva.perspectiva_id}
-                                       ,'{perspectiva.descripcion}'
-                                       ,{perspectiva.pe_id}
-                                       ,'{perspectiva.objetivo_a_1}'
-                                       ,'{perspectiva.objetivo_a_2}'
-                                       ,'{perspectiva.objetivo_a_3}'
-                                       ,'{perspectiva.responsable}'
-                                       , {activa}
-                                       ,'{perspectiva.registro_usuario}'
-                                       ,GetDate() )";
-                connection.Execute(query);
+                                       (@perspectiva_id
+                                       ,@descripcion
+                                       ,@pe_id
+                                       ,@objetivo_a_1
+                                       ,@objetivo_a_2
+                                       ,@objetivo_a_3
+                                       ,@responsable
+                                       ,@activa
+                                       ,@registro_usuario
+                                       ,GetDate());";
+
+                var p = new
+                {
+                    perspectiva_id = perspectiva.perspectiva_id,
+                    descripcion = perspectiva.descripcion,
+                    pe_id = perspectiva.pe_id,
+                    objetivo_a_1 = perspectiva.objetivo_a_1,
+                    objetivo_a_2 = perspectiva.objetivo_a_2,
+                    objetivo_a_3 = perspectiva.objetivo_a_3,
+                    responsable = perspectiva.responsable,
+                    activa = activa,
+                    registro_usuario = perspectiva.registro_usuario
+                };
+
+                connection.Execute(query, p);
             }
             catch (Exception ex)
             {
@@ -168,18 +185,32 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"UPDATE [dbo].[PE_PERSPECTIVAS]
-                                   SET [DESCRIPCION] = '{perspectiva.descripcion}'
-                                      ,[PE_ID] = {perspectiva.pe_id}
-                                      ,[OBJETIVO_A_1] = '{perspectiva.objetivo_a_1}'
-                                      ,[OBJETIVO_A_2] = '{perspectiva.objetivo_a_2}'
-                                      ,[OBJETIVO_A_3] = '{perspectiva.objetivo_a_3}'
-                                      ,[RESPONSABLE] = '{perspectiva.responsable}'
-                                      ,[ACTIVA] = {(perspectiva.activa ? 1 : 0)}
-                                      ,[MODIFICA_FECHA] = GetDate()
-                                      ,[MODIFICA_USUARIO] = '{perspectiva.modifica_usuario}'
-                                 WHERE PERSPECTIVA_ID = {perspectiva.perspectiva_id}";
-                connection.Execute(query);
+                const string query = @"UPDATE [dbo].[PE_PERSPECTIVAS]
+                                       SET [DESCRIPCION] = @descripcion
+                                          ,[PE_ID] = @pe_id
+                                          ,[OBJETIVO_A_1] = @objetivo_a_1
+                                          ,[OBJETIVO_A_2] = @objetivo_a_2
+                                          ,[OBJETIVO_A_3] = @objetivo_a_3
+                                          ,[RESPONSABLE] = @responsable
+                                          ,[ACTIVA] = @activa
+                                          ,[MODIFICA_FECHA] = GetDate()
+                                          ,[MODIFICA_USUARIO] = @modifica_usuario
+                                     WHERE PERSPECTIVA_ID = @perspectiva_id;";
+
+                var p = new
+                {
+                    perspectiva_id = perspectiva.perspectiva_id,
+                    descripcion = perspectiva.descripcion,
+                    pe_id = perspectiva.pe_id,
+                    objetivo_a_1 = perspectiva.objetivo_a_1,
+                    objetivo_a_2 = perspectiva.objetivo_a_2,
+                    objetivo_a_3 = perspectiva.objetivo_a_3,
+                    responsable = perspectiva.responsable,
+                    activa = (perspectiva.activa ? 1 : 0),
+                    modifica_usuario = perspectiva.modifica_usuario
+                };
+
+                connection.Execute(query, p);
             }
             catch (Exception ex)
             {
@@ -201,8 +232,8 @@ namespace Galileo.DataBaseTier
             {
                 using var connection = new SqlConnection(clienteConnString);
                 //Valida si existe en la tabla de objetivos
-                var query = $@"SELECT COUNT(*) FROM [dbo].[PE_OBJETIVOS] WHERE PERSPECTIVA_ID = {perspectiva}";
-                var count = connection.QueryFirstOrDefault<int>(query);
+                const string qCount = @"SELECT COUNT(1) FROM [dbo].[PE_OBJETIVOS] WHERE PERSPECTIVA_ID = @perspectiva;";
+                var count = connection.ExecuteScalar<int>(qCount, new { perspectiva });
                 if (count > 0)
                 {
                     resp.Code = -1;
@@ -210,8 +241,8 @@ namespace Galileo.DataBaseTier
                     return resp;
                 }
 
-                query = $@"DELETE FROM [dbo].[PE_PERSPECTIVAS] WHERE PERSPECTIVA_ID = {perspectiva}";
-                connection.Execute(query);
+                const string qDelete = @"DELETE FROM [dbo].[PE_PERSPECTIVAS] WHERE PERSPECTIVA_ID = @perspectiva;";
+                connection.Execute(qDelete, new { perspectiva });
             }
             catch (Exception ex)
             {
@@ -228,7 +259,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select [PE_ID]
+                const string query = @"select [PE_ID]
                                       ,[DESCRIPCION] from PE_PLANES Where ESTADO = 'A' 
                                        AND FINALIZACION > getDate() ";
                 response.Result = connection.Query<PePerspectivasDto>(query).ToList();
@@ -255,37 +286,55 @@ namespace Galileo.DataBaseTier
 
             try
             {
-                var query = "";
-                string where = " ", paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(stringConn);
-                    if (filtros.filtro != null)
-                    {
-                        where = "where perspectiva_id LIKE '%" + filtros.filtro + "%' OR " +
-                            "DESCRIPCION LIKE '%" + filtros.filtro + "%'";
-                    }
 
-                    if (filtros.pagina != null)
-                    {
-                        paginaActual = " OFFSET " + filtros.pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + filtros.paginacion + " ROWS ONLY ";
-                    }
+                var p = new DynamicParameters();
+                bool hasFilter = TryAddPerspectivasFiltro(filtros, p);
 
-                    query = $"select COUNT(*) from PE_PERSPECTIVAS {where}";
-                    response.Result.total = connection.Query<int>(query).FirstOrDefault();
+                int offset = filtros.pagina ?? 0;
+                if (offset < 0) offset = 0;
 
-                    query = $@"select [PERSPECTIVA_ID]
-                                      ,[DESCRIPCION]
-                                      ,[PE_ID]
-                                      ,[OBJETIVO_A_1]
-                                      ,[OBJETIVO_A_2]
-                                      ,[OBJETIVO_A_3]
-                                      ,[RESPONSABLE]
-                                      ,[ACTIVA]
-                                      ,[REGISTRO_USUARIO]
-                                      ,[REGISTRO_FECHA]
-                                      ,[MODIFICA_FECHA]
-                                      ,[MODIFICA_USUARIO] from PE_PERSPECTIVAS {where} order by PERSPECTIVA_ID desc {paginaActual} {paginacionActual}";
-                    response.Result.data = connection.Query<PePerspectivasDto>(query).ToList();
+                const string countNoFilter = "select COUNT(1) from PE_PERSPECTIVAS;";
+                const string countWithFilter = @"select COUNT(1)
+from PE_PERSPECTIVAS
+where CAST(perspectiva_id AS varchar(50)) LIKE @Q
+   OR DESCRIPCION LIKE @Q;";
+
+                response.Result.total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
+
+                var sb = new StringBuilder();
+                sb.Append(@"select [PERSPECTIVA_ID]
+                              ,[DESCRIPCION]
+                              ,[PE_ID]
+                              ,[OBJETIVO_A_1]
+                              ,[OBJETIVO_A_2]
+                              ,[OBJETIVO_A_3]
+                              ,[RESPONSABLE]
+                              ,[ACTIVA]
+                              ,[REGISTRO_USUARIO]
+                              ,[REGISTRO_FECHA]
+                              ,[MODIFICA_FECHA]
+                              ,[MODIFICA_USUARIO]
+                       from PE_PERSPECTIVAS ");
+
+                if (hasFilter)
+                {
+                    sb.Append(@" where CAST(perspectiva_id AS varchar(50)) LIKE @Q
+                                 OR DESCRIPCION LIKE @Q ");
+                }
+
+                sb.Append(" order by PERSPECTIVA_ID desc ");
+
+                if (filtros.pagina != null)
+                {
+                    int pageFetch = filtros.paginacion ?? 30;
+                    if (pageFetch < 1) pageFetch = 30;
+                    p.Add("@OFFSET", offset);
+                    p.Add("@FETCH", pageFetch);
+                    sb.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
+                }
+
+                response.Result.data = connection.Query<PePerspectivasDto>(sb.ToString(), p).ToList();
             }
             catch (Exception ex)
             {
@@ -294,6 +343,16 @@ namespace Galileo.DataBaseTier
                 response.Result.data = null;
             }
             return response;
+        }
+
+        private static bool TryAddPerspectivasFiltro(PePerspectivasFiltros filtros, DynamicParameters p)
+        {
+            string q = (filtros?.filtro ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(q))
+                return false;
+
+            p.Add("@Q", $"%{q}%");
+            return true;
         }
 
     }
