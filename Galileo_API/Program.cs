@@ -18,7 +18,9 @@ var externalConfigPath = Environment.GetEnvironmentVariable("APP_CONFIG_PATH");
 if (!string.IsNullOrWhiteSpace(externalConfigPath))
 {
     var envName = builder.Environment.EnvironmentName; // Production, Staging, etc.
-    var externalSettingsFile = Path.Combine(externalConfigPath, $"appsettings.{envName}.json");
+    var fileName = $"appsettings.{envName}.json";
+    var safeFileName = Path.GetFileName(fileName);
+    var externalSettingsFile = Path.Combine(externalConfigPath, safeFileName);
 
     builder.Configuration.AddJsonFile(externalSettingsFile, optional: false, reloadOnChange: true);
 }
