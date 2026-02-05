@@ -15,7 +15,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         public FrmCntXCierresController(IConfiguration config) => _bl = new FrmCntXCierresBl(config);
 
-        [HttpGet("CntXEmpresa_Obtener")]
+        [HttpGet("CntXCierres_Obtener")]
         public ErrorDto<List<CntXCierreData>> CntXCierres_Obtener(int codEmpresa, int codConta)
         {
             return _bl.CntXCierres_Obtener(codEmpresa, codConta);
@@ -28,7 +28,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
         }
 
         [HttpDelete("CntXCierres_Eliminar")]
-        public ErrorDto CntXCierres_Eliminar(int codEmpresa, int codConta, string usuario, string idCierre)
+        public ErrorDto CntXCierres_Eliminar(int codEmpresa, int codConta, string usuario, int idCierre)
         {
             return _bl.CntXCierres_Eliminar(codEmpresa, codConta, usuario, idCierre);
         }
