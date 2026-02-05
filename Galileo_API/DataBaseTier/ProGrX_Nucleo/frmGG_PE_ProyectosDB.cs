@@ -3,6 +3,7 @@ using Dapper;
 using Galileo.Models.ERROR;
 using Newtonsoft.Json;
 using Microsoft.Data.SqlClient;
+using System.Text;
 
 namespace Galileo.DataBaseTier
 {
@@ -19,54 +20,77 @@ namespace Galileo.DataBaseTier
         {
             PeProyectosFiltros filtros = JsonConvert.DeserializeObject<PeProyectosFiltros>(Jfiltros) ?? new PeProyectosFiltros();
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<PeProyectosLista>();
-            response.Result = new PeProyectosLista
+
+            var response = new ErrorDto<PeProyectosLista>
             {
-                total = 0,
-                proyectos = new List<PeProyectosDto>()
+                Code = 0,
+                Description = "Ok",
+                Result = new PeProyectosLista
+                {
+                    total = 0,
+                    proyectos = new List<PeProyectosDto>()
+                }
             };
 
             try
             {
-                const string Percent = "%";
-                var query = "";
-                string where = " ", paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(stringConn);
-                const string OrOperator = " OR ";
-                if (filtros.filtro != null)
+
+                var p = new DynamicParameters();
+                bool hasFilter = TryAddProyectosFiltro(filtros, p);
+
+                int offset = filtros.pagina ?? 0;
+                if (offset < 0) offset = 0;
+
+                const string countNoFilter = "select COUNT(1) from PE_PROYECTOS;";
+                const string countWithFilter = @"select COUNT(1)
+from PE_PROYECTOS
+where CAST(PROYECTO_ID AS varchar(50)) LIKE @Q
+   OR TIPO LIKE @Q
+   OR NOMBRE LIKE @Q
+   OR DESCRIPCION LIKE @Q
+   OR RESPONSABLE LIKE @Q;";
+
+                response.Result.total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
+
+                var sb = new StringBuilder();
+                sb.Append(@"select [PROYECTO_ID]
+                          ,[PROGRAMA_ID]
+                          ,[TIPO]
+                          ,[NOMBRE]
+                          ,[DESCRIPCION]
+                          ,[RESPONSABLE]
+                          ,[PRESUPUESTO]
+                          ,[FECHA_INICIO]
+                          ,[FECHA_FINALIZA]
+                          ,[ACTIVO]
+                          ,[REGISTRO_USUARIO]
+                          ,[REGISTRO_FECHA]
+                          ,[MODIFICA_FECHA]
+                          ,[MODIFICA_USUARIO]
+                   from PE_PROYECTOS ");
+
+                if (hasFilter)
                 {
-                    where = "where   proyecto_id LIKE '" + Percent + filtros.filtro + Percent + "'" + OrOperator +
-                                    "tipo LIKE '" + Percent + filtros.filtro + Percent + "'" + OrOperator +
-                                    "nombre LIKE '" + Percent + filtros.filtro + Percent + "'" + OrOperator +
-                                    "descripcion LIKE '" + Percent + filtros.filtro + Percent + "'" + OrOperator +
-                                    "responsable LIKE '" + Percent + filtros.filtro + Percent + "'  ";
+                    sb.Append(@" where CAST(PROYECTO_ID AS varchar(50)) LIKE @Q
+                         OR TIPO LIKE @Q
+                         OR NOMBRE LIKE @Q
+                         OR DESCRIPCION LIKE @Q
+                         OR RESPONSABLE LIKE @Q ");
                 }
+
+                sb.Append(" order by PROYECTO_ID desc ");
 
                 if (filtros.pagina != null)
                 {
-                    paginaActual = " OFFSET " + filtros.pagina + " ROWS ";
-                    paginacionActual = " FETCH NEXT " + filtros.paginacion + " ROWS ONLY ";
+                    int pageFetch = filtros.paginacion ?? 30;
+                    if (pageFetch < 1) pageFetch = 30;
+                    p.Add("@OFFSET", offset);
+                    p.Add("@FETCH", pageFetch);
+                    sb.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
                 }
 
-                query = $"select COUNT(*) from PE_PROYECTOS {where}";
-                response.Result.total = connection.Query<int>(query).FirstOrDefault();
-
-                query = $@"select [PROYECTO_ID]
-                                      ,[PROGRAMA_ID]
-                                      ,[TIPO]
-                                      ,[NOMBRE]
-                                      ,[DESCRIPCION]
-                                      ,[RESPONSABLE]
-                                      ,[PRESUPUESTO]
-                                      ,[FECHA_INICIO]
-                                      ,[FECHA_FINALIZA]
-                                      ,[ACTIVO]
-                                      ,[REGISTRO_USUARIO]
-                                      ,[REGISTRO_FECHA]
-                                      ,[MODIFICA_FECHA]
-                                      ,[MODIFICA_USUARIO] from PE_PROYECTOS {where} order 
-                            by PROYECTO_ID desc {paginaActual} {paginacionActual}";
-                response.Result.proyectos = connection.Query<PeProyectosDto>(query).ToList();
+                response.Result.proyectos = connection.Query<PeProyectosDto>(sb.ToString(), p).ToList();
             }
             catch (Exception ex)
             {
@@ -76,6 +100,16 @@ namespace Galileo.DataBaseTier
             }
 
             return response;
+        }
+
+        private static bool TryAddProyectosFiltro(PeProyectosFiltros filtros, DynamicParameters p)
+        {
+            string q = (filtros?.filtro ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(q))
+                return false;
+
+            p.Add("@Q", $"%{q}%");
+            return true;
         }
 
         public ErrorDto PeProyecto_Guardar(int CodEmpresa, PeProyectosDto proyectos)
