@@ -41,11 +41,11 @@
 
     public class CajasCajaChicaAplicarDbRequestDto
     {
-        public int codempresa { get; set; }
+        public int codempresa { get; set; } = 0;
 
         // contexto caja (normalmente viene de sesión / backend)
         public string cod_caja { get; set; } = string.Empty; // ModuloCajas.mCaja
-        public int cod_apertura { get; set; } //ModuloCajas.mApertura
+        public int cod_apertura { get; set; } = 0; //ModuloCajas.mApertura
         public string cod_oficina { get; set; } = string.Empty; //ModuloCajas.mOficina
 
         // documento (ya resuelto por BL)
@@ -66,13 +66,13 @@
         public string? detalle { get; set; }  // txtDetalle.Text
 
         // dinero
-        public decimal monto { get; set; } //curMonto = CCur(txtMonto.Text)
+        public decimal monto { get; set; }  = 0; //curMonto = CCur(txtMonto.Text)
         public string cod_divisa { get; set; } = string.Empty; //cboDivisaActual.ItemData(cboDivisaActual.ListIndex)
-        public decimal tipo_cambio { get; set; } // pTipoCambio: fxCajasTipoCambio(cod_divisa)
+        public decimal tipo_cambio { get; set; } = 0; // pTipoCambio: fxCajasTipoCambio(cod_divisa)
 
         // contabilidad (gEnlace) + monto aplicado (monto * fxSys_Tipo_Cambio_Apl(tipoCambio))
-        public int cod_contabilidad { get; set; }
-        public decimal monto_aplicado { get; set; } //curMonto * fxSys_Tipo_Cambio_Apl(pTipoCambio)
+        public int cod_contabilidad { get; set; } = 0;
+        public decimal monto_aplicado { get; set; } = 0; //curMonto * fxSys_Tipo_Cambio_Apl(pTipoCambio)
 
         // seguridad/auditoría
         public string usuario { get; set; } = string.Empty; //glogon.Usuario
