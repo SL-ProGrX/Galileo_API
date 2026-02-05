@@ -83,5 +83,20 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         [HttpPost("Contrato_Concepto_Eliminar")]
         public ErrorDto<bool> Contrato_Concepto_Eliminar(int codEmpresa, [FromBody] ContratoConceptoParams param)
             => _bl.Contrato_Concepto_Eliminar(codEmpresa, param);
+
+        [Authorize]
+        [HttpPost("Contrato_Insertar")]
+        public ErrorDto<bool> Contrato_Insertar(int codEmpresa, [FromBody] ContratoSaveParams param)
+            => _bl.Contrato_Insertar(codEmpresa, param);
+
+        [Authorize]
+        [HttpPost("Contrato_Actualizar")]
+        public ErrorDto<bool> Contrato_Actualizar(int codEmpresa, [FromBody] ContratoSaveParams param)
+            => _bl.Contrato_Actualizar(codEmpresa, param);
+
+        [Authorize]
+        [HttpPost("Contrato_Eliminar")]
+        public ErrorDto<bool> Contrato_Eliminar(int codEmpresa, [FromBody] ContratoDeleteParams param)
+            => _bl.Contrato_Eliminar(codEmpresa, param);
     }
 }

@@ -97,4 +97,24 @@
         public string? Usuario { get; set; } = string.Empty;
     }
 
+    public class ContratoSaveParams
+    {
+        public string Cod_Contrato { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public string? Notas { get; set; }
+        public short Activo { get; set; }
+        public int? Plazo { get; set; }
+        public decimal? Tasa_Corriente { get; set; }
+        public decimal? Tasa_Mora { get; set; }
+        public short? Suscripcion_Abierta { get; set; }
+        public short? Pagadores_Abierto { get; set; }
+        public string Usuario { get; set; } = string.Empty;
+    }
+
+    public class ContratoDeleteParams
+    {
+        public string Cod_Contrato { get; set; } = string.Empty;
+        public string Usuario { get; set; } = string.Empty;
+    }
+
 }
