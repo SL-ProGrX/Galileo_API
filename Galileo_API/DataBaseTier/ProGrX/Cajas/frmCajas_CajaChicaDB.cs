@@ -102,7 +102,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <param name="codEmpresa"></param>
         /// <param name="codContabilidad"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> Cajas__CajaChicaDivisas_Obtener(
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CajaChicaDivisas_Obtener(
             int codEmpresa,
             int codContabilidad)
         {
@@ -134,7 +134,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <param name="codContabilidad"></param>
         /// <param name="codDivisa"></param>
         /// <returns></returns>
-        public ErrorDto<CajasCajaChicaTipoCambioRsDto> Cntx_Divisa_TipoCambio_Obtener(
+        public ErrorDto<CajasCajaChicaTipoCambioRsDto> Cajas_CajaChicaTipoCambio_Obtener(
                 int codEmpresa,
                 int codContabilidad,
                 string codDivisa)
@@ -171,7 +171,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// <param name="codEmpresa"></param>
         /// <param name="filtroNombre"></param>
         /// <returns></returns>
-        public ErrorDto<List<CajasCajaChicaSociosBusquedaRsDto>> Socios_Buscar(
+        public ErrorDto<List<CajasCajaChicaSociosBusquedaRsDto>> Cajas_CajaChicaSocios_Buscar(
                 int codEmpresa,
                 string? filtroNombre)
         {
@@ -206,7 +206,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         /// </summary>
         /// <param name="req"></param>
         /// <returns></returns>
-        public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_Retiro_Aplicar_Db(
+        public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_CajaChicaRetiro_Aplicar(
                  CajasCajaChicaAplicarDbRequestDto req)
         {
             return DbHelper.WithConn(_portalDB, req.codempresa, conn =>

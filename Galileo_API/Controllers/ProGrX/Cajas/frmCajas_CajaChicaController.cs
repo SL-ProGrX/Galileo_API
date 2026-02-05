@@ -40,43 +40,43 @@ namespace Galileo_API.Controllers.ProGrX.Cajas
                 codCaja);
         }
 
-        [HttpGet("Cajas__CajaChicaDivisas_Obtener")]
-        public ErrorDto<List<DropDownListaGenericaModel>> Cajas__CajaChicaDivisas_Obtener(
+        [HttpGet("Cajas_CajaChicaDivisas_Obtener")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Cajas_CajaChicaDivisas_Obtener(
             int codEmpresa,
             int codContabilidad)
         {
-            return _bl.Cajas__CajaChicaDivisas_Obtener(
+            return _bl.Cajas_CajaChicaDivisas_Obtener(
                 codEmpresa,
                 codContabilidad);
         }
 
-        [HttpGet("Cntx_Divisa_TipoCambio_Obtener")]
-        public ErrorDto<CajasCajaChicaTipoCambioRsDto> Cntx_Divisa_TipoCambio_Obtener(
+        [HttpGet("Cajas_CajaChicaTipoCambio_Obtener")]
+        public ErrorDto<CajasCajaChicaTipoCambioRsDto> Cajas_CajaChicaTipoCambio_Obtener(
                 int codEmpresa,
                 int codContabilidad,
                 string codDivisa)
         {
-            return _bl.Cntx_Divisa_TipoCambio_Obtener(
+            return _bl.Cajas_CajaChicaTipoCambio_Obtener(
                 codEmpresa,
                 codContabilidad,
                 codDivisa);
         }
 
-        [HttpGet("Socios_Buscar")]
-        public ErrorDto<List<CajasCajaChicaSociosBusquedaRsDto>> Socios_Buscar(
+        [HttpGet("Cajas_CajaChicaSocios_Buscar")]
+        public ErrorDto<List<CajasCajaChicaSociosBusquedaRsDto>> Cajas_CajaChicaSocios_Buscar(
                int codEmpresa,
                string? filtroNombre)
         {
-            return _bl.Socios_Buscar(
+            return _bl.Cajas_CajaChicaSocios_Buscar(
                 codEmpresa,
                 filtroNombre);
         }
 
-        [HttpPost("Cajas_Retiro_Aplicar_Db")]
-        public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_Retiro_Aplicar_Db(
+        [HttpPost("Cajas_CajaChicaRetiro_Aplicar")]
+        public ErrorDto<CajasCajaChicaAplicarDbResponseDto> Cajas_CajaChicaRetiro_Aplicar(
                  CajasCajaChicaAplicarDbRequestDto req)
         {
-            return _bl.Cajas_Retiro_Aplicar_Db(
+            return _bl.Cajas_CajaChicaRetiro_Aplicar(
                 req);
         }
     }
