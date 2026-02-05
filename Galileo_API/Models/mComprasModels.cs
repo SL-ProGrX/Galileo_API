@@ -27,7 +27,7 @@
     public class CentroCostoDtoList
     {
         public int Total { get; set; }
-        public List<CentroCostoDto> centrocostos { get; set; } = new List<CentroCostoDto>();
+        public List<CentroCostoDto> Centrocostos { get; set; } = new List<CentroCostoDto>();
     }
 
     public class CentroCostoDto
