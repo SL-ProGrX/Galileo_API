@@ -1,13 +1,11 @@
 using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX.Bancos;
-using Galileo.Models.Security;
 using Galileo.Models.TES;
-using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.Data.SqlClient;
-using Microsoft.ReportingServices.Diagnostics.Internal;
-using Newtonsoft.Json;
+using System.Data;
 using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
@@ -17,25 +15,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         private readonly VerificadorCoreFactory _factory;
         private readonly MTesoreria _mTesoreria;
         private readonly PortalDB _portalDB;
-
-        private const string SQL_UPDATE_EMISION =
-     @"UPDATE Tes_Transacciones 
-            SET Autoriza='S',
-                Fecha_Autorizacion = dbo.MyGetdate(), 
-                User_Autoriza = @usuario,
-                ESTADO_SINPE = @estado_sinpe,
-                TIPO_GIROSINPE = @tipo_giro_sinpe
-          WHERE Nsolicitud = @nsolicitud";
-
-        private const string SQL_UPDATE_FIRMAS =
-            @"UPDATE Tes_Transacciones 
-            SET FIRMAS_AUTORIZA_FECHA = dbo.MyGetdate(),
-                FIRMAS_AUTORIZA_USUARIO = @usuario
-          WHERE Nsolicitud = @nsolicitud";
-
-        private const string SQL_BITACORA_EMISION = "EXEC spTesBitacora @nsolicitud,'02','',@usuario";
-        private const string SQL_BITACORA_FIRMAS = "EXEC spTesBitacora @nsolicitud,'04','',@usuario";
-
 
         public FrmTesAutorizacionDb(IConfiguration config)
         {
@@ -52,16 +31,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         /// <returns></returns>
         public ErrorDto<TesSolicitudesLista> TES_SolicitudesPendientes_Obtener(int CodEmpresa, string filtros)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            var filtro = ParseFiltros(filtros);
-            var response = NewOkResponse();
-
-            // Rango de fecha (inicio del día / fin del día)
-            var fechaInicio = filtro.fecha_inicio.Date;
-            var fechaCorte = filtro.fecha_corte.Date.AddDays(1).AddTicks(-1);
-            try
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
+                var filtro = DbHelper.DeserializeOrNew<TesAutorizacionFiltros>(filtros);
+                var response = new TesSolicitudesLista
+                {
+                    solicitudes = new List<Galileo.Models.TES.TesSolicitudesData>(),
+                    total = 0
+                };
+
+                // Rango de fecha (inicio del día / fin del día)
+                var fechaInicio = filtro.fecha_inicio.Date;
+                var fechaCorte = filtro.fecha_corte.Date.AddDays(1).AddTicks(-1);
                 // 1) Ajustar rangos de montos por usuario (si existen)
                 AjustarRangosPorUsuario(conn, filtro);
 
@@ -72,21 +53,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 EjecutarRevisionAutomatica(conn, filtro.id_banco);
 
                 // 4) Conteo total
-                response.Result!.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
+                response!.total = GetConteoPendientes(conn, filtro.id_banco, filtro.tipo_doc);
 
                 // 5) Construcción de query dinámica
-                var baseQuery = BuildBaseQuery(filtro.duplicados);
+                var baseQuery = FrmTesAutorizacionSql.SP_TRANSACCIONES_PENDIENTES;
                 var (query, sqlParams) = BuildFinalQueryAndParams(
                     conn, baseQuery, filtro, fechaInicio, fechaCorte, lenInter);
 
                 // 6) Ejecución
-                response.Result.solicitudes = conn
+                response.solicitudes = conn
                     .Query<Galileo.Models.TES.TesSolicitudesData>(query, sqlParams)
                     .ToList();
 
-                if(filtro.tipo_doc == "TS" && filtro.activaCuentaSinpe)
+                if (filtro.tipo_doc == "TS" && filtro.activaCuentaSinpe)
                 {
-                    foreach (var solicitud in response.Result.solicitudes)
+                    foreach (var solicitud in response.solicitudes)
                     {
                         var valida = _factory.CrearServicio(CodEmpresa, filtro.usuario)
                            .fxValidacionSinpe(CodEmpresa, solicitud.nsolicitud.ToString(), filtro.usuario);
@@ -100,39 +81,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 }
 
                 return response;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result!.solicitudes = null;
-                response.Result.total = 0;
-            }
-            return response;
+            });
         }
-
-        // ====== Helpers de TES_SolicitudesPendientes_Obtener ======
-        private static TesAutorizacionFiltros ParseFiltros(string? json)
-            => JsonConvert.DeserializeObject<TesAutorizacionFiltros>(json ?? "{}")
-               ?? new TesAutorizacionFiltros();
-
-        private static ErrorDto<TesSolicitudesLista> NewOkResponse() => new()
-        {
-            Result = new TesSolicitudesLista
-            {
-                solicitudes = new List<Galileo.Models.TES.TesSolicitudesData>(),
-                total = 0
-            },
-            Code = 0,
-            Description = "OK"
-        };
 
         private static void AjustarRangosPorUsuario(SqlConnection conn, TesAutorizacionFiltros filtro)
         {
-            const string sql = @"
-            SELECT rango_gen_Inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte 
-            FROM TES_AUTORIZACIONES 
-            WHERE NOMBRE = @usuario";
+            const string sql = FrmTesAutorizacionSql.SQL_TES_AUTORIZACIONES_RANGOS;
 
             var r = conn.Query<TesAutorizacionData>(sql, new { filtro.usuario }).FirstOrDefault();
             if (r != null)
@@ -144,12 +98,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static int GetInterbancariaLength(SqlConnection conn, int idBanco)
         {
-            const string sql = @"
-            SELECT Bg.LCTA_INTERBANCARIA 
-            FROM TES_BANCOS Tb 
-            INNER JOIN TES_BANCOS_GRUPOS Bg ON Tb.COD_GRUPO = Bg.COD_GRUPO
-            WHERE Tb.ID_BANCO = @Banco";
-            return conn.Query<int?>(sql, new { Banco = idBanco }).FirstOrDefault() ?? 0;
+            return conn.Query<int?>(FrmTesAutorizacionSql.Query_Interbancaria, new { Banco = idBanco }).FirstOrDefault() ?? 0;
         }
 
         private static void EjecutarRevisionAutomatica(SqlConnection conn, int idBanco)
@@ -160,58 +109,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
         private static int GetConteoPendientes(SqlConnection conn, int idBanco, string tipoDoc)
         {
-            const string sql = @"
-            SELECT COUNT(T.nsolicitud) 
-            FROM Tes_Transacciones T 
-            INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
-            WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc";
-            return conn.Query<int>(sql, new { Banco = idBanco, TipoDoc = tipoDoc }).FirstOrDefault();
-        }
-
-        private static string BuildBaseQuery(bool duplicados)
-        {
-            if (duplicados)
-            {
-                return @"
-                SELECT 
-                    T.nsolicitud, T.codigo, T.beneficiario, T.monto, T.fecha_solicitud, T.cta_Ahorros, 
-                    dbo.fxTesSupervisa(CODIGO,BENEFICIARIO,monto,0,'T') AS duplicado, 
-                    dbo.fxTes_Cuenta_Verifica(T.id_banco,T.codigo,T.cta_ahorros) AS Cta_Verifica,
-                    T.Detalle1 + T.detalle2 AS Detalle, ISNULL(T.cod_App,'') AS AppId,
-                    IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
-                FROM Tes_Transacciones T 
-                INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
-                INNER JOIN Socios S ON T.CODIGO = S.CEDULA
-                WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc";
-            }
-
-            return @"
-            SELECT 
-                T.nsolicitud, T.codigo, T.beneficiario, T.monto, T.fecha_solicitud, T.cta_Ahorros,
-                0 AS duplicado,
-                dbo.fxTes_Cuenta_Verifica(T.id_banco,T.codigo,T.cta_ahorros) AS Cta_Verifica,
-                T.Detalle1 + T.detalle2 AS Detalle, ISNULL(T.cod_App,'') AS AppId,
-                IIF(T.user_hold IS NULL, 0, 1) AS Bloqueo, S.ESTADOACTUAL
-            FROM Tes_Transacciones T 
-            INNER JOIN Tes_Bancos B ON T.id_banco = B.id_banco
-            INNER JOIN Socios S ON T.CODIGO = S.CEDULA
-            WHERE T.estado = 'P' AND B.id_banco = @Banco AND T.Tipo = @TipoDoc";
+            return conn.Query<int>(FrmTesAutorizacionSql.Query_ConteoPendientes, new { Banco = idBanco, TipoDoc = tipoDoc }).FirstOrDefault();
         }
 
         private static (string sql, DynamicParameters param) BuildFinalQueryAndParams(
-        SqlConnection conn,
-        string baseQuery,
-        TesAutorizacionFiltros filtro,
-        DateTime fechaInicio,
-        DateTime fechaCorte,
-        int lenInterbancaria)
+ SqlConnection conn,
+ string baseQuery,
+ TesAutorizacionFiltros filtro,
+ DateTime fechaInicio,
+ DateTime fechaCorte,
+ int lenInterbancaria)
         {
             var sb = new StringBuilder(baseQuery);
             var p = BuildBaseParams(filtro, fechaInicio, fechaCorte);
 
-            AppendDateFilter(sb, filtro.todas_fechas);
-            AppendSolicitudFilter(sb, filtro.todas_solicitudes);
-            AppendBloqueoFilter(sb, filtro.casos_bloqueados);
 
             if (EsTransferencia(filtro.tipo_doc))
             {
@@ -219,14 +130,16 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 AppendMismoBancoFilter(conn, sb, filtro.mismo_banco, filtro.id_banco, lenInterbancaria);
             }
 
-            AppendAutorizacionFilter(sb,  filtro);
-            AppendDetalleFilter(sb,  filtro.detalle);
+            AppendAutorizacionFilter(sb, filtro);
+            AppendDetalleFilter(sb, filtro.detalle);
             AppendAppFilter(sb, filtro.appid);
 
             sb.Append(" ORDER BY T.nsolicitud ASC, T.fecha_solicitud ASC");
 
             return (sb.ToString(), p);
+        
         }
+
 
         private static DynamicParameters BuildBaseParams(TesAutorizacionFiltros f, DateTime ini, DateTime fin)
         {
@@ -243,29 +156,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             p.Add("Token", f.token);
             p.Add("Detalle", $"%{f.detalle}%");
             p.Add("CodigoApp", $"%{f.appid}%");
+            p.Add("Duplicados", f.duplicados ? 1 : 0);
+            p.Add("TodasFechas", f.todas_fechas ? 1 : 0);
+            p.Add("TodasSolicitudes", f.todas_solicitudes ? 1 : 0);
+            p.Add("IncluirBloqueados", f.casos_bloqueados ? 1 : 0);
             return p;
         }
 
-        private static void AppendDateFilter(StringBuilder sb, bool todasFechas)
-        {
-            if (!todasFechas)
-                sb.Append(" AND T.fecha_solicitud BETWEEN @FechaInicio AND @FechaFin ");
-        }
-
-        private static void AppendSolicitudFilter(StringBuilder sb, bool todasSolicitudes)
-        {
-            if (!todasSolicitudes)
-                sb.Append(" AND (T.nsolicitud >= @SolicitudInicio AND T.nsolicitud <= @SolicitudCorte) ");
-        }
-
-        private static void AppendBloqueoFilter(StringBuilder sb, bool incluirBloqueados)
-        {
-            if (!incluirBloqueados)
-                sb.Append(" AND T.fecha_hold IS NULL ");
-        }
-
         private static bool EsTransferencia(string? tipoDoc)
-            => string.Equals(tipoDoc, "TE", StringComparison.OrdinalIgnoreCase);
+         => string.Equals(tipoDoc, "TE", StringComparison.OrdinalIgnoreCase);
 
         private static void AppendCuentaTipoFilter(StringBuilder sb, string? tipoCuenta, int lenInter)
         {
@@ -286,11 +185,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         }
 
         private static void AppendMismoBancoFilter(
-            SqlConnection conn,
-            StringBuilder sb,
-            bool mismoBanco,
-            int idBanco,
-            int lenInter)
+      SqlConnection conn,
+      StringBuilder sb,
+      bool mismoBanco,
+      int idBanco,
+      int lenInter)
         {
             if (!mismoBanco) return;
 
@@ -314,11 +213,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             // Firmas
             sb.Append(@" AND T.FIRMAS_AUTORIZA_FECHA IS NULL 
-                     AND T.monto > B.firmas_hasta 
-                     AND dbo.fxTesAutorizaFirmaAcceso(@Usuario, @Banco, T.monto) = 1 ");
+                 AND T.monto > B.firmas_hasta 
+                 AND dbo.fxTesAutorizaFirmaAcceso(@Usuario, @Banco, T.monto) = 1 ");
         }
 
-        private static void AppendDetalleFilter(StringBuilder sb,  string? detalle)
+        private static void AppendDetalleFilter(StringBuilder sb, string? detalle)
         {
             if (!string.IsNullOrWhiteSpace(detalle))
                 sb.Append(" AND (T.DETALLE1 + T.DETALLE2) LIKE @Detalle ");
@@ -329,6 +228,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             if (!string.IsNullOrWhiteSpace(appId))
                 sb.Append(" AND ISNULL(T.COD_APP,'') LIKE @CodigoApp ");
         }
+
 
 
         /// <summary>
@@ -344,7 +244,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             using var conn = DbHelper.OpenConnection(_portalDB, nsolicitud.codEmpresa);
 
-            var solicitudes = DeserializeLista(nsolicitud.solicitudesLista);
+            var solicitudes = DbHelper.DeserializeOrNew<List<int>>(nsolicitud.solicitudesLista);
             try
             {
                 if (!UsuarioAutorizado(conn, nsolicitud))
@@ -366,22 +266,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             }
         }
 
-        // ====== Helpers de TES_Autorizacion_Aplicar ======
-        private static List<int> DeserializeLista(string? jsonLista)
-            => JsonConvert.DeserializeObject<List<int>>(jsonLista ?? "[]") ?? new List<int>();
-
         private static bool UsuarioAutorizado(SqlConnection conn, TesAutorizaParametros p)
         {
-            var SQL_AUTH = @"Select * From Tes_Autorizaciones Where Clave = @clave and nombre = @usuario and estado = 'A'";
+            var SQL_AUTH = FrmTesAutorizacionSql.Query_Autorizaciones;
             var auth = conn.QueryFirstOrDefault<TesAutorizacionData>(
                 SQL_AUTH, new { p.clave, p.usuario });
             return auth != null;
         }
 
         private (int codigo, string mensaje) ProcesarSolicitudes(
-        SqlConnection conn,
-        TesAutorizaParametros p,
-        IEnumerable<int> solicitudes)
+    SqlConnection conn,
+    TesAutorizaParametros p,
+    IEnumerable<int> solicitudes)
         {
             var bloqueadasPorMismoUsuario = new List<int>();
 
@@ -431,7 +327,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 usuario = p.usuario,
                 nsolicitud,
                 estado_sinpe = estadoSinpeDb,
-                tipo_giro_sinpe = tipoGiroSinpeDb
+                tipo_giro_sinpe = tipoGiroSinpeDb,
+                usuarioEspecial = p.autorizacionEspecialUsuario
             };
 
             conn.Execute(updateSql, parametros);
@@ -442,8 +339,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             // 0 = Emisión; distinto de 0 = Firmas
             return tipoAutorizacion == 0
-                ? (SQL_UPDATE_EMISION, SQL_BITACORA_EMISION)
-                : (SQL_UPDATE_FIRMAS, SQL_BITACORA_FIRMAS);
+                ? (FrmTesAutorizacionSql.SQL_UPDATE_EMISION, FrmTesAutorizacionSql.SQL_BITACORA_EMISION)
+                : (FrmTesAutorizacionSql.SQL_UPDATE_FIRMAS, FrmTesAutorizacionSql.SQL_BITACORA_FIRMAS);
         }
 
         private static (int? estadoSinpeDb, string tipoGiroSinpeDb) NormalizarSinpe(bool? estadoSinpe, string? tipoDocumento, string? tipoGiroSinpe)
@@ -473,8 +370,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
-                const string query = @"select rango_gen_Inicio, rango_gen_corte, firmas_gen_inicio, firmas_gen_corte 
-                    from TES_AUTORIZACIONES where NOMBRE = @usuario";
+                const string query = FrmTesAutorizacionSql.SQL_TES_AUTORIZACIONES_RANGOS;
 
                 return conn.Query<TesAutorizacionData>(query, new { usuario }).FirstOrDefault() ?? new TesAutorizacionData();
             });
@@ -492,10 +388,80 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
                 const string query = @"select firmas_autoriza_inicio,firmas_autoriza_corte from TES_BANCO_FIRMASAUT 
-                        where USUARIO = @usuario and ID_BANCO = @banco and aplica_rango_autorizacion = 1";
+                    where USUARIO = @usuario and ID_BANCO = @banco and aplica_rango_autorizacion = 1";
 
                 return conn.Query<TesFirmasAutData>(query, new { usuario, banco }).FirstOrDefault() ?? new TesFirmasAutData();
             });
         }
+
+        /// <summary>
+        /// Método para buscar y obtener los usuarios activos de la empresa especificada, con paginación y filtros.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+        public ErrorDto<TesAccesosUsuariosLista> TES_AutorizacionBuscar_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        {
+
+            return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
+            {
+                var result = new TesAccesosUsuariosLista
+                {
+                    total = 0,
+                    lista = new List<DropDownListaGenericaModel>()
+                };
+
+                var sortMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["item"] = 1,
+                    ["descripcion"] = 2,
+                    ["nombre"] = 1
+                };
+
+                var lazy = LazyLoadHelper.Build(filtros, sortMap);
+
+                // --- COUNT: SQL 100% estático ---
+                var sqlCount = @"
+        SELECT COUNT(1)
+        FROM usuarios
+        WHERE Estado = 'A'
+          AND (
+                @hasFilter = 0
+             OR  Nombre      LIKE @filtro
+             OR  descripcion LIKE @filtro
+          );";
+                result.total = conn.ExecuteScalar<int>(sqlCount, lazy.Params);
+
+                // --- DATA: SQL 100% estático; ORDER BY con CASE + flags ---
+                var sqlData = @"
+        WITH base AS (
+            SELECT
+                Nombre       AS item,
+                RTRIM(descripcion) AS descripcion
+            FROM usuarios
+            WHERE Estado = 'A'
+              AND (
+                    @hasFilter = 0
+                 OR  Nombre      LIKE @filtro
+                 OR  descripcion LIKE @filtro
+              )
+        )
+        SELECT item, descripcion
+        FROM base t
+        ORDER BY
+            -- item ASC/DESC
+            CASE WHEN @sortCode = 1 AND @isAsc = 1 THEN t.item END ASC,
+            CASE WHEN @sortCode = 1 AND @isAsc = 0 THEN t.item END DESC,
+            -- descripcion ASC/DESC
+            CASE WHEN @sortCode = 2 AND @isAsc = 1 THEN t.descripcion END ASC,
+            CASE WHEN @sortCode = 2 AND @isAsc = 0 THEN t.descripcion END DESC
+        OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
+
+                result.lista = conn.Query<DropDownListaGenericaModel>(sqlData, lazy.Params).ToList();
+                return result;
+            });
+
+        }
+
     }
 }

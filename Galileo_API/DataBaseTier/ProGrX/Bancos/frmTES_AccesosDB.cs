@@ -81,37 +81,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 
             try
             {
-                filtros ??= new FiltrosLazyLoadData();
 
-                // --- Parámetros y saneo ---
-                var hasFilter = !string.IsNullOrWhiteSpace(filtros.filtro);
-                var filtroValor = hasFilter ? $"%{filtros.filtro}%" : null;
-
-                // Whitelist: solo columnas permitidas
-                var sortField = (filtros.sortField ?? "item").Trim();
                 var sortMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
                 {
-                    // codificamos la columna a un entero para usar CASE en ORDER BY
-                    ["item"] = 1,          // t.item
-                    ["descripcion"] = 2,   // t.descripcion
-                    ["nombre"] = 1         // "nombre" mapea a 'item'
+                    ["item"] = 1,
+                    ["descripcion"] = 2,
+                    ["nombre"] = 1
                 };
-                if (!sortMap.TryGetValue(sortField, out var sortCode))
-                    sortCode = 1; // default seguro
 
-                var isAsc = filtros.sortOrder != 0; // true=ASC, false=DESC
-
-                // Paginación (ajusta si 'pagina' es número de página y no offset)
-                var pageSize = Math.Max(1, filtros.paginacion);
-                var offset = Math.Max(0, filtros.pagina);
-
-                var p = new DynamicParameters();
-                p.Add("@hasFilter", hasFilter ? 1 : 0, DbType.Int32);
-                p.Add("@filtro", filtroValor, DbType.String);
-                p.Add("@sortCode", sortCode, DbType.Int32);
-                p.Add("@isAsc", isAsc ? 1 : 0, DbType.Int32);
-                p.Add("@offset", offset, DbType.Int32);
-                p.Add("@pageSize", pageSize, DbType.Int32);
+                var lazy = LazyLoadHelper.Build(filtros, sortMap);
 
                 // --- COUNT: SQL 100% estático ---
                 var sqlCount = @"
@@ -123,7 +101,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                  OR  Nombre      LIKE @filtro
                  OR  descripcion LIKE @filtro
               );";
-                result.Result.total = conn.ExecuteScalar<int>(sqlCount, p);
+                result.Result.total = conn.ExecuteScalar<int>(sqlCount, lazy.Params);
 
                 // --- DATA: SQL 100% estático; ORDER BY con CASE + flags ---
                 var sqlData = @"
@@ -150,7 +128,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 CASE WHEN @sortCode = 2 AND @isAsc = 0 THEN t.descripcion END DESC
             OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
-                result.Result.lista = conn.Query<DropDownListaGenericaModel>(sqlData, p).ToList();
+                result.Result.lista = conn.Query<DropDownListaGenericaModel>(sqlData, lazy.Params).ToList();
             }
             catch (Exception ex)
             {

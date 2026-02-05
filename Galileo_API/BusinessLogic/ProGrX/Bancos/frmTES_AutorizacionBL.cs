@@ -2,8 +2,11 @@
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.TES;
 using Galileo_API.DataBaseTier.ProGrX.Bancos;
+using Newtonsoft.Json;
+using PdfSharp.Pdf.Filters;
 
 namespace Galileo_API.BusinessLogic
 {
@@ -53,6 +56,12 @@ namespace Galileo_API.BusinessLogic
         public ErrorDto<TesFirmasAutData> TES_AutorizacionFirma_Obtener(int CodEmpresa, string usuario, int banco)
         {
             return AutorizacionDb.TES_AutorizacionFirma_Obtener(CodEmpresa, usuario, banco);
+        }
+
+        public ErrorDto<TesAccesosUsuariosLista> TES_AutorizacionBuscar_Obtener(int CodEmpresa, string filtro)
+        {
+            FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(filtro) ?? new FiltrosLazyLoadData();
+            return AutorizacionDb.TES_AutorizacionBuscar_Obtener(CodEmpresa, filtros);
         }
     }
 }

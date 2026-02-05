@@ -1,5 +1,6 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
+using Galileo.Models.ProGrX.Bancos;
 using Galileo.Models.TES;
 using Galileo_API.BusinessLogic;
 using Microsoft.AspNetCore.Authorization;
@@ -54,6 +55,12 @@ namespace Galileo_API.Controllers
         public ErrorDto<TesFirmasAutData> TES_AutorizacionFirma_Obtener(int CodEmpresa, string usuario, int banco)
         {
             return AutorizacionBL.TES_AutorizacionFirma_Obtener(CodEmpresa, usuario, banco);
+        }
+
+        [HttpGet("TES_AutorizacionBuscar_Obtener")]
+        public ErrorDto<TesAccesosUsuariosLista> TES_AutorizacionBuscar_Obtener(int CodEmpresa, string filtro)
+        {
+            return AutorizacionBL.TES_AutorizacionBuscar_Obtener(CodEmpresa, filtro);
         }
     }
 }

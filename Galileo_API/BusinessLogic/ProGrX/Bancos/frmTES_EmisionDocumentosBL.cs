@@ -91,5 +91,10 @@ namespace Galileo_API.BusinessLogic.ProGrX.Bancos
         {
             return _db.TES_EmisionDocumento_Generar(CodEmpresa, filtros);
         }
+
+        public ErrorDto<int> ValidaUsuarioEspecial(int CodEmpresa, string usuario)
+        {
+            return _db.ValidaUsuarioEspecial(CodEmpresa, usuario);
+        }
     }
 }
