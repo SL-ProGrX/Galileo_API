@@ -116,42 +116,55 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                    var queryID = "SELECT ISNULL(MAX(PROYECTO_ID),0) + 1 FROM PE_PROYECTOS";
-                    var secuencia = connection.Query<int>(queryID).FirstOrDefault();
-                    proyectos.proyecto_id = secuencia;
+                var queryID = "SELECT ISNULL(MAX(PROYECTO_ID),0) + 1 FROM PE_PROYECTOS";
+                var secuencia = connection.Query<int>(queryID).FirstOrDefault();
+                proyectos.proyecto_id = secuencia;
 
-                    int activa = proyectos.activo ? 1 : 0;
+                int activa = proyectos.activo ? 1 : 0;
+                proyectos.programa_id = proyectos.programa_id == 0 ? proyectos.proyecto_id : proyectos.programa_id;
 
-                    proyectos.programa_id = proyectos.programa_id == 0 ? proyectos.proyecto_id : proyectos.programa_id;
-
-                    var query = $@"INSERT INTO PE_PROYECTOS
-                                ([PROYECTO_ID]
-                                ,[PROGRAMA_ID]
-                                ,[TIPO]
-                                ,[NOMBRE]
-                                ,[DESCRIPCION]
-                                ,[RESPONSABLE]
-                                ,[PRESUPUESTO]
-                                ,[FECHA_INICIO]
-                                ,[FECHA_FINALIZA]
-                                ,[ACTIVO]
-                                ,[REGISTRO_USUARIO]
-                                ,[REGISTRO_FECHA])
-                                VALUES
-                                ({proyectos.proyecto_id}
-                                ,{proyectos.programa_id}
-                                ,'{proyectos.tipo}'
-                                ,'{proyectos.nombre}'
-                                ,'{proyectos.descripcion}'
-                                ,'{proyectos.responsable}'
-                                ,{proyectos.presupuesto}
-                                ,'{proyectos.fecha_inicio}'
-                                ,'{proyectos.fecha_finaliza}'
-                                ,{activa}
-                                ,'{proyectos.registro_usuario}'
-                                ,GetDate())";
-                    error.Code = connection.Execute(query, proyectos);
-                    error.Description = secuencia.ToString();
+                var query = @"INSERT INTO PE_PROYECTOS
+                            ([PROYECTO_ID]
+                            ,[PROGRAMA_ID]
+                            ,[TIPO]
+                            ,[NOMBRE]
+                            ,[DESCRIPCION]
+                            ,[RESPONSABLE]
+                            ,[PRESUPUESTO]
+                            ,[FECHA_INICIO]
+                            ,[FECHA_FINALIZA]
+                            ,[ACTIVO]
+                            ,[REGISTRO_USUARIO]
+                            ,[REGISTRO_FECHA])
+                            VALUES
+                            (@proyecto_id
+                            ,@programa_id
+                            ,@tipo
+                            ,@nombre
+                            ,@descripcion
+                            ,@responsable
+                            ,@presupuesto
+                            ,@fecha_inicio
+                            ,@fecha_finaliza
+                            ,@activo
+                            ,@registro_usuario
+                            ,GetDate())";
+                var parameters = new
+                {
+                    proyecto_id = proyectos.proyecto_id,
+                    programa_id = proyectos.programa_id,
+                    tipo = proyectos.tipo,
+                    nombre = proyectos.nombre,
+                    descripcion = proyectos.descripcion,
+                    responsable = proyectos.responsable,
+                    presupuesto = proyectos.presupuesto,
+                    fecha_inicio = proyectos.fecha_inicio,
+                    fecha_finaliza = proyectos.fecha_finaliza,
+                    activo = activa,
+                    registro_usuario = proyectos.registro_usuario
+                };
+                error.Code = connection.Execute(query, parameters);
+                error.Description = secuencia.ToString();
             }
             catch (Exception ex)
             {
@@ -173,23 +186,37 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                    int activa = proyectos.activo ? 1 : 0;
+                int activa = proyectos.activo ? 1 : 0;
 
-                    var query = $@"UPDATE PE_PROYECTOS
-                                SET [PROGRAMA_ID] = {proyectos.programa_id}
-                                ,[TIPO] = '{proyectos.tipo}'
-                                ,[NOMBRE] = '{proyectos.nombre}'
-                                ,[DESCRIPCION] = '{proyectos.descripcion}'
-                                ,[RESPONSABLE] = '{proyectos.responsable}'
-                                ,[PRESUPUESTO] = {proyectos.presupuesto}
-                                ,[FECHA_INICIO] = '{proyectos.fecha_inicio}'
-                                ,[FECHA_FINALIZA] = '{proyectos.fecha_finaliza}'
-                                ,[ACTIVO] = {activa}
-                                ,[MODIFICA_USUARIO] = '{proyectos.modifica_usuario}'
-                                ,[MODIFICA_FECHA] = GetDate()
-                                WHERE PROYECTO_ID = {proyectos.proyecto_id}";
-                    error.Code = connection.Execute(query, proyectos);
-                    error.Description = proyectos.proyecto_id.ToString();
+                var query = @"UPDATE PE_PROYECTOS
+                            SET [PROGRAMA_ID] = @programa_id
+                            ,[TIPO] = @tipo
+                            ,[NOMBRE] = @nombre
+                            ,[DESCRIPCION] = @descripcion
+                            ,[RESPONSABLE] = @responsable
+                            ,[PRESUPUESTO] = @presupuesto
+                            ,[FECHA_INICIO] = @fecha_inicio
+                            ,[FECHA_FINALIZA] = @fecha_finaliza
+                            ,[ACTIVO] = @activo
+                            ,[MODIFICA_USUARIO] = @modifica_usuario
+                            ,[MODIFICA_FECHA] = GetDate()
+                            WHERE PROYECTO_ID = @proyecto_id";
+                var parameters = new
+                {
+                    programa_id = proyectos.programa_id,
+                    tipo = proyectos.tipo,
+                    nombre = proyectos.nombre,
+                    descripcion = proyectos.descripcion,
+                    responsable = proyectos.responsable,
+                    presupuesto = proyectos.presupuesto,
+                    fecha_inicio = proyectos.fecha_inicio,
+                    fecha_finaliza = proyectos.fecha_finaliza,
+                    activo = activa,
+                    modifica_usuario = proyectos.modifica_usuario,
+                    proyecto_id = proyectos.proyecto_id
+                };
+                error.Code = connection.Execute(query, parameters);
+                error.Description = proyectos.proyecto_id.ToString();
             }
             catch (Exception ex)
             {
@@ -211,19 +238,19 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                    //Buscar si proyectos tiene dependencias con objetivos
-                    var query = $@"SELECT COUNT(*) FROM PE_PROYECTOS_OBJETIVOS WHERE PROYECTO_ID = {proyecto_id}";
-                    var dependencias = connection.Query<int>(query).FirstOrDefault();
+                //Buscar si proyectos tiene dependencias con objetivos
+                var query = @"SELECT COUNT(*) FROM PE_PROYECTOS_OBJETIVOS WHERE PROYECTO_ID = @proyecto_id";
+                var dependencias = connection.Query<int>(query, new { proyecto_id }).FirstOrDefault();
 
-                    if (dependencias > 0)
-                    {
-                        error.Code = -1;
-                        error.Description = "No se puede eliminar el proyecto, tiene dependencias con objetivos";
-                        return error;
-                    }
+                if (dependencias > 0)
+                {
+                    error.Code = -1;
+                    error.Description = "No se puede eliminar el proyecto, tiene dependencias con objetivos";
+                    return error;
+                }
 
-                    query = $@"DELETE FROM PE_PROYECTOS WHERE PROYECTO_ID = {proyecto_id}";
-                    error.Code = connection.Execute(query);
+                query = @"DELETE FROM PE_PROYECTOS WHERE PROYECTO_ID = @proyecto_id";
+                error.Code = connection.Execute(query, new { proyecto_id });
             }
             catch (Exception ex)
             {
@@ -243,22 +270,22 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                    var query = $@"SELECT 
-                                    O.OBJETIVO_ID, 
-                                    O.NOMBRE AS OBJETIVO, 
-                                    PR.DESCRIPCION AS PERSPECTIVA, 
-                                    PL.DESCRIPCION AS 'PLAN',
-                                    PO.REGISTRO_USUARIO,
-                                    CASE 
-                                            WHEN PO.REGISTRO_USUARIO IS NULL THEN 0 
-                                            ELSE 1 
-                                        END AS asignado
-                                    FROM PE_OBJETIVOS O
-                                    LEFT JOIN PE_PERSPECTIVAS PR ON PR.PERSPECTIVA_ID = O.PERSPECTIVA_ID
-                                    LEFT JOIN PE_PLANES PL ON PL.PE_ID = PR.PE_ID
-                                    LEFT JOIN PE_PROYECTOS_OBJETIVOS PO ON PO.OBJETIVO_ID = O.OBJETIVO_ID AND PO.PROYECTO_ID = '{proyecto_id}'
-                                  order by PO.REGISTRO_USUARIO desc ";
-                    response.Result = connection.Query<PeProyectoObjetivosLista>(query).ToList();
+                var query = @"SELECT 
+                                O.OBJETIVO_ID, 
+                                O.NOMBRE AS OBJETIVO, 
+                                PR.DESCRIPCION AS PERSPECTIVA, 
+                                PL.DESCRIPCION AS 'PLAN',
+                                PO.REGISTRO_USUARIO,
+                                CASE 
+                                        WHEN PO.REGISTRO_USUARIO IS NULL THEN 0 
+                                        ELSE 1 
+                                    END AS asignado
+                                FROM PE_OBJETIVOS O
+                                LEFT JOIN PE_PERSPECTIVAS PR ON PR.PERSPECTIVA_ID = O.PERSPECTIVA_ID
+                                LEFT JOIN PE_PLANES PL ON PL.PE_ID = PR.PE_ID
+                                LEFT JOIN PE_PROYECTOS_OBJETIVOS PO ON PO.OBJETIVO_ID = O.OBJETIVO_ID AND PO.PROYECTO_ID = @proyecto_id
+                              order by PO.REGISTRO_USUARIO desc ";
+                response.Result = connection.Query<PeProyectoObjetivosLista>(query, new { proyecto_id }).ToList();
             }
             catch (Exception ex)
             {
@@ -281,24 +308,23 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                    var query = $@"INSERT INTO PE_PROYECTOS_OBJETIVOS
-                                ([PROYECTO_ID]
-                                ,[OBJETIVO_ID]
-                                ,[REGISTRO_USUARIO]
-                                ,[REGISTRO_FECHA])
-                                VALUES
-                                ({proyecto_id}
-                                ,{objetivo_id}
-                                ,'{usuario}'
-                                ,GetDate())";
-                    error.Code = connection.Execute(query);
+                var query = @"INSERT INTO PE_PROYECTOS_OBJETIVOS
+                            ([PROYECTO_ID]
+                            ,[OBJETIVO_ID]
+                            ,[REGISTRO_USUARIO]
+                            ,[REGISTRO_FECHA])
+                            VALUES
+                            (@proyecto_id
+                            ,@objetivo_id
+                            ,@usuario
+                            ,GetDate())";
+                error.Code = connection.Execute(query, new { proyecto_id, objetivo_id, usuario });
             }
             catch (Exception ex)
             {
                 error.Code = -1;
                 error.Description = ex.Message;
             }
-
             return error;
 
         }
