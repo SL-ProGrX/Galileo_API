@@ -20,6 +20,7 @@
         public string nsolicitud { get; set; } = string.Empty;
         public int id_banco { get; set; }
         public string bancodesc { get; set; } = string.Empty;
+        public string tipo { get; set; } = string.Empty;
         public string documento { get; set; } = string.Empty;
         public DateTime fecha { get; set; }
         public decimal monto { get; set; }

@@ -125,7 +125,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
                 const string query = @"exec spCajas_DepositosCuentasBancariasAut 'DP'";
-
                 return conn.Query<FrmCajasIdentificaSfDepositoDto>(query).ToList();
             });
         }
@@ -187,29 +186,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
             {
                 const string sql = @"
-            SELECT
-                Tra.DP_TRAMITE_ID      AS DpTramiteId,
-                Tra.NSolicitud         AS NSolicitud,
-                Tra.Id_Banco           AS IdBanco,
-                Bn.Descripcion         AS BancoDesc,
-                'DP'                   AS Tipo,
-                Tra.Documento          AS Documento,
-                Tra.Fecha              AS Fecha,
-                Tra.Monto              AS Monto,
-                Tra.Descripcion        AS Descripcion,
-                Tra.Registro_Fecha     AS RegistroFecha,
-                Tra.Registro_Usuario   AS RegistroUsuario
-            FROM TES_DEPOSITOS_TRAMITE Tra
-            INNER JOIN TES_BANCOS Bn ON Tra.Id_Banco = Bn.Id_Banco
-            WHERE
-                Tra.ID_REQUERIDA = 1
-                AND Tra.IDENTIFICADO = 0
-                AND Tra.Fecha >= @FechaDesde
-                AND Tra.Fecha <= @FechaHasta
-                AND Tra.Id_Banco = @BancoId
-                AND Tra.Monto BETWEEN @MontoInicio AND @MontoHasta
-                AND (@NumDoc IS NULL OR LTRIM(RTRIM(@NumDoc)) = '' OR Tra.Documento LIKE '%' + @NumDoc + '%')
-            ORDER BY Tra.Fecha DESC;";
+                        SELECT
+                            Tra.DP_TRAMITE_ID      AS dp_tramite_id,
+                            Tra.NSolicitud         AS nsolicitud,
+                            Tra.Id_Banco           AS id_banco,
+                            Bn.Descripcion         AS bancodesc,
+                            'DP'                   AS Tipo,
+                            Tra.Documento          AS Documento,
+                            Tra.Fecha              AS Fecha,
+                            Tra.Monto              AS Monto,
+                            Tra.Descripcion        AS Descripcion,
+                            Tra.Registro_Fecha     AS registro_fecha,
+                            Tra.Registro_Usuario   AS registro_usuario 
+                        FROM TES_DEPOSITOS_TRAMITE Tra
+                        INNER JOIN TES_BANCOS Bn ON Tra.Id_Banco = Bn.Id_Banco
+                        WHERE
+                            Tra.ID_REQUERIDA = 1
+                            AND Tra.IDENTIFICADO = 0
+                            AND Tra.Fecha >= @FechaDesde
+                            AND Tra.Fecha <= @FechaHasta
+                            AND Tra.Id_Banco = @BancoId
+                            AND Tra.Monto BETWEEN @MontoInicio AND @MontoHasta
+                            AND (@NumDoc IS NULL OR LTRIM(RTRIM(@NumDoc)) = '' OR Tra.Documento LIKE '%' + @NumDoc + '%')
+                        ORDER BY Tra.Fecha DESC;";
 
                 var fechaDesde = fechaInicio.Date; // 00:00:00
                 var fechaHasta = fechaCorte.Date.AddDays(1).AddTicks(-1); // 23:59:59.9999999
