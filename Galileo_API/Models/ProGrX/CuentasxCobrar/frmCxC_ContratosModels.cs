@@ -102,7 +102,7 @@
         public string Cod_Contrato { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
         public string? Notas { get; set; }
-        public short Activo { get; set; }
+        public short? Activo { get; set; }
         public int? Plazo { get; set; }
         public decimal? Tasa_Corriente { get; set; }
         public decimal? Tasa_Mora { get; set; }
