@@ -28,27 +28,42 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"insert into sif_comunicados (
-                                    fecha,
-                                    inicio,
-                                    corte,
-                                    usuario,
-                                    nota,
-                                    ffuente,
-                                    fcolor,
-                                    fcursiva,
-                                    fnegrita) VALUES  ( 
-                                        '{DateTime.Now}',
-                                        '{comunicado.inicio}',
-                                        '{comunicado.corte}',
-                                        '{comunicado.usuario}',
-                                        '{comunicado.nota}',
-                                         '{comunicado.ffuente}',
-                                         '{comunicado.fcolor}',
-                                         '{comunicado.fcursiva}',
-                                         '{comunicado.fnegrita}')";
+                const string query = @"INSERT INTO sif_comunicados (
+    fecha,
+    inicio,
+    corte,
+    usuario,
+    nota,
+    ffuente,
+    fcolor,
+    fcursiva,
+    fnegrita
+) VALUES (
+    @fecha,
+    @inicio,
+    @corte,
+    @usuario,
+    @nota,
+    @ffuente,
+    @fcolor,
+    @fcursiva,
+    @fnegrita
+);";
 
-                connection.Execute(query);
+                var p = new
+                {
+                    fecha = DateTime.Now,
+                    inicio = comunicado.inicio,
+                    corte = comunicado.corte,
+                    usuario = comunicado.usuario,
+                    nota = comunicado.nota,
+                    ffuente = comunicado.ffuente,
+                    fcolor = comunicado.fcolor,
+                    fcursiva = comunicado.fcursiva,
+                    fnegrita = comunicado.fnegrita
+                };
+
+                connection.Execute(query, p);
             }
             catch (Exception ex)
             {
@@ -82,29 +97,31 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = "";
 
-                if (tipo == "desc")
+                const string qDescFirst = @"select Top 1 COD_COMUNICADO from sif_comunicados
+order by COD_COMUNICADO desc;";
+
+                const string qDescPrev = @"select Top 1 COD_COMUNICADO from sif_comunicados
+where COD_COMUNICADO < @consecutivo
+order by COD_COMUNICADO desc;";
+
+                const string qAscNext = @"select Top 1 COD_COMUNICADO from sif_comunicados
+where COD_COMUNICADO > @consecutivo
+order by COD_COMUNICADO asc;";
+
+                string t = (tipo ?? string.Empty).Trim().ToLowerInvariant();
+
+                if (t == "desc")
                 {
                     if (consecutivo == 0)
-                    {
-                        query = $@"select Top 1 COD_COMUNICADO from sif_comunicados
-                                    order by COD_COMUNICADO desc";
-                    }
+                        response.Result = connection.ExecuteScalar<int>(qDescFirst);
                     else
-                    {
-                        query = $@"select Top 1 COD_COMUNICADO from sif_comunicados
-                                    where COD_COMUNICADO < {consecutivo} order by COD_COMUNICADO desc";
-                    }
-
+                        response.Result = connection.ExecuteScalar<int>(qDescPrev, new { consecutivo });
                 }
                 else
                 {
-                    query = $@"select Top 1 COD_COMUNICADO from sif_comunicados
-                                    where COD_COMUNICADO > {consecutivo} order by COD_COMUNICADO asc";
+                    response.Result = connection.ExecuteScalar<int>(qAscNext, new { consecutivo });
                 }
-
-                response.Result = connection.Query<int>(query).FirstOrDefault();
 
                 if (response.Result == 0)
                 {
@@ -137,9 +154,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"SELECT * FROM sif_comunicados WHERE COD_COMUNICADO = {Cod_Comunicado}";
+                const string query = "SELECT * FROM sif_comunicados WHERE COD_COMUNICADO = @Cod_Comunicado";
 
-                response.Result = connection.Query<SifComunicadoDto>(query).FirstOrDefault();
+                response.Result = connection.Query<SifComunicadoDto>(query, new { Cod_Comunicado }).FirstOrDefault();
                 if (response.Result == null)
                 {
                     response.Code = -2;
@@ -170,7 +187,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"SELECT * FROM sif_comunicados";
+                const string query = "SELECT * FROM sif_comunicados";
 
                 response.Result = connection.Query<SifComunicadoDto>(query).ToList();
                 if (response.Result == null || !response.Result.Any())
@@ -203,18 +220,29 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"UPDATE sif_comunicados SET 
-                                INICIO = '{request.inicio}'
-                                ,CORTE =  '{request.corte}'
-                                ,NOTA = '{request.nota}'
-                                ,FFUENTE =  '{request.ffuente}'
-                                ,FCOLOR =  '{request.fcolor}'
-                                ,FCURSIVA =  '{request.fcursiva}'
-                                ,FNEGRITA =  '{request.fnegrita}'
+                const string query = @"UPDATE sif_comunicados
+SET INICIO = @inicio,
+    CORTE = @corte,
+    NOTA = @nota,
+    FFUENTE = @ffuente,
+    FCOLOR = @fcolor,
+    FCURSIVA = @fcursiva,
+    FNEGRITA = @fnegrita
+WHERE COD_COMUNICADO = @cod_comunicado;";
 
-                                WHERE COD_COMUNICADO = {request.cod_comunicado}";
+                var p = new
+                {
+                    inicio = request.inicio,
+                    corte = request.corte,
+                    nota = request.nota,
+                    ffuente = request.ffuente,
+                    fcolor = request.fcolor,
+                    fcursiva = request.fcursiva,
+                    fnegrita = request.fnegrita,
+                    cod_comunicado = request.cod_comunicado
+                };
 
-                info.Code = connection.Query<int>(query).FirstOrDefault();
+                info.Code = connection.Execute(query, p);
                 info.Description = "Ok";
             }
             catch (Exception ex)
