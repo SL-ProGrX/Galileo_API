@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using System.Text;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
@@ -42,40 +43,70 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             };
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
 
-                //Busco Total
-                query = $@"select COUNT(COD_CONCEPTO) from SIF_CONCEPTOS";
-                result.Result.total = connection.Query<int>(query).FirstOrDefault();
+                var p = new DynamicParameters();
 
-                if (filtros.filtro != null)
+                // Filtro
+                bool hasFilter = TryAddConceptosFiltro(filtros, p);
+
+                // Total
+                const string countNoFilter = "select COUNT(COD_CONCEPTO) from SIF_CONCEPTOS;";
+                const string countWithFilter = @"select COUNT(COD_CONCEPTO)
+from SIF_CONCEPTOS
+where (COD_CONCEPTO LIKE @Q OR DESCRIPCION LIKE @Q OR REGISTRO_USUARIO LIKE @Q);";
+
+                result.Result.total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
+
+                // Sorting (sin SQL dinámico)
+                string sortField = NormalizeConceptosSortField(filtros?.sortField);
+                int sortDir = (filtros?.sortOrder ?? 1) == 0 ? 0 : 1; // 1=ASC, 0=DESC
+                p.Add("@SORTFIELD", sortField);
+                p.Add("@SORTDIR", sortDir);
+
+                // Paginación
+                int offset = Math.Max(0, filtros?.pagina ?? 0);
+                int fetch = Math.Max(1, filtros?.paginacion ?? 30);
+                p.Add("@OFFSET", offset);
+                p.Add("@FETCH", fetch);
+
+                var sb = new StringBuilder();
+                sb.Append(@"select
+   COD_CONCEPTO       AS cod_concepto,
+   DESCRIPCION        AS descripcion,
+   MOVIMIENTO_TIPO    AS movimiento_tipo,
+   NIVEL_ACCESO       AS nivel_acceso,
+   ACTIVO             AS activo,
+   REGISTRO_FECHA     AS registro_fecha,
+   REGISTRO_USUARIO   AS registro_usuario
+from SIF_CONCEPTOS");
+
+                if (hasFilter)
                 {
-                    filtros.filtro = " WHERE (COD_CONCEPTO LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR Registro_Usuario LIKE '%" + filtros.filtro + "%' ) ";
+                    sb.Append(" where (COD_CONCEPTO LIKE @Q OR DESCRIPCION LIKE @Q OR REGISTRO_USUARIO LIKE @Q) ");
                 }
 
-                if (filtros.sortField == "" || filtros.sortField == null)
-                {
-                    filtros.sortField = "COD_CONCEPTO";
-                }
+                sb.Append(@"
+ order by
+    CASE WHEN @SORTFIELD = 'COD_CONCEPTO'        AND @SORTDIR = 1 THEN COD_CONCEPTO END ASC,
+    CASE WHEN @SORTFIELD = 'COD_CONCEPTO'        AND @SORTDIR = 0 THEN COD_CONCEPTO END DESC,
+    CASE WHEN @SORTFIELD = 'DESCRIPCION'         AND @SORTDIR = 1 THEN DESCRIPCION END ASC,
+    CASE WHEN @SORTFIELD = 'DESCRIPCION'         AND @SORTDIR = 0 THEN DESCRIPCION END DESC,
+    CASE WHEN @SORTFIELD = 'MOVIMIENTO_TIPO'     AND @SORTDIR = 1 THEN MOVIMIENTO_TIPO END ASC,
+    CASE WHEN @SORTFIELD = 'MOVIMIENTO_TIPO'     AND @SORTDIR = 0 THEN MOVIMIENTO_TIPO END DESC,
+    CASE WHEN @SORTFIELD = 'NIVEL_ACCESO'        AND @SORTDIR = 1 THEN NIVEL_ACCESO END ASC,
+    CASE WHEN @SORTFIELD = 'NIVEL_ACCESO'        AND @SORTDIR = 0 THEN NIVEL_ACCESO END DESC,
+    CASE WHEN @SORTFIELD = 'ACTIVO'              AND @SORTDIR = 1 THEN ACTIVO END ASC,
+    CASE WHEN @SORTFIELD = 'ACTIVO'              AND @SORTDIR = 0 THEN ACTIVO END DESC,
+    CASE WHEN @SORTFIELD = 'REGISTRO_FECHA'      AND @SORTDIR = 1 THEN REGISTRO_FECHA END ASC,
+    CASE WHEN @SORTFIELD = 'REGISTRO_FECHA'      AND @SORTDIR = 0 THEN REGISTRO_FECHA END DESC,
+    CASE WHEN @SORTFIELD = 'REGISTRO_USUARIO'    AND @SORTDIR = 1 THEN REGISTRO_USUARIO END ASC,
+    CASE WHEN @SORTFIELD = 'REGISTRO_USUARIO'    AND @SORTDIR = 0 THEN REGISTRO_USUARIO END DESC,
+    COD_CONCEPTO ASC");
 
-                query = $@"
-                            select
-                               COD_CONCEPTO       AS cod_concepto,
-                               DESCRIPCION        AS descripcion,
-                               MOVIMIENTO_TIPO    AS movimiento_tipo,
-                               NIVEL_ACCESO       AS nivel_acceso,
-                               ACTIVO             AS activo,
-                               REGISTRO_FECHA     AS registro_fecha,
-                               REGISTRO_USUARIO   AS registro_usuario
-                               from SIF_CONCEPTOS
-                                        {filtros.filtro} 
-                                     order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                         OFFSET {filtros.pagina} ROWS 
-                                         FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                result.Result.lista = connection.Query<SifConceptoData>(query).ToList();
+                sb.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
+
+                result.Result.lista = connection.Query<SifConceptoData>(sb.ToString(), p).ToList();
             }
             catch (Exception ex)
             {
@@ -103,28 +134,32 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 Description = "Ok",
                 Result = new List<SifConceptoData>()
             };
-
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
-                if (filtros.filtro != null)
+
+                var p = new DynamicParameters();
+                bool hasFilter = TryAddConceptosFiltro(filtros, p);
+
+                var sb = new StringBuilder();
+                sb.Append(@"select
+   COD_CONCEPTO       AS cod_concepto,
+   DESCRIPCION        AS descripcion,
+   MOVIMIENTO_TIPO    AS movimiento_tipo,
+   NIVEL_ACCESO       AS nivel_acceso,
+   ACTIVO             AS activo,
+   REGISTRO_FECHA     AS registro_fecha,
+   REGISTRO_USUARIO   AS registro_usuario
+from SIF_CONCEPTOS");
+
+                if (hasFilter)
                 {
-                    filtros.filtro = " WHERE ( COD_CONCEPTO LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR Registro_Usuario LIKE '%" + filtros.filtro + "%' ) ";
+                    sb.Append(" where (COD_CONCEPTO LIKE @Q OR DESCRIPCION LIKE @Q OR REGISTRO_USUARIO LIKE @Q) ");
                 }
-                query = $@"select     COD_CONCEPTO       AS cod_concepto,
-                               DESCRIPCION        AS descripcion,
-                               MOVIMIENTO_TIPO    AS movimiento_tipo,
-                               NIVEL_ACCESO       AS nivel_acceso,
-                               ACTIVO             AS activo,
-                               REGISTRO_FECHA     AS registro_fecha,
-                               REGISTRO_USUARIO   AS registro_usuario
-                               from SIF_CONCEPTOS
-                                        {filtros.filtro} 
-                                     order by COD_CONCEPTO";
-                result.Result = connection.Query<SifConceptoData>(query).ToList();
+
+                sb.Append(" order by COD_CONCEPTO");
+
+                result.Result = connection.Query<SifConceptoData>(sb.ToString(), p).ToList();
             }
             catch (Exception ex)
             {
@@ -193,10 +228,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(stringConn);
                 // Verifico si existe usuario activo
-                var qUsuario = $@"select count(Nombre) 
-                              from usuarios 
-                              where estado = 'A' 
-                                and UPPER(Nombre) = @usuario";
+                const string qUsuario = @"select count(Nombre)
+from usuarios
+where estado = 'A'
+  and UPPER(Nombre) = @usuario";
                 int existeuser = connection.QueryFirstOrDefault<int>(qUsuario, new { usuario = usuario.ToUpper() });
 
                 if (existeuser == 0)
@@ -207,10 +242,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 }
 
                 // Verifico si existe el concepto
-                var query = $@"select isnull(count(*),0) as Existe 
-                          from SIF_CONCEPTOS  
-                          where UPPER(COD_CONCEPTO) = '{concepto.cod_concepto.ToUpper()}' ";
-                var existe = connection.QueryFirstOrDefault<int>(query, new { cod = concepto.cod_concepto.ToUpper() });
+                const string qExiste = @"select isnull(count(*),0) as Existe
+from SIF_CONCEPTOS
+where UPPER(COD_CONCEPTO) = @cod;";
+                int existe = connection.QueryFirstOrDefault<int>(qExiste, new { cod = (concepto.cod_concepto ?? string.Empty).ToUpper() });
 
                 if (concepto.isNew)
                 {
@@ -362,8 +397,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"SELECT count(COD_CONCEPTO) FROM SIF_CONCEPTOS WHERE UPPER(COD_CONCEPTO) = @COD_CONCEPTO";
-                var existe = connection.QueryFirstOrDefault<int>(query, new { cod_parentesco = cod_concepto.ToUpper() });
+                const string query = "SELECT count(COD_CONCEPTO) FROM SIF_CONCEPTOS WHERE UPPER(COD_CONCEPTO) = @COD_CONCEPTO";
+                int existe = connection.QueryFirstOrDefault<int>(query, new { COD_CONCEPTO = (cod_concepto ?? string.Empty).ToUpper() });
 
                 if (existe > 0)
                 {
@@ -374,7 +409,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 {
                     result.Code = 0;
                     result.Description = "El código de concepto es válido.";
-
                 }
             }
             catch (Exception ex)
@@ -501,6 +535,32 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 result.Description = ex.Message;
             }
             return result;
+        }
+        // --- Helper methods for filtros and sort normalization ---
+        private static bool TryAddConceptosFiltro(FiltrosLazyLoadData filtros, DynamicParameters p)
+        {
+            string q = (filtros?.filtro ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(q))
+                return false;
+
+            p.Add("@Q", $"%{q}%");
+            return true;
+        }
+
+        private static string NormalizeConceptosSortField(string? sortField)
+        {
+            string sf = (sortField ?? string.Empty).Trim().ToUpperInvariant();
+            return sf switch
+            {
+                "COD_CONCEPTO" => "COD_CONCEPTO",
+                "DESCRIPCION" => "DESCRIPCION",
+                "MOVIMIENTO_TIPO" => "MOVIMIENTO_TIPO",
+                "NIVEL_ACCESO" => "NIVEL_ACCESO",
+                "ACTIVO" => "ACTIVO",
+                "REGISTRO_FECHA" => "REGISTRO_FECHA",
+                "REGISTRO_USUARIO" => "REGISTRO_USUARIO",
+                _ => "COD_CONCEPTO"
+            };
         }
     }
 }

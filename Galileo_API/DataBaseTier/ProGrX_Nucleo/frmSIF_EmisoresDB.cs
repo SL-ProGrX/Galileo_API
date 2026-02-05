@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
+using System.Text;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models;
@@ -41,31 +42,55 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
-                    // Busco Total
-                    query = $@"SELECT COUNT(cod_emisor) FROM sif_emisores";
-                    result.Result.total = connection.Query<int>(query).FirstOrDefault();
 
-                    if (!string.IsNullOrEmpty(filtros.filtro))
-                    {
-                        filtros.filtro = " WHERE ( cod_emisor LIKE '%" + filtros.filtro + "%' " +
-                            " OR descripcion LIKE '%" + filtros.filtro + "%' ) ";
-                    }
+                var p = new DynamicParameters();
 
-                    if (string.IsNullOrEmpty(filtros.sortField))
-                    {
-                        filtros.sortField = "cod_emisor";
-                    }
+                // Filtro
+                bool hasFilter = TryAddEmisoresFiltro(filtros, p);
 
-                    query = $@"SELECT cod_emisor, descripcion, activo
-                                FROM sif_emisores
-                                {filtros.filtro}
-                                ORDER BY {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                OFFSET {filtros.pagina} ROWS 
-                                FETCH NEXT {filtros.paginacion} ROWS ONLY ";
+                // Total
+                const string countNoFilter = "SELECT COUNT(cod_emisor) FROM sif_emisores;";
+                const string countWithFilter = @"SELECT COUNT(cod_emisor)
+                                                FROM sif_emisores
+                                                WHERE (cod_emisor LIKE @Q OR descripcion LIKE @Q);";
 
-                    result.Result.lista = connection.Query<SifEmisoresData>(query).ToList();
+                result.Result.total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
+
+                // Sorting (sin SQL dinámico)
+                string sortField = NormalizeEmisoresSortField(filtros?.sortField);
+                int sortDir = (filtros?.sortOrder ?? 1) == 0 ? 0 : 1; // 1=ASC, 0=DESC
+                p.Add("@SORTFIELD", sortField);
+                p.Add("@SORTDIR", sortDir);
+
+                // Paginación
+                int offset = Math.Max(0, filtros?.pagina ?? 0);
+                int fetch = Math.Max(1, filtros?.paginacion ?? 30);
+                p.Add("@OFFSET", offset);
+                p.Add("@FETCH", fetch);
+
+                var sb = new StringBuilder();
+                sb.Append(@"SELECT cod_emisor, descripcion, activo
+FROM sif_emisores");
+
+                if (hasFilter)
+                {
+                    sb.Append(" WHERE (cod_emisor LIKE @Q OR descripcion LIKE @Q) ");
+                }
+
+                sb.Append(@"
+ ORDER BY
+    CASE WHEN @SORTFIELD = 'COD_EMISOR'   AND @SORTDIR = 1 THEN cod_emisor END ASC,
+    CASE WHEN @SORTFIELD = 'COD_EMISOR'   AND @SORTDIR = 0 THEN cod_emisor END DESC,
+    CASE WHEN @SORTFIELD = 'DESCRIPCION'  AND @SORTDIR = 1 THEN descripcion END ASC,
+    CASE WHEN @SORTFIELD = 'DESCRIPCION'  AND @SORTDIR = 0 THEN descripcion END DESC,
+    CASE WHEN @SORTFIELD = 'ACTIVO'       AND @SORTDIR = 1 THEN activo END ASC,
+    CASE WHEN @SORTFIELD = 'ACTIVO'       AND @SORTDIR = 0 THEN activo END DESC,
+    cod_emisor ASC");
+
+                sb.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
+
+                result.Result.lista = connection.Query<SifEmisoresData>(sb.ToString(), p).ToList();
             }
             catch (Exception ex)
             {
@@ -95,18 +120,23 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
-                    if (!string.IsNullOrEmpty(filtros.filtro))
-                    {
-                        filtros.filtro = " WHERE ( cod_emisor LIKE '%" + filtros.filtro + "%' " +
-                            " OR descripcion LIKE '%" + filtros.filtro + "%' ) ";
-                    }
-                    query = $@"SELECT cod_emisor, descripcion, activo
-                                FROM sif_emisores
-                                {filtros.filtro}
-                                ORDER BY cod_emisor";
-                    result.Result = connection.Query<SifEmisoresData>(query).ToList();
+
+                var p = new DynamicParameters();
+                bool hasFilter = TryAddEmisoresFiltro(filtros, p);
+
+                var sb = new StringBuilder();
+                sb.Append(@"SELECT cod_emisor, descripcion, activo
+FROM sif_emisores");
+
+                if (hasFilter)
+                {
+                    sb.Append(" WHERE (cod_emisor LIKE @Q OR descripcion LIKE @Q) ");
+                }
+
+                sb.Append(" ORDER BY cod_emisor");
+
+                result.Result = connection.Query<SifEmisoresData>(sb.ToString(), p).ToList();
             }
             catch (Exception ex)
             {
@@ -253,25 +283,27 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                    var query = @"SELECT COUNT(*) FROM sif_emisores 
-                                  WHERE UPPER(cod_emisor) = @cod_emisor
-                                     OR UPPER(descripcion) = @descripcion";
-                    var existe = connection.QueryFirstOrDefault<int>(query, new
-                    {
-                        cod_emisor = emisor.cod_emisor != null ? emisor.cod_emisor.ToUpper() : string.Empty,
-                        descripcion = emisor.descripcion != null ? emisor.descripcion.ToUpper() : string.Empty
-                    });
 
-                    if (existe > 0)
-                    {
-                        result.Code = -1;
-                        result.Description = "Ya existe un emisor con ese c�digo o descripci�n.";
-                    }
-                    else
-                    {
-                        result.Code = 0;
-                        result.Description = "El código y la descripción de emisor son válidos.";
-                    }
+                const string query = @"SELECT COUNT(*) FROM sif_emisores
+WHERE UPPER(cod_emisor) = @cod_emisor
+   OR UPPER(descripcion) = @descripcion";
+
+                int existe = connection.QueryFirstOrDefault<int>(query, new
+                {
+                    cod_emisor = (emisor.cod_emisor ?? string.Empty).ToUpper(),
+                    descripcion = (emisor.descripcion ?? string.Empty).ToUpper()
+                });
+
+                if (existe > 0)
+                {
+                    result.Code = -1;
+                    result.Description = "Ya existe un emisor con ese código o descripción.";
+                }
+                else
+                {
+                    result.Code = 0;
+                    result.Description = "El código y la descripción de emisor son válidos.";
+                }
             }
             catch (Exception ex)
             {
@@ -450,6 +482,29 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 result.Description = ex.Message;
             }
             return result;
+        }
+
+        private static bool TryAddEmisoresFiltro(FiltrosLazyLoadData filtros, DynamicParameters p)
+        {
+            string q = (filtros?.filtro ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(q))
+                return false;
+
+            p.Add("@Q", $"%{q}%");
+            return true;
+        }
+
+        private static string NormalizeEmisoresSortField(string? sortField)
+        {
+            string sf = (sortField ?? string.Empty).Trim().ToUpperInvariant();
+
+            return sf switch
+            {
+                "COD_EMISOR" => "COD_EMISOR",
+                "DESCRIPCION" => "DESCRIPCION",
+                "ACTIVO" => "ACTIVO",
+                _ => "COD_EMISOR"
+            };
         }
     }
 }
