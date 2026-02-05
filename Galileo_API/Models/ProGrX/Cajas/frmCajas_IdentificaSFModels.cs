@@ -2,8 +2,8 @@
 {
     public class TesDepositoIdentificarDto
     {
-        public long DepositoId { get; set; }
-        public long BancoId { get; set; }
+        public long DepositoId { get; set; } = 0;
+        public long BancoId { get; set; } = 0;
         public string Documento { get; set; } = "";
     }
 
