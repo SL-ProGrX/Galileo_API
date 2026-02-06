@@ -49,7 +49,7 @@
 
     public class PolizaPersonaOperacionPolizaParams
     {
-        public int Operacion { get; set; }
+        public int? Operacion { get; set; }
     }
 
     public class PolizaPersonaReclamoDto
@@ -96,7 +96,7 @@
 
     public class PolizaPersonaReclamoParams
     {
-        public int Operacion { get; set; }
-        public int OperacionPoliza { get; set; }
+        public int? Operacion { get; set; }
+        public int? OperacionPoliza { get; set; }
     }
 }
