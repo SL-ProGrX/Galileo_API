@@ -18,67 +18,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             _Security_MainDB = new MSecurityMainDb(_config);
         }
 
-        private static string BuildWhereClause(FiltrosLazyLoadData filtros, DynamicParameters parameters)
-        {
-            var search = filtros?.filtro?.Trim();
-            if (string.IsNullOrWhiteSpace(search))
-            {
-                return string.Empty;
-            }
-
-            parameters.Add("search", $"%{search}%");
-            return " WHERE (COD_ENTIDAD_PAGO LIKE @search OR descripcion LIKE @search OR Registro_Usuario LIKE @search) ";
-        }
-
-        private const string COD_ENTIDAD_PAGO_COLUMN = "COD_ENTIDAD_PAGO";
-        private const string REGISTRO_USUARIO_COLUMN = "Registro_Usuario";
-        private const string REGISTRO_FECHA_COLUMN = "Registro_Fecha";
-
-        private static string BuildOrderByClause(string? sortField, int sortOrder)
-        {
-            // Whitelist allowed columns to avoid SQL injection in ORDER BY
-            var field = (sortField ?? string.Empty).Trim();
-
-            // Map UI fields to actual column names
-            var safeField = field switch
-            {
-                "cod_entidad_pago" => COD_ENTIDAD_PAGO_COLUMN,
-                "COD_ENTIDAD_PAGO" => COD_ENTIDAD_PAGO_COLUMN,
-
-                "descripcion" => "descripcion",
-                "DESCRIPCION" => "descripcion",
-
-                "activa" => "activa",
-                "ACTIVA" => "activa",
-
-                "registro_fecha" => REGISTRO_FECHA_COLUMN,
-                "REGISTRO_FECHA" => REGISTRO_FECHA_COLUMN,
-                "Registro_Fecha" => REGISTRO_FECHA_COLUMN,
-
-                "registro_usuario" => REGISTRO_USUARIO_COLUMN,
-                "REGISTRO_USUARIO" => REGISTRO_USUARIO_COLUMN,
-                "Registro_Usuario" => REGISTRO_USUARIO_COLUMN,
-
-                _ => COD_ENTIDAD_PAGO_COLUMN
-            };
-
-            var direction = (sortOrder == 0) ? "DESC" : "ASC";
-            return $" ORDER BY {safeField} {direction} ";
-        }
-
-        private static string BuildPaginationClause(FiltrosLazyLoadData filtros)
-        {
-            // Keep existing behavior: filtros.pagina is treated as ROW OFFSET
-            var offset = filtros?.pagina ?? 0;
-            var fetch = filtros?.paginacion ?? 0;
-
-            if (fetch <= 0)
-            {
-                return string.Empty;
-            }
-
-            return $" OFFSET {offset} ROWS FETCH NEXT {fetch} ROWS ONLY ";
-        }
 
         /// <summary>
         /// Lista las entidades pagadoras existentes con paginación y filtros.
@@ -103,16 +42,25 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(stringConn);
 
-                var parameters = new DynamicParameters();
-                var whereClause = BuildWhereClause(filtros, parameters);
-                var orderByClause = BuildOrderByClause(filtros?.sortField, filtros?.sortOrder ?? 0);
-                var paginationClause = BuildPaginationClause(filtros ?? new FiltrosLazyLoadData());
+                var search = filtros?.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 0; // 0=DESC, 1=ASC (según UI)
+
+                var offset = filtros?.pagina ?? 0;
+                var fetch = filtros?.paginacion ?? 0;
+                if (fetch <= 0)
+                {
+                    // Evita SQL inválido y mantiene comportamiento cercano al anterior (sin paginación real)
+                    fetch = int.MaxValue;
+                }
 
                 // Total (keeps existing behavior: total of all rows, not filtered)
                 const string totalQuery = @"SELECT COUNT(COD_ENTIDAD_PAGO) FROM SIF_ENTIDADES_PAGO";
                 result.Result.total = connection.Query<int>(totalQuery).FirstOrDefault();
 
-                var query = $@"
+                const string query = @"
                             SELECT
                                 COD_ENTIDAD_PAGO   AS cod_entidad_pago,
                                 descripcion        AS descripcion,
@@ -120,11 +68,37 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                 Registro_Fecha     AS registro_fecha,
                                 Registro_Usuario   AS registro_usuario
                             FROM SIF_ENTIDADES_PAGO
-                            {whereClause}
-                            {orderByClause}
-                            {paginationClause}";
+                            WHERE (@search IS NULL
+                                   OR COD_ENTIDAD_PAGO LIKE @search
+                                   OR descripcion LIKE @search
+                                   OR Registro_Usuario LIKE @search)
+                            ORDER BY
+                                -- ASC
+                                CASE WHEN @sortOrder = 1 AND @sortField = 'cod_entidad_pago' THEN COD_ENTIDAD_PAGO END ASC,
+                                CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion' THEN descripcion END ASC,
+                                CASE WHEN @sortOrder = 1 AND @sortField = 'activa' THEN CONVERT(int, activa) END ASC,
+                                CASE WHEN @sortOrder = 1 AND @sortField = 'registro_fecha' THEN Registro_Fecha END ASC,
+                                CASE WHEN @sortOrder = 1 AND @sortField = 'registro_usuario' THEN Registro_Usuario END ASC,
 
-                result.Result.lista = connection.Query<SifEntidadesCancelaData>(query, parameters).ToList();
+                                -- DESC
+                                CASE WHEN @sortOrder = 0 AND @sortField = 'cod_entidad_pago' THEN COD_ENTIDAD_PAGO END DESC,
+                                CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion' THEN descripcion END DESC,
+                                CASE WHEN @sortOrder = 0 AND @sortField = 'activa' THEN CONVERT(int, activa) END DESC,
+                                CASE WHEN @sortOrder = 0 AND @sortField = 'registro_fecha' THEN Registro_Fecha END DESC,
+                                CASE WHEN @sortOrder = 0 AND @sortField = 'registro_usuario' THEN Registro_Usuario END DESC,
+
+                                -- Fallback determinístico
+                                COD_ENTIDAD_PAGO ASC
+                            OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                result.Result.lista = connection.Query<SifEntidadesCancelaData>(query, new
+                {
+                    search = searchLike,
+                    sortField,
+                    sortOrder,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -155,20 +129,24 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var parameters = new DynamicParameters();
-                var whereClause = BuildWhereClause(filtros, parameters);
 
-                var query = $@"SELECT
+                var search = filtros?.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
+                const string query = @"SELECT
                                 COD_ENTIDAD_PAGO   AS cod_entidad_pago,
                                 descripcion        AS descripcion,
                                 activa             AS activa,
                                 Registro_Fecha     AS registro_fecha,
                                 Registro_Usuario   AS registro_usuario
                             FROM SIF_ENTIDADES_PAGO
-                            {whereClause}
+                            WHERE (@search IS NULL
+                                   OR COD_ENTIDAD_PAGO LIKE @search
+                                   OR descripcion LIKE @search
+                                   OR Registro_Usuario LIKE @search)
                             ORDER BY COD_ENTIDAD_PAGO";
 
-                result.Result = connection.Query<SifEntidadesCancelaData>(query, parameters).ToList();
+                result.Result = connection.Query<SifEntidadesCancelaData>(query, new { search = searchLike }).ToList();
             }
             catch (Exception ex)
             {
