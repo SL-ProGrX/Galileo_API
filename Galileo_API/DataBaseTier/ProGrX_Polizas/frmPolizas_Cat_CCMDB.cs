@@ -16,6 +16,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             _portalDb = new PortalDB(config);
         }
 
+        /// <summary>
+        /// Lista el catálogo de pólizas.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Lista genérica de pólizas (item, descripcion).</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> PolizasCatalogo_Listar(int codEmpresa)
         {
             var query = @"
@@ -26,6 +31,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Obtiene la lista de coberturas, motivos o causas configuradas para una póliza y tipo.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codPoliza">Código de la póliza.</param>
+        /// <param name="tipo">Tipo de configuración (Cobertura, Motivo, Causa, etc.).</param>
+        /// <returns>Lista de configuraciones asociadas.</returns>
         public ErrorDto<List<PolizasCoberturasMotivosCausasDto>> PolizasConceptosConfigListas(int codEmpresa, string codPoliza, string tipo)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -39,6 +51,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             });
         }
 
+        /// <summary>
+        /// Agrega o actualiza una cobertura, motivo o causa para una póliza.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">
+        /// <returns>Resultado de la operación (Pass, Mensaje, Movimiento, IdLLave).</returns>
         public ErrorDto<PolizasConceptosConfigAddResult> PolizasConceptosConfigAdd(int codEmpresa, PolizasConceptosConfigAddParams param)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
@@ -47,13 +65,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     "spPolizas_Conceptos_Config_Add",
                     new
                     {
-                        Id = param.Id,
+                        param.Id,
                         Poliza = param.Cod_Poliza,
-                        Codigo = param.Codigo,
-                        Descripcion = param.Descripcion,
-                        Activo = param.Activo,
-                        Usuario = param.Usuario,
-                        Tipo = param.Tipo
+                        param.Codigo,
+                        param.Descripcion,
+                        param.Activo,
+                        param.Usuario,
+                        param.Tipo
                     },
                     commandType: System.Data.CommandType.StoredProcedure
                 );
@@ -61,13 +79,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             });
         }
 
+        /// <summary>
+        /// Elimina una cobertura, motivo o causa de una póliza.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">
+        /// <returns>Resultado de la operación (Pass, Mensaje, Movimiento, IdLLave).</returns>
         public ErrorDto<PolizasConceptosConfigAddResult> PolizasConceptosConfigDel(int codEmpresa, PolizasConceptosConfigDelParams param)
         {
             return DbHelper.WithConn(_portalDb, codEmpresa, conn =>
             {
                 var result = conn.QueryFirstOrDefault<PolizasConceptosConfigAddResult>(
                     "spPolizas_Conceptos_Config_Del",
-                    new { Id = param.Id, Usuario = param.Usuario },
+                    new { param.Id, param.Usuario },
                     commandType: System.Data.CommandType.StoredProcedure
                 );
                 return result!;
