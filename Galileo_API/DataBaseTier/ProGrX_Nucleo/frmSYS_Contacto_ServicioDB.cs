@@ -142,31 +142,19 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(GetSafeConnectionString());
 
-                string query = (filtros?.filtro ?? "").Trim();
-                string sortField = string.IsNullOrWhiteSpace(filtros?.sortField)
-                    ? "P.APELLIDO_1, P.APELLIDO_2, P.NOMBRE"
-                    : filtros!.sortField!;
-                string sortDir = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
-                bool hasQuery = !string.IsNullOrWhiteSpace(query);
-                bool looksLikeId = hasQuery && query.All(ch => char.IsDigit(ch) || ch == '-' || ch == ' ');
+                var rawQuery = (filtros?.filtro ?? string.Empty).Trim();
+                var query = string.IsNullOrWhiteSpace(rawQuery) ? null : rawQuery;
 
-                string where = " WHERE UPPER(P.COD_PAIS) = @countryCode ";
-                if (!string.IsNullOrWhiteSpace(identificacion))
-                    where += " AND UPPER(P.IDENTIFICACION) = @ident ";
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
 
-                if (hasQuery)
-                {
-                    if (looksLikeId)
-                        where += " AND P.IDENTIFICACION LIKE @queryPrefix ";
-                    else
-                        where += @"
-                          AND ( P.IDENTIFICACION LIKE '%' + @query + '%'
-                             OR  P.NOMBRE         LIKE '%' + @query + '%'
-                             OR  P.APELLIDO_1     LIKE '%' + @query + '%'
-                             OR  P.APELLIDO_2     LIKE '%' + @query + '%')";
-                                        }
+                var identParam = string.IsNullOrWhiteSpace(identificacion) ? null : identificacion.Trim().ToUpper();
+                var countryCode = (codPais ?? "CRC").Trim().ToUpper();
 
-                                        string sql = $@"
+                var looksLikeId = query != null && query.All(ch => char.IsDigit(ch) || ch == '-' || ch == ' ');
+                var queryPrefix = query == null ? null : query + "%";
+
+                const string sql = @"
                         SELECT
                             P.IDENTIFICACION                               AS Identificacion,
                             P.COD_PAIS                                     AS CodPais,
@@ -197,19 +185,50 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         LEFT JOIN dbo.SYS_PROVINCIAS PR ON PR.COD_PAIS = P.COD_PAIS AND PR.COD_PROVINCIA = P.COD_PROVINCIA
                         LEFT JOIN dbo.SYS_CANTONES   CA ON CA.COD_PAIS = P.COD_PAIS AND CA.COD_PROVINCIA = P.COD_PROVINCIA AND CA.COD_CANTON = P.COD_CANTON
                         LEFT JOIN dbo.SYS_DISTRITOS  DI ON DI.COD_PAIS = P.COD_PAIS AND DI.COD_PROVINCIA = P.COD_PROVINCIA AND DI.COD_CANTON = P.COD_CANTON AND DI.COD_DISTRITO = P.COD_DISTRITO
-                        {where}
-                        ORDER BY {sortField} {sortDir};";
+                        WHERE UPPER(P.COD_PAIS) = @countryCode
+                          AND (@ident IS NULL OR UPPER(P.IDENTIFICACION) = @ident)
+                          AND (
+                                @query IS NULL
+                                OR (
+                                     @looksLikeId = 1 AND P.IDENTIFICACION LIKE @queryPrefix
+                                   )
+                                OR (
+                                     @looksLikeId = 0 AND (
+                                            P.IDENTIFICACION LIKE '%' + @query + '%'
+                                         OR P.NOMBRE         LIKE '%' + @query + '%'
+                                         OR P.APELLIDO_1     LIKE '%' + @query + '%'
+                                         OR P.APELLIDO_2     LIKE '%' + @query + '%'
+                                     )
+                                   )
+                              )
+                        ORDER BY
+                            -- ASC
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'identificacion' THEN P.IDENTIFICACION END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'apellido_1' THEN P.APELLIDO_1 END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'apellido_2' THEN P.APELLIDO_2 END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'nombre' THEN P.NOMBRE END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'registro_fecha' THEN P.REGISTRO_FECHA END ASC,
 
-                result.Result = connection.Query<SysContactoServicioGeneralData>(
-                    sql,
-                    new
-                    {
-                        ident = (identificacion ?? "").Trim().ToUpper(),
-                        countryCode = (codPais ?? "CRC").Trim().ToUpper(),
-                        query = query,
-                        queryPrefix = query + "%"
-                    }
-                ).ToList();
+                            -- DESC
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'identificacion' THEN P.IDENTIFICACION END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'apellido_1' THEN P.APELLIDO_1 END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'apellido_2' THEN P.APELLIDO_2 END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'nombre' THEN P.NOMBRE END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'registro_fecha' THEN P.REGISTRO_FECHA END DESC,
+
+                            -- Fallback (equivalente al orden default anterior)
+                            P.APELLIDO_1 ASC, P.APELLIDO_2 ASC, P.NOMBRE ASC;";
+
+                result.Result = connection.Query<SysContactoServicioGeneralData>(sql, new
+                {
+                    ident = identParam,
+                    countryCode,
+                    query,
+                    queryPrefix,
+                    looksLikeId = looksLikeId ? 1 : 0,
+                    sortField,
+                    sortOrder
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -236,60 +255,81 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(BaseConnStringName));
 
-                string query = (filtros?.filtro ?? "").Trim();
+                var search = (filtros?.filtro ?? string.Empty).Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
                 int page = Math.Max(0, filtros?.pagina ?? 0);
                 int pageSize = Math.Clamp(filtros?.paginacion ?? 30, 1, 200);
-                string sortField = string.IsNullOrWhiteSpace(filtros?.sortField) ? "T.TELEFONO" : filtros!.sortField!;
-                string sortDir = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
 
-                string where = @" WHERE UPPER(T.IDENTIFICACION) = @ident AND UPPER(T.COD_PAIS) = @countryCode ";
-                if (!string.IsNullOrWhiteSpace(query))
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+
+                var ident = (identificacion ?? string.Empty).Trim().ToUpper();
+                var countryCode = (codPais ?? "CRC").Trim().ToUpper();
+
+                const string totalSql = @"SELECT COUNT(1)
+                                         FROM dbo.SYS_PADRON_TELEFONOS T WITH (NOLOCK)
+                                         WHERE UPPER(T.IDENTIFICACION) = @ident
+                                           AND UPPER(T.COD_PAIS) = @countryCode
+                                           AND (@search IS NULL
+                                                OR T.TELEFONO_TIPO LIKE @search
+                                                OR T.TELEFONO      LIKE @search
+                                                OR T.EXTENSION     LIKE @search
+                                                OR T.ATIENDE       LIKE @search);";
+
+                dto.Result.total = connection.QueryFirstOrDefault<int>(totalSql, new
                 {
-                    where += @"
-                      AND ( T.TELEFONO_TIPO LIKE '%' + @query + '%'
-                         OR  T.TELEFONO      LIKE '%' + @query + '%'
-                         OR  T.EXTENSION     LIKE '%' + @query + '%'
-                         OR  T.ATIENDE       LIKE '%' + @query + '%')";
-                }
+                    ident,
+                    countryCode,
+                    search = searchLike
+                });
 
-                bool shouldCount = (page == 0);
-                if (shouldCount)
-                {
-                    string qTotal = $"SELECT COUNT(1) FROM dbo.SYS_PADRON_TELEFONOS T WITH (NOLOCK) {where};";
-                    dto.Result.total = connection.QueryFirstOrDefault<int>(qTotal, new
-                    {
-                        ident = (identificacion ?? "").Trim().ToUpper(),
-                        countryCode = (codPais ?? "CRC").Trim().ToUpper(),
-                        query
-                    });
-                }
+                const string sql = @"
+                    SELECT 
+                        T.NUM_LINEA          AS Num_Linea,
+                        @ident               AS Identificacion,
+                        @countryCode         AS CodPais,
+                        T.TELEFONO_TIPO      AS Telefono_Tipo,
+                        T.TELEFONO           AS Telefono,
+                        T.EXTENSION          AS Extension,
+                        T.ATIENDE            AS Atiende,
+                        CAST(0 AS BIT)       AS isNew
+                    FROM dbo.SYS_PADRON_TELEFONOS T WITH (NOLOCK)
+                    WHERE UPPER(T.IDENTIFICACION) = @ident
+                      AND UPPER(T.COD_PAIS) = @countryCode
+                      AND (@search IS NULL
+                           OR T.TELEFONO_TIPO LIKE @search
+                           OR T.TELEFONO      LIKE @search
+                           OR T.EXTENSION     LIKE @search
+                           OR T.ATIENDE       LIKE @search)
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'num_linea' THEN T.NUM_LINEA END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'telefono_tipo' THEN T.TELEFONO_TIPO END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'telefono' THEN T.TELEFONO END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'extension' THEN T.EXTENSION END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'atiende' THEN T.ATIENDE END ASC,
 
-                string sql = $@"
-                SELECT 
-                    T.NUM_LINEA          AS Num_Linea,
-                    @ident               AS Identificacion,
-                    @countryCode         AS CodPais,
-                    T.TELEFONO_TIPO      AS Telefono_Tipo,
-                    T.TELEFONO           AS Telefono,
-                    T.EXTENSION          AS Extension,
-                    T.ATIENDE            AS Atiende,
-                    CAST(0 AS BIT)       AS isNew
-                FROM dbo.SYS_PADRON_TELEFONOS T WITH (NOLOCK)
-                {where}
-                ORDER BY {sortField} {sortDir}
-                OFFSET @page ROWS FETCH NEXT @pageSize ROWS ONLY;";
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'num_linea' THEN T.NUM_LINEA END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'telefono_tipo' THEN T.TELEFONO_TIPO END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'telefono' THEN T.TELEFONO END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'extension' THEN T.EXTENSION END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'atiende' THEN T.ATIENDE END DESC,
+
+                        T.NUM_LINEA ASC
+                    OFFSET @page ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
                 dto.Result.lista = connection.Query<SysContactoServicioTelefonoData>(sql, new
                 {
-                    ident = (identificacion ?? "").Trim().ToUpper(),
-                    countryCode = (codPais ?? "CRC").Trim().ToUpper(),
-                    query,
+                    ident,
+                    countryCode,
+                    search = searchLike,
                     page,
-                    pageSize
+                    pageSize,
+                    sortField,
+                    sortOrder
                 }).ToList();
-
-                if (!shouldCount && dto.Result.total == 0)
-                    dto.Result.total = page + (dto.Result.lista?.Count ?? 0) + 1;
             }
             catch (Exception ex)
             {
@@ -366,81 +406,103 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(BaseConnStringName));
 
-                string query = (filtros?.filtro ?? "").Trim();
+                var search = (filtros?.filtro ?? string.Empty).Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
                 int page = Math.Max(0, filtros?.pagina ?? 0);
                 int pageSize = Math.Clamp(filtros?.paginacion ?? 30, 1, 200);
-                string sortField = string.IsNullOrWhiteSpace(filtros?.sortField)
-                    ? "D.COD_PROVINCIA, D.COD_CANTON, D.COD_DISTRITO"
-                    : filtros!.sortField!;
-                string sortDir = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
 
-                string where = @" WHERE UPPER(D.IDENTIFICACION) = @ident AND UPPER(D.COD_PAIS) = @countryCode ";
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
 
-                if (!string.IsNullOrWhiteSpace(query))
-                {
-                    where += @"
-                  AND (
-                         D.DIRECCION      LIKE '%' + @query + '%'
-                      OR PR.NOMBRE        LIKE '%' + @query + '%'
-                      OR CA.NOMBRE        LIKE '%' + @query + '%'
-                      OR DI.NOMBRE        LIKE '%' + @query + '%'
-                      OR CAST(D.COD_PROVINCIA AS VARCHAR(5)) LIKE '%' + @query + '%'
-                      OR CAST(D.COD_CANTON    AS VARCHAR(5)) LIKE '%' + @query + '%'
-                      OR CAST(D.COD_DISTRITO  AS VARCHAR(5)) LIKE '%' + @query + '%'
-                  )";
-                                }
+                var ident = (identificacion ?? string.Empty).Trim().ToUpper();
+                var countryCode = (codPais ?? "CRC").Trim().ToUpper();
 
-                bool shouldCount = (page == 0);
-                if (shouldCount)
-                {
-                    string qTotal = $@"
+                const string totalSql = @"
                     SELECT COUNT(1)
                     FROM dbo.SYS_PADRON_DIRECCIONES D WITH (NOLOCK)
                     LEFT JOIN dbo.SYS_PROVINCIAS PR ON PR.COD_PAIS = D.COD_PAIS AND PR.COD_PROVINCIA = D.COD_PROVINCIA
                     LEFT JOIN dbo.SYS_CANTONES   CA ON CA.COD_PAIS = D.COD_PAIS AND CA.COD_PROVINCIA = D.COD_PROVINCIA AND CA.COD_CANTON = D.COD_CANTON
                     LEFT JOIN dbo.SYS_DISTRITOS  DI ON DI.COD_PAIS = D.COD_PAIS AND DI.COD_PROVINCIA = D.COD_PROVINCIA AND DI.COD_CANTON = D.COD_CANTON AND DI.COD_DISTRITO = D.COD_DISTRITO
-                    {where};";
+                    WHERE UPPER(D.IDENTIFICACION) = @ident
+                      AND UPPER(D.COD_PAIS) = @countryCode
+                      AND (@search IS NULL
+                           OR D.DIRECCION LIKE @search
+                           OR PR.NOMBRE   LIKE @search
+                           OR CA.NOMBRE   LIKE @search
+                           OR DI.NOMBRE   LIKE @search
+                           OR CAST(D.COD_PROVINCIA AS VARCHAR(5)) LIKE @search
+                           OR CAST(D.COD_CANTON    AS VARCHAR(5)) LIKE @search
+                           OR CAST(D.COD_DISTRITO  AS VARCHAR(5)) LIKE @search);";
 
-                    dto.Result.total = connection.QueryFirstOrDefault<int>(qTotal, new
-                    {
-                        ident = (identificacion ?? "").Trim().ToUpper(),
-                        countryCode = (codPais ?? "CRC").Trim().ToUpper(),
-                        query
-                    });
-                }
+                dto.Result.total = connection.QueryFirstOrDefault<int>(totalSql, new
+                {
+                    ident,
+                    countryCode,
+                    search = searchLike
+                });
 
-                string sql = $@"
-                SELECT 
-                    D.NUM_LINEA                                 AS Num_Linea,
-                    @ident                                      AS Identificacion,
-                    @countryCode                                AS CodPais,
-                    D.COD_PROVINCIA                             AS Cod_Provincia,
-                    D.COD_CANTON                                AS Cod_Canton,
-                    D.COD_DISTRITO                              AS Cod_Distrito,
-                    COALESCE(PR.NOMBRE, '')                     AS Provincia,
-                    COALESCE(CA.NOMBRE, '')                     AS Canton,
-                    COALESCE(DI.NOMBRE, '')                     AS Distrito,
-                    D.DIRECCION                                 AS Direccion,
-                    CAST(0 AS BIT)                              AS isNew
-                FROM dbo.SYS_PADRON_DIRECCIONES D WITH (NOLOCK)
-                LEFT JOIN dbo.SYS_PROVINCIAS PR ON PR.COD_PAIS = D.COD_PAIS AND PR.COD_PROVINCIA = D.COD_PROVINCIA
-                LEFT JOIN dbo.SYS_CANTONES   CA ON CA.COD_PAIS = D.COD_PAIS AND CA.COD_PROVINCIA = D.COD_PROVINCIA AND CA.COD_CANTON = D.COD_CANTON
-                LEFT JOIN dbo.SYS_DISTRITOS  DI ON DI.COD_PAIS = D.COD_PAIS AND DI.COD_PROVINCIA = D.COD_PROVINCIA AND DI.COD_CANTON = D.COD_CANTON AND DI.COD_DISTRITO = D.COD_DISTRITO
-                {where}
-                ORDER BY {sortField} {sortDir}
-                OFFSET @page ROWS FETCH NEXT @pageSize ROWS ONLY;";
+                const string sql = @"
+                    SELECT 
+                        D.NUM_LINEA                                 AS Num_Linea,
+                        @ident                                      AS Identificacion,
+                        @countryCode                                AS CodPais,
+                        D.COD_PROVINCIA                             AS Cod_Provincia,
+                        D.COD_CANTON                                AS Cod_Canton,
+                        D.COD_DISTRITO                              AS Cod_Distrito,
+                        COALESCE(PR.NOMBRE, '')                     AS Provincia,
+                        COALESCE(CA.NOMBRE, '')                     AS Canton,
+                        COALESCE(DI.NOMBRE, '')                     AS Distrito,
+                        D.DIRECCION                                 AS Direccion,
+                        CAST(0 AS BIT)                              AS isNew
+                    FROM dbo.SYS_PADRON_DIRECCIONES D WITH (NOLOCK)
+                    LEFT JOIN dbo.SYS_PROVINCIAS PR ON PR.COD_PAIS = D.COD_PAIS AND PR.COD_PROVINCIA = D.COD_PROVINCIA
+                    LEFT JOIN dbo.SYS_CANTONES   CA ON CA.COD_PAIS = D.COD_PAIS AND CA.COD_PROVINCIA = D.COD_PROVINCIA AND CA.COD_CANTON = D.COD_CANTON
+                    LEFT JOIN dbo.SYS_DISTRITOS  DI ON DI.COD_PAIS = D.COD_PAIS AND DI.COD_PROVINCIA = D.COD_PROVINCIA AND DI.COD_CANTON = D.COD_CANTON AND DI.COD_DISTRITO = D.COD_DISTRITO
+                    WHERE UPPER(D.IDENTIFICACION) = @ident
+                      AND UPPER(D.COD_PAIS) = @countryCode
+                      AND (@search IS NULL
+                           OR D.DIRECCION LIKE @search
+                           OR PR.NOMBRE   LIKE @search
+                           OR CA.NOMBRE   LIKE @search
+                           OR DI.NOMBRE   LIKE @search
+                           OR CAST(D.COD_PROVINCIA AS VARCHAR(5)) LIKE @search
+                           OR CAST(D.COD_CANTON    AS VARCHAR(5)) LIKE @search
+                           OR CAST(D.COD_DISTRITO  AS VARCHAR(5)) LIKE @search)
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'num_linea' THEN D.NUM_LINEA END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_provincia' THEN D.COD_PROVINCIA END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_canton' THEN D.COD_CANTON END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_distrito' THEN D.COD_DISTRITO END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'provincia' THEN PR.NOMBRE END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'canton' THEN CA.NOMBRE END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'distrito' THEN DI.NOMBRE END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'direccion' THEN D.DIRECCION END ASC,
+
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'num_linea' THEN D.NUM_LINEA END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_provincia' THEN D.COD_PROVINCIA END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_canton' THEN D.COD_CANTON END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_distrito' THEN D.COD_DISTRITO END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'provincia' THEN PR.NOMBRE END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'canton' THEN CA.NOMBRE END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'distrito' THEN DI.NOMBRE END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'direccion' THEN D.DIRECCION END DESC,
+
+                        D.COD_PROVINCIA ASC, D.COD_CANTON ASC, D.COD_DISTRITO ASC, D.NUM_LINEA ASC
+                    OFFSET @page ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
                 dto.Result.lista = connection.Query<SysContactoServicioDireccionData>(sql, new
                 {
-                    ident = (identificacion ?? "").Trim().ToUpper(),
-                    countryCode = (codPais ?? "CRC").Trim().ToUpper(),
-                    query,
+                    ident,
+                    countryCode,
+                    search = searchLike,
                     page,
-                    pageSize
+                    pageSize,
+                    sortField,
+                    sortOrder
                 }).ToList();
-
-                if (!shouldCount && dto.Result.total == 0)
-                    dto.Result.total = page + (dto.Result.lista?.Count ?? 0) + 1;
             }
             catch (Exception ex)
             {
@@ -526,69 +588,91 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(_config.GetConnectionString(BaseConnStringName));
 
-                string query = (filtros?.filtro ?? "").Trim();
+                var search = (filtros?.filtro ?? string.Empty).Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
                 int page = Math.Max(0, filtros?.pagina ?? 0);
                 int pageSize = Math.Clamp(filtros?.paginacion ?? 30, 1, 200);
-                string sortField = string.IsNullOrWhiteSpace(filtros?.sortField) ? "E.FECHA_INGRESO" : filtros!.sortField!;
-                string sortDir = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
 
-                string where = @" WHERE UPPER(E.IDENTIFICACION) = @ident AND UPPER(E.COD_PAIS) = @countryCode ";
-                if (!string.IsNullOrWhiteSpace(query))
-                {
-                    where += @"
-                      AND ( E.NOMBRE      LIKE '%' + @query + '%'
-                         OR  CA.NOMBRE     LIKE '%' + @query + '%'
-                         OR  E.TELEFONO_1  LIKE '%' + @query + '%'
-                         OR  E.TELEFONO_2  LIKE '%' + @query + '%')";
-                                    }
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
 
-                                    bool shouldCount = (page == 0);
-                                    if (shouldCount)
-                                    {
-                                        string qTotal = $@"
+                var ident = (identificacion ?? string.Empty).Trim().ToUpper();
+                var countryCode = (codPais ?? "CRC").Trim().ToUpper();
+
+                const string totalSql = @"
                     SELECT COUNT(1)
                     FROM dbo.PADRON_PERSONA_EMP E WITH (NOLOCK)
                     LEFT JOIN dbo.SYS_CANTONES CA
                       ON CA.COD_PAIS = E.COD_PAIS AND CA.COD_PROVINCIA = E.COD_PROVINCIA AND CA.COD_CANTON = E.COD_CANTON
-                    {where};";
+                    WHERE UPPER(E.IDENTIFICACION) = @ident
+                      AND UPPER(E.COD_PAIS) = @countryCode
+                      AND (@search IS NULL
+                           OR E.NOMBRE      LIKE @search
+                           OR CA.NOMBRE     LIKE @search
+                           OR E.TELEFONO_1  LIKE @search
+                           OR E.TELEFONO_2  LIKE @search);";
 
-                    dto.Result.total = connection.QueryFirstOrDefault<int>(qTotal, new
-                    {
-                        ident = (identificacion ?? "").Trim().ToUpper(),
-                        countryCode = (codPais ?? "CRC").Trim().ToUpper(),
-                        query
-                    });
-                }
+                dto.Result.total = connection.QueryFirstOrDefault<int>(totalSql, new
+                {
+                    ident,
+                    countryCode,
+                    search = searchLike
+                });
 
-                string sql = $@"
-                SELECT
-                    @ident                 AS Identificacion,
-                    @countryCode           AS CodPais,
-                    E.NOMBRE               AS Nombre,
-                    CA.NOMBRE              AS Canton,
-                    E.FECHA_INGRESO        AS Fecha_Ingreso,
-                    E.TELEFONO_1           AS Telefono_1,
-                    E.TELEFONO_2           AS Telefono_2,
-                    E.SALARIO              AS Salario,
-                    E.ACTIVO               AS Activo
-                FROM dbo.PADRON_PERSONA_EMP E WITH (NOLOCK)
-                LEFT JOIN dbo.SYS_CANTONES CA
-                  ON CA.COD_PAIS = E.COD_PAIS AND CA.COD_PROVINCIA = E.COD_PROVINCIA AND CA.COD_CANTON = E.COD_CANTON
-                {where}
-                ORDER BY {sortField} {sortDir}
-                OFFSET @page ROWS FETCH NEXT @pageSize ROWS ONLY;";
+                const string sql = @"
+                    SELECT
+                        @ident                 AS Identificacion,
+                        @countryCode           AS CodPais,
+                        E.NOMBRE               AS Nombre,
+                        CA.NOMBRE              AS Canton,
+                        E.FECHA_INGRESO        AS Fecha_Ingreso,
+                        E.TELEFONO_1           AS Telefono_1,
+                        E.TELEFONO_2           AS Telefono_2,
+                        E.SALARIO              AS Salario,
+                        E.ACTIVO               AS Activo
+                    FROM dbo.PADRON_PERSONA_EMP E WITH (NOLOCK)
+                    LEFT JOIN dbo.SYS_CANTONES CA
+                      ON CA.COD_PAIS = E.COD_PAIS AND CA.COD_PROVINCIA = E.COD_PROVINCIA AND CA.COD_CANTON = E.COD_CANTON
+                    WHERE UPPER(E.IDENTIFICACION) = @ident
+                      AND UPPER(E.COD_PAIS) = @countryCode
+                      AND (@search IS NULL
+                           OR E.NOMBRE      LIKE @search
+                           OR CA.NOMBRE     LIKE @search
+                           OR E.TELEFONO_1  LIKE @search
+                           OR E.TELEFONO_2  LIKE @search)
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'nombre' THEN E.NOMBRE END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'canton' THEN CA.NOMBRE END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'fecha_ingreso' THEN E.FECHA_INGRESO END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'telefono_1' THEN E.TELEFONO_1 END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'telefono_2' THEN E.TELEFONO_2 END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'salario' THEN E.SALARIO END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'activo' THEN CONVERT(int, E.ACTIVO) END ASC,
+
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'nombre' THEN E.NOMBRE END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'canton' THEN CA.NOMBRE END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'fecha_ingreso' THEN E.FECHA_INGRESO END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'telefono_1' THEN E.TELEFONO_1 END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'telefono_2' THEN E.TELEFONO_2 END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'salario' THEN E.SALARIO END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'activo' THEN CONVERT(int, E.ACTIVO) END DESC,
+
+                        E.FECHA_INGRESO DESC
+                    OFFSET @page ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
                 dto.Result.lista = connection.Query<SysContactoServicioEmpresaData>(sql, new
                 {
-                    ident = (identificacion ?? "").Trim().ToUpper(),
-                    countryCode = (codPais ?? "CRC").Trim().ToUpper(),
-                    query,
+                    ident,
+                    countryCode,
+                    search = searchLike,
                     page,
-                    pageSize
+                    pageSize,
+                    sortField,
+                    sortOrder
                 }).ToList();
-
-                if (!shouldCount && dto.Result.total == 0)
-                    dto.Result.total = page + (dto.Result.lista?.Count ?? 0) + 1;
             }
             catch (Exception ex)
             {
@@ -690,79 +774,102 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(connectionString);
 
-                string query = (filtros?.filtro ?? "").Trim();
+                string rawQuery = (filtros?.filtro ?? string.Empty).Trim();
+                string? query = string.IsNullOrWhiteSpace(rawQuery) ? null : rawQuery;
+
                 int page = Math.Max(0, filtros?.pagina ?? 0);
                 int pageSize = Math.Clamp(filtros?.paginacion ?? 30, 1, 200);
-                string sortField = string.IsNullOrWhiteSpace(filtros?.sortField)
-                                     ? "P.APELLIDO_1, P.APELLIDO_2, P.NOMBRE"
-                                     : filtros!.sortField!;
-                string sortDir = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
-                bool hasQuery = !string.IsNullOrWhiteSpace(query);
-                bool looksLikeId = hasQuery && query.All(ch => char.IsDigit(ch) || ch == '-' || ch == ' ');
 
-                string where = " WHERE P.COD_PAIS = @countryCode ";
-                if (hasQuery)
-                {
-                    if (looksLikeId)
-                    {
-                        where += " AND P.IDENTIFICACION LIKE @queryPrefix ";
-                    }
-                    else
-                    {
-                       where += @"
-                      AND (
-                            P.IDENTIFICACION LIKE '%' + @query + '%'
-                         OR P.NOMBRE         LIKE '%' + @query + '%'
-                         OR P.APELLIDO_1     LIKE '%' + @query + '%'
-                         OR P.APELLIDO_2     LIKE '%' + @query + '%'
-                      )";
-                    }
-                }
-                bool shouldCount = (page == 0);
-                if (shouldCount)
-                {
-                    string sqlCount = $@"
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+
+                bool looksLikeId = query != null && query.All(ch => char.IsDigit(ch) || ch == '-' || ch == ' ');
+                var queryPrefix = query == null ? null : query + "%";
+
+                // Total con filtro
+                const string sqlCount = @"
                     SELECT COUNT(1)
                     FROM dbo.SYS_PADRON P WITH (NOLOCK)
-                    {where};";
+                    WHERE P.COD_PAIS = @countryCode
+                      AND (
+                            @query IS NULL
+                            OR (
+                                 @looksLikeId = 1 AND P.IDENTIFICACION LIKE @queryPrefix
+                               )
+                            OR (
+                                 @looksLikeId = 0 AND (
+                                        P.IDENTIFICACION LIKE '%' + @query + '%'
+                                     OR P.NOMBRE         LIKE '%' + @query + '%'
+                                     OR P.APELLIDO_1     LIKE '%' + @query + '%'
+                                     OR P.APELLIDO_2     LIKE '%' + @query + '%'
+                                 )
+                               )
+                          );";
 
-                    response.Result.total = connection.Query<int>(
-                        sqlCount,
-                        new
-                        {
-                            countryCode = codPais,
-                            query = query,
-                            queryPrefix = query + "%"
-                        }
-                    ).FirstOrDefault();
-                }
-                string sqlPage = $@"
-                SELECT
-                    P.IDENTIFICACION AS Identificacion,
-                    LTRIM(RTRIM(CONCAT(
-                        ISNULL(P.APELLIDO_1,''),
-                        CASE WHEN NULLIF(P.APELLIDO_2,'') IS NOT NULL THEN ' ' + P.APELLIDO_2 ELSE '' END,
-                        CASE WHEN NULLIF(P.NOMBRE,'')     IS NOT NULL THEN ', ' + P.NOMBRE     ELSE '' END
-                    ))) AS Nombre
-                FROM dbo.SYS_PADRON P WITH (NOLOCK)
-                {where}
-                ORDER BY {sortField} {sortDir}
-                OFFSET @page ROWS
-                FETCH NEXT @pageSize ROWS ONLY
-                OPTION (FAST 30, RECOMPILE);";
+                response.Result.total = connection.Query<int>(sqlCount, new
+                {
+                    countryCode = codPais,
+                    query,
+                    queryPrefix,
+                    looksLikeId = looksLikeId ? 1 : 0
+                }).FirstOrDefault();
 
-                response.Result.lista = connection.Query<SysContactoServicioPersonaLookupDto>(
-                    sqlPage,
-                    new
-                    {
-                        countryCode = codPais,
-                        query = query,
-                        queryPrefix = query + "%",
-                        page = page,
-                        pageSize = pageSize
-                    }
-                ).ToList();
-                if (!shouldCount && response.Result.total == 0)
+                // Página
+                const string sqlPage = @"
+                    SELECT
+                        P.IDENTIFICACION AS Identificacion,
+                        LTRIM(RTRIM(CONCAT(
+                            ISNULL(P.APELLIDO_1,''),
+                            CASE WHEN NULLIF(P.APELLIDO_2,'') IS NOT NULL THEN ' ' + P.APELLIDO_2 ELSE '' END,
+                            CASE WHEN NULLIF(P.NOMBRE,'')     IS NOT NULL THEN ', ' + P.NOMBRE     ELSE '' END
+                        ))) AS Nombre
+                    FROM dbo.SYS_PADRON P WITH (NOLOCK)
+                    WHERE P.COD_PAIS = @countryCode
+                      AND (
+                            @query IS NULL
+                            OR (
+                                 @looksLikeId = 1 AND P.IDENTIFICACION LIKE @queryPrefix
+                               )
+                            OR (
+                                 @looksLikeId = 0 AND (
+                                        P.IDENTIFICACION LIKE '%' + @query + '%'
+                                     OR P.NOMBRE         LIKE '%' + @query + '%'
+                                     OR P.APELLIDO_1     LIKE '%' + @query + '%'
+                                     OR P.APELLIDO_2     LIKE '%' + @query + '%'
+                                 )
+                               )
+                          )
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'identificacion' THEN P.IDENTIFICACION END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'apellido_1' THEN P.APELLIDO_1 END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'apellido_2' THEN P.APELLIDO_2 END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'nombre' THEN P.NOMBRE END ASC,
+
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'identificacion' THEN P.IDENTIFICACION END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'apellido_1' THEN P.APELLIDO_1 END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'apellido_2' THEN P.APELLIDO_2 END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'nombre' THEN P.NOMBRE END DESC,
+
+                        P.APELLIDO_1 ASC, P.APELLIDO_2 ASC, P.NOMBRE ASC
+                    OFFSET @page ROWS
+                    FETCH NEXT @pageSize ROWS ONLY
+                    OPTION (FAST 30, RECOMPILE);";
+
+                response.Result.lista = connection.Query<SysContactoServicioPersonaLookupDto>(sqlPage, new
+                {
+                    countryCode = codPais,
+                    query,
+                    queryPrefix,
+                    looksLikeId = looksLikeId ? 1 : 0,
+                    page,
+                    pageSize,
+                    sortField,
+                    sortOrder
+                }).ToList();
+
+                if (response.Result.total == 0)
                 {
                     response.Result.total = page + (response.Result.lista?.Count ?? 0) + 1;
                 }
