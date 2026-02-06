@@ -38,12 +38,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto<CoAplExcProcesadosResult> CO_AplFndContrApl_Aplicar(int CodEmpresa, ExcedenteAplicarRequest request)
+        public ErrorDto<CoAplFndContrAplicadosResult> CO_AplFndContrApl_Aplicar(int CodEmpresa, ContratosAplicarRequest request)
         {
-            var response = new ErrorDto<CoAplExcProcesadosResult>
+            var response = new ErrorDto<CoAplFndContrAplicadosResult>
             {
                 Code = 0, Description = "Ok",
-                Result = new CoAplExcProcesadosResult
+                Result = new CoAplFndContrAplicadosResult
                 {
                     aplicados = 0, pendientes = 0
                 }
@@ -54,7 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var usuario = (request.Usuario ?? string.Empty).Trim().ToUpper();
                 var seleccion = request.Seleccionados
                     ?.Where(x => !string.IsNullOrWhiteSpace(x.cedula))
-                    .ToList() ?? new List<CoAplExcProcInformacionData>();
+                    .ToList() ?? new List<CoAplFndContrAplInformacionData>();
 
                 if (seleccion.Count == 0)
                 {
@@ -109,7 +109,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                             $"El caso {cedula} no se proces&oacute; correctamente. " +
                             $"Aplicación: {idAplicacion}. " +
                             $"Procesados: {contValidos} de {totalCasos}.";
-                        response.Result = new CoAplExcProcesadosResult
+                        response.Result = new CoAplFndContrAplicadosResult
                         {
                             aplicados = contValidos,
                             pendientes = totalCasos - contValidos
@@ -120,7 +120,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 response.Description = "Proceso concluido satisfactoriamente";
 
-                response.Result = new CoAplExcProcesadosResult
+                response.Result = new CoAplFndContrAplicadosResult
                 {
                     aplicados = contValidos,
                     pendientes = totalCasos - contValidos
