@@ -28,12 +28,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             const string sql = @"exec spCBR_Excedente_Apl_Contratos_Proceso_Carga_Informacion";
 
-            return DbHelper.ExecuteListQuery<CoAplExcContrAplInformacionData>(
-                _portalDB, codEmpresa, sql);
+            return DbHelper.ExecuteListQuery<CoAplExcContrAplInformacionData>(_portalDB, codEmpresa, sql);
         }
 
         /// <summary>
-        /// Aplica los excedentes a mora para los contratos seleccionados
+        /// Aplica los excedentes a mora para los contratos itemsados
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="request"></param>
@@ -46,19 +45,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 Description = "Ok",
                 Result = new CoAplExcContrAplicadosResult
                 {
-                    aplicados = 0,
-                    pendientes = 0
+                    aplicados = 0, pendientes = 0
                 }
             };
 
             try
             {
                 var usuario = (request.Usuario ?? string.Empty).Trim().ToUpper();
-                var seleccion = request.Seleccionados
+                var items = request.Seleccionados
                     ?.Where(x => !string.IsNullOrWhiteSpace(x.cedula))
                     .ToList() ?? new List<CoAplExcContrAplInformacionData>();
 
-                if (seleccion.Count == 0)
+                if (items.Count == 0)
                 {
                     response.Code = -1;
                     response.Description = "No hay casos a procesar";
@@ -67,22 +65,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 using var connection = _portalDB.CreateConnection(CodEmpresa);
 
-                const string guiaSql = "exec spCBR_Excedente_Apl_Contratos_Proceso_Guia_Aplicacion @Usuario;";
+                const string guiaAplSql = "exec spCBR_Excedente_Apl_Contratos_Proceso_Guia_Aplicacion @Usuario;";
 
                 var idAplicacion = connection.QuerySingle<int>(
-                    guiaSql,
+                    guiaAplSql,
                     new { Usuario = usuario }
                 );
 
                 int contValidos = 0;
-                int totalCasos = seleccion.Count;
+                int totalCasos = items.Count;
 
-                foreach (var cedula in seleccion.Select(x => x.cedula.Trim()))
+                foreach (var cedula in items.Select(x => x.cedula.Trim()))
                 {
-                    const string aplicaSql =
+                    const string aplicSql =
                         @"exec spCBR_Excedente_Apl_Contratos_Proceso_Aplicacion @Usuario, @Cedula, @AplicacionId;";
 
-                    connection.Execute(aplicaSql, new
+                    connection.Execute(aplicSql, new
                     {
                         Usuario = usuario,
                         Cedula = cedula,
