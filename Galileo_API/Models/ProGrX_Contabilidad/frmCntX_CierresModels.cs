@@ -14,5 +14,4 @@
         public decimal impuesto_renta { get; set; } = 0;
         public bool activo { get; set; } = false;
     }
-
 }
