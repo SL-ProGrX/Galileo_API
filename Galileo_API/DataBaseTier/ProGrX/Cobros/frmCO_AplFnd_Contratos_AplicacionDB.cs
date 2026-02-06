@@ -42,23 +42,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         {
             var response = new ErrorDto<CoAplExcProcesadosResult>
             {
-                Code = 0,
-                Description = "Ok",
+                Code = 0, Description = "Ok",
                 Result = new CoAplExcProcesadosResult
                 {
-                    aplicados = 0,
-                    pendientes = 0
+                    aplicados = 0, pendientes = 0
                 }
             };
 
             try
             {
                 var usuario = (request.Usuario ?? string.Empty).Trim().ToUpper();
-                var seleccionados = request.Seleccionados
+                var seleccion = request.Seleccionados
                     ?.Where(x => !string.IsNullOrWhiteSpace(x.cedula))
                     .ToList() ?? new List<CoAplExcProcInformacionData>();
 
-                if (seleccionados.Count == 0)
+                if (seleccion.Count == 0)
                 {
                     response.Code = -1;
                     response.Description = "No hay casos a procesar";
@@ -74,10 +72,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                     new { Usuario = usuario }
                 );
 
-                int contadorValidos = 0;
-                int totalCasos = seleccionados.Count;
+                int contValidos = 0;
+                int totalCasos = seleccion.Count;
 
-                foreach (var cedula in seleccionados.Select(x => x.cedula.Trim()))
+                foreach (var cedula in seleccion.Select(x => x.cedula.Trim()))
                 {
                     const string aplicaSql =
                         @"exec spCBR_Fondos_Apl_Contratos_Proceso_Aplicacion @Usuario, @Cedula, @AplicacionId;";
@@ -102,7 +100,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                     if (valido)
                     {
-                        contadorValidos++;
+                        contValidos++;
                     }
                     else
                     {
@@ -110,11 +108,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                         response.Description =
                             $"El caso {cedula} no se proces&oacute; correctamente. " +
                             $"Aplicación: {idAplicacion}. " +
-                            $"Procesados: {contadorValidos} de {totalCasos}.";
+                            $"Procesados: {contValidos} de {totalCasos}.";
                         response.Result = new CoAplExcProcesadosResult
                         {
-                            aplicados = contadorValidos,
-                            pendientes = totalCasos - contadorValidos
+                            aplicados = contValidos,
+                            pendientes = totalCasos - contValidos
                         };
                         return response;
                     }
@@ -124,8 +122,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 response.Result = new CoAplExcProcesadosResult
                 {
-                    aplicados = contadorValidos,
-                    pendientes = totalCasos - contadorValidos
+                    aplicados = contValidos,
+                    pendientes = totalCasos - contValidos
                 };
 
                 return response;
