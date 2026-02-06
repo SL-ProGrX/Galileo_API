@@ -5,6 +5,8 @@ using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo.Models;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
+using System.Globalization;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 {
     public class FrmCxCParametrosDB
@@ -38,6 +40,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             });
         }
 
+
+        private static readonly IReadOnlyDictionary<string, string> OrderableColumns =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["cod_parametro"] = "cod_parametro",
+                ["descripcion"] = "descripcion",
+                ["valor"] = "valor"
+            };
+
+        private const int SortDescendingValue = 1;
+
+
+        private const string WhereFilter = @"
+        WHERE (@like IS NULL)
+           OR (cod_parametro LIKE @like)
+           OR (descripcion  LIKE @like)
+           OR (valor        LIKE @like)";
+
+
+        private const string SelectColumns =
+            "cod_parametro, descripcion, valor, notas, tipo, inicio_fecha, visible, modifica_usuario, modifica_fecha";
+
+
+
         /// <summary>
         /// Consulta de listado de parametros
         /// </summary>
@@ -48,94 +74,64 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns></returns>
         public ErrorDto<CxCParametrosLista> CxCParametrosLista_Obtener(int codEmpresa, int codContabilidad, FiltrosLazyLoadData filtros, bool esExportar)
         {
-            
+
+
+            if (filtros is null)
+            {
+                return DbHelper.CreateErrorResponse<CxCParametrosLista>("Los filtros no pueden ser nulos.");
+            }
+
             try
             {
-
                 CxCParametros_Cargar(codEmpresa);
 
                 using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
-
-                var response = new CxCParametrosLista();
-
-
-
-                var offset = filtros.pagina;
-                var fetch = filtros.paginacion;
-                var usarPaginacion = !esExportar && fetch > 0;
+                //var response = new CxCParametrosLista();
 
                 var like = BuildLike(filtros.filtro);
                 var (orderBy, direction) = BuildOrder(filtros.sortField, filtros.sortOrder);
 
-
-                //var offset = filtros.pagina!;
-                //var fetch = filtros.paginacion!;
-                //var usarPaginacion = fetch > 0 && !esExportar;
-
-                //var texto = filtros.filtro?.Trim();
-                //var hasFiltro = !string.IsNullOrWhiteSpace(texto);
-                //var like = hasFiltro ? $"%{texto}%" : null;
-
-                //var sortField = (filtros.sortField ?? string.Empty).Trim();
-                //var orderByField = sortField switch
-                //{
-                //    "cod_parametro" => "cod_parametro",
-                //    "descripcion" => "descripcion",
-                //    "valor" => "valor",
-                //    _ => "cod_parametro"
-                //};
-                //var direction = filtros.sortOrder == 1 ? "DESC" : "ASC";
+                var offset = Math.Max(filtros.pagina, 0);
+                var fetch = Math.Max(filtros.paginacion, 0);
+                var usarPaginacion = !esExportar && fetch > 0;
 
 
-                const string where = @"
-                    WHERE
-                        (@filtro IS NULL)
-                        OR (cod_parametro LIKE @like)
-                        OR (descripcion LIKE @like)
-                        OR (valor LIKE @like)";
 
-                var sqlList = $@"
-                    SELECT cod_parametro, descripcion, valor, notas,tipo,inicio_fecha,visible,modifica_usuario,modifica_fecha
+
+
+                var sqlList =
+               $@"SELECT {SelectColumns}
                     FROM CxC_Parametros
-                       {where}
-                        ORDER BY {orderBy} {direction}{BuildPagination(usarPaginacion)};";
-                //ORDER BY {orderByField} {direction}
+                    {WhereFilter}
+                    ORDER BY {orderBy} {direction}{BuildPagination(usarPaginacion)};";
 
-                var @params = new { like, offset, fetch };
+                var sqlCount =
+                        $@"SELECT COUNT(cod_parametro)
+                FROM CxC_Parametros
+                {WhereFilter};";
 
-                var sqlCount = $@"
-                    SELECT COUNT(cod_parametro)
-                    FROM CxC_Parametros {where}";
+                var @params = new
+                {
+                    like,
+                    offset,
+                    fetch
+                };
 
-                response.total = conn.QuerySingle<int>(sqlCount, @params);
 
-             
-
+                var total = conn.QuerySingle<int>(sqlCount, @params);
                 var lista = conn.Query<CxCParametrosData>(sqlList, @params).ToList();
-                EnriquecerCuentas(lista, codEmpresa, codContabilidad);
-                response.lista = lista;
 
 
+                EnriquecerCuentas(lista, codEmpresa, codContabilidad, mCntLink);
 
-                //if (response.lista != null)
-                //{
+                var response = new CxCParametrosLista
+                {
+                    total = total,
+                    lista = lista
+                };
 
-                //    foreach (var item in response.lista)
-                //    {
-                //        if (item.Tipo == "CTA")
-                //        {
-                //            item.cuentaMasck = string.IsNullOrWhiteSpace(item.Valor)
-                //                ? null
-                //                : mCntLink.fxgCntCuentaFormato(codEmpresa, blnMascara: true, pCuenta: item.Valor, optMensaje: 1);
-
-                //            item.cuentaDetalle = string.IsNullOrWhiteSpace(item.Valor)
-                //               ? null
-                //               : mCntLink.fxgCntCuentaDesc(codContabilidad, pCuenta: item.Valor);
-                //        }
-                //    }
-
-                //}
                 return DbHelper.CreateOkResponse(response);
+
 
             }
             catch (Exception ex)
@@ -145,36 +141,49 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         }
 
+        #region Helpers privados (reducen la complejidad cognitiva del método principal)
 
-        static string? BuildLike(string? texto)
-                => string.IsNullOrWhiteSpace(texto) ? null : $"%{texto.Trim()}%";
+        private static string? BuildLike(string? texto)
+        {
+            if (string.IsNullOrWhiteSpace(texto))
+            {
+                return null;
+            }
 
-        static (string orderBy, string direction) BuildOrder(string? sortField, int sortOrder)
+            var safe = texto.Trim();
+            // Si necesitas case-insensitive en DB case-sensitive, evalúa UPPER(col) LIKE UPPER(@like).
+            return string.Create(CultureInfo.InvariantCulture, $"%{safe}%");
+        }
+
+        private static (string orderBy, string direction) BuildOrder(string? sortField, int sortOrder)
         {
             var field = (sortField ?? string.Empty).Trim();
-            var orderBy = field switch
-            {
-                "cod_parametro" => "cod_parametro",
-                "descripcion" => "descripcion",
-                "valor" => "valor",
-                _ => "cod_parametro"
-            };
-            var direction = (sortOrder == 1) ? "DESC" : "ASC";
+
+            var orderBy = OrderableColumns.TryGetValue(field, out var col)
+                ? col
+                : "cod_parametro";
+
+            var direction = sortOrder == SortDescendingValue ? "DESC" : "ASC";
+
             return (orderBy, direction);
         }
 
+        private static string BuildPagination(bool usar)
+            => usar ? "\nOFFSET @offset ROWS\nFETCH NEXT @fetch ROWS ONLY" : string.Empty;
 
-        static string BuildPagination(bool usar)
-               => usar ? "\nOFFSET @offset ROWS\nFETCH NEXT @fetch ROWS ONLY" : string.Empty;
-
-
-        void EnriquecerCuentas(IEnumerable<CxCParametrosData> items, int empresa, int contab)
+        private static void EnriquecerCuentas(
+            IEnumerable<CxCParametrosData> items,
+            int codEmpresa,
+            int codContabilidad,
+             MCntLinkDB mCntLink)
         {
             foreach (var item in items)
             {
-                // Early-continue: reduce anidación
+                
                 if (!string.Equals(item.Tipo, "CTA", StringComparison.OrdinalIgnoreCase))
+                {
                     continue;
+                }
 
                 if (string.IsNullOrWhiteSpace(item.Valor))
                 {
@@ -182,19 +191,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     item.cuentaDetalle = null;
                     continue;
                 }
+               
 
                 item.cuentaMasck = mCntLink.fxgCntCuentaFormato(
-                    empresa,
+                    codEmpresa,
                     blnMascara: true,
                     pCuenta: item.Valor,
                     optMensaje: 1);
 
+
                 item.cuentaDetalle = mCntLink.fxgCntCuentaDesc(
-                    contab,
+                    codContabilidad,
                     pCuenta: item.Valor);
             }
         }
- 
+
+        #endregion
+
+
 
         /// <summary>
         /// Metodo encargo de ejecutar proceso de carga de parametros iniciales
@@ -210,7 +224,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var query = $@"exec spCxC_Parametros";
                 conn.Execute(query);
 
-             
+
             }
             catch (Exception ex)
             {
