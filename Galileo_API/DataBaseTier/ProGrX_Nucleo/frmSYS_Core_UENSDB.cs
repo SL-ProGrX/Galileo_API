@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
+using System.Data;
 using Newtonsoft.Json;
 using Galileo.Models.ERROR;
 using Galileo.Models.SYS;
@@ -31,28 +32,40 @@ namespace Galileo.DataBaseTier
             response.Code = 0;
             try
             {
-                var query = "";
-                string where = " ", paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-                if (vfiltro != null)
+
+                var search = vfiltro?.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
+                var offset = vfiltro?.pagina ?? 0;
+                var fetch = vfiltro?.paginacion ?? 0;
+                if (fetch <= 0)
                 {
-                    if (vfiltro.filtro != null)
-                    {
-                        where = "where COD_UNIDAD LIKE '%" + vfiltro.filtro + "%' OR descripcion LIKE '%" + vfiltro.filtro + "%' ";
-                    }
-
-                    if (vfiltro.pagina != null)
-                    {
-                        paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
-                    }
+                    fetch = int.MaxValue;
                 }
-                query = $"select COUNT(*) from CORE_UENS {where}";
-                response.Result.Total = connection.Query<int>(query).FirstOrDefault();
 
-                query = @$"select COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn' 
-                        from CORE_UENS {where} order by COD_UNIDAD desc {paginaActual} {paginacionActual}";
-                response.Result.uens = connection.Query<CoreUeNsDto>(query).ToList();
+                const string countSql = @"SELECT COUNT(*)
+                                          FROM CORE_UENS
+                                          WHERE (@search IS NULL
+                                                 OR COD_UNIDAD LIKE @search
+                                                 OR descripcion LIKE @search);";
+
+                response.Result.Total = connection.Query<int>(countSql, new { search = searchLike }).FirstOrDefault();
+
+                const string pageSql = @"SELECT COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn'
+                                         FROM CORE_UENS
+                                         WHERE (@search IS NULL
+                                                OR COD_UNIDAD LIKE @search
+                                                OR descripcion LIKE @search)
+                                         ORDER BY COD_UNIDAD DESC
+                                         OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                response.Result.uens = connection.Query<CoreUeNsDto>(pageSql, new
+                {
+                    search = searchLike,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -90,37 +103,41 @@ namespace Galileo.DataBaseTier
             {
                 Code = 0
             };
-            var activo = 0;
+            int activa;
             try
             {
-                if (request.activa)
-                {
-                    activo = 1;
-                }
+                activa = request?.activa == true ? 1 : 0;
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $"select isnull(count(*),0) as Existe from CORE_UENS where COD_UNIDAD = '{request.cod_unidad}'";
-                int Existe = connection.Query<int>(query).FirstOrDefault();
+                const string existsSql = @"select isnull(count(*),0) as Existe from CORE_UENS where COD_UNIDAD = @cod_unidad";
+                int Existe = connection.Query<int>(existsSql, new { cod_unidad = request?.cod_unidad }).FirstOrDefault();
 
                 if (Existe == 0)
                 {
-                    query = @"SELECT CAST(MAX(CAST(COD_UNIDAD AS INT)) + 1 AS VARCHAR) AS NuevoCodigo
+                    const string getMaxSql = @"SELECT CAST(MAX(CAST(COD_UNIDAD AS INT)) + 1 AS VARCHAR) AS NuevoCodigo
                         FROM CORE_UENS WHERE ISNUMERIC(COD_UNIDAD) = 1";
-                    int ultimoID = connection.Query<int>(query).FirstOrDefault();
+                    int ultimoID = connection.Query<int>(getMaxSql).FirstOrDefault();
                     string nuevoCodigo = ultimoID < 10 ? "0" + ultimoID.ToString() : ultimoID.ToString();
 
-                    query = @$"insert 
-                            into CORE_UENS(COD_UNIDAD, descripcion, Activa, Registro_Fecha, Registro_Usuario) 
-                            values('{nuevoCodigo}','{request.descripcion}', {activo}, Getdate(), '{usuario}' )";
+                    const string insertSql = @"insert into CORE_UENS(COD_UNIDAD, descripcion, Activa, Registro_Fecha, Registro_Usuario)
+                                              values(@cod_unidad, @descripcion, @activa, Getdate(), @usuario);";
+                    var query = insertSql;
                     resp.Description = "Registro agregado satisfactoriamente";
+                    resp.Code = connection.Execute(query, new { cod_unidad = nuevoCodigo, descripcion = request?.descripcion, activa, usuario });
+                    return resp;
                 }
                 else
                 {
-                    query = @$"update CORE_UENS set descripcion = '{request.descripcion}',
-                            Activa = {activo}, Modifica_Fecha = Getdate(), Modifica_Usuario = '{usuario}'
-                            where COD_UNIDAD = '{request.cod_unidad}' OR UNIDAD_PRINCIPAL = '{request.cod_unidad}'";
+                    const string updateSql = @"update CORE_UENS
+                                             set descripcion = @descripcion,
+                                                 Activa = @activa,
+                                                 Modifica_Fecha = Getdate(),
+                                                 Modifica_Usuario = @usuario
+                                             where COD_UNIDAD = @cod_unidad OR UNIDAD_PRINCIPAL = @cod_unidad;";
+                    var query = updateSql;
                     resp.Description = RegistroActualizadoMsg;
+                    resp.Code = connection.Execute(query, new { cod_unidad = request?.cod_unidad, descripcion = request?.descripcion, activa, usuario });
+                    return resp;
                 }
-                resp.Code = connection.ExecuteAsync(query).Result;
             }
             catch (Exception ex)
             {
@@ -146,55 +163,76 @@ namespace Galileo.DataBaseTier
             {
                 Code = 0
             };
-            var activo = 0;
+            int activa;
             try
             {
-                if (request.activa)
-                {
-                    activo = 1;
-                }
+                activa = request?.activa == true ? 1 : 0;
                 using var connection = new SqlConnection(clienteConnString);
                 //Se obtiene información de la unidad principal
-                var query = @$"select * from CORE_UENS where COD_UNIDAD = '{request.unidad_principal}'";
-                CoreUeNsDto unidadPrincipal = connection.Query<CoreUeNsDto>(query).First();
+                const string qPrincipal = @"select * from CORE_UENS where COD_UNIDAD = @unidad_principal";
+                CoreUeNsDto unidadPrincipal = connection.Query<CoreUeNsDto>(qPrincipal, new { unidad_principal = request?.unidad_principal }).First();
 
-                query = @$"select isnull(count(*),0) as Existe from CORE_UENS 
-                    where (COD_UNIDAD = '{request.unidad_principal}' OR UNIDAD_PRINCIPAL = '{request.unidad_principal}') AND CNTX_UNIDAD = '{request.cntx_unidad}'";
-                int Existe = connection.Query<int>(query).FirstOrDefault();
+                const string qExiste = @"select isnull(count(*),0) as Existe from CORE_UENS
+                                        where (COD_UNIDAD = @unidad_principal OR UNIDAD_PRINCIPAL = @unidad_principal)
+                                          AND CNTX_UNIDAD = @cntx_unidad";
+            int Existe = connection.Query<int>(qExiste, new { unidad_principal = request?.unidad_principal, cntx_unidad = request?.cntx_unidad }).FirstOrDefault();
 
-                if (Existe == 0 && unidadPrincipal.cntx_unidad == "")
+            if (Existe == 0 && unidadPrincipal.cntx_unidad == "")
+            {
+                //Asigna la unidad a la UEN principal, porque no tiene unidad
+                const string upSql = @"update CORE_UENS set
+                                         CntX_Unidad = @cntx_unidad,
+                                         Activa = @activa,
+                                         Modifica_Fecha = Getdate(),
+                                         Modifica_Usuario = @usuario
+                                       where COD_UNIDAD = @cod_unidad";
+                resp.Description = RegistroActualizadoMsg;
+                resp.Code = connection.Execute(upSql, new { cntx_unidad = request?.cntx_unidad, activa, usuario, cod_unidad = unidadPrincipal.cod_unidad });
+                return resp;
+            }
+            else if (Existe == 0 && request != null && request.cod_unidad == "")
+            {
+                //Agrega una nueva unidad
+                const string getMaxSql = @"SELECT CAST(MAX(CAST(COD_UNIDAD AS INT)) + 1 AS VARCHAR) AS NuevoCodigo
+                    FROM CORE_UENS WHERE ISNUMERIC(COD_UNIDAD) = 1";
+                int ultimoID = connection.Query<int>(getMaxSql).FirstOrDefault();
+                string nuevoCodigo = ultimoID < 10 ? "0" + ultimoID.ToString() : ultimoID.ToString();
+
+                const string insSql = @"insert into CORE_UENS(COD_UNIDAD, descripcion, CntX_Unidad, unidad_principal, Activa, Registro_Fecha, Registro_Usuario)
+                                       values(@cod_unidad, @descripcion, @cntx_unidad, @unidad_principal, @activa, Getdate(), @usuario)";
+                resp.Description = "Registro agregado satisfactoriamente";
+                resp.Code = connection.Execute(insSql, new
                 {
-                    //Asigna la unidad a la UEN principal, porque no tiene unidad
-                    query = @$"update CORE_UENS set 
-                            CntX_Unidad = '{request.cntx_unidad}', 
-                            Activa = {activo}, Modifica_Fecha = Getdate(), Modifica_Usuario = '{usuario}'
-                            where COD_UNIDAD = '{unidadPrincipal.cod_unidad}'";
-                    resp.Description = RegistroActualizadoMsg;
-                }
-                else if (Existe == 0 && request.cod_unidad == "")
+                    cod_unidad = nuevoCodigo,
+                    descripcion = unidadPrincipal.descripcion,
+                    cntx_unidad = request.cntx_unidad,
+                    unidad_principal = request.unidad_principal,
+                    activa,
+                    usuario
+                });
+                return resp;
+            }
+            else
+            {
+                //Actualiza la unidad
+                const string upSql = @"update CORE_UENS set
+                                         CntX_Unidad = @cntx_unidad,
+                                         Activa = @activa,
+                                         Modifica_Fecha = Getdate(),
+                                         Modifica_Usuario = @usuario
+                                       where (COD_UNIDAD = @cod_unidad OR UNIDAD_PRINCIPAL = @cod_unidad)
+                                         AND CNTX_UNIDAD = @unidad_anterior";
+                resp.Description = RegistroActualizadoMsg;
+                resp.Code = connection.Execute(upSql, new
                 {
-                    //Agrega una nueva unidad
-                    query = @"SELECT CAST(MAX(CAST(COD_UNIDAD AS INT)) + 1 AS VARCHAR) AS NuevoCodigo
-                        FROM CORE_UENS WHERE ISNUMERIC(COD_UNIDAD) = 1";
-                    int ultimoID = connection.Query<int>(query).FirstOrDefault();
-                    string nuevoCodigo = ultimoID < 10 ? "0" + ultimoID.ToString() : ultimoID.ToString();
-
-                    query = @$"insert into CORE_UENS(COD_UNIDAD, descripcion, CntX_Unidad, unidad_principal, Activa, Registro_Fecha, Registro_Usuario) 
-                        values('{nuevoCodigo}','{unidadPrincipal.descripcion}','{request.cntx_unidad}', '{request.unidad_principal}', {activo}, Getdate(), '{usuario}' )";
-
-                    resp.Description = "Registro agregado satisfactoriamente";
-                }
-                else
-                {
-                    //Actualiza la unidad
-                    query = @$"update CORE_UENS set 
-                            CntX_Unidad = '{request.cntx_unidad}', 
-                            Activa = {activo}, Modifica_Fecha = Getdate(), Modifica_Usuario = '{usuario}'
-                            where (COD_UNIDAD = '{request.cod_unidad}' OR UNIDAD_PRINCIPAL = '{request.cod_unidad}')
-                            AND CNTX_UNIDAD = '{unidad_anterior}'";
-                    resp.Description = RegistroActualizadoMsg;
-                }
-                resp.Code = connection.ExecuteAsync(query).Result;
+                    cntx_unidad = request?.cntx_unidad,
+                    activa,
+                    usuario,
+                    cod_unidad = request?.cod_unidad,
+                    unidad_anterior
+                });
+                return resp;
+            }
             }
             catch (Exception ex)
             {
@@ -219,54 +257,67 @@ namespace Galileo.DataBaseTier
             {
                 Code = 0
             };
-            var activo = 0;
+            int activa;
             try
             {
-                if (request.activa)
-                {
-                    activo = 1;
-                }
+                activa = request?.activa == true ? 1 : 0;
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $"select isnull(count(*),0) as Existe from CORE_UENS where COD_UNIDAD = '{request.cod_unidad}'";
-                int Existe = connection.Query<int>(query).FirstOrDefault();
+                const string qExisteCod = @"select isnull(count(*),0) as Existe from CORE_UENS where COD_UNIDAD = @cod_unidad";
+            int Existe = connection.Query<int>(qExisteCod, new { cod_unidad = request?.cod_unidad }).FirstOrDefault();
 
                 if (Existe == 0)
                 {
-                    //Se obtiene informaci�n de la unidad principal
-                    var query2 = @$"select * from CORE_UENS where 
-                            (COD_UNIDAD = '{request.unidad_principal}' OR UNIDAD_PRINCIPAL = '{request.unidad_principal}') 
-                            AND CNTX_UNIDAD = '{request.cntx_unidad}'";
-                    CoreUeNsDto unidadPrincipal = connection.Query<CoreUeNsDto>(query2).First();
+                    //Se obtiene información de la unidad principal
+                    const string query2 = @"select * from CORE_UENS
+                                           where (COD_UNIDAD = @unidad_principal OR UNIDAD_PRINCIPAL = @unidad_principal)
+                                             AND CNTX_UNIDAD = @cntx_unidad";
+                    CoreUeNsDto unidadPrincipal = connection.Query<CoreUeNsDto>(query2, new { unidad_principal = request?.unidad_principal, cntx_unidad = request?.cntx_unidad }).First();
 
                     if (unidadPrincipal.cntx_centro_costo == "")
                     {
-                        query = @$"update CORE_UENS set CntX_Centro_Costo = '{request.cntx_centro_costo}', 
-                                Activa = {activo}, Modifica_Fecha = Getdate(), Modifica_Usuario = '{usuario}'
-                                where COD_UNIDAD = '{unidadPrincipal.cod_unidad}'";
+                        const string upSql = @"update CORE_UENS set
+                                                 CntX_Centro_Costo = @cntx_centro_costo,
+                                                 Activa = @activa,
+                                                 Modifica_Fecha = Getdate(),
+                                                 Modifica_Usuario = @usuario
+                                               where COD_UNIDAD = @cod_unidad";
+                        resp.Code = connection.Execute(upSql, new { cntx_centro_costo = request?.cntx_centro_costo, activa, usuario, cod_unidad = unidadPrincipal.cod_unidad });
                     }
                     else
                     {
-                        query = @"SELECT CAST(MAX(CAST(COD_UNIDAD AS INT)) + 1 AS VARCHAR) AS NuevoCodigo
+                        const string getMaxSql = @"SELECT CAST(MAX(CAST(COD_UNIDAD AS INT)) + 1 AS VARCHAR) AS NuevoCodigo
                             FROM CORE_UENS WHERE ISNUMERIC(COD_UNIDAD) = 1";
-                        int ultimoID = connection.Query<int>(query).FirstOrDefault();
+                        int ultimoID = connection.Query<int>(getMaxSql).FirstOrDefault();
                         string nuevoCodigo = ultimoID < 10 ? "0" + ultimoID.ToString() : ultimoID.ToString();
 
-                        query = @$"insert 
-                                into CORE_UENS(COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, unidad_principal, Activa, Registro_Fecha, Registro_Usuario) 
-                                values('{nuevoCodigo}','{unidadPrincipal.descripcion}','{request.cntx_unidad}', '{request.cntx_centro_costo}',
-                                   '{request.unidad_principal}', {activo}, Getdate(), '{usuario}' )";
+                        const string insSql = @"insert into CORE_UENS(COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, unidad_principal, Activa, Registro_Fecha, Registro_Usuario)
+                                               values(@cod_unidad, @descripcion, @cntx_unidad, @cntx_centro_costo, @unidad_principal, @activa, Getdate(), @usuario)";
+                        resp.Code = connection.Execute(insSql, new
+                        {
+                            cod_unidad = nuevoCodigo,
+                            descripcion = unidadPrincipal.descripcion,
+                            cntx_unidad = request?.cntx_unidad,
+                            cntx_centro_costo = request?.cntx_centro_costo,
+                            unidad_principal = request?.unidad_principal,
+                            activa,
+                            usuario
+                        });
                     }
                     resp.Description = "Registro agregado satisfactoriamente";
+                    return resp;
                 }
                 else
                 {
-                    query = @$"update CORE_UENS set 
-                            CntX_Centro_Costo = '{request.cntx_centro_costo}',
-                            Activa = {activo}, Modifica_Fecha = Getdate(), Modifica_Usuario = '{usuario}'
-                            where COD_UNIDAD = '{request.cod_unidad}'";
+                    const string upSql = @"update CORE_UENS set
+                                             CntX_Centro_Costo = @cntx_centro_costo,
+                                             Activa = @activa,
+                                             Modifica_Fecha = Getdate(),
+                                             Modifica_Usuario = @usuario
+                                           where COD_UNIDAD = @cod_unidad";
+                    resp.Code = connection.Execute(upSql, new { cntx_centro_costo = request?.cntx_centro_costo, activa, usuario, cod_unidad = request?.cod_unidad });
                     resp.Description = RegistroActualizadoMsg;
+                    return resp;
                 }
-                resp.Code = connection.ExecuteAsync(query).Result;
             }
             catch (Exception ex)
             {
@@ -292,8 +343,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $"delete from CORE_UENS where COD_UNIDAD = '{cod_unidad}' OR UNIDAD_PRINCIPAL = '{cod_unidad}'";
-                resp.Code = connection.ExecuteAsync(query).Result;
+                const string query = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad OR UNIDAD_PRINCIPAL = @cod_unidad";
+                resp.Code = connection.Execute(query, new { cod_unidad });
                 resp.Description = "Registros eliminados satisfactoriamente";
             }
             catch (Exception ex)
@@ -322,45 +373,44 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $"select COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = '{cod_unidad}' AND CNTX_UNIDAD = '{cntx_unidad}'";
-                string? codUnidad = connection.Query<string>(query).FirstOrDefault();
+                const string qFind = @"select COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad AND CNTX_UNIDAD = @cntx_unidad";
+                string? codUnidad = connection.Query<string>(qFind, new { cod_unidad, cntx_unidad }).FirstOrDefault();
 
                 //Valida si es la unidad principal
                 if (codUnidad == null)
                 {
                     //Es la UEN Principal
-                    query = $"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = '{cod_unidad}'";
-                    resp.Code = connection.ExecuteAsync(query).Result;
+                    const string delRoles = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @cod_unidad";
+                    resp.Code = connection.Execute(delRoles, new { cod_unidad });
 
-                    query = $"delete from CORE_UENS where COD_UNIDAD = '{cod_unidad}'";
-                    resp.Code = connection.ExecuteAsync(query).Result;
-
+                    const string delUens = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad";
+                    resp.Code = connection.Execute(delUens, new { cod_unidad });
 
                     //Valida si existen otras unidades asociadas a la UEN Principal
-                    query = $"select TOP 1 COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = '{cod_unidad}' order by ACTIVA desc";
-                    string? nuevaUnidadPrincipal = connection.Query<string>(query).FirstOrDefault();
+                    const string qTopUnidad = @"select TOP 1 COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad order by ACTIVA desc";
+                    string? nuevaUnidadPrincipal = connection.Query<string>(qTopUnidad, new { cod_unidad }).FirstOrDefault();
 
                     if (nuevaUnidadPrincipal != null)
                     {
-                        query = @$"update CORE_UENS set 
-                            UNIDAD_PRINCIPAL = '{nuevaUnidadPrincipal}' 
-                            where UNIDAD_PRINCIPAL = '{cod_unidad}'";
-                        resp.Code = connection.ExecuteAsync(query).Result;
+                        const string upUensPrincipal = @"update CORE_UENS set 
+                            UNIDAD_PRINCIPAL = @nuevaUnidadPrincipal 
+                            where UNIDAD_PRINCIPAL = @cod_unidad";
+                        resp.Code = connection.Execute(upUensPrincipal, new { nuevaUnidadPrincipal, cod_unidad });
 
-                        query = @$"update CORE_UENS set 
+                        const string upNullPrincipal = @"update CORE_UENS set 
                             UNIDAD_PRINCIPAL = NULL 
-                            where COD_UNIDAD = '{nuevaUnidadPrincipal}'";
-                        resp.Code = connection.ExecuteAsync(query).Result;
+                            where COD_UNIDAD = @nuevaUnidadPrincipal";
+                        resp.Code = connection.Execute(upNullPrincipal, new { nuevaUnidadPrincipal });
                     }
                 }
                 else
                 {
                     //No es la UEN Principal
-                    query = $"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = '{codUnidad}'";
-                    resp.Code = connection.ExecuteAsync(query).Result;
+                    const string delRoles2 = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @codUnidad";
+                    resp.Code = connection.Execute(delRoles2, new { codUnidad });
 
-                    query = $"delete from CORE_UENS where COD_UNIDAD = '{codUnidad}'";
-                    resp.Code = connection.ExecuteAsync(query).Result;
+                    const string delUens2 = @"delete from CORE_UENS where COD_UNIDAD = @codUnidad";
+                    resp.Code = connection.Execute(delUens2, new { codUnidad });
                 }
 
                 resp.Description = "Registros eliminado satisfactoriamente";
@@ -390,43 +440,43 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $"select * from CORE_UENS where COD_UNIDAD = '{cod_unidad}'";
-                CoreUeNsDto unidadInfo = connection.Query<CoreUeNsDto>(query).First();
+                const string qInfo = @"select * from CORE_UENS where COD_UNIDAD = @cod_unidad";
+                CoreUeNsDto unidadInfo = connection.Query<CoreUeNsDto>(qInfo, new { cod_unidad }).First();
 
                 //Valida si es la unidad principal
                 if (unidadInfo.unidad_principal == "")
                 {
                     //Es la UEN Principal
-                    query = $"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = '{cod_unidad}'";
-                    resp.Code = connection.ExecuteAsync(query).Result;
+                    const string delRoles = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @cod_unidad";
+                    resp.Code = connection.Execute(delRoles, new { cod_unidad });
 
-                    query = $"delete from CORE_UENS where COD_UNIDAD = '{cod_unidad}'";
-                    resp.Code = connection.ExecuteAsync(query).Result;
+                    const string delUens = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad";
+                    resp.Code = connection.Execute(delUens, new { cod_unidad });
 
                     //Valida si existen otras unidades asociadas a la UEN Principal
-                    query = $"select TOP 1 COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = '{cod_unidad}' order by ACTIVA desc";
-                    string? nuevaUnidadPrincipal = connection.Query<string>(query).FirstOrDefault();
+                    const string qTopUnidad = @"select TOP 1 COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad order by ACTIVA desc";
+                    string? nuevaUnidadPrincipal = connection.Query<string>(qTopUnidad, new { cod_unidad }).FirstOrDefault();
                     if (nuevaUnidadPrincipal != null)
                     {
-                        query = @$"update CORE_UENS set 
-                            UNIDAD_PRINCIPAL = '{nuevaUnidadPrincipal}' 
-                            where UNIDAD_PRINCIPAL = '{cod_unidad}'";
-                        resp.Code = connection.ExecuteAsync(query).Result;
+                        const string upUensPrincipal = @"update CORE_UENS set 
+                            UNIDAD_PRINCIPAL = @nuevaUnidadPrincipal 
+                            where UNIDAD_PRINCIPAL = @cod_unidad";
+                        resp.Code = connection.Execute(upUensPrincipal, new { nuevaUnidadPrincipal, cod_unidad });
 
-                        query = @$"update CORE_UENS set 
+                        const string upNullPrincipal = @"update CORE_UENS set 
                             UNIDAD_PRINCIPAL = NULL 
-                            where COD_UNIDAD = '{nuevaUnidadPrincipal}'";
-                        resp.Code = connection.ExecuteAsync(query).Result;
+                            where COD_UNIDAD = @nuevaUnidadPrincipal";
+                        resp.Code = connection.Execute(upNullPrincipal, new { nuevaUnidadPrincipal });
                     }
                 }
                 else
                 {
                     //No es la UEN Principal
-                    query = $"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = '{cod_unidad}'";
-                    resp.Code = connection.ExecuteAsync(query).Result;
+                    const string delRoles2 = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @cod_unidad";
+                    resp.Code = connection.Execute(delRoles2, new { cod_unidad });
 
-                    query = $"delete from CORE_UENS where COD_UNIDAD = '{cod_unidad}'";
-                    resp.Code = connection.ExecuteAsync(query).Result;
+                    const string delUens2 = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad";
+                    resp.Code = connection.Execute(delUens2, new { cod_unidad });
                     resp.Description = "Registro eliminado satisfactoriamente";
                 }
             }
@@ -454,26 +504,42 @@ namespace Galileo.DataBaseTier
             response.Code = 0;
             try
             {
-                var query = "";
-                string where = " ", paginaActual = " ", paginacionActual = " ";
                 using var connection = new SqlConnection(clienteConnString);
-                if (vfiltro != null && vfiltro.filtro != null)
+
+                var search = vfiltro?.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
+                var offset = vfiltro?.pagina ?? 0;
+                var fetch = vfiltro?.paginacion ?? 0;
+                if (fetch <= 0)
                 {
-                    where = "and (COD_UNIDAD LIKE '%" + vfiltro.filtro + "%' OR descripcion LIKE '%" + vfiltro.filtro + "%') ";
+                    fetch = int.MaxValue;
                 }
 
-                if (vfiltro != null && vfiltro.pagina != null)
+                const string countSql = @"SELECT COUNT(*)
+                                          FROM CORE_UENS
+                                          WHERE UNIDAD_PRINCIPAL IS NULL
+                                            AND (@search IS NULL
+                                                 OR COD_UNIDAD LIKE @search
+                                                 OR descripcion LIKE @search);";
+
+                response.Result.Total = connection.Query<int>(countSql, new { search = searchLike }).FirstOrDefault();
+
+                const string pageSql = @"SELECT COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn'
+                                         FROM CORE_UENS
+                                         WHERE UNIDAD_PRINCIPAL IS NULL
+                                           AND (@search IS NULL
+                                                OR COD_UNIDAD LIKE @search
+                                                OR descripcion LIKE @search)
+                                         ORDER BY COD_UNIDAD DESC
+                                         OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                response.Result.uens = connection.Query<CoreUeNsDto>(pageSql, new
                 {
-                    paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
-                    paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
-                }
-
-                query = $"select COUNT(*) from CORE_UENS WHERE UNIDAD_PRINCIPAL IS NULL {where}";
-                response.Result.Total = connection.Query<int>(query).FirstOrDefault();
-
-                query = @$"select COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn' 
-                        from CORE_UENS WHERE UNIDAD_PRINCIPAL IS NULL {where} order by COD_UNIDAD desc {paginaActual} {paginacionActual}";
-                response.Result.uens = connection.Query<CoreUeNsDto>(query).ToList();
+                    search = searchLike,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -512,15 +578,14 @@ namespace Galileo.DataBaseTier
             response.Result.Total = 0;
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(clienteConnString);
-                query = @$"select DISTINCT '{cod_unidad}' AS COD_UNIDAD, C.CNTX_UNIDAD, '{cod_unidad}' as UNIDAD_PRINCIPAL,
+                const string query = @"select DISTINCT @cod_unidad AS COD_UNIDAD, C.CNTX_UNIDAD, @cod_unidad as UNIDAD_PRINCIPAL,
                     (select TOP 1 DESCRIPCION from CNTX_UNIDADES WHERE COD_UNIDAD = C.CNTX_UNIDAD) AS DESCRIPCION
                     from CORE_UENS C
-                    WHERE C.UNIDAD_PRINCIPAL = '{cod_unidad}' OR C.COD_UNIDAD = '{cod_unidad}' 
+                    WHERE C.UNIDAD_PRINCIPAL = @cod_unidad OR C.COD_UNIDAD = @cod_unidad
                     order by C.CNTX_UNIDAD desc";
-                response.Result.uens = connection.Query<CoreUeNsDto>(query).ToList();
-                if (response.Result.uens[0].cntx_unidad == null || response.Result.uens[0].cntx_unidad == "")
+                response.Result.uens = connection.Query<CoreUeNsDto>(query, new { cod_unidad }).ToList();
+                if (response.Result.uens == null || response.Result.uens.Count == 0 || string.IsNullOrWhiteSpace(response.Result.uens[0].cntx_unidad))
                 {
                     response.Result = null;
                 }
@@ -562,15 +627,14 @@ namespace Galileo.DataBaseTier
             response.Result.Total = 0;
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(clienteConnString);
-                query = @$"select C.COD_UNIDAD, C.CNTX_UNIDAD, C.CNTX_CENTRO_COSTO, C.ACTIVA, '{cod_unidad}' AS UNIDAD_PRINCIPAL,
+                const string query = @"select C.COD_UNIDAD, C.CNTX_UNIDAD, C.CNTX_CENTRO_COSTO, C.ACTIVA, @cod_unidad AS UNIDAD_PRINCIPAL,
                     (select TOP 1 DESCRIPCION from CNTX_CENTRO_COSTOS WHERE COD_CENTRO_COSTO = C.CNTX_CENTRO_COSTO) AS DESCRIPCION
                     from CORE_UENS C
-                    WHERE (C.UNIDAD_PRINCIPAL = '{cod_unidad}' OR C.COD_UNIDAD = '{cod_unidad}' ) AND C.CNTX_UNIDAD = '{sub_unidad}'
+                    WHERE (C.UNIDAD_PRINCIPAL = @cod_unidad OR C.COD_UNIDAD = @cod_unidad) AND C.CNTX_UNIDAD = @sub_unidad
                     order by C.CNTX_CENTRO_COSTO desc";
-                response.Result.uens = connection.Query<CoreUeNsDto>(query).ToList();
-                if (response.Result.uens[0].cntx_centro_costo == null || response.Result.uens[0].cntx_centro_costo == "")
+                response.Result.uens = connection.Query<CoreUeNsDto>(query, new { cod_unidad, sub_unidad }).ToList();
+                if (response.Result.uens == null || response.Result.uens.Count == 0 || string.IsNullOrWhiteSpace(response.Result.uens[0].cntx_centro_costo))
                 {
                     response.Result = null;
                 }
@@ -612,8 +676,12 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = @$"exec spSys_UENS_Miembros_Consultas '{cod_unidad}', '{filtro}'";
-                response.Result = connection.Query<CoreUsuariosDto>(query).ToList();
+                const string sp = "spSys_UENS_Miembros_Consultas";
+                response.Result = connection.Query<CoreUsuariosDto>(sp, new
+                {
+                    cod_unidad,
+                    filtro = (filtro ?? string.Empty)
+                }, commandType: CommandType.StoredProcedure).ToList();
             }
             catch (Exception ex)
             {
@@ -645,9 +713,14 @@ namespace Galileo.DataBaseTier
                     mov = 'A';
                 }
                 using var connection = new SqlConnection(clienteConnString);
-                var query = @$"exec spSys_UENS_Miembros_Registro '{cod_unidad}', '{request.core_usuario}',
-                        '{request.registro_usuario}', {mov}";
-                connection.Execute(query);
+                const string sp = "spSys_UENS_Miembros_Registro";
+                connection.Execute(sp, new
+                {
+                    cod_unidad,
+                    core_usuario = request.core_usuario,
+                    registro_usuario = request.registro_usuario,
+                    mov
+                }, commandType: CommandType.StoredProcedure);
                 resp.Description = RegistroActualizadoMsg;
             }
             catch (Exception ex)
@@ -674,8 +747,12 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = @$"exec spSys_UENS_Roles_Consultas '{cod_unidad}', '{filtro}'";
-                response.Result = connection.Query<CoreRolesDto>(query).ToList();
+                const string sp = "spSys_UENS_Roles_Consultas";
+                response.Result = connection.Query<CoreRolesDto>(sp, new
+                {
+                    cod_unidad,
+                    filtro = (filtro ?? string.Empty)
+                }, commandType: CommandType.StoredProcedure).ToList();
             }
             catch (Exception ex)
             {
@@ -701,13 +778,25 @@ namespace Galileo.DataBaseTier
             resp.Code = 0;
             try
             {
-
+                if (request == null)
+                {
+                    resp.Code = -1;
+                    resp.Description = "El parámetro 'request' no puede ser nulo.";
+                    return resp;
+                }
                 using var connection = new SqlConnection(clienteConnString);
-                var query = @$"exec spSys_UENS_Roles_Registro '{cod_unidad}', '{request.core_usuario}',
-                        {Convert.ToInt32(request.rol_solicita)}, {Convert.ToInt32(request.rol_consulta)},
-                        {Convert.ToInt32(request.rol_autoriza)},{Convert.ToInt32(request.rol_encargado)},
-                        {Convert.ToInt32(request.rol_lider)},'{request.registro_usuario}'";
-                connection.Execute(query);
+                const string sp = "spSys_UENS_Roles_Registro";
+                connection.Execute(sp, new
+                {
+                    cod_unidad,
+                    core_usuario = request.core_usuario,
+                    rol_solicita = Convert.ToInt32(request.rol_solicita),
+                    rol_consulta = Convert.ToInt32(request.rol_consulta),
+                    rol_autoriza = Convert.ToInt32(request.rol_autoriza),
+                    rol_encargado = Convert.ToInt32(request.rol_encargado),
+                    rol_lider = Convert.ToInt32(request.rol_lider),
+                    registro_usuario = request.registro_usuario
+                }, commandType: CommandType.StoredProcedure);
                 resp.Description = RegistroActualizadoMsg;
             }
             catch (Exception ex)
@@ -733,19 +822,21 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                string query = "";
                 if (usuario == null || usuario == "null")
                 {
-                    query = "select U.COD_UNIDAD AS ITEM, U.DESCRIPCION, U.CntX_Unidad, U.CntX_Centro_Costo from CORE_UENS U";
+                    const string query = @"select U.COD_UNIDAD AS ITEM, U.DESCRIPCION, U.CntX_Unidad, U.CntX_Centro_Costo from CORE_UENS U";
+                    response.Result = connection.Query<UensListaDatos>(query).ToList();
+                    return response;
                 }
                 else
                 {
-                    query = @$"SELECT S.COD_UNIDAD AS ITEM, U.DESCRIPCION, U.CntX_Unidad, U.CntX_Centro_Costo FROM CORE_UENS_USUARIOS_ROLES S LEFT JOIN 
-                                    CORE_UENS U ON S.COD_UNIDAD = U.COD_UNIDAD
-                                    WHERE S.CORE_USUARIO = '{usuario}'";
+                    const string query = @"SELECT S.COD_UNIDAD AS ITEM, U.DESCRIPCION, U.CntX_Unidad, U.CntX_Centro_Costo
+                                           FROM CORE_UENS_USUARIOS_ROLES S
+                                           LEFT JOIN CORE_UENS U ON S.COD_UNIDAD = U.COD_UNIDAD
+                                           WHERE S.CORE_USUARIO = @usuario";
+                    response.Result = connection.Query<UensListaDatos>(query, new { usuario }).ToList();
+                    return response;
                 }
-
-                response.Result = connection.Query<UensListaDatos>(query).ToList();
             }
             catch (Exception ex)
             {
