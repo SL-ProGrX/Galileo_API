@@ -4,6 +4,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
@@ -43,31 +44,54 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
-                if (filtros.filtro != null && filtros.filtro.Trim() != "")
+
+                var search = filtros?.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 0; // 0=DESC, 1=ASC
+
+                var offset = filtros?.pagina ?? 0;
+                var fetch = filtros?.paginacion ?? 0;
+                if (fetch <= 0)
                 {
-                    filtros.filtro = $" WHERE Tipo = '{tipo}'  and ( cod_Educ LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' )";
+                    fetch = int.MaxValue;
                 }
-                else
+
+                const string sql = @"
+                    SELECT cod_Educ, descripcion, Activa, 0 as btn
+                    FROM SYS_EDUCACION_CFG
+                    WHERE Tipo = @tipo
+                      AND (@search IS NULL
+                           OR cod_Educ LIKE @search
+                           OR descripcion LIKE @search)
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_educ' THEN cod_Educ END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_educ' THEN cod_Educ END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion' THEN descripcion END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'activa' THEN CONVERT(int, Activa) END ASC,
+
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_educ' THEN cod_Educ END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion' THEN descripcion END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'activa' THEN CONVERT(int, Activa) END DESC,
+
+                        -- Fallback
+                        cod_Educ ASC
+                    OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                result.Result.lista = connection.Query<SysEducacionData>(sql, new
                 {
-                    filtros.filtro = $" WHERE  Tipo = '{tipo}'";
-                }
+                    tipo,
+                    search = searchLike,
+                    sortField,
+                    sortOrder,
+                    offset,
+                    fetch
+                }).ToList();
 
-                if (filtros.sortField == "" || filtros.sortField == null)
-                {
-                    filtros.sortField = "cod_Educ";
-                }
-
-                query = $@"select cod_Educ, descripcion, Activa, 0 as btn from SYS_EDUCACION_CFG  
-                                        {filtros.filtro} 
-                                     order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                         OFFSET {filtros.pagina} ROWS 
-                                         FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-
-
-                result.Result.lista = connection.Query<SysEducacionData>(query).ToList();
                 result.Result.total = result.Result.lista.Count;
             }
             catch (Exception ex)
@@ -99,9 +123,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                //verifico si existe dato
-                var query = $@"select isnull(count(*),0) as Existe from SYS_EDUCACION_CFG where cod_Educ ='{datos.cod_educ}' and Tipo ='{datos.tipo}' ";
-                var existe = connection.QueryFirstOrDefault<int>(query, new { dato = datos.cod_educ });
+                //verifico si existe dato (parametrizado)
+                const string query = @"select isnull(count(*),0) as Existe
+                                       from SYS_EDUCACION_CFG
+                                       where cod_Educ = @cod_educ and Tipo = @tipo";
+                var existe = connection.QueryFirstOrDefault<int>(query, new { cod_educ = datos.cod_educ, tipo = datos.tipo });
 
                 if (datos.isNew)
                 {
@@ -288,8 +314,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
 
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"exec spSys_Educacion_Asigna_Consulta '{cod_Educ.Trim()}','{tipoDetalleEduc}' ";
-                result.Result = connection.Query<SysEducacionDetalleData>(query).ToList();
+                const string sp = "spSys_Educacion_Asigna_Consulta";
+                result.Result = connection.Query<SysEducacionDetalleData>(sp, new
+                {
+                    cod_Educ = (cod_Educ ?? string.Empty).Trim(),
+                    tipoDetalleEduc
+                }, commandType: CommandType.StoredProcedure).ToList();
             }
             catch (Exception ex)
             {
@@ -322,7 +352,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"exec spSys_Educacion_Asigna @cod_Educ,@cod_DetalleEduc,@usuario,@check";
+                const string query = @"exec spSys_Educacion_Asigna @cod_Educ,@cod_DetalleEduc,@usuario,@check";
                 connection.Execute(query,
                      new
                      {

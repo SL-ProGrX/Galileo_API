@@ -5,6 +5,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using System.Data;
 using Galileo.Models;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
@@ -85,35 +86,50 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                    // Obtiene el total de registros para paginaci�n.
-                    var queryTotal = "SELECT count(*) FROM vSys_Padron_Nacional";
-                    response.Result.total = connection.Query<int>(queryTotal).FirstOrDefault();
 
-                    // Construye el filtro de b�squeda si se proporciona.
-                    string where = "";
-                    if (!string.IsNullOrEmpty(filtro.filtro))
-                    {
-                        where = $@"WHERE (Identificacion LIKE '%{filtro.filtro}%' OR Nombre LIKE '%{filtro.filtro}%')";
-                    }
+                // Total (mantiene comportamiento anterior: total sin filtro)
+                const string queryTotal = @"SELECT COUNT(*) FROM vSys_Padron_Nacional";
+                response.Result.total = connection.Query<int>(queryTotal).FirstOrDefault();
 
-                    // Define el campo de ordenamiento por defecto si no se especifica.
-                    if (string.IsNullOrEmpty(filtro.sortField))
-                        filtro.sortField = "Identificacion";
+                var search = filtro.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
 
-                    // Aplica paginaci�n si corresponde.
-                    string paginacion = "";
-                    if (filtro.pagina > 0)
-                    {
-                        paginacion = $" OFFSET {filtro.pagina} ROWS FETCH NEXT {filtro.paginacion} ROWS ONLY ";
-                    }
+                var sortField = (filtro.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtro.sortOrder; // 0=DESC, 1=ASC
 
-                    // Ejecuta la consulta con filtros, orden y paginaci�n.
-                    var query = $@"SELECT Identificacion, Nombre FROM vSys_Padron_Nacional
-                                   {where}
-                                   ORDER BY {filtro.sortField} {(filtro.sortOrder == 0 ? "DESC" : "ASC")}
-                                   {paginacion}";
+                var offset = filtro.pagina;
+                var fetch = filtro.paginacion;
+                if (fetch <= 0)
+                {
+                    fetch = int.MaxValue;
+                }
 
-                    response.Result.lista = connection.Query<SysPadronData>(query).ToList();
+                const string query = @"SELECT Identificacion, Nombre
+                                       FROM vSys_Padron_Nacional
+                                       WHERE (@search IS NULL
+                                              OR Identificacion LIKE @search
+                                              OR Nombre LIKE @search)
+                                       ORDER BY
+                                            -- ASC
+                                            CASE WHEN @sortOrder = 1 AND @sortField = 'identificacion' THEN Identificacion END ASC,
+                                            CASE WHEN @sortOrder = 1 AND @sortField = 'nombre' THEN Nombre END ASC,
+
+                                            -- DESC
+                                            CASE WHEN @sortOrder = 0 AND @sortField = 'identificacion' THEN Identificacion END DESC,
+                                            CASE WHEN @sortOrder = 0 AND @sortField = 'nombre' THEN Nombre END DESC,
+
+                                            -- Fallback
+                                            Identificacion ASC
+                                       OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                response.Result.lista = connection.Query<SysPadronData>(query, new
+                {
+                    search = searchLike,
+                    sortField,
+                    sortOrder,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -124,6 +140,62 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             }
             return response;
         }
+        // --------------------------- Helpers & DTO for SYS_Educacion_Obtener ---------------------------
+        [SuppressMessage("Major Code Smell", "S3459", Justification = "Properties are populated via Json.NET deserialization.")]
+        [SuppressMessage("Major Code Smell", "S1144", Justification = "Setters are used by Json.NET during deserialization.")]
+        private sealed class EducacionAvanzadosDto
+        {
+            public string? Ciclo_Anio_Inicio { get; set; }
+            public string? Ciclo_Anio_Corte { get; set; }
+            public DateTime? Registro_Fecha_Inicio { get; set; }
+            public DateTime? Registro_Fecha_Corte { get; set; }
+
+            public string? Ciclo { get; set; }
+            public string? Registro_Usuario { get; set; }
+            public string? Cedula { get; set; }
+            public string? Nombre { get; set; }
+            public string? Beneficiario_Id { get; set; }
+            public string? Beneficiario { get; set; }
+
+            public string? Universidad { get; set; }
+            public string? Nivel { get; set; }
+            public string? Carrera { get; set; }
+            public string? Especialidad { get; set; }
+        }
+
+        private static EducacionAvanzadosDto? ParseEducacionAvanzados(object? parametros)
+        {
+            if (parametros == null) return null;
+
+            var parametrosStr = parametros.ToString();
+            if (string.IsNullOrWhiteSpace(parametrosStr)) return null;
+
+            try
+            {
+                return JsonConvert.DeserializeObject<EducacionAvanzadosDto>(parametrosStr);
+            }
+            catch
+            {
+                // Si el JSON viene mal, ignoramos y seguimos sin filtros avanzados.
+                return null;
+            }
+        }
+
+        private static string? LikeOrNull(string? value)
+        {
+            var v = value?.Trim();
+            return string.IsNullOrWhiteSpace(v) ? null : $"%{v}%";
+        }
+
+        private static string? TrimOrNull(string? value)
+        {
+            var v = value?.Trim();
+            return string.IsNullOrWhiteSpace(v) ? null : v;
+        }
+
+        private static DateTime? StartOfDay(DateTime? dt) => dt?.Date;
+        private static DateTime? EndOfDay(DateTime? dt) => dt?.Date.AddDays(1).AddSeconds(-1);
+
 
         /// <summary>
         /// Obtiene registros de educaci�n con lazy loading, paginaci�n, ordenamiento y filtros avanzados.
@@ -145,28 +217,138 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(stringConn);
 
-                var parameters = new DynamicParameters();
-                string where = BuildEducacionWhereClause(filtros, parameters);
+                var adv = ParseEducacionAvanzados(filtros?.parametros);
 
-                string sortDirection = filtros.sortOrder == 0 ? "DESC" : "ASC";
-                string orderBy = !string.IsNullOrEmpty(filtros.sortField)
-                    ? $" ORDER BY {filtros.sortField} {sortDirection} "
-                    : " ORDER BY Registro_Fecha DESC ";
+                var cicloAnioInicio = TrimOrNull(adv?.Ciclo_Anio_Inicio);
+                var cicloAnioCorte = TrimOrNull(adv?.Ciclo_Anio_Corte);
 
-                string paginacion = filtros.paginacion > 0
-                    ? $" OFFSET {filtros.pagina} ROWS FETCH NEXT {filtros.paginacion} ROWS ONLY "
-                    : "";
+                // Normaliza fechas para rango inclusivo
+                DateTime? fIni = StartOfDay(adv?.Registro_Fecha_Inicio);
+                DateTime? fFin = EndOfDay(adv?.Registro_Fecha_Corte);
 
-                string query = $@"
-            SELECT Cedula, Nombre, Registro_Fecha, Registro_Usuario,
-                   Universidad, Nivel, Carrera, Especialidad,
-                   Ciclo, Ciclo_Anio, Beneficiario_Id, Beneficiario, Parentesco
-            FROM vSys_Educacion_Log
-            WHERE 1=1 {where}
-            {orderBy}
-            {paginacion}";
+                // Campos avanzados
+                var ciclo = TrimOrNull(adv?.Ciclo)?.Replace(" ", string.Empty);
+                var registroUsuarioLike = LikeOrNull(adv?.Registro_Usuario);
+                var cedulaLike = LikeOrNull(adv?.Cedula);
+                var nombreLike = LikeOrNull(adv?.Nombre);
+                var beneficiarioIdLike = LikeOrNull(adv?.Beneficiario_Id);
+                var beneficiarioLike = LikeOrNull(adv?.Beneficiario);
 
-                result.Result = connection.Query<SysEducacionLogData>(query, parameters).ToList();
+                var codUniversidad = TrimOrNull(adv?.Universidad);
+                var codNivel = TrimOrNull(adv?.Nivel);
+                var codCarrera = TrimOrNull(adv?.Carrera);
+                var codEspecialidad = TrimOrNull(adv?.Especialidad);
+
+                // Filtro general
+                var searchLike = LikeOrNull(filtros?.filtro);
+
+                // Orden/paginación
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 0; // 0=DESC, 1=ASC
+
+                var offset = filtros?.pagina ?? 0;
+                var fetch = filtros?.paginacion ?? 0;
+                if (fetch <= 0)
+                {
+                    fetch = int.MaxValue;
+                }
+
+                const string query = @"
+                    SELECT Cedula, Nombre, Registro_Fecha, Registro_Usuario,
+                           Universidad, Nivel, Carrera, Especialidad,
+                           Ciclo, Ciclo_Anio, Beneficiario_Id, Beneficiario, Parentesco
+                    FROM vSys_Educacion_Log
+                    WHERE 1=1
+                      AND (@Ciclo_Anio_Inicio IS NULL OR @Ciclo_Anio_Corte IS NULL OR Ciclo_Anio BETWEEN @Ciclo_Anio_Inicio AND @Ciclo_Anio_Corte)
+                      AND (@Registro_Fecha_Inicio IS NULL OR @Registro_Fecha_Corte IS NULL OR Registro_Fecha BETWEEN @Registro_Fecha_Inicio AND @Registro_Fecha_Corte)
+
+                      AND (@Ciclo IS NULL OR REPLACE(Ciclo, ' ', '') = @Ciclo)
+                      AND (@Registro_Usuario IS NULL OR Registro_Usuario LIKE @Registro_Usuario)
+                      AND (@Cedula IS NULL OR Cedula LIKE @Cedula)
+                      AND (@Nombre IS NULL OR Nombre LIKE @Nombre)
+                      AND (@Beneficiario_Id IS NULL OR Beneficiario_Id LIKE @Beneficiario_Id)
+                      AND (@Beneficiario IS NULL OR Beneficiario LIKE @Beneficiario)
+
+                      AND (@Cod_Universidad IS NULL OR Cod_Universidad = @Cod_Universidad)
+                      AND (@Cod_Nivel IS NULL OR Cod_Nivel = @Cod_Nivel)
+                      AND (@Cod_Carrera IS NULL OR Cod_Carrera = @Cod_Carrera)
+                      AND (@Cod_Especialidad IS NULL OR Cod_Especialidad = @Cod_Especialidad)
+
+                      AND (
+                            @search IS NULL
+                            OR Cedula LIKE @search
+                            OR Nombre LIKE @search
+                            OR Registro_Usuario LIKE @search
+                            OR Universidad LIKE @search
+                            OR Nivel LIKE @search
+                            OR Carrera LIKE @search
+                            OR Especialidad LIKE @search
+                            OR Ciclo LIKE @search
+                            OR Ciclo_Anio LIKE @search
+                            OR Beneficiario_Id LIKE @search
+                            OR Beneficiario LIKE @search
+                            OR Parentesco LIKE @search
+                          )
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cedula' THEN Cedula END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'nombre' THEN Nombre END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'registro_fecha' THEN Registro_Fecha END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'registro_usuario' THEN Registro_Usuario END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'universidad' THEN Universidad END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'nivel' THEN Nivel END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'carrera' THEN Carrera END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'especialidad' THEN Especialidad END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'ciclo' THEN Ciclo END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'ciclo_anio' THEN Ciclo_Anio END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'beneficiario_id' THEN Beneficiario_Id END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'beneficiario' THEN Beneficiario END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'parentesco' THEN Parentesco END ASC,
+
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cedula' THEN Cedula END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'nombre' THEN Nombre END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'registro_fecha' THEN Registro_Fecha END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'registro_usuario' THEN Registro_Usuario END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'universidad' THEN Universidad END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'nivel' THEN Nivel END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'carrera' THEN Carrera END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'especialidad' THEN Especialidad END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'ciclo' THEN Ciclo END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'ciclo_anio' THEN Ciclo_Anio END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'beneficiario_id' THEN Beneficiario_Id END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'beneficiario' THEN Beneficiario END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'parentesco' THEN Parentesco END DESC,
+
+                        -- Fallback (equivalente al orden default anterior)
+                        Registro_Fecha DESC
+                    OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                result.Result = connection.Query<SysEducacionLogData>(query, new
+                {
+                    Ciclo_Anio_Inicio = cicloAnioInicio,
+                    Ciclo_Anio_Corte = cicloAnioCorte,
+                    Registro_Fecha_Inicio = fIni,
+                    Registro_Fecha_Corte = fFin,
+
+                    Ciclo = ciclo,
+                    Registro_Usuario = registroUsuarioLike,
+                    Cedula = cedulaLike,
+                    Nombre = nombreLike,
+                    Beneficiario_Id = beneficiarioIdLike,
+                    Beneficiario = beneficiarioLike,
+
+                    Cod_Universidad = codUniversidad,
+                    Cod_Nivel = codNivel,
+                    Cod_Carrera = codCarrera,
+                    Cod_Especialidad = codEspecialidad,
+
+                    search = searchLike,
+                    sortField,
+                    sortOrder,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -175,116 +357,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 result.Result = null;
             }
             return result;
-        }
-
-        private static string BuildEducacionWhereClause(FiltrosLazyLoadData filtros, DynamicParameters parameters)
-        {
-            var where = "";
-            dynamic? filtrosAvanzados = null;
-            if (filtros.parametros != null)
-            {
-                var parametrosStr = filtros.parametros?.ToString();
-                if (!string.IsNullOrWhiteSpace(parametrosStr))
-                {
-                    filtrosAvanzados = JsonConvert.DeserializeObject<dynamic>(parametrosStr) ?? new System.Dynamic.ExpandoObject();
-                }
-                else
-                {
-                    filtrosAvanzados = null;
-                }
-            }
-
-            if (filtrosAvanzados != null)
-            {
-                where += BuildCicloAnioWhere(filtrosAvanzados, parameters);
-                where += BuildRegistroFechaWhere(filtrosAvanzados, parameters);
-                where += BuildAdvancedLikeWhere(filtrosAvanzados, parameters);
-            }
-
-            if (!string.IsNullOrWhiteSpace(filtros.filtro))
-            {
-                where += @" AND (
-                Cedula LIKE @filtro OR
-                Nombre LIKE @filtro OR
-                Registro_Usuario LIKE @filtro OR
-                Universidad LIKE @filtro OR
-                Nivel LIKE @filtro OR
-                Carrera LIKE @filtro OR
-                Especialidad LIKE @filtro OR
-                Ciclo LIKE @filtro OR
-                Ciclo_Anio LIKE @filtro OR
-                Beneficiario_Id LIKE @filtro OR
-                Beneficiario LIKE @filtro OR
-                Parentesco LIKE @filtro
-            )";
-                parameters.Add("@filtro", $"%{filtros.filtro}%");
-            }
-
-            return where;
-        }
-
-        private static string BuildCicloAnioWhere(dynamic filtrosAvanzados, DynamicParameters parameters)
-        {
-            if (!string.IsNullOrEmpty((string?)filtrosAvanzados.Ciclo_Anio_Inicio) && !string.IsNullOrEmpty((string?)filtrosAvanzados.Ciclo_Anio_Corte))
-            {
-                parameters.Add("@Ciclo_Anio_Inicio", (string)filtrosAvanzados.Ciclo_Anio_Inicio);
-                parameters.Add("@Ciclo_Anio_Corte", (string)filtrosAvanzados.Ciclo_Anio_Corte);
-                return " AND CICLO_ANIO BETWEEN @Ciclo_Anio_Inicio AND @Ciclo_Anio_Corte";
-            }
-            return "";
-        }
-
-        private static string BuildRegistroFechaWhere(dynamic filtrosAvanzados, DynamicParameters parameters)
-        {
-            if (filtrosAvanzados.Registro_Fecha_Inicio != null && filtrosAvanzados.Registro_Fecha_Corte != null)
-            {
-                DateTime? fechaInicio = filtrosAvanzados.Registro_Fecha_Inicio;
-                DateTime? fechaCorte = filtrosAvanzados.Registro_Fecha_Corte;
-                if (fechaInicio.HasValue && fechaCorte.HasValue)
-                {
-                    parameters.Add("@Registro_Fecha_Inicio", fechaInicio.Value.Date);
-                    parameters.Add("@Registro_Fecha_Corte", fechaCorte.Value.Date.AddDays(1).AddSeconds(-1));
-                    return " AND REGISTRO_FECHA BETWEEN @Registro_Fecha_Inicio AND @Registro_Fecha_Corte";
-                }
-            }
-            return "";
-        }
-
-        private static string BuildAdvancedLikeWhere(dynamic filtrosAvanzados, DynamicParameters parameters)
-        {
-            var where = "";
-            var likeFields = new (string Field, string Param, string Condition)[]
-            {
-                ("Ciclo", "@Ciclo", " AND REPLACE(CICLO, ' ', '') = @Ciclo"),
-                ("Registro_Usuario", "@Registro_Usuario", " AND REGISTRO_USUARIO LIKE @Registro_Usuario"),
-                ("Cedula", "@Cedula", " AND CEDULA LIKE @Cedula"),
-                ("Nombre", "@Nombre", " AND NOMBRE LIKE @Nombre"),
-                ("Beneficiario_Id", "@Beneficiario_Id", " AND BENEFICIARIO_ID LIKE @Beneficiario_Id"),
-                ("Beneficiario", "@Beneficiario", " AND BENEFICIARIO LIKE @Beneficiario"),
-                ("Universidad", "@Cod_Universidad", " AND COD_UNIVERSIDAD = @Cod_Universidad"),
-                ("Nivel", "@Cod_Nivel", " AND COD_NIVEL = @Cod_Nivel"),
-                ("Carrera", "@Cod_Carrera", " AND COD_CARRERA = @Cod_Carrera"),
-                ("Especialidad", "@Cod_Especialidad", " AND COD_ESPECIALIDAD = @Cod_Especialidad")
-            };
-
-            foreach (var (field, param, condition) in likeFields)
-            {
-                var value = filtrosAvanzados[field];
-                string? valueStr = value as string;
-                if (!string.IsNullOrEmpty(valueStr))
-                {
-                    if (condition.Contains("LIKE"))
-                    {
-                        parameters.Add(param, $"%{valueStr}%");
-                    }
-                    else
-                    {
-                        parameters.Add(param, valueStr);
-                    }
-                    where += condition;
-                }
-            }
-            return where;
         }
     }
 
