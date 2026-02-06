@@ -20,7 +20,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntXCierres_Guardar(codEmpresa, codConta, usuario, request);
         }
 
-        public ErrorDto CntXCierres_Eliminar(int codEmpresa, int codConta, string usuario, string idCierre)
+        public ErrorDto CntXCierres_Eliminar(int codEmpresa, int codConta, string usuario, int idCierre)
         {
             return _db.CntXCierres_Eliminar(codEmpresa, codConta, usuario, idCierre);
         }
