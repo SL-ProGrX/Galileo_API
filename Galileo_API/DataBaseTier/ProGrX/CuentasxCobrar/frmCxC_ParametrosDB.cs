@@ -48,32 +48,43 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns></returns>
         public ErrorDto<CxCParametrosLista> CxCParametrosLista_Obtener(int codEmpresa, int codContabilidad, FiltrosLazyLoadData filtros, bool esExportar)
         {
-            CxCParametros_Cargar(codEmpresa);
-
-            using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
-
+            
             try
             {
+
+                CxCParametros_Cargar(codEmpresa);
+
+                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
+
                 var response = new CxCParametrosLista();
 
 
-                var offset = filtros.pagina!;
-                var fetch = filtros.paginacion!;
-                var usarPaginacion = fetch > 0 && !esExportar;
 
-                var texto = filtros.filtro?.Trim();
-                var hasFiltro = !string.IsNullOrWhiteSpace(texto);
-                var like = hasFiltro ? $"%{texto}%" : null;
+                var offset = filtros.pagina;
+                var fetch = filtros.paginacion;
+                var usarPaginacion = !esExportar && fetch > 0;
 
-                var sortField = (filtros.sortField ?? string.Empty).Trim();
-                var orderByField = sortField switch
-                {
-                    "cod_parametro" => "cod_parametro",
-                    "descripcion" => "descripcion",
-                    "valor" => "valor",
-                    _ => "cod_parametro"
-                };
-                var direction = filtros?.sortOrder == 1 ? "DESC" : "ASC";
+                var like = BuildLike(filtros.filtro);
+                var (orderBy, direction) = BuildOrder(filtros.sortField, filtros.sortOrder);
+
+
+                //var offset = filtros.pagina!;
+                //var fetch = filtros.paginacion!;
+                //var usarPaginacion = fetch > 0 && !esExportar;
+
+                //var texto = filtros.filtro?.Trim();
+                //var hasFiltro = !string.IsNullOrWhiteSpace(texto);
+                //var like = hasFiltro ? $"%{texto}%" : null;
+
+                //var sortField = (filtros.sortField ?? string.Empty).Trim();
+                //var orderByField = sortField switch
+                //{
+                //    "cod_parametro" => "cod_parametro",
+                //    "descripcion" => "descripcion",
+                //    "valor" => "valor",
+                //    _ => "cod_parametro"
+                //};
+                //var direction = filtros.sortOrder == 1 ? "DESC" : "ASC";
 
 
                 const string where = @"
@@ -87,34 +98,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     SELECT cod_parametro, descripcion, valor, notas,tipo,inicio_fecha,visible,modifica_usuario,modifica_fecha
                     FROM CxC_Parametros
                        {where}
-                    ORDER BY {orderByField} {direction}";
+                        ORDER BY {orderBy} {direction}{BuildPagination(usarPaginacion)};";
+                //ORDER BY {orderByField} {direction}
 
-
+                var @params = new { like, offset, fetch };
 
                 var sqlCount = $@"
                     SELECT COUNT(cod_parametro)
                     FROM CxC_Parametros {where}";
 
-                if (usarPaginacion)
-                {
-                    sqlList += @"
-                        OFFSET @offset ROWS
-                        FETCH NEXT @fetch ROWS ONLY;";
-                }
-
-
-                var @params = new
-                {
-                    filtro = hasFiltro ? texto : null,
-                    like,
-                    offset,
-                    fetch
-                };
-
                 response.total = conn.QuerySingle<int>(sqlCount, @params);
 
+             
 
-                response.lista = conn.Query<CxCParametrosData>(sqlList, @params).ToList();
+                var lista = conn.Query<CxCParametrosData>(sqlList, @params).ToList();
+                EnriquecerCuentas(lista, codEmpresa, codContabilidad);
+                response.lista = lista;
+
 
 
                 if (response.lista != null)
@@ -144,13 +144,64 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
 
         }
-      
+
+
+        static string? BuildLike(string? texto)
+                => string.IsNullOrWhiteSpace(texto) ? null : $"%{texto.Trim()}%";
+
+        static (string orderBy, string direction) BuildOrder(string? sortField, int sortOrder)
+        {
+            var field = (sortField ?? string.Empty).Trim();
+            var orderBy = field switch
+            {
+                "cod_parametro" => "cod_parametro",
+                "descripcion" => "descripcion",
+                "valor" => "valor",
+                _ => "cod_parametro"
+            };
+            var direction = (sortOrder == 1) ? "DESC" : "ASC";
+            return (orderBy, direction);
+        }
+
+
+        static string BuildPagination(bool usar)
+               => usar ? "\nOFFSET @offset ROWS\nFETCH NEXT @fetch ROWS ONLY" : string.Empty;
+
+
+        void EnriquecerCuentas(IEnumerable<CxCParametrosData> items, int empresa, int contab)
+        {
+            foreach (var item in items)
+            {
+                // Early-continue: reduce anidación
+                if (!string.Equals(item.Tipo, "CTA", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (string.IsNullOrWhiteSpace(item.Valor))
+                {
+                    item.cuentaMasck = null;
+                    item.cuentaDetalle = null;
+                    continue;
+                }
+
+                item.cuentaMasck = mCntLink.fxgCntCuentaFormato(
+                    empresa,
+                    blnMascara: true,
+                    pCuenta: item.Valor,
+                    optMensaje: 1);
+
+                item.cuentaDetalle = mCntLink.fxgCntCuentaDesc(
+                    contab,
+                    pCuenta: item.Valor);
+            }
+        }
+ 
+
         /// <summary>
         /// Metodo encargo de ejecutar proceso de carga de parametros iniciales
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
-        private ErrorDto CxCParametros_Cargar(int CodEmpresa)
+        private void CxCParametros_Cargar(int CodEmpresa)
         {
             try
             {
@@ -159,12 +210,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var query = $@"exec spCxC_Parametros";
                 conn.Execute(query);
 
-                return DbHelper.OkResponse("Parametros cargados");
+             
             }
             catch (Exception ex)
             {
-
-                return DbHelper.ErrorResponse(ex.Message);
+                throw;
             }
 
         }
