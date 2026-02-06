@@ -18,9 +18,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
         /// <summary>
         /// Carga inicial de la pantalla de definición de periodos
+        /// (equivalente a sbInicial VB6)
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<PeriodosDefinicionDto> Inicial(int codEmpresa)
         {
             var response = new ErrorDto<PeriodosDefinicionDto>();
@@ -63,11 +62,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
         /// <summary>
-        /// Crea el nuevo periodo
+        /// Crea los periodos contables
+        /// (cmdAplicar VB6)
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="dto"></param>
-        /// <returns></returns>
         public ErrorDto Crear(int codEmpresa, PeriodosDefinicionDto dto)
         {
             var response = new ErrorDto();
@@ -79,39 +76,67 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 
                 var sql = new StringBuilder();
 
-                var anio = dto.desdeAnio;
-                var mes = dto.desdeMes;
+                if (!dto.desdeAnio.HasValue ||
+                    !dto.desdeMes.HasValue ||
+                    !dto.hastaAnio.HasValue ||
+                    !dto.hastaMes.HasValue)
+                {
+                    response.Code = -1;
+                    response.Description = "Debe indicar año y mes de inicio y corte.";
+                    return response;
+                }
 
-                while (!(anio == dto.hastaAnio && mes == dto.hastaMes))
+
+                var desdeAnio = dto.desdeAnio.Value;
+                var desdeMes = dto.desdeMes.Value;
+                var hastaAnio = dto.hastaAnio.Value;
+                var hastaMes = dto.hastaMes.Value;
+
+                var inicio = new DateTime(
+                    desdeAnio,
+                    desdeMes,
+                    1,
+                    0, 0, 0,
+                    DateTimeKind.Local
+                );
+
+                var fin = new DateTime(
+                    hastaAnio,
+                    hastaMes,
+                    1,
+                    0, 0, 0,
+                    DateTimeKind.Local
+                );
+
+                var totalMeses =
+                    ((fin.Year - inicio.Year) * 12) +
+                    fin.Month - inicio.Month;
+
+                if (totalMeses < 0 || totalMeses > 120)
+                {
+                    response.Code = -1;
+                    response.Description =
+                        "Rango de periodos inválido o excede el máximo permitido.";
+                    return response;
+                }
+
+                var fecha = inicio;
+
+                for (int i = 0; i <= totalMeses; i++)
                 {
                     sql.AppendLine($@"
                         INSERT INTO CNTX_PERIODOS
-                        (COD_CONTABILIDAD,anio,mes,estado,PERIODO_CORTE)
+                        (COD_CONTABILIDAD, anio, mes, estado, PERIODO_CORTE)
                         VALUES
-                        ({codEmpresa},{anio},{mes},'P',
-                         dbo.fxSys_FechaAnioMesToDatetime({anio},{mes}))");
+                        ({codEmpresa}, {fecha.Year}, {fecha.Month}, 'P',
+                         dbo.fxSys_FechaAnioMesToDatetime({fecha.Year}, {fecha.Month}))");
 
-                    if (mes == 12)
-                    {
-                        mes = 1;
-                        anio++;
-                    }
-                    else
-                    {
-                        mes++;
-                    }
+                    fecha = fecha.AddMonths(1);
                 }
-
-                sql.AppendLine($@"
-                    INSERT INTO CNTX_PERIODOS
-                    (COD_CONTABILIDAD,anio,mes,estado,PERIODO_CORTE)
-                    VALUES
-                    ({codEmpresa},{anio},{mes},'P',
-                     dbo.fxSys_FechaAnioMesToDatetime({anio},{mes}))");
 
                 sql.AppendLine(@"
                     UPDATE CNTX_PERIODOS
-                    SET PERIODO_CORTE = dbo.fxSys_FechaAnioMesToDatetime(anio,mes)
+                    SET PERIODO_CORTE = dbo.fxSys_FechaAnioMesToDatetime(anio, mes)
                     WHERE PERIODO_CORTE IS NULL");
 
                 cn.Execute(sql.ToString());
