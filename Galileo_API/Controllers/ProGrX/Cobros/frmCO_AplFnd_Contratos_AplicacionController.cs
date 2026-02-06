@@ -23,7 +23,7 @@ namespace Galileo_API.Controllers.ProGrX.Cobros
         }
 
         [HttpPost("CO_AplFndContrApl_Aplicar")]
-        public ErrorDto<CoAplExcProcesadosResult> CO_AplFndContrApl_Aplicar(int CodEmpresa, ExcedenteAplicarRequest request)
+        public ErrorDto<CoAplFndContrAplicadosResult> CO_AplFndContrApl_Aplicar(int CodEmpresa, ContratosAplicarRequest request)
         {
             return _bl.CO_AplFndContrApl_Aplicar(CodEmpresa, request);
         }

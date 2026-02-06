@@ -15,7 +15,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.Cobros
             return _db.CO_AplFndContrApl_Informacion_Obtener(codEmpresa);
         }
 
-        public ErrorDto<CoAplExcProcesadosResult> CO_AplFndContrApl_Aplicar(int CodEmpresa, ExcedenteAplicarRequest request)
+        public ErrorDto<CoAplFndContrAplicadosResult> CO_AplFndContrApl_Aplicar(int CodEmpresa, ContratosAplicarRequest request)
         {
             return _db.CO_AplFndContrApl_Aplicar(CodEmpresa, request);
         }
