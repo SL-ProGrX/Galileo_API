@@ -3,6 +3,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
@@ -43,8 +44,16 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
 
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"exec spSIFOficinaMetasPeriodo '{oficina}',{anio},{anio + 1},'{usuario}'";
-                result.Result.lista = connection.Query<SifOficinasMetaData>(query).ToList();
+
+                const string sp = "spSIFOficinaMetasPeriodo";
+                result.Result.lista = connection.Query<SifOficinasMetaData>(sp, new
+                {
+                    oficina,
+                    anio_inicio = anio,
+                    anio_corte = anio + 1,
+                    usuario
+                }, commandType: CommandType.StoredProcedure).ToList();
+
                 result.Result.total = result.Result.lista.Count;
             }
             catch (Exception ex)
@@ -77,8 +86,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(stringConn);
 
-                var query = $@"select Anio_Inicio as 'item',CONCAT(Anio_Inicio, ' - ', ANIO_CORTE) as descripcion from sif_oficina_metas_periodos where cod_oficina ='{oficina}'  order by anio_Corte desc";
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
+                const string query = @"select Anio_Inicio as 'item',CONCAT(Anio_Inicio, ' - ', ANIO_CORTE) as descripcion
+from sif_oficina_metas_periodos
+where cod_oficina = @cod_oficina
+order by anio_Corte desc";
+
+                result.Result = connection.Query<DropDownListaGenericaModel>(query, new { cod_oficina = oficina }).ToList();
 
             }
             catch (Exception ex)
@@ -112,7 +125,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 using var connection = new SqlConnection(stringConn);
                 foreach (var meta in metas)
                 {
-                    var query = $@"UPDATE sif_oficina_metas
+                    const string query = @"UPDATE sif_oficina_metas
                                     SET mes_meta = @mes_meta,
                                         acumulado_meta = @acumulado_meta,
                                         Actualizado_Fecha = dbo.MyGetdate(),

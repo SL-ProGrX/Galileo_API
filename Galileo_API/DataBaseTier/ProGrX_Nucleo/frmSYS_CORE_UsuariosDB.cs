@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
+using System.Data;
 using Newtonsoft.Json;
 using Galileo.Models.ERROR;
 using Galileo.Models.SIF;
@@ -28,41 +29,44 @@ namespace Galileo.DataBaseTier
             var response = new ErrorDto<CoreUsuariosLista>();
             response.Result = new CoreUsuariosLista();
             response.Code = 0;
-
             try
             {
-                var query = "";
-                string where = "", paginaActual = "", paginacionActual = "";
-
                 using var connection = new SqlConnection(clienteConnString);
-                // Construcción del filtro WHERE
-                if (vfiltro != null)
-                {
-                    if (!string.IsNullOrEmpty(vfiltro.filtro))
-                    {
-                        where = "WHERE CORE_USUARIO LIKE '%" + vfiltro.filtro + "%' OR Nombre LIKE '%" + vfiltro.filtro + "%' ";
-                    }
 
-                    if (vfiltro.pagina != null)
-                    {
-                        paginaActual = " OFFSET " + vfiltro.pagina + " ROWS ";
-                        paginacionActual = " FETCH NEXT " + vfiltro.paginacion + " ROWS ONLY ";
-                    }
+                var search = vfiltro?.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
+                var offset = vfiltro?.pagina ?? 0;
+                var fetch = vfiltro?.paginacion ?? 0;
+                if (fetch <= 0)
+                {
+                    fetch = int.MaxValue;
                 }
 
-                // Consulta para el total de registros
-                query = $"SELECT COUNT(*) FROM CORE_USUARIOS {where}";
-                response.Result.total = connection.Query<int>(query).FirstOrDefault();
+                // Total (conteo con filtro)
+                const string totalQuery = @"SELECT COUNT(*)
+                                           FROM CORE_USUARIOS
+                                           WHERE (@search IS NULL
+                                                  OR CORE_USUARIO LIKE @search
+                                                  OR Nombre LIKE @search)";
 
-                // Consulta para obtener los datos paginados
-                query = $@"
-                            SELECT CORE_USUARIO, Nombre 
-                            FROM CORE_USUARIOS 
-                            {where}
-                            ORDER BY CORE_USUARIO
-                            {paginaActual} {paginacionActual}";
+                response.Result.total = connection.Query<int>(totalQuery, new { search = searchLike }).FirstOrDefault();
 
-                response.Result.lista = connection.Query<CoreUsuariosData>(query).ToList();
+                // Datos paginados
+                const string query = @"SELECT CORE_USUARIO, Nombre
+                                       FROM CORE_USUARIOS
+                                       WHERE (@search IS NULL
+                                              OR CORE_USUARIO LIKE @search
+                                              OR Nombre LIKE @search)
+                                       ORDER BY CORE_USUARIO
+                                       OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                response.Result.lista = connection.Query<CoreUsuariosData>(query, new
+                {
+                    search = searchLike,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -203,8 +207,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"Select * from CORE_USUARIOS where CORE_USUARIO = '{usuario}'";
-                resp.Result = connection.QueryFirstOrDefault<CoreUsuariosData>(query);
+                const string query = @"SELECT * FROM CORE_USUARIOS WHERE CORE_USUARIO = @usuario";
+                resp.Result = connection.QueryFirstOrDefault<CoreUsuariosData>(query, new { usuario });
                 if (resp.Result == null)
                 {
                     resp.Code = -2;
@@ -236,11 +240,9 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"exec spCORE_Usuarios_Importar";
-                connection.Query(query);
-
+                const string sp = "spCORE_Usuarios_Importar";
+                connection.Execute(sp, commandType: CommandType.StoredProcedure);
                 resp.Description = "Usuarios del Sistema Sincronizados/Importados Satisfactoriamente!";
-
             }
             catch (Exception ex)
             {
@@ -263,24 +265,27 @@ namespace Galileo.DataBaseTier
             var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             ErrorDto<CoreUsuariosData> resp = new ErrorDto<CoreUsuariosData>();
             resp.Code = 0;
-
             try
             {
-                string where, orderBy;
+                using var connection = new SqlConnection(clienteConnString);
+
                 if (scroll == 1)
                 {
-                    where = $@" where CORE_USUARIO > '{usuario}' ";
-                    orderBy = " order by CORE_USUARIO asc";
+                    const string query = @"SELECT TOP 1 *
+                                           FROM CORE_USUARIOS
+                                           WHERE CORE_USUARIO > @usuario
+                                           ORDER BY CORE_USUARIO ASC";
+                    resp.Result = connection.QueryFirstOrDefault<CoreUsuariosData>(query, new { usuario });
                 }
                 else
                 {
-                    where = $@" where CORE_USUARIO < '{usuario}' ";
-                    orderBy = " order by CORE_USUARIO desc";
+                    const string query = @"SELECT TOP 1 *
+                                           FROM CORE_USUARIOS
+                                           WHERE CORE_USUARIO < @usuario
+                                           ORDER BY CORE_USUARIO DESC";
+                    resp.Result = connection.QueryFirstOrDefault<CoreUsuariosData>(query, new { usuario });
                 }
 
-                using var connection = new SqlConnection(clienteConnString);
-                var query = $@"Select top 1 * from CORE_USUARIOS {where} {orderBy}";
-                resp.Result = connection.QueryFirstOrDefault<CoreUsuariosData>(query);
                 if (resp.Result == null)
                 {
                     resp.Code = -2;
@@ -311,12 +316,23 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"Insert CORE_USUARIOS(CORE_USUARIO, Usuario_Ref ,Nombre, Registro_Fecha, Registro_Usuario
-                                     , Activo, Notas, Email, Tel_Movil )
-                                        values('{usuariosData.core_usuario}','{usuariosData.usuario_ref}','{usuariosData.nombre}', 
-                                        getdate(),'{usuariosData.registro_usuario}', 1
-                                     , '{usuariosData.notas}', '{usuariosData.email}', '{usuariosData.tel_movil}')";
-                connection.Execute(query);
+
+                const string query = @"INSERT INTO CORE_USUARIOS
+                                       (CORE_USUARIO, Usuario_Ref, Nombre, Registro_Fecha, Registro_Usuario, Activo, Notas, Email, Tel_Movil)
+                                       VALUES
+                                       (@core_usuario, @usuario_ref, @nombre, GETDATE(), @registro_usuario, 1, @notas, @email, @tel_movil);";
+
+                connection.Execute(query, new
+                {
+                    core_usuario = usuariosData.core_usuario,
+                    usuario_ref = usuariosData.usuario_ref,
+                    nombre = usuariosData.nombre,
+                    registro_usuario = usuariosData.registro_usuario,
+                    notas = usuariosData.notas,
+                    email = usuariosData.email,
+                    tel_movil = usuariosData.tel_movil
+                });
+
                 resp.Description = "Usuario Ingresado Satisfactoriamente!";
             }
             catch (Exception ex)
@@ -342,13 +358,30 @@ namespace Galileo.DataBaseTier
             {
                 int activo = usuariosData.activo ? 1 : 0;
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"Update CORE_USUARIOS Set Nombre = '{usuariosData.nombre}', Activo = {activo} 
-                                  , Usuario_Ref = '{usuariosData.usuario_ref}', Notas = '{usuariosData.notas}', 
-                                    Email = '{usuariosData.email}',Tel_Movil = '{usuariosData.tel_movil}', 
-		                            Modifica_Fecha = Getdate(), Modifica_Usuario = '{usuariosData.modificacion_usuario}' 
-                                 Where CORE_USUARIO = '{usuariosData.core_usuario}'";
 
-                connection.Execute(query);
+                const string query = @"UPDATE CORE_USUARIOS
+                                       SET Nombre = @nombre,
+                                           Activo = @activo,
+                                           Usuario_Ref = @usuario_ref,
+                                           Notas = @notas,
+                                           Email = @email,
+                                           Tel_Movil = @tel_movil,
+                                           Modifica_Fecha = GETDATE(),
+                                           Modifica_Usuario = @modificacion_usuario
+                                       WHERE CORE_USUARIO = @core_usuario;";
+
+                connection.Execute(query, new
+                {
+                    nombre = usuariosData.nombre,
+                    activo,
+                    usuario_ref = usuariosData.usuario_ref,
+                    notas = usuariosData.notas,
+                    email = usuariosData.email,
+                    tel_movil = usuariosData.tel_movil,
+                    modificacion_usuario = usuariosData.modificacion_usuario,
+                    core_usuario = usuariosData.core_usuario
+                });
+
                 resp.Description = "Usuario Actualizado Satisfactoriamente!";
             }
             catch (Exception ex)
@@ -398,8 +431,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"exec spSys_CORE_Users_UENs_Miembros_Consultas {usuario}";
-                resp.Result = connection.Query<CoreMiembrosData>(query).ToList();
+                const string sp = "spSys_CORE_Users_UENs_Miembros_Consultas";
+                resp.Result = connection.Query<CoreMiembrosData>(sp, new { usuario }, commandType: CommandType.StoredProcedure).ToList();
             }
             catch (Exception ex)
             {
@@ -424,8 +457,8 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"exec spSys_CORE_Users_UENs_Roles_Consultas '{usuario}'";
-                resp.Result = connection.Query<CoreMiembrosRolData>(query).ToList();
+                const string sp = "spSys_CORE_Users_UENs_Roles_Consultas";
+                resp.Result = connection.Query<CoreMiembrosRolData>(sp, new { usuario }, commandType: CommandType.StoredProcedure).ToList();
             }
             catch (Exception ex)
             {
@@ -461,8 +494,14 @@ namespace Galileo.DataBaseTier
             {
                 string movItem = core.mov ? "A" : "E";
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"exec spSys_UENS_Miembros_Registro '{core.uen}', '{core.core_usuario}', '{core.usuario}', '{movItem}' ";
-                connection.Execute(query);
+                const string sp = "spSys_UENS_Miembros_Registro";
+                connection.Execute(sp, new
+                {
+                    uen = core.uen,
+                    core_usuario = core.core_usuario,
+                    usuario = core.usuario,
+                    movItem
+                }, commandType: CommandType.StoredProcedure);
                 resp.Description = "UENs actualizados satisfactoriamente!";
             }
             catch (Exception ex)
@@ -502,9 +541,18 @@ namespace Galileo.DataBaseTier
                 int rol_encargado = core.rol_encargado ? 1 : 0;
                 int rol_lider = core.rol_lider ? 1 : 0;
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"exec spSys_UENS_Roles_Registro  '{core.uen}', '{core.core_usuario}', 
-                                      {rol_solicita}, {rol_consulta}, {rol_autoriza}, {rol_encargado}, {rol_lider}, '{core.usuario}' ";
-                connection.Execute(query);
+                const string sp = "spSys_UENS_Roles_Registro";
+                connection.Execute(sp, new
+                {
+                    uen = core.uen,
+                    core_usuario = core.core_usuario,
+                    rol_solicita,
+                    rol_consulta,
+                    rol_autoriza,
+                    rol_encargado,
+                    rol_lider,
+                    usuario = core.usuario
+                }, commandType: CommandType.StoredProcedure);
                 resp.Description = "Rol Actualizado Satisfactoriamente!";
             }
             catch (Exception ex)

@@ -40,31 +40,54 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
-                    // Busco Total
-                    query = $@"SELECT COUNT(cod_tarjeta) FROM sif_tarjetas";
-                    result.Result.total = connection.Query<int>(query).FirstOrDefault();
 
-                    if (!string.IsNullOrEmpty(filtros.filtro))
-                    {
-                        filtros.filtro = " WHERE ( cod_tarjeta LIKE '%" + filtros.filtro + "%' " +
-                            " OR descripcion LIKE '%" + filtros.filtro + "%' ) ";
-                    }
+                var search = filtros?.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
 
-                    if (string.IsNullOrEmpty(filtros.sortField))
-                    {
-                        filtros.sortField = "cod_tarjeta";
-                    }
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 0; // 0=DESC, 1=ASC
 
-                    query = $@"SELECT cod_tarjeta, descripcion, activa
-                                FROM sif_tarjetas
-                                {filtros.filtro}
-                                ORDER BY {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                OFFSET {filtros.pagina} ROWS 
-                                FETCH NEXT {filtros.paginacion} ROWS ONLY ";
+                var offset = filtros?.pagina ?? 0;
+                var fetch = filtros?.paginacion ?? 0;
+                if (fetch <= 0)
+                {
+                    fetch = int.MaxValue;
+                }
 
-                    result.Result.lista = connection.Query<SifTarjetasData>(query).ToList();
+                // Busco Total (mantiene comportamiento anterior: total sin filtro)
+                const string totalQuery = @"SELECT COUNT(cod_tarjeta) FROM sif_tarjetas";
+                result.Result.total = connection.Query<int>(totalQuery).FirstOrDefault();
+
+                const string query = @"
+                    SELECT cod_tarjeta, descripcion, activa
+                    FROM sif_tarjetas
+                    WHERE (@search IS NULL
+                           OR cod_tarjeta LIKE @search
+                           OR descripcion LIKE @search)
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cod_tarjeta' THEN cod_tarjeta END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion' THEN descripcion END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'activa' THEN CONVERT(int, activa) END ASC,
+
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cod_tarjeta' THEN cod_tarjeta END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion' THEN descripcion END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'activa' THEN CONVERT(int, activa) END DESC,
+
+                        -- Fallback determinístico
+                        cod_tarjeta ASC
+                    OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                result.Result.lista = connection.Query<SifTarjetasData>(query, new
+                {
+                    search = searchLike,
+                    sortField,
+                    sortOrder,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -94,18 +117,19 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
-                    if (!string.IsNullOrEmpty(filtros.filtro))
-                    {
-                        filtros.filtro = " WHERE ( cod_tarjeta LIKE '%" + filtros.filtro + "%' " +
-                            " OR descripcion LIKE '%" + filtros.filtro + "%' ) ";
-                    }
-                    query = $@"SELECT cod_tarjeta, descripcion, activa
+
+                var search = filtros?.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
+                const string query = @"SELECT cod_tarjeta, descripcion, activa
                                 FROM sif_tarjetas
-                                {filtros.filtro}
+                                WHERE (@search IS NULL
+                                       OR cod_tarjeta LIKE @search
+                                       OR descripcion LIKE @search)
                                 ORDER BY cod_tarjeta";
-                    result.Result = connection.Query<SifTarjetasData>(query).ToList();
+
+                result.Result = connection.Query<SifTarjetasData>(query, new { search = searchLike }).ToList();
             }
             catch (Exception ex)
             {
