@@ -52,5 +52,14 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
 
         public ErrorDto<bool> Contrato_Concepto_Eliminar(int codEmpresa, ContratoConceptoParams param)
             => _db.Contrato_Concepto_Eliminar(codEmpresa, param);
+
+        public ErrorDto<bool> Contrato_Insertar(int codEmpresa, ContratoSaveParams param)
+            => _db.Contrato_Insertar(codEmpresa, param);
+
+        public ErrorDto<bool> Contrato_Actualizar(int codEmpresa, ContratoSaveParams param)
+            => _db.Contrato_Actualizar(codEmpresa, param);
+
+        public ErrorDto<bool> Contrato_Eliminar(int codEmpresa, ContratoDeleteParams param)
+            => _db.Contrato_Eliminar(codEmpresa, param);
     }
 }

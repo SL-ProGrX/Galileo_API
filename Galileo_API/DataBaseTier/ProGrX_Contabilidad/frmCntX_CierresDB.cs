@@ -20,6 +20,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _mSecurityMainDb = mProGrxMain;
         }
 
+        /// <summary>
+        /// Obtener los cierres fiscales
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <returns></returns>
         public ErrorDto<List<CntXCierreData>> CntXCierres_Obtener(int codEmpresa, int codConta)
         {
             string query = @"select id_cierre,inicio_anio,inicio_mes,corte_anio,corte_mes,descripcion
@@ -30,10 +36,45 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return DbHelper.ExecuteListQuery<CntXCierreData>(_portalDb, codEmpresa, query, new { codConta });
         }
 
+        /// <summary>
+        /// Guardar cierre fiscal
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="usuario"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntXCierres_Guardar(int codEmpresa, int codConta, string usuario, CntXCierreData request)
         {
             if (request == null)
-                return new ErrorDto { Code = -1, Description = "Request inválido." };
+                return new ErrorDto { Code = -2, Description = "La informaci&oacute;n especificada no es v&aacute;lida, verifiquela..." };
+
+            if (!FxVerificaCuentas(codEmpresa, codConta, request.cuenta_utilidad))
+            {
+                return new ErrorDto
+                {
+                    Code = -2,
+                    Description = "Cuenta puente no es v&aacute;lida, verifiquela..."
+                };
+            }
+
+            if (!FxVerificaCuentas(codEmpresa, codConta, request.cuenta_ganper))
+            {
+                return new ErrorDto
+                {
+                    Code = -2,
+                    Description = "Cuenta ganancias/p&eacute;rdidas no es v&aacute;lida, verifiquela..."
+                };
+            }
+
+            if (!FxVerificaCuentas(codEmpresa, codConta, request.cuenta_imprenta))
+            {
+                return new ErrorDto
+                {
+                    Code = -2,
+                    Description = "Cuenta impuesto no es v&aacute;lida, verifiquela..."
+                };
+            }
 
             string descripcion = (request.descripcion ?? string.Empty).Trim().ToUpperInvariant();
 
@@ -146,9 +187,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
         }
 
-        public ErrorDto CntXCierres_Eliminar(int codEmpresa, int codConta, string usuario, string idCierre)
+        /// <summary>
+        /// Eliminar cierre fiscal
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="usuario"></param>
+        /// <param name="idCierre"></param>
+        /// <returns></returns>
+        public ErrorDto CntXCierres_Eliminar(int codEmpresa, int codConta, string usuario, int idCierre)
         {
-            const string sqlDelete = @"delete CntX_Cierres where COD_CONTABILIDAD =
+            const string sqlDelete = @"delete CntX_Cierres 
                 where COD_CONTABILIDAD = @CodConta and Activo = 1 and id_cierre = @IdCierre;";
 
             var respDelete = DbHelper.ExecuteNonQuery(
@@ -172,6 +221,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             });
 
             return new ErrorDto { Code = 0, Description = "Cierre fiscal eliminado satisfactoriamente." };
+        }
+
+        /// <summary>
+        /// Verifica Cuentas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codConta"></param>
+        /// <param name="pCuenta"></param>
+        /// <returns></returns>
+        private bool FxVerificaCuentas(int codEmpresa, int codConta, string pCuenta)
+        {
+            string query = @"select isnull(count(*),0) as Total from Cntx_Cuentas where COD_CONTABILIDAD = @codConta
+                and cod_cuenta = @pCuenta and acepta_movimientos = 1";
+            int total = DbHelper.ExecuteSingleQuery<int>(_portalDb, codEmpresa, query, 0, new { codConta, pCuenta }).Result;
+            return total == 1;
         }
     }
 }
