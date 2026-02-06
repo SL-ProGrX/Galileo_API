@@ -301,16 +301,18 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var where = "";
-                if (!string.IsNullOrEmpty(filtro))
-                {
-                    where = " WHERE (COD_FORMA_PAGO LIKE '%" + filtro + "%' OR DESCRIPCION LIKE '%" + filtro + "%') ";
-                }
-
-                var query = $@"SELECT COD_FORMA_PAGO, DESCRIPCION FROM vSys_Formas_Pago {where}";
-
                 using var connection = new SqlConnection(stringConn);
-                result.Result = connection.Query<SifFormasPagoList>(query).ToList();
+
+                var search = filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
+                const string query = @"SELECT COD_FORMA_PAGO, DESCRIPCION
+                                       FROM vSys_Formas_Pago
+                                       WHERE (@search IS NULL
+                                              OR COD_FORMA_PAGO LIKE @search
+                                              OR DESCRIPCION LIKE @search)";
+
+                result.Result = connection.Query<SifFormasPagoList>(query, new { search = searchLike }).ToList();
             }
             catch (Exception ex)
             {

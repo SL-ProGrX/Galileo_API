@@ -29,7 +29,7 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"SELECT ID_EMPRESA, EC_Nota01, EC_Nota02 FROM sif_empresa";
+                const string query = @"SELECT ID_EMPRESA, EC_Nota01, EC_Nota02 FROM sif_empresa";
 
                 result.Result = connection.Query<SifEmpresaDto>(query).FirstOrDefault();
                 if (result.Result == null)
@@ -62,18 +62,25 @@ namespace Galileo.DataBaseTier
             try
             {
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"UPDATE sif_empresa SET 
-                                ec_nota01 = '{notas.ec_nota01}'
-                                ,ec_nota02 =  '{notas.ec_nota02}'
-                                WHERE id_empresa = {notas.id_empresa}";
-                connection.Execute(query);
+
+                const string query = @"UPDATE sif_empresa SET
+                                ec_nota01 = @ec_nota01,
+                                ec_nota02 = @ec_nota02
+                                WHERE id_empresa = @id_empresa";
+
+                connection.Execute(query, new
+                {
+                    ec_nota01 = notas?.ec_nota01,
+                    ec_nota02 = notas?.ec_nota02,
+                    id_empresa = notas?.id_empresa
+                });
             }
             catch (Exception ex)
             {
                 info.Code = -1;
                 if (ex.Message.Contains("Cannot insert duplicate key"))
                 {
-                    info.Description = "El código de beneficio ya existe";
+                    info.Description = "Ya existe un registro con esa llave.";
                 }
                 else
                 {

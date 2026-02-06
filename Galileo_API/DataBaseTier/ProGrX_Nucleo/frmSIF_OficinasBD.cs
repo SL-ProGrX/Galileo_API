@@ -4,6 +4,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
@@ -42,31 +43,74 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
 
-                //Busco Total
-                query = $@"select COUNT(cod_oficina) from Sif_Oficinas";
-                result.Result.total = connection.Query<int>(query).FirstOrDefault();
+                var search = filtros?.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
 
-                if (filtros.filtro != null)
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 0; // 0=DESC, 1=ASC
+
+                var offset = filtros?.pagina ?? 0;
+                var fetch = filtros?.paginacion ?? 0;
+                if (fetch <= 0)
                 {
-                    filtros.filtro = " WHERE ( cod_oficina LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR Registro_Usuario LIKE '%" + filtros.filtro + "%' ) ";
+                    fetch = int.MaxValue;
                 }
 
-                if (filtros.sortField == "" || filtros.sortField == null)
-                {
-                    filtros.sortField = "cod_oficina";
-                }
+                // Total (mantiene comportamiento anterior: total sin filtro)
+                const string totalQuery = @"SELECT COUNT(cod_oficina) FROM Sif_Oficinas";
+                result.Result.total = connection.Query<int>(totalQuery).FirstOrDefault();
 
-                query = $@"select cod_oficina,descripcion,COD_UNIDAD,Cod_Centro_Costo,Telefono_01,Telefono_02,DIRECCION, Registro_Usuario,Registro_Fecha, Tipo,Oficina_Omision,Estado from Sif_Oficinas
-                                        {filtros.filtro} 
-                                     order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                         OFFSET {filtros.pagina} ROWS 
-                                         FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                result.Result.lista = connection.Query<SifOficinasData>(query).ToList();
+                const string query = @"
+                        SELECT cod_oficina,descripcion,COD_UNIDAD,Cod_Centro_Costo,Telefono_01,Telefono_02,DIRECCION,
+                               Registro_Usuario,Registro_Fecha, Tipo,Oficina_Omision,Estado
+                        FROM Sif_Oficinas
+                        WHERE (@search IS NULL
+                               OR cod_oficina LIKE @search
+                               OR descripcion LIKE @search
+                               OR Registro_Usuario LIKE @search)
+                        ORDER BY
+                            -- ASC
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'cod_oficina' THEN cod_oficina END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion' THEN descripcion END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'cod_unidad' THEN COD_UNIDAD END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'cod_centro_costo' THEN Cod_Centro_Costo END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'telefono_01' THEN Telefono_01 END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'telefono_02' THEN Telefono_02 END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'direccion' THEN DIRECCION END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'registro_usuario' THEN Registro_Usuario END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'registro_fecha' THEN Registro_Fecha END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'tipo' THEN Tipo END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'oficina_omision' THEN Oficina_Omision END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'estado' THEN Estado END ASC,
+
+                            -- DESC
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'cod_oficina' THEN cod_oficina END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion' THEN descripcion END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'cod_unidad' THEN COD_UNIDAD END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'cod_centro_costo' THEN Cod_Centro_Costo END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'telefono_01' THEN Telefono_01 END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'telefono_02' THEN Telefono_02 END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'direccion' THEN DIRECCION END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'registro_usuario' THEN Registro_Usuario END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'registro_fecha' THEN Registro_Fecha END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'tipo' THEN Tipo END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'oficina_omision' THEN Oficina_Omision END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'estado' THEN Estado END DESC,
+
+                            -- Fallback determinístico
+                            cod_oficina ASC
+                        OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                result.Result.lista = connection.Query<SifOficinasData>(query, new
+                {
+                    search = searchLike,
+                    sortField,
+                    sortOrder,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -96,7 +140,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select cod_unidad as 'item',descripcion from CntX_Unidades ";
+                const string query = @"select cod_unidad as 'item',descripcion from CntX_Unidades";
                 result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
@@ -126,7 +170,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select cod_centro_costo as 'item',descripcion from CNTX_CENTRO_COSTOS ";
+                const string query = @"select cod_centro_costo as 'item',descripcion from CNTX_CENTRO_COSTOS";
                 result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
             catch (Exception ex)
@@ -150,9 +194,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
             try
             {
-
                 using var connection = new SqlConnection(clienteConnString);
-                var query = $@"select rtrim(cod_oficina) as 'item', rtrim(descripcion) as 'descripcion'
+                const string query = @"select rtrim(cod_oficina) as 'item', rtrim(descripcion) as 'descripcion'
 				                         from  SIF_Oficinas  where estado = 1 order by cod_oficina";
                 response.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
             }
@@ -234,16 +277,16 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 using var connection = new SqlConnection(stringConn);
 
                 //Verifico si existe usuario
-                var qUnidad = $@"select count(cod_unidad) from CntX_Unidades where ACTIVA = 1  and cod_unidad = '{oficinaDatos.cod_unidad.Trim()}' ";
-                int existeunidad = connection.QueryFirstOrDefault<int>(qUnidad);
+                const string qUnidad = @"SELECT COUNT(cod_unidad) FROM CntX_Unidades WHERE ACTIVA = 1 AND cod_unidad = @cod_unidad";
+                int existeunidad = connection.QueryFirstOrDefault<int>(qUnidad, new { cod_unidad = (oficinaDatos.cod_unidad ?? string.Empty).Trim() });
                 if (existeunidad == 0)
                 {
                     result.Code = -2;
                     result.Description = $"La unidad contable {oficinaDatos.cod_unidad} no existe o no está activo.";
                     return result;
                 }
-                var qCentroCosto = $@"select count(cod_centro_costo) from CNTX_CENTRO_COSTOS where ACTIVO = 1  and cod_centro_costo = '{oficinaDatos.cod_centro_costo.Trim()}' ";
-                int existeCentroCosto = connection.QueryFirstOrDefault<int>(qCentroCosto);
+                const string qCentroCosto = @"SELECT COUNT(cod_centro_costo) FROM CNTX_CENTRO_COSTOS WHERE ACTIVO = 1 AND cod_centro_costo = @cod_centro_costo";
+                int existeCentroCosto = connection.QueryFirstOrDefault<int>(qCentroCosto, new { cod_centro_costo = (oficinaDatos.cod_centro_costo ?? string.Empty).Trim() });
                 if (existeCentroCosto == 0)
                 {
                     result.Code = -2;
@@ -251,7 +294,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     return result;
                 }
                 //verifico si existe el recurso
-                var query = $@"select isnull(count(*),0) as Existe from sif_oficinas where cod_oficina = @Cod_oficina ";
+                const string query = @"select isnull(count(*),0) as Existe from sif_oficinas where cod_oficina = @Cod_oficina";
                 var existe = connection.QueryFirstOrDefault<int>(query, new { Cod_oficina = oficinaDatos.cod_oficina });
 
                 if (oficinaDatos.isNew)
@@ -421,8 +464,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 //Info de pruebas
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"exec spSys_Oficinas_Miembros_Consultas '{oficina}','{filtro.Trim()}',{apoyo},{usuariosEstado} ";
-                result.Result = connection.Query<SifOficinasMiembros>(query).ToList();
+                const string sp = "spSys_Oficinas_Miembros_Consultas";
+                result.Result = connection.Query<SifOficinasMiembros>(sp, new
+                {
+                    oficina,
+                    filtro = (filtro ?? string.Empty).Trim(),
+                    apoyo,
+                    usuariosEstado
+                }, commandType: CommandType.StoredProcedure).ToList();
 
             }
             catch (Exception ex)
@@ -454,8 +503,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 //Info de pruebas
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"exec spSys_Oficinas_Miembros_Add '{oficina}','{usuario.Trim()}',{apoyo},{usuarioRegistro} ,'{accion}' ";
-                result.Code = connection.Query<int>(query).FirstOrDefault();
+                const string sp = "spSys_Oficinas_Miembros_Add";
+                result.Code = connection.Query<int>(sp, new
+                {
+                    oficina,
+                    usuario = (usuario ?? string.Empty).Trim(),
+                    apoyo,
+                    usuarioRegistro,
+                    accion
+                }, commandType: CommandType.StoredProcedure).FirstOrDefault();
                 result.Description = "Ok";
             }
             catch (Exception ex)
@@ -487,8 +543,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"select * from dbo.SIF_OFICINA_MIEMBROS_H where usuario = '{filtro}' order by cod_historial desc";
-                result.Result = connection.Query<SifOficinasHistorial>(query).ToList();
+                const string query = @"select * from dbo.SIF_OFICINA_MIEMBROS_H where usuario = @usuario order by cod_historial desc";
+                result.Result = connection.Query<SifOficinasHistorial>(query, new { usuario = filtro }).ToList();
             }
             catch (Exception ex)
             {
@@ -519,28 +575,69 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
 
+                var search = filtros?.filtro?.Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
 
-                if (filtros.filtro != null)
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                var sortOrder = filtros?.sortOrder ?? 0; // 0=DESC, 1=ASC
+
+                var offset = filtros?.pagina ?? 0;
+                var fetch = filtros?.paginacion ?? 0;
+                if (fetch <= 0)
                 {
-                    filtros.filtro = " WHERE ( cod_oficina LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR Registro_Usuario LIKE '%" + filtros.filtro + "%' ) ";
+                    fetch = int.MaxValue;
                 }
 
-                if (filtros.sortField == "" || filtros.sortField == null)
-                {
-                    filtros.sortField = "cod_oficina";
-                }
+                const string query = @"
+                        SELECT cod_oficina,descripcion,COD_UNIDAD,Cod_Centro_Costo,Telefono_01,Telefono_02,DIRECCION,
+                               Registro_Usuario,Registro_Fecha, Tipo,Oficina_Omision,Estado
+                        FROM Sif_Oficinas
+                        WHERE (@search IS NULL
+                               OR cod_oficina LIKE @search
+                               OR descripcion LIKE @search
+                               OR Registro_Usuario LIKE @search)
+                        ORDER BY
+                            -- ASC
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'cod_oficina' THEN cod_oficina END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion' THEN descripcion END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'cod_unidad' THEN COD_UNIDAD END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'cod_centro_costo' THEN Cod_Centro_Costo END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'telefono_01' THEN Telefono_01 END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'telefono_02' THEN Telefono_02 END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'direccion' THEN DIRECCION END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'registro_usuario' THEN Registro_Usuario END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'registro_fecha' THEN Registro_Fecha END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'tipo' THEN Tipo END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'oficina_omision' THEN Oficina_Omision END ASC,
+                            CASE WHEN @sortOrder = 1 AND @sortField = 'estado' THEN Estado END ASC,
 
-                query = $@"select cod_oficina,descripcion,COD_UNIDAD,Cod_Centro_Costo,Telefono_01,Telefono_02,DIRECCION, Registro_Usuario,Registro_Fecha, Tipo,Oficina_Omision,Estado from Sif_Oficinas
-                                        {filtros.filtro} 
-                                     order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                         OFFSET {filtros.pagina} ROWS 
-                                         FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                result.Result = connection.Query<SifOficinasData>(query).ToList();
+                            -- DESC
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'cod_oficina' THEN cod_oficina END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion' THEN descripcion END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'cod_unidad' THEN COD_UNIDAD END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'cod_centro_costo' THEN Cod_Centro_Costo END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'telefono_01' THEN Telefono_01 END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'telefono_02' THEN Telefono_02 END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'direccion' THEN DIRECCION END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'registro_usuario' THEN Registro_Usuario END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'registro_fecha' THEN Registro_Fecha END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'tipo' THEN Tipo END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'oficina_omision' THEN Oficina_Omision END DESC,
+                            CASE WHEN @sortOrder = 0 AND @sortField = 'estado' THEN Estado END DESC,
+
+                            cod_oficina ASC
+                        OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                result.Result = connection.Query<SifOficinasData>(query, new
+                {
+                    search = searchLike,
+                    sortField,
+                    sortOrder,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
