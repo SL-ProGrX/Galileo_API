@@ -117,24 +117,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
 
 
-                if (response.lista != null)
-                {
+                //if (response.lista != null)
+                //{
 
-                    foreach (var item in response.lista)
-                    {
-                        if (item.Tipo == "CTA")
-                        {
-                            item.cuentaMasck = string.IsNullOrWhiteSpace(item.Valor)
-                                ? null
-                                : mCntLink.fxgCntCuentaFormato(codEmpresa, blnMascara: true, pCuenta: item.Valor, optMensaje: 1);
+                //    foreach (var item in response.lista)
+                //    {
+                //        if (item.Tipo == "CTA")
+                //        {
+                //            item.cuentaMasck = string.IsNullOrWhiteSpace(item.Valor)
+                //                ? null
+                //                : mCntLink.fxgCntCuentaFormato(codEmpresa, blnMascara: true, pCuenta: item.Valor, optMensaje: 1);
 
-                            item.cuentaDetalle = string.IsNullOrWhiteSpace(item.Valor)
-                               ? null
-                               : mCntLink.fxgCntCuentaDesc(codContabilidad, pCuenta: item.Valor);
-                        }
-                    }
+                //            item.cuentaDetalle = string.IsNullOrWhiteSpace(item.Valor)
+                //               ? null
+                //               : mCntLink.fxgCntCuentaDesc(codContabilidad, pCuenta: item.Valor);
+                //        }
+                //    }
 
-                }
+                //}
                 return DbHelper.CreateOkResponse(response);
 
             }
