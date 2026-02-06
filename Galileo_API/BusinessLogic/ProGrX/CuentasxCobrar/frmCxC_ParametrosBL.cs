@@ -20,7 +20,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         {
 
             FiltrosLazyLoadData filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
-            return _db.CxCParametrosLista_Obtener(CodEmpresa, codContabilidad,filtros, esExportar);
+            return _db.CxCParametrosLista_Obtener(CodEmpresa, codContabilidad, filtros, esExportar);
         }
         public ErrorDto CxCParametros_Guardar(int CodEmpresa, string usuario, string valor, string codParametro)
         {

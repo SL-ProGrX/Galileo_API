@@ -3,7 +3,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc; 
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 {
