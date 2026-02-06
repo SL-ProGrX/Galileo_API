@@ -49,18 +49,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 ["valor"] = "valor"
             };
 
+
         private const int SortDescendingValue = 1;
 
-
         private const string WhereFilter = @"
-        WHERE (@like IS NULL)
-           OR (cod_parametro LIKE @like)
-           OR (descripcion  LIKE @like)
-           OR (valor        LIKE @like)";
-
+            WHERE (@like IS NULL)
+               OR (cod_parametro LIKE @like)
+               OR (descripcion  LIKE @like)
+               OR (valor        LIKE @like)";
 
         private const string SelectColumns =
             "cod_parametro, descripcion, valor, notas, tipo, inicio_fecha, visible, modifica_usuario, modifica_fecha";
+
+
 
 
 
@@ -88,12 +89,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
                 //var response = new CxCParametrosLista();
 
+
                 var like = BuildLike(filtros.filtro);
                 var (orderBy, direction) = BuildOrder(filtros.sortField, filtros.sortOrder);
 
                 var offset = Math.Max(filtros.pagina, 0);
                 var fetch = Math.Max(filtros.paginacion, 0);
                 var usarPaginacion = !esExportar && fetch > 0;
+
 
 
 
@@ -122,7 +125,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var lista = conn.Query<CxCParametrosData>(sqlList, @params).ToList();
 
 
-                EnriquecerCuentas(lista, codEmpresa, codContabilidad, mCntLink);
+
+                EnriquecerCuentas(lista, codEmpresa, codContabilidad);
 
                 var response = new CxCParametrosLista
                 {
@@ -141,7 +145,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         }
 
-        #region Helpers privados (reducen la complejidad cognitiva del método principal)
+        #region Helpers privados (reducen la complejidad del método principal)
 
         private static string? BuildLike(string? texto)
         {
@@ -151,8 +155,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
 
             var safe = texto.Trim();
-            // Si necesitas case-insensitive en DB case-sensitive, evalúa UPPER(col) LIKE UPPER(@like).
-            return string.Create(CultureInfo.InvariantCulture, $"%{safe}%");
+            return "%" + safe + "%";
         }
 
         private static (string orderBy, string direction) BuildOrder(string? sortField, int sortOrder)
@@ -171,16 +174,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         private static string BuildPagination(bool usar)
             => usar ? "\nOFFSET @offset ROWS\nFETCH NEXT @fetch ROWS ONLY" : string.Empty;
 
-        private static void EnriquecerCuentas(
+        /// <summary>
+        /// Enriquece las cuentas cuando el tipo es 'CTA'. Verifica mCntLink no nulo.
+        /// </summary>
+        private void EnriquecerCuentas(
             IEnumerable<CxCParametrosData> items,
             int codEmpresa,
-            int codContabilidad,
-             MCntLinkDB mCntLink)
+            int codContabilidad)
         {
+            
+            ArgumentNullException.ThrowIfNull(mCntLink);
+
             foreach (var item in items)
             {
-                
-                if (!string.Equals(item.Tipo, "CTA", StringComparison.OrdinalIgnoreCase))
+                               if (!string.Equals(item.Tipo, "CTA", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -191,14 +198,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     item.cuentaDetalle = null;
                     continue;
                 }
-               
 
                 item.cuentaMasck = mCntLink.fxgCntCuentaFormato(
                     codEmpresa,
                     blnMascara: true,
                     pCuenta: item.Valor,
                     optMensaje: 1);
-
 
                 item.cuentaDetalle = mCntLink.fxgCntCuentaDesc(
                     codContabilidad,
@@ -207,6 +212,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         }
 
         #endregion
+
 
 
 
@@ -226,7 +232,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
 
             }
-            catch (Exception ex)
+            catch (Exception )
             {
                 throw;
             }
