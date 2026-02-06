@@ -25,7 +25,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         [Authorize]
         [HttpPost("Poliza_Persona_Creditos")]
-        public ErrorDto<List<PolizaPersonaCreditoDto>> Poliza_Persona_Creditos(int codEmpresa, [FromBody] PolizaPersonaCreditoParams param)
+        public ErrorDto<List<PolizaPersonaOperacionBaseDto>> Poliza_Persona_Creditos(int codEmpresa, [FromBody] PolizaPersonaCreditoParams param)
             => _bl.Poliza_Persona_Creditos(codEmpresa, param);
 
         [Authorize]

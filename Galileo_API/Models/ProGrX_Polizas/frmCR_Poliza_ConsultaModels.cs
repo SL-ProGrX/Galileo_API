@@ -1,5 +1,35 @@
 ﻿namespace Galileo_API.Models.ProGrX_Polizas
 {
+    // Base para créditos y operaciones de póliza
+    public class PolizaPersonaOperacionBaseDto
+    {
+        public string Cedula { get; set; } = string.Empty;
+        public string Nombre { get; set; } = string.Empty;
+        public int Id_Solicitud { get; set; }
+        public string Codigo { get; set; } = string.Empty;
+        public string Linea_Desc { get; set; } = string.Empty;
+        public string Garantia { get; set; } = string.Empty;
+        public string Garantia_Desc { get; set; } = string.Empty;
+        public DateTime? FechaForp { get; set; }
+        public decimal? MontoApr { get; set; }
+        public decimal? InteresV { get; set; }
+        public int? Plazo { get; set; }
+        public decimal? Saldo { get; set; }
+        public decimal? Cuota { get; set; }
+        public string Estado { get; set; } = string.Empty;
+        public int? Proceso { get; set; }
+        public int? Prideduc { get; set; }
+        public DateTime? Fecult { get; set; }
+    }
+
+    public class PolizaPersonaOperacionPolizaDto : PolizaPersonaOperacionBaseDto
+    {
+        public int? Crd_N_Operacion { get; set; }
+        public string? Crd_Codigo { get; set; }
+        public string? Cod_Poliza { get; set; }
+        public string? Num_Poliza { get; set; }
+    }
+
     public class PolizaPersonaFiltroDto
     {
         public string Cedula { get; set; } = string.Empty;
@@ -12,55 +42,9 @@
         public string Orden { get; set; } = "nombre"; // "nombre" o "cedula"
     }
 
-    public class PolizaPersonaCreditoDto
-    {
-        public string Cedula { get; set; } = string.Empty;
-        public string Nombre { get; set; } = string.Empty;
-        public int Id_Solicitud { get; set; }
-        public string Codigo { get; set; } = string.Empty;
-        public string Linea_Desc { get; set; } = string.Empty;
-        public string Garantia { get; set; } = string.Empty;
-        public string Garantia_Desc { get; set; } = string.Empty;
-        public DateTime? FechaForp { get; set; }
-        public decimal? MontoApr { get; set; }
-        public decimal? InteresV { get; set; }
-        public int? Plazo { get; set; }
-        public decimal? Saldo { get; set; }
-        public decimal? Cuota { get; set; }
-        public string Estado { get; set; } = string.Empty;
-        public int? Proceso { get; set; }
-        public int? Prideduc { get; set; }
-        public DateTime? Fecult { get; set; }
-    }
-
     public class PolizaPersonaCreditoParams
     {
         public string Cedula { get; set; } = string.Empty;
-    }
-
-    public class PolizaPersonaOperacionPolizaDto
-    {
-        public string Cedula { get; set; } = string.Empty;
-        public string Nombre { get; set; } = string.Empty;
-        public int Id_Solicitud { get; set; }
-        public string Codigo { get; set; } = string.Empty;
-        public string Linea_Desc { get; set; } = string.Empty;
-        public string Garantia { get; set; } = string.Empty;
-        public string Garantia_Desc { get; set; } = string.Empty;
-        public DateTime? FechaForp { get; set; }
-        public decimal? MontoApr { get; set; }
-        public decimal? InteresV { get; set; }
-        public int? Plazo { get; set; }
-        public decimal? Saldo { get; set; }
-        public decimal? Cuota { get; set; }
-        public string Estado { get; set; } = string.Empty;
-        public int? Proceso { get; set; }
-        public int? Prideduc { get; set; }
-        public DateTime? Fecult { get; set; }
-        public int? Crd_N_Operacion { get; set; }
-        public string? Crd_Codigo { get; set; }
-        public string? Cod_Poliza { get; set; }
-        public string? Num_Poliza { get; set; }
     }
 
     public class PolizaPersonaOperacionPolizaParams
@@ -114,6 +98,5 @@
     {
         public int Operacion { get; set; }
         public int OperacionPoliza { get; set; }
-    }   
-
+    }
 }

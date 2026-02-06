@@ -33,12 +33,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="param">Parámetros con la cédula.</param>
         /// <returns>Lista de operaciones de crédito.</returns>
-        public ErrorDto<List<PolizaPersonaCreditoDto>> Poliza_Persona_Creditos(int codEmpresa, PolizaPersonaCreditoParams param)
+        public ErrorDto<List<PolizaPersonaOperacionBaseDto>> Poliza_Persona_Creditos(int codEmpresa, PolizaPersonaCreditoParams param)
         {
             var sql = "spPoliza_Persona_Creditos";
             var parameters = new { param.Cedula };
             using var conn = _portalDb.CreateConnection(codEmpresa);
-            var result = conn.Query<PolizaPersonaCreditoDto>(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
+            var result = conn.Query<PolizaPersonaOperacionBaseDto>(sql, parameters, commandType: System.Data.CommandType.StoredProcedure);
             return DbHelper.CreateOkResponse(result.AsList());
         }
 
