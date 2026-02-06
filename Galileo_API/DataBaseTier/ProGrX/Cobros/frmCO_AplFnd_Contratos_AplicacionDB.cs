@@ -19,6 +19,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             _portalDB = portalDB;
         }
 
+        /// <summary>
+        /// Obtiene la información de los contratos con mora para aplicar fondos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CoAplFndContrAplInformacionData>> CO_AplFndContrApl_Informacion_Obtener(int codEmpresa)
         {
             const string sql = @"exec spCBR_Fondos_Apl_Contratos_Proceso_Carga_Informacion";
@@ -27,6 +32,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 _portalDB, codEmpresa, sql);
         }
 
+        /// <summary>
+        /// Aplica los fondos a los contratos seleccionados
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto<CoAplExcProcesadosResult> CO_AplFndContrApl_Aplicar(int CodEmpresa, ExcedenteAplicarRequest request)
         {
             var response = new ErrorDto<CoAplExcProcesadosResult>
