@@ -5,8 +5,6 @@ using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo.Models;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
-using System.Globalization;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 {
     public class FrmCxCParametrosDB
@@ -53,7 +51,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         private const int SortDescendingValue = 1;
 
 
-       
+
         private const string SelectColumns =
             "cod_parametro, descripcion, valor, notas, tipo, inicio_fecha, visible, modifica_usuario, modifica_fecha";
 
@@ -109,7 +107,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 CxCParametros_Cargar(codEmpresa);
 
                 using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
-                //var response = new CxCParametrosLista();
+             
 
 
                 var like = BuildLike(filtros.filtro);
@@ -126,8 +124,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var @params = new
                 {
                     like,
-                    orderBy,              // 'cod_parametro' | 'descripcion' | 'valor'
-                    desc = isDesc ? 1 : 0, // 1=DESC, 0=ASC
+                    orderBy,              
+                    desc = isDesc ? 1 : 0, 
                     offset = effectiveOffset,
                     fetch = effectiveFetch
                 };
@@ -176,8 +174,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             IEnumerable<CxCParametrosData> items,
             int codEmpresa,
             int codContabilidad)
-        {
-            // Asegura dependencia no nula si el analizador es estricto
+        { 
             ArgumentNullException.ThrowIfNull(mCntLink);
 
             foreach (var item in items)
@@ -216,19 +213,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns></returns>
         private void CxCParametros_Cargar(int CodEmpresa)
         {
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-                var query = $@"exec spCxC_Parametros";
-                conn.Execute(query);
-
-
-            }
-            catch (Exception )
-            {
-                throw;
-            }
+            var query = $@"exec spCxC_Parametros";
+            conn.Execute(query);
 
         }
 
