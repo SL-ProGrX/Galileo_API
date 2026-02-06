@@ -52,15 +52,37 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         private const int SortDescendingValue = 1;
 
-        private const string WhereFilter = @"
-            WHERE (@like IS NULL)
-               OR (cod_parametro LIKE @like)
-               OR (descripcion  LIKE @like)
-               OR (valor        LIKE @like)";
 
+       
         private const string SelectColumns =
             "cod_parametro, descripcion, valor, notas, tipo, inicio_fecha, visible, modifica_usuario, modifica_fecha";
 
+        // Consulta LISTA totalmente estática (sin interpolación)
+        private const string SqlList = @"
+            SELECT " + SelectColumns + @"
+            FROM CxC_Parametros
+            WHERE (@like IS NULL)
+               OR (cod_parametro LIKE @like)
+               OR (descripcion  LIKE @like)
+               OR (valor        LIKE @like)
+            ORDER BY
+                CASE WHEN @orderBy = 'cod_parametro' AND @desc = 0 THEN cod_parametro END ASC,
+                CASE WHEN @orderBy = 'cod_parametro' AND @desc = 1 THEN cod_parametro END DESC,
+                CASE WHEN @orderBy = 'descripcion'   AND @desc = 0 THEN descripcion   END ASC,
+                CASE WHEN @orderBy = 'descripcion'   AND @desc = 1 THEN descripcion   END DESC,
+                CASE WHEN @orderBy = 'valor'         AND @desc = 0 THEN valor         END ASC,
+                CASE WHEN @orderBy = 'valor'         AND @desc = 1 THEN valor         END DESC
+            OFFSET @offset ROWS
+            FETCH NEXT @fetch ROWS ONLY;";
+
+        // Consulta COUNT totalmente estática (sin interpolación)
+        private const string SqlCount = @"
+            SELECT COUNT(cod_parametro)
+            FROM CxC_Parametros
+            WHERE (@like IS NULL)
+               OR (cod_parametro LIKE @like)
+               OR (descripcion  LIKE @like)
+               OR (valor        LIKE @like);";
 
 
 
@@ -91,38 +113,29 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
 
                 var like = BuildLike(filtros.filtro);
-                var (orderBy, direction) = BuildOrder(filtros.sortField, filtros.sortOrder);
+                var (orderBy, isDesc) = BuildOrder(filtros.sortField, filtros.sortOrder);
 
                 var offset = Math.Max(filtros.pagina, 0);
                 var fetch = Math.Max(filtros.paginacion, 0);
                 var usarPaginacion = !esExportar && fetch > 0;
 
+                var effectiveOffset = usarPaginacion ? offset : 0;
+                var effectiveFetch = usarPaginacion ? fetch : int.MaxValue;
 
-
-
-
-
-                var sqlList =
-               $@"SELECT {SelectColumns}
-                    FROM CxC_Parametros
-                    {WhereFilter}
-                    ORDER BY {orderBy} {direction}{BuildPagination(usarPaginacion)};";
-
-                var sqlCount =
-                        $@"SELECT COUNT(cod_parametro)
-                FROM CxC_Parametros
-                {WhereFilter};";
 
                 var @params = new
                 {
                     like,
-                    offset,
-                    fetch
+                    orderBy,              // 'cod_parametro' | 'descripcion' | 'valor'
+                    desc = isDesc ? 1 : 0, // 1=DESC, 0=ASC
+                    offset = effectiveOffset,
+                    fetch = effectiveFetch
                 };
 
 
-                var total = conn.QuerySingle<int>(sqlCount, @params);
-                var lista = conn.Query<CxCParametrosData>(sqlList, @params).ToList();
+
+                var total = conn.QuerySingle<int>(SqlCount, @params);
+                var lista = conn.Query<CxCParametrosData>(SqlList, @params).ToList();
 
 
 
@@ -147,50 +160,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         #region Helpers privados (reducen la complejidad del método principal)
 
+
         private static string? BuildLike(string? texto)
-        {
-            if (string.IsNullOrWhiteSpace(texto))
-            {
-                return null;
-            }
+            => string.IsNullOrWhiteSpace(texto) ? null : "%" + texto.Trim() + "%";
 
-            var safe = texto.Trim();
-            return "%" + safe + "%";
-        }
-
-        private static (string orderBy, string direction) BuildOrder(string? sortField, int sortOrder)
+        private static (string orderBy, bool isDesc) BuildOrder(string? sortField, int sortOrder)
         {
             var field = (sortField ?? string.Empty).Trim();
-
-            var orderBy = OrderableColumns.TryGetValue(field, out var col)
-                ? col
-                : "cod_parametro";
-
-            var direction = sortOrder == SortDescendingValue ? "DESC" : "ASC";
-
-            return (orderBy, direction);
+            var orderBy = OrderableColumns.TryGetValue(field, out var col) ? col : "cod_parametro";
+            var isDesc = sortOrder == SortDescendingValue;
+            return (orderBy, isDesc);
         }
 
-        private static string BuildPagination(bool usar)
-            => usar ? "\nOFFSET @offset ROWS\nFETCH NEXT @fetch ROWS ONLY" : string.Empty;
-
-        /// <summary>
-        /// Enriquece las cuentas cuando el tipo es 'CTA'. Verifica mCntLink no nulo.
-        /// </summary>
         private void EnriquecerCuentas(
             IEnumerable<CxCParametrosData> items,
             int codEmpresa,
             int codContabilidad)
         {
-            
+            // Asegura dependencia no nula si el analizador es estricto
             ArgumentNullException.ThrowIfNull(mCntLink);
 
             foreach (var item in items)
             {
-                               if (!string.Equals(item.Tipo, "CTA", StringComparison.OrdinalIgnoreCase))
-                {
+                if (!string.Equals(item.Tipo, "CTA", StringComparison.OrdinalIgnoreCase))
                     continue;
-                }
 
                 if (string.IsNullOrWhiteSpace(item.Valor))
                 {
