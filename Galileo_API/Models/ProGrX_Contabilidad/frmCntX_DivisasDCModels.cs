@@ -17,9 +17,9 @@
 
     public class ProcesarDiferencialRequestDto
     {
-        public string codDivisa { get; set; }
-        public decimal tcCompra { get; set; }
-        public decimal tcVenta { get; set; }
+        public string? codDivisa { get; set; }
+        public decimal? tcCompra { get; set; }
+        public decimal? tcVenta { get; set; }
     }
 
 }
