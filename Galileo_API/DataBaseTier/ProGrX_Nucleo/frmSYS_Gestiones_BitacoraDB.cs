@@ -1,16 +1,16 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using System.Data;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
+using System.Globalization;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSysGestionesBitacoraDB
     {
         private readonly IConfiguration _config;
-        private const string WhereKeyword = " WHERE ";
-        private const string AndKeyword = " AND ";
 
         public FrmSysGestionesBitacoraDB(IConfiguration config)
         {
@@ -43,33 +43,113 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                string fromSql = " FROM vSys_Bitacora_Operaciones v LEFT JOIN SOCIOS s ON s.CEDULA = v.CEDULA ";
-                string where = ConstruirWhereBitacora(filtro);
-                (string sortFieldSql, string sortDir) = ObtenerOrdenBitacora(filtro.Filtros ?? new FiltrosLazyLoadData());
 
-                int pagina = Math.Max(0, filtro.Filtros?.pagina ?? 0);
-                int paginacion = Math.Max(1, filtro.Filtros?.paginacion ?? 30);
+                const string fromSql = " FROM vSys_Bitacora_Operaciones v LEFT JOIN SOCIOS s ON s.CEDULA = v.CEDULA ";
+
+                // Normalización de filtros
+                var f = filtro ?? new SysGestionesBitacoraFiltro();
+                var ui = f.Filtros ?? new FiltrosLazyLoadData();
+
+                int offset = Math.Max(0, ui.pagina);
+                int fetch = Math.Max(1, ui.paginacion == 0 ? 30 : ui.paginacion);
+
+                int sortOrder = ui.sortOrder; // 0=DESC, 1=ASC
+                string sortField = (ui.sortField ?? string.Empty).Trim().ToLowerInvariant();
+
+                // Fechas
+                DateTime? fechaIni = null;
+                DateTime? fechaFin = null;
+                if (!f.TodasFechas && !string.IsNullOrWhiteSpace(f.FechaInicio)
+                    && DateTime.TryParse(f.FechaInicio, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out var di))
+                    fechaIni = di.Date;
+                if (!f.TodasFechas && !string.IsNullOrWhiteSpace(f.FechaFin)
+                    && DateTime.TryParse(f.FechaFin, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out var df))
+                    fechaFin = df.Date.AddDays(1).AddSeconds(-1);
+
+                string? usuarioLike = string.IsNullOrWhiteSpace(f.UsuarioBuscar) ? null : $"%{f.UsuarioBuscar.Trim()}%";
+                string? clienteLike = string.IsNullOrWhiteSpace(f.ClienteBuscar) ? null : $"%{f.ClienteBuscar.Trim()}%";
+
+                string? gestionCod = null;
+                if (!string.IsNullOrWhiteSpace(f.GestionCod) && !f.GestionCod.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
+                    gestionCod = f.GestionCod.Trim();
+
+                string? generalLike = string.IsNullOrWhiteSpace(ui.filtro) ? null : $"%{ui.filtro.Trim()}%";
+
+                const string whereSql = @"
+                    WHERE (
+                           @TodasFechas = 1
+                           OR (@FechaIni IS NULL OR @FechaFin IS NULL)
+                           OR (v.[REGISTRO_FECHA] BETWEEN @FechaIni AND @FechaFin)
+                          )
+                      AND (@UsuarioLike IS NULL OR v.[REGISTRO_USUARIO] LIKE @UsuarioLike)
+                      AND (@GestionCod IS NULL OR v.[COD_GESTION] = @GestionCod)
+                      AND (
+                            @ClienteLike IS NULL
+                            OR v.[CEDULA] LIKE @ClienteLike
+                            OR s.[CEDULAR] LIKE @ClienteLike
+                            OR s.[NOMBRE] LIKE @ClienteLike
+                          )
+                      AND (
+                            @GeneralLike IS NULL
+                            OR v.[CEDULA] LIKE @GeneralLike
+                            OR s.[CEDULAR] LIKE @GeneralLike
+                            OR s.[NOMBRE] LIKE @GeneralLike
+                            OR v.[REGISTRO_USUARIO] LIKE @GeneralLike
+                            OR v.[DESCRIPCION] LIKE @GeneralLike
+                            OR v.[NOTAS] LIKE @GeneralLike
+                          )";
 
                 // Total
-                var query = $@"SELECT COUNT(*) {fromSql} {where}";
-                result.Result.total = connection.Query<int>(query).FirstOrDefault();
+                var sqlCount = $@"SELECT COUNT(*) {fromSql} {whereSql}";
 
-                // Lista paginada
-                query = $@"
-            SELECT
-                v.[CEDULA]            AS Cedula,
-                s.[NOMBRE]            AS Nombre,
-                v.[REGISTRO_FECHA]    AS Registro_Fecha,
-                v.[REGISTRO_USUARIO]  AS Registro_Usuario,
-                v.[DESCRIPCION]       AS Descripcion,
-                v.[NOTAS]             AS Notas,
-                v.[COD_GESTION]       AS Cod_Gestion
-            {fromSql}
-            {where}
-            ORDER BY {sortFieldSql} {sortDir}
-            OFFSET {pagina} ROWS
-            FETCH NEXT {paginacion} ROWS ONLY";
-                result.Result.lista = connection.Query<SysGestionesBitacorasData>(query).ToList();
+                // Lista paginada (orden por whitelist)
+                var sqlData = $@"
+                    SELECT
+                        v.[CEDULA]            AS Cedula,
+                        s.[NOMBRE]            AS Nombre,
+                        v.[REGISTRO_FECHA]    AS Registro_Fecha,
+                        v.[REGISTRO_USUARIO]  AS Registro_Usuario,
+                        v.[DESCRIPCION]       AS Descripcion,
+                        v.[NOTAS]             AS Notas,
+                        v.[COD_GESTION]       AS Cod_Gestion
+                    {fromSql}
+                    {whereSql}
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @SortOrder = 1 AND @SortField = 'identificacion' THEN v.[CEDULA] END ASC,
+                        CASE WHEN @SortOrder = 1 AND @SortField = 'nombre' THEN s.[NOMBRE] END ASC,
+                        CASE WHEN @SortOrder = 1 AND (@SortField = 'fecha' OR @SortField = 'registro_fecha') THEN v.[REGISTRO_FECHA] END ASC,
+                        CASE WHEN @SortOrder = 1 AND (@SortField = 'usuario' OR @SortField = 'registro_usuario') THEN v.[REGISTRO_USUARIO] END ASC,
+                        CASE WHEN @SortOrder = 1 AND (@SortField = 'gestion' OR @SortField = 'descripcion') THEN v.[DESCRIPCION] END ASC,
+                        CASE WHEN @SortOrder = 1 AND @SortField = 'notas' THEN v.[NOTAS] END ASC,
+
+                        -- DESC
+                        CASE WHEN @SortOrder = 0 AND @SortField = 'identificacion' THEN v.[CEDULA] END DESC,
+                        CASE WHEN @SortOrder = 0 AND @SortField = 'nombre' THEN s.[NOMBRE] END DESC,
+                        CASE WHEN @SortOrder = 0 AND (@SortField = 'fecha' OR @SortField = 'registro_fecha') THEN v.[REGISTRO_FECHA] END DESC,
+                        CASE WHEN @SortOrder = 0 AND (@SortField = 'usuario' OR @SortField = 'registro_usuario') THEN v.[REGISTRO_USUARIO] END DESC,
+                        CASE WHEN @SortOrder = 0 AND (@SortField = 'gestion' OR @SortField = 'descripcion') THEN v.[DESCRIPCION] END DESC,
+                        CASE WHEN @SortOrder = 0 AND @SortField = 'notas' THEN v.[NOTAS] END DESC,
+
+                        -- Fallback
+                        v.[REGISTRO_FECHA] DESC
+                    OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+
+                var p = new DynamicParameters();
+                p.Add("@TodasFechas", f.TodasFechas ? 1 : 0, DbType.Int32);
+                p.Add("@FechaIni", fechaIni, DbType.DateTime);
+                p.Add("@FechaFin", fechaFin, DbType.DateTime);
+                p.Add("@UsuarioLike", usuarioLike, DbType.String);
+                p.Add("@ClienteLike", clienteLike, DbType.String);
+                p.Add("@GestionCod", gestionCod, DbType.String);
+                p.Add("@GeneralLike", generalLike, DbType.String);
+                p.Add("@SortField", sortField, DbType.String);
+                p.Add("@SortOrder", sortOrder, DbType.Int32);
+                p.Add("@Offset", offset, DbType.Int32);
+                p.Add("@Fetch", fetch, DbType.Int32);
+
+                result.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
+                result.Result.lista = connection.Query<SysGestionesBitacorasData>(sqlData, p).ToList();
             }
             catch (Exception ex)
             {
@@ -80,27 +160,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             }
 
             return result;
-        }
-
-
-        /// <summary>
-        /// Devuelve el campo y dirección de ordenamiento para la bitácora.
-        /// </summary>
-        private static (string, string) ObtenerOrdenBitacora(FiltrosLazyLoadData filtros)
-        {
-            string sort = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
-            string sortFieldSql = sort switch
-            {
-                "identificacion" => "v.[CEDULA]",
-                "nombre" => "s.[NOMBRE]",
-                "fecha" => "v.[REGISTRO_FECHA]",
-                "usuario" => "v.[REGISTRO_USUARIO]",
-                "gestion" => "v.[DESCRIPCION]",
-                "notas" => "v.[NOTAS]",
-                _ => "v.[REGISTRO_FECHA]"
-            };
-            string sortDir = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
-            return (sortFieldSql, sortDir);
         }
 
 
@@ -116,85 +175,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             public string? FechaFin { get; set; }
             public bool TodasFechas { get; set; }
             public FiltrosLazyLoadData? Filtros { get; set; }
-        }
-
-
-        /// <summary>
-        /// Construye la cláusula WHERE para la consulta de gestiones de bitácora.
-        /// </summary>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
-        private static string ConstruirWhereBitacora(SysGestionesBitacoraFiltro filtro)
-        {
-            var conditions = new List<string>();
-
-            if (!filtro.TodasFechas && !string.IsNullOrWhiteSpace(filtro.FechaInicio) && !string.IsNullOrWhiteSpace(filtro.FechaFin))
-            {
-                conditions.Add($"v.[REGISTRO_FECHA] BETWEEN '{filtro.FechaInicio} 00:00:00' AND '{filtro.FechaFin} 23:59:59'");
-            }
-
-            AddLikeCondition(conditions, filtro.UsuarioBuscar, "v.[REGISTRO_USUARIO]");
-            AddClienteBuscarCondition(conditions, filtro.ClienteBuscar ?? string.Empty);
-            AddGestionCodCondition(conditions, filtro.GestionCod ?? string.Empty);
-
-            if (!string.IsNullOrWhiteSpace(filtro.Filtros?.filtro))
-            {
-                var q = filtro.Filtros.filtro.Trim().Replace("'", "''");
-                conditions.Add(
-                    $"(v.[CEDULA] LIKE '%{q}%' OR s.[CEDULAR] LIKE '%{q}%' OR s.[NOMBRE] LIKE '%{q}%' " +
-                    $"OR v.[REGISTRO_USUARIO] LIKE '%{q}%' OR v.[DESCRIPCION] LIKE '%{q}%' OR v.[NOTAS] LIKE '%{q}%')");
-            }
-
-            if (conditions.Count == 0)
-                return "";
-
-            return WhereKeyword + string.Join(AndKeyword, conditions);
-        }
-
-
-        /// <summary>
-        /// Agrega una condición LIKE a la lista de condiciones si el valor no es nulo o vacío.
-        /// </summary>
-        /// <param name="conditions"></param>
-        /// <param name="value"></param>
-        /// <param name="field"></param>
-        private static void AddLikeCondition(List<string> conditions, string? value, string field)
-        {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                var q = value.Trim().Replace("'", "''");
-                conditions.Add($"{field} LIKE '%{q}%'");
-            }
-        }
-
-
-        /// <summary>
-        /// Agrega una condición de búsqueda para clienteBuscar en cédula, cédular y nombre.
-        /// </summary>
-        /// <param name="conditions"></param>
-        /// <param name="clienteBuscar"></param>
-        private static void AddClienteBuscarCondition(List<string> conditions, string clienteBuscar)
-        {
-            if (!string.IsNullOrWhiteSpace(clienteBuscar))
-            {
-                var q = clienteBuscar.Trim().Replace("'", "''");
-                conditions.Add($"(v.[CEDULA] LIKE '%{q}%' OR s.[CEDULAR] LIKE '%{q}%' OR s.[NOMBRE] LIKE '%{q}%')");
-            }
-        }
-
-
-        /// <summary>
-        /// Agrega una condición para el código de gestión si no es nulo, vacío o "TODOS".
-        /// </summary>
-        /// <param name="conditions"></param>
-        /// <param name="gestionCod"></param>
-        private static void AddGestionCodCondition(List<string> conditions, string gestionCod)
-        {
-            if (!string.IsNullOrWhiteSpace(gestionCod) && !gestionCod.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
-            {
-                var q = gestionCod.Trim().Replace("'", "''");
-                conditions.Add($"v.[COD_GESTION] = '{q}'");
-            }
         }
 
 
@@ -216,25 +196,65 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
 
-                string fromSql = " FROM vSys_Bitacora_Operaciones v LEFT JOIN SOCIOS s ON s.CEDULA = v.CEDULA ";
-                string where = ConstruirWhereBitacora(filtro);
+                const string fromSql = " FROM vSys_Bitacora_Operaciones v LEFT JOIN SOCIOS s ON s.CEDULA = v.CEDULA ";
 
-                query = $@"
-            SELECT
-                v.[CEDULA]            AS Cedula,
-                s.[NOMBRE]            AS Nombre,
-                v.[REGISTRO_FECHA]    AS Registro_Fecha,
-                v.[REGISTRO_USUARIO]  AS Registro_Usuario,
-                v.[DESCRIPCION]       AS Descripcion,
-                v.[NOTAS]             AS Notas,
-                v.[COD_GESTION]       AS Cod_Gestion
-            {fromSql}
-            {where}
-            ORDER BY v.[REGISTRO_FECHA] DESC";
-                result.Result = connection.Query<SysGestionesBitacorasData>(query).ToList();
+                var f = filtro ?? new SysGestionesBitacoraFiltro();
+
+                DateTime? fechaIni = null;
+                DateTime? fechaFin = null;
+                if (!f.TodasFechas && !string.IsNullOrWhiteSpace(f.FechaInicio)
+                    && DateTime.TryParse(f.FechaInicio, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out var di))
+                    fechaIni = di.Date;
+                if (!f.TodasFechas && !string.IsNullOrWhiteSpace(f.FechaFin)
+                    && DateTime.TryParse(f.FechaFin, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out var df))
+                    fechaFin = df.Date.AddDays(1).AddSeconds(-1);
+
+                string? usuarioLike = string.IsNullOrWhiteSpace(f.UsuarioBuscar) ? null : $"%{f.UsuarioBuscar.Trim()}%";
+                string? clienteLike = string.IsNullOrWhiteSpace(f.ClienteBuscar) ? null : $"%{f.ClienteBuscar.Trim()}%";
+
+                string? gestionCod = null;
+                if (!string.IsNullOrWhiteSpace(f.GestionCod) && !f.GestionCod.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
+                    gestionCod = f.GestionCod.Trim();
+
+                const string whereSql = @"
+                    WHERE (
+                           @TodasFechas = 1
+                           OR (@FechaIni IS NULL OR @FechaFin IS NULL)
+                           OR (v.[REGISTRO_FECHA] BETWEEN @FechaIni AND @FechaFin)
+                          )
+                      AND (@UsuarioLike IS NULL OR v.[REGISTRO_USUARIO] LIKE @UsuarioLike)
+                      AND (@GestionCod IS NULL OR v.[COD_GESTION] = @GestionCod)
+                      AND (
+                            @ClienteLike IS NULL
+                            OR v.[CEDULA] LIKE @ClienteLike
+                            OR s.[CEDULAR] LIKE @ClienteLike
+                            OR s.[NOMBRE] LIKE @ClienteLike
+                          )";
+
+                var sql = $@"
+                    SELECT
+                        v.[CEDULA]            AS Cedula,
+                        s.[NOMBRE]            AS Nombre,
+                        v.[REGISTRO_FECHA]    AS Registro_Fecha,
+                        v.[REGISTRO_USUARIO]  AS Registro_Usuario,
+                        v.[DESCRIPCION]       AS Descripcion,
+                        v.[NOTAS]             AS Notas,
+                        v.[COD_GESTION]       AS Cod_Gestion
+                    {fromSql}
+                    {whereSql}
+                    ORDER BY v.[REGISTRO_FECHA] DESC";
+
+                var p = new DynamicParameters();
+                p.Add("@TodasFechas", f.TodasFechas ? 1 : 0, DbType.Int32);
+                p.Add("@FechaIni", fechaIni, DbType.DateTime);
+                p.Add("@FechaFin", fechaFin, DbType.DateTime);
+                p.Add("@UsuarioLike", usuarioLike, DbType.String);
+                p.Add("@ClienteLike", clienteLike, DbType.String);
+                p.Add("@GestionCod", gestionCod, DbType.String);
+
+                result.Result = connection.Query<SysGestionesBitacorasData>(sql, p).ToList();
             }
             catch (Exception ex)
             {
@@ -305,40 +325,51 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(stringConn);
 
-                string condicion = "";
-                var p = new DynamicParameters();
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    condicion = " WHERE (CEDULA LIKE @filtro_busqueda OR CEDULAR LIKE @filtro_busqueda OR NOMBRE LIKE @filtro_busqueda) ";
-                    p.Add("@filtro_busqueda", "%" + filtros.filtro.Trim() + "%");
-                }
+                string? searchLike = string.IsNullOrWhiteSpace(filtros?.filtro) ? null : $"%{filtros.filtro.Trim()}%";
 
-                // Total
-                var query = $@"SELECT COUNT(*) FROM SOCIOS {condicion}";
-                result.Result.total = connection.Query<int>(query, p).FirstOrDefault();
-
-                // Orden
-                string campoOrden = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
-                string ordenSql = (filtros?.sortOrder == 0) ? "DESC" : "ASC";
-                string campoOrdenSql = campoOrden switch
-                {
-                    "cedula" => "CEDULA",
-                    "cedular" => "CEDULAR",
-                    "nombre" => "NOMBRE",
-                    _ => "NOMBRE"
-                };
+                string sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                int sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
 
                 int offset = Math.Max(0, filtros?.pagina ?? 0);
-                int take = Math.Max(1, filtros?.paginacion ?? 30);
+                int fetch = Math.Max(1, filtros?.paginacion ?? 30);
 
-                // Lista paginada
-                query = $@"
+                const string sqlCount = @"SELECT COUNT(*)
+                                         FROM SOCIOS
+                                         WHERE (@filtro IS NULL
+                                                OR CEDULA LIKE @filtro
+                                                OR CEDULAR LIKE @filtro
+                                                OR NOMBRE LIKE @filtro);";
+
+                const string sqlData = @"
                     SELECT CEDULA, CEDULAR, NOMBRE
                     FROM SOCIOS
-                    {condicion}
-                    ORDER BY {campoOrdenSql} {ordenSql}
-                    OFFSET {offset} ROWS FETCH NEXT {take} ROWS ONLY";
-                result.Result.lista = connection.Query<SociosLookupData>(query, p).ToList();
+                    WHERE (@filtro IS NULL
+                           OR CEDULA LIKE @filtro
+                           OR CEDULAR LIKE @filtro
+                           OR NOMBRE LIKE @filtro)
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cedula' THEN CEDULA END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'cedular' THEN CEDULAR END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'nombre' THEN NOMBRE END ASC,
+
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cedula' THEN CEDULA END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'cedular' THEN CEDULAR END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'nombre' THEN NOMBRE END DESC,
+
+                        NOMBRE ASC
+                    OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+                var p = new DynamicParameters();
+                p.Add("@filtro", searchLike, DbType.String);
+                p.Add("@sortField", sortField, DbType.String);
+                p.Add("@sortOrder", sortOrder, DbType.Int32);
+                p.Add("@offset", offset, DbType.Int32);
+                p.Add("@fetch", fetch, DbType.Int32);
+
+                result.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
+                result.Result.lista = connection.Query<SociosLookupData>(sqlData, p).ToList();
             }
             catch (Exception ex)
             {

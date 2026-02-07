@@ -45,34 +45,21 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 connection.Execute("dbo.spSys_IVA_Parametros", commandType: CommandType.StoredProcedure, commandTimeout: 60);
 
                 var p = new DynamicParameters();
-                string where = "";
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    where = @"
-                    WHERE (
-                           p.cod_parametro     LIKE @query
-                        OR p.descripcion       LIKE @query
-                        OR p.valor             LIKE @query
-                        OR p.tipo              LIKE @query
-                        OR cta.Cod_Cuenta_Mask LIKE @query
-                        OR m.mask10            LIKE @query
-                    )";
-                    p.Add("@query", "%" + filtros.filtro.Trim() + "%");
-                }
 
-                string sort = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
-                string sortFieldSql = sort switch
-                {
-                    "cod_parametro" => "p.cod_parametro",
-                    "descripcion" => "p.descripcion",
-                    "valor" => "p.valor",
-                    "tipo" => "p.tipo",
-                    "modifica_fecha" => "p.modifica_fecha",
-                    _ => "p.cod_parametro"
-                };
-                string sortDir = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
-                int pagina = Math.Max(0, filtros?.pagina ?? 0);
-                int paginacion = Math.Max(1, filtros?.paginacion ?? 30);
+                var raw = (filtros?.filtro ?? string.Empty).Trim();
+                string? query = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
+
+                string sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                int sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+
+                int offset = Math.Max(0, filtros?.pagina ?? 0);
+                int fetch = Math.Max(1, filtros?.paginacion ?? 30);
+
+                p.Add("@query", query);
+                p.Add("@sortField", sortField);
+                p.Add("@sortOrder", sortOrder);
+                p.Add("@offset", offset);
+                p.Add("@fetch", fetch);
 
                 // ---------- COUNT ----------
                 var sqlCount = $@"
@@ -114,8 +101,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                           AND c.Cod_Cuenta_Mask = m.mask10
                         ORDER BY c.COD_CONTABILIDAD
                     ) cta
-                    {where}";
-                 result.Result.total = connection.Query<int>(sqlCount, p).FirstOrDefault();
+                    WHERE (@query IS NULL OR (
+                           p.cod_parametro     LIKE @query
+                        OR p.descripcion       LIKE @query
+                        OR p.valor             LIKE @query
+                        OR p.tipo              LIKE @query
+                        OR cta.Cod_Cuenta_Mask LIKE @query
+                        OR m.mask10            LIKE @query
+                    ))";
+                result.Result.total = connection.Query<int>(sqlCount, p).FirstOrDefault();
 
                 // ---------- LISTA ----------
                 var sql = $@"
@@ -169,9 +163,31 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                       AND c.Cod_Cuenta_Mask = m.mask10
                     ORDER BY c.COD_CONTABILIDAD
                 ) cta
-                {where}
-                ORDER BY {sortFieldSql} {sortDir}
-                OFFSET {pagina} ROWS FETCH NEXT {paginacion} ROWS ONLY";
+                WHERE (@query IS NULL OR (
+                       p.cod_parametro    LIKE @query
+                    OR p.descripcion      LIKE @query
+                    OR p.valor            LIKE @query
+                    OR p.tipo             LIKE @query
+                    OR cta.Cod_Cuenta_Mask LIKE @query
+                    OR m.mask10           LIKE @query
+                ))
+                ORDER BY
+                    -- ASC
+                    CASE WHEN @sortOrder = 1 AND @sortField = 'cod_parametro' THEN p.cod_parametro END ASC,
+                    CASE WHEN @sortOrder = 1 AND @sortField = 'descripcion' THEN p.descripcion END ASC,
+                    CASE WHEN @sortOrder = 1 AND @sortField = 'valor' THEN p.valor END ASC,
+                    CASE WHEN @sortOrder = 1 AND @sortField = 'tipo' THEN p.tipo END ASC,
+                    CASE WHEN @sortOrder = 1 AND @sortField = 'modifica_fecha' THEN p.modifica_fecha END ASC,
+
+                    -- DESC
+                    CASE WHEN @sortOrder = 0 AND @sortField = 'cod_parametro' THEN p.cod_parametro END DESC,
+                    CASE WHEN @sortOrder = 0 AND @sortField = 'descripcion' THEN p.descripcion END DESC,
+                    CASE WHEN @sortOrder = 0 AND @sortField = 'valor' THEN p.valor END DESC,
+                    CASE WHEN @sortOrder = 0 AND @sortField = 'tipo' THEN p.tipo END DESC,
+                    CASE WHEN @sortOrder = 0 AND @sortField = 'modifica_fecha' THEN p.modifica_fecha END DESC,
+
+                    p.cod_parametro ASC
+                OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY";
 
                 result.Result.lista = connection.Query<SysIvaParametrosData>(sql, p).ToList();
             }
@@ -484,68 +500,66 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 using var connection = new SqlConnection(stringConn);
                 connection.Open();
 
-                var where = "WHERE COD_CONTABILIDAD = @conta";
-                var p = new DynamicParameters(new { conta = codContabilidad });
+                string? q = string.IsNullOrWhiteSpace(filtros?.filtro) ? null : $"%{filtros.filtro.Trim()}%";
 
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
+                string div = (divisaRaw ?? string.Empty).Trim().ToUpperInvariant();
+                string? codDivisa;
+                if (div == "MN")
                 {
-                    where += " AND (COD_CUENTA LIKE @q OR Cod_Cuenta_Mask LIKE @q OR Descripcion LIKE @q OR Descripcion_Alterna LIKE @q)";
-                    p.Add("@q", "%" + filtros.filtro.Trim() + "%");
+                    codDivisa = "COL";
+                }
+                else if (div == "ME")
+                {
+                    codDivisa = "DOL";
+                }
+                else
+                {
+                    codDivisa = null;
                 }
 
-                var div = (divisaRaw ?? "").ToUpperInvariant();
-                if (div == "MN") where += " AND COD_DIVISA = 'COL'";
-                else if (div == "ME") where += " AND COD_DIVISA = 'DOL'";
+                int nlev = nivelMask ?? 0;
 
-                var nlev = nivelMask ?? 0;
-                if (nlev > 0)
-                {
-                    string wNivel = nlev switch
-                    {
-                        // Máscara: 1-0-0-00-0-00-00  (posiciones de dígitos: 1,3,5,7-8,10,12-13,15-16)
-                        1 => "SUBSTRING(Cod_Cuenta_Mask,3,1)='0'  AND SUBSTRING(Cod_Cuenta_Mask,5,1)='0' " +
-                             "AND SUBSTRING(Cod_Cuenta_Mask,7,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,10,1)='0' " +
-                             "AND SUBSTRING(Cod_Cuenta_Mask,12,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00'",
+                var p = new DynamicParameters();
+                p.Add("@conta", codContabilidad);
+                p.Add("@q", q);
+                p.Add("@codDivisa", codDivisa);
+                p.Add("@nlev", nlev);
 
-                        2 => "SUBSTRING(Cod_Cuenta_Mask,3,1)<>'0' AND SUBSTRING(Cod_Cuenta_Mask,5,1)='0' " +
-                             "AND SUBSTRING(Cod_Cuenta_Mask,7,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,10,1)='0' " +
-                             "AND SUBSTRING(Cod_Cuenta_Mask,12,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00'",
-
-                        3 => "SUBSTRING(Cod_Cuenta_Mask,5,1)<>'0' AND SUBSTRING(Cod_Cuenta_Mask,7,2)='00' " +
-                             "AND SUBSTRING(Cod_Cuenta_Mask,10,1)='0' AND SUBSTRING(Cod_Cuenta_Mask,12,2)='00' " +
-                             "AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00'",
-
-                        4 => "SUBSTRING(Cod_Cuenta_Mask,7,2)<>'00' AND SUBSTRING(Cod_Cuenta_Mask,10,1)='0' " +
-                             "AND SUBSTRING(Cod_Cuenta_Mask,12,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00'",
-
-                        5 => "SUBSTRING(Cod_Cuenta_Mask,10,1)<>'0' AND SUBSTRING(Cod_Cuenta_Mask,12,2)='00' " +
-                             "AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00'",
-
-                        6 => "SUBSTRING(Cod_Cuenta_Mask,12,2)<>'00' AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00'",
-
-                        7 => "SUBSTRING(Cod_Cuenta_Mask,15,2)<>'00'",
-
-                        _ => "Acepta_Movimientos = 1"
-                    };
-                    where += " AND (" + wNivel + ")";
-                }
+                const string whereSql = @"
+                    WHERE COD_CONTABILIDAD = @conta
+                      AND (@q IS NULL OR (
+                            COD_CUENTA LIKE @q
+                            OR Cod_Cuenta_Mask LIKE @q
+                            OR Descripcion LIKE @q
+                            OR Descripcion_Alterna LIKE @q
+                          ))
+                      AND (@codDivisa IS NULL OR COD_DIVISA = @codDivisa)
+                      AND (
+                            @nlev <= 0
+                            OR (
+                                (@nlev = 1 AND SUBSTRING(Cod_Cuenta_Mask,3,1)='0'  AND SUBSTRING(Cod_Cuenta_Mask,5,1)='0'  AND SUBSTRING(Cod_Cuenta_Mask,7,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,10,1)='0' AND SUBSTRING(Cod_Cuenta_Mask,12,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00')
+                             OR (@nlev = 2 AND SUBSTRING(Cod_Cuenta_Mask,3,1)<>'0' AND SUBSTRING(Cod_Cuenta_Mask,5,1)='0'  AND SUBSTRING(Cod_Cuenta_Mask,7,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,10,1)='0' AND SUBSTRING(Cod_Cuenta_Mask,12,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00')
+                             OR (@nlev = 3 AND SUBSTRING(Cod_Cuenta_Mask,5,1)<>'0' AND SUBSTRING(Cod_Cuenta_Mask,7,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,10,1)='0' AND SUBSTRING(Cod_Cuenta_Mask,12,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00')
+                             OR (@nlev = 4 AND SUBSTRING(Cod_Cuenta_Mask,7,2)<>'00' AND SUBSTRING(Cod_Cuenta_Mask,10,1)='0' AND SUBSTRING(Cod_Cuenta_Mask,12,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00')
+                             OR (@nlev = 5 AND SUBSTRING(Cod_Cuenta_Mask,10,1)<>'0' AND SUBSTRING(Cod_Cuenta_Mask,12,2)='00' AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00')
+                             OR (@nlev = 6 AND SUBSTRING(Cod_Cuenta_Mask,12,2)<>'00' AND SUBSTRING(Cod_Cuenta_Mask,15,2)='00')
+                             OR (@nlev = 7 AND SUBSTRING(Cod_Cuenta_Mask,15,2)<>'00')
+                            )
+                          )";
 
                 // Total
-                var sqlCount = $"SELECT COUNT(*) FROM vCNTX_CUENTAS_LOCAL {where}";
+                var sqlCount = $"SELECT COUNT(*) FROM vCNTX_CUENTAS_LOCAL {whereSql}";
                 result.Result.total = connection.Query<int>(sqlCount, p).FirstOrDefault();
 
-                // Orden / Paginación
-                string sortField = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
-                string sortFieldSql = sortField switch
-                {
-                    "codigo" => "Cod_Cuenta_Mask",
-                    "codigomask" => "Cod_Cuenta_Mask",
-                    "nombre" => "COALESCE(NULLIF(Descripcion_Alterna,''), Descripcion)",
-                    _ => "Cod_Cuenta_Mask"
-                };
-                string sortDir = (filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
-                int pagina = Math.Max(0, filtros?.pagina ?? 0);
-                int paginacion = Math.Max(1, filtros?.paginacion ?? 30);
+                string sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                int sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+                int offset = Math.Max(0, filtros?.pagina ?? 0);
+                int fetch = Math.Max(1, filtros?.paginacion ?? 30);
+
+                p.Add("@sortField", sortField);
+                p.Add("@sortOrder", sortOrder);
+                p.Add("@offset", offset);
+                p.Add("@fetch", fetch);
 
                 // Lista
                 var sql = $@"
@@ -558,9 +572,18 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                COD_DIVISA                                               AS divisa,
                NIVEL                                                    AS nivel
             FROM vCNTX_CUENTAS_LOCAL
-            {where}
-            ORDER BY {sortFieldSql} {sortDir}
-            OFFSET {pagina} ROWS FETCH NEXT {paginacion} ROWS ONLY;";
+            {whereSql}
+            ORDER BY
+                -- ASC
+                CASE WHEN @sortOrder = 1 AND (@sortField = 'codigo' OR @sortField = 'codigomask') THEN Cod_Cuenta_Mask END ASC,
+                CASE WHEN @sortOrder = 1 AND @sortField = 'nombre' THEN COALESCE(NULLIF(Descripcion_Alterna,''), Descripcion) END ASC,
+
+                -- DESC
+                CASE WHEN @sortOrder = 0 AND (@sortField = 'codigo' OR @sortField = 'codigomask') THEN Cod_Cuenta_Mask END DESC,
+                CASE WHEN @sortOrder = 0 AND @sortField = 'nombre' THEN COALESCE(NULLIF(Descripcion_Alterna,''), Descripcion) END DESC,
+
+                Cod_Cuenta_Mask ASC
+            OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
 
                 result.Result.lista = connection.Query<SysIvaCuentasResumenData>(sql, p).ToList();
             }

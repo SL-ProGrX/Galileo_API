@@ -100,42 +100,70 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
                 var (paginacion, exportAll, offset) = GetPagination(filtros);
 
-                var (orderByCol, orderDir) = GetOrderBy(filtros);
-                string orderBy = $"ORDER BY {orderByCol} {orderDir}";
+                int fetch = exportAll ? int.MaxValue : paginacion;
 
-                string filtroGlobal = (filtros?.filtro ?? "").Trim();
-                string where = BuildWhereClause(filtroGlobal);
+                string search = (filtros?.filtro ?? string.Empty).Trim();
+                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
 
-                string sqlCount = $@"
-                SELECT COUNT(1)
-                FROM SYS_FE_CLIENTE_CORTES
-                {where};
-                ";
-
-                string sqlData = $@"
-                SELECT
-                    CORTE_ID as corte_id,
-                    CORTE as corte,
-                    FACTURACION as facturacion,
-                    CASE WHEN METODO_BASE = 'D' THEN 'Devengado' ELSE 'Efectivo' END as metodo,
-                    REGISTRO_USUARIO as reg_usuario,
-                    REGISTRO_FECHA as reg_fecha
-                FROM SYS_FE_CLIENTE_CORTES
-                {where}
-                {orderBy}
-                ";
-
-                if (!exportAll)
-                {
-                    sqlData += @"
-                OFFSET @OFFSET ROWS
-                FETCH NEXT @FETCH ROWS ONLY
-                ";
-                }
+                int sortOrder = filtros?.sortOrder ?? 0; // 0=DESC, 1=ASC
+                string sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
 
                 using var connection = new SqlConnection(stringConn);
 
-                var p = BuildParameters(codCliente, filtroGlobal, exportAll, offset, paginacion);
+                // Total (conteo con filtro)
+                const string sqlCount = @"
+                    SELECT COUNT(1)
+                    FROM SYS_FE_CLIENTE_CORTES
+                    WHERE COD_CLIENTE = @COD_CLIENTE
+                      AND (@FILTRO IS NULL
+                           OR REGISTRO_USUARIO LIKE @FILTRO
+                           OR CAST(CORTE_ID AS varchar(20)) LIKE @FILTRO);
+                ";
+
+                // Datos paginados (orden controlado por whitelist via CASE WHEN)
+                const string sqlData = @"
+                    SELECT
+                        CORTE_ID as corte_id,
+                        CORTE as corte,
+                        FACTURACION as facturacion,
+                        CASE WHEN METODO_BASE = 'D' THEN 'Devengado' ELSE 'Efectivo' END as metodo,
+                        REGISTRO_USUARIO as reg_usuario,
+                        REGISTRO_FECHA as reg_fecha
+                    FROM SYS_FE_CLIENTE_CORTES
+                    WHERE COD_CLIENTE = @COD_CLIENTE
+                      AND (@FILTRO IS NULL
+                           OR REGISTRO_USUARIO LIKE @FILTRO
+                           OR CAST(CORTE_ID AS varchar(20)) LIKE @FILTRO)
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'corte_id' THEN CORTE_ID END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'corte' THEN CORTE END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'facturacion' THEN FACTURACION END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND (@SORT_FIELD = 'metodo' OR @SORT_FIELD = 'metodo_base') THEN METODO_BASE END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND (@SORT_FIELD = 'reg_usuario' OR @SORT_FIELD = 'registro_usuario') THEN REGISTRO_USUARIO END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND (@SORT_FIELD = 'reg_fecha' OR @SORT_FIELD = 'registro_fecha') THEN REGISTRO_FECHA END ASC,
+
+                        -- DESC
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'corte_id' THEN CORTE_ID END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'corte' THEN CORTE END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'facturacion' THEN FACTURACION END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND (@SORT_FIELD = 'metodo' OR @SORT_FIELD = 'metodo_base') THEN METODO_BASE END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND (@SORT_FIELD = 'reg_usuario' OR @SORT_FIELD = 'registro_usuario') THEN REGISTRO_USUARIO END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND (@SORT_FIELD = 'reg_fecha' OR @SORT_FIELD = 'registro_fecha') THEN REGISTRO_FECHA END DESC,
+
+                        -- Fallback
+                        CORTE DESC
+                    OFFSET @OFFSET ROWS
+                    FETCH NEXT @FETCH ROWS ONLY;
+                ";
+
+                var p = new DynamicParameters();
+                p.Add("@COD_CLIENTE", codCliente, DbType.String);
+                p.Add("@FILTRO", searchLike, DbType.String);
+                p.Add("@OFFSET", offset, DbType.Int32);
+                p.Add("@FETCH", fetch, DbType.Int32);
+                p.Add("@SORT_FIELD", sortField, DbType.String);
+                p.Add("@SORT_ORDER", sortOrder, DbType.Int32);
 
                 result.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
                 result.Result.lista = connection.Query<FeCorteItem>(sqlData, p).ToList();
@@ -207,78 +235,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         }
 
 
-        /// <summary>
-        ///     Obtiene columna y dirección de ordenamiento desde filtros.
-        /// </summary>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
-        private static (string orderByCol, string orderDir) GetOrderBy(FiltrosLazyLoadData filtros)
-        {
-            int sortOrder = filtros?.sortOrder ?? 0;
-            string sortField = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
-
-            string orderByCol = "CORTE";
-            string orderDir = "DESC";
-
-            if (!string.IsNullOrWhiteSpace(sortField))
-            {
-                switch (sortField)
-                {
-                    case "corte_id": orderByCol = "CORTE_ID"; break;
-                    case "corte": orderByCol = "CORTE"; break;
-                    case "facturacion": orderByCol = "FACTURACION"; break;
-                    case "metodo":
-                    case "metodo_base": orderByCol = "METODO_BASE"; break;
-                    case "reg_usuario":
-                    case "registro_usuario": orderByCol = "REGISTRO_USUARIO"; break;
-                    case "reg_fecha":
-                    case "registro_fecha": orderByCol = "REGISTRO_FECHA"; break;
-                    default: orderByCol = "CORTE"; break;
-                }
-                orderDir = (sortOrder == 1) ? "ASC" : "DESC";
-            }
-            return (orderByCol, orderDir);
-        }
-
-        
-        /// <summary>
-        ///     Construye cláusula WHERE para consulta de cortes.
-        /// </summary>
-        /// <param name="filtroGlobal"></param>
-        /// <returns></returns>
-        private static string BuildWhereClause(string filtroGlobal)
-        {
-            string where = @"
-                WHERE COD_CLIENTE = @COD_CLIENTE
-                ";
-            if (!string.IsNullOrWhiteSpace(filtroGlobal))
-            {
-                where += @"
-                AND (
-                    REGISTRO_USUARIO LIKE @FILTRO
-                    OR CAST(CORTE_ID AS varchar(20)) LIKE @FILTRO
-                )
-                ";
-            }
-            return where;
-        }
-
-
-        private static DynamicParameters BuildParameters(string codCliente, string filtroGlobal, bool exportAll, int offset, int paginacion)
-        {
-            var p = new DynamicParameters();
-            p.Add("@COD_CLIENTE", codCliente, DbType.String);
-
-            if (!string.IsNullOrWhiteSpace(filtroGlobal))
-                p.Add("@FILTRO", $"%{filtroGlobal}%", DbType.String);
-
-            if (!exportAll)
-            {
-                p.Add("@OFFSET", offset, DbType.Int32);
-                p.Add("@FETCH", paginacion, DbType.Int32);
-            }
-            return p;
-        }
 
 
         /// <summary>
