@@ -1,19 +1,19 @@
 ﻿ 
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar;
-using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCCuentasSGTAutorizacionModels;
+using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCCuentasSgtAutorizacionModels;
 
 
 namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
 {
-    public class FrmCxCCuentasSGTAutorizacionBL
+    public class FrmCxCCuentasSgtAutorizacionBL
     {
 
-        private readonly FrmCxCCuentasSGTAutorizacionDB _db;
+        private readonly FrmCxCCuentasSgtAutorizacionDb _db;
 
-        public FrmCxCCuentasSGTAutorizacionBL(IConfiguration config) => _db = new FrmCxCCuentasSGTAutorizacionDB(config);
+        public FrmCxCCuentasSgtAutorizacionBL(IConfiguration config) => _db = new FrmCxCCuentasSgtAutorizacionDb(config);
 
-        public ErrorDto<CuentasSGTAutorizacionDto?> CxCCuentasSGTAutorizacion_Consulta(int codEmpresa, int operacion)
+        public ErrorDto<CuentasSgtAutorizacionDto?> CxCCuentasSGTAutorizacion_Consulta(int codEmpresa, int operacion)
         {
              
             return _db.CxCCuentasSGTAutorizacion_Consulta(codEmpresa, operacion);

@@ -1,8 +1,8 @@
 ﻿namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
-    public class FrmCxCCuentasSGTAutorizacionModels
+    public class FrmCxCCuentasSgtAutorizacionModels
     {
-        public class CuentasSGTAutorizacionDto
+        public class CuentasSgtAutorizacionDto
         {
             public int Operacion { get; set; } 
             public string cod_concepto { get; set; } = string.Empty;

@@ -2,11 +2,11 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
-using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCCuentasSGTAutorizacionModels;
+using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCCuentasSgtAutorizacionModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 {
-    public class FrmCxCCuentasSGTAutorizacionDB
+    public class FrmCxCCuentasSgtAutorizacionDb
     {
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDb;
@@ -14,7 +14,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         private const string MovAplica = "APLICA - WEB";
 
 
-        public FrmCxCCuentasSGTAutorizacionDB(IConfiguration config)
+        public FrmCxCCuentasSgtAutorizacionDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
             _securityMainDb = new MSecurityMainDb(config!);
@@ -39,7 +39,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="codEmpresa"></param>
         /// <param name="operacion"></param>
         /// <returns></returns>
-        public ErrorDto<CuentasSGTAutorizacionDto?> CxCCuentasSGTAutorizacion_Consulta(int codEmpresa,int operacion)
+        public ErrorDto<CuentasSgtAutorizacionDto?> CxCCuentasSGTAutorizacion_Consulta(int codEmpresa,int operacion)
         {
             var query = @"Select R.Operacion,R.cod_concepto,R.cedula,S.nombre,R.Monto,R.Dias_plazo,R.Tasa_Corriente, R.cuota,R.cod_Contrato
                         ,D.descripcion as ContratoDesc,C.descripcion as ConceptoDesc,R.Registro_Usuario,R.Registro_Fecha,R.Notas
@@ -48,19 +48,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         left join CxC_Contratos D on R.cod_Contrato = D.cod_Contrato
                         where R.Autoriza_Fecha is null and R.Estado = 'R' and R.Operacion = @operacion"; 
              
-            var resp = DbHelper.ExecuteSingleQuery<CuentasSGTAutorizacionDto>(_portalDB, codEmpresa, query, default, new { operacion });
+            var resp = DbHelper.ExecuteSingleQuery<CuentasSgtAutorizacionDto>(_portalDB, codEmpresa, query, default, new { operacion });
 
             
 
             if (resp.Result is null)
-                return DbHelper.CreateErrorResponse<CuentasSGTAutorizacionDto?>("No se encontró la operación solicitada.", -1);
+                return DbHelper.CreateErrorResponse<CuentasSgtAutorizacionDto?>("No se encontró la operación solicitada.", -1);
 
             var dto = resp.Result;
             dto.NotasDetalle = CxCCuentasSGTAutorizacion_Validar(codEmpresa, dto.cedula,dto.Operacion,dto.Monto,dto.cod_concepto);
 
             dto.Registro_FechaStr = dto.Registro_Fecha.ToString("dd/MM/yyyy");
 
-            return DbHelper.CreateOkResponse<CuentasSGTAutorizacionDto?>(dto);
+            return DbHelper.CreateOkResponse<CuentasSgtAutorizacionDto?>(dto);
 
         }
         /// <summary>

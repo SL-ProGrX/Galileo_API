@@ -4,22 +4,22 @@ using Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCCuentasSGTAutorizacionModels;
+using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCCuentasSgtAutorizacionModels;
 
 namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class FrmCxCCuentasSGTAutorizacionController : ControllerBase
+    public class FrmCxCCuentasSgtAutorizacionController : ControllerBase
     {
-        private readonly FrmCxCCuentasSGTAutorizacionBL _bl;
+        private readonly FrmCxCCuentasSgtAutorizacionBL _bl;
 
-        public FrmCxCCuentasSGTAutorizacionController(IConfiguration config)
-            => _bl = new FrmCxCCuentasSGTAutorizacionBL(config);
+        public FrmCxCCuentasSgtAutorizacionController(IConfiguration config)
+            => _bl = new FrmCxCCuentasSgtAutorizacionBL(config);
 
         [Authorize]
         [HttpGet("CxCCuentasSGTAutorizacion_Consulta")]
-        public ErrorDto<CuentasSGTAutorizacionDto?> CxCCuentasSGTAutorizacion_Consulta(int codEmpresa, int operacion)
+        public ErrorDto<CuentasSgtAutorizacionDto?> CxCCuentasSGTAutorizacion_Consulta(int codEmpresa, int operacion)
         {
 
             return _bl.CxCCuentasSGTAutorizacion_Consulta(codEmpresa, operacion);
