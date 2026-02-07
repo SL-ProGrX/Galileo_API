@@ -44,14 +44,21 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     DateTimeOffset fecha_inicio = filtros.inicioVenc != null
                         ? DateTimeOffset.Parse(filtros.inicioVenc, System.Globalization.CultureInfo.InvariantCulture)
                         : throw new ArgumentNullException("filtros.inicioVenc cannot be null", nameof(filtros.inicioVenc));
-                    string? fechaIni = fecha_inicio.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+
                     DateTimeOffset fecha_fin = filtros.finVenc != null
                         ? DateTimeOffset.Parse(filtros.finVenc, System.Globalization.CultureInfo.InvariantCulture)
                         : throw new ArgumentNullException(nameof(filtros), "filtros.finVenc cannot be null");
-                    string? fechaCorte = fecha_fin.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
 
-                    var query = $@"select *, isnull(Fecha_Vence, '2300/01/01') as 'Vence_Fix' from vSYS_RA_Casos where cedula like @ced and nombre like @nombre and Estado = @estado
-                            and isnull(Fecha_Vence, '2300/01/01')  between '{fechaIni} 00:00:00' and '{fechaCorte} 23:59:59'";
+                    // Rango inclusivo día completo
+                    var ini = fecha_inicio.Date;
+                    var fin = fecha_fin.Date.AddDays(1).AddSeconds(-1);
+
+                    const string query = @"select *, isnull(Fecha_Vence, '2300/01/01') as 'Vence_Fix'
+                                          from vSYS_RA_Casos
+                                          where cedula like @ced
+                                            and nombre like @nombre
+                                            and Estado = @estado
+                                            and isnull(Fecha_Vence, '2300/01/01') between @ini and @fin";
 
                     result.Result = connection.Query<SysRaExpedientesData>(query,
                         new
@@ -59,12 +66,17 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                             ced = $"%{filtros.cedula?.Trim()}%",
                             nombre = $"%{filtros.nombre?.Trim()}%",
                             estado = filtros.estado,
-
+                            ini,
+                            fin
                         }).ToList();
                 }
                 else
                 {
-                    var query = $@"select *, isnull(Fecha_Vence, '2300/01/01') as 'Vence_Fix' from vSYS_RA_Casos where cedula like @ced and nombre like @nombre and Estado = @estado";
+                    const string query = @"select *, isnull(Fecha_Vence, '2300/01/01') as 'Vence_Fix'
+                                          from vSYS_RA_Casos
+                                          where cedula like @ced
+                                            and nombre like @nombre
+                                            and Estado = @estado";
 
                     result.Result = connection.Query<SysRaExpedientesData>(query,
                         new
@@ -72,7 +84,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                             ced = $"%{filtros.cedula?.Trim()}%",
                             nombre = $"%{filtros.nombre?.Trim()}%",
                             estado = filtros.estado,
-
                         }).ToList();
                 }
             }

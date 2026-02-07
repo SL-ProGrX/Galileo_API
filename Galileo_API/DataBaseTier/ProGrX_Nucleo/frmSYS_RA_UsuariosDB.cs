@@ -1,9 +1,9 @@
-﻿
-using Dapper;
+﻿using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
@@ -39,8 +39,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"exec spSYS_RA_Usuarios_Consulta '{filtro.Trim()}'";
-                result.Result = connection.Query<SysUsuariosData>(query).ToList();
+
+                // Llamada parametrizada al SP (evita SQL dinámico)
+                const string sp = "spSYS_RA_Usuarios_Consulta";
+                result.Result = connection.Query<SysUsuariosData>(
+                    sp,
+                    new { filtro = (filtro ?? string.Empty).Trim() },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
             }
             catch (Exception ex)
             {
@@ -73,14 +79,18 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"exec spSYS_RA_Usuarios_Add @ra_usuario,@check,@usuario";
-                connection.Execute(query,
-                     new
-                     {
-                         ra_usuario = ra_usuario.Trim(),
-                         usuario = usuario,
-                         check = check
-                     });
+
+                const string sp = "spSYS_RA_Usuarios_Add";
+                connection.Execute(
+                    sp,
+                    new
+                    {
+                        ra_usuario = (ra_usuario ?? string.Empty).Trim(),
+                        usuario = usuario,
+                        check = check
+                    },
+                    commandType: CommandType.StoredProcedure
+                );
 
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {

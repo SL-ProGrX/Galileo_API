@@ -41,29 +41,70 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
-                query = $@"select COUNT(TIPO_ID) from SYS_EXP_TIPOS";
-                result.Result.total = connection.Query<int>(query).FirstOrDefault();
 
-                if (filtros.filtro != null)
+                // Total (mantiene comportamiento anterior: total sin filtro)
+                const string sqlTotal = @"select COUNT(TIPO_ID) from SYS_EXP_TIPOS";
+                result.Result.total = connection.Query<int>(sqlTotal).FirstOrDefault();
+
+                var raw = (filtros?.filtro ?? string.Empty).Trim();
+                string? q = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
+
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(sortField))
                 {
-                    filtros.filtro = " WHERE ( TIPO_ID LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR Registro_Usuario LIKE '%" + filtros.filtro + "%' ) ";
+                    sortField = "tipo_id";
                 }
 
-                if (filtros.sortField == "" || filtros.sortField == null)
+                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+
+                var offset = Math.Max(0, filtros?.pagina ?? 0);
+                var fetch = filtros?.paginacion ?? 0;
+                if (fetch <= 0)
                 {
-                    filtros.sortField = "TIPO_ID";
+                    fetch = 30;
                 }
 
-                query = $@"select TIPO_ID,descripcion,activo, Registro_Fecha,Registro_Usuario from SYS_EXP_TIPOS
-                                        {filtros.filtro} 
-                                     order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                         OFFSET {filtros.pagina} ROWS 
-                                         FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                result.Result.lista = connection.Query<SysRaTiposData>(query).ToList();
+                const string sql = @"
+                    select
+                        TIPO_ID,
+                        descripcion,
+                        activo,
+                        Registro_Fecha,
+                        Registro_Usuario
+                    from SYS_EXP_TIPOS
+                    where (@q is null or (
+                        TIPO_ID like @q
+                        or descripcion like @q
+                        or Registro_Usuario like @q
+                    ))
+                    order by
+                        -- ASC
+                        case when @sortOrder = 1 and (@sortField = 'tipo_id' or @sortField = 'tipo') then TIPO_ID end asc,
+                        case when @sortOrder = 1 and @sortField = 'descripcion' then descripcion end asc,
+                        case when @sortOrder = 1 and @sortField = 'activo' then convert(int, activo) end asc,
+                        case when @sortOrder = 1 and @sortField = 'registro_fecha' then Registro_Fecha end asc,
+                        case when @sortOrder = 1 and @sortField = 'registro_usuario' then Registro_Usuario end asc,
+
+                        -- DESC
+                        case when @sortOrder = 0 and (@sortField = 'tipo_id' or @sortField = 'tipo') then TIPO_ID end desc,
+                        case when @sortOrder = 0 and @sortField = 'descripcion' then descripcion end desc,
+                        case when @sortOrder = 0 and @sortField = 'activo' then convert(int, activo) end desc,
+                        case when @sortOrder = 0 and @sortField = 'registro_fecha' then Registro_Fecha end desc,
+                        case when @sortOrder = 0 and @sortField = 'registro_usuario' then Registro_Usuario end desc,
+
+                        -- Fallback
+                        TIPO_ID asc
+                    offset @offset rows fetch next @fetch rows only;";
+
+                result.Result.lista = connection.Query<SysRaTiposData>(sql, new
+                {
+                    q,
+                    sortField,
+                    sortOrder,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {

@@ -43,55 +43,77 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 string filtroTxt = filtros?.filtro?.Trim() ?? string.Empty;
                 var p = new DynamicParameters();
 
-                string where = "";
-                if (!string.IsNullOrEmpty(filtroTxt))
+                string? like = null;
+                if (!string.IsNullOrWhiteSpace(filtroTxt))
                 {
-                    string like = $"%{filtroTxt.Replace("%", "[%]").Replace("_", "[_]").Replace("'", "''")}%";
-                    p.Add("like", like);
-
-                    where = @"
-                WHERE (  COD_NOTIFICA LIKE @like
-                      OR TITULO       LIKE @like
-                      OR SMTP_ID      LIKE @like
-                      OR TIPO         LIKE @like
-                      OR ISNULL(Tipo_Desc,'') LIKE @like )";
+                    // Escapa comodines para evitar que el usuario inyecte patrones
+                    like = $"%{filtroTxt.Replace("%", "[%]").Replace("_", "[_]")}%";
                 }
-                string MapSort(string? f) => (f ?? "").ToLowerInvariant() switch
-                {
-                    "codigo" => "COD_NOTIFICA",
-                    "titulo" => "TITULO",
-                    "smtp_id" => "SMTP_ID",
-                    "tipo_formato_cod" => "TIPO",
-                    "tipo_formato_desc" => "Tipo_Desc",
-                    "activa" => "Activa",
-                    _ => "COD_NOTIFICA"
-                };
-                string orderCol = MapSort(filtros?.sortField);
-                string orderDir = (filtros?.sortOrder ?? 1) == 1 ? "ASC" : "DESC";
+
+                string sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(sortField))
+                    sortField = "codigo";
+
+                int sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
                 int take = filtros?.paginacion ?? 30;
                 int off = filtros?.pagina ?? 0;
                 if (off < 0) off = 0;
 
+                p.Add("like", like);
+                p.Add("sortField", sortField);
+                p.Add("sortOrder", sortOrder);
                 p.Add("off", off);
                 p.Add("take", take);
-                string sqlTotal = $@"
-            SELECT COUNT(*)
-            FROM vSys_Notificaciones_Cfg
-            {where};";
+
+                const string sqlTotal = @"
+                    SELECT COUNT(*)
+                    FROM vSys_Notificaciones_Cfg
+                    WHERE (@like IS NULL OR (
+                          COD_NOTIFICA LIKE @like
+                          OR TITULO LIKE @like
+                          OR SMTP_ID LIKE @like
+                          OR TIPO LIKE @like
+                          OR ISNULL(Tipo_Desc,'') LIKE @like
+                    ));";
 
                 result.Result.total = cn.ExecuteScalar<int>(sqlTotal, p);
-                string sql = $@"
-            SELECT
-                RTRIM(COD_NOTIFICA)                 AS codigo,
-                RTRIM(TITULO)                       AS titulo,
-                RTRIM(SMTP_ID)                      AS smtp_id,
-                RTRIM(TIPO)                         AS tipo_formato_cod,
-                RTRIM(ISNULL(Tipo_Desc,''))         AS tipo_formato_desc,
-                CAST(Activa AS bit)                 AS activa
-            FROM vSys_Notificaciones_Cfg
-            {where}
-            ORDER BY {orderCol} {orderDir}
-            OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
+
+                const string sql = @"
+                    SELECT
+                        RTRIM(COD_NOTIFICA)                 AS codigo,
+                        RTRIM(TITULO)                       AS titulo,
+                        RTRIM(SMTP_ID)                      AS smtp_id,
+                        RTRIM(TIPO)                         AS tipo_formato_cod,
+                        RTRIM(ISNULL(Tipo_Desc,''))         AS tipo_formato_desc,
+                        CAST(Activa AS bit)                 AS activa
+                    FROM vSys_Notificaciones_Cfg
+                    WHERE (@like IS NULL OR (
+                          COD_NOTIFICA LIKE @like
+                          OR TITULO LIKE @like
+                          OR SMTP_ID LIKE @like
+                          OR TIPO LIKE @like
+                          OR ISNULL(Tipo_Desc,'') LIKE @like
+                    ))
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'codigo' THEN COD_NOTIFICA END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'titulo' THEN TITULO END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'smtp_id' THEN SMTP_ID END ASC,
+                        CASE WHEN @sortOrder = 1 AND (@sortField = 'tipo_formato_cod' OR @sortField = 'tipo') THEN TIPO END ASC,
+                        CASE WHEN @sortOrder = 1 AND (@sortField = 'tipo_formato_desc' OR @sortField = 'tipo_desc') THEN ISNULL(Tipo_Desc,'') END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'activa' THEN CAST(Activa AS int) END ASC,
+
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'codigo' THEN COD_NOTIFICA END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'titulo' THEN TITULO END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'smtp_id' THEN SMTP_ID END DESC,
+                        CASE WHEN @sortOrder = 0 AND (@sortField = 'tipo_formato_cod' OR @sortField = 'tipo') THEN TIPO END DESC,
+                        CASE WHEN @sortOrder = 0 AND (@sortField = 'tipo_formato_desc' OR @sortField = 'tipo_desc') THEN ISNULL(Tipo_Desc,'') END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'activa' THEN CAST(Activa AS int) END DESC,
+
+                        -- Fallback
+                        COD_NOTIFICA ASC
+                    OFFSET @off ROWS FETCH NEXT @take ROWS ONLY;";
 
                 result.Result.lista = cn.Query<SysMensajesPortalListaItem>(sql, p).ToList();
             }
@@ -127,34 +149,60 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(connStr);
-                string where = "";
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    where = " WHERE ( COD_NOTIFICA LIKE '%" + filtros.filtro + "%' " +
-                            " OR TITULO LIKE '%" + filtros.filtro + "%' " +
-                            " OR SMTP_ID LIKE '%" + filtros.filtro + "%' " +
-                            " OR TIPO LIKE '%" + filtros.filtro + "%' " +
-                            " OR ISNULL(Tipo_Desc,'') LIKE '%" + filtros.filtro + "%' ) ";
-                }
-                if (string.IsNullOrWhiteSpace(filtros?.sortField))
-                    filtros!.sortField = "COD_NOTIFICA";
 
-                int sortOrder = filtros.sortOrder;
-                string sortDir = sortOrder == 0 ? "DESC" : "ASC";
+                var p = new DynamicParameters();
 
-                string query = $@"
-            SELECT
-                RTRIM(COD_NOTIFICA)                 AS codigo,
-                RTRIM(TITULO)                       AS titulo,
-                RTRIM(SMTP_ID)                      AS smtp_id,
-                RTRIM(TIPO)                         AS tipo_formato_cod,
-                RTRIM(ISNULL(Tipo_Desc,''))         AS tipo_formato_desc,
-                CAST(Activa AS bit)                 AS activa
-            FROM vSys_Notificaciones_Cfg
-            {where}
-            ORDER BY {filtros.sortField} {sortDir};";
+                var raw = (filtros?.filtro ?? string.Empty).Trim();
+                string? like = string.IsNullOrWhiteSpace(raw)
+                    ? null
+                    : $"%{raw.Replace("%", "[%]").Replace("_", "[_]")}%";
 
-                result.Result = connection.Query<SysMensajesPortalListaItem>(query).ToList();
+                string sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(sortField))
+                    sortField = "codigo";
+
+                int sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+
+                p.Add("like", like);
+                p.Add("sortField", sortField);
+                p.Add("sortOrder", sortOrder);
+
+                const string query = @"
+                    SELECT
+                        RTRIM(COD_NOTIFICA)                 AS codigo,
+                        RTRIM(TITULO)                       AS titulo,
+                        RTRIM(SMTP_ID)                      AS smtp_id,
+                        RTRIM(TIPO)                         AS tipo_formato_cod,
+                        RTRIM(ISNULL(Tipo_Desc,''))         AS tipo_formato_desc,
+                        CAST(Activa AS bit)                 AS activa
+                    FROM vSys_Notificaciones_Cfg
+                    WHERE (@like IS NULL OR (
+                          COD_NOTIFICA LIKE @like
+                          OR TITULO LIKE @like
+                          OR SMTP_ID LIKE @like
+                          OR TIPO LIKE @like
+                          OR ISNULL(Tipo_Desc,'') LIKE @like
+                    ))
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'codigo' THEN COD_NOTIFICA END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'titulo' THEN TITULO END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'smtp_id' THEN SMTP_ID END ASC,
+                        CASE WHEN @sortOrder = 1 AND (@sortField = 'tipo_formato_cod' OR @sortField = 'tipo') THEN TIPO END ASC,
+                        CASE WHEN @sortOrder = 1 AND (@sortField = 'tipo_formato_desc' OR @sortField = 'tipo_desc') THEN ISNULL(Tipo_Desc,'') END ASC,
+                        CASE WHEN @sortOrder = 1 AND @sortField = 'activa' THEN CAST(Activa AS int) END ASC,
+
+                        -- DESC
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'codigo' THEN COD_NOTIFICA END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'titulo' THEN TITULO END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'smtp_id' THEN SMTP_ID END DESC,
+                        CASE WHEN @sortOrder = 0 AND (@sortField = 'tipo_formato_cod' OR @sortField = 'tipo') THEN TIPO END DESC,
+                        CASE WHEN @sortOrder = 0 AND (@sortField = 'tipo_formato_desc' OR @sortField = 'tipo_desc') THEN ISNULL(Tipo_Desc,'') END DESC,
+                        CASE WHEN @sortOrder = 0 AND @sortField = 'activa' THEN CAST(Activa AS int) END DESC,
+
+                        COD_NOTIFICA ASC;";
+
+                result.Result = connection.Query<SysMensajesPortalListaItem>(query, p).ToList();
             }
             catch (Exception ex)
             {
