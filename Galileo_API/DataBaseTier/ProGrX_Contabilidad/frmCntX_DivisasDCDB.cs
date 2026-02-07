@@ -117,8 +117,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="tcVenta"></param>
         /// <param name="usuario"></param>
         /// <returns></returns>
-        public ErrorDto Procesar(int codEmpresa,int anio,int mes,string codDivisa,decimal tcCompra,
-            decimal tcVenta,string usuario)
+        public ErrorDto Procesar(int codEmpresa,int anio,int mes,string codDivisa,decimal? tcCompra,
+            decimal? tcVenta,string usuario)
         {
             var response = new ErrorDto();
 
