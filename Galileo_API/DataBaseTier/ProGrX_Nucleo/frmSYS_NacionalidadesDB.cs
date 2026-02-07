@@ -3,7 +3,6 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo.Models.SYS;
-using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
@@ -13,10 +12,35 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         private readonly int vModulo = 10; // Modulo de Tesorería
         private readonly MSecurityMainDb _Security_MainDB;
 
+        private const string ErrorValidarNacionalidad = "Error al validar nacionalidad.";
+
         public FrmSysNacionalidadesDB(IConfiguration config)
         {
             _config = config;
             _Security_MainDB = new MSecurityMainDb(_config);
+        }
+
+        private PortalDB PortalDb() => new PortalDB(_config);
+
+        private void LogBitacora(int empresaId, string usuario, string movimiento, string detalle)
+        {
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = empresaId,
+                Usuario = usuario,
+                DetalleMovimiento = detalle,
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
+        }
+
+        private ErrorDto<int> CountByCodigo(PortalDB portalDb, int codEmpresa, string codNacionalidad)
+        {
+            const string sql = @"SELECT COUNT(*) FROM SYS_NACIONALIDADES WHERE UPPER(COD_NACIONALIDAD) = @cod";
+            return DbHelper.ExecuteSingleQuery<int>(portalDb, codEmpresa, sql, 0, new
+            {
+                cod = (codNacionalidad ?? string.Empty).Trim().ToUpper()
+            });
         }
 
         /// <summary>
@@ -130,53 +154,35 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto Sys_Nacionalidades_Guardar(int CodEmpresa, string usuario, SysNacionalidadesData nacionalidad)
         {
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
             try
             {
-                // Reutiliza la función de validación
+                var portalDb = PortalDb();
+
                 var valida = Sys_Nacionalidades_Valida(CodEmpresa, nacionalidad);
 
                 if (nacionalidad.isNew)
                 {
                     if (valida.Code == -1)
-                    {
-                        result.Code = -2;
-                        result.Description = valida.Description;
-                    }
-                    else
-                    {
-                        result = Sys_Nacionalidades_Insertar(CodEmpresa, usuario, nacionalidad);
-                    }
-                }
-                else
-                {
-                    // Para actualizar, solo valida que exista por código
-                    string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                    using var connection = new SqlConnection(stringConn);
-                    var query = @"SELECT COUNT(*) FROM SYS_NACIONALIDADES WHERE UPPER(COD_NACIONALIDAD) = @cod_nacionalidad";
-                    var existe = connection.QueryFirstOrDefault<int>(query, new { cod_nacionalidad = nacionalidad.cod_nacionalidad.ToUpper() });
+                        return DbHelper.ErrorResponse(valida.Description ?? ErrorValidarNacionalidad, -2);
 
-                    if (existe == 0)
-                    {
-                        result.Code = -2;
-                        result.Description = $"La nacionalidad con el código {nacionalidad.cod_nacionalidad} no existe.";
-                    }
-                    else
-                    {
-                        result = Sys_Nacionalidades_Actualizar(CodEmpresa, usuario, nacionalidad);
-                    }
+                    return Sys_Nacionalidades_Insertar(CodEmpresa, usuario, nacionalidad);
                 }
+
+                // Para actualizar, solo valida que exista por código
+                var existe = CountByCodigo(portalDb, CodEmpresa, nacionalidad.cod_nacionalidad);
+
+                if (existe.Code != 0)
+                    return DbHelper.ErrorResponse(existe.Description ?? ErrorValidarNacionalidad, -1);
+
+                if (existe.Result <= 0)
+                    return DbHelper.ErrorResponse($"La nacionalidad con el código {nacionalidad.cod_nacionalidad} no existe.", -2);
+
+                return Sys_Nacionalidades_Actualizar(CodEmpresa, usuario, nacionalidad);
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message, -1);
             }
-            return result;
         }
 
 
@@ -185,43 +191,29 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         private ErrorDto Sys_Nacionalidades_Insertar(int CodEmpresa, string usuario, SysNacionalidadesData nacionalidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"INSERT INTO SYS_NACIONALIDADES 
+            var portalDb = PortalDb();
+
+            const string sql = @"INSERT INTO SYS_NACIONALIDADES
                     (COD_NACIONALIDAD, descripcion, cod_inter, omision, activo, Registro_Fecha, Registro_Usuario)
                     VALUES (@cod_nacionalidad, @descripcion, @cod_inter, @omision, @activo, GETDATE(), @registro_usuario)";
-                connection.Execute(query, new
-                {
-                    cod_nacionalidad = nacionalidad.cod_nacionalidad.ToUpper(),
-                    nacionalidad.descripcion,
-                    nacionalidad.cod_inter,
-                    nacionalidad.omision,
-                    nacionalidad.activo,
-                    registro_usuario = usuario
-                });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Nacionalidad: {nacionalidad.cod_nacionalidad} - {nacionalidad.descripcion}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
+            var exec = DbHelper.ExecuteNonQuery(portalDb, CodEmpresa, sql, new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                cod_nacionalidad = (nacionalidad.cod_nacionalidad ?? string.Empty).Trim().ToUpper(),
+                descripcion = nacionalidad.descripcion,
+                cod_inter = nacionalidad.cod_inter,
+                omision = nacionalidad.omision,
+                activo = nacionalidad.activo,
+                registro_usuario = usuario
+            });
+
+            if (exec.Code == 0)
+            {
+                LogBitacora(CodEmpresa, usuario, "Registra - WEB",
+                    $"Nacionalidad: {nacionalidad.cod_nacionalidad} - {nacionalidad.descripcion}");
             }
-            return result;
+
+            return exec;
         }
 
 
@@ -230,16 +222,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         private ErrorDto Sys_Nacionalidades_Actualizar(int CodEmpresa, string usuario, SysNacionalidadesData nacionalidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"UPDATE SYS_NACIONALIDADES
+            var portalDb = PortalDb();
+
+            const string sql = @"UPDATE SYS_NACIONALIDADES
                     SET descripcion = @descripcion,
                         cod_inter = @cod_inter,
                         omision = @omision,
@@ -247,31 +232,24 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         Registro_Usuario = @registro_usuario,
                         Registro_Fecha = GETDATE()
                     WHERE COD_NACIONALIDAD = @cod_nacionalidad";
-                connection.Execute(query, new
-                {
-                    cod_nacionalidad = nacionalidad.cod_nacionalidad.ToUpper(),
-                    nacionalidad.descripcion,
-                    nacionalidad.cod_inter,
-                    nacionalidad.omision,
-                    nacionalidad.activo,
-                    registro_usuario = usuario
-                });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Nacionalidad: {nacionalidad.cod_nacionalidad} - {nacionalidad.descripcion}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
+            var exec = DbHelper.ExecuteNonQuery(portalDb, CodEmpresa, sql, new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                cod_nacionalidad = (nacionalidad.cod_nacionalidad ?? string.Empty).Trim().ToUpper(),
+                descripcion = nacionalidad.descripcion,
+                cod_inter = nacionalidad.cod_inter,
+                omision = nacionalidad.omision,
+                activo = nacionalidad.activo,
+                registro_usuario = usuario
+            });
+
+            if (exec.Code == 0)
+            {
+                LogBitacora(CodEmpresa, usuario, "Modifica - WEB",
+                    $"Nacionalidad: {nacionalidad.cod_nacionalidad} - {nacionalidad.descripcion}");
             }
-            return result;
+
+            return exec;
         }
 
 
@@ -284,50 +262,36 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto Sys_Nacionalidades_Eliminar(int CodEmpresa, string usuario, string cod_nacionalidad)
         {
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-
-            // Usamos la función de validación para verificar existencia
-            var nacionalidad = new SysNacionalidadesData
-            {
-                cod_nacionalidad = cod_nacionalidad,
-                descripcion = string.Empty // Solo interesa el código para eliminar
-            };
-            var valida = Sys_Nacionalidades_Valida(CodEmpresa, nacionalidad);
-
-            // Si la validación indica que no existe, devolvemos error
-            if (valida.Code == 0)
-            {
-                result.Code = -2;
-                result.Description = $"La nacionalidad con el código {cod_nacionalidad} no existe.";
-                return result;
-            }
-
             try
             {
-                string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var connection = new SqlConnection(stringConn);
-                var query = @"DELETE FROM SYS_NACIONALIDADES WHERE UPPER(COD_NACIONALIDAD) = @cod_nacionalidad";
-                connection.Execute(query, new { cod_nacionalidad = cod_nacionalidad.ToUpper() });
+                var portalDb = PortalDb();
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                // Debe existir
+                var existe = CountByCodigo(portalDb, CodEmpresa, cod_nacionalidad);
+
+                if (existe.Code != 0)
+                    return DbHelper.ErrorResponse(existe.Description ?? "Error al validar nacionalidad.", -1);
+
+                if (existe.Result <= 0)
+                    return DbHelper.ErrorResponse($"La nacionalidad con el código {cod_nacionalidad} no existe.", -2);
+
+                const string sql = @"DELETE FROM SYS_NACIONALIDADES WHERE UPPER(COD_NACIONALIDAD) = @cod";
+                var exec = DbHelper.ExecuteNonQuery(portalDb, CodEmpresa, sql, new
                 {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Nacionalidad eliminada: {cod_nacionalidad}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
+                    cod = (cod_nacionalidad ?? string.Empty).Trim().ToUpper()
                 });
+
+                if (exec.Code == 0)
+                {
+                    LogBitacora(CodEmpresa, usuario, "Elimina - WEB", $"Nacionalidad eliminada: {cod_nacionalidad}");
+                }
+
+                return exec;
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message, -1);
             }
-            return result;
         }
 
 
@@ -339,41 +303,26 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto Sys_Nacionalidades_Valida(int CodEmpresa, SysNacionalidadesData nacionalidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"SELECT COUNT(*) FROM SYS_NACIONALIDADES 
-                                  WHERE UPPER(COD_NACIONALIDAD) = @cod_nacionalidad
-                                     OR UPPER(descripcion) = @descripcion";
-                var existe = connection.QueryFirstOrDefault<int>(query, new
-                {
-                    cod_nacionalidad = nacionalidad.cod_nacionalidad.ToUpper(),
-                    descripcion = nacionalidad.descripcion.ToUpper()
-                });
+            var portalDb = PortalDb();
 
-                if (existe > 0)
-                {
-                    result.Code = -1;
-                    result.Description = "Ya existe una nacionalidad con ese código o descripción.";
-                }
-                else
-                {
-                    result.Code = 0;
-                    result.Description = "El código y la descripción de nacionalidad son válidos.";
-                }
-            }
-            catch (Exception ex)
+            const string sql = @"SELECT COUNT(*)
+                                 FROM SYS_NACIONALIDADES
+                                 WHERE UPPER(COD_NACIONALIDAD) = @cod
+                                    OR UPPER(descripcion) = @desc";
+
+            var count = DbHelper.ExecuteSingleQuery<int>(portalDb, CodEmpresa, sql, 0, new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+                cod = (nacionalidad.cod_nacionalidad ?? string.Empty).Trim().ToUpper(),
+                desc = (nacionalidad.descripcion ?? string.Empty).Trim().ToUpper()
+            });
+
+            if (count.Code != 0)
+                return DbHelper.ErrorResponse(count.Description ?? ErrorValidarNacionalidad, -1);
+
+            if (count.Result > 0)
+                return DbHelper.ErrorResponse("Ya existe una nacionalidad con ese código o descripción.", -1);
+
+            return DbHelper.OkResponse("El código y la descripción de nacionalidad son válidos.");
         }
 
     }
