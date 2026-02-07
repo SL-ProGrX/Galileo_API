@@ -226,22 +226,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
                 connection.Execute("dbo.spSys_IVA_Parametros", commandType: CommandType.StoredProcedure, commandTimeout: 60);
 
-                string where = "";
                 var p = new DynamicParameters();
-                if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-                {
-                    where = @"
-                    WHERE (
-                           p.cod_parametro LIKE @query
-                        OR p.descripcion   LIKE @query
-                        OR p.valor         LIKE @query
-                        OR p.tipo          LIKE @query
-                        OR cta.Cod_Cuenta_Mask LIKE @query
-                    )";
-                    p.Add("@query", "%" + filtros.filtro.Trim() + "%");
-                }
 
-                var query = $@"
+                var raw = (filtros?.filtro ?? string.Empty).Trim();
+                string? queryLike = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
+                p.Add("@query", queryLike);
+
+                const string query = @"
                 SELECT
                     p.cod_parametro    AS codParametro,
                     p.descripcion      AS descripcion,
@@ -267,7 +258,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                       AND PATINDEX('%[^0-9]%', p.valor) = 0   -- solo dígitos
                       AND c.COD_CUENTA = CONVERT(BIGINT, p.valor)
                 ) cta
-                {where}
+                WHERE (@query IS NULL OR (
+                       p.cod_parametro      LIKE @query
+                    OR p.descripcion        LIKE @query
+                    OR p.valor              LIKE @query
+                    OR p.tipo               LIKE @query
+                    OR cta.Cod_Cuenta_Mask  LIKE @query
+                ))
                 ORDER BY p.cod_parametro";
 
                 result.Result = connection.Query<SysIvaParametrosData>(query, p).ToList();

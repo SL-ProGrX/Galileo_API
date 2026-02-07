@@ -3,6 +3,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Microsoft.Data.SqlClient;
+using System.Data;
 using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
@@ -39,38 +40,69 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             };
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
 
-                //Busco Total
-                query = $@"select COUNT(COD_PARENTESCO) from SYS_PARENTESCOS";
-                result.Result.total = connection.Query<int>(query).FirstOrDefault();
+                // Total (mantiene comportamiento anterior: total sin filtro)
+                const string sqlTotal = @"select COUNT(COD_PARENTESCO) from SYS_PARENTESCOS";
+                result.Result.total = connection.Query<int>(sqlTotal).FirstOrDefault();
 
-                if (filtros.filtro != null)
+                var raw = (filtros?.filtro ?? string.Empty).Trim();
+                string? q = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
+
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(sortField))
                 {
-                    filtros.filtro = " WHERE (COD_PARENTESCO LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR Registro_Usuario LIKE '%" + filtros.filtro + "%' ) ";
+                    sortField = "cod_parentesco";
                 }
 
-                if (filtros.sortField == "" || filtros.sortField == null)
+                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+
+                var offset = Math.Max(0, filtros?.pagina ?? 0);
+                var fetch = filtros?.paginacion ?? 0;
+                if (fetch <= 0)
                 {
-                    filtros.sortField = "COD_PARENTESCO";
+                    fetch = 30;
                 }
 
-                query = $@"
-                            select
-                                COD_PARENTESCO      as cod_parentesco,
-                                descripcion         as descripcion,
-                                activo              as activo,
-                                Registro_Fecha      as registro_fecha,
-                                Registro_Usuario    as registro_usuario
-                            from SYS_PARENTESCOS
-                                        {filtros.filtro} 
-                                     order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                         OFFSET {filtros.pagina} ROWS 
-                                         FETCH NEXT {filtros.paginacion} ROWS ONLY ";
-                result.Result.lista = connection.Query<SysParentescosData>(query).ToList();
+                const string sql = @"
+                    select
+                        COD_PARENTESCO      as cod_parentesco,
+                        descripcion         as descripcion,
+                        activo              as activo,
+                        Registro_Fecha      as registro_fecha,
+                        Registro_Usuario    as registro_usuario
+                    from SYS_PARENTESCOS
+                    where (@q is null or (
+                        COD_PARENTESCO like @q
+                        or descripcion like @q
+                        or Registro_Usuario like @q
+                    ))
+                    order by
+                        -- ASC
+                        case when @sortOrder = 1 and @sortField = 'cod_parentesco' then COD_PARENTESCO end asc,
+                        case when @sortOrder = 1 and @sortField = 'descripcion' then descripcion end asc,
+                        case when @sortOrder = 1 and @sortField = 'activo' then convert(int, activo) end asc,
+                        case when @sortOrder = 1 and @sortField = 'registro_fecha' then Registro_Fecha end asc,
+                        case when @sortOrder = 1 and @sortField = 'registro_usuario' then Registro_Usuario end asc,
+
+                        -- DESC
+                        case when @sortOrder = 0 and @sortField = 'cod_parentesco' then COD_PARENTESCO end desc,
+                        case when @sortOrder = 0 and @sortField = 'descripcion' then descripcion end desc,
+                        case when @sortOrder = 0 and @sortField = 'activo' then convert(int, activo) end desc,
+                        case when @sortOrder = 0 and @sortField = 'registro_fecha' then Registro_Fecha end desc,
+                        case when @sortOrder = 0 and @sortField = 'registro_usuario' then Registro_Usuario end desc,
+
+                        COD_PARENTESCO asc
+                    offset @offset rows fetch next @fetch rows only;";
+
+                result.Result.lista = connection.Query<SysParentescosData>(sql, new
+                {
+                    q,
+                    sortField,
+                    sortOrder,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -101,23 +133,26 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
-                if (filtros.filtro != null)
-                {
-                    filtros.filtro = " WHERE ( COD_PARENTESCO LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR Registro_Usuario LIKE '%" + filtros.filtro + "%' ) ";
-                }
-                query = $@"select   COD_PARENTESCO      as cod_parentesco,
-                                descripcion         as descripcion,
-                                activo              as activo,
-                                Registro_Fecha      as registro_fecha,
-                                Registro_Usuario    as registro_usuario
-                            from SYS_PARENTESCOS
-                                        {filtros.filtro} 
+
+                var raw = (filtros?.filtro ?? string.Empty).Trim();
+                string? q = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
+
+                const string sql = @"select
+                                        COD_PARENTESCO      as cod_parentesco,
+                                        descripcion         as descripcion,
+                                        activo              as activo,
+                                        Registro_Fecha      as registro_fecha,
+                                        Registro_Usuario    as registro_usuario
+                                     from SYS_PARENTESCOS
+                                     where (@q is null or (
+                                         COD_PARENTESCO like @q
+                                         or descripcion like @q
+                                         or Registro_Usuario like @q
+                                     ))
                                      order by COD_PARENTESCO";
-                result.Result = connection.Query<SysParentescosData>(query).ToList();
+
+                result.Result = connection.Query<SysParentescosData>(sql, new { q }).ToList();
             }
             catch (Exception ex)
             {
@@ -188,20 +223,24 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             {
                 using var connection = new SqlConnection(stringConn);
                 //Verifico si existe usuario
-                var qUsuario = $@"select count(Nombre) from usuarios where estado = 'A' and UPPER(Nombre) like '%{parentesco.registro_usuario.ToUpper()}%' ";
-                int existeuser = connection.QueryFirstOrDefault<int>(qUsuario);
+                const string qUsuario = @"select count(Nombre)
+                                         from usuarios
+                                         where estado = 'A'
+                                           and UPPER(Nombre) like @usr";
+                var usrLike = $"%{(parentesco.registro_usuario ?? string.Empty).Trim().ToUpper()}%";
+                int existeuser = connection.QueryFirstOrDefault<int>(qUsuario, new { usr = usrLike });
                 if (existeuser == 0)
                 {
                     result.Code = -2;
-                    result.Description = $"El usuario {parentesco.registro_usuario.ToUpper()} no existe o no está activo.";
+                    result.Description = $"El usuario {(parentesco.registro_usuario ?? string.Empty).ToUpper()} no existe o no está activo.";
                     return result;
                 }
 
                 //verifico si existe parentesco
-                var query = $@"select isnull(count(*),0) as Existe 
-                           from SYS_PARENTESCOS  
-                           where UPPER(COD_PARENTESCO) = '{parentesco.cod_parentesco.ToUpper()}' ";
-                var existe = connection.QueryFirstOrDefault<int>(query);
+                const string query = @"select isnull(count(*),0) as Existe
+                                       from SYS_PARENTESCOS
+                                       where UPPER(COD_PARENTESCO) = @cod";
+                var existe = connection.QueryFirstOrDefault<int>(query, new { cod = (parentesco.cod_parentesco ?? string.Empty).Trim().ToUpper() });
 
                 if (parentesco.isNew)
                 {
@@ -349,8 +388,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             try
             {
                 using var connection = new SqlConnection(stringConn);
-                var query = $@"SELECT count(COD_PARENTESCO) FROM SYS_PARENTESCOS WHERE UPPER(COD_PARENTESCO) = @COD_PARENTESCO";
-                var existe = connection.QueryFirstOrDefault<int>(query, new { cod_parentesco = cod_parentesco.ToUpper() });
+                const string query = @"SELECT count(COD_PARENTESCO)
+                                       FROM SYS_PARENTESCOS
+                                       WHERE UPPER(COD_PARENTESCO) = @cod_parentesco";
+                var existe = connection.QueryFirstOrDefault<int>(query, new { cod_parentesco = (cod_parentesco ?? string.Empty).Trim().ToUpper() });
 
                 if (existe > 0)
                 {

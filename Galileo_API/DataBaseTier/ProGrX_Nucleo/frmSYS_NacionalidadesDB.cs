@@ -41,33 +41,70 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
-                // Busco Total
-                query = $@"select COUNT(COD_NACIONALIDAD) from SYS_NACIONALIDADES";
-                result.Result.total = connection.Query<int>(query).FirstOrDefault();
 
-                if (filtros.filtro != null)
+                // Total (mantiene comportamiento anterior: total sin filtro)
+                const string sqlTotal = @"select COUNT(COD_NACIONALIDAD) from SYS_NACIONALIDADES";
+                result.Result.total = connection.Query<int>(sqlTotal).FirstOrDefault();
+
+                var raw = (filtros?.filtro ?? string.Empty).Trim();
+                string? q = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
+
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(sortField))
                 {
-                    filtros.filtro = " WHERE ( COD_NACIONALIDAD LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR cod_inter LIKE '%" + filtros.filtro + "%' " +
-                        " OR Registro_Usuario LIKE '%" + filtros.filtro + "%' ) ";
+                    sortField = "cod_nacionalidad";
                 }
 
-                if (string.IsNullOrEmpty(filtros.sortField))
+                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+
+                var offset = Math.Max(0, filtros?.pagina ?? 0);
+                var fetch = filtros?.paginacion ?? 0;
+                if (fetch <= 0)
                 {
-                    filtros.sortField = "COD_NACIONALIDAD";
+                    fetch = 30;
                 }
 
-                query = $@"select COD_NACIONALIDAD, descripcion, cod_inter, omision, activo, Registro_Fecha, Registro_Usuario
-                                from SYS_NACIONALIDADES
-                                {filtros.filtro}
-                                order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}
-                                OFFSET {filtros.pagina} ROWS 
-                                FETCH NEXT {filtros.paginacion} ROWS ONLY ";
+                const string sql = @"
+                    select COD_NACIONALIDAD, descripcion, cod_inter, omision, activo, Registro_Fecha, Registro_Usuario
+                    from SYS_NACIONALIDADES
+                    where (@q is null or (
+                        COD_NACIONALIDAD like @q
+                        or descripcion like @q
+                        or cod_inter like @q
+                        or Registro_Usuario like @q
+                    ))
+                    order by
+                        -- ASC
+                        case when @sortOrder = 1 and @sortField = 'cod_nacionalidad' then COD_NACIONALIDAD end asc,
+                        case when @sortOrder = 1 and @sortField = 'descripcion' then descripcion end asc,
+                        case when @sortOrder = 1 and @sortField = 'cod_inter' then cod_inter end asc,
+                        case when @sortOrder = 1 and @sortField = 'omision' then convert(int, omision) end asc,
+                        case when @sortOrder = 1 and @sortField = 'activo' then convert(int, activo) end asc,
+                        case when @sortOrder = 1 and @sortField = 'registro_fecha' then Registro_Fecha end asc,
+                        case when @sortOrder = 1 and @sortField = 'registro_usuario' then Registro_Usuario end asc,
 
-                result.Result.lista = connection.Query<SysNacionalidadesData>(query).ToList();
+                        -- DESC
+                        case when @sortOrder = 0 and @sortField = 'cod_nacionalidad' then COD_NACIONALIDAD end desc,
+                        case when @sortOrder = 0 and @sortField = 'descripcion' then descripcion end desc,
+                        case when @sortOrder = 0 and @sortField = 'cod_inter' then cod_inter end desc,
+                        case when @sortOrder = 0 and @sortField = 'omision' then convert(int, omision) end desc,
+                        case when @sortOrder = 0 and @sortField = 'activo' then convert(int, activo) end desc,
+                        case when @sortOrder = 0 and @sortField = 'registro_fecha' then Registro_Fecha end desc,
+                        case when @sortOrder = 0 and @sortField = 'registro_usuario' then Registro_Usuario end desc,
+
+                        -- Fallback
+                        COD_NACIONALIDAD asc
+                    offset @offset rows fetch next @fetch rows only;";
+
+                result.Result.lista = connection.Query<SysNacionalidadesData>(sql, new
+                {
+                    q,
+                    sortField,
+                    sortOrder,
+                    offset,
+                    fetch
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -98,19 +135,22 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var query = "";
                 using var connection = new SqlConnection(stringConn);
-                if (filtros.filtro != null)
-                {
-                    filtros.filtro = " WHERE ( COD_NACIONALIDAD LIKE '%" + filtros.filtro + "%' " +
-                        " OR descripcion LIKE '%" + filtros.filtro + "%' " +
-                        " OR Registro_Usuario LIKE '%" + filtros.filtro + "%' ) ";
-                }
-                query = $@"SELECT COD_NACIONALIDAD, descripcion, cod_inter, omision, activo, Registro_Fecha, Registro_Usuario
-                                FROM SYS_NACIONALIDADES
-                                {filtros.filtro}
-                                ORDER BY COD_NACIONALIDAD";
-                result.Result = connection.Query<SysNacionalidadesData>(query).ToList();
+
+                var raw = (filtros?.filtro ?? string.Empty).Trim();
+                string? q = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
+
+                const string sql = @"
+                    SELECT COD_NACIONALIDAD, descripcion, cod_inter, omision, activo, Registro_Fecha, Registro_Usuario
+                    FROM SYS_NACIONALIDADES
+                    WHERE (@q IS NULL OR (
+                          COD_NACIONALIDAD LIKE @q
+                          OR descripcion LIKE @q
+                          OR Registro_Usuario LIKE @q
+                    ))
+                    ORDER BY COD_NACIONALIDAD";
+
+                result.Result = connection.Query<SysNacionalidadesData>(sql, new { q }).ToList();
             }
             catch (Exception ex)
             {

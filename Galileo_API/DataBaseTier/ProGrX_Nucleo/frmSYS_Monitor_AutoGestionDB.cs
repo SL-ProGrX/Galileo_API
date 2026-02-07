@@ -1,8 +1,6 @@
 ﻿using System.Data;
-using System.Text;
 using Dapper;
 using Microsoft.Data.SqlClient;
-using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
@@ -53,93 +51,68 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 using var cn = new SqlConnection(connStr);
 
                 var p = new DynamicParameters();
-                var sbWhere = new StringBuilder(" WHERE 1=1 ");
 
-                if (!string.IsNullOrWhiteSpace(filtroDto.estado))
-                {
-                    sbWhere.Append(" AND ESTADO = @ESTADO ");
-                    p.Add("@ESTADO", filtroDto.estado.Trim().Substring(0, 1));
-                }
+                string? estado = string.IsNullOrWhiteSpace(filtroDto.estado) ? null : filtroDto.estado.Trim().Substring(0, 1);
+                string? tramite = string.IsNullOrWhiteSpace(filtroDto.tramite_estado_id) ? null : filtroDto.tramite_estado_id.Trim().Substring(0, 1);
 
-                if (!string.IsNullOrWhiteSpace(filtroDto.tramite_estado_id))
-                {
-                    sbWhere.Append(" AND TRAMITE_ESTADO_ID = @TRAMITE ");
-                    p.Add("@TRAMITE", filtroDto.tramite_estado_id.Trim().Substring(0, 1));
-                }
+                bool todasFechas = string.Equals(filtroDto.fechaTipo ?? "", "Todas", StringComparison.OrdinalIgnoreCase);
+                bool useResFecha = string.Equals(filtroDto.fechaTipo, "Resolución", StringComparison.OrdinalIgnoreCase);
+
                 var ini = new DateTime(filtroDto.fechaInicio.Year, filtroDto.fechaInicio.Month, filtroDto.fechaInicio.Day, 0, 0, 0, filtroDto.fechaInicio.Kind);
                 var fin = new DateTime(filtroDto.fechaFin.Year, filtroDto.fechaFin.Month, filtroDto.fechaFin.Day, 23, 59, 59, filtroDto.fechaFin.Kind);
 
-                if (!string.Equals(filtroDto.fechaTipo ?? "", "Todas", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (string.Equals(filtroDto.fechaTipo, "Resolución", StringComparison.OrdinalIgnoreCase))
-                    {
-                        sbWhere.Append(@"
-                        AND ISDATE(RES_FECHA) = 1
-                        AND CONVERT(datetime, RES_FECHA, 121) BETWEEN @INI AND @FIN ");
-                    }
-                    else
-                    {
-                        sbWhere.Append(@"
-                        AND ISDATE(REGISTRO_FECHA) = 1
-                        AND CONVERT(datetime, REGISTRO_FECHA, 121) BETWEEN @INI AND @FIN ");
-                    }
-                    p.Add("@INI", ini, DbType.DateTime);
-                    p.Add("@FIN", fin, DbType.DateTime);
-                }
+                string? codigo = string.IsNullOrWhiteSpace(filtroDto.codigoLinea) ? null : filtroDto.codigoLinea.Trim();
+                string? cedula = string.IsNullOrWhiteSpace(filtroDto.cedula) ? null : filtroDto.cedula.Trim();
 
+                string rawQ = (filtroDto.filtros?.filtro ?? string.Empty).Trim();
+                string? qLike = string.IsNullOrWhiteSpace(rawQ) ? null : $"%{rawQ}%";
 
-                if (!string.IsNullOrWhiteSpace(filtroDto.codigoLinea))
-                {
-                    sbWhere.Append(" AND CODIGO = @CODIGO ");
-                    p.Add("@CODIGO", filtroDto.codigoLinea.Trim());
-                }
-
-                if (!string.IsNullOrWhiteSpace(filtroDto.cedula))
-                {
-                    sbWhere.Append(" AND CEDULA = @CEDULA ");
-                    p.Add("@CEDULA", filtroDto.cedula.Trim());
-                }
-                if (!string.IsNullOrWhiteSpace(filtroDto.filtros?.filtro))
-                {
-                    sbWhere.Append(@"
-                        AND (
-                             CEDULA      LIKE @Q
-                          OR NOMBRE      LIKE @Q
-                          OR LINEA_DESC  LIKE @Q
-                          OR ESTADO_DESC LIKE @Q
-                        )");
-                    p.Add("@Q", "%" + filtroDto.filtros.filtro.Trim() + "%");
-                }
-                string orderBy = (filtroDto.filtros?.sortField ?? "").Trim().ToUpperInvariant() switch
-                {
-                    "COD_SOLICITUD" => "COD_SOLICITUD",
-                    "ESTADO_DESC" => "ESTADO_DESC",
-                    "CEDULA" => "CEDULA",
-                    "NOMBRE" => "NOMBRE",
-                    "LINEA_DESC" => "LINEA_DESC",
-                    "MONTO" => "MONTO",
-                    "PLAZO" => "PLAZO",
-                    "TASA" => "TASA",
-                    "CUOTA" => "CUOTA",
-                    "GARANTIA_DESC" => "GARANTIA_DESC",
-                    "REGISTRO_FECHA" => "REGISTRO_FECHA",
-                    "RES_FECHA" => "RES_FECHA",
-                    "RES_CODIGO" => "RES_CODIGO",
-                    "TRAMITE_ESTADO_DESC" => "TRAMITE_ESTADO_DESC",
-                    _ => "COD_SOLICITUD"
-                };
-                string orderDir = (filtroDto.filtros?.sortOrder ?? 1) == 0 ? "DESC" : "ASC";
-                string sqlCount = $@"
-                    SELECT COUNT(1)
-                    FROM vCrd_Solicitudes_AutoGestion
-                    {sbWhere};";
-
-                result.Result.total = cn.ExecuteScalar<int>(sqlCount, p, commandTimeout: 60);
+                string sortField = (filtroDto.filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                int sortOrder = filtroDto.filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
 
                 int offset = Math.Max(0, filtroDto.filtros?.pagina ?? 0);
                 int fetch = Math.Max(1, filtroDto.filtros?.paginacion ?? 30);
 
-                string sql = $@"
+                p.Add("@ESTADO", estado);
+                p.Add("@TRAMITE", tramite);
+                p.Add("@TODAS_FECHAS", todasFechas ? 1 : 0, DbType.Int32);
+                p.Add("@USE_RES", useResFecha ? 1 : 0, DbType.Int32);
+                p.Add("@INI", ini, DbType.DateTime);
+                p.Add("@FIN", fin, DbType.DateTime);
+                p.Add("@CODIGO", codigo);
+                p.Add("@CEDULA", cedula);
+                p.Add("@Q", qLike);
+                p.Add("@SORT_FIELD", sortField);
+                p.Add("@SORT_ORDER", sortOrder);
+                p.Add("@OFFSET", offset);
+                p.Add("@FETCH", fetch);
+
+                const string sqlCount = @"
+                    SELECT COUNT(1)
+                    FROM vCrd_Solicitudes_AutoGestion
+                    WHERE 1=1
+                      AND (@ESTADO IS NULL OR ESTADO = @ESTADO)
+                      AND (@TRAMITE IS NULL OR TRAMITE_ESTADO_ID = @TRAMITE)
+                      AND (
+                            @TODAS_FECHAS = 1
+                            OR (
+                                (@USE_RES = 1 AND ISDATE(RES_FECHA) = 1 AND CONVERT(datetime, RES_FECHA, 121) BETWEEN @INI AND @FIN)
+                                OR (@USE_RES = 0 AND ISDATE(REGISTRO_FECHA) = 1 AND CONVERT(datetime, REGISTRO_FECHA, 121) BETWEEN @INI AND @FIN)
+                               )
+                          )
+                      AND (@CODIGO IS NULL OR CODIGO = @CODIGO)
+                      AND (@CEDULA IS NULL OR CEDULA = @CEDULA)
+                      AND (
+                            @Q IS NULL
+                            OR CEDULA LIKE @Q
+                            OR NOMBRE LIKE @Q
+                            OR LINEA_DESC LIKE @Q
+                            OR ESTADO_DESC LIKE @Q
+                          );";
+
+                result.Result.total = cn.ExecuteScalar<int>(sqlCount, p, commandTimeout: 60);
+
+                const string sql = @"
                     SELECT 
                         COD_SOLICITUD           AS Cod_Solicitud,
                         ESTADO_DESC             AS Estado_Desc,
@@ -156,14 +129,63 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         RES_CODIGO              AS Res_Codigo,
                         TRAMITE_ESTADO_DESC     AS Tramite_Estado_Desc,
                         RES_TIPO                AS Res_Tipo 
-                        FROM vCrd_Solicitudes_AutoGestion
-                        {sbWhere}
-                        ORDER BY {orderBy} {orderDir}
-                        OFFSET {offset} ROWS
-                        FETCH NEXT {fetch} ROWS ONLY;";
+                    FROM vCrd_Solicitudes_AutoGestion
+                    WHERE 1=1
+                      AND (@ESTADO IS NULL OR ESTADO = @ESTADO)
+                      AND (@TRAMITE IS NULL OR TRAMITE_ESTADO_ID = @TRAMITE)
+                      AND (
+                            @TODAS_FECHAS = 1
+                            OR (
+                                (@USE_RES = 1 AND ISDATE(RES_FECHA) = 1 AND CONVERT(datetime, RES_FECHA, 121) BETWEEN @INI AND @FIN)
+                                OR (@USE_RES = 0 AND ISDATE(REGISTRO_FECHA) = 1 AND CONVERT(datetime, REGISTRO_FECHA, 121) BETWEEN @INI AND @FIN)
+                               )
+                          )
+                      AND (@CODIGO IS NULL OR CODIGO = @CODIGO)
+                      AND (@CEDULA IS NULL OR CEDULA = @CEDULA)
+                      AND (
+                            @Q IS NULL
+                            OR CEDULA LIKE @Q
+                            OR NOMBRE LIKE @Q
+                            OR LINEA_DESC LIKE @Q
+                            OR ESTADO_DESC LIKE @Q
+                          )
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'cod_solicitud' THEN COD_SOLICITUD END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'estado_desc' THEN ESTADO_DESC END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'cedula' THEN CEDULA END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'nombre' THEN NOMBRE END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'linea_desc' THEN LINEA_DESC END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'monto' THEN MONTO END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'plazo' THEN PLAZO END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'tasa' THEN TASA END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'cuota' THEN CUOTA END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'garantia_desc' THEN GARANTIA_DESC END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'registro_fecha' THEN REGISTRO_FECHA END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'res_fecha' THEN RES_FECHA END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'res_codigo' THEN RES_CODIGO END ASC,
+                        CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'tramite_estado_desc' THEN TRAMITE_ESTADO_DESC END ASC,
 
-                result.Result.lista = cn.Query<MonitorAutoGestionListaData>(
-                    sql, p, commandTimeout: 60).ToList();
+                        -- DESC
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'cod_solicitud' THEN COD_SOLICITUD END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'estado_desc' THEN ESTADO_DESC END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'cedula' THEN CEDULA END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'nombre' THEN NOMBRE END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'linea_desc' THEN LINEA_DESC END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'monto' THEN MONTO END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'plazo' THEN PLAZO END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'tasa' THEN TASA END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'cuota' THEN CUOTA END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'garantia_desc' THEN GARANTIA_DESC END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'registro_fecha' THEN REGISTRO_FECHA END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'res_fecha' THEN RES_FECHA END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'res_codigo' THEN RES_CODIGO END DESC,
+                        CASE WHEN @SORT_ORDER = 0 AND @SORT_FIELD = 'tramite_estado_desc' THEN TRAMITE_ESTADO_DESC END DESC,
+
+                        COD_SOLICITUD ASC
+                    OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY;";
+
+                result.Result.lista = cn.Query<MonitorAutoGestionListaData>(sql, p, commandTimeout: 60).ToList();
             }
             catch (Exception ex)
             {
@@ -203,84 +225,70 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 using var cn = new SqlConnection(connStr);
 
                 var p = new DynamicParameters();
-                var sbWhere = new StringBuilder(" WHERE 1=1 ");
-                if (!string.IsNullOrWhiteSpace(filtroDto.estado))
-                {
-                    sbWhere.Append(" AND ESTADO = @ESTADO ");
-                    p.Add("@ESTADO", filtroDto.estado.Trim().Substring(0, 1));
-                }
 
-                if (!string.IsNullOrWhiteSpace(filtroDto.tramite_estado_id))
-                {
-                    sbWhere.Append(" AND TRAMITE_ESTADO_ID = @TRAMITE ");
-                    p.Add("@TRAMITE", filtroDto.tramite_estado_id.Trim().Substring(0, 1));
-                }
+                string? estado = string.IsNullOrWhiteSpace(filtroDto.estado) ? null : filtroDto.estado.Trim().Substring(0, 1);
+                string? tramite = string.IsNullOrWhiteSpace(filtroDto.tramite_estado_id) ? null : filtroDto.tramite_estado_id.Trim().Substring(0, 1);
+
+                bool todasFechas = string.Equals(filtroDto.fechaTipo ?? "", "Todas", StringComparison.OrdinalIgnoreCase);
+                bool useResFecha = string.Equals(filtroDto.fechaTipo, "Resolución", StringComparison.OrdinalIgnoreCase);
 
                 var ini = new DateTime(filtroDto.fechaInicio.Year, filtroDto.fechaInicio.Month, filtroDto.fechaInicio.Day, 0, 0, 0, filtroDto.fechaInicio.Kind);
                 var fin = new DateTime(filtroDto.fechaFin.Year, filtroDto.fechaFin.Month, filtroDto.fechaFin.Day, 23, 59, 59, filtroDto.fechaFin.Kind);
 
-                if (!string.Equals(filtroDto.fechaTipo ?? "", "Todas", StringComparison.OrdinalIgnoreCase))
-                {
-                    if (string.Equals(filtroDto.fechaTipo, "Resolución", StringComparison.OrdinalIgnoreCase))
-                    {
-                        sbWhere.Append(@"
-                        AND ISDATE(RES_FECHA) = 1
-                        AND CONVERT(datetime, RES_FECHA, 121) BETWEEN @INI AND @FIN ");
-                    }
-                    else
-                    {
-                        sbWhere.Append(@"
-                        AND ISDATE(REGISTRO_FECHA) = 1
-                        AND CONVERT(datetime, REGISTRO_FECHA, 121) BETWEEN @INI AND @FIN ");
-                    }
-                    p.Add("@INI", ini, DbType.DateTime);
-                    p.Add("@FIN", fin, DbType.DateTime);
-                }
+                string? codigo = string.IsNullOrWhiteSpace(filtroDto.codigoLinea) ? null : filtroDto.codigoLinea.Trim();
+                string? cedula = string.IsNullOrWhiteSpace(filtroDto.cedula) ? null : filtroDto.cedula.Trim();
 
+                string rawQ = (filtroDto.filtros?.filtro ?? string.Empty).Trim();
+                string? qLike = string.IsNullOrWhiteSpace(rawQ) ? null : $"%{rawQ}%";
 
-                if (!string.IsNullOrWhiteSpace(filtroDto.codigoLinea))
-                {
-                    sbWhere.Append(" AND CODIGO = @CODIGO ");
-                    p.Add("@CODIGO", filtroDto.codigoLinea.Trim());
-                }
+                p.Add("@ESTADO", estado);
+                p.Add("@TRAMITE", tramite);
+                p.Add("@TODAS_FECHAS", todasFechas ? 1 : 0, DbType.Int32);
+                p.Add("@USE_RES", useResFecha ? 1 : 0, DbType.Int32);
+                p.Add("@INI", ini, DbType.DateTime);
+                p.Add("@FIN", fin, DbType.DateTime);
+                p.Add("@CODIGO", codigo);
+                p.Add("@CEDULA", cedula);
+                p.Add("@Q", qLike);
 
-                if (!string.IsNullOrWhiteSpace(filtroDto.cedula))
-                {
-                    sbWhere.Append(" AND CEDULA = @CEDULA ");
-                    p.Add("@CEDULA", filtroDto.cedula.Trim());
-                }
-                if (!string.IsNullOrWhiteSpace(filtroDto.filtros?.filtro))
-                {
-                    sbWhere.Append(@"
-                AND (
-                     CEDULA      LIKE @Q
-                  OR NOMBRE      LIKE @Q
-                  OR LINEA_DESC  LIKE @Q
-                  OR ESTADO_DESC LIKE @Q
-                )");
-                    p.Add("@Q", "%" + filtroDto.filtros.filtro.Trim() + "%");
-                }
-
-                string sql = $@"
-                SELECT 
-                    COD_SOLICITUD           AS Cod_Solicitud,
-                    ESTADO_DESC             AS Estado_Desc,
-                    CEDULA                  AS Cedula,
-                    NOMBRE                  AS Nombre,
-                    LINEA_DESC              AS Linea_Desc,
-                    MONTO                   AS Monto,
-                    PLAZO                   AS Plazo,
-                    TASA                    AS Tasa,
-                    CUOTA                   AS Cuota,
-                    GARANTIA_DESC           AS Garantia_Desc,
-                    REGISTRO_FECHA          AS Registro_Fecha,
-                    RES_FECHA               AS Res_Fecha,
-                    RES_CODIGO              AS Res_Codigo,
-                    TRAMITE_ESTADO_DESC     AS Tramite_Estado_Desc,
-                    RES_TIPO                AS Res_Tipo 
-                FROM vCrd_Solicitudes_AutoGestion
-            {sbWhere}
-            ORDER BY COD_SOLICITUD ASC;";
+                const string sql = @"
+                    SELECT 
+                        COD_SOLICITUD           AS Cod_Solicitud,
+                        ESTADO_DESC             AS Estado_Desc,
+                        CEDULA                  AS Cedula,
+                        NOMBRE                  AS Nombre,
+                        LINEA_DESC              AS Linea_Desc,
+                        MONTO                   AS Monto,
+                        PLAZO                   AS Plazo,
+                        TASA                    AS Tasa,
+                        CUOTA                   AS Cuota,
+                        GARANTIA_DESC           AS Garantia_Desc,
+                        REGISTRO_FECHA          AS Registro_Fecha,
+                        RES_FECHA               AS Res_Fecha,
+                        RES_CODIGO              AS Res_Codigo,
+                        TRAMITE_ESTADO_DESC     AS Tramite_Estado_Desc,
+                        RES_TIPO                AS Res_Tipo 
+                    FROM vCrd_Solicitudes_AutoGestion
+                    WHERE 1=1
+                      AND (@ESTADO IS NULL OR ESTADO = @ESTADO)
+                      AND (@TRAMITE IS NULL OR TRAMITE_ESTADO_ID = @TRAMITE)
+                      AND (
+                            @TODAS_FECHAS = 1
+                            OR (
+                                (@USE_RES = 1 AND ISDATE(RES_FECHA) = 1 AND CONVERT(datetime, RES_FECHA, 121) BETWEEN @INI AND @FIN)
+                                OR (@USE_RES = 0 AND ISDATE(REGISTRO_FECHA) = 1 AND CONVERT(datetime, REGISTRO_FECHA, 121) BETWEEN @INI AND @FIN)
+                               )
+                          )
+                      AND (@CODIGO IS NULL OR CODIGO = @CODIGO)
+                      AND (@CEDULA IS NULL OR CEDULA = @CEDULA)
+                      AND (
+                            @Q IS NULL
+                            OR CEDULA LIKE @Q
+                            OR NOMBRE LIKE @Q
+                            OR LINEA_DESC LIKE @Q
+                            OR ESTADO_DESC LIKE @Q
+                          )
+                    ORDER BY COD_SOLICITUD ASC;";
 
                 result.Result = cn.Query<MonitorAutoGestionListaData>(sql, p, commandTimeout: 60).ToList();
             }
