@@ -27,93 +27,70 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SysNacionalidadesLista> Sys_NacionalidadesLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SysNacionalidadesLista>()
+            var portalDb = new PortalDB(_config);
+
+            // Mapa de columnas permitidas para ordenar (evita SQL dinámico)
+            var sortMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new SysNacionalidadesLista()
-                {
-                    total = 0,
-                    lista = new List<SysNacionalidadesData>()
-                }
+                ["cod_nacionalidad"] = 1,
+                ["descripcion"] = 2,
+                ["cod_inter"] = 3,
+                ["omision"] = 4,
+                ["activo"] = 5,
+                ["registro_fecha"] = 6,
+                ["registro_usuario"] = 7,
+                ["item"] = 1
             };
 
-            try
+            return DbHelper.WithConn(portalDb, CodEmpresa, conn =>
             {
-                using var connection = new SqlConnection(stringConn);
-
                 // Total (mantiene comportamiento anterior: total sin filtro)
                 const string sqlTotal = @"select COUNT(COD_NACIONALIDAD) from SYS_NACIONALIDADES";
-                result.Result.total = connection.Query<int>(sqlTotal).FirstOrDefault();
+                int total = conn.QueryFirstOrDefault<int>(sqlTotal);
 
-                var raw = (filtros?.filtro ?? string.Empty).Trim();
-                string? q = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
-
-                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                if (string.IsNullOrWhiteSpace(sortField))
-                {
-                    sortField = "cod_nacionalidad";
-                }
-
-                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
-
-                var offset = Math.Max(0, filtros?.pagina ?? 0);
-                var fetch = filtros?.paginacion ?? 0;
-                if (fetch <= 0)
-                {
-                    fetch = 30;
-                }
+                // Lazy load (filtro + orden + paginación)
+                var spec = LazyLoadHelper.Build(filtros, sortMap, defaultSort: "cod_nacionalidad");
 
                 const string sql = @"
                     select COD_NACIONALIDAD, descripcion, cod_inter, omision, activo, Registro_Fecha, Registro_Usuario
                     from SYS_NACIONALIDADES
-                    where (@q is null or (
-                        COD_NACIONALIDAD like @q
-                        or descripcion like @q
-                        or cod_inter like @q
-                        or Registro_Usuario like @q
+                    where (@hasFilter = 0 or (
+                        COD_NACIONALIDAD like @filtro
+                        or descripcion like @filtro
+                        or cod_inter like @filtro
+                        or Registro_Usuario like @filtro
                     ))
                     order by
                         -- ASC
-                        case when @sortOrder = 1 and @sortField = 'cod_nacionalidad' then COD_NACIONALIDAD end asc,
-                        case when @sortOrder = 1 and @sortField = 'descripcion' then descripcion end asc,
-                        case when @sortOrder = 1 and @sortField = 'cod_inter' then cod_inter end asc,
-                        case when @sortOrder = 1 and @sortField = 'omision' then convert(int, omision) end asc,
-                        case when @sortOrder = 1 and @sortField = 'activo' then convert(int, activo) end asc,
-                        case when @sortOrder = 1 and @sortField = 'registro_fecha' then Registro_Fecha end asc,
-                        case when @sortOrder = 1 and @sortField = 'registro_usuario' then Registro_Usuario end asc,
+                        case when @isAsc = 1 and @sortCode = 1 then COD_NACIONALIDAD end asc,
+                        case when @isAsc = 1 and @sortCode = 2 then descripcion end asc,
+                        case when @isAsc = 1 and @sortCode = 3 then cod_inter end asc,
+                        case when @isAsc = 1 and @sortCode = 4 then convert(int, omision) end asc,
+                        case when @isAsc = 1 and @sortCode = 5 then convert(int, activo) end asc,
+                        case when @isAsc = 1 and @sortCode = 6 then Registro_Fecha end asc,
+                        case when @isAsc = 1 and @sortCode = 7 then Registro_Usuario end asc,
 
                         -- DESC
-                        case when @sortOrder = 0 and @sortField = 'cod_nacionalidad' then COD_NACIONALIDAD end desc,
-                        case when @sortOrder = 0 and @sortField = 'descripcion' then descripcion end desc,
-                        case when @sortOrder = 0 and @sortField = 'cod_inter' then cod_inter end desc,
-                        case when @sortOrder = 0 and @sortField = 'omision' then convert(int, omision) end desc,
-                        case when @sortOrder = 0 and @sortField = 'activo' then convert(int, activo) end desc,
-                        case when @sortOrder = 0 and @sortField = 'registro_fecha' then Registro_Fecha end desc,
-                        case when @sortOrder = 0 and @sortField = 'registro_usuario' then Registro_Usuario end desc,
+                        case when @isAsc = 0 and @sortCode = 1 then COD_NACIONALIDAD end desc,
+                        case when @isAsc = 0 and @sortCode = 2 then descripcion end desc,
+                        case when @isAsc = 0 and @sortCode = 3 then cod_inter end desc,
+                        case when @isAsc = 0 and @sortCode = 4 then convert(int, omision) end desc,
+                        case when @isAsc = 0 and @sortCode = 5 then convert(int, activo) end desc,
+                        case when @isAsc = 0 and @sortCode = 6 then Registro_Fecha end desc,
+                        case when @isAsc = 0 and @sortCode = 7 then Registro_Usuario end desc,
 
                         -- Fallback
                         COD_NACIONALIDAD asc
-                    offset @offset rows fetch next @fetch rows only;";
+                    offset @offset rows fetch next @pageSize rows only;";
 
-                result.Result.lista = connection.Query<SysNacionalidadesData>(sql, new
+                var lista = conn.Query<SysNacionalidadesData>(sql, spec.Params).ToList();
+
+                return new SysNacionalidadesLista
                 {
-                    q,
-                    sortField,
-                    sortOrder,
-                    offset,
-                    fetch
-                }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<SysNacionalidadesData>();
-            }
-            return result;
+                    total = total,
+                    lista = lista
+                };
+            });
         }
 
 
@@ -125,40 +102,22 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SysNacionalidadesData>> Sys_Nacionalidades_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SysNacionalidadesData>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SysNacionalidadesData>()
-            };
+            var portalDb = new PortalDB(_config);
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            var raw = (filtros?.filtro ?? string.Empty).Trim();
+            string? q = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
 
-                var raw = (filtros?.filtro ?? string.Empty).Trim();
-                string? q = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
+            const string sql = @"
+                SELECT COD_NACIONALIDAD, descripcion, cod_inter, omision, activo, Registro_Fecha, Registro_Usuario
+                FROM SYS_NACIONALIDADES
+                WHERE (@q IS NULL OR (
+                      COD_NACIONALIDAD LIKE @q
+                      OR descripcion LIKE @q
+                      OR Registro_Usuario LIKE @q
+                ))
+                ORDER BY COD_NACIONALIDAD";
 
-                const string sql = @"
-                    SELECT COD_NACIONALIDAD, descripcion, cod_inter, omision, activo, Registro_Fecha, Registro_Usuario
-                    FROM SYS_NACIONALIDADES
-                    WHERE (@q IS NULL OR (
-                          COD_NACIONALIDAD LIKE @q
-                          OR descripcion LIKE @q
-                          OR Registro_Usuario LIKE @q
-                    ))
-                    ORDER BY COD_NACIONALIDAD";
-
-                result.Result = connection.Query<SysNacionalidadesData>(sql, new { q }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return DbHelper.ExecuteListQuery<SysNacionalidadesData>(portalDb, CodEmpresa, sql, new { q });
         }
 
 

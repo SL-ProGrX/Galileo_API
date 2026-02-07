@@ -1,7 +1,6 @@
 using Dapper;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.TES;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System.Data;
