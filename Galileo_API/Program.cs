@@ -12,6 +12,19 @@ using Galileo.DataBaseTier;
 // ✅ Asegúrate que este using apunte al namespace real donde está tu filtro
 var builder = WebApplication.CreateBuilder(args);
 
+// ✅ Cargar configuración externa desde APP_CONFIG_PATH (definida en web.config/IIS)
+var externalConfigPath = Environment.GetEnvironmentVariable("APP_CONFIG_PATH");
+
+if (!string.IsNullOrWhiteSpace(externalConfigPath))
+{
+    var envName = builder.Environment.EnvironmentName; // Production, Staging, etc.
+    var fileName = $"appsettings.{envName}.json";
+    var safeFileName = Path.GetFileName(fileName);
+    var externalSettingsFile = Path.Combine(externalConfigPath, safeFileName);
+
+    builder.Configuration.AddJsonFile(externalSettingsFile, optional: false, reloadOnChange: true);
+}
+
 // ✅ Registrar MemoryCache (si luego cacheas permisos)
 builder.Services.AddMemoryCache();
 
@@ -187,7 +200,9 @@ namespace Galileo_API
             "http://localhost:4201",
             "http://localhost:4202",
             "http://localhost:61968",
-            "http://localhost:61969"
+            "http://localhost:61969",
+            "https://progrxpruebas.aseccss.com",
+            "https://progrxweb.com"
         };
 
         public static readonly HashSet<string> Prod = new(StringComparer.OrdinalIgnoreCase)
