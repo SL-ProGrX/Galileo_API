@@ -8,9 +8,9 @@
 
     public class TipoCambioDto
     {
-        public int id_cambio { get; set; }
-        public decimal tc_compra { get; set; }
-        public decimal tc_venta { get; set; }
+        public int? id_cambio { get; set; }
+        public decimal? tc_compra { get; set; }
+        public decimal? tc_venta { get; set; }
         public DateTime inicio { get; set; }
         public DateTime corte { get; set; }
     }
