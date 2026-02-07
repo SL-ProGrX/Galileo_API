@@ -2,6 +2,7 @@
 using Galileo.DataBaseTier;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using System.Text;
 using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCCuentasSgtAutorizacionModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
@@ -118,7 +119,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns></returns>
         private string Operacio_FacturasVerifica(int codEmpresa, int operacion)
         {
-            string respuesta = string.Empty;
+        
 
             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
             const string query = "exec spCxC_Operacion_Facturas_Verifica  @operacion"; 
@@ -128,16 +129,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             if (facturas.Count == 0)
                 return string.Empty;
 
+            var sb = new StringBuilder();
 
             foreach (var item in facturas)
             {
-                respuesta +=
-                            $"\r\n- Factura No.: {item.cod_factura?.ToString().Trim()}," +
-                            $" se encuentra registrada en la Operación: {item.Operacion}";
+
+                sb.AppendLine(
+                            $"\r\n - Factura No.: {item.cod_factura?.ToString().Trim()}," +
+                            $" se encuentra registrada en la Operación: {item.Operacion}"
+                        );
+                 
 
             }
 
-            return respuesta;
+
+            return sb.ToString();
+
         }
 
         /// <summary>
