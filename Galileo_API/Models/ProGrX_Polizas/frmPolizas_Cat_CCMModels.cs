@@ -16,11 +16,11 @@
 
     public class PolizasConceptosConfigAddParams
     {
-        public int Id { get; set; }
+        public required int Id { get; set; }
         public string Cod_Poliza { get; set; } = string.Empty;
         public string Codigo { get; set; } = string.Empty;
         public string Descripcion { get; set; } = string.Empty;
-        public short Activo { get; set; }
+        public short? Activo { get; set; }
         public string Usuario { get; set; } = string.Empty;
         public string Tipo { get; set; } = string.Empty;
     }
@@ -35,7 +35,7 @@
 
     public class PolizasConceptosConfigDelParams
     {
-        public int Id { get; set; }
+        public required int Id { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 }
