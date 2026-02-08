@@ -2,7 +2,7 @@
 {
     public class PolizasEstadosReclamosDto
     {
-        public int Id_Estado { get; set; }
+        public required int Id_Estado { get; set; }
         public string Descripcion { get; set; } = string.Empty;
         public short Activo { get; set; }
     }
@@ -14,9 +14,9 @@
 
     public class PolizasEstadosReclamosSaveParams
     {
-        public int Id_Estado { get; set; }
+        public required  int Id_Estado { get; set; }
         public string Descripcion { get; set; } = string.Empty;
-        public short Activo { get; set; }
+        public short? Activo { get; set; }
         public string Usuario { get; set; } = string.Empty;
     }
 
