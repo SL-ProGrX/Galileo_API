@@ -22,6 +22,6 @@
 
     public class PolizasEstadosReclamosDeleteParams
     {
-        public int Id_Estado { get; set; }
+        public required int Id_Estado { get; set; }
     }
 }
