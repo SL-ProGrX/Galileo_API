@@ -299,7 +299,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 var ver = FxVerifica(codempresa, req);
                 if (FailIfError(ver, out var e)) return e;
 
-                var vNumDoc = _mRecibos.fxDocumentoConsecutivo(codempresa, req.tipodoc).ToString();
+                var vNumDoc = _mRecibos.FxDocumentoConsecutivo(codempresa, req.tipodoc).ToString();
 
                 var extraordinario = false;
                 var r = ProcesarRegistroAbono(codempresa, req, vNumDoc, ref extraordinario);
