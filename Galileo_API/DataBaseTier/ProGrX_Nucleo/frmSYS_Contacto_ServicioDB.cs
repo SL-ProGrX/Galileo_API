@@ -8,19 +8,41 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSysContactoServicioDB
     {
-        private readonly IConfiguration _config;
         private const string BaseConnStringName = "BaseConnString";
+        private readonly string _connStr;
+
         public FrmSysContactoServicioDB(IConfiguration config)
         {
-            _config = config;
+            _connStr = config.GetConnectionString(BaseConnStringName)
+                ?? throw new InvalidOperationException($"Connection string '{BaseConnStringName}' is not configured.");
+
+            if (string.IsNullOrWhiteSpace(_connStr))
+                throw new InvalidOperationException($"Connection string '{BaseConnStringName}' is not configured.");
         }
 
-        private string GetSafeConnectionString()
+
+
+        private static string NormalizeUpper(string? value)
+            => (value ?? string.Empty).Trim().ToUpper();
+
+        private static string? BuildSearchLike(FiltrosLazyLoadData? filtros)
         {
-            var connStr = _config.GetConnectionString(BaseConnStringName);
-            if (string.IsNullOrWhiteSpace(connStr))
-                throw new InvalidOperationException($"Connection string '{BaseConnStringName}' is not configured.");
-            return connStr;
+            var search = filtros?.filtro?.Trim();
+            return string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+        }
+
+        private ErrorDto<T> WithBaseConn<T>(Func<SqlConnection, T> action)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connStr);
+                var result = action(conn);
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse<T>(ex.Message ?? "Error inesperado", -1, default!);
+            }
         }
 
 
@@ -31,23 +53,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="identificacion"></param>
         /// <param name="codPais"></param>
         /// /// <returns></returns>
-        public ErrorDto<SysContactoServicioGeneralData>SysContactoServicio_General_Obtener(int CodEmpresa, string identificacion, string codPais = "CRC")
+        public ErrorDto<SysContactoServicioGeneralData> SysContactoServicio_General_Obtener(int CodEmpresa, string identificacion, string codPais = "CRC")
         {
-            var dto = new ErrorDto<SysContactoServicioGeneralData>
+            return WithBaseConn(conn =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = null
-            };
-
-            try
-            {
-                string connStr = GetSafeConnectionString();
-                using var conn = new SqlConnection(connStr);
-
                 var sql = @"
                 SELECT
-                    -- Identificación y encabezado
                     P.IDENTIFICACION                                 AS Identificacion,
                     P.COD_PAIS                                       AS CodPais,
                     P.TIPO_ID                                        AS Tipo_Id,
@@ -55,7 +66,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     P.APELLIDO_2                                     AS Apellido_2,
                     P.NOMBRE                                         AS Nombre,
 
-                    -- Fechas y edad
                     P.FECHA_NACIMIENTO                               AS Fecha_Nacimiento,
                     P.FECHA_CADUCIDAD                                AS Fecha_Caducidad,
                     CASE
@@ -66,24 +76,20 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                  THEN 1 ELSE 0 END
                     END                                              AS Edad,
 
-                    -- Datos generales
                     P.SEXO                                           AS Sexo,
                     P.ESTADO_CIVIL                                   AS Estado_Civil,
                     P.PROFESION                                      AS Profesion,
 
-                    -- Económicos / contacto
                     P.SALARIO                                        AS Salario,
                     P.EMAIL_01                                       AS Email_01,
                     P.EMAIL_02                                       AS Email_02,
                     P.EMAIL_03                                       AS Email_03,
 
-                    -- Códigos de geografía y dirección
                     P.COD_PROVINCIA                                  AS Cod_Provincia,
                     P.COD_CANTON                                     AS Cod_Canton,
                     P.COD_DISTRITO                                   AS Cod_Distrito,
                     P.DIRECCION                                      AS Direccion,
 
-                    -- Descripciones (sin JOIN, por subconsulta)
                     (SELECT PR.DESCRIPCION
                        FROM dbo.SYS_PROVINCIAS PR WITH (NOLOCK)
                       WHERE PR.COD_PAIS = P.COD_PAIS AND PR.COD_PROVINCIA = P.COD_PROVINCIA) AS Provincia,
@@ -101,27 +107,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
                 var r = conn.QueryFirstOrDefault<SysContactoServicioGeneralData>(sql, new
                 {
-                    identificacion = (identificacion ?? "").Trim().ToUpper(),
-                    codPais = (codPais ?? "CRC").Trim().ToUpper()
+                    identificacion = NormalizeUpper(identificacion),
+                    codPais = NormalizeUpper(codPais ?? "CRC")
                 });
 
                 if (r == null)
-                {
-                    dto.Code = -2;
-                    dto.Description = "No existe la identificación en SYS_PADRON.";
-                    return dto;
-                }
+                    throw new InvalidOperationException("No existe la identificación en SYS_PADRON.");
 
-                dto.Result = r;
-            }
-            catch (Exception ex)
-            {
-                dto.Code = -1;
-                dto.Description = ex.Message;
-                dto.Result = null;
-            }
-
-            return dto;
+                return r;
+            });
         }
 
 
@@ -133,23 +127,18 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="codPais"></param>
         /// <param name="filtros"></param>
         /// /// <returns></returns>
-        public ErrorDto<List<SysContactoServicioGeneralData>>SysContactoServicio_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
+        public ErrorDto<List<SysContactoServicioGeneralData>> SysContactoServicio_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
         {
-            var result = new ErrorDto<List<SysContactoServicioGeneralData>>
-            { Code = 0, Description = "Ok", Result = new() };
-
-            try
+            return WithBaseConn(conn =>
             {
-                using var connection = new SqlConnection(GetSafeConnectionString());
-
                 var rawQuery = (filtros?.filtro ?? string.Empty).Trim();
                 var query = string.IsNullOrWhiteSpace(rawQuery) ? null : rawQuery;
 
                 var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
                 var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
 
-                var identParam = string.IsNullOrWhiteSpace(identificacion) ? null : identificacion.Trim().ToUpper();
-                var countryCode = (codPais ?? "CRC").Trim().ToUpper();
+                var identParam = string.IsNullOrWhiteSpace(identificacion) ? null : NormalizeUpper(identificacion);
+                var countryCode = NormalizeUpper(codPais ?? "CRC");
 
                 var looksLikeId = query != null && query.All(ch => char.IsDigit(ch) || ch == '-' || ch == ' ');
                 var queryPrefix = query == null ? null : query + "%";
@@ -202,24 +191,21 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                    )
                               )
                         ORDER BY
-                            -- ASC
                             CASE WHEN @sortOrder = 1 AND @sortField = 'identificacion' THEN P.IDENTIFICACION END ASC,
                             CASE WHEN @sortOrder = 1 AND @sortField = 'apellido_1' THEN P.APELLIDO_1 END ASC,
                             CASE WHEN @sortOrder = 1 AND @sortField = 'apellido_2' THEN P.APELLIDO_2 END ASC,
                             CASE WHEN @sortOrder = 1 AND @sortField = 'nombre' THEN P.NOMBRE END ASC,
                             CASE WHEN @sortOrder = 1 AND @sortField = 'registro_fecha' THEN P.REGISTRO_FECHA END ASC,
 
-                            -- DESC
                             CASE WHEN @sortOrder = 0 AND @sortField = 'identificacion' THEN P.IDENTIFICACION END DESC,
                             CASE WHEN @sortOrder = 0 AND @sortField = 'apellido_1' THEN P.APELLIDO_1 END DESC,
                             CASE WHEN @sortOrder = 0 AND @sortField = 'apellido_2' THEN P.APELLIDO_2 END DESC,
                             CASE WHEN @sortOrder = 0 AND @sortField = 'nombre' THEN P.NOMBRE END DESC,
                             CASE WHEN @sortOrder = 0 AND @sortField = 'registro_fecha' THEN P.REGISTRO_FECHA END DESC,
 
-                            -- Fallback (equivalente al orden default anterior)
                             P.APELLIDO_1 ASC, P.APELLIDO_2 ASC, P.NOMBRE ASC;";
 
-                result.Result = connection.Query<SysContactoServicioGeneralData>(sql, new
+                return conn.Query<SysContactoServicioGeneralData>(sql, new
                 {
                     ident = identParam,
                     countryCode,
@@ -229,12 +215,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     sortField,
                     sortOrder
                 }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1; result.Description = ex.Message; result.Result = null;
-            }
-            return result;
+            });
         }
 
 
@@ -246,26 +227,22 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="codPais"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<SysContactoServicioTelefonoLista>SysContactoServicio_Telefonos_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysContactoServicioTelefonoLista> SysContactoServicio_Telefonos_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
         {
-            var dto = new ErrorDto<SysContactoServicioTelefonoLista>
-            { Code = 0, Description = "Ok", Result = new() { total = 0, lista = new() } };
-
-            try
+            return WithBaseConn(conn =>
             {
-                using var connection = new SqlConnection(_config.GetConnectionString(BaseConnStringName));
+                var dto = new SysContactoServicioTelefonoLista { total = 0, lista = new List<SysContactoServicioTelefonoData>() };
 
-                var search = (filtros?.filtro ?? string.Empty).Trim();
-                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+                var searchLike = BuildSearchLike(filtros);
 
                 int page = Math.Max(0, filtros?.pagina ?? 0);
                 int pageSize = Math.Clamp(filtros?.paginacion ?? 30, 1, 200);
 
                 var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+                var sortOrder = filtros?.sortOrder ?? 1;
 
-                var ident = (identificacion ?? string.Empty).Trim().ToUpper();
-                var countryCode = (codPais ?? "CRC").Trim().ToUpper();
+                var ident = NormalizeUpper(identificacion);
+                var countryCode = NormalizeUpper(codPais ?? "CRC");
 
                 const string totalSql = @"SELECT COUNT(1)
                                          FROM dbo.SYS_PADRON_TELEFONOS T WITH (NOLOCK)
@@ -277,7 +254,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                                 OR T.EXTENSION     LIKE @search
                                                 OR T.ATIENDE       LIKE @search);";
 
-                dto.Result.total = connection.QueryFirstOrDefault<int>(totalSql, new
+                dto.total = conn.QueryFirstOrDefault<int>(totalSql, new
                 {
                     ident,
                     countryCode,
@@ -303,14 +280,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                            OR T.EXTENSION     LIKE @search
                            OR T.ATIENDE       LIKE @search)
                     ORDER BY
-                        -- ASC
                         CASE WHEN @sortOrder = 1 AND @sortField = 'num_linea' THEN T.NUM_LINEA END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'telefono_tipo' THEN T.TELEFONO_TIPO END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'telefono' THEN T.TELEFONO END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'extension' THEN T.EXTENSION END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'atiende' THEN T.ATIENDE END ASC,
 
-                        -- DESC
                         CASE WHEN @sortOrder = 0 AND @sortField = 'num_linea' THEN T.NUM_LINEA END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'telefono_tipo' THEN T.TELEFONO_TIPO END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'telefono' THEN T.TELEFONO END DESC,
@@ -320,7 +295,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         T.NUM_LINEA ASC
                     OFFSET @page ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
-                dto.Result.lista = connection.Query<SysContactoServicioTelefonoData>(sql, new
+                dto.lista = conn.Query<SysContactoServicioTelefonoData>(sql, new
                 {
                     ident,
                     countryCode,
@@ -330,12 +305,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     sortField,
                     sortOrder
                 }).ToList();
-            }
-            catch (Exception ex)
-            {
-                dto.Code = -1; dto.Description = ex.Message; dto.Result.lista = new List<SysContactoServicioTelefonoData>(); dto.Result.total = 0;
-            }
-            return dto;
+
+                return dto;
+            });
         }
 
 
@@ -346,19 +318,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="identificacion"></param>
         /// <param name="codPais"></param>
         /// <returns></returns>
-        public ErrorDto<List<SysContactoServicioTelefonoData>>SysContactoServicio_Telefonos_Obtener(int CodEmpresa, string identificacion, string codPais)
+        public ErrorDto<List<SysContactoServicioTelefonoData>> SysContactoServicio_Telefonos_Obtener(int CodEmpresa, string identificacion, string codPais)
         {
-            var dto = new ErrorDto<List<SysContactoServicioTelefonoData>>
+            return WithBaseConn(conn =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(_config.GetConnectionString(BaseConnStringName));
-
                 const string sql = @"
                 SELECT
                     T.NUM_LINEA          AS Num_Linea,
@@ -373,19 +336,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                   AND UPPER(T.COD_PAIS) = @countryCode
                 ORDER BY T.NUM_LINEA;";
 
-                dto.Result = connection.Query<SysContactoServicioTelefonoData>(sql, new
+                return conn.Query<SysContactoServicioTelefonoData>(sql, new
                 {
-                    ident = (identificacion ?? "").Trim().ToUpper(),
-                    countryCode = (codPais ?? "CRC").Trim().ToUpper()
+                    ident = NormalizeUpper(identificacion),
+                    countryCode = NormalizeUpper(codPais ?? "CRC")
                 }).ToList();
-            }
-            catch (Exception ex)
-            {
-                dto.Code = -1;
-                dto.Description = ex.Message;
-                dto.Result = null;
-            }
-            return dto;
+            });
         }
 
 
@@ -404,7 +360,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString(BaseConnStringName));
+                using var connection = new SqlConnection(_connStr);
 
                 var search = (filtros?.filtro ?? string.Empty).Trim();
                 string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
@@ -530,7 +486,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString(BaseConnStringName));
+                using var connection = new SqlConnection(_connStr);
 
                 string sql = @"
                     SELECT 
@@ -586,7 +542,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString(BaseConnStringName));
+                using var connection = new SqlConnection(_connStr);
 
                 var search = (filtros?.filtro ?? string.Empty).Trim();
                 string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
@@ -700,7 +656,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                using var connection = new SqlConnection(_config.GetConnectionString(BaseConnStringName));
+                using var connection = new SqlConnection(_connStr);
 
                 string sql = @"
                 SELECT
@@ -757,7 +713,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SysContactoServicioPersonaLookupLista> SysContactoServicio_Personas_Lista_Buscar(int CodEmpresa, string codPais, FiltrosLazyLoadData filtros)
         {
-            string connectionString = GetSafeConnectionString();
+            string connectionString = _connStr;
 
             var response = new ErrorDto<SysContactoServicioPersonaLookupLista>
             {
