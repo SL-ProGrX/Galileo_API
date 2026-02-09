@@ -21,6 +21,42 @@ namespace Galileo_API.DataBaseTier
             _reportingServicesDB = new MReportingServicesDB(config);
         }
 
+        private static ErrorDto<object> CreateOkObjectResponse()
+            => DbHelper.CreateOkResponse<object>(null!);
+
+        private static void ApplyException(ErrorDto<object> response, Exception ex)
+        {
+            response.Code = -1;
+            response.Description = ex.Message;
+        }
+
+        private static void ApplyReporteActionResult(ErrorDto<object> response, object actionResult)
+        {
+            var objectResult = actionResult as ObjectResult;
+
+            if (objectResult == null)
+            {
+                response.Result = JsonConvert.SerializeObject(actionResult, Formatting.Indented);
+                return;
+            }
+
+            var res = objectResult.Value;
+            var json = System.Text.Json.JsonSerializer.Serialize(res);
+            var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto<object>>(json);
+
+            if (err != null)
+            {
+                response.Code = err.Code;
+                response.Description = err.Description;
+                response.Result = err.Result;
+            }
+            else
+            {
+                response.Code = -1;
+                response.Description = "ErrorDto deserialization returned null.";
+            }
+        }
+
         public long FxDocumentoConsecutivo(int codEmpresa, string vTipo)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
@@ -81,42 +117,29 @@ namespace Galileo_API.DataBaseTier
 
         public ErrorDto<object> sbImprimeRecibo(int CodEmpresa, string pDocumento, string pTipo, string Usuario, bool pReImprime = false)
         {
-            var response = new ErrorDto<object>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = null
-            };
-            try
-            {
-                var empresaEnlace = new MProGrxMain(_config).EmpresaEnlaceObtener();
-                int SysDocVersion = empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
-                if (SysDocVersion == 1)
+                var response = CreateOkObjectResponse();
+
+                try
                 {
-                    response = sbImprimev1(CodEmpresa, pDocumento, pTipo, pReImprime);
-                } 
-                else
-                {
-                    response = sbImprimev2(CodEmpresa, pTipo, pDocumento, Usuario, pReImprime);
+                    var empresaEnlace = new MProGrxMain(_config).EmpresaEnlaceObtener();
+                    int SysDocVersion = empresaEnlace?.FirstOrDefault()?.SysDocVersion ?? 0;
+
+                    response = SysDocVersion == 1
+                        ? sbImprimev1(CodEmpresa, pDocumento, pTipo, pReImprime)
+                        : sbImprimev2(CodEmpresa, pTipo, pDocumento, Usuario, pReImprime);
                 }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-            return response;
+                catch (Exception ex)
+                {
+                    ApplyException(response, ex);
+                }
+
+                return response;
         }
 
         public ErrorDto<object> sbImprimev1(int CodEmpresa, string pDocumento, string pTipo, bool pReImprime = false)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<object>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = null
-            };
+            var response = CreateOkObjectResponse();
             bool vFlat = false;
             try
             {
@@ -172,38 +195,11 @@ namespace Galileo_API.DataBaseTier
                     
                     var actionResult = _reportingServicesDB.ReporteRDLC_v2(reporteData);
 
-                    //Valida respuesta de ReporteRDLC_v2
-                    var objectResult = actionResult as ObjectResult;
-
-                    if (objectResult == null)
-                    {
-                        response.Result = JsonConvert.SerializeObject(actionResult, Formatting.Indented);
-                    }
-                    else
-                    {
-                        var res = objectResult.Value;
-                        //converto res a JSON
-                        var Jres = System.Text.Json.JsonSerializer.Serialize(res);
-
-                        // convierto JSON a ErrorDTO
-                        var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto<object>>(Jres);
-
-                        if (err != null)
-                        {
-                            response.Code = err.Code;
-                            response.Description = err.Description;
-                        }
-                        else
-                        {
-                            response.Code = -1;
-                            response.Description = "ErrorDto deserialization returned null.";
-                        }
-                    }
+                    ApplyReporteActionResult(response, actionResult);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                ApplyException(response, ex);
             }
             return response;
         }
@@ -211,12 +207,7 @@ namespace Galileo_API.DataBaseTier
         public ErrorDto<object> sbImprimev2(int CodEmpresa, string pTipo, string pTransaccion, string Usuario, bool pReImprime = false)
         {
             string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<object>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = null
-            };
+            var response = CreateOkObjectResponse();
             try
             {
                 using var connection = new SqlConnection(stringConn);
@@ -249,34 +240,11 @@ namespace Galileo_API.DataBaseTier
                 };
 
                 var actionResult = _reportingServicesDB.ReporteRDLC_v2(reporteData);
-                var objectResult = actionResult as ObjectResult;
-
-                if (objectResult == null)
-                {
-                    response.Result = JsonConvert.SerializeObject(actionResult, Formatting.Indented);
-                }
-                else
-                {
-                    var res = objectResult.Value;
-                    var Jres = System.Text.Json.JsonSerializer.Serialize(res);
-                    var err = System.Text.Json.JsonSerializer.Deserialize<ErrorDto<object>>(Jres);
-
-                    if (err != null)
-                    {
-                        response.Code = err.Code;
-                        response.Description = err.Description;
-                    }
-                    else
-                    {
-                        response.Code = -1;
-                        response.Description = "ErrorDto deserialization returned null.";
-                    }
-                }
+                ApplyReporteActionResult(response, actionResult);
             }
             catch (Exception ex)
             {
-                response.Code = -1;
-                response.Description = ex.Message;
+                ApplyException(response, ex);
             }
             return response;
         }
