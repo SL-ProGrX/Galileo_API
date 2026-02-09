@@ -7,9 +7,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 {
     public sealed class RdlcPathResolver : IRdlcPathResolver
     {
-
-        private const string RdlcExt = ".rdlc";
-        private const string RdlExt = ".rdl";
+        private static readonly string [] exts = new[] { ".rdlc", ".RDLC", ".rdl", ".RDL" };
 
         public string GetBasePath(int codEmpresa, string dirRdlc, string? folder = null)
         {
@@ -21,22 +19,65 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
         public string ResolveReportPath(string basePath, string reportNameOrRelative)
         {
-            if (!TryNormalizeInputs(basePath, reportNameOrRelative, out var baseFull, out var rel, out var relDir, out var bare))
+            if (!TryNormalizeInputs(
+                    basePath,
+                    reportNameOrRelative,
+                    out var baseFull,
+                    out var rel,
+                    out var relDir,
+                    out var bare))
                 return string.Empty;
 
-            var dir = CombineUnderBase(baseFull, relDir);
-            if (dir is null)
+            // Ruta base combinada con el input (puede ser "stem" o carpeta)
+            var dirOrStem = CombineUnderBase(baseFull, reportNameOrRelative);
+            if (string.IsNullOrEmpty(dirOrStem))
                 return string.Empty;
 
-            var found = BuildCandidates(baseFull, rel, relDir, bare)
-                .Where(p => p is not null)
+            // 1) Intento directo: "<stem>.ext"
+            // Ej: C:\...\Banking_BoletaRegistro.rdlc
+            var found = exts
+                .Select(ext => dirOrStem + ext)
                 .FirstOrDefault(File.Exists);
 
             if (!string.IsNullOrEmpty(found))
                 return found;
 
-            var enumerated = FindByEnumeration(baseFull, dir, bare);
-            return !string.IsNullOrEmpty(enumerated) ? enumerated : string.Empty;
+            // 2) Si es carpeta: "<carpeta>\<carpeta>.ext"
+            // Ej: C:\...\Banking_BoletaRegistro\Banking_BoletaRegistro.rdlc
+            if (Directory.Exists(dirOrStem))
+            {
+                var folderName = Path.GetFileName(
+                    dirOrStem.TrimEnd(
+                        Path.DirectorySeparatorChar,
+                        Path.AltDirectorySeparatorChar));
+
+                found = exts
+                    .Select(ext => Path.Combine(dirOrStem, folderName + ext))
+                    .FirstOrDefault(File.Exists);
+
+                if (!string.IsNullOrEmpty(found))
+                    return found;
+
+                // 3) Enumeración acotada dentro de la carpeta: "bare.*"
+                found = Directory
+                    .EnumerateFiles(dirOrStem, bare + ".*", SearchOption.TopDirectoryOnly)
+                    .FirstOrDefault(f =>
+                        exts.Any(ext => f.EndsWith(ext, StringComparison.Ordinal)));
+
+                return found ?? string.Empty;
+            }
+
+            // 4) No es carpeta → enumera en el directorio padre
+            var parentDir = Path.GetDirectoryName(dirOrStem);
+            if (string.IsNullOrEmpty(parentDir) || !Directory.Exists(parentDir))
+                return string.Empty;
+
+            found = Directory
+                .EnumerateFiles(parentDir, bare + ".*", SearchOption.TopDirectoryOnly)
+                .FirstOrDefault(f =>
+                    exts.Any(ext => f.EndsWith(ext, StringComparison.Ordinal)));
+
+            return found ?? string.Empty;
         }
 
         private static bool TryNormalizeInputs(
@@ -66,7 +107,7 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             if (Path.IsPathRooted(rel))
                 return false;
 
-            relDir = Path.GetDirectoryName(rel) ?? string.Empty;
+            relDir = Path.GetDirectoryName(baseFull + rel) ?? string.Empty;
             bare = Path.GetFileName(rel);
 
             // bloquea cosas raras tipo "." ".." o nombre vacío
@@ -74,55 +115,6 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                 return false;
 
             return true;
-        }
-
-        private static IEnumerable<string?> BuildCandidates(string baseFull, string rel, string relDir, string bare)
-        {
-            // 1) "rel" completo (con subcarpetas) + extensiones
-            yield return CombineUnderBase(baseFull, rel + RdlcExt);
-            yield return CombineUnderBase(baseFull, rel + RdlExt);
-
-            // 2) "bare" + extensiones dentro de relDir
-            var bareInDir = string.IsNullOrEmpty(relDir)
-                ? bare
-                : relDir + Path.DirectorySeparatorChar + bare;
-
-            yield return CombineUnderBase(baseFull, bareInDir + RdlcExt);
-            yield return CombineUnderBase(baseFull, bareInDir + RdlExt);
-        }
-
-        private static string FindByEnumeration(string baseFullWithSep, string dir, string bare)
-        {
-            // Canonicaliza y valida que dir esté bajo base antes de tocar el FS
-            var dirFull = Path.GetFullPath(dir);
-
-            if (!EnsureTrailingSeparator(baseFullWithSep).Equals(baseFullWithSep))
-                baseFullWithSep = EnsureTrailingSeparator(baseFullWithSep);
-
-            if (!IsUnderBase(baseFullWithSep, EnsureTrailingSeparator(dirFull)))
-                return string.Empty;
-
-            if (!Directory.Exists(dirFull))
-                return string.Empty;
-
-            var found = Directory.EnumerateFiles(dirFull, "*.*", SearchOption.TopDirectoryOnly)
-                                 .FirstOrDefault(f => IsReportMatch(f, bare));
-
-            if (string.IsNullOrEmpty(found))
-                return string.Empty;
-
-            var full = Path.GetFullPath(found);
-            return IsUnderBase(baseFullWithSep, full) ? full : string.Empty;
-        }
-
-        private static bool IsReportMatch(string filePath, string bare)
-        {
-            if (!string.Equals(Path.GetFileNameWithoutExtension(filePath), bare, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            var ext = Path.GetExtension(filePath);
-            return string.Equals(ext, RdlcExt, StringComparison.OrdinalIgnoreCase) ||
-                   string.Equals(ext, RdlExt, StringComparison.OrdinalIgnoreCase);
         }
 
         private static string EnsureTrailingSeparator(string path)

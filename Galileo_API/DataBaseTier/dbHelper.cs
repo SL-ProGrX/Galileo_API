@@ -209,6 +209,7 @@ namespace Galileo.DataBaseTier
             p.Add("@isAsc", isAsc ? 1 : 0, DbType.Int32);
             p.Add("@offset", offset, DbType.Int32);
             p.Add("@pageSize", pageSize, DbType.Int32);
+            p.Add("@fetch", pageSize, DbType.Int32);
 
             return new LazyLoadSpec
             {

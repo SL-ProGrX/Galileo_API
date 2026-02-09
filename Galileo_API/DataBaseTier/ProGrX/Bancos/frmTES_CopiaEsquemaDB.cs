@@ -100,7 +100,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
-                var query = $@"exec spTES_Transaccion_Copia @TesoreriaId, @Notas,  @Usuario";
+                var query = "exec spTES_Transaccion_Copia @TesoreriaId, @Notas,  @Usuario";
                 var tesoleria = conn.Query<int>(query, new {
                     TesoreriaId = solicitud.solicitud,
                     Notas = solicitud.notas,

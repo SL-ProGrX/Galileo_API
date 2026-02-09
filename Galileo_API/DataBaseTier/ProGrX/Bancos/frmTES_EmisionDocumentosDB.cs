@@ -186,8 +186,12 @@ And t.Autoriza = 'S' and t.fecha_hold is null";
 
                 if (especial == 0)
                 {
-                    query = @" Select TOP (@top) t.*, (select descripcion from SINPE_MOTIVOS 
-where cod_motivo = t.id_rechazo ) as estadoSinpe,
+                    query = @" Select TOP (@top) t.*, CAST(t.id_rechazo AS varchar(10)) + ' - ' +
+(
+    SELECT descripcion
+    FROM SINPE_MOTIVOS
+    WHERE cod_motivo = t.id_rechazo
+) AS estadoSinpe,
  dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass From Tes_Transacciones t 
  Where t.Estado='P' And t.Tipo = @tipoDoc And t.Id_Banco=@banco And t.Autoriza = 'S' 
  and t.fecha_hold is null and  t.USUARIO_AUTORIZA_ESPECIAL is null ";
@@ -197,7 +201,12 @@ where cod_motivo = t.id_rechazo ) as estadoSinpe,
                 {
 
                     query = @" Select TOP (@top) t.*, 
- (select descripcion from SINPE_MOTIVOS where cod_motivo = t.id_rechazo ) as estadoSinpe, 
+ CAST(t.id_rechazo AS varchar(10)) + ' - ' +
+(
+    SELECT descripcion
+    FROM SINPE_MOTIVOS
+    WHERE cod_motivo = t.id_rechazo
+) AS estadoSinpe,
  dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass From Tes_Transacciones t 
  Where t.Estado='P' And t.Autoriza = 'S' and t.fecha_hold is null and  UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario ";
                 }

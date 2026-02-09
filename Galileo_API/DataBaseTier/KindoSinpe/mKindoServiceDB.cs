@@ -5,6 +5,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
 using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.Data.SqlClient;
+using PdfSharp.Pdf.Content.Objects;
 using System.Data;
 using System.Globalization;
 using System.Net;
@@ -76,16 +77,25 @@ namespace Galileo_API.DataBaseTier
                 }
             };
 
+        private sealed record SinpeResultLite(string? SINPEReference, object? State);
         // Parámetros compartidos entre INSERT/UPDATE de SINPE_MOV_TRANSITO
         // (reduce duplicidad y evita divergencias accidentales)
         private object BuildMovTransitoParams(
             int codEmpresa,
             string codReferencia,
             string usuario,
+            int canal,
             ResSendingDynamic resPIN,
             TesTransaccion solicitud,
             bool incluirFechaActualiza)
         {
+
+            // Selección explícita del resultado según canal
+            var sr = canal == 24
+                ? (resPIN.PINSendingResult is null ? null : new SinpeResultLite(resPIN.PINSendingResult?.SINPEReference, resPIN.PINSendingResult?.State))
+                : (resPIN.DTRSendingResult is null ? null : new SinpeResultLite(resPIN.DTRSendingResult?.SINPERefNumber, resPIN.DTRSendingResult?.State));
+
+
             return new
             {
                 CodTransito = ConsecutivoMovTransito(codEmpresa),
@@ -96,19 +106,19 @@ namespace Galileo_API.DataBaseTier
                 CedulaOrigen = solicitud.CedulaOrigen,
                 CuentaClienteOrigen = solicitud.CuentaOrigen,
                 CodReferencia = codReferencia,
-                CodServicio = 21,
-                CodMoneda = solicitud.Divisa,
+                CodServicio = canal,
+                CodMoneda = (solicitud.Divisa == "COL") ? 1: 2,
                 Monto = solicitud.Monto,
-                MontoComision = "",
+                MontoComision = 0,
                 Accion = "C", // antes no se enviaba en Update; mantiene intención del flujo (ajusta si aplica otro valor)
                 TransacTipo = "C",
                 TransacDesc = (solicitud.Detalle1 ?? "") + (solicitud.Detalle2 ?? "") + (solicitud.Detalle3 ?? "") + (solicitud.Detalle4 ?? ""),
                 RegistroFecha = DateTime.Now,
                 RegistroUsuario = usuario,
-                ComprobanteInterno = resPIN.PINSendingResult?.SINPEReference ?? string.Empty,
+                ComprobanteInterno = sr?.SINPEReference ?? string.Empty,
                 RechazoCodigo = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
-                RechazoDesc = (resPIN.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Message : string.Empty,
-                Estado = resPIN.PINSendingResult!.State,
+                RechazoDesc = string.Empty,
+                Estado = sr?.State ?? 4,
                 FechaActualiza = incluirFechaActualiza ? DateTime.Now : (DateTime?)null,
                 Servicio = Convert.ToInt32(Inferir((solicitud.CedulaOrigen ?? "").Replace("-", "")).Codigo)
             };
@@ -1102,37 +1112,28 @@ FROM dbo.fxSinpe_ValidaCredito(
                 RegexOptions.CultureInvariant, RegexTimeout);
         }
 
-        public string IsValidTransactionNumber(int CodCliente, string iban)
+        public string IsValidTransactionNumber(int CodCliente, int canal)
         {
-            string fecha = DateTime.Now.ToString("yyyyMMdd", CultureInfo.InvariantCulture);
-            string? canal = ObtenerCanal(iban);
-            string consecutivo = ConsecutivoTransSinpe(CodCliente);
+           
+            const string query = @"exec spPSL_ConsultarConsecutivoSinpe @CANAL";
 
-            return fecha + canal + consecutivo;
-        }
+            var parametros = new
+            {
+                CANAL = canal
+            };
 
-        public static string? ObtenerCanal(string iban)
-        {
-            if (string.IsNullOrWhiteSpace(iban))
-                return null;
+            var result = DbHelper.ExecuteSingleQuery<string>(
+                _portalDB,
+                CodCliente,
+                query,
+                "", parametros);
 
-            var match = Regex.Match(iban, @"-(\d{4})-", RegexOptions.IgnoreCase | RegexOptions.Singleline,
-                RegexTimeout);
-
-            if (!match.Success)
-                return null;
-
-            var bloque = match.Groups[1].Value; // "1234"
-
-            var canal = bloque.Substring(0, 2).PadLeft(3, '0');
-            var subCanal = bloque.Substring(2, 2);
-
-            return canal + subCanal;
+            return result.Result!;
         }
 
         public string ConsecutivoTransSinpe(int CodCliente)
         {
-            const string query = @"SELECT ISNULL(MAX(COD_REFERENCIA), 0) + 1
+            const string query = @"SELECT COUNT(*) + 1
                             FROM SINPE_MOV_TRANSITO
                             WHERE CAST(REGISTRO_FECHA AS DATE) = CAST(GETDATE() AS DATE)";
 
@@ -1476,7 +1477,8 @@ FROM dbo.fxSinpe_ValidaCredito(
                                     REFERENCIA_BANCARIA, 
                                     COD_CONCEPTO_ANULACION, 
                                     VALIDA_SINPE, 
-                                    USUARIO_AUTORIZA_ESPECIAL 
+                                    USUARIO_AUTORIZA_ESPECIAL,
+                                    REFERENCIA_SINPE
                                FROM TES_TRANSACCIONES 
                               where Nsolicitud = @solicitud ";
 
@@ -1687,13 +1689,19 @@ FROM dbo.fxSinpe_ValidaCredito(
                 using var connection = new SqlConnection(stringConn);
                 if (datos.IdMotivoRechazo != 201)
                 {
-                    nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
-                                 .Substring(0, Math.Min(30, (datos.DocumentoBase + "-" + datos.contador.ToString()).Length));
+                    string estado = "I";
+                    if(datos.IdMotivoRechazo != 1 && datos.IdMotivoRechazo != 2)
+                    {
+                        estado = "P";
+                    }
+
+                        nDocumento = (datos.DocumentoBase + "-" + datos.contador.ToString())
+                                     .Substring(0, Math.Min(30, (datos.DocumentoBase + "-" + datos.contador.ToString()).Length));
 
 
-                    var query = $@"Update Tes_Transacciones Set Estado='I',Fecha_Emision= @FECHAEMITE, 
+                    var query = $@"Update Tes_Transacciones Set Estado=@Estado,Fecha_Emision= @FECHAEMITE, 
                                     Ubicacion_Actual='T',FECHA_TRASLADO= @FECHATRASLADO, User_Genera = @USUARIO, 
-                                    Estado_Sinpe= @ESTADOSINPE, Id_Rechazo= @RECHAZO, Referencia_Sinpe= @REFERENCIA, 
+                                    Estado_Sinpe= @ESTADOSINPE, Id_Rechazo= @RECHAZO, 
                                     Documento_Base = @DOCBASE, NDocumento = CASE WHEN USUARIO_AUTORIZA_ESPECIAL IS 
                                     NULL THEN @NDOC ELSE @REFERENCIA END where NSolicitud= @SOLICITUD";
                     var result = connection.Execute(query, new
@@ -1706,7 +1714,8 @@ FROM dbo.fxSinpe_ValidaCredito(
                         REFERENCIA = datos.CodigoReferencia,
                         DOCBASE = datos.DocumentoBase,
                         NDOC = nDocumento,
-                        SOLICITUD = datos.NumeroSolicitud
+                        SOLICITUD = datos.NumeroSolicitud,
+                        Estado = estado
                     });
                     if (result > 0)
                     {
@@ -1739,7 +1748,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             return response != null && response!.TIPO_SINPE == 1 && response!.SINPE_PRODUCTO == 1;
         }
 
-        public void RegistraMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResSendingDynamic resPIN, TesTransaccion solicitud)
+        public void RegistraMovTransito(int CodEmpresa, string cod_referencia, string usuario, int canal, ResSendingDynamic resPIN, TesTransaccion solicitud)
         {
             var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
@@ -1750,19 +1759,18 @@ FROM dbo.fxSinpe_ValidaCredito(
 
             if (existe > 0)
             {
-                UpdateMovTransito(CodEmpresa, cod_referencia, usuario, resPIN, solicitud);
+                UpdateMovTransito(CodEmpresa, cod_referencia, usuario, canal, resPIN, solicitud);
             }
             else
             {
-                IngresaMovTransito(CodEmpresa, cod_referencia, usuario, resPIN, solicitud);
+                IngresaMovTransito(CodEmpresa, cod_referencia, usuario, canal, resPIN, solicitud);
             }
         }
 
-        private void IngresaMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResSendingDynamic resPIN, TesTransaccion solicitud)
+        private void IngresaMovTransito(int CodEmpresa, string cod_referencia, string usuario,int canal, ResSendingDynamic resPIN, TesTransaccion solicitud)
         {
             const string Query = @"INSERT INTO SINPE_MOV_TRANSITO
                             (
-                                COD_TRANSITO,
                                 CEDULA,
                                 CUENTA_CLIENTE,
                                 BANCO_ORIGEN,
@@ -1787,7 +1795,6 @@ FROM dbo.fxSinpe_ValidaCredito(
                             )
                             VALUES
                             (
-                                @CodTransito,
                                 @Cedula,
                                 @CuentaCliente,
                                 @BancoOrigen,
@@ -1811,11 +1818,11 @@ FROM dbo.fxSinpe_ValidaCredito(
                                 @Servicio
                             );";
 
-            var parametros = BuildMovTransitoParams(CodEmpresa, cod_referencia, usuario, resPIN, solicitud, incluirFechaActualiza: false);
+            var parametros = BuildMovTransitoParams(CodEmpresa, cod_referencia, usuario,canal, resPIN, solicitud, incluirFechaActualiza: false);
             DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
         }
 
-        private void UpdateMovTransito(int CodEmpresa, string cod_referencia, string usuario, ResSendingDynamic resPIN, TesTransaccion solicitud)
+        private void UpdateMovTransito(int CodEmpresa, string cod_referencia, string usuario, int canal, ResSendingDynamic resPIN, TesTransaccion solicitud)
         {
             const string Query = @"UPDATE SINPE_MOV_TRANSITO
                                 SET
@@ -1841,7 +1848,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                                 WHERE
                                      COD_REFERENCIA = @CodReferencia;";
 
-            var parametros = BuildMovTransitoParams(CodEmpresa, cod_referencia, usuario, resPIN, solicitud, incluirFechaActualiza: true);
+            var parametros = BuildMovTransitoParams(CodEmpresa, cod_referencia, usuario, canal ,resPIN, solicitud, incluirFechaActualiza: true);
             DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, Query, parametros);
         }
 
