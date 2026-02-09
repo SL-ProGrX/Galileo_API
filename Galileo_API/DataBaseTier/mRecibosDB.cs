@@ -7,13 +7,9 @@ namespace Galileo_API.DataBaseTier
     {
         private readonly PortalDB _portalDB;
 
-        public MRecibos(IConfiguration config)
-        {
-            _portalDB = new PortalDB(config);
-        }
+        public MRecibos(IConfiguration config) => _portalDB = new PortalDB(config);
 
-
-        public long fxDocumentoConsecutivo(int codEmpresa, string vTipo)
+        public long FxDocumentoConsecutivo(int codEmpresa, string vTipo)
         {
             using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
             try

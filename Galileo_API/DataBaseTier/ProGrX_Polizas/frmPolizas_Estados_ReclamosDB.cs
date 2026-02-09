@@ -39,10 +39,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         public ErrorDto<bool> EstadosReclamos_Guardar(int codEmpresa, PolizasEstadosReclamosSaveParams param)
         {
             var existe = EstadosReclamos_Existe(codEmpresa, param.Id_Estado).Result?.Existe ?? 0;
-            if (existe == 0)
-                return EstadosReclamos_Insertar(codEmpresa, param);
-            else
-                return EstadosReclamos_Actualizar(codEmpresa, param);
+            return existe == 0
+                ? EstadosReclamos_Insertar(codEmpresa, param)
+                : EstadosReclamos_Actualizar(codEmpresa, param);
         }
 
         private ErrorDto<bool> EstadosReclamos_Insertar(int codEmpresa, PolizasEstadosReclamosSaveParams param)
