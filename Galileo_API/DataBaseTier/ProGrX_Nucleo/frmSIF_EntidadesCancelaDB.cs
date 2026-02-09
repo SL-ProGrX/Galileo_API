@@ -9,14 +9,38 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSifEntidadesCancelaDB
     {
-        private readonly IConfiguration _config;
         private readonly int vModulo = 10;
         private readonly MSecurityMainDb _Security_MainDB;
+        private readonly PortalDB _portalDB;
+        private const string UnexpectedErrorMessage = "Error inesperado";
+
         public FrmSifEntidadesCancelaDB(IConfiguration config)
         {
-            _config = config;
-            _Security_MainDB = new MSecurityMainDb(_config);
+            _portalDB = new PortalDB(config);
+            _Security_MainDB = new MSecurityMainDb(config);
         }
+
+        private static string? BuildSearchLike(FiltrosLazyLoadData? filtros)
+        {
+            var search = filtros?.filtro?.Trim();
+            return string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+        }
+
+        private static string NormalizeUpper(string? value)
+            => (value ?? string.Empty).ToUpper();
+
+        private const string BaseSelectEntidadesPago = @"
+                            SELECT
+                                COD_ENTIDAD_PAGO   AS cod_entidad_pago,
+                                descripcion        AS descripcion,
+                                activa             AS activa,
+                                Registro_Fecha     AS registro_fecha,
+                                Registro_Usuario   AS registro_usuario
+                            FROM SIF_ENTIDADES_PAGO
+                            WHERE (@search IS NULL
+                                   OR COD_ENTIDAD_PAGO LIKE @search
+                                   OR descripcion LIKE @search
+                                   OR Registro_Usuario LIKE @search)";
 
 
         /// <summary>
@@ -27,23 +51,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SifEntidadesCancelaLista> SIF_EntidadesCancelaLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SifEntidadesCancelaLista>()
+            return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new SifEntidadesCancelaLista()
-                {
-                    total = 0,
-                    lista = new List<SifEntidadesCancelaData>()
-                }
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                var search = filtros?.filtro?.Trim();
-                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+                var searchLike = BuildSearchLike(filtros);
 
                 var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
                 var sortOrder = filtros?.sortOrder ?? 0; // 0=DESC, 1=ASC (según UI)
@@ -58,20 +68,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
                 // Total (keeps existing behavior: total of all rows, not filtered)
                 const string totalQuery = @"SELECT COUNT(COD_ENTIDAD_PAGO) FROM SIF_ENTIDADES_PAGO";
-                result.Result.total = connection.Query<int>(totalQuery).FirstOrDefault();
+                var total = connection.Query<int>(totalQuery).FirstOrDefault();
 
-                const string query = @"
-                            SELECT
-                                COD_ENTIDAD_PAGO   AS cod_entidad_pago,
-                                descripcion        AS descripcion,
-                                activa             AS activa,
-                                Registro_Fecha     AS registro_fecha,
-                                Registro_Usuario   AS registro_usuario
-                            FROM SIF_ENTIDADES_PAGO
-                            WHERE (@search IS NULL
-                                   OR COD_ENTIDAD_PAGO LIKE @search
-                                   OR descripcion LIKE @search
-                                   OR Registro_Usuario LIKE @search)
+                var query = $@"{BaseSelectEntidadesPago}
                             ORDER BY
                                 -- ASC
                                 CASE WHEN @sortOrder = 1 AND @sortField = 'cod_entidad_pago' THEN COD_ENTIDAD_PAGO END ASC,
@@ -91,7 +90,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                 COD_ENTIDAD_PAGO ASC
                             OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
 
-                result.Result.lista = connection.Query<SifEntidadesCancelaData>(query, new
+                var lista = connection.Query<SifEntidadesCancelaData>(query, new
                 {
                     search = searchLike,
                     sortField,
@@ -99,15 +98,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     offset,
                     fetch
                 }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<SifEntidadesCancelaData>();
-            }
-            return result;
+
+                return new SifEntidadesCancelaLista
+                {
+                    total = total,
+                    lista = lista
+                };
+            });
         }
 
 
@@ -119,42 +116,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SifEntidadesCancelaData>> SIF_EntidadesCancela_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifEntidadesCancelaData>>()
+            return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifEntidadesCancelaData>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+                var searchLike = BuildSearchLike(filtros);
 
-                var search = filtros?.filtro?.Trim();
-                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
-
-                const string query = @"SELECT
-                                COD_ENTIDAD_PAGO   AS cod_entidad_pago,
-                                descripcion        AS descripcion,
-                                activa             AS activa,
-                                Registro_Fecha     AS registro_fecha,
-                                Registro_Usuario   AS registro_usuario
-                            FROM SIF_ENTIDADES_PAGO
-                            WHERE (@search IS NULL
-                                   OR COD_ENTIDAD_PAGO LIKE @search
-                                   OR descripcion LIKE @search
-                                   OR Registro_Usuario LIKE @search)
+                var query = $@"{BaseSelectEntidadesPago}
                             ORDER BY COD_ENTIDAD_PAGO";
 
-                result.Result = connection.Query<SifEntidadesCancelaData>(query, new { search = searchLike }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+                return connection.Query<SifEntidadesCancelaData>(query, new { search = searchLike }).ToList();
+            });
         }
 
 
@@ -168,18 +138,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
         public ErrorDto SIF_EntidadesCancela_Eliminar(int CodEmpresa, string usuario, string cod_entidad_pago)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var query = @"DELETE FROM SIF_ENTIDADES_PAGO WHERE COD_ENTIDAD_PAGO = @cod_entidad_pago";
+            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new { cod_entidad_pago = NormalizeUpper(cod_entidad_pago) });
+
+            if ((res.Code ?? -1) != 0)
+                return res;
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"DELETE FROM SIF_ENTIDADES_PAGO WHERE COD_ENTIDAD_PAGO = @cod_entidad_pago";
-                connection.Execute(query, new { cod_entidad_pago = (cod_entidad_pago ?? string.Empty).ToUpper() });
-
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -191,10 +157,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? UnexpectedErrorMessage);
             }
-            return result;
+
+            return res;
         }
 
         /// <summary>
@@ -206,59 +172,65 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// 
         public ErrorDto SIF_EntidadesCancela_Guardar(int CodEmpresa, string usuario, SifEntidadesCancelaData entidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
             try
             {
-                using var connection = new SqlConnection(stringConn);
                 // Verifico si existe usuario (parametrizado)
                 var qUsuario = @"SELECT COUNT(Nombre) FROM usuarios WHERE estado = 'A' AND UPPER(Nombre) LIKE @userLike";
-                var userLike = $"%{(entidad.registro_usuario ?? string.Empty).ToUpper()}%";
-                int existeuser = connection.QueryFirstOrDefault<int>(qUsuario, new { userLike });
+                var userLike = $"%{NormalizeUpper(entidad.registro_usuario)}%";
+                var existeUserRes = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, qUsuario, 0, new { userLike });
+
+                if ((existeUserRes.Code ?? -1) != 0)
+                    return DbHelper.ErrorResponse(existeUserRes.Description ?? "Error", existeUserRes.Code ?? -1);
+
+                var existeuser = existeUserRes.Result;
                 if (existeuser == 0)
                 {
-                    result.Code = -2;
-                    result.Description = $"El usuario {(entidad.registro_usuario ?? string.Empty).ToUpper()} no existe o no está activo.";
-                    return result;
+                    return new ErrorDto
+                    {
+                        Code = -2,
+                        Description = $"El usuario {NormalizeUpper(entidad.registro_usuario)} no existe o no está activo."
+                    };
                 }
 
                 // Verifico si existe entidad (parametrizado)
                 var queryExiste = @"SELECT ISNULL(COUNT(*),0) AS Existe FROM SIF_ENTIDADES_PAGO WHERE UPPER(COD_ENTIDAD_PAGO) = @cod";
-                var cod = (entidad.cod_entidad_pago ?? string.Empty).ToUpper();
-                var existe = connection.QueryFirstOrDefault<int>(queryExiste, new { cod });
+                var cod = NormalizeUpper(entidad.cod_entidad_pago);
+                var existeRes = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, queryExiste, 0, new { cod });
+
+                if ((existeRes.Code ?? -1) != 0)
+                    return DbHelper.ErrorResponse(existeRes.Description ?? "Error", existeRes.Code ?? -1);
+
+                var existe = existeRes.Result;
 
                 if (entidad.isNew)
                 {
                     if (existe > 0)
                     {
-                        result.Code = -2;
-                        result.Description = $"La Entidad pagadora con el código {entidad.cod_entidad_pago} ya existe.";
+                        return new ErrorDto
+                        {
+                            Code = -2,
+                            Description = $"La Entidad pagadora con el código {entidad.cod_entidad_pago} ya existe."
+                        };
                     }
-                    else
+
+                    return SIF_EntidadesCancela_Insertar(CodEmpresa, usuario, entidad);
+                }
+
+                if (existe == 0 && !entidad.isNew)
+                {
+                    return new ErrorDto
                     {
-                        result = SIF_EntidadesCancela_Insertar(CodEmpresa, usuario, entidad);
-                    }
+                        Code = -2,
+                        Description = $"La Entidad pagadora con el código {entidad.cod_entidad_pago} no existe."
+                    };
                 }
-                else if (existe == 0 && !entidad.isNew)
-                {
-                    result.Code = -2;
-                    result.Description = $"La Entidad pagadora con el código {entidad.cod_entidad_pago} no existe.";
-                }
-                else
-                {
-                    result = SIF_EntidadesCancela_Actualizar(CodEmpresa, usuario, entidad);
-                }
+
+                return SIF_EntidadesCancela_Actualizar(CodEmpresa, usuario, entidad);
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? UnexpectedErrorMessage);
             }
-            return result;
         }
 
 
@@ -271,29 +243,26 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         private ErrorDto SIF_EntidadesCancela_Actualizar(int CodEmpresa, string usuario, SifEntidadesCancelaData entidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"UPDATE SIF_ENTIDADES_PAGO
+            var query = @"UPDATE SIF_ENTIDADES_PAGO
                                SET descripcion       = @descripcion,
                                    activa            = @activa,
                                    Registro_Fecha    = GETDATE(),
                                    Registro_Usuario  = @registro_usuario
                              WHERE COD_ENTIDAD_PAGO    = @cod_entidad_pago;";
-                connection.Execute(query, new
-                {
-                    cod_entidad_pago = (entidad.cod_entidad_pago ?? string.Empty).ToUpper(),
-                    descripcion = (entidad.descripcion ?? string.Empty).ToUpper(),
-                    activa = entidad.activa,
-                    registro_usuario = usuario
-                });
 
+            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
+            {
+                cod_entidad_pago = NormalizeUpper(entidad.cod_entidad_pago),
+                descripcion = NormalizeUpper(entidad.descripcion),
+                activa = entidad.activa,
+                registro_usuario = usuario
+            });
+
+            if ((res.Code ?? -1) != 0)
+                return res;
+
+            try
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -305,10 +274,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? UnexpectedErrorMessage);
             }
-            return result;
+
+            return res;
         }
         
         
@@ -321,27 +290,24 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         private ErrorDto SIF_EntidadesCancela_Insertar(int CodEmpresa, string usuario, SifEntidadesCancelaData entidad)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"INSERT INTO SIF_ENTIDADES_PAGO
+            var query = @"INSERT INTO SIF_ENTIDADES_PAGO
                                     (COD_ENTIDAD_PAGO, descripcion, activA, Registro_Fecha, Registro_Usuario)
                                 VALUES
                                     (@cod_entidad_pago, @descripcion, @activa, GETDATE(), @registro_usuario);";
-                connection.Execute(query, new
-                {
-                    cod_entidad_pago = (entidad.cod_entidad_pago ?? string.Empty).ToUpper(),
-                    descripcion = (entidad.descripcion ?? string.Empty).ToUpper(),
-                    activa = entidad.activa,
-                    registro_usuario = usuario
-                });
 
+            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
+            {
+                cod_entidad_pago = NormalizeUpper(entidad.cod_entidad_pago),
+                descripcion = NormalizeUpper(entidad.descripcion),
+                activa = entidad.activa,
+                registro_usuario = usuario
+            });
+
+            if ((res.Code ?? -1) != 0)
+                return res;
+
+            try
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -350,14 +316,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     Movimiento = "Registra - WEB",
                     Modulo = vModulo
                 });
-
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? UnexpectedErrorMessage);
             }
-            return result;
+
+            return res;
         }
         
         
@@ -369,36 +334,28 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto SIF_EntidadesCancela_Valida(int CodEmpresa, string cod_entidad_pago)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
+            var query = @"SELECT COUNT(COD_ENTIDAD_PAGO) FROM SIF_ENTIDADES_PAGO WHERE UPPER(COD_ENTIDAD_PAGO) = @cod_entidad_pago";
+            var res = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, query, 0, new { cod_entidad_pago = NormalizeUpper(cod_entidad_pago) });
+
+            if ((res.Code ?? -1) != 0)
+                return DbHelper.ErrorResponse(res.Description ?? "Error", res.Code ?? -1);
+
+            var existe = res.Result;
+
+            if (existe > 0)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "El código de entidad ya existe."
+                };
+            }
+
+            return new ErrorDto
             {
                 Code = 0,
-                Description = "Ok"
+                Description = "El código de entidad es válido."
             };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"SELECT COUNT(COD_ENTIDAD_PAGO) FROM SIF_ENTIDADES_PAGO WHERE UPPER(COD_ENTIDAD_PAGO) = @cod_entidad_pago";
-                var existe = connection.QueryFirstOrDefault<int>(query, new { cod_entidad_pago = (cod_entidad_pago ?? string.Empty).ToUpper() });
-
-                if (existe > 0)
-                {
-                    result.Code = -1;
-                    result.Description = "El código de entidad ya existe.";
-                }
-                else
-                {
-                    result.Code = 0;
-                    result.Description = "El código de entidad es válido.";
-
-                }
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
         }
 
     }
