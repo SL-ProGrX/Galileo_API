@@ -654,7 +654,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
                 if (valida.Code != 0)
                     return valida;
 
-                long vNumDoc = _mRecibos.fxDocumentoConsecutivo(codEmpresa, request.tipoDoc!);
+                long vNumDoc = _mRecibos.FxDocumentoConsecutivo(codEmpresa, request.tipoDoc!);
                 decimal glngFechaCR = _mProGrx.glngFechaCR(codEmpresa);
 
                 if (request.lblFecUltMovR.HasValue && request.lblFecUltMovR.Value < (long)glngFechaCR)
