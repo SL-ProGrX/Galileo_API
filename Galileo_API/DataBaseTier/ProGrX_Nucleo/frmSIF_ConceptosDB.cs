@@ -11,13 +11,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSifConceptosDB
     {
-        private readonly IConfiguration _config;
         private readonly int vModulo = 10; //Módulo de tesoreria
         private readonly MSecurityMainDb _Security_MainDB;
+        private readonly PortalDB _portalDB;
         public FrmSifConceptosDB(IConfiguration config)
         {
-            _config = config;
-            _Security_MainDB = new MSecurityMainDb(_config);
+            _portalDB = new PortalDB(config);
+            _Security_MainDB = new MSecurityMainDb(config);
         }
 
 
@@ -30,21 +30,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// 
         public ErrorDto<SifConceptoLista> SIF_ConceptosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SifConceptoLista>()
+            return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new SifConceptoLista()
-                {
-                    total = 0,
-                    lista = new List<SifConceptoData>()
-                }
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
                 var p = new DynamicParameters();
 
                 // Filtro
@@ -56,7 +43,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 from SIF_CONCEPTOS
 where (COD_CONCEPTO LIKE @Q OR DESCRIPCION LIKE @Q OR REGISTRO_USUARIO LIKE @Q);";
 
-                result.Result.total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
+                var total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
 
                 // Sorting (sin SQL dinámico)
                 string sortField = NormalizeConceptosSortField(filtros?.sortField);
@@ -106,16 +93,14 @@ from SIF_CONCEPTOS");
 
                 sb.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
 
-                result.Result.lista = connection.Query<SifConceptoData>(sb.ToString(), p).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<SifConceptoData>();
-            }
-            return result;
+                var lista = connection.Query<SifConceptoData>(sb.ToString(), p).ToList();
+
+                return new SifConceptoLista
+                {
+                    total = total,
+                    lista = lista
+                };
+            });
         }
 
 
@@ -127,17 +112,8 @@ from SIF_CONCEPTOS");
         /// <returns></returns>
         public ErrorDto<List<SifConceptoData>> SIF_Conceptos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifConceptoData>>()
+            return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifConceptoData>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
                 var p = new DynamicParameters();
                 bool hasFilter = TryAddConceptosFiltro(filtros, p);
 
@@ -159,15 +135,8 @@ from SIF_CONCEPTOS");
 
                 sb.Append(" order by COD_CONCEPTO");
 
-                result.Result = connection.Query<SifConceptoData>(sb.ToString(), p).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+                return connection.Query<SifConceptoData>(sb.ToString(), p).ToList();
+            });
         }
 
 
@@ -180,18 +149,14 @@ from SIF_CONCEPTOS");
         /// <returns></returns>
         public ErrorDto SIF_Conceptos_Eliminar(int CodEmpresa, string usuario, string cod_concepto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var query = @"DELETE FROM SIF_CONCEPTOS WHERE COD_CONCEPTO = @cod_concepto";
+            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new { cod_concepto = NormalizeUpper(cod_concepto) });
+
+            if ((res.Code ?? -1) != 0)
+                return res;
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"DELETE FROM SIF_CONCEPTOS WHERE COD_CONCEPTO = @cod_concepto";
-                connection.Execute(query, new { cod_concepto = (cod_concepto ?? string.Empty).ToUpper() });
-
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -203,10 +168,10 @@ from SIF_CONCEPTOS");
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? "Error inesperado");
             }
-            return result;
+
+            return res;
         }
 
 
@@ -218,63 +183,45 @@ from SIF_CONCEPTOS");
         /// </summary>
         public ErrorDto SIF_Conceptos_Guardar(int CodEmpresa, string usuario, SifConceptoData concepto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
+            return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
                 // Verifico si existe usuario activo
                 const string qUsuario = @"select count(Nombre)
 from usuarios
 where estado = 'A'
   and UPPER(Nombre) = @usuario";
-                int existeuser = connection.QueryFirstOrDefault<int>(qUsuario, new { usuario = usuario.ToUpper() });
+
+                int existeuser = connection.QueryFirstOrDefault<int>(qUsuario, new { usuario = NormalizeUpper(usuario) });
 
                 if (existeuser == 0)
                 {
-                    result.Code = -2;
-                    result.Description = $"El usuario {usuario.ToUpper()} no existe o no está activo.";
-                    return result;
+                    throw new InvalidOperationException($"El usuario {NormalizeUpper(usuario)} no existe o no está activo.");
                 }
 
                 // Verifico si existe el concepto
                 const string qExiste = @"select isnull(count(*),0) as Existe
 from SIF_CONCEPTOS
 where UPPER(COD_CONCEPTO) = @cod;";
-                int existe = connection.QueryFirstOrDefault<int>(qExiste, new { cod = (concepto.cod_concepto ?? string.Empty).ToUpper() });
+
+                int existe = connection.QueryFirstOrDefault<int>(qExiste, new { cod = NormalizeUpper(concepto.cod_concepto) });
 
                 if (concepto.isNew)
                 {
                     if (existe > 0)
-                    {
-                        result.Code = -2;
-                        result.Description = $"El concepto con el código {concepto.cod_concepto} ya existe.";
-                    }
-                    else
-                    {
-                        result = SIF_Conceptos_Insertar(CodEmpresa, usuario, concepto);
-                    }
+                        throw new InvalidOperationException($"El concepto con el código {concepto.cod_concepto} ya existe.");
+
+                    ExecuteConceptosInsert(connection, CodEmpresa, usuario, concepto);
+                    return 0; // dummy return for WithConn
                 }
-                else if (existe == 0 && !concepto.isNew)
-                {
-                    result.Code = -2;
-                    result.Description = $"El concepto con el código {concepto.cod_concepto} no existe.";
-                }
-                else
-                {
-                    result = SIF_Conceptos_Actualizar(CodEmpresa, usuario, concepto);
-                }
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+
+                if (existe == 0 && !concepto.isNew)
+                    throw new InvalidOperationException($"El concepto con el código {concepto.cod_concepto} no existe.");
+
+                ExecuteConceptosUpdate(connection, CodEmpresa, usuario, concepto);
+                return 0; // dummy return for WithConn
+            }).Code == 0
+                ? DbHelper.OkResponse("Ok")
+                : DbHelper.ErrorResponse("Error", -1);
         }
 
 
@@ -284,18 +231,9 @@ where UPPER(COD_CONCEPTO) = @cod;";
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// </summary>
-        private ErrorDto SIF_Conceptos_Actualizar(int CodEmpresa, string usuario, SifConceptoData concepto)
+        private void ExecuteConceptosUpdate(SqlConnection connection, int CodEmpresa, string usuario, SifConceptoData concepto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"UPDATE SIF_CONCEPTOS
+            var query = @"UPDATE SIF_CONCEPTOS
                           SET DESCRIPCION      = @descripcion,
                               MOVIMIENTO_TIPO  = @movimiento_tipo,
                               NIVEL_ACCESO     = @nivel_acceso,
@@ -303,31 +241,25 @@ where UPPER(COD_CONCEPTO) = @cod;";
                               REGISTRO_FECHA   = GETDATE(),
                               REGISTRO_USUARIO = @registro_usuario
                         WHERE COD_CONCEPTO    = @cod_concepto;";
-                connection.Execute(query, new
-                {
-                    cod_concepto = concepto.cod_concepto.ToUpper(),
-                    descripcion = concepto.descripcion?.ToUpper(),
-                    movimiento_tipo = concepto.movimiento_tipo,
-                    nivel_acceso = concepto.nivel_acceso,
-                    activo = concepto.activo,
-                    registro_usuario = usuario
-                });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Concepto : {concepto.cod_concepto} - {concepto.descripcion}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
+            connection.Execute(query, new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+                cod_concepto = NormalizeUpper(concepto.cod_concepto),
+                descripcion = NormalizeUpper(concepto.descripcion),
+                movimiento_tipo = concepto.movimiento_tipo,
+                nivel_acceso = concepto.nivel_acceso,
+                activo = concepto.activo,
+                registro_usuario = usuario
+            });
+
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = $"Concepto : {concepto.cod_concepto} - {concepto.descripcion}",
+                Movimiento = "Modifica - WEB",
+                Modulo = vModulo
+            });
         }
 
 
@@ -337,46 +269,31 @@ where UPPER(COD_CONCEPTO) = @cod;";
         /// <param name="usuario"></param>
         /// <param name="concepto"></param>
         /// </summary>
-        private ErrorDto SIF_Conceptos_Insertar(int CodEmpresa, string usuario, SifConceptoData concepto)
+        private void ExecuteConceptosInsert(SqlConnection connection, int CodEmpresa, string usuario, SifConceptoData concepto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"INSERT INTO SIF_CONCEPTOS
+            var query = @"INSERT INTO SIF_CONCEPTOS
                             (COD_CONCEPTO, DESCRIPCION, MOVIMIENTO_TIPO, NIVEL_ACCESO, ACTIVO, REGISTRO_FECHA, REGISTRO_USUARIO)
                           VALUES
                             (@cod_concepto, @descripcion, @movimiento_tipo, @nivel_acceso, @activo, GETDATE(), @registro_usuario);";
-                connection.Execute(query, new
-                {
-                    cod_concepto = concepto.cod_concepto.ToUpper(),
-                    descripcion = concepto.descripcion?.ToUpper(),
-                    movimiento_tipo = concepto.movimiento_tipo,
-                    nivel_acceso = concepto.nivel_acceso,
-                    activo = concepto.activo,
-                    registro_usuario = usuario
-                });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Concepto : {concepto.cod_concepto} - {concepto.descripcion}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
+            connection.Execute(query, new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+                cod_concepto = NormalizeUpper(concepto.cod_concepto),
+                descripcion = NormalizeUpper(concepto.descripcion),
+                movimiento_tipo = concepto.movimiento_tipo,
+                nivel_acceso = concepto.nivel_acceso,
+                activo = concepto.activo,
+                registro_usuario = usuario
+            });
+
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = $"Concepto : {concepto.cod_concepto} - {concepto.descripcion}",
+                Movimiento = "Registra - WEB",
+                Modulo = vModulo
+            });
         }
 
 
@@ -388,35 +305,18 @@ where UPPER(COD_CONCEPTO) = @cod;";
         /// <returns></returns>
         public ErrorDto SIF_Conceptos_Valida(int CodEmpresa, string cod_concepto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                const string query = "SELECT count(COD_CONCEPTO) FROM SIF_CONCEPTOS WHERE UPPER(COD_CONCEPTO) = @COD_CONCEPTO";
-                int existe = connection.QueryFirstOrDefault<int>(query, new { COD_CONCEPTO = (cod_concepto ?? string.Empty).ToUpper() });
+            const string query = "SELECT count(COD_CONCEPTO) FROM SIF_CONCEPTOS WHERE UPPER(COD_CONCEPTO) = @COD_CONCEPTO";
+            var res = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, query, 0, new { COD_CONCEPTO = NormalizeUpper(cod_concepto) });
 
-                if (existe > 0)
-                {
-                    result.Code = -1;
-                    result.Description = "El código de concepto ya existe.";
-                }
-                else
-                {
-                    result.Code = 0;
-                    result.Description = "El código de concepto es válido.";
-                }
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+            if ((res.Code ?? -1) != 0)
+                return DbHelper.ErrorResponse(res.Description ?? "Error", res.Code ?? -1);
+
+            var existe = res.Result;
+
+            if (existe > 0)
+                return new ErrorDto { Code = -1, Description = "El código de concepto ya existe." };
+
+            return new ErrorDto { Code = 0, Description = "El código de concepto es válido." };
         }
 
 
@@ -427,18 +327,7 @@ where UPPER(COD_CONCEPTO) = @cod;";
         /// </summary>
         public ErrorDto<List<SifConceptoDocumentoData>> SIF_ConceptosDocumentos_Obtener(int CodEmpresa, string cod_concepto)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifConceptoDocumentoData>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifConceptoDocumentoData>()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"
+            var query = @"
                 SELECT 
                     D.Tipo_Documento     AS tipo_documento,
                     D.Descripcion        AS descripcion,
@@ -449,15 +338,7 @@ where UPPER(COD_CONCEPTO) = @cod;";
                     AND CD.Cod_Concepto = @cod_concepto
                 ORDER BY D.Tipo_Documento";
 
-                result.Result = connection.Query<SifConceptoDocumentoData>(query, new { cod_concepto }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return DbHelper.ExecuteListQuery<SifConceptoDocumentoData>(_portalDB, CodEmpresa, query, new { cod_concepto = NormalizeUpper(cod_concepto) });
         }
 
 
@@ -470,18 +351,22 @@ where UPPER(COD_CONCEPTO) = @cod;";
         /// </summary>
         public ErrorDto SIF_ConceptosDocumentos_Asociar(int CodEmpresa, string usuario, string cod_concepto, string tipo_documento)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto { Code = 0, Description = "Ok" };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"INSERT INTO SIF_CONCEPTOS_DOCUMENTO 
+            var query = @"INSERT INTO SIF_CONCEPTOS_DOCUMENTO 
                           (Cod_Concepto, Tipo_Documento, Registro_Usuario, Registro_Fecha)
                           VALUES (@cod_concepto, @tipo_documento, @usuario, GETDATE());";
 
-                connection.Execute(query, new { cod_concepto, tipo_documento, usuario });
+            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
+            {
+                cod_concepto = NormalizeUpper(cod_concepto),
+                tipo_documento = NormalizeUpper(tipo_documento),
+                usuario
+            });
 
+            if ((res.Code ?? -1) != 0)
+                return res;
+
+            try
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -493,10 +378,10 @@ where UPPER(COD_CONCEPTO) = @cod;";
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? "Error inesperado");
             }
-            return result;
+
+            return res;
         }
 
 
@@ -509,17 +394,20 @@ where UPPER(COD_CONCEPTO) = @cod;";
         /// </summary>
         public ErrorDto SIF_ConceptosDocumentos_Desasociar(int CodEmpresa, string usuario, string cod_concepto, string tipo_documento)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto { Code = 0, Description = "Ok" };
+            var query = @"DELETE FROM SIF_CONCEPTOS_DOCUMENTO 
+                          WHERE Cod_Concepto = @cod_concepto AND Tipo_Documento = @tipo_documento;";
+
+            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
+            {
+                cod_concepto = NormalizeUpper(cod_concepto),
+                tipo_documento = NormalizeUpper(tipo_documento)
+            });
+
+            if ((res.Code ?? -1) != 0)
+                return res;
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"DELETE FROM SIF_CONCEPTOS_DOCUMENTO 
-                          WHERE Cod_Concepto = @cod_concepto AND Tipo_Documento = @tipo_documento;";
-
-                connection.Execute(query, new { cod_concepto, tipo_documento });
-
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -531,12 +419,15 @@ where UPPER(COD_CONCEPTO) = @cod;";
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? "Error inesperado");
             }
-            return result;
+
+            return res;
         }
         // --- Helper methods for filtros and sort normalization ---
+        private static string NormalizeUpper(string? value)
+            => (value ?? string.Empty).Trim().ToUpper();
+
         private static bool TryAddConceptosFiltro(FiltrosLazyLoadData filtros, DynamicParameters p)
         {
             string q = (filtros?.filtro ?? string.Empty).Trim();
