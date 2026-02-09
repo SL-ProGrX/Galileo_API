@@ -3,68 +3,32 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Microsoft.Data.SqlClient;
-using System.Data;
 using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSysParentescosDB
     {
-        private readonly IConfiguration _config;
         private readonly int vModulo = 10;
         private readonly MSecurityMainDb _Security_MainDB;
+        private readonly PortalDB _portalDB;
+        private const string ErrorInesperado = "Error inesperado";
         public FrmSysParentescosDB(IConfiguration config)
         {
-            _config = config;
-            _Security_MainDB = new MSecurityMainDb(_config);
+            _portalDB = new PortalDB(config);
+            _Security_MainDB = new MSecurityMainDb(config);
         }
 
-        /// <summary>
-        /// Lista los parentescos existentes con paginación y filtros.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
-        public ErrorDto<SysParentescosLista> SYS_ParentescosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        private static string? BuildSearchLike(FiltrosLazyLoadData? filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SysParentescosLista>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new SysParentescosLista()
-                {
-                    total = 0,
-                    lista = new List<SysParentescosData>()
-                }
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            var search = filtros?.filtro?.Trim();
+            return string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+        }
 
-                // Total (mantiene comportamiento anterior: total sin filtro)
-                const string sqlTotal = @"select COUNT(COD_PARENTESCO) from SYS_PARENTESCOS";
-                result.Result.total = connection.Query<int>(sqlTotal).FirstOrDefault();
+        private static string NormalizeUpper(string? value)
+            => (value ?? string.Empty).Trim().ToUpper();
 
-                var raw = (filtros?.filtro ?? string.Empty).Trim();
-                string? q = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
-
-                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                if (string.IsNullOrWhiteSpace(sortField))
-                {
-                    sortField = "cod_parentesco";
-                }
-
-                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
-
-                var offset = Math.Max(0, filtros?.pagina ?? 0);
-                var fetch = filtros?.paginacion ?? 0;
-                if (fetch <= 0)
-                {
-                    fetch = 30;
-                }
-
-                const string sql = @"
+        private const string BaseSelectParentescos = @"
                     select
                         COD_PARENTESCO      as cod_parentesco,
                         descripcion         as descripcion,
@@ -76,7 +40,36 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         COD_PARENTESCO like @q
                         or descripcion like @q
                         or Registro_Usuario like @q
-                    ))
+                    ))";
+
+        /// <summary>
+        /// Lista los parentescos existentes con paginación y filtros.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+        public ErrorDto<SysParentescosLista> SYS_ParentescosLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
+        {
+            return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
+            {
+                // Total (mantiene comportamiento anterior: total sin filtro)
+                const string sqlTotal = @"select COUNT(COD_PARENTESCO) from SYS_PARENTESCOS";
+                var total = connection.Query<int>(sqlTotal).FirstOrDefault();
+
+                var q = BuildSearchLike(filtros);
+
+                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+                if (string.IsNullOrWhiteSpace(sortField))
+                    sortField = "cod_parentesco";
+
+                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+
+                var offset = Math.Max(0, filtros?.pagina ?? 0);
+                var fetch = filtros?.paginacion ?? 0;
+                if (fetch <= 0)
+                    fetch = 30;
+
+                var sql = $@"{BaseSelectParentescos}
                     order by
                         -- ASC
                         case when @sortOrder = 1 and @sortField = 'cod_parentesco' then COD_PARENTESCO end asc,
@@ -95,7 +88,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         COD_PARENTESCO asc
                     offset @offset rows fetch next @fetch rows only;";
 
-                result.Result.lista = connection.Query<SysParentescosData>(sql, new
+                var lista = connection.Query<SysParentescosData>(sql, new
                 {
                     q,
                     sortField,
@@ -103,15 +96,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     offset,
                     fetch
                 }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<SysParentescosData>();
-            }
-            return result;
+
+                return new SysParentescosLista
+                {
+                    total = total,
+                    lista = lista
+                };
+            });
         }
 
 
@@ -123,44 +114,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SysParentescosData>> SYS_Parentescos_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SysParentescosData>>()
+            return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SysParentescosData>()
-            };
+                var q = BuildSearchLike(filtros);
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+                var sql = $@"{BaseSelectParentescos}
+                             order by COD_PARENTESCO";
 
-                var raw = (filtros?.filtro ?? string.Empty).Trim();
-                string? q = string.IsNullOrWhiteSpace(raw) ? null : $"%{raw}%";
-
-                const string sql = @"select
-                                        COD_PARENTESCO      as cod_parentesco,
-                                        descripcion         as descripcion,
-                                        activo              as activo,
-                                        Registro_Fecha      as registro_fecha,
-                                        Registro_Usuario    as registro_usuario
-                                     from SYS_PARENTESCOS
-                                     where (@q is null or (
-                                         COD_PARENTESCO like @q
-                                         or descripcion like @q
-                                         or Registro_Usuario like @q
-                                     ))
-                                     order by COD_PARENTESCO";
-
-                result.Result = connection.Query<SysParentescosData>(sql, new { q }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+                return connection.Query<SysParentescosData>(sql, new { q }).ToList();
+            });
         }
 
 
@@ -174,18 +136,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
         public ErrorDto SYS_Parentescos_Eliminar(int CodEmpresa, string usuario, string cod_parentesco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            var query = @"DELETE FROM SYS_PARENTESCOS WHERE COD_PARENTESCO = @cod_parentesco";
+            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new { cod_parentesco = NormalizeUpper(cod_parentesco) });
+
+            if ((res.Code ?? -1) != 0)
+                return res;
+
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"DELETE FROM SYS_PARENTESCOS WHERE COD_PARENTESCO = @cod_parentesco";
-                connection.Execute(query, new { cod_parentesco = (cod_parentesco ?? string.Empty).ToUpper() });
-
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -197,10 +155,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? ErrorInesperado);
             }
-            return result;
+
+            return res;
         }
 
 
@@ -213,63 +171,72 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// 
         public ErrorDto SYS_Parentescos_Guardar(int CodEmpresa, string usuario, SysParentescosData parentesco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                //Verifico si existe usuario
+                // Verifico si existe usuario
                 const string qUsuario = @"select count(Nombre)
                                          from usuarios
                                          where estado = 'A'
                                            and UPPER(Nombre) like @usr";
-                var usrLike = $"%{(parentesco.registro_usuario ?? string.Empty).Trim().ToUpper()}%";
-                int existeuser = connection.QueryFirstOrDefault<int>(qUsuario, new { usr = usrLike });
+
+                var usrLike = $"%{NormalizeUpper(parentesco.registro_usuario)}%";
+                var existeUserRes = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, qUsuario, 0, new { usr = usrLike });
+
+                if ((existeUserRes.Code ?? -1) != 0)
+                    return DbHelper.ErrorResponse(existeUserRes.Description ?? "Error", existeUserRes.Code ?? -1);
+
+                var existeuser = existeUserRes.Result;
                 if (existeuser == 0)
                 {
-                    result.Code = -2;
-                    result.Description = $"El usuario {(parentesco.registro_usuario ?? string.Empty).ToUpper()} no existe o no está activo.";
-                    return result;
+                    return new ErrorDto
+                    {
+                        Code = -2,
+                        Description = $"El usuario {NormalizeUpper(parentesco.registro_usuario)} no existe o no está activo."
+                    };
                 }
 
-                //verifico si existe parentesco
-                const string query = @"select isnull(count(*),0) as Existe
-                                       from SYS_PARENTESCOS
-                                       where UPPER(COD_PARENTESCO) = @cod";
-                var existe = connection.QueryFirstOrDefault<int>(query, new { cod = (parentesco.cod_parentesco ?? string.Empty).Trim().ToUpper() });
+                // Verifico si existe parentesco
+                const string queryExiste = @"select isnull(count(*),0) as Existe
+                                            from SYS_PARENTESCOS
+                                            where UPPER(COD_PARENTESCO) = @cod";
+
+                var cod = NormalizeUpper(parentesco.cod_parentesco);
+                var existeRes = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, queryExiste, 0, new { cod });
+
+                if ((existeRes.Code ?? -1) != 0)
+                    return DbHelper.ErrorResponse(existeRes.Description ?? "Error", existeRes.Code ?? -1);
+
+                var existe = existeRes.Result;
 
                 if (parentesco.isNew)
                 {
                     if (existe > 0)
                     {
-                        result.Code = -2;
-                        result.Description = $"El parentesco con el código {parentesco.cod_parentesco} ya existe.";
+                        return new ErrorDto
+                        {
+                            Code = -2,
+                            Description = $"El parentesco con el código {parentesco.cod_parentesco} ya existe."
+                        };
                     }
-                    else
+
+                    return SYS_Parentescos_Insertar(CodEmpresa, usuario, parentesco);
+                }
+
+                if (existe == 0 && !parentesco.isNew)
+                {
+                    return new ErrorDto
                     {
-                        result = SYS_Parentescos_Insertar(CodEmpresa, usuario, parentesco);
-                    }
+                        Code = -2,
+                        Description = $"El parentesco con el código {parentesco.cod_parentesco} no existe."
+                    };
                 }
-                else if (existe == 0 && !parentesco.isNew)
-                {
-                    result.Code = -2;
-                    result.Description = $"El parentesco con el código {parentesco.cod_parentesco} no existe.";
-                }
-                else
-                {
-                    result = SYS_Parentescos_Actualizar(CodEmpresa, usuario, parentesco);
-                }
+
+                return SYS_Parentescos_Actualizar(CodEmpresa, usuario, parentesco);
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? ErrorInesperado);
             }
-            return result;
         }
 
 
@@ -282,29 +249,26 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         private ErrorDto SYS_Parentescos_Actualizar(int CodEmpresa, string usuario, SysParentescosData parentesco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"UPDATE SYS_PARENTESCOS
+            var query = @"UPDATE SYS_PARENTESCOS
                                SET descripcion       = @descripcion,
                                    activo            = @activo,
                                    Registro_Fecha    = GETDATE(),
                                    Registro_Usuario  = @registro_usuario
                              WHERE COD_PARENTESCO    = @cod_parentesco;";
-                connection.Execute(query, new
-                {
-                    cod_parentesco = (parentesco.cod_parentesco ?? string.Empty).ToUpper(),
-                    descripcion = (parentesco.descripcion ?? string.Empty).ToUpper(),
-                    activo = parentesco.activo,
-                    registro_usuario = usuario
-                });
 
+            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
+            {
+                cod_parentesco = NormalizeUpper(parentesco.cod_parentesco),
+                descripcion = NormalizeUpper(parentesco.descripcion),
+                activo = parentesco.activo,
+                registro_usuario = usuario
+            });
+
+            if ((res.Code ?? -1) != 0)
+                return res;
+
+            try
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -316,10 +280,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? ErrorInesperado);
             }
-            return result;
+
+            return res;
         }
         
         
@@ -332,27 +296,24 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         private ErrorDto SYS_Parentescos_Insertar(int CodEmpresa, string usuario, SysParentescosData parentesco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"INSERT INTO SYS_PARENTESCOS
+            var query = @"INSERT INTO SYS_PARENTESCOS
                                     (COD_PARENTESCO, descripcion, activo, Registro_Fecha, Registro_Usuario)
                                 VALUES
                                     (@cod_parentesco, @descripcion, @activo, GETDATE(), @registro_usuario);";
-                connection.Execute(query, new
-                {
-                    cod_parentesco = (parentesco.cod_parentesco ?? string.Empty).ToUpper(),
-                    descripcion = (parentesco.descripcion ?? string.Empty).ToUpper(),
-                    activo = parentesco.activo,
-                    registro_usuario = usuario
-                });
 
+            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
+            {
+                cod_parentesco = NormalizeUpper(parentesco.cod_parentesco),
+                descripcion = NormalizeUpper(parentesco.descripcion),
+                activo = parentesco.activo,
+                registro_usuario = usuario
+            });
+
+            if ((res.Code ?? -1) != 0)
+                return res;
+
+            try
+            {
                 _Security_MainDB.Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
@@ -364,10 +325,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             }
             catch (Exception ex)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message ?? ErrorInesperado);
             }
-            return result;
+
+            return res;
         }
 
 
@@ -379,38 +340,31 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto SYS_Parentescos_Valida(int CodEmpresa, string cod_parentesco)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                const string query = @"SELECT count(COD_PARENTESCO)
+            var query = @"SELECT count(COD_PARENTESCO)
                                        FROM SYS_PARENTESCOS
                                        WHERE UPPER(COD_PARENTESCO) = @cod_parentesco";
-                var existe = connection.QueryFirstOrDefault<int>(query, new { cod_parentesco = (cod_parentesco ?? string.Empty).Trim().ToUpper() });
 
-                if (existe > 0)
-                {
-                    result.Code = -1;
-                    result.Description = "El código de parentesco ya existe.";
-                }
-                else
-                {
-                    result.Code = 0;
-                    result.Description = "El código de parentesco es válido.";
+            var res = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, query, 0, new { cod_parentesco = NormalizeUpper(cod_parentesco) });
 
-                }
-            }
-            catch (Exception ex)
+            if ((res.Code ?? -1) != 0)
+                return DbHelper.ErrorResponse(res.Description ?? "Error", res.Code ?? -1);
+
+            var existe = res.Result;
+
+            if (existe > 0)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "El código de parentesco ya existe."
+                };
             }
-            return result;
+
+            return new ErrorDto
+            {
+                Code = 0,
+                Description = "El código de parentesco es válido."
+            };
         }
     }
 }
