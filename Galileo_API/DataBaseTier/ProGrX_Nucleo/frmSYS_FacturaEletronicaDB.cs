@@ -2203,7 +2203,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 var respDet = InsertDetProveedor(connProveedor, codCliente, dto, cfg);
                 if (respDet.Code != 0) return respDet;
 
-                AppendNotificaLocal(buffer, codCliente, dto.comprobanteInterno, dto.idFactura, usuario);
+                buffer.Add(new NotificaFacturaItem(codCliente, dto.comprobanteInterno, dto.idFactura, usuario));
 
                 if (buffer.Count >= 200)
                 {
@@ -2671,6 +2671,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             sb.Append($"'{SqlEscape(cod_cliente)}','{cedula}','{nombre}',{clienteId},{clienteIdFe}, getdate(), '{SqlEscape(usuario)}');");
             sb.AppendLine();
         }
+
         private sealed class FacturaProcDto
         {
             public string comprobanteInterno = "";
