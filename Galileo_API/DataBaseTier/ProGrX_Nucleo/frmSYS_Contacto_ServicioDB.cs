@@ -45,6 +45,20 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             }
         }
 
+        private ErrorDto<T> WithBaseConn<T>(Func<SqlConnection, T> action, Func<T> defaultFactory)
+        {
+            try
+            {
+                using var conn = new SqlConnection(_connStr);
+                var result = action(conn);
+                return DbHelper.CreateOkResponse(result);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.CreateErrorResponse(ex.Message ?? "Error inesperado", -1, defaultFactory());
+            }
+        }
+
 
         /// <summary>
         /// Lista: devuelve General con paginación, orden y búsqueda.
@@ -353,26 +367,22 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="codPais"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<SysContactoServicioDireccionLista>SysContactoServicio_Direcciones_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysContactoServicioDireccionLista> SysContactoServicio_Direcciones_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
         {
-            var dto = new ErrorDto<SysContactoServicioDireccionLista>
-            { Code = 0, Description = "Ok", Result = new() { total = 0, lista = new() } };
-
-            try
+            return WithBaseConn(conn =>
             {
-                using var connection = new SqlConnection(_connStr);
+                var dto = new SysContactoServicioDireccionLista { total = 0, lista = new List<SysContactoServicioDireccionData>() };
 
-                var search = (filtros?.filtro ?? string.Empty).Trim();
-                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+                var searchLike = BuildSearchLike(filtros);
 
                 int page = Math.Max(0, filtros?.pagina ?? 0);
                 int pageSize = Math.Clamp(filtros?.paginacion ?? 30, 1, 200);
 
                 var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+                var sortOrder = filtros?.sortOrder ?? 1;
 
-                var ident = (identificacion ?? string.Empty).Trim().ToUpper();
-                var countryCode = (codPais ?? "CRC").Trim().ToUpper();
+                var ident = NormalizeUpper(identificacion);
+                var countryCode = NormalizeUpper(codPais ?? "CRC");
 
                 const string totalSql = @"
                     SELECT COUNT(1)
@@ -391,7 +401,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                            OR CAST(D.COD_CANTON    AS VARCHAR(5)) LIKE @search
                            OR CAST(D.COD_DISTRITO  AS VARCHAR(5)) LIKE @search);";
 
-                dto.Result.total = connection.QueryFirstOrDefault<int>(totalSql, new
+                dto.total = conn.QueryFirstOrDefault<int>(totalSql, new
                 {
                     ident,
                     countryCode,
@@ -426,7 +436,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                            OR CAST(D.COD_CANTON    AS VARCHAR(5)) LIKE @search
                            OR CAST(D.COD_DISTRITO  AS VARCHAR(5)) LIKE @search)
                     ORDER BY
-                        -- ASC
                         CASE WHEN @sortOrder = 1 AND @sortField = 'num_linea' THEN D.NUM_LINEA END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'cod_provincia' THEN D.COD_PROVINCIA END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'cod_canton' THEN D.COD_CANTON END ASC,
@@ -436,7 +445,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         CASE WHEN @sortOrder = 1 AND @sortField = 'distrito' THEN DI.NOMBRE END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'direccion' THEN D.DIRECCION END ASC,
 
-                        -- DESC
                         CASE WHEN @sortOrder = 0 AND @sortField = 'num_linea' THEN D.NUM_LINEA END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'cod_provincia' THEN D.COD_PROVINCIA END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'cod_canton' THEN D.COD_CANTON END DESC,
@@ -449,7 +457,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         D.COD_PROVINCIA ASC, D.COD_CANTON ASC, D.COD_DISTRITO ASC, D.NUM_LINEA ASC
                     OFFSET @page ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
-                dto.Result.lista = connection.Query<SysContactoServicioDireccionData>(sql, new
+                dto.lista = conn.Query<SysContactoServicioDireccionData>(sql, new
                 {
                     ident,
                     countryCode,
@@ -459,12 +467,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     sortField,
                     sortOrder
                 }).ToList();
-            }
-            catch (Exception ex)
-            {
-                dto.Code = -1; dto.Description = ex.Message; dto.Result.lista = new List<SysContactoServicioDireccionData>(); dto.Result.total = 0;
-            }
-            return dto;
+
+                return dto;
+            }, () => new SysContactoServicioDireccionLista { total = 0, lista = new List<SysContactoServicioDireccionData>() });
         }
 
 
@@ -475,20 +480,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="identificacion"></param>
         /// <param name="codPais"></param>
         /// <returns></returns>
-        public ErrorDto<List<SysContactoServicioDireccionData>>SysContactoServicio_Direcciones_Obtener(int CodEmpresa, string identificacion, string codPais)
+        public ErrorDto<List<SysContactoServicioDireccionData>> SysContactoServicio_Direcciones_Obtener(int CodEmpresa, string identificacion, string codPais)
         {
-            var dto = new ErrorDto<List<SysContactoServicioDireccionData>>
+            return WithBaseConn(conn =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(_connStr);
-
-                string sql = @"
+                const string sql = @"
                     SELECT 
                         D.NUM_LINEA                     AS Num_Linea,
                         @ident                          AS Identificacion,
@@ -511,19 +507,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                       AND UPPER(D.COD_PAIS)       = @codPais
                     ORDER BY D.COD_PROVINCIA, D.COD_CANTON, D.COD_DISTRITO, D.NUM_LINEA;";
 
-                dto.Result = connection.Query<SysContactoServicioDireccionData>(sql, new
+                return conn.Query<SysContactoServicioDireccionData>(sql, new
                 {
-                    ident = (identificacion ?? string.Empty).Trim().ToUpper(),
-                    codPais = (codPais ?? "CRC").Trim().ToUpper()
+                    ident = NormalizeUpper(identificacion),
+                    codPais = NormalizeUpper(codPais ?? "CRC")
                 }).ToList();
-            }
-            catch (Exception ex)
-            {
-                dto.Code = -1;
-                dto.Description = ex.Message;
-                dto.Result = null;
-            }
-            return dto;
+            }, () => new List<SysContactoServicioDireccionData>());
         }
 
 
@@ -535,26 +524,22 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="codPais"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<SysContactoServicioEmpresaLista>SysContactoServicio_Empresas_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
+        public ErrorDto<SysContactoServicioEmpresaLista> SysContactoServicio_Empresas_Lista_Obtener(int CodEmpresa, string identificacion, string codPais, FiltrosLazyLoadData filtros)
         {
-            var dto = new ErrorDto<SysContactoServicioEmpresaLista>
-            { Code = 0, Description = "Ok", Result = new() { total = 0, lista = new() } };
-
-            try
+            return WithBaseConn(conn =>
             {
-                using var connection = new SqlConnection(_connStr);
+                var dto = new SysContactoServicioEmpresaLista { total = 0, lista = new List<SysContactoServicioEmpresaData>() };
 
-                var search = (filtros?.filtro ?? string.Empty).Trim();
-                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+                var searchLike = BuildSearchLike(filtros);
 
                 int page = Math.Max(0, filtros?.pagina ?? 0);
                 int pageSize = Math.Clamp(filtros?.paginacion ?? 30, 1, 200);
 
                 var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+                var sortOrder = filtros?.sortOrder ?? 1;
 
-                var ident = (identificacion ?? string.Empty).Trim().ToUpper();
-                var countryCode = (codPais ?? "CRC").Trim().ToUpper();
+                var ident = NormalizeUpper(identificacion);
+                var countryCode = NormalizeUpper(codPais ?? "CRC");
 
                 const string totalSql = @"
                     SELECT COUNT(1)
@@ -569,7 +554,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                            OR E.TELEFONO_1  LIKE @search
                            OR E.TELEFONO_2  LIKE @search);";
 
-                dto.Result.total = connection.QueryFirstOrDefault<int>(totalSql, new
+                dto.total = conn.QueryFirstOrDefault<int>(totalSql, new
                 {
                     ident,
                     countryCode,
@@ -598,7 +583,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                            OR E.TELEFONO_1  LIKE @search
                            OR E.TELEFONO_2  LIKE @search)
                     ORDER BY
-                        -- ASC
                         CASE WHEN @sortOrder = 1 AND @sortField = 'nombre' THEN E.NOMBRE END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'canton' THEN CA.NOMBRE END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'fecha_ingreso' THEN E.FECHA_INGRESO END ASC,
@@ -607,7 +591,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         CASE WHEN @sortOrder = 1 AND @sortField = 'salario' THEN E.SALARIO END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'activo' THEN CONVERT(int, E.ACTIVO) END ASC,
 
-                        -- DESC
                         CASE WHEN @sortOrder = 0 AND @sortField = 'nombre' THEN E.NOMBRE END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'canton' THEN CA.NOMBRE END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'fecha_ingreso' THEN E.FECHA_INGRESO END DESC,
@@ -619,7 +602,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         E.FECHA_INGRESO DESC
                     OFFSET @page ROWS FETCH NEXT @pageSize ROWS ONLY;";
 
-                dto.Result.lista = connection.Query<SysContactoServicioEmpresaData>(sql, new
+                dto.lista = conn.Query<SysContactoServicioEmpresaData>(sql, new
                 {
                     ident,
                     countryCode,
@@ -629,12 +612,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     sortField,
                     sortOrder
                 }).ToList();
-            }
-            catch (Exception ex)
-            {
-                dto.Code = -1; dto.Description = ex.Message; dto.Result.lista = new List<SysContactoServicioEmpresaData>(); dto.Result.total = 0;
-            }
-            return dto;
+
+                return dto;
+            }, () => new SysContactoServicioEmpresaLista { total = 0, lista = new List<SysContactoServicioEmpresaData>() });
         }
 
 
@@ -645,62 +625,42 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="identificacion"></param>
         /// <param name="codPais"></param>
         /// <returns></returns>
-        public ErrorDto<List<SysContactoServicioEmpresaData>>SysContactoServicio_Empresas_Obtener(int CodEmpresa, string identificacion, string codPais)
+        public ErrorDto<List<SysContactoServicioEmpresaData>> SysContactoServicio_Empresas_Obtener(int CodEmpresa, string identificacion, string codPais)
         {
-            var dto = new ErrorDto<List<SysContactoServicioEmpresaData>>
+            return WithBaseConn(conn =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(_connStr);
-
-                string sql = @"
+                const string sql = @"
                 SELECT
                     @ident                          AS Identificacion,
                     @codPais                        AS CodPais,
-                    E.COD_EMPRESA                   AS Cod_Empresa,
+                    EP.COD_EMPRESA                  AS Cod_Empresa,
                     COALESCE(EM.DESCRIPCION, '')    AS Nombre,
-                    -- opcionales:
                     EM.COD_PROVINCIA                AS Cod_Provincia,
                     EM.COD_CANTON                   AS Cod_Canton,
                     COALESCE(CA.DESCRIPCION, '')    AS Canton,
-
                     EP.FECHA_INGRESO                AS Fecha_Ingreso,
                     EP.TELEFONO_1                   AS Telefono_1,
                     EP.TELEFONO_2                   AS Telefono_2,
                     EP.EMAIL                        AS Email,
                     EP.SALARIO                      AS Salario,
                     EP.ACTIVO                       AS Activo
-                FROM dbo.SYS_PADRON_EMPRESARIAL EP WITH (NOLOCK)   -- <== pon aquí el nombre real
+                FROM dbo.SYS_PADRON_EMPRESARIAL EP WITH (NOLOCK)
                 LEFT JOIN dbo.SYS_EMPRESAS EM
                   ON EM.COD_PAIS = EP.COD_PAIS AND EM.COD_EMPRESA = EP.COD_EMPRESA
                 LEFT JOIN dbo.SYS_CANTONES CA
                   ON CA.COD_PAIS = EM.COD_PAIS
                  AND CA.COD_PROVINCIA = EM.COD_PROVINCIA
                  AND CA.COD_CANTON = EM.COD_CANTON
-                -- alias corto para ordenar por nombre:
-                OUTER APPLY (SELECT EP.COD_EMPRESA) AS E
                 WHERE UPPER(EP.IDENTIFICACION) = @ident
                   AND UPPER(EP.COD_PAIS)       = @codPais
                 ORDER BY EM.DESCRIPCION;";
 
-                dto.Result = connection.Query<SysContactoServicioEmpresaData>(sql, new
+                return conn.Query<SysContactoServicioEmpresaData>(sql, new
                 {
-                    ident = (identificacion ?? "").Trim().ToUpper(),
-                    codPais = (codPais ?? "CRC").Trim().ToUpper()
+                    ident = NormalizeUpper(identificacion),
+                    codPais = NormalizeUpper(codPais ?? "CRC")
                 }).ToList();
-            }
-            catch (Exception ex)
-            {
-                dto.Code = -1;
-                dto.Description = ex.Message;
-                dto.Result = null;
-            }
-            return dto;
+            }, () => new List<SysContactoServicioEmpresaData>());
         }
 
 
@@ -713,22 +673,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SysContactoServicioPersonaLookupLista> SysContactoServicio_Personas_Lista_Buscar(int CodEmpresa, string codPais, FiltrosLazyLoadData filtros)
         {
-            string connectionString = _connStr;
-
-            var response = new ErrorDto<SysContactoServicioPersonaLookupLista>
+            return WithBaseConn(conn =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new SysContactoServicioPersonaLookupLista
+                var response = new SysContactoServicioPersonaLookupLista
                 {
                     total = 0,
                     lista = new List<SysContactoServicioPersonaLookupDto>()
-                }
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(connectionString);
+                };
 
                 string rawQuery = (filtros?.filtro ?? string.Empty).Trim();
                 string? query = string.IsNullOrWhiteSpace(rawQuery) ? null : rawQuery;
@@ -737,16 +688,17 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 int pageSize = Math.Clamp(filtros?.paginacion ?? 30, 1, 200);
 
                 var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var sortOrder = filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+                var sortOrder = filtros?.sortOrder ?? 1;
 
                 bool looksLikeId = query != null && query.All(ch => char.IsDigit(ch) || ch == '-' || ch == ' ');
                 var queryPrefix = query == null ? null : query + "%";
 
-                // Total con filtro
+                var countryCode = NormalizeUpper(codPais ?? "CRC");
+
                 const string sqlCount = @"
                     SELECT COUNT(1)
                     FROM dbo.SYS_PADRON P WITH (NOLOCK)
-                    WHERE P.COD_PAIS = @countryCode
+                    WHERE UPPER(P.COD_PAIS) = @countryCode
                       AND (
                             @query IS NULL
                             OR (
@@ -762,15 +714,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                )
                           );";
 
-                response.Result.total = connection.Query<int>(sqlCount, new
+                response.total = conn.Query<int>(sqlCount, new
                 {
-                    countryCode = codPais,
+                    countryCode,
                     query,
                     queryPrefix,
                     looksLikeId = looksLikeId ? 1 : 0
                 }).FirstOrDefault();
 
-                // Página
                 const string sqlPage = @"
                     SELECT
                         P.IDENTIFICACION AS Identificacion,
@@ -780,7 +731,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                             CASE WHEN NULLIF(P.NOMBRE,'')     IS NOT NULL THEN ', ' + P.NOMBRE     ELSE '' END
                         ))) AS Nombre
                     FROM dbo.SYS_PADRON P WITH (NOLOCK)
-                    WHERE P.COD_PAIS = @countryCode
+                    WHERE UPPER(P.COD_PAIS) = @countryCode
                       AND (
                             @query IS NULL
                             OR (
@@ -796,13 +747,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                )
                           )
                     ORDER BY
-                        -- ASC
                         CASE WHEN @sortOrder = 1 AND @sortField = 'identificacion' THEN P.IDENTIFICACION END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'apellido_1' THEN P.APELLIDO_1 END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'apellido_2' THEN P.APELLIDO_2 END ASC,
                         CASE WHEN @sortOrder = 1 AND @sortField = 'nombre' THEN P.NOMBRE END ASC,
 
-                        -- DESC
                         CASE WHEN @sortOrder = 0 AND @sortField = 'identificacion' THEN P.IDENTIFICACION END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'apellido_1' THEN P.APELLIDO_1 END DESC,
                         CASE WHEN @sortOrder = 0 AND @sortField = 'apellido_2' THEN P.APELLIDO_2 END DESC,
@@ -813,9 +762,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     FETCH NEXT @pageSize ROWS ONLY
                     OPTION (FAST 30, RECOMPILE);";
 
-                response.Result.lista = connection.Query<SysContactoServicioPersonaLookupDto>(sqlPage, new
+                response.lista = conn.Query<SysContactoServicioPersonaLookupDto>(sqlPage, new
                 {
-                    countryCode = codPais,
+                    countryCode,
                     query,
                     queryPrefix,
                     looksLikeId = looksLikeId ? 1 : 0,
@@ -825,20 +774,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     sortOrder
                 }).ToList();
 
-                if (response.Result.total == 0)
+                if (response.total == 0)
                 {
-                    response.Result.total = page + (response.Result.lista?.Count ?? 0) + 1;
+                    response.total = page + (response.lista?.Count ?? 0) + 1;
                 }
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result.total = 0;
-                response.Result.lista = new List<SysContactoServicioPersonaLookupDto>();
-            }
 
-            return response;
+                return response;
+            }, () => new SysContactoServicioPersonaLookupLista { total = 0, lista = new List<SysContactoServicioPersonaLookupDto>() });
         }
     }
 }
