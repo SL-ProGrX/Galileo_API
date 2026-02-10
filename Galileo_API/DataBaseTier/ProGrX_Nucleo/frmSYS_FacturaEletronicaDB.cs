@@ -31,7 +31,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private const string P_CLIENTE_ID = "@ClienteId";
         private const string P_CODIGO = "@Codigo";
         private const string P_MOVIMIENTO = "@Movimiento";
-        private const string P_TIPO = "@Tipo";
+        private const string P_TIPO = TIPO;
         private const string P_USUARIO = USUARIO;
         private const string P_COD_CLIENTE = "@cod_cliente";
         private const string MENSAJE_COD_CLIENTE = "cod_cliente es requerido.";
@@ -55,6 +55,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private const string KEY_OBSERVACIONES = "Observaciones";
         private const string KEY_ID_FACTURA = "id_Factura";
         private const string IDENTIFICACION = "identificacion";
+        private const string FACTURA = "@Factura";
         private static readonly string[] FECHA_FORMATOS = new[]
         {
             "yyyy-MM-dd",
@@ -528,7 +529,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
                 var p = new DynamicParameters();
                 p.Add(P_CLIENTE_ID, codCliente, DbType.String);
-                p.Add("@Factura", idFacturaInt, DbType.Int32);
+                p.Add(FACTURA, idFacturaInt, DbType.Int32);
 
                 var rows = conn.Query(
                     SP_FACTURA_DETALLE,
@@ -1667,13 +1668,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="ini"></param>
         /// <param name="fin"></param>
         /// <returns></returns>
-        private DynamicParameters BuildFacturasResumenBaseParams(FeFacturasParametrosDto dto, DateTime ini, DateTime fin)
+        private static DynamicParameters BuildFacturasResumenBaseParams(FeFacturasParametrosDto dto, DateTime ini, DateTime fin)
         {
             var p = new DynamicParameters();
             p.Add("@ClienteId", dto.cod_cliente, DbType.String);
             p.Add("@Cedula", (dto.identificacion ?? "").Trim(), DbType.String);
             p.Add("@Nombre", (dto.nombre ?? "").Trim(), DbType.String);
-            p.Add("@Factura", (dto.factura ?? "").Trim(), DbType.String);
+            p.Add(FACTURA, (dto.factura ?? "").Trim(), DbType.String);
 
             p.Add("@FechaInicio", ini, DbType.DateTime);
             p.Add("@FechaCorte", fin, DbType.DateTime);
@@ -1689,10 +1690,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="conn"></param>
         /// <param name="pBase"></param>
         /// <returns></returns>
-        private object? ExecuteFacturasResumenHead(IDbConnection conn, DynamicParameters pBase)
+        private static object? ExecuteFacturasResumenHead(IDbConnection conn, DynamicParameters pBase)
         {
             var p = new DynamicParameters(pBase);
-            p.Add("@Tipo", "R", DbType.String);
+            p.Add(TIPO, "R", DbType.String);
 
             return conn.QueryFirstOrDefault(
                 "spProGrX_Facturas_Consulta_Rsm",
@@ -1764,7 +1765,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private List<FeFacturaResumenItem> ExecuteFacturasResumenDetalle(IDbConnection conn, DynamicParameters pBase)
         {
             var p = new DynamicParameters(pBase);
-            p.Add("@Tipo", "D", DbType.String);
+            p.Add(TIPO, "D", DbType.String);
 
             var rows = conn.Query(
                 "spProGrX_Facturas_Consulta_Rsm",
@@ -1773,62 +1774,76 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             ).ToList();
 
             var lista = new List<FeFacturaResumenItem>(rows.Count);
-
             foreach (var r in rows)
-            {
-                var item = new FeFacturaResumenItem
-                {
-                    tipo =
-                        ExtractKeyFromParametros(r, "TIPO") ??
-                        ExtractKeyFromParametros(r, "TIPO_DOC") ??
-                        ExtractKeyFromParametros(r, "TIPO_DOCUMENTO") ??
-                        ExtractKeyFromParametros(r, "DOC") ??
-                        ExtractKeyFromParametros(r, "TIPO_COMPROBANTE"),
-
-                    lineas =
-                        TryParseInt(ExtractKeyFromParametros(r, "LINEAS")) != 0 ? TryParseInt(ExtractKeyFromParametros(r, "LINEAS")) :
-                        TryParseInt(ExtractKeyFromParametros(r, "NUM_LINEAS")) != 0 ? TryParseInt(ExtractKeyFromParametros(r, "NUM_LINEAS")) :
-                        TryParseInt(ExtractKeyFromParametros(r, "CANTIDAD")),
-
-                    detalle =
-                        ExtractKeyFromParametros(r, "DETALLE") ??
-                        ExtractKeyFromParametros(r, "DESCRIPCION") ??
-                        ExtractKeyFromParametros(r, "PRODUCTO"),
-
-                    facturado =
-                        TryParseDecimal(ExtractKeyFromParametros(r, "FACTURADO")) != 0m ? TryParseDecimal(ExtractKeyFromParametros(r, "FACTURADO")) :
-                        TryParseDecimal(ExtractKeyFromParametros(r, "MONTO_FACTURADO")) != 0m ? TryParseDecimal(ExtractKeyFromParametros(r, "MONTO_FACTURADO")) :
-                        TryParseDecimal(ExtractKeyFromParametros(r, "SUBTOTAL")) != 0m ? TryParseDecimal(ExtractKeyFromParametros(r, "SUBTOTAL")) :
-                        TryParseDecimal(ExtractKeyFromParametros(r, "MONTO_TOTAL")) != 0m ? TryParseDecimal(ExtractKeyFromParametros(r, "MONTO_TOTAL")) :
-                        TryParseDecimal(ExtractKeyFromParametros(r, "TOTAL")),
-
-                    inicio = TryParseDateTimeNullable(
-                        ExtractKeyFromParametros(r, "INICIO") ??
-                        ExtractKeyFromParametros(r, "FECHA_INICIO")
-                    ),
-
-                    corte = TryParseDateTimeNullable(
-                        ExtractKeyFromParametros(r, "CORTE") ??
-                        ExtractKeyFromParametros(r, "FECHA_CORTE")
-                    ),
-
-                    xml_respuesta =
-                        ExtractKeyFromParametros(r, "XML_RESPUESTA") ??
-                        ExtractKeyFromParametros(r, "ESTADO") ??
-                        ExtractKeyFromParametros(r, "RESPUESTA")
-                };
-
-                if (!string.IsNullOrWhiteSpace(item.tipo))
-                {
-                    var t = item.tipo.Trim();
-                    if (t == "01") item.tipo = "FE";
-                    else if (t == "03") item.tipo = "NC";
-                }
-
-                lista.Add(item);
-            }
+                lista.Add(MapFacturasResumenDetalleItem(r));
 
             return lista;
+        }
+
+        private FeFacturaResumenItem MapFacturasResumenDetalleItem(object r)
+        {
+            var item = new FeFacturaResumenItem
+            {
+                tipo = FirstNonEmpty(r, "TIPO", "TIPO_DOC", "TIPO_DOCUMENTO", "DOC", "TIPO_COMPROBANTE"),
+                lineas = FirstNonZeroInt(r, "LINEAS", "NUM_LINEAS", "CANTIDAD"),
+                detalle = FirstNonEmpty(r, "DETALLE", "DESCRIPCION", "PRODUCTO"),
+                facturado = FirstNonZeroDecimal(r, "FACTURADO", "MONTO_FACTURADO", "SUBTOTAL", "MONTO_TOTAL", "TOTAL"),
+                inicio = TryParseDateTimeNullable(FirstAny(r, "INICIO", "FECHA_INICIO")),
+                corte = TryParseDateTimeNullable(FirstAny(r, "CORTE", "FECHA_CORTE")),
+                xml_respuesta = FirstNonEmpty(r, "XML_RESPUESTA", "ESTADO", "RESPUESTA"),
+            };
+
+            NormalizeTipo(item);
+            return item;
+        }
+
+        private static void NormalizeTipo(FeFacturaResumenItem item)
+        {
+            if (string.IsNullOrWhiteSpace(item.tipo)) return;
+
+            var t = item.tipo.Trim();
+            if (t == "01") item.tipo = "FE";
+            else if (t == "03") item.tipo = "NC";
+        }
+
+        private string? FirstAny(object r, params string[] keys)
+        {
+            foreach (var k in keys)
+            {
+                var v = ExtractKeyFromParametros(r, k);
+                if (v != null) return v;
+            }
+            return null;
+        }
+
+        private string? FirstNonEmpty(object r, params string[] keys)
+        {
+            foreach (var k in keys)
+            {
+                var v = ExtractKeyFromParametros(r, k);
+                if (!string.IsNullOrWhiteSpace(v)) return v;
+            }
+            return null;
+        }
+
+        private int FirstNonZeroInt(object r, params string[] keys)
+        {
+            foreach (var k in keys)
+            {
+                var n = TryParseInt(ExtractKeyFromParametros(r, k));
+                if (n != 0) return n;
+            }
+            return TryParseInt(ExtractKeyFromParametros(r, keys.Length > 0 ? keys[^1] : ""));
+        }
+
+        private decimal FirstNonZeroDecimal(object r, params string[] keys)
+        {
+            foreach (var k in keys)
+            {
+                var n = TryParseDecimal(ExtractKeyFromParametros(r, k));
+                if (n != 0m) return n;
+            }
+            return TryParseDecimal(ExtractKeyFromParametros(r, keys.Length > 0 ? keys[^1] : ""));
         }
 
 
@@ -1864,7 +1879,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             var p = new DynamicParameters();
             p.Add(P_CLIENTE_ID, dto.cod_cliente, DbType.String);
-            p.Add("@Factura", dto.factura ?? "", DbType.String);
+            p.Add(FACTURA, dto.factura ?? "", DbType.String);
             p.Add("@Cedula", dto.identificacion ?? "", DbType.String);
             p.Add("@Nombre", dto.nombre ?? "", DbType.String);
             p.Add("@FechaInicio", ini, DbType.DateTime);
@@ -1889,50 +1904,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private static FeFacturaItem MapFacturaRow(object r)
         {
             var tipoDoc = ExtractKeyFromParametros(r, KEY_TIPO_DOCUMENTO);
-            DateTime? fecha = null;
-            if (r is IDictionary<string, object> d &&
-                d.TryGetValue(KEY_FECHA_EMISION, out var v) &&
-                v != null && v != DBNull.Value)
-            {
-                if (v is DateTime dt)
-                {
-                    fecha = dt;
-                }
-                else if (v is DateTimeOffset dto)
-                {
-                    fecha = dto.DateTime;
-                }
-                else
-                {
-                    var s = v.ToString();
-                    if (!string.IsNullOrWhiteSpace(s) &&
-                        DateTime.TryParseExact(s, FECHA_FORMATOS, CultureInfo.InvariantCulture, DateTimeStyles.None, out var f))
-                    {
-                        fecha = f;
-                    }
-                    else if (!string.IsNullOrWhiteSpace(s) &&
-                             DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var f2))
-                    {
-                        fecha = f2;
-                    }
-                }
-            }
-            else
-            {
-                var s = ExtractKeyFromParametros(r, KEY_FECHA_EMISION);
-                if (!string.IsNullOrWhiteSpace(s) &&
-                    DateTime.TryParseExact(s, FECHA_FORMATOS, CultureInfo.InvariantCulture, DateTimeStyles.None, out var f))
-                {
-                    fecha = f;
-                }
-                else if (!string.IsNullOrWhiteSpace(s) &&
-                         DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var f2))
-                {
-                    fecha = f2;
-                }
-            }
+            var fecha = ReadFechaEmision(r);
 
-            var item = new FeFacturaItem
+            return new FeFacturaItem
             {
                 tipo = (tipoDoc == "01") ? "FE" : "NC",
                 comprobante = "_" + (ExtractKeyFromParametros(r, KEY_NUMERO_CONSECUTIVO) ?? ""),
@@ -1956,8 +1930,51 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
                 id_factura = TryParseInt(ExtractKeyFromParametros(r, KEY_ID_FACTURA))
             };
+        }
 
-            return item;
+        private static DateTime? ReadFechaEmision(object r)
+        {
+            if (r is IDictionary<string, object> d &&
+                d.TryGetValue(KEY_FECHA_EMISION, out var v) &&
+                v != null && v != DBNull.Value)
+            {
+                return ParseFechaValue(v);
+            }
+
+            var s = ExtractKeyFromParametros(r, KEY_FECHA_EMISION);
+            return ParseFechaString(s);
+        }
+        private static DateTime? ParseFechaValue(object v)
+        {
+            if (v is DateTime dt)
+                return dt;
+
+            if (v is DateTimeOffset dto)
+                return dto.DateTime;
+
+            return ParseFechaString(v.ToString());
+        }
+        private static DateTime? ParseFechaString(string? s)
+        {
+            if (string.IsNullOrWhiteSpace(s))
+                return null;
+
+            if (DateTime.TryParseExact(
+                    s,
+                    FECHA_FORMATOS,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out var f))
+                return f;
+
+            if (DateTime.TryParse(
+                    s,
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.None,
+                    out var f2))
+                return f2;
+
+            return null;
         }
 
         private static decimal TryParseDecimal(string? s)
@@ -2425,7 +2442,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             {
                 var p = new DynamicParameters();
                 p.Add("@Cliente", it.CodCliente, DbType.String);
-                p.Add("@Factura", it.ComprobanteInterno, DbType.String);
+                p.Add(FACTURA, it.ComprobanteInterno, DbType.String);
                 p.Add("@Id", (int)it.IdFactura, DbType.Int32);
                 p.Add(USUARIO, it.Usuario, DbType.String);
 
