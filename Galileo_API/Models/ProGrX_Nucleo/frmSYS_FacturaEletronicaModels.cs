@@ -22,7 +22,14 @@ namespace Galileo.Models.ProGrX_Nucleo
             public string fecha_factura { get; set; } = string.Empty;
             public string usuario { get; set; } = string.Empty;
         }
-        public class FeClienteInfo
+        public class FeProcesarCorteDto
+        {
+            public string? cod_cliente { get; set; }    
+            public string? fecha_corte { get; set; }  
+            public string? fecha_factura { get; set; }  
+            public string? usuario { get; set; }        
+        }
+    public class FeClienteInfo
         {
             public string? identificacion { get; set; }
             public string? nombre { get; set; }
@@ -192,6 +199,8 @@ namespace Galileo.Models.ProGrX_Nucleo
 
             public string? cabys { get; set; }               
             public string? sucursal { get; set; }           
-            public string? terminal { get; set; }           
-        }
+            public string? terminal { get; set; }
+            public string? cabys_desc { get; set; }
+    }
+
 }

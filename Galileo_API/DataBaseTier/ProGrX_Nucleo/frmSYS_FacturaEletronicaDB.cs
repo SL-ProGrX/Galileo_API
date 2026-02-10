@@ -33,7 +33,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private const string P_MOVIMIENTO = "@Movimiento";
         private const string P_TIPO = "@Tipo";
         private const string P_USUARIO = "@Usuario";
-
+        private const string SP_FACTURAS_CONSULTA = "spProGrX_Facturas_Consulta";
+        private const string SP_FACTURA_DETALLE = "spProGrX_Factura_Detalle";
+        private const string SP_FACTURAS_RSM = "spProGrX_Facturas_Consulta_Rsm";
+        private static readonly string[] _whitelistEstados = new[] { "T", "A", "P", "R" };
         public FrmSysFacturaElectronicaDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -49,9 +52,63 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             return _securityMainDb.Bitacora(data);
         }
-
         /// <summary>
-        /// Lista clientes para Facturación Electrónica (SYS_FE_PARAMETROS).
+        /// Conexion con la base de datos del proveedor.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="cod_cliente"></param>
+        /// <returns></returns>
+        private SqlConnection OpenPortalProveedorConn(int CodEmpresa, string cod_cliente)
+        {
+            cod_cliente = (cod_cliente ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(cod_cliente))
+                throw new InvalidOperationException("cod_cliente es requerido.");
+            var csLocal = _portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
+            using var connLocal = new SqlConnection(csLocal);
+            connLocal.Open();
+
+            const string sqlCfg = @"
+            select
+                rtrim(isnull(ACC_SERVER,'')) as portal_server,
+                rtrim(isnull(ACC_DB,''))     as portal_db,
+                rtrim(isnull(ACC_USR,''))    as portal_user,
+                rtrim(isnull(ACC_KEY,''))    as portal_key
+            from SYS_FE_PARAMETROS
+            where COD_CLIENTE = @cod_cliente;";
+
+            var cfg = connLocal.QueryFirstOrDefault<dynamic>(sqlCfg, new { cod_cliente });
+
+            if (cfg == null)
+                throw new InvalidOperationException("No se encontró configuración del cliente en SYS_FE_PARAMETROS.");
+
+            string portalServer = (cfg.portal_server ?? "").ToString().Trim();
+            string portalDb = (cfg.portal_db ?? "").ToString().Trim();
+            string portalUser = (cfg.portal_user ?? "").ToString().Trim();
+            string portalKey = (cfg.portal_key ?? "").ToString().Trim();
+
+            if (string.IsNullOrWhiteSpace(portalServer) ||
+                string.IsNullOrWhiteSpace(portalDb) ||
+                string.IsNullOrWhiteSpace(portalUser) ||
+                string.IsNullOrWhiteSpace(portalKey))
+                throw new InvalidOperationException("Credenciales del portal proveedor incompletas.");
+
+            var csb = new SqlConnectionStringBuilder
+            {
+                DataSource = portalServer,
+                InitialCatalog = portalDb,
+                UserID = portalUser,
+                Password = portalKey,
+                ConnectTimeout = 15,
+                Encrypt = false,
+                TrustServerCertificate = true
+            };
+
+            var connPortal = new SqlConnection(csb.ConnectionString);
+            connPortal.Open();
+            return connPortal;
+        }
+        /// <summary>
+        /// Lista clientes para Facturación Electrónica.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
@@ -70,7 +127,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             });
         }
         /// <summary>
-        /// F4 CABYS (vINV_Cabys) - filtro por código o descripción.
+        /// Lista los codigos Cabys.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <returns></returns>
@@ -88,9 +145,65 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return conn.Query<DropDownListaGenericaModel>(query).ToList();
             });
         }
+        /// <summary>
+        /// Obtiene estados para filtro de Facturas.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> FE_Facturas_Estados_DropDown_Obtener(int CodEmpresa)
+        {
+            var lista = new List<DropDownListaGenericaModel>
+            {
+                new DropDownListaGenericaModel { item = "T", descripcion = "TODAS" },
+                new DropDownListaGenericaModel { item = "A", descripcion = "Aceptada" },
+                new DropDownListaGenericaModel { item = "R", descripcion = "Rechazada" }
+            };
+
+            return DbHelper.CreateOkResponse(lista);
+        }
 
         /// <summary>
-        /// Lista cortes realizados por cliente (SYS_FE_CLIENTE_CORTES) con lazy load.
+        /// Obtiene personas (Cedula/Nombre) para F4 de Identificación (Facturas/Clientes).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> FE_Personas_DropDown_Obtener(int CodEmpresa, string? filtro)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
+            try
+            {
+                filtro = (filtro ?? "").Trim();
+                var has = !string.IsNullOrWhiteSpace(filtro);
+                var like = has ? $"%{filtro}%" : null;
+
+                const string sql = @"
+                select
+                    rtrim(CEDULA) as item,
+                    rtrim(NOMBRE) as descripcion
+                from SYS_FE_CLIENTES
+                where (
+                      @filtro is null
+                   or CEDULA like @like
+                   or NOMBRE like @like
+                )
+                order by NOMBRE;";
+
+                var p = new DynamicParameters();
+                p.Add("@filtro", has ? filtro : null, DbType.String);
+                p.Add("@like", like, DbType.String);
+
+                var lista = conn.Query<DropDownListaGenericaModel>(sql, p).ToList();
+                return DbHelper.CreateOkResponse(lista);
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
+            }
+        }
+        /// <summary>
+        /// Lista cortes realizados por cliente con lazy load.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
@@ -211,14 +324,33 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Registra/Reprocesa corte usando spCrd_Facturacion_Corte.
+        /// Registra/Reprocesa corte usando el spCrd_Facturacion_Corte.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
         /// <returns></returns>
         public ErrorDto FE_Corte_Registrar(int CodEmpresa, FeRegistrarCorteDto dto)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+            var p = new FeProcesarCorteDto
+            {
+                cod_cliente = dto.cod_cliente,
+                fecha_corte = dto.fecha_corte,
+                fecha_factura = dto.fecha_factura,
+                usuario = dto.usuario
+            };
+
+            return FE_Corte_Procesar(CodEmpresa, p);
+        }
+
+        /// <summary>
+        /// Proceso completo de corte.
+        /// <param name="CodEmpresa"></param>
+        /// <param name="dto"></param>
+        /// </summary>
+        /// <returns></returns>
+        public ErrorDto FE_Corte_Procesar(int CodEmpresa, FeProcesarCorteDto dto)
+        {
+            const string MSG_OK = "Proceso de Corte + Facturación realizado satisfactoriamente!";
 
             try
             {
@@ -239,26 +371,361 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     CultureInfo.InvariantCulture, DateTimeStyles.None, out var fechaFactura))
                     return DbHelper.ErrorResponse("fecha_factura inválida. Formato esperado: YYYY-MM-DD.");
 
-                var p = new DynamicParameters();
-                p.Add("@Cliente", codCliente, DbType.String);
-                p.Add(P_CORTE, DayEnd(fechaCorte), DbType.DateTime);
-                p.Add(USUARIO, usuario, DbType.String);
-                p.Add("@FechaFactura", DateTime.SpecifyKind(fechaFactura, DateTimeKind.Unspecified), DbType.DateTime);
 
-                conn.Execute("spCrd_Facturacion_Corte", p, commandType: CommandType.StoredProcedure);
+                using var connLocal = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+                connLocal.Open();
+
+
+                using var connProveedor = OpenPortalProveedorConn(CodEmpresa, codCliente);
+
+                static bool TryReadSpError(dynamic? row, out int code, out string desc)
+                {
+                    code = 0;
+                    desc = "";
+
+                    if (row == null) return false;
+
+                    if (row is IDictionary<string, object> d)
+                    {
+                        if (d.TryGetValue("code", out var c) && c != null)
+                        {
+                            code = Convert.ToInt32(c);
+                            if (d.TryGetValue("description", out var m) && m != null) desc = Convert.ToString(m) ?? "";
+                            return code != 0;
+                        }
+                        if (d.TryGetValue("Code", out var c2) && c2 != null)
+                        {
+                            code = Convert.ToInt32(c2);
+                            if (d.TryGetValue("Description", out var m2) && m2 != null) desc = Convert.ToString(m2) ?? "";
+                            return code != 0;
+                        }
+                    }
+
+                    try
+                    {
+                        var t = row.GetType();
+                        var pCode = t.GetProperty("code") ?? t.GetProperty("Code");
+                        var pDesc = t.GetProperty("description") ?? t.GetProperty("Description");
+                        if (pCode != null)
+                        {
+                            var v = pCode.GetValue(row);
+                            if (v != null)
+                            {
+                                code = Convert.ToInt32(v);
+                                if (pDesc != null)
+                                {
+                                    var v2 = pDesc.GetValue(row);
+                                    if (v2 != null) desc = Convert.ToString(v2) ?? "";
+                                }
+                                return code != 0;
+                            }
+                        }
+                    }
+                    catch { /* no-op */ }
+
+                    return false;
+                }
+
+                const string sqlParams = @"
+                select
+                    isnull(INCLUYE_POLIZAS,0)        as incluye_polizas,
+                    isnull(INCLUYE_PRINCIPAL,0)     as incluye_principal,
+                    rtrim(isnull(CABYS,''))         as cabys,
+                    rtrim(isnull(ACTIVIDAD_ECONOMICA,'')) as actividad,
+                    rtrim(isnull(MONEDA,''))        as moneda,
+                    rtrim(isnull(SUCURSAL,''))      as sucursal,
+                    rtrim(isnull(TERMINAL,''))      as terminal
+                from SYS_FE_PARAMETROS
+                where COD_CLIENTE = @cod_cliente;";
+
+                var pCfg = connLocal.QueryFirstOrDefault<dynamic>(sqlParams, new { cod_cliente = codCliente });
+                if (pCfg == null)
+                    return DbHelper.ErrorResponse("No se encontró configuración en SYS_FE_PARAMETROS para el cliente.");
+
+                bool incluyePolizas = Convert.ToInt32(pCfg.incluye_polizas) == 1;
+                bool incluyePrincipal = Convert.ToInt32(pCfg.incluye_principal) == 1;
+                string actividad = Convert.ToString(pCfg.actividad) ?? "";
+                string monedaCfg = (Convert.ToString(pCfg.moneda) ?? "").Trim();
+
+                string codSucursal = (Convert.ToString(pCfg.sucursal) ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(codSucursal)) codSucursal = "2";
+
+                string terminalPOS = (Convert.ToString(pCfg.terminal) ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(terminalPOS)) terminalPOS = "00001";
+
+                var rsConsec = connProveedor.QueryFirstOrDefault<dynamic>(
+                    "exec spProGrX_Cliente_Consecutivo @cliente;",
+                    new { cliente = codCliente }
+                );
+
+                int consecutivo = GetConsecutivo(rsConsec);
+                if (consecutivo > 0)
+                {
+                    connLocal.Execute(
+                        "update SYS_FE_PARAMETROS set CONSECUTIVO_FE  = @c where COD_CLIENTE = @cod_cliente;",
+                        new { c = consecutivo, cod_cliente = codCliente }
+                    );
+                }
+
+                {
+                    var pCorte = new DynamicParameters();
+                    pCorte.Add("@Cliente", codCliente, DbType.String);
+                    pCorte.Add("@Corte", DayEnd(fechaCorte), DbType.DateTime);
+                    pCorte.Add("@Usuario", usuario, DbType.String);
+                    pCorte.Add("@FechaFactura", DateTime.SpecifyKind(fechaFactura, DateTimeKind.Unspecified), DbType.DateTime);
+
+                    connLocal.Execute("spCrd_Facturacion_Corte", pCorte, commandType: CommandType.StoredProcedure);
+                }
+
+                var nuevos = connLocal.Query(
+                    "spCrd_Facturacion_Notifica_Clientes",
+                    new { Cliente = codCliente },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                if (nuevos.Count > 0)
+                {
+                    var sbCli = new System.Text.StringBuilder();
+
+                    foreach (var r in nuevos)
+                    {
+                        string codCliRow = (Convert.ToString(r.COD_CLIENTE) ?? codCliente).Trim();
+                        string tipoId = Convert.ToString(r.TIPO_ID) ?? Convert.ToString(r.Tipo_Id) ?? "";
+                        string clienteId = Convert.ToString(r.CLIENTE_ID) ?? Convert.ToString(r.Cliente_ID) ?? "";
+                        string cedula = (Convert.ToString(r.CEDULA) ?? Convert.ToString(r.Cedula) ?? "").Trim();
+                        string nombre = Convert.ToString(r.NOMBRE) ?? Convert.ToString(r.Nombre) ?? "";
+                        string email = Convert.ToString(r.EMAIL) ?? Convert.ToString(r.Email) ?? "";
+                        string direccion = Convert.ToString(r.DIRECCION) ?? Convert.ToString(r.DIRECCION) ?? Convert.ToString(r.Direccion) ?? "";
+
+                      
+                        var ins = connProveedor.QueryFirstOrDefault<dynamic>(
+                            "exec sp_IW_CLIENTEInsert_ProGrX @COD_CLIENTE,@TIPO_ID,@CLIENTE_ID,@CEDULA,@NOMBRE,@EMAIL,'','','',@DIRECCION,1,1,1,1,@FECHA_CORTE,30,1;",
+                            new
+                            {
+                                COD_CLIENTE = codCliRow,
+                                TIPO_ID = tipoId,
+                                CLIENTE_ID = clienteId,
+                                CEDULA = cedula,
+                                NOMBRE = nombre,
+                                EMAIL = email,
+                                DIRECCION = direccion,
+                                FECHA_CORTE = DateTime.SpecifyKind(fechaCorte, DateTimeKind.Unspecified)
+                            }
+                        );
+
+                        if (TryReadSpError(ins, out var cErr, out var mErr))
+                            return DbHelper.ErrorResponse(mErr.Length > 0 ? mErr : $"Error proveedor sp_IW_CLIENTEInsert_ProGrX (code {cErr}).");
+
+                        long codigoInterno = GetCodigoInterno(ins);
+                        if (codigoInterno <= 0)
+                            return DbHelper.ErrorResponse("Proveedor no devolvió CLIENTE_ID_FE (código interno) para el cliente insertado.");
+
+                     
+                        sbCli.Append(" exec spCrd_Facturacion_Notifica_Clientes_Result ");
+                        sbCli.Append($"'{SqlEscape(codCliRow)}','{SqlEscape(cedula)}',{codigoInterno};");
+                        sbCli.AppendLine();
+
+                        if (sbCli.Length > 20000)
+                        {
+                            connLocal.Execute(sbCli.ToString(), commandTimeout: 360);
+                            sbCli.Clear();
+                        }
+                    }
+
+                    if (sbCli.Length > 0)
+                        connLocal.Execute(sbCli.ToString(), commandTimeout: 360);
+                }
+
+                var factRows = connLocal.Query(
+                    "spCrd_Facturacion_Notifica",
+                    new { ClienteID = codCliente },
+                    commandType: CommandType.StoredProcedure
+                ).ToList();
+
+                if (factRows.Count > 0)
+                {
+                    string cedulaEmisor = "";
+                    {
+                        const string sqlCol = "select col_length('dbo.SYS_FE_PARAMETROS','CEDULA_EMISOR');";
+                        var col = connLocal.QueryFirstOrDefault<int?>(sqlCol);
+                        if (col.HasValue && col.Value > 0)
+                        {
+                            const string sqlCed = "select rtrim(isnull(CEDULA_EMISOR,'')) from SYS_FE_PARAMETROS where COD_CLIENTE = @c;";
+                            cedulaEmisor = (connLocal.QueryFirstOrDefault<string>(sqlCed, new { c = codCliente }) ?? "").Trim();
+                        }
+
+                        if (string.IsNullOrWhiteSpace(cedulaEmisor))
+                            return DbHelper.ErrorResponse("No se pudo obtener la cédula del EMISOR. Defina SYS_FE_PARAMETROS.CEDULA_EMISOR (o indique la tabla correcta para la cédula jurídica del emisor).");
+                    }
+
+                    var sbFact = new System.Text.StringBuilder();
+
+                    const string situacion = "1";
+                    const string tipoComprobante = "01";
+
+                    foreach (var r in factRows)
+                    {
+                        string comprobanteInterno = (Convert.ToString(r.FAC_NUMERO) ?? "").Trim();
+                        if (string.IsNullOrWhiteSpace(comprobanteInterno))
+                            continue;
+
+                        DateTime fechaTransac = DateTime.SpecifyKind(fechaFactura, DateTimeKind.Unspecified);
+
+                        string clave50 = mHaciendaDB.fxHacienda_Clave50(
+                            "506", fechaTransac, cedulaEmisor, codSucursal, terminalPOS,
+                            comprobanteInterno, situacion, tipoComprobante);
+
+                        string clave20 = mHaciendaDB.fxHacienda_Clave20(
+                            codSucursal, terminalPOS, comprobanteInterno, tipoComprobante);
+
+                        decimal intCor = r.INTCOR == null ? 0m : Convert.ToDecimal(r.INTCOR);
+                        decimal intMor = r.INTMOR == null ? 0m : Convert.ToDecimal(r.INTMOR);
+                        decimal cargos = r.CARGOS == null ? 0m : Convert.ToDecimal(r.CARGOS);
+                        decimal poliza = r.POLIZA == null ? 0m : Convert.ToDecimal(r.POLIZA);
+                        decimal principal = r.PRINCIPAL == null ? 0m : Convert.ToDecimal(r.PRINCIPAL);
+
+                        decimal totalGravado = 0m;
+                        decimal totalExento = intCor + intMor + cargos;
+                        if (incluyePolizas) totalExento += poliza;
+                        if (incluyePrincipal) totalExento += principal;
+
+                        string moneda = ((Convert.ToString(r.MONEDA) ?? monedaCfg) ?? "").Trim();
+                        if (string.IsNullOrWhiteSpace(moneda)) moneda = "CRC";
+
+                        decimal tipoCambio = r.TIPO_CAMBIO == null ? 1m : Convert.ToDecimal(r.TIPO_CAMBIO);
+
+                        string emailDefaultApl = Convert.ToString(r.EMAIL_DEFAULT_APL) ?? "0";
+                        bool apl = emailDefaultApl.Trim() == "1";
+
+                        string emailDefault = Convert.ToString(r.EMAIL_DEFAULT) ?? "";
+                        string emailRow = Convert.ToString(r.EMAIL) ?? Convert.ToString(r.Email) ?? "";
+                        string emailDestino = apl ? emailDefault : emailRow;
+
+                        string enviarCliente = Convert.ToString(r.EMAIL_CLIENTE_NO) ?? "0";
+                        string clienteIdFE = Convert.ToString(r.CLIENTE_ID_FE) ?? "";
+                        string clienteId = Convert.ToString(r.CLIENTE_ID) ?? "";
+                        string tipoId = Convert.ToString(r.TIPO_ID) ?? Convert.ToString(r.Tipo_Id) ?? "";
+
+                        string clienteIdDestino = string.IsNullOrWhiteSpace(clienteIdFE) ? clienteId : clienteIdFE;
+
+                        var enc = connProveedor.QueryFirstOrDefault<dynamic>(
+                            "exec sp_IW_ENC_FACTURAInsert_ProGrX " +
+                            "@COD_CLIENTE,@CLAVE50,@CLAVE20,@CLIENTE_ID,@MONEDA,@SUCURSAL,'02',@FAC,30," +
+                            "@EMAIL,@NOENV,@FECHA,0,'05','','','','',null,'','','','1',@TERM,@TC," +
+                            "@TIPO_COMP,@TIPO_ID," +
+                            "@TOT_GR,@TOT_EX,0,@TOT_GR,0,0,@TOT_GR,@TOT_EX,0," +
+                            "@TOT,@DESC,@SUBTOT,@IMP,0,0,@TOTAL," +
+                            "1,@USR,@NOW,'','','FACT. PROGRX',@ACT;",
+                            new
+                            {
+                                COD_CLIENTE = codCliente,
+                                CLAVE50 = clave50,
+                                CLAVE20 = clave20,
+                                CLIENTE_ID = clienteIdDestino,
+                                MONEDA = moneda,
+                                SUCURSAL = codSucursal,
+                                FAC = comprobanteInterno,
+                                EMAIL = emailDestino,
+                                NOENV = enviarCliente,
+                                FECHA = $"{fechaTransac:yyyy/MM/dd HH:mm:ss}",
+                                TERM = terminalPOS,
+                                TC = tipoCambio.ToString(CultureInfo.InvariantCulture),
+                                TIPO_COMP = tipoComprobante,
+                                TIPO_ID = (tipoId ?? "").PadLeft(2, '0'),
+                                TOT_GR = totalGravado.ToString(CultureInfo.InvariantCulture),
+                                TOT_EX = totalExento.ToString(CultureInfo.InvariantCulture),
+                                TOT = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
+                                DESC = "0",
+                                SUBTOT = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
+                                IMP = "0",
+                                TOTAL = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
+                                USR = usuario,
+                                NOW = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}",
+                                ACT = actividad
+                            }
+                        );
+
+                        if (TryReadSpError(enc, out var cErrEnc, out var mErrEnc))
+                            return DbHelper.ErrorResponse(mErrEnc.Length > 0 ? mErrEnc : $"Error proveedor sp_IW_ENC_FACTURAInsert_ProGrX (code {cErrEnc}).");
+
+                        long idFactura = GetIdFactura(enc);
+                        if (idFactura == 0)
+                            return DbHelper.ErrorResponse("Proveedor no devolvió IdFactura al insertar encabezado.");
+
+                        int linea = 0;
+
+                        void InsDet(string codigo, string unidad, string detalle, decimal monto)
+                        {
+                            if (monto <= 0) return;
+                            linea++;
+
+                            var det = connProveedor.QueryFirstOrDefault<dynamic>(
+                                "exec sp_IW_DET_FACTURAInsert_ProGrX " +
+                                "@COD_CLIENTE,@ID_FACT,@LINEA,@CODIGO,1,@UNIDAD,@DETALLE," +
+                                "@PRECIO,@MONTO,0,'DESCUENTO CLIENTES',@MONTO,'01',0,0," +
+                                "null,null,null,null,null,null,null,'01',@CLAVE50;",
+                                new
+                                {
+                                    COD_CLIENTE = codCliente,
+                                    ID_FACT = idFactura,
+                                    LINEA = linea,
+                                    CODIGO = codigo,
+                                    UNIDAD = unidad,
+                                    DETALLE = detalle,
+                                    PRECIO = monto.ToString(CultureInfo.InvariantCulture),
+                                    MONTO = monto.ToString(CultureInfo.InvariantCulture),
+                                    CLAVE50 = clave50
+                                }
+                            );
+
+                            if (TryReadSpError(det, out var cErrDet, out var mErrDet))
+                                throw new InvalidOperationException(mErrDet.Length > 0 ? mErrDet : $"Error proveedor sp_IW_DET_FACTURAInsert_ProGrX (code {cErrDet}).");
+                        }
+
+                        try
+                        {
+                            InsDet("CRD001", "I", "INTERES CORRIENTE DEL MES", intCor);
+                            InsDet("CRD002", "I", "INTERES ATRASADOS", intMor);
+                            InsDet("CRD003", "I", "CARGOS ADM Y DE FORMALIZACION", cargos);
+                            if (incluyePolizas) InsDet("CRD004", "Unid", "POLIZAS DEL CREDITO", poliza);
+                            if (incluyePrincipal) InsDet("CRD005", "Unid", "ABONO AL CREDITO", principal);
+                        }
+                        catch (InvalidOperationException exDet)
+                        {
+                            return DbHelper.ErrorResponse(exDet.Message);
+                        }
+
+                        sbFact.Append(" exec spCrd_Facturacion_Notifica_Result ");
+                        sbFact.Append($"'{SqlEscape(codCliente)}','{SqlEscape(comprobanteInterno)}','{idFactura}','{SqlEscape(usuario)}';");
+                        sbFact.AppendLine();
+
+                        if (sbFact.Length > 20000)
+                        {
+                            connLocal.Execute(sbFact.ToString(), commandTimeout: 360);
+                            sbFact.Clear();
+                        }
+                    }
+
+                    if (sbFact.Length > 0)
+                        connLocal.Execute(sbFact.ToString(), commandTimeout: 360);
+                }
 
                 Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
-                    DetalleMovimiento = $"FE Corte Cliente: {codCliente} Corte: {dto.fecha_corte} Factura: {dto.fecha_factura}",
-                    Movimiento = "Registra Corte - WEB",
+                    DetalleMovimiento = $"FE Corte PROCESAR: Cliente {codCliente} Corte {dto.fecha_corte} Factura {dto.fecha_factura}",
+                    Movimiento = "Corte + Facturación - WEB",
                     Modulo = vModulo
                 });
 
-                return DbHelper.OkResponse("Ok");
+                return DbHelper.OkResponse(MSG_OK);
             }
             catch (SqlException ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+            catch (InvalidOperationException ex)
             {
                 return DbHelper.ErrorResponse(ex.Message);
             }
@@ -287,36 +754,75 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+                using var conn = OpenPortalProveedorConn(CodEmpresa, dto.cod_cliente);
 
                 var p = new DynamicParameters();
-                p.Add(C_CLIENTE, dto.cod_cliente, DbType.String);
-                p.Add("@FiltroFactura", dto.factura, DbType.String);
-                p.Add("@FiltroId", dto.identificacion, DbType.String);
-                p.Add("@FiltroRazonSocial", dto.nombre, DbType.String);
-                p.Add(INICIO, ini, DbType.DateTime);
-                p.Add(P_CORTE, fin, DbType.DateTime);
+                p.Add("@ClienteId", dto.cod_cliente, DbType.String);
+                p.Add("@Factura", dto.factura ?? "", DbType.String);
+                p.Add("@Cedula", dto.identificacion ?? "", DbType.String);
+                p.Add("@Nombre", dto.nombre ?? "", DbType.String);
+                p.Add("@FechaInicio", ini, DbType.DateTime);
+                p.Add("@FechaCorte", fin, DbType.DateTime);
                 p.Add("@Estado", NormalizeEstado(dto.estado), DbType.String);
 
-                var data = conn.Query<FeFacturaItem>(
+                var rows = conn.Query(
                     "spProGrX_Facturas_Consulta",
                     p,
                     commandType: CommandType.StoredProcedure
                 ).ToList();
 
-                SortFacturas(data, filtros!.sortField, filtros.sortOrder);
+                var lista = new List<FeFacturaItem>();
 
-                response.Result.total = data.Count;
+                foreach (var r in rows)
+                {
+                    var tipoDoc = ExtractKeyFromParametros(r, "Tipo_Documento");
+
+                    var item = new FeFacturaItem
+                    {
+                        tipo = (tipoDoc == "01") ? "FE" : "NC",
+                        comprobante = "_" + (ExtractKeyFromParametros(r, "Numero_Consecutivo") ?? ""),
+
+                        identificacion = ExtractKeyFromParametros(r, "Cedula"),
+                        razon_social = ExtractKeyFromParametros(r, "Razon_Social"),
+
+                        fecha = DateTime.TryParse(ExtractKeyFromParametros(r, "Fecha_Emision"), out DateTime f) ? f : (DateTime?)null,
+
+
+                        total = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Venta"), out decimal d1) ? d1 : 0m,
+                        total_exento = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Exento"), out decimal d2) ? d2 : 0m,
+                        total_gravado = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Gravado"), out decimal d3) ? d3 : 0m,
+                        total_impuestos = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Impuestos"), out decimal d4) ? d4 : 0m,
+                        total_descuentos = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Descuentos"), out decimal d5) ? d5 : 0m,
+                        total_comprobante = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Comprobante"), out decimal d6) ? d6 : 0m,
+
+                        clave = "_" + (ExtractKeyFromParametros(r, "Clave") ?? ""),
+
+                        xml_respuesta = ExtractKeyFromParametros(r, "XML_Respuesta"),
+                        observaciones = ExtractKeyFromParametros(r, "Observaciones"),
+
+                        id_factura = int.TryParse(
+                        ExtractKeyFromParametros(r, "id_Factura"),
+                        out int id) ? id : 0
+
+                    };
+
+                    lista.Add(item);
+                }
+
+                SortFacturas(lista, filtros!.sortField, filtros.sortOrder);
+
+                response.Result.total = lista.Count;
 
                 if (exportAll)
                 {
-                    response.Result.lista = data;
+                    response.Result.lista = lista;
                     return response;
                 }
 
                 var pagina = NormalizePagina(filtros!.pagina, exportAll);
                 var paginacion = NormalizePaginacion(filtros!.paginacion, exportAll, 30);
-                response.Result.lista = Page(data, pagina, paginacion);
+
+                response.Result.lista = Page(lista, pagina, paginacion);
 
                 return response;
             }
@@ -350,11 +856,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="codCliente"></param>
         /// <param name="idFactura"></param>
         /// <returns></returns>
-        public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa, string codCliente, int idFactura)
+        public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa, string codCliente, string idFactura)
         {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
             var resp = DbHelper.CreateOkResponse(new List<FeFacturaDetalleItem>());
+            resp.Result ??= new List<FeFacturaDetalleItem>();
 
             try
             {
@@ -362,12 +867,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (string.IsNullOrWhiteSpace(codCliente))
                     return DbHelper.CreateErrorResponse<List<FeFacturaDetalleItem>>("codCliente es requerido.");
 
-                if (idFactura <= 0)
+                idFactura = (idFactura ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(idFactura))
+                    return DbHelper.CreateErrorResponse<List<FeFacturaDetalleItem>>("idFactura es requerido.");
+
+                if (!int.TryParse(idFactura, out int idFacturaInt) || idFacturaInt <= 0)
                     return DbHelper.CreateErrorResponse<List<FeFacturaDetalleItem>>("idFactura inválido.");
 
+                using var conn = OpenPortalProveedorConn(CodEmpresa, codCliente);
+
                 var p = new DynamicParameters();
-                p.Add(C_CLIENTE, codCliente, DbType.String);
-                p.Add("@IdFactura", idFactura, DbType.Int32);
+                p.Add("@ClienteId", codCliente, DbType.String);
+                p.Add("@IdFactura", idFacturaInt, DbType.Int32);
 
                 resp.Result = conn.Query<FeFacturaDetalleItem>(
                     "spProGrX_Factura_Detalle",
@@ -384,7 +895,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene el resumen (cabecera + lista) usando spProGrX_Facturas_Consulta_Rsm.
+        /// Obtiene el resumen  usando spProGrX_Facturas_Consulta_Rsm.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
@@ -404,16 +915,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (!ValidateFacturasParams(dto, out var ini, out var fin, out var errMsg))
                     return DbHelper.CreateErrorResponse<FeFacturasResumen>(errMsg ?? "Parámetros inválidos.");
 
-                using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
+                using var conn = OpenPortalProveedorConn(CodEmpresa, dto.cod_cliente);
                 var pBase = BuildFacturasResumenBaseParams(dto, ini, fin);
-
                 var head = ExecuteFacturasResumenHead(conn, pBase);
-
                 resp.Result.cabecera = MapFacturasResumenCabecera(head);
                 resp.Result.lista = ExecuteFacturasResumenDetalle(conn, pBase);
 
-                SortFacturasResumen(resp.Result.lista, filtros!.sortField, filtros.sortOrder);
+                var sf = (filtros!.sortField ?? "").Trim();
+                if (!string.IsNullOrWhiteSpace(sf))
+                    SortFacturasResumen(resp.Result.lista, filtros.sortField, filtros.sortOrder);
 
                 return resp;
             }
@@ -422,8 +932,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.CreateErrorResponse<FeFacturasResumen>(ex.Message);
             }
         }
+
         /// <summary>
-        /// Exporta resumen (cabecera + lista) usando spProGrX_Facturas_Consulta_Rsm.
+        /// Exporta resumen usando spProGrX_Facturas_Consulta_Rsm.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
@@ -447,66 +958,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Obtiene estados para filtro de Facturas.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> FE_Facturas_Estados_DropDown_Obtener(int CodEmpresa)
-        {
-            var lista = new List<DropDownListaGenericaModel>
-        {
-            new DropDownListaGenericaModel { item = EST_TODAS, descripcion = "TODAS" },
-            new DropDownListaGenericaModel { item = "A", descripcion = "ACEPTADAS" },
-            new DropDownListaGenericaModel { item = "P", descripcion = "PENDIENTES" },
-            new DropDownListaGenericaModel { item = "R", descripcion = "RECHAZADAS" }
-        };
-
-            return DbHelper.CreateOkResponse(lista);
-        }
-        /// <summary>
-        /// Obtiene personas (Cedula/Nombre) para F4 de Identificación (Facturas/Clientes).
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> FE_Personas_DropDown_Obtener(int CodEmpresa, string? filtro)
-        {
-            using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
-            try
-            {
-                filtro = (filtro ?? "").Trim();
-                var has = !string.IsNullOrWhiteSpace(filtro);
-                var like = has ? $"%{filtro}%" : null;
-
-                const string sql = @"
-                select
-                    rtrim(CEDULA) as item,
-                    rtrim(NOMBRE) as descripcion
-                from SYS_FE_CLIENTES
-                where (
-                      @filtro is null
-                   or CEDULA like @like
-                   or NOMBRE like @like
-                )
-                order by NOMBRE;";
-
-                var p = new DynamicParameters();
-                p.Add("@filtro", has ? filtro : null, DbType.String);
-                p.Add("@like", like, DbType.String);
-
-                var lista = conn.Query<DropDownListaGenericaModel>(sql, p).ToList();
-                return DbHelper.CreateOkResponse(lista);
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
-            }
-        }
-
-
-        /// <summary>
-        /// Lista clientes para el TAB "Clientes" (SYS_FE_CLIENTES) con lazy load.
+        /// Lista clientes (IW_CLIENTE en portal proveedor) con lazy load.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
@@ -523,11 +975,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             if (string.IsNullOrWhiteSpace(codCliente))
                 return DbHelper.CreateErrorResponse<FeClientesLista>("Seleccione un cliente.");
 
-            var identificacion = (ExtractKeyFromParametros(filtros!.parametros, "identificacion") ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(identificacion))
-                return DbHelper.CreateErrorResponse<FeClientesLista>("Digite la identificación.");
+            var identificacion = (ExtractKeyFromParametros(filtros.parametros, "identificacion") ?? "").Trim();
+            var nombre = (ExtractKeyFromParametros(filtros.parametros, "nombre") ?? "").Trim();
 
-            var exportAll = IsExportAll(filtros!);
+            var exportAll = IsExportAll(filtros);
 
             try
             {
@@ -545,7 +996,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 var cfg = connLocal.QueryFirstOrDefault<dynamic>(sqlCfg, new { cod_cliente = codCliente });
 
                 if (cfg == null)
-                    return DbHelper.CreateErrorResponse<FeClientesLista>("No se encontró configuración del portal para el cliente seleccionado.");
+                    return DbHelper.CreateErrorResponse<FeClientesLista>(
+                        "No se encontró configuración del portal para el cliente seleccionado."
+                    );
 
                 string portalServer = (cfg.portal_server ?? "").ToString().Trim();
                 string portalDb = (cfg.portal_db ?? "").ToString().Trim();
@@ -557,7 +1010,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     string.IsNullOrWhiteSpace(portalUser) ||
                     string.IsNullOrWhiteSpace(portalKey))
                 {
-                    return DbHelper.CreateErrorResponse<FeClientesLista>("Credenciales del portal proveedor incompletas para el cliente seleccionado.");
+                    return DbHelper.CreateErrorResponse<FeClientesLista>(
+                        "Credenciales del portal proveedor incompletas para el cliente seleccionado."
+                    );
                 }
 
                 var csb = new SqlConnectionStringBuilder
@@ -574,37 +1029,56 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 using var connPortal = new SqlConnection(csb.ConnectionString);
                 connPortal.Open();
 
-                var exists = connPortal.QueryFirstOrDefault<int>("select case when object_id('dbo.IW_CLIENTE','U') is null then 0 else 1 end;");
-                if (exists == 0)
-                    return DbHelper.CreateErrorResponse<FeClientesLista>("No existe la tabla IW_CLIENTE en el portal proveedor del cliente seleccionado.");
+                var exists = connPortal.QueryFirstOrDefault<int>(
+                    "select case when object_id('dbo.IW_CLIENTE','U') is null then 0 else 1 end;"
+                );
 
-                                const string sql = @"
+                if (exists == 0)
+                    return DbHelper.CreateErrorResponse<FeClientesLista>(
+                        "No existe la tabla IW_CLIENTE en el portal proveedor del cliente seleccionado."
+                    );
+
+                bool hasId = !string.IsNullOrWhiteSpace(identificacion);
+                bool hasNom = !string.IsNullOrWhiteSpace(nombre);
+                const string sql = @"
                 select
                     rtrim(isnull(convert(varchar(30), CODIGO), '')) as id_prov,
-                    rtrim(isnull(TIPO_CLIENTE, ''))                as tipo_id,
-                    rtrim(isnull(CEDULA, ''))                      as identificacion,
-                    rtrim(isnull(RAZON_SOCIAL, ''))                as razon_social,
-                    rtrim(isnull(EMAIL1, ''))                      as email1,
-                    rtrim(isnull(EMAIL2, ''))                      as email2,
-                    ''                                             as telefono1,
-                    ''                                             as telefono2,
-                    ''                                             as provincia,
-                    ''                                             as canton,
-                    ''                                             as distrito,
-                    ''                                             as barrio,
-                    ''                                             as direccion
+                    rtrim(isnull(TIPO_CLIENTE, ''))                 as tipo_id,
+                    rtrim(isnull(CEDULA, ''))                       as identificacion,
+                    rtrim(isnull(RAZON_SOCIAL, ''))                 as razon_social,
+                    rtrim(isnull(EMAIL1, ''))                       as email1,
+                    rtrim(isnull(EMAIL2, ''))                       as email2,
+                    rtrim(isnull(TELEFONO1, ''))                    as telefono1,
+                    rtrim(isnull(TELEFONO2, ''))                    as telefono2,
+                    rtrim(isnull(convert(varchar(10), COD_PROVINCIA), '')) as provincia,
+                    rtrim(isnull(convert(varchar(10), COD_CANTON), ''))    as canton,
+                    rtrim(isnull(convert(varchar(10), COD_DISTRITO), ''))  as distrito,
+                    rtrim(isnull(convert(varchar(10), COD_BARRIO), ''))    as barrio,
+                    rtrim(isnull(DIR_FISICA, ''))                   as direccion
                 from IW_CLIENTE
                 where ID_CLIENTE_ORIGEN = @cod_cliente
-                  and rtrim(isnull(CEDULA,'')) = @identificacion
+                  and (
+                        @identificacion is null
+                     or rtrim(isnull(CEDULA,'')) like @like_ident
+                  )
+                  and (
+                        @nombre is null
+                     or rtrim(isnull(RAZON_SOCIAL,'')) like @like_nombre
+                  )
                 order by [ID];";
 
                 var p = new DynamicParameters();
                 p.Add("@cod_cliente", codCliente, DbType.String);
-                p.Add("@identificacion", identificacion, DbType.String);
+
+                p.Add("@identificacion", hasId ? identificacion : null, DbType.String);
+                p.Add("@like_ident", hasId ? $"%{identificacion}%" : null, DbType.String);
+
+                p.Add("@nombre", hasNom ? nombre : null, DbType.String);
+                p.Add("@like_nombre", hasNom ? $"%{nombre}%" : null, DbType.String);
 
                 var data = connPortal.Query<FeClienteItem>(sql, p).ToList();
 
-                SortClientes(data, filtros!.sortField, filtros.sortOrder);
+                SortClientes(data, filtros.sortField, filtros.sortOrder);
 
                 response.Result.total = data.Count;
 
@@ -614,10 +1088,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     return response;
                 }
 
-                var pagina = NormalizePagina(filtros!.pagina, exportAll);
-                var paginacion = NormalizePaginacion(filtros!.paginacion, exportAll, 30);
-                response.Result.lista = PageClientes(data, pagina, paginacion);
+                var pagina = NormalizePagina(filtros.pagina, exportAll);
+                var paginacion = NormalizePaginacion(filtros.paginacion, exportAll, 30);
 
+                response.Result.lista = PageClientes(data, pagina, paginacion);
                 return response;
             }
             catch (SqlException ex)
@@ -626,57 +1100,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             }
         }
 
-
-
-        private static void SortClientes(List<FeClienteItem> data, string? sortField, int sortOrder)
-        {
-            var sf = (sortField ?? "").Trim().ToLowerInvariant();
-            int dir = (sortOrder == 1) ? 1 : -1;
-
-            int Cmp(string? a, string? b) =>
-                dir * string.Compare(a ?? "", b ?? "", StringComparison.OrdinalIgnoreCase);
-
-            if (string.IsNullOrWhiteSpace(sf))
-            {
-                data.Sort((a, b) => Cmp(a.identificacion, b.identificacion));
-                return;
-            }
-
-            data.Sort((a, b) => sf switch
-            {
-                "id_prov" => Cmp(a.id_prov, b.id_prov),
-                "tipo_id" => Cmp(a.tipo_id, b.tipo_id),
-                "identificacion" => Cmp(a.identificacion, b.identificacion),
-                "razon_social" => Cmp(a.razon_social, b.razon_social),
-                "nombre" => Cmp(a.razon_social, b.razon_social),
-                "email1" => Cmp(a.email1, b.email1),
-                "email2" => Cmp(a.email2, b.email2),
-                "telefono1" => Cmp(a.telefono1, b.telefono1),
-                "telefono2" => Cmp(a.telefono2, b.telefono2),
-                "provincia" => Cmp(a.provincia, b.provincia),
-                "canton" => Cmp(a.canton, b.canton),
-                "distrito" => Cmp(a.distrito, b.distrito),
-                "barrio" => Cmp(a.barrio, b.barrio),
-                "direccion" => Cmp(a.direccion, b.direccion),
-                _ => Cmp(a.identificacion, b.identificacion)
-            });
-        }
-
-        private static List<FeClienteItem> PageClientes(List<FeClienteItem> data, int pagina, int paginacion)
-        {
-            if (data.Count == 0) return new List<FeClienteItem>();
-
-            if (pagina <= 0) pagina = 1;
-            if (paginacion <= 0) paginacion = 30;
-
-            int start = (pagina - 1) * paginacion;
-            if (start >= data.Count) return new List<FeClienteItem>();
-
-            int count = Math.Min(paginacion, data.Count - start);
-            return data.GetRange(start, count);
-        }
         /// <summary>
-        /// Exporta lista de clientes (TAB Clientes).
+        /// Exporta lista de clientes.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="parametros"></param>
@@ -698,8 +1123,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return FE_Clientes_Lista_Obtener(CodEmpresa, JsonConvert.SerializeObject(filtros));
         }
+
         /// <summary>
-        /// Obtiene configuración de Facturación Electrónica por cliente (SYS_FE_PARAMETROS).
+        /// Obtiene configuración de Facturación Electrónica por cliente.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="codigo"></param>
@@ -719,40 +1145,43 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
                 const string sql = @"
                 select
-                    rtrim(COD_CLIENTE) as codigo,
-                    rtrim(TIPO_ID) as tipo_id,
-                    rtrim(CEDULA) as identificacion,
-                    rtrim(RAZON_SOCIAL) as razon_social,
-                    cast(isnull(ACTIVO,0) as smallint) as activa,
-                    FECHA_INICIO as inicio,
+                    rtrim(P.COD_CLIENTE) as codigo,
+                    rtrim(P.TIPO_ID) as tipo_id,
+                    rtrim(P.CEDULA) as identificacion,
+                    rtrim(P.RAZON_SOCIAL) as razon_social,
+                    cast(isnull(P.ACTIVO,0) as smallint) as activa,
+                    P.FECHA_INICIO as inicio,
 
-                    rtrim(isnull(NOTIFICA_EMAIL,'')) as notifica_email,
-                    cast(isnull(NOTIFICA_EMAIL_ACTIVO,0) as smallint) as notifica_activa,
-                    cast(isnull(NOTIFICA_CLIENTE,0) as smallint) as notifica_cliente,
+                    rtrim(isnull(P.NOTIFICA_EMAIL,'')) as notifica_email,
+                    cast(isnull(P.NOTIFICA_EMAIL_ACTIVO,0) as smallint) as notifica_activa,
+                    cast(isnull(P.NOTIFICA_CLIENTE,0) as smallint) as notifica_cliente,
 
-                    isnull(CONSECUTIVO_FE,0) as consec_fe,
-                    isnull(CONSECUTIVO_NC,0) as consec_nc,
-                    isnull(CONSECUTIVO_ND,0) as consec_nd,
-                    isnull(CONSECUTIVO_TE,0) as consec_te,
+                    isnull(P.CONSECUTIVO_FE,0) as consec_fe,
+                    isnull(P.CONSECUTIVO_NC,0) as consec_nc,
+                    isnull(P.CONSECUTIVO_ND,0) as consec_nd,
+                    isnull(P.CONSECUTIVO_TE,0) as consec_te,
 
-                    rtrim(isnull(ACC_CODIGO,'')) as portal_codigo,
-                    rtrim(isnull(ACC_SERVER,'')) as portal_server,
-                    rtrim(isnull(ACC_DB,'')) as portal_db,
-                    rtrim(isnull(ACC_USR,'')) as portal_user,
-                    rtrim(isnull(ACC_KEY,'')) as portal_key,
+                    rtrim(isnull(P.ACC_CODIGO,'')) as portal_codigo,
+                    rtrim(isnull(P.ACC_SERVER,'')) as portal_server,
+                    rtrim(isnull(P.ACC_DB,'')) as portal_db,
+                    rtrim(isnull(P.ACC_USR,'')) as portal_user,
+                    rtrim(isnull(P.ACC_KEY,'')) as portal_key,
 
-                    rtrim(isnull(METODO_BASE,'')) as metodo,
-                    cast(isnull(INCLUYE_POLIZAS,0) as smallint) as i_polizas,
-                    cast(isnull(INCLUYE_PRINCIPAL,0) as smallint) as i_principal,
+                    rtrim(isnull(P.METODO_BASE,'')) as metodo,
+                    cast(isnull(P.INCLUYE_POLIZAS,0) as smallint) as i_polizas,
+                    cast(isnull(P.INCLUYE_PRINCIPAL,0) as smallint) as i_principal,
 
-                    cast(isnull(MAX_MONTO_APL,0) as smallint) as mnt_max_apl,
-                    cast(isnull(MAX_MONTO,0) as decimal(18,2)) as mnt_max,
+                    cast(isnull(P.MAX_MONTO_APL,0) as smallint) as mnt_max_apl,
+                    cast(isnull(P.MAX_MONTO,0) as decimal(18,2)) as mnt_max,
 
-                    rtrim(isnull(CABYS,'')) as cabys,
-                    rtrim(isnull(SUCURSAL,'')) as sucursal,
-                    rtrim(isnull(TERMINAL,'')) as terminal
-                from SYS_FE_PARAMETROS
-                where COD_CLIENTE = @codigo;";
+                    rtrim(isnull(P.CABYS,'')) as cabys,
+                    rtrim(isnull(P.SUCURSAL,'')) as sucursal,
+                    rtrim(isnull(P.TERMINAL,'')) as terminal,
+
+                    rtrim(isnull(C.DESCRIPCION,'')) as cabys_desc
+                from SYS_FE_PARAMETROS P
+                left join vINV_Cabys C on P.CABYS = C.COD_BYS
+                where P.COD_CLIENTE = @codigo;";
 
                 var p = new DynamicParameters();
                 p.Add("@codigo", codigo, DbType.String);
@@ -769,7 +1198,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Guarda/Actualiza configuración (spSYS_FE_PARAMETROS_Registra) con TipoMov='A'.
+        /// Guarda/Actualiza configuración con TipoMov='A'.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
@@ -781,15 +1210,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var codigo = (dto.codigo ?? "").Trim();
-                var tipoId = (dto.tipo_id ?? "").Trim();
-                var identificacion = (dto.identificacion ?? "").Trim();
-                var razonSocial = (dto.razon_social ?? "").Trim();
-                var notificaEmail = (dto.notifica_email ?? "").Trim();
-                var portalCodigo = (dto.portal_codigo ?? "").Trim();
-                var portalServer = (dto.portal_server ?? "").Trim();
-                var portalDb = (dto.portal_db ?? "").Trim();
-                var portalUser = (dto.portal_user ?? "").Trim();
-                var portalKey = (dto.portal_key ?? "").Trim();
+                var tipoId = (dto.tipo_id ?? "").Trim();                
+                var identificacion = (dto.identificacion ?? "").Trim(); 
+                var razonSocial = (dto.razon_social ?? "").Trim();      
+                var notificaEmail = (dto.notifica_email ?? "").Trim();  
+
+                var portalCodigo = (dto.portal_codigo ?? "").Trim();    
+                var portalServer = (dto.portal_server ?? "").Trim();  
+                var portalDb = (dto.portal_db ?? "").Trim();          
+                var portalUser = (dto.portal_user ?? "").Trim();      
+                var portalKey = (dto.portal_key ?? "").Trim(); 
+
                 var usuario = (dto.usuario ?? "").Trim().ToUpperInvariant();
 
                 if (string.IsNullOrWhiteSpace(codigo))
@@ -807,21 +1238,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (string.IsNullOrWhiteSpace(usuario))
                     return DbHelper.ErrorResponse(USUARIO_REQUERIDO);
 
-                if (!DateTime.TryParseExact((dto.inicio ?? "").Trim(), FE_DATE_FMT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var inicio))
+                var inicioTxt = (dto.inicio ?? "").Trim();
+                DateTime inicio;
+                var okInicio =
+                    DateTime.TryParseExact(inicioTxt, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out inicio)
+                 || DateTime.TryParseExact(inicioTxt, "yyyy/MM/dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out inicio);
+
+                if (!okInicio)
                     return DbHelper.ErrorResponse("inicio inválido. Formato esperado: YYYY-MM-DD.");
 
-          
+                var inicio235959 = new DateTime(inicio.Year, inicio.Month, inicio.Day, 23, 59, 59, DateTimeKind.Unspecified);
                 var metodoRaw = (dto.metodo ?? "").Trim().ToUpperInvariant();
                 string metodo;
-                if (metodoRaw == "E") metodo = "E";
+                if (metodoRaw == "E" || metodoRaw.StartsWith("E")) metodo = "E";
                 else metodo = "D";
 
                 var sucursal = (dto.sucursal ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(sucursal)) sucursal = "2";
-                if (sucursal.Length > 1) sucursal = sucursal.Substring(0, 1);
+                if (sucursal.Length > 3) sucursal = sucursal.Substring(0, 3);
 
                 var terminal = (dto.terminal ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(terminal)) terminal = "00001";
                 if (terminal.Length > 5) terminal = terminal.Substring(0, 5);
 
                 var cabys = (dto.cabys ?? "").Trim();
@@ -834,7 +1269,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 p.Add("@Identificacion", identificacion, DbType.String);
                 p.Add("@Razon_Social", razonSocial, DbType.String);
                 p.Add("@Activa", dto.activa, DbType.Int16);
-                var inicio235959 = new DateTime(inicio.Year, inicio.Month, inicio.Day, 23, 59, 59, DateTimeKind.Unspecified);
                 p.Add(INICIO, inicio235959, DbType.DateTime);
 
                 p.Add("@Notifica_Email", notificaEmail, DbType.String);
@@ -886,7 +1320,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         }
 
         /// <summary>
-        /// Elimina configuración (spSYS_FE_PARAMETROS_Registra) con TipoMov='E'.
+        /// Elimina configuración con TipoMov='E'.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="codigo"></param>
@@ -912,16 +1346,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     return DbHelper.ErrorResponse(cfg.Description ?? "No se pudo obtener configuración.");
 
                 var c = cfg.Result ?? new FeConfiguracionModel();
+                var inicio = c.inicio ?? DateTime.Now;
+                var inicio235959 = new DateTime(inicio.Year, inicio.Month, inicio.Day, 23, 59, 59, DateTimeKind.Unspecified);
+
+                var metodo = (c.metodo ?? "").Trim().ToUpperInvariant();
+                if (metodo != "E") metodo = "D";
+
+                var sucursal = (c.sucursal ?? "").Trim();
+                if (sucursal.Length > 3) sucursal = sucursal.Substring(0, 3);
+
+                var terminal = (c.terminal ?? "").Trim();
+                if (terminal.Length > 5) terminal = terminal.Substring(0, 5);
+
+                var cabys = (c.cabys ?? "").Trim();
+                if (cabys.Length > 30) cabys = cabys.Substring(0, 30);
 
                 var p = new DynamicParameters();
+
                 p.Add("@Codigo", codigo, DbType.String);
                 p.Add("@TipoID", (c.tipo_id ?? "").Trim(), DbType.String);
                 p.Add("@Identificacion", (c.identificacion ?? "").Trim(), DbType.String);
                 p.Add("@Razon_Social", (c.razon_social ?? "").Trim(), DbType.String);
                 p.Add("@Activa", c.activa, DbType.Int16);
-
-                var inicio = c.inicio ?? DateTime.Now;
-                var inicio235959 = new DateTime(inicio.Year, inicio.Month, inicio.Day, 23, 59, 59, DateTimeKind.Unspecified);
                 p.Add(INICIO, inicio235959, DbType.DateTime);
 
                 p.Add("@Notifica_Email", (c.notifica_email ?? "").Trim(), DbType.String);
@@ -942,28 +1388,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 p.Add("@TipoMov", "E", DbType.String);
                 p.Add(USUARIO, usuario, DbType.String);
 
-                var metodo = (c.metodo ?? "").Trim().ToUpperInvariant();
-                if (metodo != "E") metodo = "D";
                 p.Add("@Metodo", metodo, DbType.String);
-
                 p.Add("@IPolizas", c.i_polizas, DbType.Int16);
                 p.Add("@IPrincipal", c.i_principal, DbType.Int16);
 
                 p.Add("@MntMaxApl", c.mnt_max_apl, DbType.Int16);
                 p.Add("@MntMax", c.mnt_max, DbType.Decimal);
 
-                var cabys = (c.cabys ?? "").Trim();
-                if (cabys.Length > 30) cabys = cabys.Substring(0, 30);
                 p.Add("@Cabys", cabys, DbType.String);
-
-                var sucursal = (c.sucursal ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(sucursal)) sucursal = "2";
-                if (sucursal.Length > 1) sucursal = sucursal.Substring(0, 1);
                 p.Add("@Sucursal", sucursal, DbType.String);
-
-                var terminal = (c.terminal ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(terminal)) terminal = "00001";
-                if (terminal.Length > 5) terminal = terminal.Substring(0, 5);
                 p.Add("@Terminal", terminal, DbType.String);
 
                 conn.Execute("spSYS_FE_PARAMETROS_Registra", p, commandType: CommandType.StoredProcedure);
@@ -984,9 +1417,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+
         /// <summary>
-        /// Sincroniza SYS_FE_CLIENTES desde IW_CLIENTE para un COD_CLIENTE (VB6: btnConfig_Clientes_Sinc_Click).
-        /// Borra y reconstruye la tabla de clientes del proveedor.
+        /// Sincroniza SYS_FE_CLIENTES desde IW_CLIENTE para un COD_CLIENTE.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_cliente"></param>
@@ -1009,6 +1442,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
                 using var connLocal = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
+
+                if (connLocal.State != ConnectionState.Open)
+                    connLocal.Open();
+
                 connLocal.Execute(
                     "exec sp_getapplock @Resource=@r, @LockMode='Exclusive', @LockOwner='Session', @LockTimeout=15000;",
                     new { r = $"FE_CLIENTES_SINC_{cod_cliente}" },
@@ -1016,13 +1453,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 );
 
                 const string sqlCfg = @"
-                select
-                    rtrim(isnull(ACC_SERVER,'')) as portal_server,
-                    rtrim(isnull(ACC_DB,''))     as portal_db,
-                    rtrim(isnull(ACC_USR,''))    as portal_user,
-                    rtrim(isnull(ACC_KEY,''))    as portal_key
-                from SYS_FE_PARAMETROS
-                where COD_CLIENTE = @cod_cliente;";
+        select
+            rtrim(isnull(ACC_SERVER,'')) as portal_server,
+            rtrim(isnull(ACC_DB,''))     as portal_db,
+            rtrim(isnull(ACC_USR,''))    as portal_user,
+            rtrim(isnull(ACC_KEY,''))    as portal_key
+        from SYS_FE_PARAMETROS
+        where COD_CLIENTE = @cod_cliente;";
 
                 var cfg = connLocal.QueryFirstOrDefault<dynamic>(sqlCfg, new { cod_cliente });
 
@@ -1041,7 +1478,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 {
                     return DbHelper.ErrorResponse("Credenciales del portal proveedor incompletas.");
                 }
-
                 var csb = new SqlConnectionStringBuilder
                 {
                     DataSource = portalServer,
@@ -1055,71 +1491,90 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
                 using var connPortal = new SqlConnection(csb.ConnectionString);
                 connPortal.Open();
+                var exists = connPortal.QueryFirstOrDefault<int>(
+                    "select case when object_id('dbo.IW_CLIENTE','U') is null then 0 else 1 end;"
+                );
 
-                var exists = connPortal.QueryFirstOrDefault<int>("select case when object_id('dbo.IW_CLIENTE','U') is null then 0 else 1 end;");
                 if (exists == 0)
                     return DbHelper.ErrorResponse("No existe la tabla IW_CLIENTE en el portal proveedor. Verifique base de datos/servidor configurados.");
 
                 const string sqlPortal = @"
-                select
-                    [ID]                as CLIENTE_ID_FE,
-                    CODIGO              as CLIENTE_ID,
-                    rtrim(CEDULA)       as CEDULA,
-                    rtrim(RAZON_SOCIAL) as NOMBRE
-                from IW_CLIENTE
-                where ID_CLIENTE_ORIGEN = @cod_cliente
-                order by [ID];";
+                    select
+                        [ID]                as CLIENTE_ID_FE,
+                        CODIGO              as CLIENTE_ID,
+                        rtrim(CEDULA)       as CEDULA,
+                        rtrim(RAZON_SOCIAL) as NOMBRE
+                    from IW_CLIENTE
+                    where ID_CLIENTE_ORIGEN = @cod_cliente
+                    order by [ID];";
 
                 var portalRows = connPortal.Query(sqlPortal, new { cod_cliente }).ToList();
 
-                const string sqlDelete = @"delete SYS_FE_CLIENTES where COD_CLIENTE = @cod_cliente;";
-                connLocal.Execute(sqlDelete, new { cod_cliente }, commandTimeout: 360);
+                using var tx = connLocal.BeginTransaction();
 
-                var seenClienteId = new HashSet<long>();
-                var seenClienteIdFe = new HashSet<long>();
-
-                var sb = new System.Text.StringBuilder();
-
-                foreach (var r in portalRows)
+                try
                 {
-                    long clienteId = 0;
-                    long clienteIdFe = 0;
+                    const string sqlDelete = @"delete SYS_FE_CLIENTES where COD_CLIENTE = @cod_cliente;";
+                    connLocal.Execute(sqlDelete, new { cod_cliente }, transaction: tx, commandTimeout: 360);
 
-                    if (r.CLIENTE_ID != null) clienteId = Convert.ToInt64(r.CLIENTE_ID);
-                    if (r.CLIENTE_ID_FE != null) clienteIdFe = Convert.ToInt64(r.CLIENTE_ID_FE);
+                    var seenClienteId = new HashSet<long>();
+                    var seenClienteIdFe = new HashSet<long>();
 
-                    if (clienteId <= 0 || clienteIdFe <= 0) continue;
+                    var sb = new System.Text.StringBuilder();
 
-                    if (!seenClienteId.Add(clienteId)) continue;
-                    if (!seenClienteIdFe.Add(clienteIdFe)) continue;
-
-                    string cedula = SqlEscape((r.CEDULA ?? "").ToString());
-                    string nombre = SqlEscape((r.NOMBRE ?? "").ToString());
-
-                    sb.AppendLine(" ");
-                    sb.Append("INSERT SYS_FE_CLIENTES (COD_CLIENTE, CEDULA, NOMBRE, CLIENTE_ID, CLIENTE_ID_FE, REGISTRO_FECHA, REGISTRO_USUARIO) ");
-                    sb.Append("VALUES(");
-                    sb.Append($"'{SqlEscape(cod_cliente)}','{cedula}','{nombre}',{clienteId},{clienteIdFe}, getdate(), '{SqlEscape(usuario)}');");
-                    sb.AppendLine();
-
-                    if (sb.Length > 20000)
+                    foreach (var r in portalRows)
                     {
-                        connLocal.Execute(sb.ToString(), commandTimeout: 360);
+                        long clienteId = 0;
+                        long clienteIdFe = 0;
+
+                        if (r.CLIENTE_ID != null) clienteId = Convert.ToInt64(r.CLIENTE_ID);
+                        if (r.CLIENTE_ID_FE != null) clienteIdFe = Convert.ToInt64(r.CLIENTE_ID_FE);
+
+                        if (clienteId <= 0 || clienteIdFe <= 0) continue;
+
+                        if (!seenClienteId.Add(clienteId)) continue;
+                        if (!seenClienteIdFe.Add(clienteIdFe)) continue;
+
+                        string cedula = SqlEscape((r.CEDULA ?? "").ToString());
+                        string nombre = SqlEscape((r.NOMBRE ?? "").ToString());
+
+                        sb.AppendLine(" ");
+                        sb.Append("IF NOT EXISTS (SELECT 1 FROM SYS_FE_CLIENTES WHERE COD_CLIENTE = '");
+                        sb.Append(SqlEscape(cod_cliente));
+                        sb.Append("' AND CLIENTE_ID_FE = ");
+                        sb.Append(clienteIdFe);
+                        sb.AppendLine(")");
+                        sb.Append("INSERT SYS_FE_CLIENTES (COD_CLIENTE, CEDULA, NOMBRE, CLIENTE_ID, CLIENTE_ID_FE, REGISTRO_FECHA, REGISTRO_USUARIO) ");
+                        sb.Append("VALUES(");
+                        sb.Append($"'{SqlEscape(cod_cliente)}','{cedula}','{nombre}',{clienteId},{clienteIdFe}, getdate(), '{SqlEscape(usuario)}');");
+                        sb.AppendLine();
+
+                        if (sb.Length > 20000)
+                        {
+                            connLocal.Execute(sb.ToString(), transaction: tx, commandTimeout: 360);
+                            sb.Clear();
+                        }
+                    }
+
+                    if (sb.Length > 0)
+                    {
+                        connLocal.Execute(sb.ToString(), transaction: tx, commandTimeout: 360);
                         sb.Clear();
                     }
-                }
 
-                if (sb.Length > 0)
+                    tx.Commit();
+                }
+                catch (SqlException)
                 {
-                    connLocal.Execute(sb.ToString(), commandTimeout: 360);
-                    sb.Clear();
+                    try { tx.Rollback(); } catch { /* no-op */ }
+                    throw;
                 }
 
                 Bitacora(new BitacoraInsertarDto
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
-                    DetalleMovimiento = $"FE Sincroniza Clientes: Cliente {cod_cliente} RegistrosPortal {portalRows.Count} Insertados {seenClienteId.Count}",
+                    DetalleMovimiento = $"FE Sincroniza Clientes: Cliente {cod_cliente} RegistrosPortal {portalRows.Count} Insertados {portalRows.Count}",
                     Movimiento = "Sincronizar Clientes - WEB",
                     Modulo = vModulo
                 });
@@ -1132,34 +1587,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             }
         }
 
-        private static string SqlEscape(string s)
-        {
-            s = (s ?? "").Trim();
-            return s.Replace("'", "''");
-        }
 
-
-
-        private static (string server, string db, string usr, string key) GetPortalAccesos(SqlConnection conn, string cod_cliente)
-        {
-            const string sql = @"
-            select
-                rtrim(isnull(ACC_SERVER,'')) as server,
-                rtrim(isnull(ACC_DB,''))     as db,
-                rtrim(isnull(ACC_USR,''))    as usr,
-                rtrim(isnull(ACC_KEY,''))    as [key]
-            from SYS_FE_PARAMETROS
-            where COD_CLIENTE = @cod_cliente;";
-
-            var row = conn.QueryFirstOrDefault<dynamic>(sql, new { cod_cliente });
-            if (row == null) return ("", "", "", "");
-
-            string server = Convert.ToString(row.server) ?? "";
-            string dbn = Convert.ToString(row.db) ?? "";
-            string usr = Convert.ToString(row.usr) ?? "";
-            string key = Convert.ToString(row.key) ?? "";
-            return (server.Trim(), dbn.Trim(), usr.Trim(), key.Trim());
-        }
 
         /// <summary>
         /// Consulta exclusiones por tipo (spSYS_FE_PARAMETROS_Exclusion_Consulta).
@@ -1177,7 +1605,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             try
             {
                 cod_cliente = (cod_cliente ?? "").Trim();
-                tipo = (tipo ?? "").Trim().ToUpperInvariant();
+                tipo = (tipo ?? "").Trim();
 
                 if (string.IsNullOrWhiteSpace(cod_cliente))
                     return DbHelper.CreateErrorResponse<List<FeExclusionItem>>("cod_cliente es requerido.");
@@ -1185,9 +1613,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (string.IsNullOrWhiteSpace(tipo))
                     return DbHelper.CreateErrorResponse<List<FeExclusionItem>>("tipo es requerido.");
 
+                var tipoNorm = tipo.Trim().ToUpperInvariant();
+                if (tipoNorm == "CXC") tipoNorm = "CXC";
+
+                var tipoOk =
+                    tipoNorm == "ESTP" ||
+                    tipoNorm == "CRD" ||
+                    tipoNorm == "CXC" ||
+                    tipoNorm == "INST";
+
+                if (!tipoOk)
+                    return DbHelper.CreateErrorResponse<List<FeExclusionItem>>(
+                        "tipo inválido. Valores esperados: 'ESTP', 'CRD', 'CxC', 'INST'."
+                    );
+
                 var p = new DynamicParameters();
                 p.Add(P_CLIENTE_ID, cod_cliente, DbType.String);
-                p.Add(P_TIPO, tipo, DbType.String);
+                p.Add(P_TIPO, tipoNorm, DbType.String);
 
                 resp.Result = conn.Query<FeExclusionItem>(
                     "spSYS_FE_PARAMETROS_Exclusion_Consulta",
@@ -1222,7 +1664,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 cod_cliente = (cod_cliente ?? "").Trim();
                 codigo = (codigo ?? "").Trim();
                 movimiento = (movimiento ?? "").Trim().ToUpperInvariant();
-                tipo = (tipo ?? "").Trim().ToUpperInvariant();
+                tipo = (tipo ?? "").Trim();
                 usuario = (usuario ?? "").Trim().ToUpperInvariant();
 
                 if (string.IsNullOrWhiteSpace(cod_cliente))
@@ -1236,6 +1678,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
                 if (string.IsNullOrWhiteSpace(tipo))
                     return DbHelper.ErrorResponse("tipo es requerido.");
+                var tipoNorm = tipo.Trim().ToUpperInvariant();
+                if (tipoNorm == "CXC") tipoNorm = "CXC";
+
+                var tipoOk =
+                    tipoNorm == "ESTP" ||
+                    tipoNorm == "CRD" ||
+                    tipoNorm == "CXC" ||
+                    tipoNorm == "INST";
+
+                if (!tipoOk)
+                    return DbHelper.ErrorResponse("tipo inválido. Valores esperados: 'ESTP', 'CRD', 'CxC', 'INST'.");
 
                 if (string.IsNullOrWhiteSpace(usuario))
                     return DbHelper.ErrorResponse(USUARIO_REQUERIDO);
@@ -1244,7 +1697,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 p.Add(P_CLIENTE_ID, cod_cliente, DbType.String);
                 p.Add(P_CODIGO, codigo, DbType.String);
                 p.Add(P_MOVIMIENTO, movimiento, DbType.String);
-                p.Add(P_TIPO, tipo, DbType.String);
+                p.Add(P_TIPO, tipoNorm, DbType.String);
                 p.Add(P_USUARIO, usuario, DbType.String);
 
                 conn.Execute("spSYS_FE_PARAMETROS_Exclusion", p, commandType: CommandType.StoredProcedure);
@@ -1253,7 +1706,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = usuario,
-                    DetalleMovimiento = $"FE Exclusión: Cliente {cod_cliente} Tipo {tipo} Código {codigo} Mov {movimiento}",
+                    DetalleMovimiento = $"FE Exclusión: Cliente {cod_cliente} Tipo {tipoNorm} Código {codigo} Mov {movimiento}",
                     Movimiento = "Exclusión - WEB",
                     Modulo = vModulo
                 });
@@ -1265,6 +1718,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+
 
         /// <summary>
         /// Reactiva casos excluidos por montos (spCrd_Operacion_Factura_Reactivar).
@@ -1283,13 +1737,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 usuario = (usuario ?? "").Trim().ToUpperInvariant();
                 if (string.IsNullOrWhiteSpace(usuario))
                     return DbHelper.ErrorResponse(USUARIO_REQUERIDO);
-
                 var ini = DayStart(fecha_inicio);
-                var fin = DayEnd(fecha_corte);
+                var fin = new DateTime(fecha_corte.Year, fecha_corte.Month, fecha_corte.Day, 23, 59, 59);
 
                 var p = new DynamicParameters();
-                p.Add(INICIO, ini, DbType.DateTime);
-                p.Add(P_CORTE, fin, DbType.DateTime);
+                p.Add("@Inicio", ini, DbType.DateTime);
+                p.Add("@Corte", fin, DbType.DateTime);
 
                 conn.Execute("spCrd_Operacion_Factura_Reactivar", p, commandType: CommandType.StoredProcedure);
 
@@ -1309,6 +1762,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+
         /// <summary>
         /// Extrae un parámetro string desde filtros.parametros (JSON), case-insensitive.
         /// </summary>
@@ -1477,8 +1931,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         private static string NormalizeEstado(string? estado)
         {
-            var s = (estado ?? "").Trim();
-            return string.IsNullOrWhiteSpace(s) ? "T" : s.Substring(0, 1);
+            var s = (estado ?? "").Trim().ToUpperInvariant();
+            if (string.IsNullOrWhiteSpace(s)) return "T";
+
+            s = s.Substring(0, 1);
+            return _whitelistEstados.Contains(s) ? s : "T";
         }
 
         private static DateTime DayStart(DateTime d) => new(d.Year, d.Month, d.Day, 0, 0, 0, DateTimeKind.Unspecified);
@@ -1616,13 +2073,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private static DynamicParameters BuildFacturasResumenBaseParams(FeFacturasParametrosDto dto, DateTime ini, DateTime fin)
         {
             var pBase = new DynamicParameters();
-            pBase.Add(C_CLIENTE, dto.cod_cliente, DbType.String);
-            pBase.Add("@FiltroFactura", dto.factura ?? "", DbType.String);
-            pBase.Add("@FiltroId", dto.identificacion ?? "", DbType.String);
-            pBase.Add("@FiltroRazonSocial", dto.nombre ?? "", DbType.String);
+            pBase.Add("@ClienteId", dto.cod_cliente, DbType.String);
+            pBase.Add("@Factura", dto.factura ?? "", DbType.String);
+            pBase.Add("@Cedula", dto.identificacion ?? "", DbType.String);
+            pBase.Add("@Nombre", dto.nombre ?? "", DbType.String);
 
-            pBase.Add(INICIO, DateTime.SpecifyKind(ini, DateTimeKind.Unspecified), DbType.DateTime);
-            pBase.Add(P_CORTE, DateTime.SpecifyKind(fin, DateTimeKind.Unspecified), DbType.DateTime);
+            pBase.Add("@FechaInicio", DateTime.SpecifyKind(ini, DateTimeKind.Unspecified), DbType.DateTime);
+            pBase.Add("@FechaCorte", DateTime.SpecifyKind(fin, DateTimeKind.Unspecified), DbType.DateTime);
 
             pBase.Add("@Estado", NormalizeEstado(dto.estado), DbType.String);
 
@@ -1711,5 +2168,208 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 _ => dir * a.facturado.CompareTo(b.facturado)
             });
         }
+
+        /// <summary>
+        /// Retorna consecutivo.
+        /// <param name="rsConsec"></param>
+        /// </summary>
+        /// <returns></returns>
+        private static int GetConsecutivo(object? rsConsec)
+        {
+            if (rsConsec == null) return 0;
+
+            try
+            {
+                var d = rsConsec as IDictionary<string, object?>;
+                if (d != null && d.TryGetValue("Consecutivo", out var v) && v != null)
+                    return Convert.ToInt32(v);
+            }
+            catch { }
+
+            try
+            {
+                var p = rsConsec.GetType().GetProperty("Consecutivo");
+                var v = p?.GetValue(rsConsec, null);
+                if (v == null) return 0;
+                return Convert.ToInt32(v);
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+        /// <summary>
+        /// Retorna codigo interno.
+        /// <param name="ins"></param>
+        /// </summary>
+        /// <returns></returns>
+        private static long GetCodigoInterno(object? ins)
+        {
+            if (ins == null) return 0;
+
+            try
+            {
+                var d = ins as IDictionary<string, object?>;
+                if (d != null && d.TryGetValue("CODIGO_INTERNO", out var v) && v != null)
+                    return Convert.ToInt64(v);
+            }
+            catch { }
+
+            try
+            {
+                var p = ins.GetType().GetProperty("CODIGO_INTERNO");
+                var v = p?.GetValue(ins, null);
+                if (v == null) return 0;
+                return Convert.ToInt64(v);
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+        /// <summary>
+        /// Retorna id de la factura.
+        /// <param name="enc"></param>
+        /// </summary>
+        /// <returns></returns>
+        private static long GetIdFactura(object? enc)
+        {
+            if (enc == null) return 0;
+
+            try
+            {
+                var d = enc as IDictionary<string, object?>;
+                if (d != null && d.TryGetValue("id_Factura", out var v) && v != null)
+                    return Convert.ToInt64(v);
+            }
+            catch { }
+
+            try
+            {
+                var p = enc.GetType().GetProperty("id_Factura");
+                var v = p?.GetValue(enc, null);
+                if (v == null) return 0;
+                return Convert.ToInt64(v);
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+        /// <summary>
+        /// Aplica sort a la lista de clientes.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="sortField"></param>
+        /// <param name="sortOrder"></param>
+        /// <returns></returns>
+        private static void SortClientes(List<FeClienteItem> data, string? sortField, int sortOrder)
+        {
+            var sf = (sortField ?? "").Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(sf))
+                return;
+
+            int dir = (sortOrder == 1) ? 1 : -1;
+
+            int Cmp(string? a, string? b) =>
+                dir * string.Compare(a ?? "", b ?? "", StringComparison.OrdinalIgnoreCase);
+
+            switch (sf)
+            {
+                case "id_prov":
+                    data.Sort((a, b) => Cmp(a.id_prov, b.id_prov));
+                    return;
+                case "tipo_id":
+                    data.Sort((a, b) => Cmp(a.tipo_id, b.tipo_id));
+                    return;
+                case "identificacion":
+                    data.Sort((a, b) => Cmp(a.identificacion, b.identificacion));
+                    return;
+                case "razon_social":
+                case "nombre":
+                    data.Sort((a, b) => Cmp(a.razon_social, b.razon_social));
+                    return;
+                case "email1":
+                    data.Sort((a, b) => Cmp(a.email1, b.email1));
+                    return;
+                case "email2":
+                    data.Sort((a, b) => Cmp(a.email2, b.email2));
+                    return;
+                case "telefono1":
+                    data.Sort((a, b) => Cmp(a.telefono1, b.telefono1));
+                    return;
+                case "telefono2":
+                    data.Sort((a, b) => Cmp(a.telefono2, b.telefono2));
+                    return;
+                case "provincia":
+                    data.Sort((a, b) => Cmp(a.provincia, b.provincia));
+                    return;
+                case "canton":
+                    data.Sort((a, b) => Cmp(a.canton, b.canton));
+                    return;
+                case "distrito":
+                    data.Sort((a, b) => Cmp(a.distrito, b.distrito));
+                    return;
+                case "barrio":
+                    data.Sort((a, b) => Cmp(a.barrio, b.barrio));
+                    return;
+                case "direccion":
+                    data.Sort((a, b) => Cmp(a.direccion, b.direccion));
+                    return;
+                default:
+
+                    return;
+            }
+        }
+        /// <summary>
+        /// Aplica paginacion a la lista de clientes.
+        /// </summary>
+        /// <param name="data"></param>
+        /// <param name="pagina"></param>
+        /// <param name="paginacion"></param>
+        /// <returns></returns>
+        private static List<FeClienteItem> PageClientes(List<FeClienteItem> data, int pagina, int paginacion)
+        {
+            if (data.Count == 0) return new List<FeClienteItem>();
+
+            if (pagina <= 0) pagina = 1;
+            if (paginacion <= 0) paginacion = 30;
+
+            int start = (pagina - 1) * paginacion;
+            if (start >= data.Count) return new List<FeClienteItem>();
+
+            int count = Math.Min(paginacion, data.Count - start);
+            return data.GetRange(start, count);
+        }
+        /// <summary>
+        /// DEBUG: Describe columnas del resultset de SPs de corte (Notifica_Clientes y Notifica).
+        /// Solo para DEV.
+        /// </summary>
+        private static string SqlEscape(string s)
+        {
+            s = (s ?? "").Trim();
+            return s.Replace("'", "''");
+        }
+        private static (string server, string db, string usr, string key) GetPortalAccesos(SqlConnection conn, string cod_cliente)
+        {
+            const string sql = @"
+            select
+                rtrim(isnull(ACC_SERVER,'')) as server,
+                rtrim(isnull(ACC_DB,''))     as db,
+                rtrim(isnull(ACC_USR,''))    as usr,
+                rtrim(isnull(ACC_KEY,''))    as [key]
+            from SYS_FE_PARAMETROS
+            where COD_CLIENTE = @cod_cliente;";
+
+            var row = conn.QueryFirstOrDefault<dynamic>(sql, new { cod_cliente });
+            if (row == null) return ("", "", "", "");
+
+            string server = Convert.ToString(row.server) ?? "";
+            string dbn = Convert.ToString(row.db) ?? "";
+            string usr = Convert.ToString(row.usr) ?? "";
+            string key = Convert.ToString(row.key) ?? "";
+            return (server.Trim(), dbn.Trim(), usr.Trim(), key.Trim());
+        }
+      
     }
 }

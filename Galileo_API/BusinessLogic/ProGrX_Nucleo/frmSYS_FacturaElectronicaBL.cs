@@ -2,6 +2,7 @@
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo_API.DataBaseTier.ProGrX_Nucleo;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Nucleo
 {
@@ -47,7 +48,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Nucleo
             return Db.FE_Facturas_Lista_Export(CodEmpresa, parametros);
         }
 
-        public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa, string codCliente, int idFactura)
+        public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa, string codCliente, string idFactura)
         {
             return Db.FE_Factura_Detalle_Obtener(CodEmpresa, codCliente, idFactura);
         }
