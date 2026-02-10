@@ -3,7 +3,7 @@ using Dapper;
 using Galileo.Models.ERROR;
 using Galileo.Models.SIF;
 using Galileo.Models.Security;
-using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 
 namespace Galileo.DataBaseTier
 {
@@ -19,20 +19,6 @@ namespace Galileo.DataBaseTier
             _securityDb = new MSecurityMainDb(config);
         }
 
-        private ErrorDto WithEmpresaConn(int codEmpresa, Action<SqlConnection> action, string okMsg = "OK")
-        {
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDB, codEmpresa);
-                action(conn);
-                return DbHelper.OkResponse(okMsg);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? "Error inesperado");
-            }
-        }
-
         public ErrorDto<List<SifParametrosDto>> obtener_ParametrosSistema(int CodEmpresa)
         {
             return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
@@ -46,25 +32,33 @@ namespace Galileo.DataBaseTier
 
         public ErrorDto Parametros_Actualizar(int CodEmpresa, string usuario, SifParametrosDto parametros)
         {
-            return WithEmpresaConn(CodEmpresa, connection =>
+            const string sql = "UPDATE SIF_PARAMETROS SET valor = @valor WHERE cod_parametro = @codParametro";
+
+            // 1) Actualiza parámetro
+            var upd = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, sql, new
             {
-                const string sql = "UPDATE SIF_PARAMETROS SET valor = @valor WHERE cod_parametro = @codParametro";
-                var parameters = new DynamicParameters();
-                parameters.Add("valor", parametros.valor, DbType.String);
-                parameters.Add("codParametro", parametros.cod_parametro, DbType.String);
+                valor = parametros.valor,
+                codParametro = parametros.cod_parametro
+            });
 
-                connection.Execute(sql, parameters);
+            if ((upd.Code ?? -1) != 0)
+                return upd;
 
-                // Bitácora
-                _securityDb.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Parametro del SIF : {parametros.cod_parametro} - {parametros.valor}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
-                });
-            }, "Registro actualizado satisfactoriamente");
+            // 2) Bitácora
+            var bit = _securityDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario,
+                Modulo = vModulo,
+                Movimiento = $"Parametro del SIF : {parametros.cod_parametro} - {parametros.valor}",
+                Detalle = "Modifica - WEB",
+                AppNombre = "Galileo_API"
+            });
+
+            if ((bit.Code ?? -1) != 0)
+                return DbHelper.ErrorResponse(bit.Description ?? "Error al registrar bitácora", bit.Code ?? -1);
+
+            return DbHelper.OkResponse("Registro actualizado satisfactoriamente");
         }
 
     }
