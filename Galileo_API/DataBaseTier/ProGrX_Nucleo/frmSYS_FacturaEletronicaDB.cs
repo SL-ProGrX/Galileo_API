@@ -1806,7 +1806,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             else if (t == "03") item.tipo = "NC";
         }
 
-        private string? FirstAny(object r, params string[] keys)
+        private static string? FirstAny(object r, params string[] keys)
         {
             foreach (var k in keys)
             {
@@ -1816,7 +1816,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             return null;
         }
 
-        private string? FirstNonEmpty(object r, params string[] keys)
+        private static string? FirstNonEmpty(object r, params string[] keys)
         {
             foreach (var k in keys)
             {
@@ -1826,7 +1826,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             return null;
         }
 
-        private int FirstNonZeroInt(object r, params string[] keys)
+        private static int FirstNonZeroInt(object r, params string[] keys)
         {
             foreach (var k in keys)
             {
@@ -1836,7 +1836,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             return TryParseInt(ExtractKeyFromParametros(r, keys.Length > 0 ? keys[^1] : ""));
         }
 
-        private decimal FirstNonZeroDecimal(object r, params string[] keys)
+        private static decimal FirstNonZeroDecimal(object r, params string[] keys)
         {
             foreach (var k in keys)
             {
