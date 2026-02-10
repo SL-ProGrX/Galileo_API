@@ -17,34 +17,48 @@ namespace Galileo.DataBaseTier
             _config = config;
         }
 
+        private string GetConnString(int codEmpresa)
+            => new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+
+        private static ErrorDto<T> Ok<T>(T result, string description = "Ok")
+            => new() { Code = 0, Description = description, Result = result };
+
+        private static ErrorDto Fail(Exception ex, int code = -1)
+            => new() { Code = code, Description = ex.Message };
+
+        private static ErrorDto<T> Fail<T>(Exception ex, T? result = default, int code = -1)
+            => new() { Code = code, Description = ex.Message, Result = result };
+
+        private ErrorDto<T> WithConn<T>(int codEmpresa, Func<SqlConnection, T> work, Func<T> empty)
+        {
+            try
+            {
+                using var connection = new SqlConnection(GetConnString(codEmpresa));
+                return Ok(work(connection));
+            }
+            catch (Exception ex)
+            {
+                return Fail(ex, empty());
+            }
+        }
+
+
         public ErrorDto<PePlanesDatosLista> PePlanesLista_Obtener(int CodEmpresa, string Jfiltros)
         {
             PePlanesFiltros filtros = JsonConvert.DeserializeObject<PePlanesFiltros>(Jfiltros) ?? new PePlanesFiltros();
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
-            var response = new ErrorDto<PePlanesDatosLista>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new PePlanesDatosLista
+            return WithConn(
+                CodEmpresa,
+                connection =>
                 {
-                    total = 0,
-                    data = new List<PePlanesDto>()
-                }
-            };
+                    var p = new DynamicParameters();
+                    bool hasFilter = TryAddPlanesFiltro(filtros, p);
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+                    int offset = filtros.pagina ?? 0;
+                    if (offset < 0) offset = 0;
 
-                var p = new DynamicParameters();
-                bool hasFilter = TryAddPlanesFiltro(filtros, p);
-
-                int offset = filtros.pagina ?? 0;
-                if (offset < 0) offset = 0;
-
-                const string countNoFilter = "select COUNT(1) from PE_PLANES;";
-                const string countWithFilter = @"select COUNT(1)
+                    const string countNoFilter = "select COUNT(1) from PE_PLANES;";
+                    const string countWithFilter = @"select COUNT(1)
 from PE_PLANES
 where CAST(PE_ID AS varchar(50)) LIKE @Q
    OR DESCRIPCION LIKE @Q
@@ -53,10 +67,14 @@ where CAST(PE_ID AS varchar(50)) LIKE @Q
    OR CAST(FINALIZACION AS varchar(50)) LIKE @Q
    OR CAST(INICIO AS varchar(50)) LIKE @Q;";
 
-                response.Result.total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
+                    var result = new PePlanesDatosLista
+                    {
+                        total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p),
+                        data = new List<PePlanesDto>()
+                    };
 
-                var sb = new StringBuilder();
-                sb.Append(@"select [PE_ID]
+                    var sb = new StringBuilder();
+                    sb.Append(@"select [PE_ID]
                           ,[DESCRIPCION]
                           ,[INICIO]
                           ,[FINALIZACION]
@@ -69,37 +87,32 @@ where CAST(PE_ID AS varchar(50)) LIKE @Q
                           ,[REGISTRO_FECHA]
                    from PE_PLANES ");
 
-                if (hasFilter)
-                {
-                    sb.Append(@" where CAST(PE_ID AS varchar(50)) LIKE @Q
+                    if (hasFilter)
+                    {
+                        sb.Append(@" where CAST(PE_ID AS varchar(50)) LIKE @Q
                          OR DESCRIPCION LIKE @Q
                          OR MISION LIKE @Q
                          OR VISION LIKE @Q
                          OR CAST(FINALIZACION AS varchar(50)) LIKE @Q
                          OR CAST(INICIO AS varchar(50)) LIKE @Q ");
-                }
+                    }
 
-                sb.Append(" order by PE_ID desc ");
+                    sb.Append(" order by PE_ID desc ");
 
-                if (filtros.pagina != null)
-                {
-                    int pageFetch = filtros.paginacion ?? 30;
-                    if (pageFetch < 1) pageFetch = 30;
-                    p.Add("@OFFSET", offset);
-                    p.Add("@FETCH", pageFetch);
-                    sb.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
-                }
+                    if (filtros.pagina != null)
+                    {
+                        int pageFetch = filtros.paginacion ?? 30;
+                        if (pageFetch < 1) pageFetch = 30;
+                        p.Add("@OFFSET", offset);
+                        p.Add("@FETCH", pageFetch);
+                        sb.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
+                    }
 
-                response.Result.data = connection.Query<PePlanesDto>(sb.ToString(), p).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result.data = null;
-            }
-
-            return response;
+                    result.data = connection.Query<PePlanesDto>(sb.ToString(), p).ToList();
+                    return result;
+                },
+                () => new PePlanesDatosLista { total = 0, data = new List<PePlanesDto>() }
+            );
         }
 
         private static bool TryAddPlanesFiltro(PePlanesFiltros filtros, DynamicParameters p)
@@ -114,44 +127,25 @@ where CAST(PE_ID AS varchar(50)) LIKE @Q
 
         public ErrorDto PePlanes_Guardar(int CodEmpresa, PePlanesDto plan)
         {
-            ErrorDto error = new()
-            {
-                Code = 0
-            };
-
             try
             {
-                if (plan.pe_id == 0)
-                {
-                    error = PePlanes_Insertar(CodEmpresa, plan);
-                }
-                else
-                {
-                    error = PePlanes_Actualizar(CodEmpresa, plan);
-                }
+                return plan.pe_id == 0
+                    ? PePlanes_Insertar(CodEmpresa, plan)
+                    : PePlanes_Actualizar(CodEmpresa, plan);
             }
             catch (Exception ex)
             {
-                error.Code = -1;
-                error.Description = ex.Message;
+                return Fail(ex);
             }
-
-            return error;
         }
 
         private ErrorDto PePlanes_Insertar(int CodEmpresa, PePlanesDto plan)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto error = new()
-            {
-                Code = 0
-            };
-
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                //Busco el ultimo siguiente consecutico si es null es el primero de la tabla como 0
-                var queryID = "SELECT ISNULL(MAX(PE_ID),0) + 1 FROM PE_PLANES";
+                using var connection = new SqlConnection(GetConnString(CodEmpresa));
+                // Busco el ultimo siguiente consecutivo; si es null es el primero de la tabla como 0
+                const string queryID = "SELECT ISNULL(MAX(PE_ID),0) + 1 FROM PE_PLANES";
                 var secuencia = connection.Query<int>(queryID).FirstOrDefault();
                 plan.pe_id = secuencia;
 
@@ -187,30 +181,20 @@ where CAST(PE_ID AS varchar(50)) LIKE @Q
                     registro_usuario = plan.registro_usuario
                 };
 
-                error.Code = connection.Execute(insert, p);
-
-                error.Description = plan.pe_id.ToString();
+                var rows = connection.Execute(insert, p);
+                return new ErrorDto { Code = rows, Description = plan.pe_id.ToString() };
             }
             catch (Exception ex)
             {
-                error.Code = -1;
-                error.Description = ex.Message;
+                return Fail(ex);
             }
-
-            return error;
         }
 
         private ErrorDto PePlanes_Actualizar(int CodEmpresa, PePlanesDto plan)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto error = new()
-            {
-                Code = 0
-            };
-
             try
             {
-                using var connection = new SqlConnection(stringConn);
+                using var connection = new SqlConnection(GetConnString(CodEmpresa));
 
                 const string update = @"UPDATE [dbo].[PE_PLANES]
    SET [DESCRIPCION] = @descripcion
@@ -235,61 +219,44 @@ where CAST(PE_ID AS varchar(50)) LIKE @Q
                     modifica_usuario = plan.modifica_usuario
                 };
 
-                error.Code = connection.Execute(update, p);
-
-                error.Description = plan.pe_id.ToString();
+                var rows = connection.Execute(update, p);
+                return new ErrorDto { Code = rows, Description = plan.pe_id.ToString() };
             }
             catch (Exception ex)
             {
-                error.Code = -1;
-                error.Description = ex.Message;
+                return Fail(ex);
             }
-
-            return error;
         }
 
         public ErrorDto PePlanes_Eliminar(int CodEmpresa, int pe_id)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto error = new()
-            {
-                Code = 0
-            };
-
             try
             {
-                using var connection = new SqlConnection(stringConn);
-                //Busco si el plan tiene registros en la tabla de perpectivas
+                using var connection = new SqlConnection(GetConnString(CodEmpresa));
+                // Busco si el plan tiene registros en la tabla de perspectivas
                 const string qCount = "SELECT COUNT(1) FROM PE_PERSPECTIVAS WHERE PE_ID = @pe_id";
                 var respuesta = connection.ExecuteScalar<int>(qCount, new { pe_id });
 
                 if (respuesta > 0)
-                {
-                    error.Code = -1;
-                    error.Description = "No se puede eliminar el plan, tiene perspectivas asociadas";
-                }
-                else
-                {
-                    const string qDelete = "DELETE FROM [dbo].[PE_PLANES] WHERE [PE_ID] = @pe_id";
-                    error.Code = connection.Execute(qDelete, new { pe_id });
-                }
+                    return new ErrorDto { Code = -1, Description = "No se puede eliminar el plan, tiene perspectivas asociadas" };
+
+                const string qDelete = "DELETE FROM [dbo].[PE_PLANES] WHERE [PE_ID] = @pe_id";
+                var rows = connection.Execute(qDelete, new { pe_id });
+                return new ErrorDto { Code = rows, Description = "Ok" };
             }
             catch (Exception ex)
             {
-                error.Code = -1;
-                error.Description = ex.Message;
+                return Fail(ex);
             }
-            return error;
         }
 
         public ErrorDto<List<PePlanesDto>> PePlanes_Exportar(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PePlanesDto>>();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                const string query = @"select [PE_ID]
+            return WithConn(
+                CodEmpresa,
+                connection =>
+                {
+                    const string query = @"select [PE_ID]
                               ,[DESCRIPCION]
                               ,[INICIO]
                               ,[FINALIZACION]
@@ -300,15 +267,10 @@ where CAST(PE_ID AS varchar(50)) LIKE @Q
                               ,[MODIFICA_USUARIO]
                               ,[REGISTRO_USUARIO]
                               ,[REGISTRO_FECHA] from PE_PLANES order by PE_ID desc ";
-                response.Result = connection.Query<PePlanesDto>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+                    return connection.Query<PePlanesDto>(query).ToList();
+                },
+                () => new List<PePlanesDto>()
+            );
         }
 
     }
