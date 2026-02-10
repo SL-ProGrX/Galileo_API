@@ -7,34 +7,35 @@
         public string? nombre { get; set; }
 
         public DateTime aso_fecha_nac { get; set; }
-        public string aso_telefono { get; set; }
+        public string aso_telefono { get; set; } = string.Empty;
 
-        public string aso_estado_persona_desc { get; set; }
-        public string aso_estado_persona { get; set; }
+        public string aso_estado_persona_desc { get; set; } = string.Empty;
+        public string aso_estado_persona { get; set; } = string.Empty;
 
-        public string aso_institucion_desc { get; set; }
-        public string aso_departamento_desc { get; set; }
-        public string aso_seccion_desc { get; set; }
-        public string aso_profesion_desc { get; set; }
+        public string aso_institucion_desc { get; set; } = string.Empty;
+        public string aso_departamento_desc { get; set; } = string.Empty;
+        public string aso_seccion_desc { get; set; } = string.Empty;
+        public string aso_profesion_desc { get; set; } = string.Empty;
 
-        public string aso_provincia_desc { get; set; }
-        public string aso_canton_desc { get; set; }
-        public string aso_distrito_desc { get; set; }
+        public string aso_provinciadesc { get; set; } = string.Empty;
+        public string aso_cantondesc { get; set; } = string.Empty;
+        public string aso_distritodesc { get; set; } = string.Empty;
 
-        public string aso_tipo_id { get; set; }
-        public string aso_direccion { get; set; }
-        public string aso_tipoiddesc { get; set; }
-        public string tipo_personeria { get; set; }
+        public string aso_tipo_id { get; set; } = string.Empty;
+        public string aso_direccion { get; set; } = string.Empty;
+        public string aso_tipoiddesc { get; set; } = string.Empty;
+        public string tipo_personeria { get; set; } = string.Empty;
 
-        public string aso_pais_desc { get; set; }
-        public string aso_nacionalidad { get; set; }
-        public string aso_estado_civil_desc { get; set; }
-        public string aso_estado_laboral_desc { get; set; }
-        public string aso_nivel_academico_desc { get; set; }
+        public string aso_paisdesc { get; set; } = string.Empty;
+        public string aso_nacionalidad { get; set; } = string.Empty;
+        public string aso_estado_civil_desc { get; set; } = string.Empty;
+        public string aso_estado_laboral_desc { get; set; } = string.Empty;
+        public string aso_nivel_academico_desc { get; set; } = string.Empty;
 
         // ---- roe.* (tabla cajas_roe) ----
         public int id_roe { get; set; }
-        public int? id_sesion { get; set; }
+
+        public string tipo_id { get; set; } = string.Empty;
 
         public string? cedula_aso { get; set; }
 
@@ -45,7 +46,11 @@
         public string? canton { get; set; }
         public string? distrito { get; set; }
 
-        public string? direccion { get; set; }
+        public string? cod_provincia { get; set; }
+        public string? cod_canton { get; set; }
+        public string? cod_distrito { get; set; }
+
+        public string? dir_referencia1 { get; set; }
         public string? telefono_depo { get; set; }
 
         public DateTime? fecha_nac_const_empr { get; set; }
@@ -54,7 +59,7 @@
         public string? num_doc { get; set; }
 
         public DateTime? fecha { get; set; }
-        public string? hora { get; set; }
+        public TimeSpan? hora { get; set; }
 
         public decimal? monto_local { get; set; }
         public decimal? monto_dol { get; set; }
@@ -80,11 +85,14 @@
         public string? observ_anulacion { get; set; }
 
         // ---- descripciones depositante ----
-        public string dep_tipoiddesc { get; set; }
-        public string dep_pais_desc { get; set; }
-        public string dep_provincia_desc { get; set; }
-        public string dep_canton_desc { get; set; }
-        public string dep_distrito_desc { get; set; }
+        public string dep_tipoiddesc { get; set; } = string.Empty;
+        public string dep_paisdesc { get; set; } = string.Empty;
+        public string dep_provinciadesc { get; set; } = string.Empty;
+        public string dep_cantondesc { get; set; } = string.Empty;
+        public string dep_distritodesc { get; set; } = string.Empty;
+
+        public string observacion { get; set; } = string.Empty;
+        public string id_sesion { get; set; } = string.Empty;
     }
 
     public class CajasRoeActualizaParamsModel
