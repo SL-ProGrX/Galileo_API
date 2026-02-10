@@ -20,6 +20,72 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
         private const string FromSql = " FROM vSys_Bitacora_Operaciones v LEFT JOIN SOCIOS s ON s.CEDULA = v.CEDULA ";
 
+        // NOTE: Keep SQL as constants to avoid runtime string concatenation (Sonar S2077)
+        private const string GestionesWhereBaseSql = @"
+                    WHERE (
+                           @TodasFechas = 1
+                           OR (@FechaIni IS NULL OR @FechaFin IS NULL)
+                           OR (v.[REGISTRO_FECHA] BETWEEN @FechaIni AND @FechaFin)
+                          )
+                      AND (@UsuarioLike IS NULL OR v.[REGISTRO_USUARIO] LIKE @UsuarioLike)
+                      AND (@GestionCod IS NULL OR v.[COD_GESTION] = @GestionCod)
+                      AND (
+                            @ClienteLike IS NULL
+                            OR v.[CEDULA] LIKE @ClienteLike
+                            OR s.[CEDULAR] LIKE @ClienteLike
+                            OR s.[NOMBRE] LIKE @ClienteLike
+                          )";
+
+        private const string GestionesWhereWithGeneralSql = GestionesWhereBaseSql + @"
+                      AND (
+                            @GeneralLike IS NULL
+                            OR v.[CEDULA] LIKE @GeneralLike
+                            OR s.[CEDULAR] LIKE @GeneralLike
+                            OR s.[NOMBRE] LIKE @GeneralLike
+                            OR v.[REGISTRO_USUARIO] LIKE @GeneralLike
+                            OR v.[DESCRIPCION] LIKE @GeneralLike
+                            OR v.[NOTAS] LIKE @GeneralLike
+                          )";
+
+        private const string GestionesCountWithGeneralSql = "SELECT COUNT(*) " + FromSql + GestionesWhereWithGeneralSql;
+
+        private const string GestionesSelectColumnsSql = @"
+                    SELECT
+                        v.[CEDULA]            AS Cedula,
+                        s.[NOMBRE]            AS Nombre,
+                        v.[REGISTRO_FECHA]    AS Registro_Fecha,
+                        v.[REGISTRO_USUARIO]  AS Registro_Usuario,
+                        v.[DESCRIPCION]       AS Descripcion,
+                        v.[NOTAS]             AS Notas,
+                        v.[COD_GESTION]       AS Cod_Gestion
+                    ";
+
+        private const string GestionesPagedOrderBySql = @"
+                    ORDER BY
+                        -- ASC
+                        CASE WHEN @SortOrder = 1 AND @SortField = 'identificacion' THEN v.[CEDULA] END ASC,
+                        CASE WHEN @SortOrder = 1 AND @SortField = 'nombre' THEN s.[NOMBRE] END ASC,
+                        CASE WHEN @SortOrder = 1 AND (@SortField = 'fecha' OR @SortField = 'registro_fecha') THEN v.[REGISTRO_FECHA] END ASC,
+                        CASE WHEN @SortOrder = 1 AND (@SortField = 'usuario' OR @SortField = 'registro_usuario') THEN v.[REGISTRO_USUARIO] END ASC,
+                        CASE WHEN @SortOrder = 1 AND (@SortField = 'gestion' OR @SortField = 'descripcion') THEN v.[DESCRIPCION] END ASC,
+                        CASE WHEN @SortOrder = 1 AND @SortField = 'notas' THEN v.[NOTAS] END ASC,
+
+                        -- DESC
+                        CASE WHEN @SortOrder = 0 AND @SortField = 'identificacion' THEN v.[CEDULA] END DESC,
+                        CASE WHEN @SortOrder = 0 AND @SortField = 'nombre' THEN s.[NOMBRE] END DESC,
+                        CASE WHEN @SortOrder = 0 AND (@SortField = 'fecha' OR @SortField = 'registro_fecha') THEN v.[REGISTRO_FECHA] END DESC,
+                        CASE WHEN @SortOrder = 0 AND (@SortField = 'usuario' OR @SortField = 'registro_usuario') THEN v.[REGISTRO_USUARIO] END DESC,
+                        CASE WHEN @SortOrder = 0 AND (@SortField = 'gestion' OR @SortField = 'descripcion') THEN v.[DESCRIPCION] END DESC,
+                        CASE WHEN @SortOrder = 0 AND @SortField = 'notas' THEN v.[NOTAS] END DESC,
+
+                        -- Fallback
+                        v.[REGISTRO_FECHA] DESC
+                    OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+
+        private const string GestionesPagedWithGeneralSql = GestionesSelectColumnsSql + FromSql + GestionesWhereWithGeneralSql + GestionesPagedOrderBySql;
+
+        private const string GestionesAllBaseSql = GestionesSelectColumnsSql + FromSql + GestionesWhereBaseSql + "\n                    ORDER BY v.[REGISTRO_FECHA] DESC";
+
         private static DateTime? ParseDateOrNull(string? value)
         {
             if (string.IsNullOrWhiteSpace(value))
@@ -97,37 +163,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             };
         }
 
-        private static string WhereSql(bool includeGeneral)
-        {
-            var baseWhere = @"
-                    WHERE (
-                           @TodasFechas = 1
-                           OR (@FechaIni IS NULL OR @FechaFin IS NULL)
-                           OR (v.[REGISTRO_FECHA] BETWEEN @FechaIni AND @FechaFin)
-                          )
-                      AND (@UsuarioLike IS NULL OR v.[REGISTRO_USUARIO] LIKE @UsuarioLike)
-                      AND (@GestionCod IS NULL OR v.[COD_GESTION] = @GestionCod)
-                      AND (
-                            @ClienteLike IS NULL
-                            OR v.[CEDULA] LIKE @ClienteLike
-                            OR s.[CEDULAR] LIKE @ClienteLike
-                            OR s.[NOMBRE] LIKE @ClienteLike
-                          )";
-
-            if (!includeGeneral)
-                return baseWhere;
-
-            return baseWhere + @"
-                      AND (
-                            @GeneralLike IS NULL
-                            OR v.[CEDULA] LIKE @GeneralLike
-                            OR s.[CEDULAR] LIKE @GeneralLike
-                            OR s.[NOMBRE] LIKE @GeneralLike
-                            OR v.[REGISTRO_USUARIO] LIKE @GeneralLike
-                            OR v.[DESCRIPCION] LIKE @GeneralLike
-                            OR v.[NOTAS] LIKE @GeneralLike
-                          )";
-        }
 
         private ErrorDto<T> WithEmpresaConn<T>(int codEmpresa, Func<SqlConnection, T> action)
             => DbHelper.WithConn(_portalDB, codEmpresa, action);
@@ -150,41 +185,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             return WithEmpresaConn(CodEmpresa, connection =>
             {
                 var spec = BuildSpec(filtro, includeGeneral: true);
-                var whereSql = WhereSql(includeGeneral: true);
-
-                var sqlCount = $@"SELECT COUNT(*) {FromSql} {whereSql}";
-
-                var sqlData = $@"
-                    SELECT
-                        v.[CEDULA]            AS Cedula,
-                        s.[NOMBRE]            AS Nombre,
-                        v.[REGISTRO_FECHA]    AS Registro_Fecha,
-                        v.[REGISTRO_USUARIO]  AS Registro_Usuario,
-                        v.[DESCRIPCION]       AS Descripcion,
-                        v.[NOTAS]             AS Notas,
-                        v.[COD_GESTION]       AS Cod_Gestion
-                    {FromSql}
-                    {whereSql}
-                    ORDER BY
-                        -- ASC
-                        CASE WHEN @SortOrder = 1 AND @SortField = 'identificacion' THEN v.[CEDULA] END ASC,
-                        CASE WHEN @SortOrder = 1 AND @SortField = 'nombre' THEN s.[NOMBRE] END ASC,
-                        CASE WHEN @SortOrder = 1 AND (@SortField = 'fecha' OR @SortField = 'registro_fecha') THEN v.[REGISTRO_FECHA] END ASC,
-                        CASE WHEN @SortOrder = 1 AND (@SortField = 'usuario' OR @SortField = 'registro_usuario') THEN v.[REGISTRO_USUARIO] END ASC,
-                        CASE WHEN @SortOrder = 1 AND (@SortField = 'gestion' OR @SortField = 'descripcion') THEN v.[DESCRIPCION] END ASC,
-                        CASE WHEN @SortOrder = 1 AND @SortField = 'notas' THEN v.[NOTAS] END ASC,
-
-                        -- DESC
-                        CASE WHEN @SortOrder = 0 AND @SortField = 'identificacion' THEN v.[CEDULA] END DESC,
-                        CASE WHEN @SortOrder = 0 AND @SortField = 'nombre' THEN s.[NOMBRE] END DESC,
-                        CASE WHEN @SortOrder = 0 AND (@SortField = 'fecha' OR @SortField = 'registro_fecha') THEN v.[REGISTRO_FECHA] END DESC,
-                        CASE WHEN @SortOrder = 0 AND (@SortField = 'usuario' OR @SortField = 'registro_usuario') THEN v.[REGISTRO_USUARIO] END DESC,
-                        CASE WHEN @SortOrder = 0 AND (@SortField = 'gestion' OR @SortField = 'descripcion') THEN v.[DESCRIPCION] END DESC,
-                        CASE WHEN @SortOrder = 0 AND @SortField = 'notas' THEN v.[NOTAS] END DESC,
-
-                        -- Fallback
-                        v.[REGISTRO_FECHA] DESC
-                    OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
+                var sqlCount = GestionesCountWithGeneralSql;
+                var sqlData = GestionesPagedWithGeneralSql;
 
                 var total = connection.QueryFirstOrDefault<int>(sqlCount, spec.Params);
                 var lista = connection.Query<SysGestionesBitacorasData>(sqlData, spec.Params).ToList();
@@ -220,20 +222,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             return WithEmpresaConn(CodEmpresa, connection =>
             {
                 var spec = BuildSpec(filtro, includeGeneral: false);
-                var whereSql = WhereSql(includeGeneral: false);
-
-                var sql = $@"
-                    SELECT
-                        v.[CEDULA]            AS Cedula,
-                        s.[NOMBRE]            AS Nombre,
-                        v.[REGISTRO_FECHA]    AS Registro_Fecha,
-                        v.[REGISTRO_USUARIO]  AS Registro_Usuario,
-                        v.[DESCRIPCION]       AS Descripcion,
-                        v.[NOTAS]             AS Notas,
-                        v.[COD_GESTION]       AS Cod_Gestion
-                    {FromSql}
-                    {whereSql}
-                    ORDER BY v.[REGISTRO_FECHA] DESC";
+                var sql = GestionesAllBaseSql;
 
                 return connection.Query<SysGestionesBitacorasData>(sql, spec.Params).ToList();
             });
