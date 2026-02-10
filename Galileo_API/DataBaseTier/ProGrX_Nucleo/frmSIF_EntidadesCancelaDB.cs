@@ -2,7 +2,6 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
@@ -27,7 +26,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         }
 
         private static string NormalizeUpper(string? value)
-            => (value ?? string.Empty).ToUpper();
+            => (value ?? string.Empty).Trim().ToUpperInvariant();
 
         private const string BaseSelectEntidadesPago = @"
                             SELECT
@@ -42,6 +41,44 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                    OR descripcion LIKE @search
                                    OR Registro_Usuario LIKE @search)";
 
+        private ErrorDto TryBitacora(int codEmpresa, string usuario, string detalleMovimiento, string movimiento)
+        {
+            try
+            {
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = codEmpresa,
+                    Usuario = usuario,
+                    DetalleMovimiento = detalleMovimiento,
+                    Movimiento = movimiento,
+                    Modulo = vModulo
+                });
+
+                return DbHelper.CreateOkResponse();
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message ?? UnexpectedErrorMessage);
+            }
+        }
+
+
+        private static int SafeOffset(FiltrosLazyLoadData? filtros)
+            => Math.Max(0, filtros?.pagina ?? 0);
+
+        private static int SafeFetch(FiltrosLazyLoadData? filtros)
+        {
+            var fetch = filtros?.paginacion ?? 0;
+            return fetch <= 0 ? int.MaxValue : fetch;
+        }
+
+        private static (string sortField, int sortOrder) SafeSort(FiltrosLazyLoadData? filtros)
+        {
+            var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+            var sortOrder = filtros?.sortOrder ?? 0; // 0=DESC, 1=ASC (según UI)
+            return (sortField, sortOrder);
+        }
+
 
         /// <summary>
         /// Lista las entidades pagadoras existentes con paginación y filtros.
@@ -54,17 +91,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
             {
                 var searchLike = BuildSearchLike(filtros);
-
-                var sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                var sortOrder = filtros?.sortOrder ?? 0; // 0=DESC, 1=ASC (según UI)
-
-                var offset = filtros?.pagina ?? 0;
-                var fetch = filtros?.paginacion ?? 0;
-                if (fetch <= 0)
-                {
-                    // Evita SQL inválido y mantiene comportamiento cercano al anterior (sin paginación real)
-                    fetch = int.MaxValue;
-                }
+                var (sortField, sortOrder) = SafeSort(filtros);
+                var offset = SafeOffset(filtros);
+                var fetch = SafeFetch(filtros);
 
                 // Total (keeps existing behavior: total of all rows, not filtered)
                 const string totalQuery = @"SELECT COUNT(COD_ENTIDAD_PAGO) FROM SIF_ENTIDADES_PAGO";
@@ -144,23 +173,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if ((res.Code ?? -1) != 0)
                 return res;
 
-            try
-            {
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Entidad Pagadora : {cod_entidad_pago}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? UnexpectedErrorMessage);
-            }
-
-            return res;
+            var bit = TryBitacora(CodEmpresa, usuario, $"Entidad Pagadora : {cod_entidad_pago}", "Elimina - WEB");
+            return (bit.Code ?? -1) == 0 ? res : bit;
         }
 
         /// <summary>
@@ -172,17 +186,17 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// 
         public ErrorDto SIF_EntidadesCancela_Guardar(int CodEmpresa, string usuario, SifEntidadesCancelaData entidad)
         {
-            try
+            var result = DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
             {
-                // Verifico si existe usuario (parametrizado)
-                var qUsuario = @"SELECT COUNT(Nombre) FROM usuarios WHERE estado = 'A' AND UPPER(Nombre) LIKE @userLike";
+                // Verifico si existe usuario activo
+                const string qUsuario = @"SELECT COUNT(Nombre)
+                                         FROM usuarios
+                                         WHERE estado = 'A'
+                                           AND UPPER(Nombre) LIKE @userLike";
+
                 var userLike = $"%{NormalizeUpper(entidad.registro_usuario)}%";
-                var existeUserRes = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, qUsuario, 0, new { userLike });
+                var existeuser = connection.QueryFirstOrDefault<int>(qUsuario, new { userLike });
 
-                if ((existeUserRes.Code ?? -1) != 0)
-                    return DbHelper.ErrorResponse(existeUserRes.Description ?? "Error", existeUserRes.Code ?? -1);
-
-                var existeuser = existeUserRes.Result;
                 if (existeuser == 0)
                 {
                     return new ErrorDto
@@ -192,15 +206,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     };
                 }
 
-                // Verifico si existe entidad (parametrizado)
-                var queryExiste = @"SELECT ISNULL(COUNT(*),0) AS Existe FROM SIF_ENTIDADES_PAGO WHERE UPPER(COD_ENTIDAD_PAGO) = @cod";
+                // Verifico si existe entidad
+                const string qExiste = @"SELECT ISNULL(COUNT(*),0)
+                                        FROM SIF_ENTIDADES_PAGO
+                                        WHERE UPPER(COD_ENTIDAD_PAGO) = @cod";
+
                 var cod = NormalizeUpper(entidad.cod_entidad_pago);
-                var existeRes = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, queryExiste, 0, new { cod });
-
-                if ((existeRes.Code ?? -1) != 0)
-                    return DbHelper.ErrorResponse(existeRes.Description ?? "Error", existeRes.Code ?? -1);
-
-                var existe = existeRes.Result;
+                var existe = connection.QueryFirstOrDefault<int>(qExiste, new { cod });
 
                 if (entidad.isNew)
                 {
@@ -216,7 +228,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     return SIF_EntidadesCancela_Insertar(CodEmpresa, usuario, entidad);
                 }
 
-                if (existe == 0 && !entidad.isNew)
+                if (existe == 0)
                 {
                     return new ErrorDto
                     {
@@ -226,11 +238,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 }
 
                 return SIF_EntidadesCancela_Actualizar(CodEmpresa, usuario, entidad);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? UnexpectedErrorMessage);
-            }
+            });
+
+            // Si WithConn falló por excepción, regresa un ErrorDto<ErrorDto>
+            if ((result.Code ?? -1) != 0)
+                return DbHelper.ErrorResponse(result.Description ?? UnexpectedErrorMessage, result.Code ?? -1);
+
+            return result.Result ?? DbHelper.ErrorResponse(UnexpectedErrorMessage);
         }
 
 
@@ -261,23 +275,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if ((res.Code ?? -1) != 0)
                 return res;
 
-            try
-            {
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Entidad Pagadora : {entidad.cod_entidad_pago} - {entidad.descripcion}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? UnexpectedErrorMessage);
-            }
-
-            return res;
+            var bit = TryBitacora(CodEmpresa, usuario, $"Entidad Pagadora : {entidad.cod_entidad_pago} - {entidad.descripcion}", "Modifica - WEB");
+            return (bit.Code ?? -1) == 0 ? res : bit;
         }
         
         
@@ -306,23 +305,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if ((res.Code ?? -1) != 0)
                 return res;
 
-            try
-            {
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Entidad pagadora : {entidad.cod_entidad_pago} - {entidad.descripcion}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? UnexpectedErrorMessage);
-            }
-
-            return res;
+            var bit = TryBitacora(CodEmpresa, usuario, $"Entidad pagadora : {entidad.cod_entidad_pago} - {entidad.descripcion}", "Registra - WEB");
+            return (bit.Code ?? -1) == 0 ? res : bit;
         }
         
         
