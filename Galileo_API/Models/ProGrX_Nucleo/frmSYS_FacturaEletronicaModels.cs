@@ -137,12 +137,11 @@ namespace Galileo.Models.ProGrX_Nucleo
             public string? tipo_id { get; set; }             
             public string? identificacion { get; set; }      
             public string? razon_social { get; set; }        
-            public short activa { get; set; }                
+            public short? activa { get; set; }                
             public string? inicio { get; set; }              
             public string? notifica_email { get; set; }      
-            public short notifica_activa { get; set; }       
-            public short notifica_cliente { get; set; }      
-
+            public short? notifica_activa { get; set; }       
+            public short? notifica_cliente { get; set; }      
             public int consec_fe { get; set; }               
             public int? consec_nc { get; set; }               
             public int? consec_nd { get; set; }               

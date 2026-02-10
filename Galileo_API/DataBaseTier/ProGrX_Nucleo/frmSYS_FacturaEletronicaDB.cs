@@ -55,7 +55,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private const string KEY_OBSERVACIONES = "Observaciones";
         private const string KEY_ID_FACTURA = "id_Factura";
         private const string IDENTIFICACION = "identificacion";
-
+        private static readonly string[] FECHA_FORMATOS = new[]
+        {
+            "yyyy-MM-dd",
+            "yyyy-MM-dd HH:mm:ss",
+            "yyyy/MM/dd",
+            "yyyy/MM/dd HH:mm:ss"
+        };
         private static readonly string[] _whitelistEstados = new[] { "T", "A", "P", "R" };
         public FrmSysFacturaElectronicaDB(IConfiguration config)
         {
@@ -382,13 +388,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
                 using var connProveedor = OpenPortalProveedorConn(CodEmpresa, codCliente);
 
-                LoadCorteCfg(connLocal, codCliente,
-                    out var incluyePolizas,
-                    out var incluyePrincipal,
-                    out var actividad,
-                    out var monedaCfg,
-                    out var codSucursal,
-                    out var terminalPOS);
+                var cfg = LoadCorteCfg(connLocal, codCliente);
 
                 SyncConsecutivo(connLocal, connProveedor, codCliente);
 
@@ -404,9 +404,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 var factRows = ObtenerFactRows(connLocal, codCliente);
                 if (factRows.Count > 0)
                 {
-                    var respFact = ProcesarFacturas(connLocal, connProveedor, factRows,
-                        codCliente, usuario, fechaFactura,
-                        incluyePolizas, incluyePrincipal, actividad, monedaCfg, codSucursal, terminalPOS);
+                    var respFact = ProcesarFacturas(
+                        connLocal,
+                        connProveedor,
+                        factRows,
+                        codCliente,
+                        usuario,
+                        fechaFactura,
+                        cfg
+                    );
 
                     if (respFact.Code != 0) return respFact;
                 }
@@ -1741,8 +1747,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 identificacion = ExtractKeyFromParametros(r, KEY_CEDULA),
                 razon_social = ExtractKeyFromParametros(r, KEY_RAZON_SOCIAL),
 
-                fecha = DateTime.TryParse(ExtractKeyFromParametros(r, KEY_FECHA_EMISION), out var f) ? f : (DateTime?)null,
-
+                fecha = DateTime.TryParseExact(
+                ExtractKeyFromParametros(r, KEY_FECHA_EMISION),
+                FECHA_FORMATOS,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.None,
+                out var f
+            ) ? f : (DateTime?)null,
                 total = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_VENTA)),
                 total_exento = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_EXENTO)),
                 total_gravado = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_GRAVADO)),
@@ -2013,27 +2024,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return true;
         }
+        private readonly record struct CorteCfg(
+    bool incluyePolizas,
+    bool incluyePrincipal,
+    string actividad,
+    string monedaCfg,
+    string codSucursal,
+    string terminalPOS
+);
 
-        private static void LoadCorteCfg(SqlConnection connLocal, string codCliente,out bool incluyePolizas,out bool incluyePrincipal,out string actividad,out string monedaCfg,out string codSucursal,out string terminalPOS)
+        private static CorteCfg LoadCorteCfg(SqlConnection connLocal, string codCliente)
         {
-            incluyePolizas = false;
-            incluyePrincipal = false;
-            actividad = "";
-            monedaCfg = "";
-            codSucursal = "2";
-            terminalPOS = "00001";
+            bool incluyePolizas = false;
+            bool incluyePrincipal = false;
+            string actividad = "";
+            string monedaCfg = "";
+            string codSucursal = "2";
+            string terminalPOS = "00001";
 
             const string sqlParams = @"
-    select
-        isnull(INCLUYE_POLIZAS,0)        as incluye_polizas,
-        isnull(INCLUYE_PRINCIPAL,0)     as incluye_principal,
-        rtrim(isnull(CABYS,''))         as cabys,
-        rtrim(isnull(ACTIVIDAD_ECONOMICA,'')) as actividad,
-        rtrim(isnull(MONEDA,''))        as moneda,
-        rtrim(isnull(SUCURSAL,''))      as sucursal,
-        rtrim(isnull(TERMINAL,''))      as terminal
-    from SYS_FE_PARAMETROS
-    where COD_CLIENTE = @cod_cliente;";
+            select
+                isnull(INCLUYE_POLIZAS,0)        as incluye_polizas,
+                isnull(INCLUYE_PRINCIPAL,0)     as incluye_principal,
+                rtrim(isnull(CABYS,''))         as cabys,
+                rtrim(isnull(ACTIVIDAD_ECONOMICA,'')) as actividad,
+                rtrim(isnull(MONEDA,''))        as moneda,
+                rtrim(isnull(SUCURSAL,''))      as sucursal,
+                rtrim(isnull(TERMINAL,''))      as terminal
+            from SYS_FE_PARAMETROS
+            where COD_CLIENTE = @cod_cliente;";
 
             var pCfg = connLocal.QueryFirstOrDefault<dynamic>(sqlParams, new { cod_cliente = codCliente });
             if (pCfg == null)
@@ -2041,6 +2060,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             incluyePolizas = Convert.ToInt32(pCfg.incluye_polizas) == 1;
             incluyePrincipal = Convert.ToInt32(pCfg.incluye_principal) == 1;
+
             actividad = Convert.ToString(pCfg.actividad) ?? "";
             monedaCfg = (Convert.ToString(pCfg.moneda) ?? "").Trim();
 
@@ -2049,7 +2069,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             terminalPOS = (Convert.ToString(pCfg.terminal) ?? "").Trim();
             if (string.IsNullOrWhiteSpace(terminalPOS)) terminalPOS = "00001";
+
+            return new CorteCfg(
+                incluyePolizas,
+                incluyePrincipal,
+                actividad,
+                monedaCfg,
+                codSucursal,
+                terminalPOS
+            );
         }
+
 
         private static void SyncConsecutivo(SqlConnection connLocal, SqlConnection connProveedor, string codCliente)
         {
@@ -2165,137 +2195,39 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             return (connLocal.QueryFirstOrDefault<string>(sqlCed, new { c = codCliente }) ?? "").Trim();
         }
 
-        private static ErrorDto ProcesarFacturas(SqlConnection connLocal,SqlConnection connProveedor,List<dynamic> factRows,string codCliente,string usuario,DateTime fechaFactura,bool incluyePolizas,bool incluyePrincipal, string actividad,string monedaCfg,string codSucursal,string terminalPOS)
+        private static ErrorDto ProcesarFacturas(SqlConnection connLocal,SqlConnection connProveedor,List<dynamic> factRows,string codCliente,string usuario,DateTime fechaFactura,CorteCfg cfg)
         {
             string cedulaEmisor = ObtenerCedulaEmisor(connLocal, codCliente);
             if (string.IsNullOrWhiteSpace(cedulaEmisor))
-                return DbHelper.ErrorResponse("No se pudo obtener la cédula del EMISOR. Defina SYS_FE_PARAMETROS.CEDULA_EMISOR (o indique la tabla correcta para la cédula jurídica del emisor).");
+                return DbHelper.ErrorResponse("No se pudo obtener la cédula del EMISOR.");
 
             var sbFact = new System.Text.StringBuilder();
 
             const string situacion = "1";
             const string tipoComprobante = "01";
 
+            var mapCtx = new FacturaMapCtx(
+                codCliente: codCliente,
+                usuario: usuario,
+                fechaFactura: fechaFactura,
+                cfg: cfg,
+                cedulaEmisor: cedulaEmisor,
+                situacion: situacion,
+                tipoComprobante: tipoComprobante
+            );
+
             foreach (var r in factRows)
             {
-                string comprobanteInterno = (Convert.ToString(r.FAC_NUMERO) ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(comprobanteInterno))
-                    continue;
+                var dto = MapFacturaProveedorRow(r, mapCtx);
+                if (dto == null) continue;
 
-                DateTime fechaTransac = DateTime.SpecifyKind(fechaFactura, DateTimeKind.Unspecified);
+                var respEnc = InsertEncProveedor(connProveedor, codCliente, usuario, dto, cfg);
+                if (respEnc.Code != 0) return respEnc;
 
-                string clave50 = MHaciendaDB.fxHacienda_Clave50((
-                codPais: "506",
-                fechaTransac: fechaTransac,
-                idEmpresa: cedulaEmisor,
-                codSucursal: codSucursal,
-                terminalPOS: terminalPOS,
-                comprobanteInterno: comprobanteInterno,
-                situacionComprobante: situacion,
-                tipoComprobante: tipoComprobante
-            ));
-                string clave20 = MHaciendaDB.fxHacienda_Clave20(
-                    codSucursal, terminalPOS, comprobanteInterno, tipoComprobante);
+                var respDet = InsertDetProveedor(connProveedor, codCliente, dto, cfg);
+                if (respDet.Code != 0) return respDet;
 
-                decimal intCor = r.INTCOR == null ? 0m : Convert.ToDecimal(r.INTCOR);
-                decimal intMor = r.INTMOR == null ? 0m : Convert.ToDecimal(r.INTMOR);
-                decimal cargos = r.CARGOS == null ? 0m : Convert.ToDecimal(r.CARGOS);
-                decimal poliza = r.POLIZA == null ? 0m : Convert.ToDecimal(r.POLIZA);
-                decimal principal = r.PRINCIPAL == null ? 0m : Convert.ToDecimal(r.PRINCIPAL);
-
-                decimal totalGravado = 0m;
-                decimal totalExento = intCor + intMor + cargos;
-                if (incluyePolizas) totalExento += poliza;
-                if (incluyePrincipal) totalExento += principal;
-
-                string moneda = ((Convert.ToString(r.MONEDA) ?? monedaCfg) ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(moneda)) moneda = "CRC";
-
-                decimal tipoCambio = r.TIPO_CAMBIO == null ? 1m : Convert.ToDecimal(r.TIPO_CAMBIO);
-
-                string emailDefaultApl = Convert.ToString(r.EMAIL_DEFAULT_APL) ?? "0";
-                bool apl = emailDefaultApl.Trim() == "1";
-
-                string emailDefault = Convert.ToString(r.EMAIL_DEFAULT) ?? "";
-                string emailRow = Convert.ToString(r.EMAIL) ?? Convert.ToString(r.Email) ?? "";
-                string emailDestino = apl ? emailDefault : emailRow;
-
-                string enviarCliente = Convert.ToString(r.EMAIL_CLIENTE_NO) ?? "0";
-                string clienteIdFE = Convert.ToString(r.CLIENTE_ID_FE) ?? "";
-                string clienteId = Convert.ToString(r.CLIENTE_ID) ?? "";
-                string tipoId = Convert.ToString(r.TIPO_ID) ?? Convert.ToString(r.Tipo_Id) ?? "";
-
-                string clienteIdDestino = string.IsNullOrWhiteSpace(clienteIdFE) ? clienteId : clienteIdFE;
-
-                var enc = connProveedor.QueryFirstOrDefault<dynamic>(
-                    "exec sp_IW_ENC_FACTURAInsert_ProGrX " +
-                    "@COD_CLIENTE,@CLAVE50,@CLAVE20,@CLIENTE_ID,@MONEDA,@SUCURSAL,'02',@FAC,30," +
-                    "@EMAIL,@NOENV,@FECHA,0,'05','','','','',null,'','','','1',@TERM,@TC," +
-                    "@TIPO_COMP,@TIPO_ID," +
-                    "@TOT_GR,@TOT_EX,0,@TOT_GR,0,0,@TOT_GR,@TOT_EX,0," +
-                    "@TOT,@DESC,@SUBTOT,@IMP,0,0,@TOTAL," +
-                    "1,@USR,@NOW,'','','FACT. PROGRX',@ACT;",
-                    new
-                    {
-                        COD_CLIENTE = codCliente,
-                        CLAVE50 = clave50,
-                        CLAVE20 = clave20,
-                        CLIENTE_ID = clienteIdDestino,
-                        MONEDA = moneda,
-                        SUCURSAL = codSucursal,
-                        FAC = comprobanteInterno,
-                        EMAIL = emailDestino,
-                        NOENV = enviarCliente,
-                        FECHA = $"{fechaTransac:yyyy/MM/dd HH:mm:ss}",
-                        TERM = terminalPOS,
-                        TC = tipoCambio.ToString(CultureInfo.InvariantCulture),
-                        TIPO_COMP = tipoComprobante,
-                        TIPO_ID = (tipoId ?? "").PadLeft(2, '0'),
-                        TOT_GR = totalGravado.ToString(CultureInfo.InvariantCulture),
-                        TOT_EX = totalExento.ToString(CultureInfo.InvariantCulture),
-                        TOT = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
-                        DESC = "0",
-                        SUBTOT = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
-                        IMP = "0",
-                        TOTAL = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
-                        USR = usuario,
-                        NOW = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}",
-                        ACT = actividad
-                    }
-                );
-
-                int cErrEnc;
-                string mErrEnc;
-                if (TryReadSpError(enc, out cErrEnc, out mErrEnc))
-                    return DbHelper.ErrorResponse(mErrEnc.Length > 0 ? mErrEnc : $"Error proveedor sp_IW_ENC_FACTURAInsert_ProGrX (code {cErrEnc}).");
-
-
-                long idFactura = GetIdFactura(enc);
-                if (idFactura == 0)
-                    return DbHelper.ErrorResponse("Proveedor no devolvió IdFactura al insertar encabezado.");
-
-                try
-                {
-                    int linea = 0;
-
-                    InsertFacturaDetalleProveedor(connProveedor, codCliente, idFactura, ref linea, "CRD001", "I", "INTERES CORRIENTE DEL MES", intCor, clave50);
-                    InsertFacturaDetalleProveedor(connProveedor, codCliente, idFactura, ref linea, "CRD002", "I", "INTERES ATRASADOS", intMor, clave50);
-                    InsertFacturaDetalleProveedor(connProveedor, codCliente, idFactura, ref linea, "CRD003", "I", "CARGOS ADM Y DE FORMALIZACION", cargos, clave50);
-
-                    if (incluyePolizas)
-                        InsertFacturaDetalleProveedor(connProveedor, codCliente, idFactura, ref linea, "CRD004", "Unid", "POLIZAS DEL CREDITO", poliza, clave50);
-
-                    if (incluyePrincipal)
-                        InsertFacturaDetalleProveedor(connProveedor, codCliente, idFactura, ref linea, "CRD005", "Unid", "ABONO AL CREDITO", principal, clave50);
-                }
-                catch (InvalidOperationException exDet)
-                {
-                    return DbHelper.ErrorResponse(exDet.Message);
-                }
-
-                sbFact.Append(" exec spCrd_Facturacion_Notifica_Result ");
-                sbFact.Append($"'{SqlEscape(codCliente)}','{SqlEscape(comprobanteInterno)}','{idFactura}','{SqlEscape(usuario)}';");
-                sbFact.AppendLine();
+                AppendNotificaLocal(sbFact, codCliente, dto.comprobanteInterno, dto.idFactura, usuario);
 
                 if (sbFact.Length > 20000)
                 {
@@ -2310,9 +2242,213 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             return DbHelper.OkResponse("Ok");
         }
 
-        private static void InsertFacturaDetalleProveedor(SqlConnection connProveedor, string codCliente,long idFactura,ref int linea,string codigo,string unidad,string detalle,decimal monto,string clave50)
+        private static FacturaProcDto? MapFacturaProveedorRow(dynamic r, FacturaMapCtx ctx)
         {
-            if (monto <= 0) return;
+            string comprobanteInterno = (Convert.ToString(r.FAC_NUMERO) ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(comprobanteInterno))
+                return null;
+
+            DateTime fechaTransac = DateTime.SpecifyKind(ctx.fechaFactura, DateTimeKind.Unspecified);
+
+            string clave50 = MHaciendaDB.fxHacienda_Clave50((
+                codPais: "506",
+                fechaTransac: fechaTransac,
+                idEmpresa: ctx.cedulaEmisor,
+                codSucursal: ctx.cfg.codSucursal,
+                terminalPOS: ctx.cfg.terminalPOS,
+                comprobanteInterno: comprobanteInterno,
+                situacionComprobante: ctx.situacion,
+                tipoComprobante: ctx.tipoComprobante
+            ));
+
+            string clave20 = MHaciendaDB.fxHacienda_Clave20(
+                ctx.cfg.codSucursal, ctx.cfg.terminalPOS, comprobanteInterno, ctx.tipoComprobante
+            );
+
+            decimal intCor = r.INTCOR == null ? 0m : Convert.ToDecimal(r.INTCOR);
+            decimal intMor = r.INTMOR == null ? 0m : Convert.ToDecimal(r.INTMOR);
+            decimal cargos = r.CARGOS == null ? 0m : Convert.ToDecimal(r.CARGOS);
+            decimal poliza = r.POLIZA == null ? 0m : Convert.ToDecimal(r.POLIZA);
+            decimal principal = r.PRINCIPAL == null ? 0m : Convert.ToDecimal(r.PRINCIPAL);
+
+            decimal totalGravado = 0m;
+            decimal totalExento = intCor + intMor + cargos;
+
+            if (ctx.cfg.incluyePolizas) totalExento += poliza;
+            if (ctx.cfg.incluyePrincipal) totalExento += principal;
+
+            string moneda = ((Convert.ToString(r.MONEDA) ?? ctx.cfg.monedaCfg) ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(moneda)) moneda = "CRC";
+
+            decimal tipoCambio = r.TIPO_CAMBIO == null ? 1m : Convert.ToDecimal(r.TIPO_CAMBIO);
+
+            string emailDefaultApl = Convert.ToString(r.EMAIL_DEFAULT_APL) ?? "0";
+            bool apl = emailDefaultApl.Trim() == "1";
+
+            string emailDefault = Convert.ToString(r.EMAIL_DEFAULT) ?? "";
+            string emailRow = Convert.ToString(r.EMAIL) ?? Convert.ToString(r.Email) ?? "";
+            string emailDestino = apl ? emailDefault : emailRow;
+
+            string enviarCliente = Convert.ToString(r.EMAIL_CLIENTE_NO) ?? "0";
+
+            string clienteIdFE = Convert.ToString(r.CLIENTE_ID_FE) ?? "";
+            string clienteId = Convert.ToString(r.CLIENTE_ID) ?? "";
+            string tipoId = Convert.ToString(r.TIPO_ID) ?? Convert.ToString(r.Tipo_Id) ?? "";
+
+            string clienteIdDestino = string.IsNullOrWhiteSpace(clienteIdFE) ? clienteId : clienteIdFE;
+
+            return new FacturaProcDto
+            {
+                comprobanteInterno = comprobanteInterno,
+                clave50 = clave50,
+                clave20 = clave20,
+
+                intCor = intCor,
+                intMor = intMor,
+                cargos = cargos,
+                poliza = poliza,
+                principal = principal,
+
+                totalGravado = totalGravado,
+                totalExento = totalExento,
+
+                moneda = moneda,
+                tipoCambio = tipoCambio,
+
+                emailDestino = emailDestino,
+                enviarCliente = enviarCliente,
+
+                clienteIdDestino = clienteIdDestino,
+                tipoId = (tipoId ?? "").PadLeft(2, '0')
+            };
+        }
+
+
+        private static ErrorDto InsertEncProveedor(SqlConnection connProveedor,string codCliente,string usuario, FacturaProcDto dto,CorteCfg cfg)
+        {
+            DateTime now = DateTime.Now;
+            string fechaSp = $"{DateTime.SpecifyKind(now, DateTimeKind.Unspecified):yyyy/MM/dd HH:mm:ss}";
+
+            var enc = connProveedor.QueryFirstOrDefault<dynamic>(
+                "exec sp_IW_ENC_FACTURAInsert_ProGrX " +
+                "@COD_CLIENTE,@CLAVE50,@CLAVE20,@CLIENTE_ID,@MONEDA,@SUCURSAL,'02',@FAC,30," +
+                "@EMAIL,@NOENV,@FECHA,0,'05','','','','',null,'','','','1',@TERM,@TC," +
+                "@TIPO_COMP,@TIPO_ID," +
+                "@TOT_GR,@TOT_EX,0,@TOT_GR,0,0,@TOT_GR,@TOT_EX,0," +
+                "@TOT,@DESC,@SUBTOT,@IMP,0,0,@TOTAL," +
+                "1,@USR,@NOW,'','','FACT. PROGRX',@ACT;",
+                new
+                {
+                    COD_CLIENTE = codCliente,
+                    CLAVE50 = dto.clave50,
+                    CLAVE20 = dto.clave20,
+                    CLIENTE_ID = dto.clienteIdDestino,
+                    MONEDA = dto.moneda,
+                    SUCURSAL = cfg.codSucursal,
+                    FAC = dto.comprobanteInterno,
+                    EMAIL = dto.emailDestino,
+                    NOENV = dto.enviarCliente,
+                    FECHA = fechaSp,
+                    TERM = cfg.terminalPOS,
+                    TC = dto.tipoCambio.ToString(CultureInfo.InvariantCulture),
+                    TIPO_COMP = "01",
+                    TIPO_ID = dto.tipoId,
+
+                    TOT_GR = dto.totalGravado.ToString(CultureInfo.InvariantCulture),
+                    TOT_EX = dto.totalExento.ToString(CultureInfo.InvariantCulture),
+                    TOT = (dto.totalGravado + dto.totalExento).ToString(CultureInfo.InvariantCulture),
+                    DESC = "0",
+                    SUBTOT = (dto.totalGravado + dto.totalExento).ToString(CultureInfo.InvariantCulture),
+                    IMP = "0",
+                    TOTAL = (dto.totalGravado + dto.totalExento).ToString(CultureInfo.InvariantCulture),
+
+                    USR = usuario,
+                    NOW = $"{now:yyyy/MM/dd HH:mm:ss}",
+                    ACT = cfg.actividad
+                }
+            );
+
+            int cErrEnc;
+            string mErrEnc;
+            if (TryReadSpError(enc, out cErrEnc, out mErrEnc))
+                return DbHelper.ErrorResponse(mErrEnc.Length > 0 ? mErrEnc : $"Error proveedor sp_IW_ENC_FACTURAInsert_ProGrX (code {cErrEnc}).");
+
+            long idFactura = GetIdFactura(enc);
+            if (idFactura == 0)
+                return DbHelper.ErrorResponse("Proveedor no devolvió IdFactura al insertar encabezado.");
+
+            dto.idFactura = idFactura;
+            return DbHelper.OkResponse("Ok");
+        }
+        private static ErrorDto InsertDetProveedor(SqlConnection connProveedor,string codCliente,FacturaProcDto dto,CorteCfg cfg)
+        {
+            try
+            {
+                int linea = 0;
+
+                InsertFacturaDetalleProveedor(
+                    connProveedor,
+                    codCliente,
+                    dto.idFactura,
+                    ref linea,
+                    new FacturaDetDto("CRD001", "I", "INTERES CORRIENTE DEL MES", dto.intCor, dto.clave50)
+                );
+
+                InsertFacturaDetalleProveedor(
+                    connProveedor,
+                    codCliente,
+                    dto.idFactura,
+                    ref linea,
+                    new FacturaDetDto("CRD002", "I", "INTERES ATRASADOS", dto.intMor, dto.clave50)
+                );
+
+                InsertFacturaDetalleProveedor(
+                    connProveedor,
+                    codCliente,
+                    dto.idFactura,
+                    ref linea,
+                    new FacturaDetDto("CRD003", "I", "CARGOS ADM Y DE FORMALIZACION", dto.cargos, dto.clave50)
+                );
+
+                if (cfg.incluyePolizas)
+                {
+                    InsertFacturaDetalleProveedor(
+                        connProveedor,
+                        codCliente,
+                        dto.idFactura,
+                        ref linea,
+                        new FacturaDetDto("CRD004", "Unid", "POLIZAS DEL CREDITO", dto.poliza, dto.clave50)
+                    );
+                }
+
+                if (cfg.incluyePrincipal)
+                {
+                    InsertFacturaDetalleProveedor(
+                        connProveedor,
+                        codCliente,
+                        dto.idFactura,
+                        ref linea,
+                        new FacturaDetDto("CRD005", "Unid", "ABONO AL CREDITO", dto.principal, dto.clave50)
+                    );
+                }
+
+                return DbHelper.OkResponse("Ok");
+            }
+            catch (InvalidOperationException exDet)
+            {
+                return DbHelper.ErrorResponse(exDet.Message);
+            }
+        }
+        private static void AppendNotificaLocal(System.Text.StringBuilder sb,string codCliente,string comprobanteInterno,long idFactura,string usuario)
+        {
+            sb.Append(" exec spCrd_Facturacion_Notifica_Result ");
+            sb.Append($"'{SqlEscape(codCliente)}','{SqlEscape(comprobanteInterno)}','{idFactura}','{SqlEscape(usuario)}';");
+            sb.AppendLine();
+        }
+
+        private static void InsertFacturaDetalleProveedor(SqlConnection connProveedor, string codCliente, long idFactura, ref int linea,FacturaDetDto dto)
+        {
+            if (dto.monto <= 0) return;
             linea++;
 
             var det = connProveedor.QueryFirstOrDefault<dynamic>(
@@ -2325,19 +2461,21 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     COD_CLIENTE = codCliente,
                     ID_FACT = idFactura,
                     LINEA = linea,
-                    CODIGO = codigo,
-                    UNIDAD = unidad,
-                    DETALLE = detalle,
-                    PRECIO = monto.ToString(CultureInfo.InvariantCulture),
-                    MONTO = monto.ToString(CultureInfo.InvariantCulture),
-                    CLAVE50 = clave50
+                    CODIGO = dto.codigo,
+                    UNIDAD = dto.unidad,
+                    DETALLE = dto.detalle,
+                    PRECIO = dto.monto.ToString(CultureInfo.InvariantCulture),
+                    MONTO = dto.monto.ToString(CultureInfo.InvariantCulture),
+                    CLAVE50 = dto.clave50
                 }
             );
 
             int cErrDet;
             string mErrDet;
             if (TryReadSpError(det, out cErrDet, out mErrDet))
-                throw new InvalidOperationException(mErrDet.Length > 0 ? mErrDet : $"Error proveedor sp_IW_DET_FACTURAInsert_ProGrX (code {cErrDet}).");
+                throw new InvalidOperationException(
+                    mErrDet.Length > 0 ? mErrDet : $"Error proveedor sp_IW_DET_FACTURAInsert_ProGrX (code {cErrDet})."
+                );
         }
 
         private static bool TryReadSpError(object? row, out int code, out string desc)
@@ -2549,6 +2687,77 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             sb.AppendLine();
         }
 
+        private sealed class FacturaProcDto
+        {
+            public string comprobanteInterno = "";
+            public string clave50 = "";
+            public string clave20 = "";
+
+            public decimal intCor;
+            public decimal intMor;
+            public decimal cargos;
+            public decimal poliza;
+            public decimal principal;
+
+            public decimal totalGravado;
+            public decimal totalExento;
+
+            public string moneda = "CRC";
+            public decimal tipoCambio = 1m;
+
+            public string emailDestino = "";
+            public string enviarCliente = "0";
+
+            public string clienteIdDestino = "";
+            public string tipoId = "";
+
+            public long idFactura;
+        }
+        private readonly struct FacturaDetDto
+        {
+            public readonly string codigo;
+            public readonly string unidad;
+            public readonly string detalle;
+            public readonly decimal monto;
+            public readonly string clave50;
+
+            public FacturaDetDto(string codigo, string unidad, string detalle, decimal monto, string clave50)
+            {
+                this.codigo = (codigo ?? "").Trim();
+                this.unidad = (unidad ?? "").Trim();
+                this.detalle = (detalle ?? "").Trim();
+                this.monto = monto;
+                this.clave50 = (clave50 ?? "").Trim();
+            }
+        }
+        private readonly struct FacturaMapCtx
+        {
+            public readonly string codCliente;
+            public readonly string usuario;
+            public readonly DateTime fechaFactura;
+            public readonly CorteCfg cfg;
+            public readonly string cedulaEmisor;
+            public readonly string situacion;
+            public readonly string tipoComprobante;
+
+            public FacturaMapCtx(
+                string codCliente,
+                string usuario,
+                DateTime fechaFactura,
+                CorteCfg cfg,
+                string cedulaEmisor,
+                string situacion,
+                string tipoComprobante)
+            {
+                this.codCliente = (codCliente ?? "").Trim();
+                this.usuario = (usuario ?? "").Trim();
+                this.fechaFactura = fechaFactura;
+                this.cfg = cfg;
+                this.cedulaEmisor = (cedulaEmisor ?? "").Trim();
+                this.situacion = (situacion ?? "").Trim();
+                this.tipoComprobante = (tipoComprobante ?? "").Trim();
+            }
+        }
 
     }
 }
