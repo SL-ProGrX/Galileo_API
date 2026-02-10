@@ -10,12 +10,127 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSysGestionesBitacoraDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
 
         public FrmSysGestionesBitacoraDB(IConfiguration config)
         {
-            _config = config;
+            _portalDB = new PortalDB(config);
         }
+
+
+        private const string FromSql = " FROM vSys_Bitacora_Operaciones v LEFT JOIN SOCIOS s ON s.CEDULA = v.CEDULA ";
+
+        private static DateTime? ParseDateOrNull(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+                return null;
+
+            return DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out var d)
+                ? d
+                : null;
+        }
+
+        private sealed class GestionesSpec
+        {
+            public DynamicParameters Params { get; init; } = new();
+            public int Offset { get; init; }
+            public int Fetch { get; init; }
+            public string SortField { get; init; } = string.Empty;
+            public int SortOrder { get; init; }
+        }
+
+        private static GestionesSpec BuildSpec(SysGestionesBitacoraFiltro? filtro, bool includeGeneral)
+        {
+            var f = filtro ?? new SysGestionesBitacoraFiltro();
+            var ui = f.Filtros ?? new FiltrosLazyLoadData();
+
+            var offset = Math.Max(0, ui.pagina);
+            var fetch = Math.Max(1, ui.paginacion == 0 ? 30 : ui.paginacion);
+
+            var sortOrder = ui.sortOrder; // 0=DESC, 1=ASC
+            var sortField = (ui.sortField ?? string.Empty).Trim().ToLowerInvariant();
+
+            DateTime? fechaIni = null;
+            DateTime? fechaFin = null;
+
+            if (!f.TodasFechas)
+            {
+                var di = ParseDateOrNull(f.FechaInicio);
+                var df = ParseDateOrNull(f.FechaFin);
+
+                if (di.HasValue) fechaIni = di.Value.Date;
+                if (df.HasValue) fechaFin = df.Value.Date.AddDays(1).AddSeconds(-1);
+            }
+
+            string? usuarioLike = string.IsNullOrWhiteSpace(f.UsuarioBuscar) ? null : $"%{f.UsuarioBuscar.Trim()}%";
+            string? clienteLike = string.IsNullOrWhiteSpace(f.ClienteBuscar) ? null : $"%{f.ClienteBuscar.Trim()}%";
+
+            string? gestionCod = null;
+            if (!string.IsNullOrWhiteSpace(f.GestionCod) && !f.GestionCod.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
+                gestionCod = f.GestionCod.Trim();
+
+            string? generalLike = string.IsNullOrWhiteSpace(ui.filtro) ? null : $"%{ui.filtro.Trim()}%";
+
+            var p = new DynamicParameters();
+            p.Add("@TodasFechas", f.TodasFechas ? 1 : 0, DbType.Int32);
+            p.Add("@FechaIni", fechaIni, DbType.DateTime);
+            p.Add("@FechaFin", fechaFin, DbType.DateTime);
+            p.Add("@UsuarioLike", usuarioLike, DbType.String);
+            p.Add("@ClienteLike", clienteLike, DbType.String);
+            p.Add("@GestionCod", gestionCod, DbType.String);
+
+            if (includeGeneral)
+                p.Add("@GeneralLike", generalLike, DbType.String);
+
+            p.Add("@SortField", sortField, DbType.String);
+            p.Add("@SortOrder", sortOrder, DbType.Int32);
+            p.Add("@Offset", offset, DbType.Int32);
+            p.Add("@Fetch", fetch, DbType.Int32);
+
+            return new GestionesSpec
+            {
+                Params = p,
+                Offset = offset,
+                Fetch = fetch,
+                SortField = sortField,
+                SortOrder = sortOrder
+            };
+        }
+
+        private static string WhereSql(bool includeGeneral)
+        {
+            var baseWhere = @"
+                    WHERE (
+                           @TodasFechas = 1
+                           OR (@FechaIni IS NULL OR @FechaFin IS NULL)
+                           OR (v.[REGISTRO_FECHA] BETWEEN @FechaIni AND @FechaFin)
+                          )
+                      AND (@UsuarioLike IS NULL OR v.[REGISTRO_USUARIO] LIKE @UsuarioLike)
+                      AND (@GestionCod IS NULL OR v.[COD_GESTION] = @GestionCod)
+                      AND (
+                            @ClienteLike IS NULL
+                            OR v.[CEDULA] LIKE @ClienteLike
+                            OR s.[CEDULAR] LIKE @ClienteLike
+                            OR s.[NOMBRE] LIKE @ClienteLike
+                          )";
+
+            if (!includeGeneral)
+                return baseWhere;
+
+            return baseWhere + @"
+                      AND (
+                            @GeneralLike IS NULL
+                            OR v.[CEDULA] LIKE @GeneralLike
+                            OR s.[CEDULAR] LIKE @GeneralLike
+                            OR s.[NOMBRE] LIKE @GeneralLike
+                            OR v.[REGISTRO_USUARIO] LIKE @GeneralLike
+                            OR v.[DESCRIPCION] LIKE @GeneralLike
+                            OR v.[NOTAS] LIKE @GeneralLike
+                          )";
+        }
+
+        private ErrorDto<T> WithEmpresaConn<T>(int codEmpresa, Func<SqlConnection, T> action)
+            => DbHelper.WithConn(_portalDB, codEmpresa, action);
 
 
         /// <summary>
@@ -32,77 +147,13 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SysGestionesBitacorasLista> Sys_Gestiones_Bitacoras_Lista_Obtener(int CodEmpresa, SysGestionesBitacoraFiltro filtro)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SysGestionesBitacorasLista>
+            return WithEmpresaConn(CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new SysGestionesBitacorasLista { total = 0, lista = new List<SysGestionesBitacorasData>() }
-            };
+                var spec = BuildSpec(filtro, includeGeneral: true);
+                var whereSql = WhereSql(includeGeneral: true);
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+                var sqlCount = $@"SELECT COUNT(*) {FromSql} {whereSql}";
 
-                const string fromSql = " FROM vSys_Bitacora_Operaciones v LEFT JOIN SOCIOS s ON s.CEDULA = v.CEDULA ";
-
-                // Normalización de filtros
-                var f = filtro ?? new SysGestionesBitacoraFiltro();
-                var ui = f.Filtros ?? new FiltrosLazyLoadData();
-
-                int offset = Math.Max(0, ui.pagina);
-                int fetch = Math.Max(1, ui.paginacion == 0 ? 30 : ui.paginacion);
-
-                int sortOrder = ui.sortOrder; // 0=DESC, 1=ASC
-                string sortField = (ui.sortField ?? string.Empty).Trim().ToLowerInvariant();
-
-                // Fechas
-                DateTime? fechaIni = null;
-                DateTime? fechaFin = null;
-                if (!f.TodasFechas && !string.IsNullOrWhiteSpace(f.FechaInicio)
-                    && DateTime.TryParse(f.FechaInicio, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out var di))
-                    fechaIni = di.Date;
-                if (!f.TodasFechas && !string.IsNullOrWhiteSpace(f.FechaFin)
-                    && DateTime.TryParse(f.FechaFin, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out var df))
-                    fechaFin = df.Date.AddDays(1).AddSeconds(-1);
-
-                string? usuarioLike = string.IsNullOrWhiteSpace(f.UsuarioBuscar) ? null : $"%{f.UsuarioBuscar.Trim()}%";
-                string? clienteLike = string.IsNullOrWhiteSpace(f.ClienteBuscar) ? null : $"%{f.ClienteBuscar.Trim()}%";
-
-                string? gestionCod = null;
-                if (!string.IsNullOrWhiteSpace(f.GestionCod) && !f.GestionCod.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
-                    gestionCod = f.GestionCod.Trim();
-
-                string? generalLike = string.IsNullOrWhiteSpace(ui.filtro) ? null : $"%{ui.filtro.Trim()}%";
-
-                const string whereSql = @"
-                    WHERE (
-                           @TodasFechas = 1
-                           OR (@FechaIni IS NULL OR @FechaFin IS NULL)
-                           OR (v.[REGISTRO_FECHA] BETWEEN @FechaIni AND @FechaFin)
-                          )
-                      AND (@UsuarioLike IS NULL OR v.[REGISTRO_USUARIO] LIKE @UsuarioLike)
-                      AND (@GestionCod IS NULL OR v.[COD_GESTION] = @GestionCod)
-                      AND (
-                            @ClienteLike IS NULL
-                            OR v.[CEDULA] LIKE @ClienteLike
-                            OR s.[CEDULAR] LIKE @ClienteLike
-                            OR s.[NOMBRE] LIKE @ClienteLike
-                          )
-                      AND (
-                            @GeneralLike IS NULL
-                            OR v.[CEDULA] LIKE @GeneralLike
-                            OR s.[CEDULAR] LIKE @GeneralLike
-                            OR s.[NOMBRE] LIKE @GeneralLike
-                            OR v.[REGISTRO_USUARIO] LIKE @GeneralLike
-                            OR v.[DESCRIPCION] LIKE @GeneralLike
-                            OR v.[NOTAS] LIKE @GeneralLike
-                          )";
-
-                // Total
-                var sqlCount = $@"SELECT COUNT(*) {fromSql} {whereSql}";
-
-                // Lista paginada (orden por whitelist)
                 var sqlData = $@"
                     SELECT
                         v.[CEDULA]            AS Cedula,
@@ -112,7 +163,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         v.[DESCRIPCION]       AS Descripcion,
                         v.[NOTAS]             AS Notas,
                         v.[COD_GESTION]       AS Cod_Gestion
-                    {fromSql}
+                    {FromSql}
                     {whereSql}
                     ORDER BY
                         -- ASC
@@ -135,31 +186,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         v.[REGISTRO_FECHA] DESC
                     OFFSET @Offset ROWS FETCH NEXT @Fetch ROWS ONLY;";
 
-                var p = new DynamicParameters();
-                p.Add("@TodasFechas", f.TodasFechas ? 1 : 0, DbType.Int32);
-                p.Add("@FechaIni", fechaIni, DbType.DateTime);
-                p.Add("@FechaFin", fechaFin, DbType.DateTime);
-                p.Add("@UsuarioLike", usuarioLike, DbType.String);
-                p.Add("@ClienteLike", clienteLike, DbType.String);
-                p.Add("@GestionCod", gestionCod, DbType.String);
-                p.Add("@GeneralLike", generalLike, DbType.String);
-                p.Add("@SortField", sortField, DbType.String);
-                p.Add("@SortOrder", sortOrder, DbType.Int32);
-                p.Add("@Offset", offset, DbType.Int32);
-                p.Add("@Fetch", fetch, DbType.Int32);
+                var total = connection.QueryFirstOrDefault<int>(sqlCount, spec.Params);
+                var lista = connection.Query<SysGestionesBitacorasData>(sqlData, spec.Params).ToList();
 
-                result.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
-                result.Result.lista = connection.Query<SysGestionesBitacorasData>(sqlData, p).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = null;
-            }
-
-            return result;
+                return new SysGestionesBitacorasLista { total = total, lista = lista };
+            });
         }
 
 
@@ -186,52 +217,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SysGestionesBitacorasData>> Sys_Gestiones_Bitacoras_Obtener(int CodEmpresa, SysGestionesBitacoraFiltro filtro)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SysGestionesBitacorasData>>
+            return WithEmpresaConn(CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SysGestionesBitacorasData>()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                const string fromSql = " FROM vSys_Bitacora_Operaciones v LEFT JOIN SOCIOS s ON s.CEDULA = v.CEDULA ";
-
-                var f = filtro ?? new SysGestionesBitacoraFiltro();
-
-                DateTime? fechaIni = null;
-                DateTime? fechaFin = null;
-                if (!f.TodasFechas && !string.IsNullOrWhiteSpace(f.FechaInicio)
-                    && DateTime.TryParse(f.FechaInicio, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out var di))
-                    fechaIni = di.Date;
-                if (!f.TodasFechas && !string.IsNullOrWhiteSpace(f.FechaFin)
-                    && DateTime.TryParse(f.FechaFin, CultureInfo.CurrentCulture, DateTimeStyles.AllowWhiteSpaces, out var df))
-                    fechaFin = df.Date.AddDays(1).AddSeconds(-1);
-
-                string? usuarioLike = string.IsNullOrWhiteSpace(f.UsuarioBuscar) ? null : $"%{f.UsuarioBuscar.Trim()}%";
-                string? clienteLike = string.IsNullOrWhiteSpace(f.ClienteBuscar) ? null : $"%{f.ClienteBuscar.Trim()}%";
-
-                string? gestionCod = null;
-                if (!string.IsNullOrWhiteSpace(f.GestionCod) && !f.GestionCod.Equals("TODOS", StringComparison.OrdinalIgnoreCase))
-                    gestionCod = f.GestionCod.Trim();
-
-                const string whereSql = @"
-                    WHERE (
-                           @TodasFechas = 1
-                           OR (@FechaIni IS NULL OR @FechaFin IS NULL)
-                           OR (v.[REGISTRO_FECHA] BETWEEN @FechaIni AND @FechaFin)
-                          )
-                      AND (@UsuarioLike IS NULL OR v.[REGISTRO_USUARIO] LIKE @UsuarioLike)
-                      AND (@GestionCod IS NULL OR v.[COD_GESTION] = @GestionCod)
-                      AND (
-                            @ClienteLike IS NULL
-                            OR v.[CEDULA] LIKE @ClienteLike
-                            OR s.[CEDULAR] LIKE @ClienteLike
-                            OR s.[NOMBRE] LIKE @ClienteLike
-                          )";
+                var spec = BuildSpec(filtro, includeGeneral: false);
+                var whereSql = WhereSql(includeGeneral: false);
 
                 var sql = $@"
                     SELECT
@@ -242,28 +231,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         v.[DESCRIPCION]       AS Descripcion,
                         v.[NOTAS]             AS Notas,
                         v.[COD_GESTION]       AS Cod_Gestion
-                    {fromSql}
+                    {FromSql}
                     {whereSql}
                     ORDER BY v.[REGISTRO_FECHA] DESC";
 
-                var p = new DynamicParameters();
-                p.Add("@TodasFechas", f.TodasFechas ? 1 : 0, DbType.Int32);
-                p.Add("@FechaIni", fechaIni, DbType.DateTime);
-                p.Add("@FechaFin", fechaFin, DbType.DateTime);
-                p.Add("@UsuarioLike", usuarioLike, DbType.String);
-                p.Add("@ClienteLike", clienteLike, DbType.String);
-                p.Add("@GestionCod", gestionCod, DbType.String);
-
-                result.Result = connection.Query<SysGestionesBitacorasData>(sql, p).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+                return connection.Query<SysGestionesBitacorasData>(sql, spec.Params).ToList();
+            });
         }
 
 
@@ -274,34 +247,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Sys_Gestiones_Tipos_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"
+            const string query = @"
                     SELECT cod_gestion AS item,
                            RTRIM(descripcion) AS descripcion
                     FROM SYS_GESTIONES_TIPOS
                     WHERE ACTIVA = 1
                     ORDER BY descripcion";
 
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDB, CodEmpresa, query);
         }
 
 
@@ -313,18 +266,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SociosLookupLista> Sys_Socios_Buscar_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SociosLookupLista>()
+            return WithEmpresaConn(CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new SociosLookupLista() { total = 0, lista = new List<SociosLookupData>() }
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
                 string? searchLike = string.IsNullOrWhiteSpace(filtros?.filtro) ? null : $"%{filtros.filtro.Trim()}%";
 
                 string sortField = (filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
@@ -368,17 +311,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 p.Add("@offset", offset, DbType.Int32);
                 p.Add("@fetch", fetch, DbType.Int32);
 
-                result.Result.total = connection.QueryFirstOrDefault<int>(sqlCount, p);
-                result.Result.lista = connection.Query<SociosLookupData>(sqlData, p).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = null;
-            }
-            return result;
+                var total = connection.QueryFirstOrDefault<int>(sqlCount, p);
+                var lista = connection.Query<SociosLookupData>(sqlData, p).ToList();
+
+                return new SociosLookupLista { total = total, lista = lista };
+            });
         }
     }
 }
