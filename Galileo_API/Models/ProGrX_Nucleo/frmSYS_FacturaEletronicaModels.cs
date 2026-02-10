@@ -144,9 +144,9 @@ namespace Galileo.Models.ProGrX_Nucleo
             public short notifica_cliente { get; set; }      
 
             public int consec_fe { get; set; }               
-            public int consec_nc { get; set; }               
-            public int consec_nd { get; set; }               
-            public int consec_te { get; set; }               
+            public int? consec_nc { get; set; }               
+            public int? consec_nd { get; set; }               
+            public int? consec_te { get; set; }               
 
             public string? portal_codigo { get; set; }       
             public string? portal_server { get; set; }       
@@ -155,11 +155,11 @@ namespace Galileo.Models.ProGrX_Nucleo
             public string? portal_key { get; set; }          
 
             public string? metodo { get; set; }              
-            public short i_polizas { get; set; }             
-            public short i_principal { get; set; }          
+            public short? i_polizas { get; set; }             
+            public short? i_principal { get; set; }          
 
-            public short mnt_max_apl { get; set; }          
-            public decimal mnt_max { get; set; }            
+            public short? mnt_max_apl { get; set; }          
+            public decimal? mnt_max { get; set; }            
 
             public string? cabys { get; set; }               
             public string? sucursal { get; set; }            
@@ -173,15 +173,15 @@ namespace Galileo.Models.ProGrX_Nucleo
             public string? codigo { get; set; }              
             public string? tipo_id { get; set; }            
             public string? identificacion { get; set; }      
-            public string? razon_social { get; set; }        
-            public short activa { get; set; }                
+            public string? razon_social { get; set; }
+            public short? activa { get; set; }
             public DateTime? inicio { get; set; }            
 
-            public string? notifica_email { get; set; }      
-            public short notifica_activa { get; set; }       
-            public short notifica_cliente { get; set; }      
-            public int consec_fe { get; set; }               
-            public int consec_nc { get; set; }               
+            public string? notifica_email { get; set; }
+            public short? notifica_activa { get; set; }
+            public short? notifica_cliente { get; set; }
+            public int? consec_fe { get; set; }               
+            public int? consec_nc { get; set; }               
             public int consec_nd { get; set; }               
             public int consec_te { get; set; }               
             public string? portal_codigo { get; set; }      

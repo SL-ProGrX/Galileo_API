@@ -33,9 +33,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private const string P_MOVIMIENTO = "@Movimiento";
         private const string P_TIPO = "@Tipo";
         private const string P_USUARIO = "@Usuario";
+        private const string P_COD_CLIENTE = "@cod_cliente";
+        private const string MENSAJE_COD_CLIENTE = "cod_cliente es requerido.";
         private const string SP_FACTURAS_CONSULTA = "spProGrX_Facturas_Consulta";
         private const string SP_FACTURA_DETALLE = "spProGrX_Factura_Detalle";
         private const string SP_FACTURAS_RSM = "spProGrX_Facturas_Consulta_Rsm";
+        private const string PARAM_NOMBRE = "nombre";
+        private const string KEY_TIPO_DOCUMENTO = "Tipo_Documento";
+        private const string KEY_NUMERO_CONSECUTIVO = "Numero_Consecutivo";
+        private const string KEY_CEDULA = "Cedula";
+        private const string KEY_RAZON_SOCIAL = "Razon_Social";
+        private const string KEY_FECHA_EMISION = "Fecha_Emision";
+        private const string KEY_TOTAL_VENTA = "Total_Venta";
+        private const string KEY_TOTAL_EXENTO = "Total_Exento";
+        private const string KEY_TOTAL_GRAVADO = "Total_Gravado";
+        private const string KEY_TOTAL_IMPUESTOS = "Total_Impuestos";
+        private const string KEY_TOTAL_DESCUENTOS = "Total_Descuentos";
+        private const string KEY_TOTAL_COMPROBANTE = "Total_Comprobante";
+        private const string KEY_CLAVE = "Clave";
+        private const string KEY_XML_RESPUESTA = "XML_Respuesta";
+        private const string KEY_OBSERVACIONES = "Observaciones";
+        private const string KEY_ID_FACTURA = "id_Factura";
+        private const string IDENTIFICACION = "identificacion";
+
         private static readonly string[] _whitelistEstados = new[] { "T", "A", "P", "R" };
         public FrmSysFacturaElectronicaDB(IConfiguration config)
         {
@@ -62,7 +82,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             cod_cliente = (cod_cliente ?? "").Trim();
             if (string.IsNullOrWhiteSpace(cod_cliente))
-                throw new InvalidOperationException("cod_cliente es requerido.");
+                throw new InvalidOperationException(MENSAJE_COD_CLIENTE);
             var csLocal = _portalDB.ObtenerDbConnStringEmpresa(CodEmpresa);
             using var connLocal = new SqlConnection(csLocal);
             connLocal.Open();
@@ -287,7 +307,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var p = new DynamicParameters();
-                p.Add("@cod_cliente", codCliente, DbType.String);
+                p.Add(P_COD_CLIENTE, codCliente, DbType.String);
                 p.Add("@texto", hasTexto ? filtroGlobal : null, DbType.String);
                 p.Add("@like", like, DbType.String);
                 p.Add("@sf", sf, DbType.String);
@@ -354,360 +374,41 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                var codCliente = (dto.cod_cliente ?? "").Trim();
-                var usuario = (dto.usuario ?? "").Trim().ToUpperInvariant();
-
-                if (string.IsNullOrWhiteSpace(codCliente))
-                    return DbHelper.ErrorResponse("cod_cliente es requerido.");
-
-                if (string.IsNullOrWhiteSpace(usuario))
-                    return DbHelper.ErrorResponse(USUARIO_REQUERIDO);
-
-                if (!DateTime.TryParseExact((dto.fecha_corte ?? "").Trim(), FE_DATE_FMT,
-                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var fechaCorte))
-                    return DbHelper.ErrorResponse("fecha_corte inválida. Formato esperado: YYYY-MM-DD.");
-
-                if (!DateTime.TryParseExact((dto.fecha_factura ?? "").Trim(), FE_DATE_FMT,
-                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var fechaFactura))
-                    return DbHelper.ErrorResponse("fecha_factura inválida. Formato esperado: YYYY-MM-DD.");
-
+                if (!TryParseProcesarCorteInputs(dto, out var codCliente, out var usuario, out var fechaCorte, out var fechaFactura, out var err))
+                    return DbHelper.ErrorResponse(err);
 
                 using var connLocal = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 connLocal.Open();
 
-
                 using var connProveedor = OpenPortalProveedorConn(CodEmpresa, codCliente);
 
-                static bool TryReadSpError(dynamic? row, out int code, out string desc)
-                {
-                    code = 0;
-                    desc = "";
+                LoadCorteCfg(connLocal, codCliente,
+                    out var incluyePolizas,
+                    out var incluyePrincipal,
+                    out var actividad,
+                    out var monedaCfg,
+                    out var codSucursal,
+                    out var terminalPOS);
 
-                    if (row == null) return false;
+                SyncConsecutivo(connLocal, connProveedor, codCliente);
 
-                    if (row is IDictionary<string, object> d)
-                    {
-                        if (d.TryGetValue("code", out var c) && c != null)
-                        {
-                            code = Convert.ToInt32(c);
-                            if (d.TryGetValue("description", out var m) && m != null) desc = Convert.ToString(m) ?? "";
-                            return code != 0;
-                        }
-                        if (d.TryGetValue("Code", out var c2) && c2 != null)
-                        {
-                            code = Convert.ToInt32(c2);
-                            if (d.TryGetValue("Description", out var m2) && m2 != null) desc = Convert.ToString(m2) ?? "";
-                            return code != 0;
-                        }
-                    }
+                EjecutarCorte(connLocal, codCliente, usuario, fechaCorte, fechaFactura);
 
-                    try
-                    {
-                        var t = row.GetType();
-                        var pCode = t.GetProperty("code") ?? t.GetProperty("Code");
-                        var pDesc = t.GetProperty("description") ?? t.GetProperty("Description");
-                        if (pCode != null)
-                        {
-                            var v = pCode.GetValue(row);
-                            if (v != null)
-                            {
-                                code = Convert.ToInt32(v);
-                                if (pDesc != null)
-                                {
-                                    var v2 = pDesc.GetValue(row);
-                                    if (v2 != null) desc = Convert.ToString(v2) ?? "";
-                                }
-                                return code != 0;
-                            }
-                        }
-                    }
-                    catch { /* no-op */ }
-
-                    return false;
-                }
-
-                const string sqlParams = @"
-                select
-                    isnull(INCLUYE_POLIZAS,0)        as incluye_polizas,
-                    isnull(INCLUYE_PRINCIPAL,0)     as incluye_principal,
-                    rtrim(isnull(CABYS,''))         as cabys,
-                    rtrim(isnull(ACTIVIDAD_ECONOMICA,'')) as actividad,
-                    rtrim(isnull(MONEDA,''))        as moneda,
-                    rtrim(isnull(SUCURSAL,''))      as sucursal,
-                    rtrim(isnull(TERMINAL,''))      as terminal
-                from SYS_FE_PARAMETROS
-                where COD_CLIENTE = @cod_cliente;";
-
-                var pCfg = connLocal.QueryFirstOrDefault<dynamic>(sqlParams, new { cod_cliente = codCliente });
-                if (pCfg == null)
-                    return DbHelper.ErrorResponse("No se encontró configuración en SYS_FE_PARAMETROS para el cliente.");
-
-                bool incluyePolizas = Convert.ToInt32(pCfg.incluye_polizas) == 1;
-                bool incluyePrincipal = Convert.ToInt32(pCfg.incluye_principal) == 1;
-                string actividad = Convert.ToString(pCfg.actividad) ?? "";
-                string monedaCfg = (Convert.ToString(pCfg.moneda) ?? "").Trim();
-
-                string codSucursal = (Convert.ToString(pCfg.sucursal) ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(codSucursal)) codSucursal = "2";
-
-                string terminalPOS = (Convert.ToString(pCfg.terminal) ?? "").Trim();
-                if (string.IsNullOrWhiteSpace(terminalPOS)) terminalPOS = "00001";
-
-                var rsConsec = connProveedor.QueryFirstOrDefault<dynamic>(
-                    "exec spProGrX_Cliente_Consecutivo @cliente;",
-                    new { cliente = codCliente }
-                );
-
-                int consecutivo = GetConsecutivo(rsConsec);
-                if (consecutivo > 0)
-                {
-                    connLocal.Execute(
-                        "update SYS_FE_PARAMETROS set CONSECUTIVO_FE  = @c where COD_CLIENTE = @cod_cliente;",
-                        new { c = consecutivo, cod_cliente = codCliente }
-                    );
-                }
-
-                {
-                    var pCorte = new DynamicParameters();
-                    pCorte.Add("@Cliente", codCliente, DbType.String);
-                    pCorte.Add("@Corte", DayEnd(fechaCorte), DbType.DateTime);
-                    pCorte.Add("@Usuario", usuario, DbType.String);
-                    pCorte.Add("@FechaFactura", DateTime.SpecifyKind(fechaFactura, DateTimeKind.Unspecified), DbType.DateTime);
-
-                    connLocal.Execute("spCrd_Facturacion_Corte", pCorte, commandType: CommandType.StoredProcedure);
-                }
-
-                var nuevos = connLocal.Query(
-                    "spCrd_Facturacion_Notifica_Clientes",
-                    new { Cliente = codCliente },
-                    commandType: CommandType.StoredProcedure
-                ).ToList();
-
+                var nuevos = ObtenerNuevosClientes(connLocal, codCliente);
                 if (nuevos.Count > 0)
                 {
-                    var sbCli = new System.Text.StringBuilder();
-
-                    foreach (var r in nuevos)
-                    {
-                        string codCliRow = (Convert.ToString(r.COD_CLIENTE) ?? codCliente).Trim();
-                        string tipoId = Convert.ToString(r.TIPO_ID) ?? Convert.ToString(r.Tipo_Id) ?? "";
-                        string clienteId = Convert.ToString(r.CLIENTE_ID) ?? Convert.ToString(r.Cliente_ID) ?? "";
-                        string cedula = (Convert.ToString(r.CEDULA) ?? Convert.ToString(r.Cedula) ?? "").Trim();
-                        string nombre = Convert.ToString(r.NOMBRE) ?? Convert.ToString(r.Nombre) ?? "";
-                        string email = Convert.ToString(r.EMAIL) ?? Convert.ToString(r.Email) ?? "";
-                        string direccion = Convert.ToString(r.DIRECCION) ?? Convert.ToString(r.DIRECCION) ?? Convert.ToString(r.Direccion) ?? "";
-
-                      
-                        var ins = connProveedor.QueryFirstOrDefault<dynamic>(
-                            "exec sp_IW_CLIENTEInsert_ProGrX @COD_CLIENTE,@TIPO_ID,@CLIENTE_ID,@CEDULA,@NOMBRE,@EMAIL,'','','',@DIRECCION,1,1,1,1,@FECHA_CORTE,30,1;",
-                            new
-                            {
-                                COD_CLIENTE = codCliRow,
-                                TIPO_ID = tipoId,
-                                CLIENTE_ID = clienteId,
-                                CEDULA = cedula,
-                                NOMBRE = nombre,
-                                EMAIL = email,
-                                DIRECCION = direccion,
-                                FECHA_CORTE = DateTime.SpecifyKind(fechaCorte, DateTimeKind.Unspecified)
-                            }
-                        );
-
-                        if (TryReadSpError(ins, out var cErr, out var mErr))
-                            return DbHelper.ErrorResponse(mErr.Length > 0 ? mErr : $"Error proveedor sp_IW_CLIENTEInsert_ProGrX (code {cErr}).");
-
-                        long codigoInterno = GetCodigoInterno(ins);
-                        if (codigoInterno <= 0)
-                            return DbHelper.ErrorResponse("Proveedor no devolvió CLIENTE_ID_FE (código interno) para el cliente insertado.");
-
-                     
-                        sbCli.Append(" exec spCrd_Facturacion_Notifica_Clientes_Result ");
-                        sbCli.Append($"'{SqlEscape(codCliRow)}','{SqlEscape(cedula)}',{codigoInterno};");
-                        sbCli.AppendLine();
-
-                        if (sbCli.Length > 20000)
-                        {
-                            connLocal.Execute(sbCli.ToString(), commandTimeout: 360);
-                            sbCli.Clear();
-                        }
-                    }
-
-                    if (sbCli.Length > 0)
-                        connLocal.Execute(sbCli.ToString(), commandTimeout: 360);
+                    var respCli = ProcesarNuevosClientes(connLocal, connProveedor, nuevos, codCliente, fechaCorte);
+                    if (respCli.Code != 0) return respCli;
                 }
 
-                var factRows = connLocal.Query(
-                    "spCrd_Facturacion_Notifica",
-                    new { ClienteID = codCliente },
-                    commandType: CommandType.StoredProcedure
-                ).ToList();
-
+                var factRows = ObtenerFactRows(connLocal, codCliente);
                 if (factRows.Count > 0)
                 {
-                    string cedulaEmisor = "";
-                    {
-                        const string sqlCol = "select col_length('dbo.SYS_FE_PARAMETROS','CEDULA_EMISOR');";
-                        var col = connLocal.QueryFirstOrDefault<int?>(sqlCol);
-                        if (col.HasValue && col.Value > 0)
-                        {
-                            const string sqlCed = "select rtrim(isnull(CEDULA_EMISOR,'')) from SYS_FE_PARAMETROS where COD_CLIENTE = @c;";
-                            cedulaEmisor = (connLocal.QueryFirstOrDefault<string>(sqlCed, new { c = codCliente }) ?? "").Trim();
-                        }
+                    var respFact = ProcesarFacturas(connLocal, connProveedor, factRows,
+                        codCliente, usuario, fechaFactura,
+                        incluyePolizas, incluyePrincipal, actividad, monedaCfg, codSucursal, terminalPOS);
 
-                        if (string.IsNullOrWhiteSpace(cedulaEmisor))
-                            return DbHelper.ErrorResponse("No se pudo obtener la cédula del EMISOR. Defina SYS_FE_PARAMETROS.CEDULA_EMISOR (o indique la tabla correcta para la cédula jurídica del emisor).");
-                    }
-
-                    var sbFact = new System.Text.StringBuilder();
-
-                    const string situacion = "1";
-                    const string tipoComprobante = "01";
-
-                    foreach (var r in factRows)
-                    {
-                        string comprobanteInterno = (Convert.ToString(r.FAC_NUMERO) ?? "").Trim();
-                        if (string.IsNullOrWhiteSpace(comprobanteInterno))
-                            continue;
-
-                        DateTime fechaTransac = DateTime.SpecifyKind(fechaFactura, DateTimeKind.Unspecified);
-
-                        string clave50 = mHaciendaDB.fxHacienda_Clave50(
-                            "506", fechaTransac, cedulaEmisor, codSucursal, terminalPOS,
-                            comprobanteInterno, situacion, tipoComprobante);
-
-                        string clave20 = mHaciendaDB.fxHacienda_Clave20(
-                            codSucursal, terminalPOS, comprobanteInterno, tipoComprobante);
-
-                        decimal intCor = r.INTCOR == null ? 0m : Convert.ToDecimal(r.INTCOR);
-                        decimal intMor = r.INTMOR == null ? 0m : Convert.ToDecimal(r.INTMOR);
-                        decimal cargos = r.CARGOS == null ? 0m : Convert.ToDecimal(r.CARGOS);
-                        decimal poliza = r.POLIZA == null ? 0m : Convert.ToDecimal(r.POLIZA);
-                        decimal principal = r.PRINCIPAL == null ? 0m : Convert.ToDecimal(r.PRINCIPAL);
-
-                        decimal totalGravado = 0m;
-                        decimal totalExento = intCor + intMor + cargos;
-                        if (incluyePolizas) totalExento += poliza;
-                        if (incluyePrincipal) totalExento += principal;
-
-                        string moneda = ((Convert.ToString(r.MONEDA) ?? monedaCfg) ?? "").Trim();
-                        if (string.IsNullOrWhiteSpace(moneda)) moneda = "CRC";
-
-                        decimal tipoCambio = r.TIPO_CAMBIO == null ? 1m : Convert.ToDecimal(r.TIPO_CAMBIO);
-
-                        string emailDefaultApl = Convert.ToString(r.EMAIL_DEFAULT_APL) ?? "0";
-                        bool apl = emailDefaultApl.Trim() == "1";
-
-                        string emailDefault = Convert.ToString(r.EMAIL_DEFAULT) ?? "";
-                        string emailRow = Convert.ToString(r.EMAIL) ?? Convert.ToString(r.Email) ?? "";
-                        string emailDestino = apl ? emailDefault : emailRow;
-
-                        string enviarCliente = Convert.ToString(r.EMAIL_CLIENTE_NO) ?? "0";
-                        string clienteIdFE = Convert.ToString(r.CLIENTE_ID_FE) ?? "";
-                        string clienteId = Convert.ToString(r.CLIENTE_ID) ?? "";
-                        string tipoId = Convert.ToString(r.TIPO_ID) ?? Convert.ToString(r.Tipo_Id) ?? "";
-
-                        string clienteIdDestino = string.IsNullOrWhiteSpace(clienteIdFE) ? clienteId : clienteIdFE;
-
-                        var enc = connProveedor.QueryFirstOrDefault<dynamic>(
-                            "exec sp_IW_ENC_FACTURAInsert_ProGrX " +
-                            "@COD_CLIENTE,@CLAVE50,@CLAVE20,@CLIENTE_ID,@MONEDA,@SUCURSAL,'02',@FAC,30," +
-                            "@EMAIL,@NOENV,@FECHA,0,'05','','','','',null,'','','','1',@TERM,@TC," +
-                            "@TIPO_COMP,@TIPO_ID," +
-                            "@TOT_GR,@TOT_EX,0,@TOT_GR,0,0,@TOT_GR,@TOT_EX,0," +
-                            "@TOT,@DESC,@SUBTOT,@IMP,0,0,@TOTAL," +
-                            "1,@USR,@NOW,'','','FACT. PROGRX',@ACT;",
-                            new
-                            {
-                                COD_CLIENTE = codCliente,
-                                CLAVE50 = clave50,
-                                CLAVE20 = clave20,
-                                CLIENTE_ID = clienteIdDestino,
-                                MONEDA = moneda,
-                                SUCURSAL = codSucursal,
-                                FAC = comprobanteInterno,
-                                EMAIL = emailDestino,
-                                NOENV = enviarCliente,
-                                FECHA = $"{fechaTransac:yyyy/MM/dd HH:mm:ss}",
-                                TERM = terminalPOS,
-                                TC = tipoCambio.ToString(CultureInfo.InvariantCulture),
-                                TIPO_COMP = tipoComprobante,
-                                TIPO_ID = (tipoId ?? "").PadLeft(2, '0'),
-                                TOT_GR = totalGravado.ToString(CultureInfo.InvariantCulture),
-                                TOT_EX = totalExento.ToString(CultureInfo.InvariantCulture),
-                                TOT = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
-                                DESC = "0",
-                                SUBTOT = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
-                                IMP = "0",
-                                TOTAL = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
-                                USR = usuario,
-                                NOW = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}",
-                                ACT = actividad
-                            }
-                        );
-
-                        if (TryReadSpError(enc, out var cErrEnc, out var mErrEnc))
-                            return DbHelper.ErrorResponse(mErrEnc.Length > 0 ? mErrEnc : $"Error proveedor sp_IW_ENC_FACTURAInsert_ProGrX (code {cErrEnc}).");
-
-                        long idFactura = GetIdFactura(enc);
-                        if (idFactura == 0)
-                            return DbHelper.ErrorResponse("Proveedor no devolvió IdFactura al insertar encabezado.");
-
-                        int linea = 0;
-
-                        void InsDet(string codigo, string unidad, string detalle, decimal monto)
-                        {
-                            if (monto <= 0) return;
-                            linea++;
-
-                            var det = connProveedor.QueryFirstOrDefault<dynamic>(
-                                "exec sp_IW_DET_FACTURAInsert_ProGrX " +
-                                "@COD_CLIENTE,@ID_FACT,@LINEA,@CODIGO,1,@UNIDAD,@DETALLE," +
-                                "@PRECIO,@MONTO,0,'DESCUENTO CLIENTES',@MONTO,'01',0,0," +
-                                "null,null,null,null,null,null,null,'01',@CLAVE50;",
-                                new
-                                {
-                                    COD_CLIENTE = codCliente,
-                                    ID_FACT = idFactura,
-                                    LINEA = linea,
-                                    CODIGO = codigo,
-                                    UNIDAD = unidad,
-                                    DETALLE = detalle,
-                                    PRECIO = monto.ToString(CultureInfo.InvariantCulture),
-                                    MONTO = monto.ToString(CultureInfo.InvariantCulture),
-                                    CLAVE50 = clave50
-                                }
-                            );
-
-                            if (TryReadSpError(det, out var cErrDet, out var mErrDet))
-                                throw new InvalidOperationException(mErrDet.Length > 0 ? mErrDet : $"Error proveedor sp_IW_DET_FACTURAInsert_ProGrX (code {cErrDet}).");
-                        }
-
-                        try
-                        {
-                            InsDet("CRD001", "I", "INTERES CORRIENTE DEL MES", intCor);
-                            InsDet("CRD002", "I", "INTERES ATRASADOS", intMor);
-                            InsDet("CRD003", "I", "CARGOS ADM Y DE FORMALIZACION", cargos);
-                            if (incluyePolizas) InsDet("CRD004", "Unid", "POLIZAS DEL CREDITO", poliza);
-                            if (incluyePrincipal) InsDet("CRD005", "Unid", "ABONO AL CREDITO", principal);
-                        }
-                        catch (InvalidOperationException exDet)
-                        {
-                            return DbHelper.ErrorResponse(exDet.Message);
-                        }
-
-                        sbFact.Append(" exec spCrd_Facturacion_Notifica_Result ");
-                        sbFact.Append($"'{SqlEscape(codCliente)}','{SqlEscape(comprobanteInterno)}','{idFactura}','{SqlEscape(usuario)}';");
-                        sbFact.AppendLine();
-
-                        if (sbFact.Length > 20000)
-                        {
-                            connLocal.Execute(sbFact.ToString(), commandTimeout: 360);
-                            sbFact.Clear();
-                        }
-                    }
-
-                    if (sbFact.Length > 0)
-                        connLocal.Execute(sbFact.ToString(), commandTimeout: 360);
+                    if (respFact.Code != 0) return respFact;
                 }
 
                 Bitacora(new BitacoraInsertarDto
@@ -756,73 +457,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             {
                 using var conn = OpenPortalProveedorConn(CodEmpresa, dto.cod_cliente);
 
-                var p = new DynamicParameters();
-                p.Add("@ClienteId", dto.cod_cliente, DbType.String);
-                p.Add("@Factura", dto.factura ?? "", DbType.String);
-                p.Add("@Cedula", dto.identificacion ?? "", DbType.String);
-                p.Add("@Nombre", dto.nombre ?? "", DbType.String);
-                p.Add("@FechaInicio", ini, DbType.DateTime);
-                p.Add("@FechaCorte", fin, DbType.DateTime);
-                p.Add("@Estado", NormalizeEstado(dto.estado), DbType.String);
-
-                var rows = conn.Query(
-                    "spProGrX_Facturas_Consulta",
-                    p,
-                    commandType: CommandType.StoredProcedure
-                ).ToList();
-
-                var lista = new List<FeFacturaItem>();
-
-                foreach (var r in rows)
-                {
-                    var tipoDoc = ExtractKeyFromParametros(r, "Tipo_Documento");
-
-                    var item = new FeFacturaItem
-                    {
-                        tipo = (tipoDoc == "01") ? "FE" : "NC",
-                        comprobante = "_" + (ExtractKeyFromParametros(r, "Numero_Consecutivo") ?? ""),
-
-                        identificacion = ExtractKeyFromParametros(r, "Cedula"),
-                        razon_social = ExtractKeyFromParametros(r, "Razon_Social"),
-
-                        fecha = DateTime.TryParse(ExtractKeyFromParametros(r, "Fecha_Emision"), out DateTime f) ? f : (DateTime?)null,
-
-
-                        total = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Venta"), out decimal d1) ? d1 : 0m,
-                        total_exento = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Exento"), out decimal d2) ? d2 : 0m,
-                        total_gravado = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Gravado"), out decimal d3) ? d3 : 0m,
-                        total_impuestos = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Impuestos"), out decimal d4) ? d4 : 0m,
-                        total_descuentos = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Descuentos"), out decimal d5) ? d5 : 0m,
-                        total_comprobante = decimal.TryParse(ExtractKeyFromParametros(r, "Total_Comprobante"), out decimal d6) ? d6 : 0m,
-
-                        clave = "_" + (ExtractKeyFromParametros(r, "Clave") ?? ""),
-
-                        xml_respuesta = ExtractKeyFromParametros(r, "XML_Respuesta"),
-                        observaciones = ExtractKeyFromParametros(r, "Observaciones"),
-
-                        id_factura = int.TryParse(
-                        ExtractKeyFromParametros(r, "id_Factura"),
-                        out int id) ? id : 0
-
-                    };
-
-                    lista.Add(item);
-                }
+                var rows = ExecuteFacturasConsulta(conn, dto, ini, fin);
+                var lista = MapFacturasRows(rows);
 
                 SortFacturas(lista, filtros!.sortField, filtros.sortOrder);
 
                 response.Result.total = lista.Count;
-
-                if (exportAll)
-                {
-                    response.Result.lista = lista;
-                    return response;
-                }
-
-                var pagina = NormalizePagina(filtros!.pagina, exportAll);
-                var paginacion = NormalizePaginacion(filtros!.paginacion, exportAll, 30);
-
-                response.Result.lista = Page(lista, pagina, paginacion);
+                response.Result.lista = exportAll
+                    ? lista
+                    : Page(lista, NormalizePagina(filtros.pagina, exportAll), NormalizePaginacion(filtros.paginacion, exportAll, 30));
 
                 return response;
             }
@@ -831,6 +474,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.CreateErrorResponse<FeFacturasLista>(ex.Message);
             }
         }
+
 
         /// <summary>
         /// Exporta lista de facturas (Detalle).
@@ -877,7 +521,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 using var conn = OpenPortalProveedorConn(CodEmpresa, codCliente);
 
                 var p = new DynamicParameters();
-                p.Add("@ClienteId", codCliente, DbType.String);
+                p.Add(P_CLIENTE_ID, codCliente, DbType.String);
                 p.Add("@IdFactura", idFacturaInt, DbType.Int32);
 
                 resp.Result = conn.Query<FeFacturaDetalleItem>(
@@ -975,8 +619,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             if (string.IsNullOrWhiteSpace(codCliente))
                 return DbHelper.CreateErrorResponse<FeClientesLista>("Seleccione un cliente.");
 
-            var identificacion = (ExtractKeyFromParametros(filtros.parametros, "identificacion") ?? "").Trim();
-            var nombre = (ExtractKeyFromParametros(filtros.parametros, "nombre") ?? "").Trim();
+            var identificacion = (ExtractKeyFromParametros(filtros.parametros, IDENTIFICACION) ?? "").Trim();
+            var nombre = (ExtractKeyFromParametros(filtros.parametros, PARAM_NOMBRE) ?? "").Trim();
 
             var exportAll = IsExportAll(filtros);
 
@@ -1068,7 +712,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 order by [ID];";
 
                 var p = new DynamicParameters();
-                p.Add("@cod_cliente", codCliente, DbType.String);
+                p.Add(P_COD_CLIENTE, codCliente, DbType.String);
 
                 p.Add("@identificacion", hasId ? identificacion : null, DbType.String);
                 p.Add("@like_ident", hasId ? $"%{identificacion}%" : null, DbType.String);
@@ -1250,9 +894,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 var inicio235959 = new DateTime(inicio.Year, inicio.Month, inicio.Day, 23, 59, 59, DateTimeKind.Unspecified);
                 var metodoRaw = (dto.metodo ?? "").Trim().ToUpperInvariant();
                 string metodo;
-                if (metodoRaw == "E" || metodoRaw.StartsWith("E")) metodo = "E";
-                else metodo = "D";
-
+                if (metodoRaw == "E" || metodoRaw.StartsWith('E'))
+                    metodo = "E";
+                else
+                    metodo = "D";
                 var sucursal = (dto.sucursal ?? "").Trim();
                 if (sucursal.Length > 3) sucursal = sucursal.Substring(0, 3);
 
@@ -1435,140 +1080,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 usuario = (usuario ?? "").Trim().ToUpperInvariant();
 
                 if (string.IsNullOrWhiteSpace(cod_cliente))
-                    return DbHelper.ErrorResponse("cod_cliente es requerido.");
+                    return DbHelper.ErrorResponse(MENSAJE_COD_CLIENTE);
 
                 if (string.IsNullOrWhiteSpace(usuario))
                     return DbHelper.ErrorResponse("Usuario es requerido.");
 
                 using var connLocal = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
+                EnsureOpen(connLocal);
+                AcquireSyncLock(connLocal, cod_cliente);
 
-                if (connLocal.State != ConnectionState.Open)
-                    connLocal.Open();
-
-                connLocal.Execute(
-                    "exec sp_getapplock @Resource=@r, @LockMode='Exclusive', @LockOwner='Session', @LockTimeout=15000;",
-                    new { r = $"FE_CLIENTES_SINC_{cod_cliente}" },
-                    commandTimeout: 360
-                );
-
-                const string sqlCfg = @"
-        select
-            rtrim(isnull(ACC_SERVER,'')) as portal_server,
-            rtrim(isnull(ACC_DB,''))     as portal_db,
-            rtrim(isnull(ACC_USR,''))    as portal_user,
-            rtrim(isnull(ACC_KEY,''))    as portal_key
-        from SYS_FE_PARAMETROS
-        where COD_CLIENTE = @cod_cliente;";
-
-                var cfg = connLocal.QueryFirstOrDefault<dynamic>(sqlCfg, new { cod_cliente });
-
-                if (cfg == null)
-                    return DbHelper.ErrorResponse("No se encontró configuración del cliente en SYS_FE_PARAMETROS.");
-
-                string portalServer = (cfg.portal_server ?? "").ToString().Trim();
-                string portalDb = (cfg.portal_db ?? "").ToString().Trim();
-                string portalUser = (cfg.portal_user ?? "").ToString().Trim();
-                string portalKey = (cfg.portal_key ?? "").ToString().Trim();
+                var (portalServer, portalDb, portalUser, portalKey) = GetPortalAccesos(connLocal, cod_cliente);
 
                 if (string.IsNullOrWhiteSpace(portalServer) ||
                     string.IsNullOrWhiteSpace(portalDb) ||
                     string.IsNullOrWhiteSpace(portalUser) ||
                     string.IsNullOrWhiteSpace(portalKey))
-                {
                     return DbHelper.ErrorResponse("Credenciales del portal proveedor incompletas.");
-                }
-                var csb = new SqlConnectionStringBuilder
-                {
-                    DataSource = portalServer,
-                    InitialCatalog = portalDb,
-                    UserID = portalUser,
-                    Password = portalKey,
-                    ConnectTimeout = 15,
-                    Encrypt = false,
-                    TrustServerCertificate = true
-                };
 
-                using var connPortal = new SqlConnection(csb.ConnectionString);
-                connPortal.Open();
-                var exists = connPortal.QueryFirstOrDefault<int>(
-                    "select case when object_id('dbo.IW_CLIENTE','U') is null then 0 else 1 end;"
-                );
-
-                if (exists == 0)
+                using var connPortal = OpenPortalConn(portalServer, portalDb, portalUser, portalKey);
+                if (!PortalHasIwCliente(connPortal))
                     return DbHelper.ErrorResponse("No existe la tabla IW_CLIENTE en el portal proveedor. Verifique base de datos/servidor configurados.");
 
-                const string sqlPortal = @"
-                    select
-                        [ID]                as CLIENTE_ID_FE,
-                        CODIGO              as CLIENTE_ID,
-                        rtrim(CEDULA)       as CEDULA,
-                        rtrim(RAZON_SOCIAL) as NOMBRE
-                    from IW_CLIENTE
-                    where ID_CLIENTE_ORIGEN = @cod_cliente
-                    order by [ID];";
+                var portalRows = LoadPortalClientes(connPortal, cod_cliente);
 
-                var portalRows = connPortal.Query(sqlPortal, new { cod_cliente }).ToList();
-
-                using var tx = connLocal.BeginTransaction();
-
-                try
-                {
-                    const string sqlDelete = @"delete SYS_FE_CLIENTES where COD_CLIENTE = @cod_cliente;";
-                    connLocal.Execute(sqlDelete, new { cod_cliente }, transaction: tx, commandTimeout: 360);
-
-                    var seenClienteId = new HashSet<long>();
-                    var seenClienteIdFe = new HashSet<long>();
-
-                    var sb = new System.Text.StringBuilder();
-
-                    foreach (var r in portalRows)
-                    {
-                        long clienteId = 0;
-                        long clienteIdFe = 0;
-
-                        if (r.CLIENTE_ID != null) clienteId = Convert.ToInt64(r.CLIENTE_ID);
-                        if (r.CLIENTE_ID_FE != null) clienteIdFe = Convert.ToInt64(r.CLIENTE_ID_FE);
-
-                        if (clienteId <= 0 || clienteIdFe <= 0) continue;
-
-                        if (!seenClienteId.Add(clienteId)) continue;
-                        if (!seenClienteIdFe.Add(clienteIdFe)) continue;
-
-                        string cedula = SqlEscape((r.CEDULA ?? "").ToString());
-                        string nombre = SqlEscape((r.NOMBRE ?? "").ToString());
-
-                        sb.AppendLine(" ");
-                        sb.Append("IF NOT EXISTS (SELECT 1 FROM SYS_FE_CLIENTES WHERE COD_CLIENTE = '");
-                        sb.Append(SqlEscape(cod_cliente));
-                        sb.Append("' AND CLIENTE_ID_FE = ");
-                        sb.Append(clienteIdFe);
-                        sb.AppendLine(")");
-                        sb.Append("INSERT SYS_FE_CLIENTES (COD_CLIENTE, CEDULA, NOMBRE, CLIENTE_ID, CLIENTE_ID_FE, REGISTRO_FECHA, REGISTRO_USUARIO) ");
-                        sb.Append("VALUES(");
-                        sb.Append($"'{SqlEscape(cod_cliente)}','{cedula}','{nombre}',{clienteId},{clienteIdFe}, getdate(), '{SqlEscape(usuario)}');");
-                        sb.AppendLine();
-
-                        if (sb.Length > 20000)
-                        {
-                            connLocal.Execute(sb.ToString(), transaction: tx, commandTimeout: 360);
-                            sb.Clear();
-                        }
-                    }
-
-                    if (sb.Length > 0)
-                    {
-                        connLocal.Execute(sb.ToString(), transaction: tx, commandTimeout: 360);
-                        sb.Clear();
-                    }
-
-                    tx.Commit();
-                }
-                catch (SqlException)
-                {
-                    try { tx.Rollback(); } catch { /* no-op */ }
-                    throw;
-                }
+                SyncLocalClientes(connLocal, cod_cliente, usuario, portalRows);
 
                 Bitacora(new BitacoraInsertarDto
                 {
@@ -1586,8 +1122,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
-
 
         /// <summary>
         /// Consulta exclusiones por tipo (spSYS_FE_PARAMETROS_Exclusion_Consulta).
@@ -1608,7 +1142,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 tipo = (tipo ?? "").Trim();
 
                 if (string.IsNullOrWhiteSpace(cod_cliente))
-                    return DbHelper.CreateErrorResponse<List<FeExclusionItem>>("cod_cliente es requerido.");
+                    return DbHelper.CreateErrorResponse<List<FeExclusionItem>>(MENSAJE_COD_CLIENTE);
 
                 if (string.IsNullOrWhiteSpace(tipo))
                     return DbHelper.CreateErrorResponse<List<FeExclusionItem>>("tipo es requerido.");
@@ -1668,7 +1202,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 usuario = (usuario ?? "").Trim().ToUpperInvariant();
 
                 if (string.IsNullOrWhiteSpace(cod_cliente))
-                    return DbHelper.ErrorResponse("cod_cliente es requerido.");
+                    return DbHelper.ErrorResponse(MENSAJE_COD_CLIENTE);
 
                 if (string.IsNullOrWhiteSpace(codigo))
                     return DbHelper.ErrorResponse(COD_REQUERIDO);
@@ -1738,7 +1272,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (string.IsNullOrWhiteSpace(usuario))
                     return DbHelper.ErrorResponse(USUARIO_REQUERIDO);
                 var ini = DayStart(fecha_inicio);
-                var fin = new DateTime(fecha_corte.Year, fecha_corte.Month, fecha_corte.Day, 23, 59, 59);
+                var fin = new DateTime(fecha_corte.Year,fecha_corte.Month, fecha_corte.Day,23, 59, 59,DateTimeKind.Unspecified);
 
                 var p = new DynamicParameters();
                 p.Add("@Inicio", ini, DbType.DateTime);
@@ -1951,8 +1485,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             return new FeFacturasParametrosDto
             {
                 cod_cliente = (ExtractKeyFromParametros(filtros.parametros, "cod_cliente") ?? "").Trim(),
-                identificacion = (ExtractKeyFromParametros(filtros.parametros, "identificacion") ?? "").Trim(),
-                nombre = (ExtractKeyFromParametros(filtros.parametros, "nombre") ?? "").Trim(),
+                identificacion = (ExtractKeyFromParametros(filtros.parametros, IDENTIFICACION) ?? "").Trim(),
+                nombre = (ExtractKeyFromParametros(filtros.parametros, PARAM_NOMBRE) ?? "").Trim(),
                 factura = (ExtractKeyFromParametros(filtros.parametros, "factura") ?? "").Trim(),
                 fecha_inicio = (ExtractKeyFromParametros(filtros.parametros, "fecha_inicio") ?? "").Trim(),
                 fecha_corte = (ExtractKeyFromParametros(filtros.parametros, "fecha_corte") ?? "").Trim(),
@@ -1977,19 +1511,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             if (string.IsNullOrWhiteSpace(dto.cod_cliente))
             {
-                errMsg = "parametros.cod_cliente es requerido.";
+                errMsg = MENSAJE_COD_CLIENTE;
                 return false;
             }
 
             if (!DateTime.TryParseExact(dto.fecha_inicio, FE_DATE_FMT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var fechaInicio))
             {
-                errMsg = "parametros.fecha_inicio inválida. Formato esperado: YYYY-MM-DD.";
+                errMsg = "Fecha inicio inválida. Formato esperado: YYYY-MM-DD.";
                 return false;
             }
 
             if (!DateTime.TryParseExact(dto.fecha_corte, FE_DATE_FMT, CultureInfo.InvariantCulture, DateTimeStyles.None, out var fechaCorte))
             {
-                errMsg = "parametros.fecha_corte inválida. Formato esperado: YYYY-MM-DD.";
+                errMsg = "Fecha de corte inválida. Formato esperado: YYYY-MM-DD.";
                 return false;
             }
 
@@ -2028,9 +1562,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             {
                 "tipo" => CmpStr(a.tipo, b.tipo),
                 "comprobante" => CmpStr(a.comprobante, b.comprobante),
-                "identificacion" => CmpStr(a.identificacion, b.identificacion),
+                IDENTIFICACION => CmpStr(a.identificacion, b.identificacion),
                 "razon_social" => CmpStr(a.razon_social, b.razon_social),
-                "nombre" => CmpStr(a.razon_social, b.razon_social),
+                PARAM_NOMBRE => CmpStr(a.razon_social, b.razon_social),
                 "fecha" => CmpDate(a.fecha, b.fecha),
                 "total" => CmpDec(a.total, b.total),
                 "total_exento" => CmpDec(a.total_exento, b.total_exento),
@@ -2073,7 +1607,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private static DynamicParameters BuildFacturasResumenBaseParams(FeFacturasParametrosDto dto, DateTime ini, DateTime fin)
         {
             var pBase = new DynamicParameters();
-            pBase.Add("@ClienteId", dto.cod_cliente, DbType.String);
+            pBase.Add(P_CLIENTE_ID, dto.cod_cliente, DbType.String);
             pBase.Add("@Factura", dto.factura ?? "", DbType.String);
             pBase.Add("@Cedula", dto.identificacion ?? "", DbType.String);
             pBase.Add("@Nombre", dto.nombre ?? "", DbType.String);
@@ -2169,11 +1703,75 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             });
         }
 
+        private static List<object> ExecuteFacturasConsulta(SqlConnection conn, FeFacturasParametrosDto dto, DateTime ini, DateTime fin)
+        {
+            var p = new DynamicParameters();
+            p.Add(P_CLIENTE_ID, dto.cod_cliente, DbType.String);
+            p.Add("@Factura", dto.factura ?? "", DbType.String);
+            p.Add("@Cedula", dto.identificacion ?? "", DbType.String);
+            p.Add("@Nombre", dto.nombre ?? "", DbType.String);
+            p.Add("@FechaInicio", ini, DbType.DateTime);
+            p.Add("@FechaCorte", fin, DbType.DateTime);
+            p.Add("@Estado", NormalizeEstado(dto.estado), DbType.String);
+
+            return conn.Query(
+                SP_FACTURAS_CONSULTA,
+                p,
+                commandType: CommandType.StoredProcedure
+            ).ToList();
+        }
+        private static List<FeFacturaItem> MapFacturasRows(List<object> rows)
+        {
+            var lista = new List<FeFacturaItem>();
+            foreach (var r in rows)
+                lista.Add(MapFacturaRow(r));
+
+            return lista;
+        }
+
+        private static FeFacturaItem MapFacturaRow(object r)
+        {
+            var tipoDoc = ExtractKeyFromParametros(r, KEY_TIPO_DOCUMENTO);
+
+            var item = new FeFacturaItem
+            {
+                tipo = (tipoDoc == "01") ? "FE" : "NC",
+                comprobante = "_" + (ExtractKeyFromParametros(r, KEY_NUMERO_CONSECUTIVO) ?? ""),
+
+                identificacion = ExtractKeyFromParametros(r, KEY_CEDULA),
+                razon_social = ExtractKeyFromParametros(r, KEY_RAZON_SOCIAL),
+
+                fecha = DateTime.TryParse(ExtractKeyFromParametros(r, KEY_FECHA_EMISION), out var f) ? f : (DateTime?)null,
+
+                total = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_VENTA)),
+                total_exento = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_EXENTO)),
+                total_gravado = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_GRAVADO)),
+                total_impuestos = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_IMPUESTOS)),
+                total_descuentos = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_DESCUENTOS)),
+                total_comprobante = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_COMPROBANTE)),
+
+                clave = "_" + (ExtractKeyFromParametros(r, KEY_CLAVE) ?? ""),
+
+                xml_respuesta = ExtractKeyFromParametros(r, KEY_XML_RESPUESTA),
+                observaciones = ExtractKeyFromParametros(r, KEY_OBSERVACIONES),
+
+                id_factura = TryParseInt(ExtractKeyFromParametros(r, KEY_ID_FACTURA))
+            };
+
+            return item;
+        }
+        private static decimal TryParseDecimal(string? s)
+        {
+            return decimal.TryParse(s, out var d) ? d : 0m;
+        }
+
+        private static int TryParseInt(string? s)
+        {
+            return int.TryParse(s, out var i) ? i : 0;
+        }
         /// <summary>
         /// Retorna consecutivo.
-        /// <param name="rsConsec"></param>
         /// </summary>
-        /// <returns></returns>
         private static int GetConsecutivo(object? rsConsec)
         {
             if (rsConsec == null) return 0;
@@ -2184,7 +1782,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (d != null && d.TryGetValue("Consecutivo", out var v) && v != null)
                     return Convert.ToInt32(v);
             }
-            catch { }
+            catch (Exception)
+            {
+                // aqui cae la excepcion
+            }
 
             try
             {
@@ -2193,16 +1794,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (v == null) return 0;
                 return Convert.ToInt32(v);
             }
-            catch
+            catch (Exception)
             {
                 return 0;
             }
         }
+
         /// <summary>
         /// Retorna codigo interno.
-        /// <param name="ins"></param>
         /// </summary>
-        /// <returns></returns>
         private static long GetCodigoInterno(object? ins)
         {
             if (ins == null) return 0;
@@ -2213,7 +1813,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (d != null && d.TryGetValue("CODIGO_INTERNO", out var v) && v != null)
                     return Convert.ToInt64(v);
             }
-            catch { }
+            catch (Exception)
+            {
+                //aqui cae a la excepcion
+            }
 
             try
             {
@@ -2222,16 +1825,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (v == null) return 0;
                 return Convert.ToInt64(v);
             }
-            catch
+            catch (Exception)
             {
                 return 0;
             }
         }
+
         /// <summary>
         /// Retorna id de la factura.
-        /// <param name="enc"></param>
         /// </summary>
-        /// <returns></returns>
         private static long GetIdFactura(object? enc)
         {
             if (enc == null) return 0;
@@ -2242,7 +1844,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (d != null && d.TryGetValue("id_Factura", out var v) && v != null)
                     return Convert.ToInt64(v);
             }
-            catch { }
+            catch (Exception)
+            {
+                //aqui cae a la excepcion
+            }
 
             try
             {
@@ -2251,11 +1856,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (v == null) return 0;
                 return Convert.ToInt64(v);
             }
-            catch
+            catch (Exception)
             {
                 return 0;
             }
         }
+
         /// <summary>
         /// Aplica sort a la lista de clientes.
         /// </summary>
@@ -2282,11 +1888,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 case "tipo_id":
                     data.Sort((a, b) => Cmp(a.tipo_id, b.tipo_id));
                     return;
-                case "identificacion":
+                case IDENTIFICACION:
                     data.Sort((a, b) => Cmp(a.identificacion, b.identificacion));
                     return;
                 case "razon_social":
-                case "nombre":
+                case PARAM_NOMBRE:
                     data.Sort((a, b) => Cmp(a.razon_social, b.razon_social));
                     return;
                 case "email1":
@@ -2370,6 +1976,579 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             string key = Convert.ToString(row.key) ?? "";
             return (server.Trim(), dbn.Trim(), usr.Trim(), key.Trim());
         }
-      
+
+        private static bool TryParseProcesarCorteInputs(FeProcesarCorteDto dto,out string codCliente,out string usuario,out DateTime fechaCorte,out DateTime fechaFactura,out string err)
+        {
+            codCliente = (dto.cod_cliente ?? "").Trim();
+            usuario = (dto.usuario ?? "").Trim().ToUpperInvariant();
+            fechaCorte = default;
+            fechaFactura = default;
+            err = "";
+
+            if (string.IsNullOrWhiteSpace(codCliente))
+            {
+                err = MENSAJE_COD_CLIENTE;
+                return false;
+            }
+
+            if (string.IsNullOrWhiteSpace(usuario))
+            {
+                err = USUARIO_REQUERIDO;
+                return false;
+            }
+
+            if (!DateTime.TryParseExact((dto.fecha_corte ?? "").Trim(), FE_DATE_FMT,
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out fechaCorte))
+            {
+                err = "fecha_corte inválida. Formato esperado: YYYY-MM-DD.";
+                return false;
+            }
+
+            if (!DateTime.TryParseExact((dto.fecha_factura ?? "").Trim(), FE_DATE_FMT,
+                CultureInfo.InvariantCulture, DateTimeStyles.None, out fechaFactura))
+            {
+                err = "fecha_factura inválida. Formato esperado: YYYY-MM-DD.";
+                return false;
+            }
+
+            return true;
+        }
+
+        private static void LoadCorteCfg(SqlConnection connLocal, string codCliente,out bool incluyePolizas,out bool incluyePrincipal,out string actividad,out string monedaCfg,out string codSucursal,out string terminalPOS)
+        {
+            incluyePolizas = false;
+            incluyePrincipal = false;
+            actividad = "";
+            monedaCfg = "";
+            codSucursal = "2";
+            terminalPOS = "00001";
+
+            const string sqlParams = @"
+    select
+        isnull(INCLUYE_POLIZAS,0)        as incluye_polizas,
+        isnull(INCLUYE_PRINCIPAL,0)     as incluye_principal,
+        rtrim(isnull(CABYS,''))         as cabys,
+        rtrim(isnull(ACTIVIDAD_ECONOMICA,'')) as actividad,
+        rtrim(isnull(MONEDA,''))        as moneda,
+        rtrim(isnull(SUCURSAL,''))      as sucursal,
+        rtrim(isnull(TERMINAL,''))      as terminal
+    from SYS_FE_PARAMETROS
+    where COD_CLIENTE = @cod_cliente;";
+
+            var pCfg = connLocal.QueryFirstOrDefault<dynamic>(sqlParams, new { cod_cliente = codCliente });
+            if (pCfg == null)
+                throw new InvalidOperationException("No se encontró configuración en SYS_FE_PARAMETROS para el cliente.");
+
+            incluyePolizas = Convert.ToInt32(pCfg.incluye_polizas) == 1;
+            incluyePrincipal = Convert.ToInt32(pCfg.incluye_principal) == 1;
+            actividad = Convert.ToString(pCfg.actividad) ?? "";
+            monedaCfg = (Convert.ToString(pCfg.moneda) ?? "").Trim();
+
+            codSucursal = (Convert.ToString(pCfg.sucursal) ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(codSucursal)) codSucursal = "2";
+
+            terminalPOS = (Convert.ToString(pCfg.terminal) ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(terminalPOS)) terminalPOS = "00001";
+        }
+
+        private static void SyncConsecutivo(SqlConnection connLocal, SqlConnection connProveedor, string codCliente)
+        {
+            var rsConsec = connProveedor.QueryFirstOrDefault<dynamic>(
+                "exec spProGrX_Cliente_Consecutivo @cliente;",
+                new { cliente = codCliente }
+            );
+
+            int consecutivo = GetConsecutivo(rsConsec);
+            if (consecutivo > 0)
+            {
+                connLocal.Execute(
+                    "update SYS_FE_PARAMETROS set CONSECUTIVO_FE = @c where COD_CLIENTE = @cod_cliente;",
+                    new { c = consecutivo, cod_cliente = codCliente }
+                );
+            }
+        }
+
+        private static void EjecutarCorte(SqlConnection connLocal, string codCliente, string usuario, DateTime fechaCorte, DateTime fechaFactura)
+        {
+            var pCorte = new DynamicParameters();
+            pCorte.Add("@Cliente", codCliente, DbType.String);
+            pCorte.Add("@Corte", DayEnd(fechaCorte), DbType.DateTime);
+            pCorte.Add("@Usuario", usuario, DbType.String);
+            pCorte.Add("@FechaFactura", DateTime.SpecifyKind(fechaFactura, DateTimeKind.Unspecified), DbType.DateTime);
+
+            connLocal.Execute("spCrd_Facturacion_Corte", pCorte, commandType: CommandType.StoredProcedure);
+        }
+
+        private static List<dynamic> ObtenerNuevosClientes(SqlConnection connLocal, string codCliente)
+        {
+            return connLocal.Query(
+                "spCrd_Facturacion_Notifica_Clientes",
+                new { Cliente = codCliente },
+                commandType: CommandType.StoredProcedure
+            ).ToList();
+        }
+
+        private static ErrorDto ProcesarNuevosClientes(SqlConnection connLocal,SqlConnection connProveedor,List<dynamic> nuevos,string codClienteDefault, DateTime fechaCorte)
+        {
+            var sbCli = new System.Text.StringBuilder();
+
+            foreach (var r in nuevos)
+            {
+                string codCliRow = (Convert.ToString(r.COD_CLIENTE) ?? codClienteDefault).Trim();
+                string tipoId = Convert.ToString(r.TIPO_ID) ?? Convert.ToString(r.Tipo_Id) ?? "";
+                string clienteId = Convert.ToString(r.CLIENTE_ID) ?? Convert.ToString(r.Cliente_ID) ?? "";
+                string cedula = (Convert.ToString(r.CEDULA) ?? Convert.ToString(r.Cedula) ?? "").Trim();
+                string nombre = Convert.ToString(r.NOMBRE) ?? Convert.ToString(r.Nombre) ?? "";
+                string email = Convert.ToString(r.EMAIL) ?? Convert.ToString(r.Email) ?? "";
+                string direccion = Convert.ToString(r.DIRECCION) ?? Convert.ToString(r.DIRECCION) ?? Convert.ToString(r.Direccion) ?? "";
+
+                var ins = connProveedor.QueryFirstOrDefault<dynamic>(
+                    "exec sp_IW_CLIENTEInsert_ProGrX @COD_CLIENTE,@TIPO_ID,@CLIENTE_ID,@CEDULA,@NOMBRE,@EMAIL,'','','',@DIRECCION,1,1,1,1,@FECHA_CORTE,30,1;",
+                    new
+                    {
+                        COD_CLIENTE = codCliRow,
+                        TIPO_ID = tipoId,
+                        CLIENTE_ID = clienteId,
+                        CEDULA = cedula,
+                        NOMBRE = nombre,
+                        EMAIL = email,
+                        DIRECCION = direccion,
+                        FECHA_CORTE = DateTime.SpecifyKind(fechaCorte, DateTimeKind.Unspecified)
+                    }
+                );
+
+                int cErr;
+                string mErr;
+                if (TryReadSpError(ins, out cErr, out mErr))
+                    return DbHelper.ErrorResponse(mErr.Length > 0 ? mErr : $"Error proveedor sp_IW_CLIENTEInsert_ProGrX (code {cErr}).");
+
+
+                long codigoInterno = GetCodigoInterno(ins);
+                if (codigoInterno <= 0)
+                    return DbHelper.ErrorResponse("Proveedor no devolvió CLIENTE_ID_FE (código interno) para el cliente insertado.");
+
+                sbCli.Append(" exec spCrd_Facturacion_Notifica_Clientes_Result ");
+                sbCli.Append($"'{SqlEscape(codCliRow)}','{SqlEscape(cedula)}',{codigoInterno};");
+                sbCli.AppendLine();
+
+                if (sbCli.Length > 20000)
+                {
+                    connLocal.Execute(sbCli.ToString(), commandTimeout: 360);
+                    sbCli.Clear();
+                }
+            }
+
+            if (sbCli.Length > 0)
+                connLocal.Execute(sbCli.ToString(), commandTimeout: 360);
+
+            return DbHelper.OkResponse("Ok");
+        }
+
+        private static List<dynamic> ObtenerFactRows(SqlConnection connLocal, string codCliente)
+        {
+            return connLocal.Query(
+                "spCrd_Facturacion_Notifica",
+                new { ClienteID = codCliente },
+                commandType: CommandType.StoredProcedure
+            ).ToList();
+        }
+
+        private static string ObtenerCedulaEmisor(SqlConnection connLocal, string codCliente)
+        {
+            const string sqlCol = "select col_length('dbo.SYS_FE_PARAMETROS','CEDULA_EMISOR');";
+            var col = connLocal.QueryFirstOrDefault<int?>(sqlCol);
+
+            if (!col.HasValue || col.Value <= 0)
+                return "";
+
+            const string sqlCed = "select rtrim(isnull(CEDULA_EMISOR,'')) from SYS_FE_PARAMETROS where COD_CLIENTE = @c;";
+            return (connLocal.QueryFirstOrDefault<string>(sqlCed, new { c = codCliente }) ?? "").Trim();
+        }
+
+        private static ErrorDto ProcesarFacturas(SqlConnection connLocal,SqlConnection connProveedor,List<dynamic> factRows,string codCliente,string usuario,DateTime fechaFactura,bool incluyePolizas,bool incluyePrincipal, string actividad,string monedaCfg,string codSucursal,string terminalPOS)
+        {
+            string cedulaEmisor = ObtenerCedulaEmisor(connLocal, codCliente);
+            if (string.IsNullOrWhiteSpace(cedulaEmisor))
+                return DbHelper.ErrorResponse("No se pudo obtener la cédula del EMISOR. Defina SYS_FE_PARAMETROS.CEDULA_EMISOR (o indique la tabla correcta para la cédula jurídica del emisor).");
+
+            var sbFact = new System.Text.StringBuilder();
+
+            const string situacion = "1";
+            const string tipoComprobante = "01";
+
+            foreach (var r in factRows)
+            {
+                string comprobanteInterno = (Convert.ToString(r.FAC_NUMERO) ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(comprobanteInterno))
+                    continue;
+
+                DateTime fechaTransac = DateTime.SpecifyKind(fechaFactura, DateTimeKind.Unspecified);
+
+                string clave50 = MHaciendaDB.fxHacienda_Clave50((
+                codPais: "506",
+                fechaTransac: fechaTransac,
+                idEmpresa: cedulaEmisor,
+                codSucursal: codSucursal,
+                terminalPOS: terminalPOS,
+                comprobanteInterno: comprobanteInterno,
+                situacionComprobante: situacion,
+                tipoComprobante: tipoComprobante
+            ));
+                string clave20 = MHaciendaDB.fxHacienda_Clave20(
+                    codSucursal, terminalPOS, comprobanteInterno, tipoComprobante);
+
+                decimal intCor = r.INTCOR == null ? 0m : Convert.ToDecimal(r.INTCOR);
+                decimal intMor = r.INTMOR == null ? 0m : Convert.ToDecimal(r.INTMOR);
+                decimal cargos = r.CARGOS == null ? 0m : Convert.ToDecimal(r.CARGOS);
+                decimal poliza = r.POLIZA == null ? 0m : Convert.ToDecimal(r.POLIZA);
+                decimal principal = r.PRINCIPAL == null ? 0m : Convert.ToDecimal(r.PRINCIPAL);
+
+                decimal totalGravado = 0m;
+                decimal totalExento = intCor + intMor + cargos;
+                if (incluyePolizas) totalExento += poliza;
+                if (incluyePrincipal) totalExento += principal;
+
+                string moneda = ((Convert.ToString(r.MONEDA) ?? monedaCfg) ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(moneda)) moneda = "CRC";
+
+                decimal tipoCambio = r.TIPO_CAMBIO == null ? 1m : Convert.ToDecimal(r.TIPO_CAMBIO);
+
+                string emailDefaultApl = Convert.ToString(r.EMAIL_DEFAULT_APL) ?? "0";
+                bool apl = emailDefaultApl.Trim() == "1";
+
+                string emailDefault = Convert.ToString(r.EMAIL_DEFAULT) ?? "";
+                string emailRow = Convert.ToString(r.EMAIL) ?? Convert.ToString(r.Email) ?? "";
+                string emailDestino = apl ? emailDefault : emailRow;
+
+                string enviarCliente = Convert.ToString(r.EMAIL_CLIENTE_NO) ?? "0";
+                string clienteIdFE = Convert.ToString(r.CLIENTE_ID_FE) ?? "";
+                string clienteId = Convert.ToString(r.CLIENTE_ID) ?? "";
+                string tipoId = Convert.ToString(r.TIPO_ID) ?? Convert.ToString(r.Tipo_Id) ?? "";
+
+                string clienteIdDestino = string.IsNullOrWhiteSpace(clienteIdFE) ? clienteId : clienteIdFE;
+
+                var enc = connProveedor.QueryFirstOrDefault<dynamic>(
+                    "exec sp_IW_ENC_FACTURAInsert_ProGrX " +
+                    "@COD_CLIENTE,@CLAVE50,@CLAVE20,@CLIENTE_ID,@MONEDA,@SUCURSAL,'02',@FAC,30," +
+                    "@EMAIL,@NOENV,@FECHA,0,'05','','','','',null,'','','','1',@TERM,@TC," +
+                    "@TIPO_COMP,@TIPO_ID," +
+                    "@TOT_GR,@TOT_EX,0,@TOT_GR,0,0,@TOT_GR,@TOT_EX,0," +
+                    "@TOT,@DESC,@SUBTOT,@IMP,0,0,@TOTAL," +
+                    "1,@USR,@NOW,'','','FACT. PROGRX',@ACT;",
+                    new
+                    {
+                        COD_CLIENTE = codCliente,
+                        CLAVE50 = clave50,
+                        CLAVE20 = clave20,
+                        CLIENTE_ID = clienteIdDestino,
+                        MONEDA = moneda,
+                        SUCURSAL = codSucursal,
+                        FAC = comprobanteInterno,
+                        EMAIL = emailDestino,
+                        NOENV = enviarCliente,
+                        FECHA = $"{fechaTransac:yyyy/MM/dd HH:mm:ss}",
+                        TERM = terminalPOS,
+                        TC = tipoCambio.ToString(CultureInfo.InvariantCulture),
+                        TIPO_COMP = tipoComprobante,
+                        TIPO_ID = (tipoId ?? "").PadLeft(2, '0'),
+                        TOT_GR = totalGravado.ToString(CultureInfo.InvariantCulture),
+                        TOT_EX = totalExento.ToString(CultureInfo.InvariantCulture),
+                        TOT = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
+                        DESC = "0",
+                        SUBTOT = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
+                        IMP = "0",
+                        TOTAL = (totalGravado + totalExento).ToString(CultureInfo.InvariantCulture),
+                        USR = usuario,
+                        NOW = $"{DateTime.Now:yyyy/MM/dd HH:mm:ss}",
+                        ACT = actividad
+                    }
+                );
+
+                int cErrEnc;
+                string mErrEnc;
+                if (TryReadSpError(enc, out cErrEnc, out mErrEnc))
+                    return DbHelper.ErrorResponse(mErrEnc.Length > 0 ? mErrEnc : $"Error proveedor sp_IW_ENC_FACTURAInsert_ProGrX (code {cErrEnc}).");
+
+
+                long idFactura = GetIdFactura(enc);
+                if (idFactura == 0)
+                    return DbHelper.ErrorResponse("Proveedor no devolvió IdFactura al insertar encabezado.");
+
+                try
+                {
+                    int linea = 0;
+
+                    InsertFacturaDetalleProveedor(connProveedor, codCliente, idFactura, ref linea, "CRD001", "I", "INTERES CORRIENTE DEL MES", intCor, clave50);
+                    InsertFacturaDetalleProveedor(connProveedor, codCliente, idFactura, ref linea, "CRD002", "I", "INTERES ATRASADOS", intMor, clave50);
+                    InsertFacturaDetalleProveedor(connProveedor, codCliente, idFactura, ref linea, "CRD003", "I", "CARGOS ADM Y DE FORMALIZACION", cargos, clave50);
+
+                    if (incluyePolizas)
+                        InsertFacturaDetalleProveedor(connProveedor, codCliente, idFactura, ref linea, "CRD004", "Unid", "POLIZAS DEL CREDITO", poliza, clave50);
+
+                    if (incluyePrincipal)
+                        InsertFacturaDetalleProveedor(connProveedor, codCliente, idFactura, ref linea, "CRD005", "Unid", "ABONO AL CREDITO", principal, clave50);
+                }
+                catch (InvalidOperationException exDet)
+                {
+                    return DbHelper.ErrorResponse(exDet.Message);
+                }
+
+                sbFact.Append(" exec spCrd_Facturacion_Notifica_Result ");
+                sbFact.Append($"'{SqlEscape(codCliente)}','{SqlEscape(comprobanteInterno)}','{idFactura}','{SqlEscape(usuario)}';");
+                sbFact.AppendLine();
+
+                if (sbFact.Length > 20000)
+                {
+                    connLocal.Execute(sbFact.ToString(), commandTimeout: 360);
+                    sbFact.Clear();
+                }
+            }
+
+            if (sbFact.Length > 0)
+                connLocal.Execute(sbFact.ToString(), commandTimeout: 360);
+
+            return DbHelper.OkResponse("Ok");
+        }
+
+        private static void InsertFacturaDetalleProveedor(SqlConnection connProveedor, string codCliente,long idFactura,ref int linea,string codigo,string unidad,string detalle,decimal monto,string clave50)
+        {
+            if (monto <= 0) return;
+            linea++;
+
+            var det = connProveedor.QueryFirstOrDefault<dynamic>(
+                "exec sp_IW_DET_FACTURAInsert_ProGrX " +
+                "@COD_CLIENTE,@ID_FACT,@LINEA,@CODIGO,1,@UNIDAD,@DETALLE," +
+                "@PRECIO,@MONTO,0,'DESCUENTO CLIENTES',@MONTO,'01',0,0," +
+                "null,null,null,null,null,null,null,'01',@CLAVE50;",
+                new
+                {
+                    COD_CLIENTE = codCliente,
+                    ID_FACT = idFactura,
+                    LINEA = linea,
+                    CODIGO = codigo,
+                    UNIDAD = unidad,
+                    DETALLE = detalle,
+                    PRECIO = monto.ToString(CultureInfo.InvariantCulture),
+                    MONTO = monto.ToString(CultureInfo.InvariantCulture),
+                    CLAVE50 = clave50
+                }
+            );
+
+            int cErrDet;
+            string mErrDet;
+            if (TryReadSpError(det, out cErrDet, out mErrDet))
+                throw new InvalidOperationException(mErrDet.Length > 0 ? mErrDet : $"Error proveedor sp_IW_DET_FACTURAInsert_ProGrX (code {cErrDet}).");
+        }
+
+        private static bool TryReadSpError(object? row, out int code, out string desc)
+        {
+            code = 0;
+            desc = "";
+
+            if (row == null)
+                return false;
+
+            if (row is IDictionary<string, object?> dict)
+            {
+                if (TryReadFromDict(dict, out code, out desc))
+                    return code != 0;
+
+                return false;
+            }
+            try
+            {
+                var type = row.GetType();
+
+                var pCode = type.GetProperty("code") ?? type.GetProperty("Code");
+                if (pCode == null)
+                    return false;
+
+                var vCode = pCode.GetValue(row);
+                if (vCode == null)
+                    return false;
+
+                code = Convert.ToInt32(vCode);
+
+                var pDesc = type.GetProperty("description") ?? type.GetProperty("Description");
+                if (pDesc != null)
+                {
+                    var vDesc = pDesc.GetValue(row);
+                    if (vDesc != null)
+                        desc = Convert.ToString(vDesc) ?? "";
+                }
+
+                return code != 0;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static bool TryReadFromDict(IDictionary<string, object?> dict,out int code,out string desc)
+        {
+            code = 0;
+            desc = "";
+
+            if (TryGetDictValue(dict, "code", out var c) ||
+                TryGetDictValue(dict, "Code", out c))
+            {
+                code = Convert.ToInt32(c);
+
+                if (TryGetDictValue(dict, "description", out var d) ||
+                    TryGetDictValue(dict, "Description", out d))
+                {
+                    desc = Convert.ToString(d) ?? "";
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+
+        private static bool TryGetDictValue(IDictionary<string, object?> dict,string key,out object? value)
+        {
+            if (dict.TryGetValue(key, out value) && value != null)
+                return true;
+
+            value = null;
+            return false;
+        }
+
+        private static void EnsureOpen(SqlConnection conn)
+        {
+            if (conn.State != ConnectionState.Open)
+                conn.Open();
+        }
+
+        private static void AcquireSyncLock(SqlConnection connLocal, string cod_cliente)
+        {
+            connLocal.Execute(
+                "exec sp_getapplock @Resource=@r, @LockMode='Exclusive', @LockOwner='Session', @LockTimeout=15000;",
+                new { r = $"FE_CLIENTES_SINC_{cod_cliente}" },
+                commandTimeout: 360
+            );
+        }
+        private static SqlConnection OpenPortalConn(string server, string db, string usr, string key)
+        {
+            var csb = new SqlConnectionStringBuilder
+            {
+                DataSource = server,
+                InitialCatalog = db,
+                UserID = usr,
+                Password = key,
+                ConnectTimeout = 15,
+                Encrypt = false,
+                TrustServerCertificate = true
+            };
+
+            var connPortal = new SqlConnection(csb.ConnectionString);
+            connPortal.Open();
+            return connPortal;
+        }
+
+        private static bool PortalHasIwCliente(SqlConnection connPortal)
+        {
+            var exists = connPortal.QueryFirstOrDefault<int>(
+                "select case when object_id('dbo.IW_CLIENTE','U') is null then 0 else 1 end;"
+            );
+            return exists == 1;
+        }
+        private static List<dynamic> LoadPortalClientes(SqlConnection connPortal, string cod_cliente)
+        {
+            const string sqlPortal = @"
+        select
+            [ID]                as CLIENTE_ID_FE,
+            CODIGO              as CLIENTE_ID,
+            rtrim(CEDULA)       as CEDULA,
+            rtrim(RAZON_SOCIAL) as NOMBRE
+        from IW_CLIENTE
+        where ID_CLIENTE_ORIGEN = @cod_cliente
+        order by [ID];";
+
+            return connPortal.Query(sqlPortal, new { cod_cliente }).ToList();
+        }
+        private static void SyncLocalClientes(SqlConnection connLocal, string cod_cliente, string usuario, List<dynamic> portalRows)
+        {
+            using var tx = connLocal.BeginTransaction();
+
+            try
+            {
+                DeleteLocalClientes(connLocal, tx, cod_cliente);
+                InsertLocalClientes(connLocal, tx, cod_cliente, usuario, portalRows);
+                tx.Commit();
+            }
+            catch (SqlException)
+            {
+                try { tx.Rollback(); } catch { /* no-op */ }
+                throw;
+            }
+        }
+
+        private static void DeleteLocalClientes(SqlConnection connLocal, SqlTransaction tx, string cod_cliente)
+        {
+            const string sqlDelete = @"delete SYS_FE_CLIENTES where COD_CLIENTE = @cod_cliente;";
+            connLocal.Execute(sqlDelete, new { cod_cliente }, transaction: tx, commandTimeout: 360);
+        }
+
+        private static void InsertLocalClientes(SqlConnection connLocal, SqlTransaction tx, string cod_cliente, string usuario, List<dynamic> portalRows)
+        {
+            var seenClienteId = new HashSet<long>();
+            var seenClienteIdFe = new HashSet<long>();
+            var sb = new System.Text.StringBuilder();
+
+            foreach (var r in portalRows)
+            {
+                long clienteId;
+                long clienteIdFe;
+
+                if (!TryGetClienteIds(r, out clienteId, out clienteIdFe))
+                    continue;
+                if (!seenClienteId.Add(clienteId)) continue;
+                if (!seenClienteIdFe.Add(clienteIdFe)) continue;
+
+                string cedula = SqlEscape((r.CEDULA ?? "").ToString());
+                string nombre = SqlEscape((r.NOMBRE ?? "").ToString());
+
+                AppendInsert(sb, cod_cliente, usuario, clienteId, clienteIdFe, cedula, nombre);
+
+                if (sb.Length > 20000)
+                {
+                    connLocal.Execute(sb.ToString(), transaction: tx, commandTimeout: 360);
+                    sb.Clear();
+                }
+            }
+
+            if (sb.Length > 0)
+                connLocal.Execute(sb.ToString(), transaction: tx, commandTimeout: 360);
+        }
+
+        private static bool TryGetClienteIds(dynamic r, out long clienteId, out long clienteIdFe)
+        {
+            clienteId = 0;
+            clienteIdFe = 0;
+
+            if (r.CLIENTE_ID != null) clienteId = Convert.ToInt64(r.CLIENTE_ID);
+            if (r.CLIENTE_ID_FE != null) clienteIdFe = Convert.ToInt64(r.CLIENTE_ID_FE);
+
+            return (clienteId > 0 && clienteIdFe > 0);
+        }
+
+        private static void AppendInsert(System.Text.StringBuilder sb, string cod_cliente, string usuario, long clienteId, long clienteIdFe, string cedula, string nombre)
+        {
+            sb.AppendLine(" ");
+            sb.Append("IF NOT EXISTS (SELECT 1 FROM SYS_FE_CLIENTES WHERE COD_CLIENTE = '");
+            sb.Append(SqlEscape(cod_cliente));
+            sb.Append("' AND CLIENTE_ID_FE = ");
+            sb.Append(clienteIdFe);
+            sb.AppendLine(")");
+            sb.Append("INSERT SYS_FE_CLIENTES (COD_CLIENTE, CEDULA, NOMBRE, CLIENTE_ID, CLIENTE_ID_FE, REGISTRO_FECHA, REGISTRO_USUARIO) ");
+            sb.Append("VALUES(");
+            sb.Append($"'{SqlEscape(cod_cliente)}','{cedula}','{nombre}',{clienteId},{clienteIdFe}, getdate(), '{SqlEscape(usuario)}');");
+            sb.AppendLine();
+        }
+
+
     }
 }

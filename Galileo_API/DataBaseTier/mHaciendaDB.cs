@@ -2,7 +2,7 @@
 
 namespace Galileo.DataBaseTier
 {
-    public static class mHaciendaDB
+    public static class MHaciendaDB
     {
         public static int Aleatorio(int minimo, int maximoInclusive)
         {
@@ -27,7 +27,7 @@ namespace Galileo.DataBaseTier
                 : valor.PadLeft(largo, fillChar);
         }
 
-        public static string fxHacienda_Clave50(
+        public static string fxHacienda_Clave50((
             string codPais,
             DateTime fechaTransac,
             string idEmpresa,
@@ -35,24 +35,27 @@ namespace Galileo.DataBaseTier
             string terminalPOS,
             string comprobanteInterno,
             string situacionComprobante,
-            string tipoComprobante)
+            string tipoComprobante
+        ) a)
         {
             int rndClave = Aleatorio(0, 99999999);
 
+            var fechaTransac = a.fechaTransac;
             string yy = (fechaTransac.Year % 100).ToString("00");
 
-            return (codPais ?? "").Trim()
+            return (a.codPais ?? "").Trim()
                  + fechaTransac.Day.ToString("00")
                  + fechaTransac.Month.ToString("00")
                  + yy
-                 + fxStringRelleno(idEmpresa, "I", "0", 12)
-                 + fxStringRelleno(codSucursal, "I", "0", 3)
-                 + fxStringRelleno(terminalPOS, "I", "0", 5)
-                 + (tipoComprobante ?? "").Trim()
-                 + fxStringRelleno(comprobanteInterno, "I", "0", 10)
-                 + (situacionComprobante ?? "").Trim()
+                 + fxStringRelleno(a.idEmpresa, "I", "0", 12)
+                 + fxStringRelleno(a.codSucursal, "I", "0", 3)
+                 + fxStringRelleno(a.terminalPOS, "I", "0", 5)
+                 + (a.tipoComprobante ?? "").Trim()
+                 + fxStringRelleno(a.comprobanteInterno, "I", "0", 10)
+                 + (a.situacionComprobante ?? "").Trim()
                  + fxStringRelleno(rndClave.ToString(), "D", "9", 8);
         }
+
 
         public static string fxHacienda_Clave20(
             string codSucursal,
