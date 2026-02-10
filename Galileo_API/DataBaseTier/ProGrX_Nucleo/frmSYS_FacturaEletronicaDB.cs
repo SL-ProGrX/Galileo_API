@@ -1958,10 +1958,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             int count = Math.Min(paginacion, data.Count - start);
             return data.GetRange(start, count);
         }
-        /// <summary>
-        /// DEBUG: Describe columnas del resultset de SPs de corte (Notifica_Clientes y Notifica).
-        /// Solo para DEV.
-        /// </summary>
         private static string SqlEscape(string s)
         {
             s = (s ?? "").Trim();
@@ -1987,7 +1983,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             string key = Convert.ToString(row.key) ?? "";
             return (server.Trim(), dbn.Trim(), usr.Trim(), key.Trim());
         }
-
         private static bool TryParseProcesarCorteInputs(FeProcesarCorteDto dto,out string codCliente,out string usuario,out DateTime fechaCorte,out DateTime fechaFactura,out string err)
         {
             codCliente = (dto.cod_cliente ?? "").Trim();
@@ -2032,21 +2027,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
     string codSucursal,
     string terminalPOS
 );
-
         private static CorteCfg LoadCorteCfg(SqlConnection connLocal, string codCliente)
         {
-            bool incluyePolizas = false;
-            bool incluyePrincipal = false;
-            string actividad = "";
-            string monedaCfg = "";
-            string codSucursal = "2";
-            string terminalPOS = "00001";
-
             const string sqlParams = @"
             select
                 isnull(INCLUYE_POLIZAS,0)        as incluye_polizas,
                 isnull(INCLUYE_PRINCIPAL,0)     as incluye_principal,
-                rtrim(isnull(CABYS,''))         as cabys,
                 rtrim(isnull(ACTIVIDAD_ECONOMICA,'')) as actividad,
                 rtrim(isnull(MONEDA,''))        as moneda,
                 rtrim(isnull(SUCURSAL,''))      as sucursal,
@@ -2058,17 +2044,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             if (pCfg == null)
                 throw new InvalidOperationException("No se encontró configuración en SYS_FE_PARAMETROS para el cliente.");
 
-            incluyePolizas = Convert.ToInt32(pCfg.incluye_polizas) == 1;
-            incluyePrincipal = Convert.ToInt32(pCfg.incluye_principal) == 1;
+            bool incluyePolizas = Convert.ToInt32(pCfg.incluye_polizas) == 1;
+            bool incluyePrincipal = Convert.ToInt32(pCfg.incluye_principal) == 1;
 
-            actividad = Convert.ToString(pCfg.actividad) ?? "";
-            monedaCfg = (Convert.ToString(pCfg.moneda) ?? "").Trim();
+            string actividad = Convert.ToString(pCfg.actividad) ?? "";
+            string monedaCfg = (Convert.ToString(pCfg.moneda) ?? "").Trim();
 
-            codSucursal = (Convert.ToString(pCfg.sucursal) ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(codSucursal)) codSucursal = "2";
+            string codSucursal = (Convert.ToString(pCfg.sucursal) ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(codSucursal))
+                codSucursal = "2";
 
-            terminalPOS = (Convert.ToString(pCfg.terminal) ?? "").Trim();
-            if (string.IsNullOrWhiteSpace(terminalPOS)) terminalPOS = "00001";
+            string terminalPOS = (Convert.ToString(pCfg.terminal) ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(terminalPOS))
+                terminalPOS = "00001";
 
             return new CorteCfg(
                 incluyePolizas,
@@ -2079,8 +2067,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 terminalPOS
             );
         }
-
-
         private static void SyncConsecutivo(SqlConnection connLocal, SqlConnection connProveedor, string codCliente)
         {
             var rsConsec = connProveedor.QueryFirstOrDefault<dynamic>(
@@ -2097,7 +2083,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 );
             }
         }
-
         private static void EjecutarCorte(SqlConnection connLocal, string codCliente, string usuario, DateTime fechaCorte, DateTime fechaFactura)
         {
             var pCorte = new DynamicParameters();
@@ -2108,7 +2093,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             connLocal.Execute("spCrd_Facturacion_Corte", pCorte, commandType: CommandType.StoredProcedure);
         }
-
         private static List<dynamic> ObtenerNuevosClientes(SqlConnection connLocal, string codCliente)
         {
             return connLocal.Query(
@@ -2117,11 +2101,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 commandType: CommandType.StoredProcedure
             ).ToList();
         }
-
-        private static ErrorDto ProcesarNuevosClientes(SqlConnection connLocal,SqlConnection connProveedor,List<dynamic> nuevos,string codClienteDefault, DateTime fechaCorte)
+        private static ErrorDto ProcesarNuevosClientes(SqlConnection connLocal,SqlConnection connProveedor,List<dynamic> nuevos,string codClienteDefault,DateTime fechaCorte)
         {
-            var sbCli = new System.Text.StringBuilder();
-
             foreach (var r in nuevos)
             {
                 string codCliRow = (Convert.ToString(r.COD_CLIENTE) ?? codClienteDefault).Trim();
@@ -2130,7 +2111,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 string cedula = (Convert.ToString(r.CEDULA) ?? Convert.ToString(r.Cedula) ?? "").Trim();
                 string nombre = Convert.ToString(r.NOMBRE) ?? Convert.ToString(r.Nombre) ?? "";
                 string email = Convert.ToString(r.EMAIL) ?? Convert.ToString(r.Email) ?? "";
-                string direccion = Convert.ToString(r.DIRECCION) ?? Convert.ToString(r.DIRECCION) ?? Convert.ToString(r.Direccion) ?? "";
+                string direccion = Convert.ToString(r.DIRECCION) ?? Convert.ToString(r.Direccion) ?? "";
 
                 var ins = connProveedor.QueryFirstOrDefault<dynamic>(
                     "exec sp_IW_CLIENTEInsert_ProGrX @COD_CLIENTE,@TIPO_ID,@CLIENTE_ID,@CEDULA,@NOMBRE,@EMAIL,'','','',@DIRECCION,1,1,1,1,@FECHA_CORTE,30,1;",
@@ -2152,28 +2133,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (TryReadSpError(ins, out cErr, out mErr))
                     return DbHelper.ErrorResponse(mErr.Length > 0 ? mErr : $"Error proveedor sp_IW_CLIENTEInsert_ProGrX (code {cErr}).");
 
-
                 long codigoInterno = GetCodigoInterno(ins);
                 if (codigoInterno <= 0)
                     return DbHelper.ErrorResponse("Proveedor no devolvió CLIENTE_ID_FE (código interno) para el cliente insertado.");
 
-                sbCli.Append(" exec spCrd_Facturacion_Notifica_Clientes_Result ");
-                sbCli.Append($"'{SqlEscape(codCliRow)}','{SqlEscape(cedula)}',{codigoInterno};");
-                sbCli.AppendLine();
+                if (codigoInterno > int.MaxValue)
+                    return DbHelper.ErrorResponse("Proveedor devolvió CLIENTE_ID_FE fuera de rango (int).");
 
-                if (sbCli.Length > 20000)
-                {
-                    connLocal.Execute(sbCli.ToString(), commandTimeout: 360);
-                    sbCli.Clear();
-                }
+                var p = new DynamicParameters();
+                p.Add("@Cliente", codCliRow, DbType.String);
+                p.Add("@Identificacion", cedula, DbType.String);
+                p.Add("@Id", (int)codigoInterno, DbType.Int32);
+
+                connLocal.Execute(
+                    "spCrd_Facturacion_Notifica_Clientes_Result",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 360
+                );
             }
-
-            if (sbCli.Length > 0)
-                connLocal.Execute(sbCli.ToString(), commandTimeout: 360);
 
             return DbHelper.OkResponse("Ok");
         }
-
         private static List<dynamic> ObtenerFactRows(SqlConnection connLocal, string codCliente)
         {
             return connLocal.Query(
@@ -2182,7 +2163,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 commandType: CommandType.StoredProcedure
             ).ToList();
         }
-
         private static string ObtenerCedulaEmisor(SqlConnection connLocal, string codCliente)
         {
             const string sqlCol = "select col_length('dbo.SYS_FE_PARAMETROS','CEDULA_EMISOR');";
@@ -2194,27 +2174,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             const string sqlCed = "select rtrim(isnull(CEDULA_EMISOR,'')) from SYS_FE_PARAMETROS where COD_CLIENTE = @c;";
             return (connLocal.QueryFirstOrDefault<string>(sqlCed, new { c = codCliente }) ?? "").Trim();
         }
-
         private static ErrorDto ProcesarFacturas(SqlConnection connLocal,SqlConnection connProveedor,List<dynamic> factRows,string codCliente,string usuario,DateTime fechaFactura,CorteCfg cfg)
         {
             string cedulaEmisor = ObtenerCedulaEmisor(connLocal, codCliente);
             if (string.IsNullOrWhiteSpace(cedulaEmisor))
                 return DbHelper.ErrorResponse("No se pudo obtener la cédula del EMISOR.");
 
-            var sbFact = new System.Text.StringBuilder();
-
             const string situacion = "1";
             const string tipoComprobante = "01";
 
             var mapCtx = new FacturaMapCtx(
-                codCliente: codCliente,
-                usuario: usuario,
                 fechaFactura: fechaFactura,
                 cfg: cfg,
                 cedulaEmisor: cedulaEmisor,
                 situacion: situacion,
                 tipoComprobante: tipoComprobante
             );
+            var buffer = new List<NotificaFacturaItem>(256);
 
             foreach (var r in factRows)
             {
@@ -2227,21 +2203,40 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 var respDet = InsertDetProveedor(connProveedor, codCliente, dto, cfg);
                 if (respDet.Code != 0) return respDet;
 
-                AppendNotificaLocal(sbFact, codCliente, dto.comprobanteInterno, dto.idFactura, usuario);
+                AppendNotificaLocal(buffer, codCliente, dto.comprobanteInterno, dto.idFactura, usuario);
 
-                if (sbFact.Length > 20000)
+                if (buffer.Count >= 200)
                 {
-                    connLocal.Execute(sbFact.ToString(), commandTimeout: 360);
-                    sbFact.Clear();
+                    FlushNotificaLocal(connLocal, buffer);
                 }
             }
 
-            if (sbFact.Length > 0)
-                connLocal.Execute(sbFact.ToString(), commandTimeout: 360);
+            FlushNotificaLocal(connLocal, buffer);
 
             return DbHelper.OkResponse("Ok");
         }
+        private static void FlushNotificaLocal(SqlConnection connLocal, List<NotificaFacturaItem> buffer)
+        {
+            if (buffer.Count == 0) return;
 
+            foreach (var it in buffer)
+            {
+                var p = new DynamicParameters();
+                p.Add("@Cliente", it.CodCliente, DbType.String);
+                p.Add("@Factura", it.ComprobanteInterno, DbType.String);
+                p.Add("@Id", (int)it.IdFactura, DbType.Int32);
+                p.Add("@Usuario", it.Usuario, DbType.String);
+
+                connLocal.Execute(
+                    "spCrd_Facturacion_Notifica_Result",
+                    p,
+                    commandType: CommandType.StoredProcedure,
+                    commandTimeout: 360
+                );
+            }
+
+            buffer.Clear();
+        }
         private static FacturaProcDto? MapFacturaProveedorRow(dynamic r, FacturaMapCtx ctx)
         {
             string comprobanteInterno = (Convert.ToString(r.FAC_NUMERO) ?? "").Trim();
@@ -2322,8 +2317,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 tipoId = tipoId.PadLeft(2, '0')
             };
         }
-
-
         private static ErrorDto InsertEncProveedor(SqlConnection connProveedor,string codCliente,string usuario, FacturaProcDto dto,CorteCfg cfg)
         {
             DateTime now = DateTime.Now;
@@ -2439,13 +2432,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.ErrorResponse(exDet.Message);
             }
         }
-        private static void AppendNotificaLocal(System.Text.StringBuilder sb,string codCliente,string comprobanteInterno,long idFactura,string usuario)
+        private static void AppendNotificaLocal(List<NotificaFacturaItem> buffer, string codCliente, string comprobanteInterno, long idFactura, string usuario)
         {
-            sb.Append(" exec spCrd_Facturacion_Notifica_Result ");
-            sb.Append($"'{SqlEscape(codCliente)}','{SqlEscape(comprobanteInterno)}','{idFactura}','{SqlEscape(usuario)}';");
-            sb.AppendLine();
+            buffer.Add(new NotificaFacturaItem(codCliente, comprobanteInterno, idFactura, usuario));
         }
-
         private static void InsertFacturaDetalleProveedor(SqlConnection connProveedor, string codCliente, long idFactura, ref int linea,FacturaDetDto dto)
         {
             if (dto.monto <= 0) return;
@@ -2477,7 +2467,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     mErrDet.Length > 0 ? mErrDet : $"Error proveedor sp_IW_DET_FACTURAInsert_ProGrX (code {cErrDet})."
                 );
         }
-
         private static bool TryReadSpError(object? row, out int code, out string desc)
         {
             code = 0;
@@ -2522,7 +2511,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return false;
             }
         }
-
         private static bool TryReadFromDict(IDictionary<string, object?> dict,out int code,out string desc)
         {
             code = 0;
@@ -2544,7 +2532,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return false;
         }
-
         private static bool TryGetDictValue(IDictionary<string, object?> dict,string key,out object? value)
         {
             if (dict.TryGetValue(key, out value) && value != null)
@@ -2553,13 +2540,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             value = null;
             return false;
         }
-
         private static void EnsureOpen(SqlConnection conn)
         {
             if (conn.State != ConnectionState.Open)
                 conn.Open();
         }
-
         private static void AcquireSyncLock(SqlConnection connLocal, string cod_cliente)
         {
             connLocal.Execute(
@@ -2585,7 +2570,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             connPortal.Open();
             return connPortal;
         }
-
         private static bool PortalHasIwCliente(SqlConnection connPortal)
         {
             var exists = connPortal.QueryFirstOrDefault<int>(
@@ -2623,45 +2607,47 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 throw;
             }
         }
-
         private static void DeleteLocalClientes(SqlConnection connLocal, SqlTransaction tx, string cod_cliente)
         {
             const string sqlDelete = @"delete SYS_FE_CLIENTES where COD_CLIENTE = @cod_cliente;";
             connLocal.Execute(sqlDelete, new { cod_cliente }, transaction: tx, commandTimeout: 360);
         }
-
-        private static void InsertLocalClientes(SqlConnection connLocal, SqlTransaction tx, string cod_cliente, string usuario, List<dynamic> portalRows)
+        private static void InsertLocalClientes(SqlConnection connLocal,SqlTransaction tx,string cod_cliente,string usuario,List<dynamic> portalRows)
         {
             var seenClienteId = new HashSet<long>();
             var seenClienteIdFe = new HashSet<long>();
-            var sb = new System.Text.StringBuilder();
+            const string SQL_INSERT = @"
+                insert into SYS_FE_CLIENTES (COD_CLIENTE, USUARIO, CLIENTE_ID, CLIENTE_ID_FE, CEDULA, NOMBRE)
+                values (@COD_CLIENTE, @USUARIO, @CLIENTE_ID, @CLIENTE_ID_FE, @CEDULA, @NOMBRE);
+                ";
 
             foreach (var r in portalRows)
             {
-                long clienteId;
-                long clienteIdFe;
-
-                if (!TryGetClienteIds(r, out clienteId, out clienteIdFe))
+                if (!TryGetClienteIds(r, out long clienteId, out long clienteIdFe))
                     continue;
+
                 if (!seenClienteId.Add(clienteId)) continue;
                 if (!seenClienteIdFe.Add(clienteIdFe)) continue;
 
-                string cedula = SqlEscape((r.CEDULA ?? "").ToString());
-                string nombre = SqlEscape((r.NOMBRE ?? "").ToString());
+                string cedula = ((r.CEDULA ?? "").ToString()).Trim();
+                string nombre = ((r.NOMBRE ?? "").ToString()).Trim();
 
-                AppendInsert(sb, cod_cliente, usuario, clienteId, clienteIdFe, cedula, nombre);
-
-                if (sb.Length > 20000)
-                {
-                    connLocal.Execute(sb.ToString(), transaction: tx, commandTimeout: 360);
-                    sb.Clear();
-                }
+                connLocal.Execute(
+                    SQL_INSERT,
+                    new
+                    {
+                        COD_CLIENTE = (cod_cliente ?? "").Trim(),
+                        USUARIO = (usuario ?? "").Trim(),
+                        CLIENTE_ID = clienteId,
+                        CLIENTE_ID_FE = clienteIdFe,
+                        CEDULA = cedula,
+                        NOMBRE = nombre
+                    },
+                    transaction: tx,
+                    commandTimeout: 360
+                );
             }
-
-            if (sb.Length > 0)
-                connLocal.Execute(sb.ToString(), transaction: tx, commandTimeout: 360);
         }
-
         private static bool TryGetClienteIds(dynamic r, out long clienteId, out long clienteIdFe)
         {
             clienteId = 0;
@@ -2672,7 +2658,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return (clienteId > 0 && clienteIdFe > 0);
         }
-
         private static void AppendInsert(System.Text.StringBuilder sb, string cod_cliente, string usuario, long clienteId, long clienteIdFe, string cedula, string nombre)
         {
             sb.AppendLine(" ");
@@ -2686,7 +2671,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             sb.Append($"'{SqlEscape(cod_cliente)}','{cedula}','{nombre}',{clienteId},{clienteIdFe}, getdate(), '{SqlEscape(usuario)}');");
             sb.AppendLine();
         }
-
         private sealed class FacturaProcDto
         {
             public string comprobanteInterno = "";
@@ -2732,8 +2716,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         }
         private readonly struct FacturaMapCtx
         {
-            public readonly string codCliente;
-            public readonly string usuario;
             public readonly DateTime fechaFactura;
             public readonly CorteCfg cfg;
             public readonly string cedulaEmisor;
@@ -2741,23 +2723,35 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             public readonly string tipoComprobante;
 
             public FacturaMapCtx(
-                string codCliente,
-                string usuario,
                 DateTime fechaFactura,
                 CorteCfg cfg,
                 string cedulaEmisor,
                 string situacion,
                 string tipoComprobante)
             {
-                this.codCliente = (codCliente ?? "").Trim();
-                this.usuario = (usuario ?? "").Trim();
                 this.fechaFactura = fechaFactura;
                 this.cfg = cfg;
                 this.cedulaEmisor = (cedulaEmisor ?? "").Trim();
-                this.situacion = (situacion ?? "").Trim();
-                this.tipoComprobante = (tipoComprobante ?? "").Trim();
+                this.situacion = situacion;
+                this.tipoComprobante = tipoComprobante;
             }
         }
+        private sealed class NotificaFacturaItem
+        {
+            public string CodCliente { get; }
+            public string ComprobanteInterno { get; }
+            public long IdFactura { get; }
+            public string Usuario { get; }
+
+            public NotificaFacturaItem(string codCliente, string comprobanteInterno, long idFactura, string usuario)
+            {
+                CodCliente = (codCliente ?? "").Trim();
+                ComprobanteInterno = (comprobanteInterno ?? "").Trim();
+                IdFactura = idFactura;
+                Usuario = (usuario ?? "").Trim();
+            }
+        }
+
 
     }
 }

@@ -142,7 +142,7 @@ namespace Galileo.Models.ProGrX_Nucleo
             public string? notifica_email { get; set; }      
             public short? notifica_activa { get; set; }       
             public short? notifica_cliente { get; set; }      
-            public int consec_fe { get; set; }               
+            public int? consec_fe { get; set; }               
             public int? consec_nc { get; set; }               
             public int? consec_nd { get; set; }               
             public int? consec_te { get; set; }               
