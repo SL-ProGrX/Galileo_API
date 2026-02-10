@@ -50,7 +50,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         }
 
         /// <summary>
-        /// Obtiene el detalle de un contrato por su código.
+        /// Obtiene el detalle de un contrato por su código enviado por param.
         /// </summary>
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="codContrato">Código del contrato.</param>
@@ -187,7 +187,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             if (result.Code == 0)
                 RegistrarBitacora(
                     codEmpresa,
-                    param.Usuario!,
+                    param.Usuario ?? "",
                     $"Pagador Id.: {param.Cedula} de Contrato No.: {param.Cod_Contrato}",
                     "Borra - WEB"
                 );
