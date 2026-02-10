@@ -48,6 +48,49 @@ namespace Galileo.DataBaseTier
             }
         }
 
+        private static int ToActivaBit(bool? activa)
+            => activa == true ? 1 : 0;
+
+        private static string GetNextNumericCodUnidad(SqlConnection connection)
+        {
+            const string getMaxSql = @"SELECT CAST(MAX(CAST(COD_UNIDAD AS INT)) + 1 AS VARCHAR) AS NuevoCodigo
+                FROM CORE_UENS WHERE ISNUMERIC(COD_UNIDAD) = 1";
+
+            int ultimoID = connection.Query<int>(getMaxSql).FirstOrDefault();
+            return ultimoID < 10 ? "0" + ultimoID : ultimoID.ToString();
+        }
+
+        private CoreUeNsDtoList QueryUensPaged(SqlConnection connection, CoreUeNsFiltros? vfiltro, bool onlyPrincipales)
+        {
+            var search = vfiltro?.filtro?.Trim();
+            string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+
+            var offset = vfiltro?.pagina ?? 0;
+            var fetch = vfiltro?.paginacion ?? 0;
+            if (fetch <= 0) fetch = int.MaxValue;
+
+            var wherePrincipales = onlyPrincipales ? "UNIDAD_PRINCIPAL IS NULL AND" : string.Empty;
+
+            var countSql = $@"SELECT COUNT(*)
+                              FROM CORE_UENS
+                              WHERE {wherePrincipales} (@search IS NULL
+                                     OR COD_UNIDAD LIKE @search
+                                     OR descripcion LIKE @search);";
+
+            var pageSql = $@"SELECT COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn'
+                             FROM CORE_UENS
+                             WHERE {wherePrincipales} (@search IS NULL
+                                    OR COD_UNIDAD LIKE @search
+                                    OR descripcion LIKE @search)
+                             ORDER BY COD_UNIDAD DESC
+                             OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+
+            var dto = EmptyUensList();
+            dto.Total = connection.Query<int>(countSql, new { search = searchLike }).FirstOrDefault();
+            dto.uens = connection.Query<CoreUeNsDto>(pageSql, new { search = searchLike, offset, fetch }).ToList();
+            return dto;
+        }
+
         /// <summary>
         /// Obtener UENs
         /// </summary>
@@ -58,34 +101,9 @@ namespace Galileo.DataBaseTier
         {
             var vfiltro = JsonConvert.DeserializeObject<CoreUeNsFiltros>(filtros);
 
-            return WithClienteConn(CodCliente, connection =>
-            {
-                var search = vfiltro?.filtro?.Trim();
-                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
-
-                var offset = vfiltro?.pagina ?? 0;
-                var fetch = vfiltro?.paginacion ?? 0;
-                if (fetch <= 0) fetch = int.MaxValue;
-
-                const string countSql = @"SELECT COUNT(*)
-                                          FROM CORE_UENS
-                                          WHERE (@search IS NULL
-                                                 OR COD_UNIDAD LIKE @search
-                                                 OR descripcion LIKE @search);";
-
-                const string pageSql = @"SELECT COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn'
-                                         FROM CORE_UENS
-                                         WHERE (@search IS NULL
-                                                OR COD_UNIDAD LIKE @search
-                                                OR descripcion LIKE @search)
-                                         ORDER BY COD_UNIDAD DESC
-                                         OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
-
-                var dto = EmptyUensList();
-                dto.Total = connection.Query<int>(countSql, new { search = searchLike }).FirstOrDefault();
-                dto.uens = connection.Query<CoreUeNsDto>(pageSql, new { search = searchLike, offset, fetch }).ToList();
-                return dto;
-            }, EmptyUensList);
+            return WithClienteConn(CodCliente,
+                connection => QueryUensPaged(connection, vfiltro, onlyPrincipales: false),
+                EmptyUensList);
         }
 
 
@@ -100,17 +118,14 @@ namespace Galileo.DataBaseTier
         {
             return WithClienteConnNonQuery(CodCliente, connection =>
             {
-                var activa = request?.activa == true ? 1 : 0;
+                var activa = ToActivaBit(request?.activa);
 
                 const string existsSql = @"select isnull(count(*),0) as Existe from CORE_UENS where COD_UNIDAD = @cod_unidad";
                 int existe = connection.Query<int>(existsSql, new { cod_unidad = request?.cod_unidad }).FirstOrDefault();
 
                 if (existe == 0)
                 {
-                    const string getMaxSql = @"SELECT CAST(MAX(CAST(COD_UNIDAD AS INT)) + 1 AS VARCHAR) AS NuevoCodigo
-                        FROM CORE_UENS WHERE ISNUMERIC(COD_UNIDAD) = 1";
-                    int ultimoID = connection.Query<int>(getMaxSql).FirstOrDefault();
-                    string nuevoCodigo = ultimoID < 10 ? "0" + ultimoID : ultimoID.ToString();
+                    string nuevoCodigo = GetNextNumericCodUnidad(connection);
 
                     const string insertSql = @"insert into CORE_UENS(COD_UNIDAD, descripcion, Activa, Registro_Fecha, Registro_Usuario)
                                               values(@cod_unidad, @descripcion, @activa, Getdate(), @usuario);";
@@ -142,7 +157,7 @@ namespace Galileo.DataBaseTier
         {
             return WithClienteConnNonQuery(CodCliente, connection =>
             {
-                var activa = request?.activa == true ? 1 : 0;
+                var activa = ToActivaBit(request?.activa);
 
                 //Se obtiene información de la unidad principal
                 const string qPrincipal = @"select * from CORE_UENS where COD_UNIDAD = @unidad_principal";
@@ -170,10 +185,7 @@ namespace Galileo.DataBaseTier
                 if (existe == 0 && request != null && request.cod_unidad == "")
                 {
                     //Agrega una nueva unidad
-                    const string getMaxSql = @"SELECT CAST(MAX(CAST(COD_UNIDAD AS INT)) + 1 AS VARCHAR) AS NuevoCodigo
-                    FROM CORE_UENS WHERE ISNUMERIC(COD_UNIDAD) = 1";
-                    int ultimoID = connection.Query<int>(getMaxSql).FirstOrDefault();
-                    string nuevoCodigo = ultimoID < 10 ? "0" + ultimoID : ultimoID.ToString();
+                    string nuevoCodigo = GetNextNumericCodUnidad(connection);
 
                     const string insSql = @"insert into CORE_UENS(COD_UNIDAD, descripcion, CntX_Unidad, unidad_principal, Activa, Registro_Fecha, Registro_Usuario)
                                        values(@cod_unidad, @descripcion, @cntx_unidad, @unidad_principal, @activa, Getdate(), @usuario)";
@@ -221,7 +233,7 @@ namespace Galileo.DataBaseTier
         {
             return WithClienteConnNonQuery(CodCliente, connection =>
             {
-                var activa = request?.activa == true ? 1 : 0;
+                var activa = ToActivaBit(request?.activa);
 
                 const string qExisteCod = @"select isnull(count(*),0) as Existe from CORE_UENS where COD_UNIDAD = @cod_unidad";
                 int existe = connection.Query<int>(qExisteCod, new { cod_unidad = request?.cod_unidad }).FirstOrDefault();
@@ -246,10 +258,7 @@ namespace Galileo.DataBaseTier
                         return connection.Execute(upSql, new { cntx_centro_costo = request?.cntx_centro_costo, activa, usuario, cod_unidad = unidadPrincipal.cod_unidad });
                     }
 
-                    const string getMaxSql = @"SELECT CAST(MAX(CAST(COD_UNIDAD AS INT)) + 1 AS VARCHAR) AS NuevoCodigo
-                            FROM CORE_UENS WHERE ISNUMERIC(COD_UNIDAD) = 1";
-                    int ultimoID = connection.Query<int>(getMaxSql).FirstOrDefault();
-                    string nuevoCodigo = ultimoID < 10 ? "0" + ultimoID : ultimoID.ToString();
+                    string nuevoCodigo = GetNextNumericCodUnidad(connection);
 
                     const string insSql = @"insert into CORE_UENS(COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, unidad_principal, Activa, Registro_Fecha, Registro_Usuario)
                                                values(@cod_unidad, @descripcion, @cntx_unidad, @cntx_centro_costo, @unidad_principal, @activa, Getdate(), @usuario)";
@@ -413,36 +422,9 @@ namespace Galileo.DataBaseTier
         {
             var vfiltro = JsonConvert.DeserializeObject<CoreUeNsFiltros>(filtros);
 
-            return WithClienteConn(CodCliente, connection =>
-            {
-                var search = vfiltro?.filtro?.Trim();
-                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
-
-                var offset = vfiltro?.pagina ?? 0;
-                var fetch = vfiltro?.paginacion ?? 0;
-                if (fetch <= 0) fetch = int.MaxValue;
-
-                const string countSql = @"SELECT COUNT(*)
-                                          FROM CORE_UENS
-                                          WHERE UNIDAD_PRINCIPAL IS NULL
-                                            AND (@search IS NULL
-                                                 OR COD_UNIDAD LIKE @search
-                                                 OR descripcion LIKE @search);";
-
-                const string pageSql = @"SELECT COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn'
-                                         FROM CORE_UENS
-                                         WHERE UNIDAD_PRINCIPAL IS NULL
-                                           AND (@search IS NULL
-                                                OR COD_UNIDAD LIKE @search
-                                                OR descripcion LIKE @search)
-                                         ORDER BY COD_UNIDAD DESC
-                                         OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
-
-                var dto = EmptyUensList();
-                dto.Total = connection.Query<int>(countSql, new { search = searchLike }).FirstOrDefault();
-                dto.uens = connection.Query<CoreUeNsDto>(pageSql, new { search = searchLike, offset, fetch }).ToList();
-                return dto;
-            }, EmptyUensList);
+            return WithClienteConn(CodCliente,
+                connection => QueryUensPaged(connection, vfiltro, onlyPrincipales: true),
+                EmptyUensList);
         }
 
 
