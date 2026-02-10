@@ -187,7 +187,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             if (result.Code == 0)
                 RegistrarBitacora(
                     codEmpresa,
-                    param.Usuario,
+                    param.Usuario!,
                     $"Pagador Id.: {param.Cedula} de Contrato No.: {param.Cod_Contrato}",
                     "Borra - WEB"
                 );

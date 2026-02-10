@@ -384,8 +384,10 @@ Tipo de Moneda: {cuenta.Account.CurrencyCode} Entidad: {cuenta.Account.EntityCod
 
                 var resp = send(uri, req);
 
+                var hasErrors = resp?.Errors?.Length > 0;
+
                 // Manejo de errores del proveedor (guarda ID rechazo si viene)
-                if (resp?.Errors != null && resp!.Errors.Length > 0)
+                if (hasErrors)
                     fxGuardaID_RespuestaSinpe(parametros.codEmpresa, resp!.Errors[0].Code, parametros.nSolicitud.ToString(), codReferencia);
 
                 if (resp == null || !resp!.IsSuccessful)

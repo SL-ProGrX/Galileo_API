@@ -1,23 +1,15 @@
 ﻿using Dapper;
-using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.FSL;
 using Galileo.Models.Security;
 using Galileo.Models.TES;
-using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using Microsoft.ReportingServices.ReportProcessing.ReportObjectModel;
 using Newtonsoft.Json;
-using PdfSharp.Pdf.Filters;
-using System.Collections;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
