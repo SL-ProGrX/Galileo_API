@@ -15,13 +15,13 @@
 
     public class CxcBancoAutorizadoUpdateChequesParams
     {
-        public int Id_Banco { get; set; }
-        public int Cheques { get; set; }
+        public required int Id_Banco { get; set; }
+        public required int Cheques { get; set; }
     }
 
     public class CxcBancoAutorizadoUpdateTransferenciasParams
     {
-        public int Id_Banco { get; set; }
-        public int Transferencias { get; set; }
+        public required int Id_Banco { get; set; }
+        public required int Transferencias { get; set; }
     }
 }
