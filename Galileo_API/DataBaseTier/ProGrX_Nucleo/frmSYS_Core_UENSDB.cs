@@ -69,25 +69,26 @@ namespace Galileo.DataBaseTier
             var fetch = vfiltro?.paginacion ?? 0;
             if (fetch <= 0) fetch = int.MaxValue;
 
-            var wherePrincipales = onlyPrincipales ? "UNIDAD_PRINCIPAL IS NULL AND" : string.Empty;
+            // Evita SQL dinámico (Sonar S2077): usa un parámetro para filtrar principales
+            const string countSql = @"SELECT COUNT(*)
+                                      FROM CORE_UENS
+                                      WHERE (@onlyPrincipales = 0 OR UNIDAD_PRINCIPAL IS NULL)
+                                        AND (@search IS NULL
+                                             OR COD_UNIDAD LIKE @search
+                                             OR descripcion LIKE @search);";
 
-            var countSql = $@"SELECT COUNT(*)
-                              FROM CORE_UENS
-                              WHERE {wherePrincipales} (@search IS NULL
-                                     OR COD_UNIDAD LIKE @search
-                                     OR descripcion LIKE @search);";
-
-            var pageSql = $@"SELECT COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn'
-                             FROM CORE_UENS
-                             WHERE {wherePrincipales} (@search IS NULL
-                                    OR COD_UNIDAD LIKE @search
-                                    OR descripcion LIKE @search)
-                             ORDER BY COD_UNIDAD DESC
-                             OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
+            const string pageSql = @"SELECT COD_UNIDAD, descripcion, CntX_Unidad, CntX_Centro_Costo, Activa, 0 as 'btn'
+                                     FROM CORE_UENS
+                                     WHERE (@onlyPrincipales = 0 OR UNIDAD_PRINCIPAL IS NULL)
+                                       AND (@search IS NULL
+                                            OR COD_UNIDAD LIKE @search
+                                            OR descripcion LIKE @search)
+                                     ORDER BY COD_UNIDAD DESC
+                                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
 
             var dto = EmptyUensList();
-            dto.Total = connection.Query<int>(countSql, new { search = searchLike }).FirstOrDefault();
-            dto.uens = connection.Query<CoreUeNsDto>(pageSql, new { search = searchLike, offset, fetch }).ToList();
+            dto.Total = connection.Query<int>(countSql, new { search = searchLike, onlyPrincipales = onlyPrincipales ? 1 : 0 }).FirstOrDefault();
+            dto.uens = connection.Query<CoreUeNsDto>(pageSql, new { search = searchLike, offset, fetch, onlyPrincipales = onlyPrincipales ? 1 : 0 }).ToList();
             return dto;
         }
 
