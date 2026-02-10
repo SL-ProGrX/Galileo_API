@@ -32,7 +32,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         private const string P_CODIGO = "@Codigo";
         private const string P_MOVIMIENTO = "@Movimiento";
         private const string P_TIPO = "@Tipo";
-        private const string P_USUARIO = "@Usuario";
+        private const string P_USUARIO = USUARIO;
         private const string P_COD_CLIENTE = "@cod_cliente";
         private const string MENSAJE_COD_CLIENTE = "cod_cliente es requerido.";
         private const string SP_FACTURAS_CONSULTA = "spProGrX_Facturas_Consulta";
@@ -2088,7 +2088,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             var pCorte = new DynamicParameters();
             pCorte.Add("@Cliente", codCliente, DbType.String);
             pCorte.Add("@Corte", DayEnd(fechaCorte), DbType.DateTime);
-            pCorte.Add("@Usuario", usuario, DbType.String);
+            pCorte.Add(USUARIO, usuario, DbType.String);
             pCorte.Add("@FechaFactura", DateTime.SpecifyKind(fechaFactura, DateTimeKind.Unspecified), DbType.DateTime);
 
             connLocal.Execute("spCrd_Facturacion_Corte", pCorte, commandType: CommandType.StoredProcedure);
@@ -2225,7 +2225,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 p.Add("@Cliente", it.CodCliente, DbType.String);
                 p.Add("@Factura", it.ComprobanteInterno, DbType.String);
                 p.Add("@Id", (int)it.IdFactura, DbType.Int32);
-                p.Add("@Usuario", it.Usuario, DbType.String);
+                p.Add(USUARIO, it.Usuario, DbType.String);
 
                 connLocal.Execute(
                     "spCrd_Facturacion_Notifica_Result",
