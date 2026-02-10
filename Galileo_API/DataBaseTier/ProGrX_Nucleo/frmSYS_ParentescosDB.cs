@@ -2,8 +2,8 @@
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.Security;
+using Microsoft.Data.SqlClient;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
@@ -26,7 +26,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         }
 
         private static string NormalizeUpper(string? value)
-            => (value ?? string.Empty).Trim().ToUpper();
+            => (value ?? string.Empty).Trim().ToUpperInvariant();
 
         private const string BaseSelectParentescos = @"
                     select
@@ -41,6 +41,67 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         or descripcion like @q
                         or Registro_Usuario like @q
                     ))";
+
+        private ErrorDto LogBitacora(int codEmpresa, string usuario, string detalleMovimiento, string movimiento)
+        {
+            try
+            {
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = codEmpresa,
+                    Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
+                    DetalleMovimiento = detalleMovimiento,
+                    Movimiento = movimiento,
+                    Modulo = vModulo
+                });
+
+                return DbHelper.CreateOkResponse();
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message ?? ErrorInesperado);
+            }
+        }
+
+        private ErrorDto ExecuteActualizar(SqlConnection connection, int codEmpresa, string usuario, SysParentescosData parentesco)
+        {
+            const string query = @"UPDATE SYS_PARENTESCOS
+                               SET descripcion       = @descripcion,
+                                   activo            = @activo,
+                                   Registro_Fecha    = GETDATE(),
+                                   Registro_Usuario  = @registro_usuario
+                             WHERE COD_PARENTESCO    = @cod_parentesco;";
+
+            connection.Execute(query, new
+            {
+                cod_parentesco = NormalizeUpper(parentesco.cod_parentesco),
+                descripcion = NormalizeUpper(parentesco.descripcion),
+                activo = parentesco.activo,
+                registro_usuario = usuario
+            });
+
+            var bit = LogBitacora(codEmpresa, usuario, $"Parentesco : {parentesco.cod_parentesco} - {parentesco.descripcion}", "Modifica - WEB");
+            return (bit.Code ?? -1) == 0 ? DbHelper.CreateOkResponse() : bit;
+        }
+
+        private ErrorDto ExecuteInsertar(SqlConnection connection, int codEmpresa, string usuario, SysParentescosData parentesco)
+        {
+            const string query = @"INSERT INTO SYS_PARENTESCOS
+                                    (COD_PARENTESCO, descripcion, activo, Registro_Fecha, Registro_Usuario)
+                                VALUES
+                                    (@cod_parentesco, @descripcion, @activo, GETDATE(), @registro_usuario);";
+
+            connection.Execute(query, new
+            {
+                cod_parentesco = NormalizeUpper(parentesco.cod_parentesco),
+                descripcion = NormalizeUpper(parentesco.descripcion),
+                activo = parentesco.activo,
+                registro_usuario = usuario
+            });
+
+            var bit = LogBitacora(codEmpresa, usuario, $"Parentesco : {parentesco.cod_parentesco} - {parentesco.descripcion}", "Registra - WEB");
+            return (bit.Code ?? -1) == 0 ? DbHelper.CreateOkResponse() : bit;
+        }
 
         /// <summary>
         /// Lista los parentescos existentes con paginación y filtros.
@@ -142,23 +203,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             if ((res.Code ?? -1) != 0)
                 return res;
 
-            try
-            {
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Parentesco : {cod_parentesco}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? ErrorInesperado);
-            }
-
-            return res;
+            var bit = LogBitacora(CodEmpresa, usuario, $"Parentesco : {cod_parentesco}", "Elimina - WEB");
+            return (bit.Code ?? -1) == 0 ? res : bit;
         }
 
 
@@ -173,6 +219,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         {
             try
             {
+                using var connection = _portalDB.CreateConnection(CodEmpresa);
+
                 // Verifico si existe usuario
                 const string qUsuario = @"select count(Nombre)
                                          from usuarios
@@ -180,12 +228,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                            and UPPER(Nombre) like @usr";
 
                 var usrLike = $"%{NormalizeUpper(parentesco.registro_usuario)}%";
-                var existeUserRes = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, qUsuario, 0, new { usr = usrLike });
+                var existeuser = connection.QueryFirstOrDefault<int>(qUsuario, new { usr = usrLike });
 
-                if ((existeUserRes.Code ?? -1) != 0)
-                    return DbHelper.ErrorResponse(existeUserRes.Description ?? "Error", existeUserRes.Code ?? -1);
-
-                var existeuser = existeUserRes.Result;
                 if (existeuser == 0)
                 {
                     return new ErrorDto
@@ -201,12 +245,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                             where UPPER(COD_PARENTESCO) = @cod";
 
                 var cod = NormalizeUpper(parentesco.cod_parentesco);
-                var existeRes = DbHelper.ExecuteSingleQuery<int>(_portalDB, CodEmpresa, queryExiste, 0, new { cod });
-
-                if ((existeRes.Code ?? -1) != 0)
-                    return DbHelper.ErrorResponse(existeRes.Description ?? "Error", existeRes.Code ?? -1);
-
-                var existe = existeRes.Result;
+                var existe = connection.QueryFirstOrDefault<int>(queryExiste, new { cod });
 
                 if (parentesco.isNew)
                 {
@@ -219,10 +258,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         };
                     }
 
-                    return SYS_Parentescos_Insertar(CodEmpresa, usuario, parentesco);
+                    return ExecuteInsertar(connection, CodEmpresa, usuario, parentesco);
                 }
 
-                if (existe == 0 && !parentesco.isNew)
+                if (existe == 0)
                 {
                     return new ErrorDto
                     {
@@ -231,104 +270,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     };
                 }
 
-                return SYS_Parentescos_Actualizar(CodEmpresa, usuario, parentesco);
+                return ExecuteActualizar(connection, CodEmpresa, usuario, parentesco);
             }
             catch (Exception ex)
             {
                 return DbHelper.ErrorResponse(ex.Message ?? ErrorInesperado);
             }
-        }
-
-
-        /// <summary>
-        /// Actualiza un parentesco existente.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="parentesco"></param>
-        /// <returns></returns>
-        private ErrorDto SYS_Parentescos_Actualizar(int CodEmpresa, string usuario, SysParentescosData parentesco)
-        {
-            var query = @"UPDATE SYS_PARENTESCOS
-                               SET descripcion       = @descripcion,
-                                   activo            = @activo,
-                                   Registro_Fecha    = GETDATE(),
-                                   Registro_Usuario  = @registro_usuario
-                             WHERE COD_PARENTESCO    = @cod_parentesco;";
-
-            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
-            {
-                cod_parentesco = NormalizeUpper(parentesco.cod_parentesco),
-                descripcion = NormalizeUpper(parentesco.descripcion),
-                activo = parentesco.activo,
-                registro_usuario = usuario
-            });
-
-            if ((res.Code ?? -1) != 0)
-                return res;
-
-            try
-            {
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Parentesco : {parentesco.cod_parentesco} - {parentesco.descripcion}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? ErrorInesperado);
-            }
-
-            return res;
-        }
-        
-        
-        /// <summary>
-        /// Inserta un nuevo parentesco.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="parentesco"></param>
-        /// <returns></returns>
-        private ErrorDto SYS_Parentescos_Insertar(int CodEmpresa, string usuario, SysParentescosData parentesco)
-        {
-            var query = @"INSERT INTO SYS_PARENTESCOS
-                                    (COD_PARENTESCO, descripcion, activo, Registro_Fecha, Registro_Usuario)
-                                VALUES
-                                    (@cod_parentesco, @descripcion, @activo, GETDATE(), @registro_usuario);";
-
-            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
-            {
-                cod_parentesco = NormalizeUpper(parentesco.cod_parentesco),
-                descripcion = NormalizeUpper(parentesco.descripcion),
-                activo = parentesco.activo,
-                registro_usuario = usuario
-            });
-
-            if ((res.Code ?? -1) != 0)
-                return res;
-
-            try
-            {
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Parentesco : {parentesco.cod_parentesco} - {parentesco.descripcion}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? ErrorInesperado);
-            }
-
-            return res;
         }
 
 
