@@ -2319,7 +2319,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 enviarCliente = enviarCliente,
 
                 clienteIdDestino = clienteIdDestino,
-                tipoId = (tipoId ?? "").PadLeft(2, '0')
+                tipoId = tipoId.PadLeft(2, '0')
             };
         }
 
