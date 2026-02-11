@@ -934,6 +934,24 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             return response;
         }
 
+        // --- Shared SELECT fragments (reduce duplication in BuildDocumentosBuscarQuery) ---
+        private const string TransaccionesEstadoCase =
+            "case when estado = 'I' then 'Emitido' when estado = 'P' then 'Pendiente' when  estado = 'A' then 'Anulado' end as Estado";
+
+        private const string TransaccionesCommonColumns =
+            "Cod_transaccion,isnull(documento,0) as documento, Tipo_documento, monto, " + TransaccionesEstadoCase;
+
+        private const string TransaccionesTailColumns =
+            ", cod_caja, cod_apertura, Id_Sesion, cod_oficina, Cliente_Identificacion, Cliente_Nombre, isnull(Detalle,'') as detalle";
+
+        private static string BuildTransaccionesSelectColumns(bool outer)
+        {
+            // Outer query uses user-friendly aliases; inner keeps original column names.
+            var fechaCol = outer ? "isnull(Registro_fecha,'') as Fecha_registro" : "isnull(Registro_fecha,'') as Registro_fecha";
+            var usuarioCol = outer ? "isnull(Registro_Usuario,'') as 'Usuario'" : "isnull(Registro_Usuario,'') as Registro_Usuario";
+            return $"{TransaccionesCommonColumns}, {fechaCol}, {usuarioCol}{TransaccionesTailColumns}";
+        }
+
         private string BuildDocumentosBuscarQuery(SifConsultaDocFiltros filtros, int CodEmpresa, out dynamic parametros)
         {
             int pSesion = 0;
@@ -951,17 +969,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     " OR Tipo_documento LIKE '%" + filtros.filtro + "%' ) ";
             }
 
-            var query = $@"select Cod_transaccion,isnull(documento,0) as documento, Tipo_documento, monto, case when estado = 'I' then 'Emitido'
-                            when estado = 'P' then 'Pendiente' when  estado = 'A' then 'Anulado'  end as Estado
-                            ,isnull(Registro_fecha,'') as Fecha_registro,isnull(Registro_Usuario,'') as 'Usuario', cod_caja, cod_apertura, Id_Sesion
-                            , cod_oficina, Cliente_Identificacion, Cliente_Nombre
-                            ,isnull(Detalle,'') as detalle 
-                            from ( 
-                                    select Cod_transaccion,isnull(documento,0) as documento, Tipo_documento, monto, case when estado = 'I' then 'Emitido'
-                                    when estado = 'P' then 'Pendiente' when  estado = 'A' then 'Anulado'  end as Estado
-                                    ,isnull(Registro_fecha,'') as Registro_fecha,isnull(Registro_Usuario,'') as Registro_Usuario, cod_caja, cod_apertura, Id_Sesion
-                                    , cod_oficina, Cliente_Identificacion, Cliente_Nombre
-                                    ,isnull(Detalle,'') as detalle from Sif_Transacciones ";
+            var outerCols = BuildTransaccionesSelectColumns(outer: true);
+            var innerCols = BuildTransaccionesSelectColumns(outer: false);
+
+            var query = $@"select {outerCols}
+                            from (
+                                    select {innerCols} from Sif_Transacciones ";
 
             query += BuildWhereClause(filtros, ref documentos, ref conceptos, ref pSesion, CodEmpresa);
 
