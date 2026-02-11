@@ -219,7 +219,7 @@ where UPPER(COD_CONCEPTO) = @cod;";
                     return 0; // dummy return for WithConn
                 }
 
-                if (existe == 0 && !concepto.isNew)
+                if (existe == 0)
                     throw new InvalidOperationException($"El concepto con el código {concepto.cod_concepto} no existe.");
 
                 ExecuteConceptosUpdate(connection, CodEmpresa, usuario, concepto);
