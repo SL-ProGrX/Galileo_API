@@ -6,11 +6,12 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
 
+
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSifDocsTrasladoDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _security_MainDB;
         private readonly int vModulo = 10;
 
@@ -26,9 +27,169 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
         public FrmSifDocsTrasladoDB(IConfiguration config)
         {
-            _config = config;
-            _security_MainDB = new MSecurityMainDb(_config);
+            _portalDB = new PortalDB(config);
+            _security_MainDB = new MSecurityMainDb(config);
         }
+
+        private ErrorDto<T> WithEmpresaConn<T>(int codEmpresa, Func<SqlConnection, T> action)
+            => DbHelper.WithConn(_portalDB, codEmpresa, action);
+
+        private static DateTime StartOfDay(DateTime dt)
+            => new DateTime(dt.Year, dt.Month, dt.Day, 0, 0, 0, DateTimeKind.Local);
+
+        private static DateTime EndOfDay(DateTime dt)
+            => new DateTime(dt.Year, dt.Month, dt.Day, 23, 59, 59, DateTimeKind.Local);
+
+        private static DynamicParameters BuildRangoParams(DateTime ini, DateTime fin)
+        {
+            var p = new DynamicParameters();
+            p.Add(InicioParam, StartOfDay(ini), DbType.DateTime);
+            p.Add(CorteParam, EndOfDay(fin), DbType.DateTime);
+            return p;
+        }
+
+        private static DynamicParameters BuildRangoParamsConBalance(DateTime ini, DateTime fin, bool soloBalanceados)
+        {
+            var p = BuildRangoParams(ini, fin);
+            // 1 = balanceados, 2 = todos
+            p.Add(BalanceParam, soloBalanceados ? (short)1 : (short)2, DbType.Int16);
+            return p;
+        }
+
+        private static string GetTrasladoSp(string? modo)
+            => (modo ?? string.Empty).Trim().ToLowerInvariant() == "individual"
+                ? "spSys_Asientos_CtrlDoc_Traslado_Individual"
+                : "spSys_Asientos_CtrlDoc_Traslado_Bloque_Diario";
+
+        private ErrorDto TryBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
+        {
+            try
+            {
+                _security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = codEmpresa,
+                    Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
+                    Modulo = vModulo,
+                    Movimiento = movimiento,
+                    DetalleMovimiento = detalle
+                });
+
+                return DbHelper.CreateOkResponse();
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message ?? "Error inesperado");
+            }
+        }
+
+        private static (int from, int take) ComputePage(FiltrosLazyLoadData? filtros, int total)
+        {
+            int from = filtros?.pagina ?? 0;
+            int take = filtros?.paginacion ?? 30;
+
+            if (from < 0) from = 0;
+            if (take <= 0) take = 30;
+
+            from = Math.Min(from, total);
+            take = Math.Min(take, Math.Max(0, total - from));
+
+            return (from, take);
+        }
+
+        private static List<SifDocsTrasladoDocumentosData> LoadCtrlDoc(SqlConnection cn, DateTime ini, DateTime fin, bool soloBalanceados)
+        {
+            var p = BuildRangoParamsConBalance(ini, fin, soloBalanceados);
+
+            var lista = new List<SifDocsTrasladoDocumentosData>();
+            using var dr = cn.ExecuteReader("spSys_Asientos_CtrlDoc_Busca", p, commandType: CommandType.StoredProcedure, commandTimeout: 60);
+
+            while (dr.Read())
+            {
+                lista.Add(new SifDocsTrasladoDocumentosData
+                {
+                    Tipo_Documento = dr[TipoDocumentoField] as string ?? "",
+                    descripcion = dr[DescripcionField] as string ?? "",
+                    pendientes = dr[PendientesField] == DBNull.Value ? 0 : Convert.ToInt32(dr[PendientesField]),
+                    bloqueados = dr[BloqueadosField] == DBNull.Value ? 0 : Convert.ToInt32(dr[BloqueadosField]),
+                    codContabilidad = dr[CodContabilidadField] == DBNull.Value ? 0 : Convert.ToInt32(dr[CodContabilidadField]),
+                    asientoTransaccion = null
+                });
+            }
+
+            return lista;
+        }
+
+        private static List<SifDocsTrasladoDesbalanceadoData> LoadDesbalanceados(SqlConnection cn, DateTime ini, DateTime fin)
+        {
+            var p = BuildRangoParams(ini, fin);
+
+            return cn.Query<SifDocsTrasladoDesbalanceadoData>(
+                "spSys_Asientos_CtrlDoc_Desbalanceados",
+                p,
+                commandType: CommandType.StoredProcedure,
+                commandTimeout: 60
+            ).AsList();
+        }
+
+        private static List<SifDocsTrasladoDesbalanceadoData> FiltrarDesbalanceados(List<SifDocsTrasladoDesbalanceadoData> lista, string filtro)
+        {
+            var q = (filtro ?? string.Empty).Trim();
+            if (q.Length == 0)
+                return lista;
+
+            var u = q.ToUpperInvariant();
+            var filtrada = new List<SifDocsTrasladoDesbalanceadoData>();
+
+            for (int i = 0; i < lista.Count; i++)
+            {
+                var x = lista[i];
+                if ((x.Tipo_Documento ?? string.Empty).ToUpperInvariant().IndexOf(u, StringComparison.Ordinal) >= 0 ||
+                    (x.cod_transaccion ?? string.Empty).ToUpperInvariant().IndexOf(u, StringComparison.Ordinal) >= 0 ||
+                    (x.Registro_Usuario ?? string.Empty).ToUpperInvariant().IndexOf(u, StringComparison.Ordinal) >= 0 ||
+                    (x.Referencia ?? string.Empty).ToUpperInvariant().IndexOf(u, StringComparison.Ordinal) >= 0 ||
+                    (x.Notas ?? string.Empty).ToUpperInvariant().IndexOf(u, StringComparison.Ordinal) >= 0)
+                {
+                    filtrada.Add(x);
+                }
+            }
+
+            return filtrada;
+        }
+
+        private static void OrdenarDesbalanceados(List<SifDocsTrasladoDesbalanceadoData> lista, string sortField, int? sortOrder)
+        {
+            var sf = (sortField ?? string.Empty).Trim().ToLowerInvariant();
+            int so = sortOrder ?? 1;
+
+            lista.Sort((a, b) =>
+            {
+                int m = (so == 1) ? 1 : -1;
+                switch (sf)
+                {
+                    case TipoDocumentoSortField:
+                        return m * string.Compare(a.Tipo_Documento, b.Tipo_Documento, StringComparison.OrdinalIgnoreCase);
+                    case "cod_transaccion":
+                    case "transaccion":
+                        return m * string.Compare(a.cod_transaccion, b.cod_transaccion, StringComparison.OrdinalIgnoreCase);
+                    case "registro_fecha":
+                    case "fecha":
+                        return m * a.Registro_Fecha.CompareTo(b.Registro_Fecha);
+                    case "registro_usuario":
+                        return m * string.Compare(a.Registro_Usuario, b.Registro_Usuario, StringComparison.OrdinalIgnoreCase);
+                    case "monto":
+                        return m * a.Monto.CompareTo(b.Monto);
+                    case "referencia":
+                        return m * string.Compare(a.Referencia, b.Referencia, StringComparison.OrdinalIgnoreCase);
+                    case "notas":
+                        return m * string.Compare(a.Notas, b.Notas, StringComparison.OrdinalIgnoreCase);
+                    default:
+                        return m * a.Registro_Fecha.CompareTo(b.Registro_Fecha);
+                }
+            });
+        }
+
+        private static List<T> PageOf<T>(List<T> lista, int from, int take)
+            => take <= 0 ? new List<T>() : lista.Skip(from).Take(take).ToList();
         
         /// <summary>
         /// Obtiene la lista de documentos del control de traslado (pendientes/bloqueados) con paginación y filtros.
@@ -40,64 +201,22 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="soloBalanceados"></param>
         public ErrorDto<SifDocsTrasladoDocumentosLista> Sif_DocsTraslado_Lista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros, DateTime fechaInicio, DateTime fechaFin, bool soloBalanceados)
         {
-            var result = new ErrorDto<SifDocsTrasladoDocumentosLista>
+            return WithEmpresaConn(CodEmpresa, cn =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new SifDocsTrasladoDocumentosLista { total = 0, lista = new List<SifDocsTrasladoDocumentosData>() }
-            };
+                var lista = LoadCtrlDoc(cn, fechaInicio, fechaFin, soloBalanceados);
 
-            try
-            {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
-                var p = new DynamicParameters();
-                p.Add(InicioParam, new DateTime(fechaInicio.Year, fechaInicio.Month, fechaInicio.Day, 0, 0, 0, DateTimeKind.Local), DbType.DateTime);
-                p.Add(CorteParam, new DateTime(fechaFin.Year, fechaFin.Month, fechaFin.Day, 23, 59, 59, DateTimeKind.Local), DbType.DateTime);
-                p.Add(BalanceParam, soloBalanceados ? (short)1 : (short)2, DbType.Int16);
-
-                var lista = new List<SifDocsTrasladoDocumentosData>();
-                using (var dr = cn.ExecuteReader("spSys_Asientos_CtrlDoc_Busca", p, commandType: CommandType.StoredProcedure, commandTimeout: 60))
-                {
-                    while (dr.Read())
-                    {
-                        var row = new SifDocsTrasladoDocumentosData
-                        {
-                            Tipo_Documento = dr[TipoDocumentoField] as string ?? "",
-                            descripcion = dr[DescripcionField] as string ?? "",
-                            pendientes = dr[PendientesField] == DBNull.Value ? 0 : Convert.ToInt32(dr[PendientesField]),
-                            bloqueados = dr[BloqueadosField] == DBNull.Value ? 0 : Convert.ToInt32(dr[BloqueadosField]),
-                            codContabilidad = dr[CodContabilidadField] == DBNull.Value ? 0 : Convert.ToInt32(dr[CodContabilidadField]),
-                            asientoTransaccion = null
-                        };
-                        lista.Add(row);
-                    }
-                }
-
-                lista = FiltrarDocumentos(lista, filtros?.filtro ?? "");
+                lista = FiltrarDocumentos(lista, filtros?.filtro ?? string.Empty);
                 OrdenarDocumentos(lista, filtros?.sortField ?? string.Empty, filtros?.sortOrder);
 
-                int pagina = filtros?.pagina ?? 0;
-                int paginacion = filtros?.paginacion ?? 30;
-                if (pagina < 0) pagina = 0;
-                if (paginacion <= 0) paginacion = 30;
-
                 int total = lista.Count;
-                int from = Math.Min(pagina, total);
-                int take = Math.Min(paginacion, Math.Max(0, total - from));
+                var (from, take) = ComputePage(filtros, total);
 
-                result.Result.total = total;
-                result.Result.lista = lista.Skip(from).Take(take).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<SifDocsTrasladoDocumentosData>();
-            }
-
-            return result;
+                return new SifDocsTrasladoDocumentosLista
+                {
+                    total = total,
+                    lista = PageOf(lista, from, take)
+                };
+            });
         }
 
         private static List<SifDocsTrasladoDocumentosData> FiltrarDocumentos(List<SifDocsTrasladoDocumentosData> lista, string filtro)
@@ -147,112 +266,33 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="filtros"></param>
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
-        public ErrorDto<SifDocsTrasladoDesbalanceadosLista> Sif_DocsTraslado_Desbalanceados_Obtener(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<SifDocsTrasladoDesbalanceadosLista> Sif_DocsTraslado_Desbalanceados_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros, DateTime fechaInicio, DateTime fechaFin)
         {
-            var result = new ErrorDto<SifDocsTrasladoDesbalanceadosLista>
+            return WithEmpresaConn(CodEmpresa, cn =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new SifDocsTrasladoDesbalanceadosLista { total = 0, lista = new List<SifDocsTrasladoDesbalanceadoData>() }
-            };
+                var lista = LoadDesbalanceados(cn, fechaInicio, fechaFin);
 
-            try
-            {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
-                var p = new DynamicParameters();
-                p.Add(InicioParam, new DateTime(fechaInicio.Year, fechaInicio.Month, fechaInicio.Day, 0, 0, 0, DateTimeKind.Local), DbType.DateTime);
-                p.Add(CorteParam, new DateTime(fechaFin.Year, fechaFin.Month, fechaFin.Day, 23, 59, 59, DateTimeKind.Local), DbType.DateTime);
-
-                var lista = cn.Query<SifDocsTrasladoDesbalanceadoData>(
-                    "spSys_Asientos_CtrlDoc_Desbalanceados",
-                    p, commandType: CommandType.StoredProcedure, commandTimeout: 60
-                ).AsList();
-                string q = filtros?.filtro?.Trim() ?? "";
-                if (q.Length > 0)
-                {
-                    var u = q.ToUpperInvariant();
-                    var filtrada = new List<SifDocsTrasladoDesbalanceadoData>();
-                    for (int i = 0; i < lista.Count; i++)
-                    {
-                        var x = lista[i];
-                        if (((x.Tipo_Documento ?? "").ToUpperInvariant().IndexOf(u, StringComparison.Ordinal) >= 0) ||
-                            ((x.cod_transaccion ?? "").ToUpperInvariant().IndexOf(u, StringComparison.Ordinal) >= 0) ||
-                            ((x.Registro_Usuario ?? "").ToUpperInvariant().IndexOf(u, StringComparison.Ordinal) >= 0) ||
-                            ((x.Referencia ?? "").ToUpperInvariant().IndexOf(u, StringComparison.Ordinal) >= 0) ||
-                            ((x.Notas ?? "").ToUpperInvariant().IndexOf(u, StringComparison.Ordinal) >= 0))
-                        {
-                            filtrada.Add(x);
-                        }
-                    }
-                    lista = filtrada;
-                }
-                string sf = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
-                int so = filtros?.sortOrder ?? 1;
-                lista.Sort((a, b) =>
-                {
-                    int m = (so == 1) ? 1 : -1;
-                    switch (sf)
-                    {
-                        case TipoDocumentoSortField:
-                            return m * string.Compare(a.Tipo_Documento, b.Tipo_Documento, StringComparison.OrdinalIgnoreCase);
-                        case "cod_transaccion":
-                            return m * string.Compare(a.cod_transaccion, b.cod_transaccion, StringComparison.OrdinalIgnoreCase);
-                        case "registro_fecha":
-                        case "fecha":
-                            return m * a.Registro_Fecha.CompareTo(b.Registro_Fecha);
-                        case "registro_usuario":
-                            return m * string.Compare(a.Registro_Usuario, b.Registro_Usuario, StringComparison.OrdinalIgnoreCase);
-                        case "monto":
-                            return m * a.Monto.CompareTo(b.Monto);
-                        case "referencia":
-                            return m * string.Compare(a.Referencia, b.Referencia, StringComparison.OrdinalIgnoreCase);
-                        case "notas":
-                            return m * string.Compare(a.Notas, b.Notas, StringComparison.OrdinalIgnoreCase);
-                        default:
-                            return m * a.Registro_Fecha.CompareTo(b.Registro_Fecha);
-                    }
-                });
-                int pagina = filtros?.pagina ?? 0;
-                int paginacion = filtros?.paginacion ?? 30;
-                if (pagina < 0) pagina = 0;
-                if (paginacion <= 0) paginacion = 30;
+                lista = FiltrarDesbalanceados(lista, filtros?.filtro ?? string.Empty);
+                OrdenarDesbalanceados(lista, filtros?.sortField ?? string.Empty, filtros?.sortOrder);
 
                 int total = lista.Count;
-                int from = Math.Min(pagina, total);
-                int take = Math.Min(paginacion, Math.Max(0, total - from));
+                var (from, take) = ComputePage(filtros, total);
 
-                var page = new List<SifDocsTrasladoDesbalanceadoData>(take);
-                for (int i = 0; i < take; i++) page.Add(lista[from + i]);
-
-                result.Result.total = total;
-                result.Result.lista = page;
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = new List<SifDocsTrasladoDesbalanceadoData>();
-            }
-
-            return result;
+                return new SifDocsTrasladoDesbalanceadosLista
+                {
+                    total = total,
+                    lista = PageOf(lista, from, take)
+                };
+            });
         }
         /// <summary>
         /// Obtiene la configuración del documento en SIF_DOCUMENTOS.
         /// <param name="CodEmpresa"></param>
         /// <param name="tipoDocumento"></param>
         /// </summary>
-        public ErrorDto<SifDocsTrasladoDocumentoConfig> Sif_DocsTraslado_Documento_Config_Obtener(int CodEmpresa,string tipoDocumento)
+        public ErrorDto<SifDocsTrasladoDocumentoConfig> Sif_DocsTraslado_Documento_Config_Obtener(int CodEmpresa, string tipoDocumento)
         {
-            var result = new ErrorDto<SifDocsTrasladoDocumentoConfig> { Code = 0, Description = "Ok" };
-
-            try
-            {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
-
-                const string sql = @"
+            const string sql = @"
                     SELECT TOP 1
                         Tipo_Documento       AS tipoDocumento,
                         Tipo_Asiento         AS tipoAsiento,
@@ -263,23 +303,16 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     FROM SIF_DOCUMENTOS
                     WHERE Tipo_Documento = @doc;";
 
-                result.Result = cn.QueryFirstOrDefault<SifDocsTrasladoDocumentoConfig>(
-                    sql, new { doc = tipoDocumento }, commandTimeout: 60);
+            var r = WithEmpresaConn(CodEmpresa, cn =>
+                cn.QueryFirstOrDefault<SifDocsTrasladoDocumentoConfig>(sql, new { doc = tipoDocumento }, commandTimeout: 60));
 
-                if (result.Result == null)
-                {
-                    result.Code = 1;
-                    result.Description = "No existe configuración para el documento.";
-                }
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<SifDocsTrasladoDocumentoConfig> { Code = r.Code, Description = r.Description, Result = null };
 
-            return result;
+            if (r.Result == null)
+                return new ErrorDto<SifDocsTrasladoDocumentoConfig> { Code = 1, Description = "No existe configuración para el documento.", Result = null };
+
+            return new ErrorDto<SifDocsTrasladoDocumentoConfig> { Code = 0, Description = "Ok", Result = r.Result };
         }
 
 
@@ -289,34 +322,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
         /// </summary>
-        public ErrorDto<string> Sif_DocsTraslado_Reactivar(int CodEmpresa,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<string> Sif_DocsTraslado_Reactivar(int CodEmpresa, DateTime fechaInicio, DateTime fechaFin)
         {
-            var result = new ErrorDto<string> { Code = 0, Description = "Ok", Result = "Revisión realizada" };
-
-            try
+            return WithEmpresaConn(CodEmpresa, cn =>
             {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
-
-                var ini = new DateTime(fechaInicio.Year, fechaInicio.Month, fechaInicio.Day, 0, 0, 0, DateTimeKind.Local);
-                var fin = new DateTime(fechaFin.Year, fechaFin.Month, fechaFin.Day, 23, 59, 59, DateTimeKind.Local);
-
-                var p = new DynamicParameters();
-                p.Add(InicioParam, ini, DbType.DateTime);
-                p.Add(CorteParam, fin, DbType.DateTime);
-
+                var p = BuildRangoParams(fechaInicio, fechaFin);
                 cn.Execute("spSys_Asiento_Revisa_Traslado", p, commandType: CommandType.StoredProcedure, commandTimeout: 120);
-
-                result.Description = "Revisión de documentos realizada satisfactoriamente.";
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+                return "Revisión realizada";
+            });
         }
 
         /// <summary>
@@ -324,46 +337,44 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
         /// </summary>
-        public ErrorDto<string> Sif_DocsTraslado_Aplica(int CodEmpresa,SifDocsTrasladoEjecutarRequest dto)
+        public ErrorDto<string> Sif_DocsTraslado_Aplica(int CodEmpresa, SifDocsTrasladoEjecutarRequest dto)
         {
-            var result = new ErrorDto<string> { Code = 0, Description = "Ok", Result = "Traslado realizado" };
+            if (dto == null)
+                return DbHelper.CreateErrorResponse<string>("Request inválido");
 
-            try
+            if (string.IsNullOrWhiteSpace(dto.tipoDocumento))
+                return DbHelper.CreateErrorResponse<string>("tipoDocumento es requerido");
+
+            var tipoDocumento = dto.tipoDocumento!.Trim();
+            var usuario = dto.usuario ?? string.Empty;
+            var fechaInicio = dto.fechaInicio;
+            var fechaFin = dto.fechaFin;
+            var soloBalanceados = dto.soloBalanceados;
+            var modo = dto.modo;
+
+            var sp = GetTrasladoSp(modo);
+
+            var exec = WithEmpresaConn(CodEmpresa, cn =>
             {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
-
                 var p = new DynamicParameters();
-                p.Add("@TipoDoc", dto.tipoDocumento, DbType.String);
-                p.Add("@FechaInicio", new DateTime(dto.fechaInicio.Year, dto.fechaInicio.Month, dto.fechaInicio.Day, 0, 0, 0, DateTimeKind.Local), DbType.DateTime);
-                p.Add("@FechaCorte", new DateTime(dto.fechaFin.Year, dto.fechaFin.Month, dto.fechaFin.Day, 23, 59, 59, DateTimeKind.Local), DbType.DateTime);
-                p.Add("@pUsuario", dto.usuario ?? "", DbType.String);
-                p.Add(BalanceParam, dto.soloBalanceados ? (short)1 : (short)2, DbType.Int16);
-                string sp = (dto.modo ?? "").Trim().ToLowerInvariant() == "individual"
-                    ? "spSys_Asientos_CtrlDoc_Traslado_Individual"
-                    : "spSys_Asientos_CtrlDoc_Traslado_Bloque_Diario";
+                p.Add("@TipoDoc", tipoDocumento, DbType.String);
+                p.Add("@FechaInicio", StartOfDay(fechaInicio), DbType.DateTime);
+                p.Add("@FechaCorte", EndOfDay(fechaFin), DbType.DateTime);
+                p.Add("@pUsuario", usuario, DbType.String);
+                p.Add(BalanceParam, soloBalanceados ? (short)1 : (short)2, DbType.Int16);
 
                 cn.Execute(sp, p, commandType: CommandType.StoredProcedure, commandTimeout: 0);
+                return "Traslado realizado";
+            });
 
-                _security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = dto.usuario ?? "",
-                    Modulo = vModulo,
-                    Movimiento = "Aplica - WEB",
-                    DetalleMovimiento = "Asientos del Control de Documentos"
-                });
+            if ((exec.Code ?? -1) != 0)
+                return exec;
 
-                result.Description = "Se realizó el Traslado de Asientos a Contabilidad.";
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
+            var bit = TryBitacora(CodEmpresa, usuario, "Aplica - WEB", "Asientos del Control de Documentos");
+            if ((bit.Code ?? -1) != 0)
+                return new ErrorDto<string> { Code = bit.Code, Description = bit.Description, Result = null };
 
-            return result;
+            return new ErrorDto<string> { Code = 0, Description = "Se realizó el Traslado de Asientos a Contabilidad.", Result = exec.Result };
         }
 
         /// <summary>
@@ -374,89 +385,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="fechaFin"></param>
         /// <param name="soloBalanceados"></param>
         /// </summary>
-        public ErrorDto<List<SifDocsTrasladoDocumentosData>> Sif_DocsTraslado_Lista_Export(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin,bool soloBalanceados)
+        public ErrorDto<List<SifDocsTrasladoDocumentosData>> Sif_DocsTraslado_Lista_Export(int CodEmpresa, FiltrosLazyLoadData filtros, DateTime fechaInicio, DateTime fechaFin, bool soloBalanceados)
         {
-            var result = new ErrorDto<List<SifDocsTrasladoDocumentosData>>
+            return WithEmpresaConn(CodEmpresa, cn =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifDocsTrasladoDocumentosData>()
-            };
-
-            try
-            {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
-
-                var p = new DynamicParameters();
-                p.Add(InicioParam, new DateTime(fechaInicio.Year, fechaInicio.Month, fechaInicio.Day, 0, 0, 0, DateTimeKind.Local), DbType.DateTime);
-                p.Add(CorteParam, new DateTime(fechaFin.Year, fechaFin.Month, fechaFin.Day, 23, 59, 59, DateTimeKind.Local), DbType.DateTime);
-                // 1 = balanceados, 2 = todos
-                p.Add(BalanceParam, soloBalanceados ? (short)1 : (short)2, DbType.Int16);
-
-                var lista = new List<SifDocsTrasladoDocumentosData>();
-                using (var dr = cn.ExecuteReader("spSys_Asientos_CtrlDoc_Busca", p, commandType: CommandType.StoredProcedure, commandTimeout: 60))
-                {
-                    while (dr.Read())
-                    {
-                        lista.Add(new SifDocsTrasladoDocumentosData
-                        {
-                            Tipo_Documento = dr[TipoDocumentoField] as string ?? "",
-                            descripcion = dr[DescripcionField] as string ?? "",
-                            pendientes = dr[PendientesField] == DBNull.Value ? 0 : Convert.ToInt32(dr[PendientesField]),
-                            bloqueados = dr[BloqueadosField] == DBNull.Value ? 0 : Convert.ToInt32(dr[BloqueadosField]),
-                            codContabilidad = dr[CodContabilidadField] == DBNull.Value ? 0 : Convert.ToInt32(dr[CodContabilidadField]),
-                            asientoTransaccion = null
-                        });
-                    }
-                }
-
-                // Filtro
-                string q = filtros?.filtro?.Trim() ?? "";
-                if (q.Length > 0)
-                {
-                    var up = q.ToUpperInvariant();
-                    lista = lista.Where(x =>
-                        (x.Tipo_Documento ?? "").ToUpperInvariant().Contains(up) ||
-                        (x.descripcion ?? "").ToUpperInvariant().Contains(up)
-                    ).ToList();
-                }
-
-                // Orden
-                string sortField = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
-                int sortOrder = filtros?.sortOrder ?? 1; // 1 asc, 0 desc
-                lista.Sort((a, b) =>
-                {
-                    int mul = (sortOrder == 1) ? 1 : -1;
-                    switch (sortField)
-                    {
-                        case "tipodocumento":
-                        case "tipo_documento":
-                            return mul * string.Compare(a.Tipo_Documento, b.Tipo_Documento, StringComparison.OrdinalIgnoreCase);
-                        case "descripcion":
-                            return mul * string.Compare(a.descripcion, b.descripcion, StringComparison.OrdinalIgnoreCase);
-                        case "pendientes":
-                            return mul * a.pendientes.CompareTo(b.pendientes);
-                        case "bloqueados":
-                            return mul * a.bloqueados.CompareTo(b.bloqueados);
-                        case "codcontabilidad":
-                        case "cod_contabilidad":
-                            return mul * a.codContabilidad.CompareTo(b.codContabilidad);
-                        default:
-                            return mul * string.Compare(a.Tipo_Documento, b.Tipo_Documento, StringComparison.OrdinalIgnoreCase);
-                    }
-                });
-
-                result.Result = lista; // sin paginar
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+                var lista = LoadCtrlDoc(cn, fechaInicio, fechaFin, soloBalanceados);
+                lista = FiltrarDocumentos(lista, filtros?.filtro ?? string.Empty);
+                OrdenarDocumentos(lista, filtros?.sortField ?? string.Empty, filtros?.sortOrder);
+                return lista;
+            });
         }
 
         /// <summary>
@@ -466,89 +403,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
         /// </summary>
-        public ErrorDto<List<SifDocsTrasladoDesbalanceadoData>> Sif_DocsTraslado_Desbalanceados_Export(int CodEmpresa,FiltrosLazyLoadData filtros,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<List<SifDocsTrasladoDesbalanceadoData>> Sif_DocsTraslado_Desbalanceados_Export(int CodEmpresa, FiltrosLazyLoadData filtros, DateTime fechaInicio, DateTime fechaFin)
         {
-            var result = new ErrorDto<List<SifDocsTrasladoDesbalanceadoData>>
+            return WithEmpresaConn(CodEmpresa, cn =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifDocsTrasladoDesbalanceadoData>()
-            };
-
-            try
-            {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
-
-                var p = new DynamicParameters();
-                p.Add(InicioParam, new DateTime(fechaInicio.Year, fechaInicio.Month, fechaInicio.Day, 0, 0, 0, DateTimeKind.Local), DbType.DateTime);
-                p.Add(CorteParam, new DateTime(fechaFin.Year, fechaFin.Month, fechaFin.Day, 23, 59, 59, DateTimeKind.Local), DbType.DateTime);
-
-                var lista = cn.Query<SifDocsTrasladoDesbalanceadoData>(
-                    "spSys_Asientos_CtrlDoc_Desbalanceados",
-                    p, commandType: CommandType.StoredProcedure, commandTimeout: 60
-                ).AsList();
-
-                // Filtro (según TU modelo)
-                string q = filtros?.filtro?.Trim() ?? "";
-                if (q.Length > 0)
-                {
-                    var up = q.ToUpperInvariant();
-                    var filtrada = new List<SifDocsTrasladoDesbalanceadoData>();
-                    for (int i = 0; i < lista.Count; i++)
-                    {
-                        var x = lista[i];
-                        if ((x.Tipo_Documento ?? "").ToUpperInvariant().IndexOf(up, StringComparison.Ordinal) >= 0 ||
-                            (x.cod_transaccion ?? "").ToUpperInvariant().IndexOf(up, StringComparison.Ordinal) >= 0 ||
-                            (x.Registro_Usuario ?? "").ToUpperInvariant().IndexOf(up, StringComparison.Ordinal) >= 0 ||
-                            (x.Referencia ?? "").ToUpperInvariant().IndexOf(up, StringComparison.Ordinal) >= 0 ||
-                            (x.Notas ?? "").ToUpperInvariant().IndexOf(up, StringComparison.Ordinal) >= 0)
-                        {
-                            filtrada.Add(x);
-                        }
-                    }
-                    lista = filtrada;
-                }
-
-                // Orden (según TU modelo)
-                string sortField = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
-                int sortOrder = filtros?.sortOrder ?? 1; // 1 asc, 0 desc
-                lista.Sort((a, b) =>
-                {
-                    int mul = (sortOrder == 1) ? 1 : -1;
-                    switch (sortField)
-                    {
-                        case "registro_fecha":
-                        case "fecha":
-                            return mul * a.Registro_Fecha.CompareTo(b.Registro_Fecha);
-                        case "tipo_documento":
-                            return mul * string.Compare(a.Tipo_Documento, b.Tipo_Documento, StringComparison.OrdinalIgnoreCase);
-                        case "cod_transaccion":
-                        case "transaccion":
-                            return mul * string.Compare(a.cod_transaccion, b.cod_transaccion, StringComparison.OrdinalIgnoreCase);
-                        case "registro_usuario":
-                            return mul * string.Compare(a.Registro_Usuario, b.Registro_Usuario, StringComparison.OrdinalIgnoreCase);
-                        case "monto":
-                            return mul * a.Monto.CompareTo(b.Monto);
-                        case "referencia":
-                            return mul * string.Compare(a.Referencia, b.Referencia, StringComparison.OrdinalIgnoreCase);
-                        case "notas":
-                            return mul * string.Compare(a.Notas, b.Notas, StringComparison.OrdinalIgnoreCase);
-                        default:
-                            return mul * a.Registro_Fecha.CompareTo(b.Registro_Fecha);
-                    }
-                });
-
-                result.Result = lista; // sin paginar
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+                var lista = LoadDesbalanceados(cn, fechaInicio, fechaFin);
+                lista = FiltrarDesbalanceados(lista, filtros?.filtro ?? string.Empty);
+                OrdenarDesbalanceados(lista, filtros?.sortField ?? string.Empty, filtros?.sortOrder);
+                return lista;
+            });
         }
 
         /// <summary>
@@ -559,25 +422,26 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SifDocsTrasladoResultadoLote> Sif_DocsTraslado_Aplica_Lote(int CodEmpresa, SifDocsTrasladoEjecutarLoteRequest dto)
         {
-            var res = new ErrorDto<SifDocsTrasladoResultadoLote>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new SifDocsTrasladoResultadoLote()
-            };
+            if (dto == null)
+                return DbHelper.CreateErrorResponse<SifDocsTrasladoResultadoLote>("Request inválido");
 
-            try
+            var usuario = dto.usuario ?? string.Empty;
+            var tipos = dto.tiposDocumento ?? new List<string>();
+            var fechaInicio = dto.fechaInicio;
+            var fechaFin = dto.fechaFin;
+            var soloBalanceados = dto.soloBalanceados;
+            var modo = dto.modo;
+
+            var spName = GetTrasladoSp(modo);
+
+            var r = WithEmpresaConn(CodEmpresa, cn =>
             {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
                 cn.Open();
 
-                var lista = dto.tiposDocumento ?? new List<string>();
-                res.Result.total = lista.Count;
+                var res = new SifDocsTrasladoResultadoLote();
+                var lista = tipos;
 
-                string spName = (dto.modo ?? "").Trim().ToLowerInvariant() == "individual"
-                    ? "spSys_Asientos_CtrlDoc_Traslado_Individual"
-                    : "spSys_Asientos_CtrlDoc_Traslado_Bloque_Diario";
+                res.total = lista.Count;
 
                 foreach (var tipo in lista)
                 {
@@ -587,45 +451,48 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     {
                         var p = new DynamicParameters();
                         p.Add("@TipoDoc", tipo, DbType.String);
-                        p.Add("@FechaInicio", new DateTime(dto.fechaInicio.Year, dto.fechaInicio.Month, dto.fechaInicio.Day, 0, 0, 0, DateTimeKind.Local), DbType.DateTime);
-                        p.Add("@FechaCorte", new DateTime(dto.fechaFin.Year, dto.fechaFin.Month, dto.fechaFin.Day, 23, 59, 59, DateTimeKind.Local), DbType.DateTime);
-                        p.Add("@pUsuario", dto.usuario ?? "", DbType.String);
-                        p.Add("@Balance", dto.soloBalanceados ? (short)1 : (short)2, DbType.Int16);
+                        p.Add("@FechaInicio", StartOfDay(fechaInicio), DbType.DateTime);
+                        p.Add("@FechaCorte", EndOfDay(fechaFin), DbType.DateTime);
+                        p.Add("@pUsuario", usuario, DbType.String);
+                        p.Add(BalanceParam, soloBalanceados ? (short)1 : (short)2, DbType.Int16);
 
                         cn.Execute(spName, p, commandType: CommandType.StoredProcedure, commandTimeout: 0);
 
                         item.code = 0;
                         item.description = "Traslado aplicado";
-                        res.Result.ok++;
+                        res.ok++;
                     }
                     catch (Exception exDoc)
                     {
                         item.code = -1;
                         item.description = exDoc.Message;
-                        res.Result.fail++;
+                        res.fail++;
                     }
 
-                    res.Result.detalle.Add(item);
+                    res.detalle.Add(item);
                 }
-                _security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = dto.usuario ?? "",
-                    Modulo = vModulo,
-                    Movimiento = "Aplica Lote - WEB",
-                    DetalleMovimiento = $"Asientos del Control de Documentos | Total: {res.Result.total} | OK: {res.Result.ok} | Fail: {res.Result.fail}"
-                });
 
-                res.Description = $"Procesados: {res.Result.total}. OK: {res.Result.ok}. Error: {res.Result.fail}.";
-            }
-            catch (Exception ex)
+                return res;
+            });
+
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<SifDocsTrasladoResultadoLote> { Code = r.Code, Description = r.Description, Result = null };
+
+            if (r.Result == null)
+                return new ErrorDto<SifDocsTrasladoResultadoLote> { Code = -1, Description = "No se pudo generar el resultado del lote", Result = null };
+
+            var detalle = $"Asientos del Control de Documentos | Total: {r.Result.total} | OK: {r.Result.ok} | Fail: {r.Result.fail}";
+            var bit = TryBitacora(CodEmpresa, usuario, "Aplica Lote - WEB", detalle);
+
+            if ((bit.Code ?? -1) != 0)
+                return new ErrorDto<SifDocsTrasladoResultadoLote> { Code = bit.Code, Description = bit.Description, Result = r.Result };
+
+            return new ErrorDto<SifDocsTrasladoResultadoLote>
             {
-                res.Code = -1;
-                res.Description = ex.Message;
-                res.Result = null;
-            }
-
-            return res;
+                Code = 0,
+                Description = $"Procesados: {r.Result.total}. OK: {r.Result.ok}. Error: {r.Result.fail}.",
+                Result = r.Result
+            };
         }
 
     }
