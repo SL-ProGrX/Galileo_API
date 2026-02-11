@@ -1,12 +1,9 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using Newtonsoft.Json;
 using Galileo.Models.ERROR;
 using Galileo.Models.SYS;
-using Microsoft.Extensions.Configuration;
 
 namespace Galileo.DataBaseTier
 {
