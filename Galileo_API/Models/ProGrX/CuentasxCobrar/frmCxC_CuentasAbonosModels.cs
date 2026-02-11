@@ -3,24 +3,24 @@
     public class CxCCuentasAbonosData
     {
         public int operacion { get; set; }
-        public decimal saldo { get; set; }
+        public decimal? saldo { get; set; }
         public string proceso { get; set; } = string.Empty;
-        public decimal tasa_corriente { get; set; }
-        public decimal interesc { get; set; }
-        public decimal amortiza { get; set; }
-        public int fecha_ultmov { get; set; }
-        public decimal cuota { get; set; }
+        public decimal? tasa_corriente { get; set; }
+        public decimal? interesc { get; set; }
+        public decimal? amortiza { get; set; }
+        public int? fecha_ultmov { get; set; }
+        public decimal? cuota { get; set; }
         public string cod_concepto { get; set; } = string.Empty;
         public string cedula { get; set; } = string.Empty;
-        public int meses { get; set; }
+        public int? meses { get; set; }
         public string nombre { get; set; } = string.Empty;
-        public DateTime activa_fecha { get; set; }
+        public DateTime? activa_fecha { get; set; }
         public string autoriza_usuario { get; set; } = string.Empty;
         public string conceptodesc { get; set; } = string.Empty;
         public string oficinadesc { get; set; } = string.Empty;
-        public DateTime fechaserver { get; set; }
-        public bool caja_valida_concepto { get; set; }
-        public int facturas { get; set; }
+        public DateTime? fechaserver { get; set; }
+        public int? caja_valida_concepto { get; set; }
+        public int? facturas { get; set; }
     }
 
     public class CxCCuotasActivasData
@@ -44,5 +44,15 @@
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
         public string descripcion { get; set; } = string.Empty;
+    }
+
+    public class CxCCuentaCuotasInfoData
+    {
+        public long seqX { get; set; } = 0;
+        public decimal intCor { get; set; } = 0;
+        public decimal principal { get; set; } = 0;
+        public decimal saldo { get; set; } = 0;
+        public DateTime? fecha_Proceso { get; set; }
+        public decimal cuota { get; set; } = 0;
     }
 }

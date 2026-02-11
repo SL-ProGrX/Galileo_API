@@ -3,6 +3,7 @@ using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.Cajas;
+using Galileo_API.Models.ProGrX.Cajas;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
@@ -33,11 +34,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         public ErrorDto<CxCCuentasAbonosData> CxCCuentas_ConsultaOperacion_Obtener(int codEmpresa, string codCaja, int operacionId)
         {
             const string query = @"select R.Operacion,R.saldo,R.proceso,R.Tasa_Corriente,R.interesc,R.amortiza,
-                    dbo.fxSIFFechaProcesoConvert(isnull(R.Fecha_UltMov,dbo.MyGetdate())) as 'Fecha_UltMov'
-                    , R.cuota,R.cod_concepto,R.cedula,datediff(m,R.Activa_Fecha,dbo.MyGetdate()) as 'Meses'
+                    dbo.fxSIFFechaProcesoConvert(isnull(R.Fecha_UltMov,GETDATE())) as 'Fecha_UltMov'
+                    , R.cuota,R.cod_concepto,R.cedula,datediff(m,R.Activa_Fecha,GETDATE()) as 'Meses'
                     , S.nombre,R.Activa_Fecha,R.Autoriza_Usuario 
                     , C.descripcion as 'ConceptoDesc',Ofi.descripcion as 'OficinaDesc', GETDATE() as 'FechaServer' 
-                    , dbo.fxCajas_Valida_Auxiliar(@codCaja,'CxC',C.cod_Concepto) as 'Caja_Valida_Concepto'
+                    , dbo.fxCajas_Valida_Auxiliar(@codCaja,'CxC',C.cod_Concepto) as 'caja_valida_concepto'
                     , dbo.fxCxC_Operacion_Facturas_Pending(R.Operacion) as 'Facturas' 
                     from CxC_Cuentas R inner join CxC_Conceptos C on R.cod_concepto = C.cod_concepto 
                     inner join CxC_Personas S on R.cedula = S.cedula 
@@ -86,5 +87,67 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, new { caja });
         }
+
+        public ErrorDto<CxCCuentaCuotasInfoData> CxCCuentas_CuotasInfo_Obtener(int codEmpresa, int vOperacion, int vCuotas)
+        {
+            const string sqlTotales = @"
+            select 
+                isnull(max(Linea),0) as seqX, 
+                isnull(sum(Int_Cor + Int_Mor),0) as intCor, 
+                isnull(sum(Principal),0) as principal,
+                isnull(min(Saldo_Final),0) as saldo, 
+                isnull(max(Fecha_Corte),0) as fecha_Proceso
+            from CxC_Cuentas_Mov where Operacion = @OperacionId 
+            and Linea in(select Top (@Cuotas) Linea from CxC_Cuentas_Mov
+            where estado in('A','P') and Operacion =  @OperacionId  and Linea > 0  order by Linea);";
+
+            var totales = DbHelper.ExecuteSingleQuery<CxCCuentaCuotasInfoData>(
+                _portalDb,
+                codEmpresa,
+                sqlTotales,
+                new CxCCuentaCuotasInfoData(),
+                new
+                {
+                    OperacionId = vOperacion,
+                    Cuotas = vCuotas
+                }
+            );
+
+            if (totales.Result == null)
+                totales.Result = new CxCCuentaCuotasInfoData();
+
+            const string sqlCuota = @"
+                select ISNULL(Monto, 0) AS Cuota
+                from CxC_Cuentas_Mov where Linea = @Linea
+                and Operacion = @OperacionId;";
+
+            if (totales.Result.seqX > 0)
+            {
+                var cuotaRs = DbHelper.ExecuteSingleQuery<decimal>(
+                    _portalDb,
+                    codEmpresa,
+                    sqlCuota,
+                    0,
+                    new
+                    {
+                        Linea = totales.Result.seqX,
+                        OperacionId = vOperacion
+                    }
+                );
+
+                if (cuotaRs == null || cuotaRs.Code != 0)
+                    return new ErrorDto<CxCCuentaCuotasInfoData>
+                    {
+                        Code = cuotaRs?.Code,
+                        Description = cuotaRs?.Description,
+                        Result = totales.Result
+                    };
+
+                totales.Result.cuota = cuotaRs.Result;
+            }
+
+            return totales!;
+        }
+
     }
 }

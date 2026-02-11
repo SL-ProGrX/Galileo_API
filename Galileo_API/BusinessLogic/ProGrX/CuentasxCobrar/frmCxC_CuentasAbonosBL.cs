@@ -31,5 +31,10 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         {
             return _db.CxCCuentas_TipoDoc_Obtener(codEmpresa, caja);
         }
+
+        public ErrorDto<CxCCuentaCuotasInfoData> CxCCuentas_CuotasInfo_Obtener(int codEmpresa, int vOperacion, int vCuotas)
+        {
+            return _db.CxCCuentas_CuotasInfo_Obtener(codEmpresa, vOperacion, vCuotas);
+        }
     }
 }
