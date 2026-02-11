@@ -5,90 +5,116 @@ using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
 
-
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSysMonitorAutoGestionDB
     {
-        private readonly IConfiguration _config;
         private readonly MSecurityMainDb _security_MainDB;
         private readonly int vModulo = 3;
 
+        private readonly PortalDB _portalDb;
+        private const string DefaultErrorDescription = "Error";
+
         public FrmSysMonitorAutoGestionDB(IConfiguration config)
         {
-            _config = config;
-            _security_MainDB = new MSecurityMainDb(_config);
+            _portalDb = new PortalDB(config);
+            _security_MainDB = new MSecurityMainDb(config);
         }
 
-        /// <summary>
-        /// Obtiene lista (grid) con LazyLoad, filtros y ordenamiento.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="filtros"></param>
-        /// <param name="estado"></param>
-        /// <param name="tramite_estado_id"></param>
-        /// <param name="fechaTipo"></param>
-        /// <param name="fechaInicio"></param>
-        /// <param name="fechaFin"></param>
-        /// <param name="codigoLinea"></param>
-        /// <param name="cedula"></param>
-        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener(int CodEmpresa, MonitorAutoGestionListaFiltroDto filtroDto)
+        // =========================
+        // Helpers internos (evitan duplicación)
+        // =========================
+
+        private sealed record AutoGestionSpec(
+            string? Estado,
+            string? Tramite,
+            int TodasFechas,
+            int UseRes,
+            DateTime Ini,
+            DateTime Fin,
+            string? Codigo,
+            string? Cedula,
+            string? QLike,
+            string SortField,
+            int SortOrder,
+            int Offset,
+            int Fetch);
+
+        private static string? FirstCharOrNull(string? value)
         {
-            var result = new ErrorDto<MonitorAutoGestionLista>
+            if (string.IsNullOrWhiteSpace(value)) return null;
+            var s = value.Trim();
+            return s.Length == 0 ? null : s.Substring(0, 1);
+        }
+
+        private static DateTime StartOfDay(DateTime dt) => new DateTime(dt.Year, dt.Month, dt.Day, 0, 0, 0, dt.Kind);
+        private static DateTime EndOfDay(DateTime dt) => new DateTime(dt.Year, dt.Month, dt.Day, 23, 59, 59, dt.Kind);
+
+        private static AutoGestionSpec BuildSpec(MonitorAutoGestionListaFiltroDto filtroDto, bool includePaging)
+        {
+            string? estado = FirstCharOrNull(filtroDto.estado);
+            string? tramite = FirstCharOrNull(filtroDto.tramite_estado_id);
+
+            bool todasFechas = string.Equals(filtroDto.fechaTipo ?? "", "Todas", StringComparison.OrdinalIgnoreCase);
+            bool useResFecha = string.Equals(filtroDto.fechaTipo, "Resolución", StringComparison.OrdinalIgnoreCase);
+
+            var ini = StartOfDay(filtroDto.fechaInicio);
+            var fin = EndOfDay(filtroDto.fechaFin);
+
+            string? codigo = string.IsNullOrWhiteSpace(filtroDto.codigoLinea) ? null : filtroDto.codigoLinea.Trim();
+            string? cedula = string.IsNullOrWhiteSpace(filtroDto.cedula) ? null : filtroDto.cedula.Trim();
+
+            string rawQ = (filtroDto.filtros?.filtro ?? string.Empty).Trim();
+            string? qLike = string.IsNullOrWhiteSpace(rawQ) ? null : $"%{rawQ}%";
+
+            string sortField = (filtroDto.filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
+            int sortOrder = filtroDto.filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
+
+            int offset = includePaging ? Math.Max(0, filtroDto.filtros?.pagina ?? 0) : 0;
+            int fetch = includePaging ? Math.Max(1, filtroDto.filtros?.paginacion ?? 30) : int.MaxValue;
+
+            return new AutoGestionSpec(
+                Estado: estado,
+                Tramite: tramite,
+                TodasFechas: todasFechas ? 1 : 0,
+                UseRes: useResFecha ? 1 : 0,
+                Ini: ini,
+                Fin: fin,
+                Codigo: codigo,
+                Cedula: cedula,
+                QLike: qLike,
+                SortField: sortField,
+                SortOrder: sortOrder,
+                Offset: offset,
+                Fetch: fetch);
+        }
+
+        private static DynamicParameters BuildParams(AutoGestionSpec s, bool includePaging)
+        {
+            var p = new DynamicParameters();
+
+            p.Add("@ESTADO", s.Estado);
+            p.Add("@TRAMITE", s.Tramite);
+            p.Add("@TODAS_FECHAS", s.TodasFechas, DbType.Int32);
+            p.Add("@USE_RES", s.UseRes, DbType.Int32);
+            p.Add("@INI", s.Ini, DbType.DateTime);
+            p.Add("@FIN", s.Fin, DbType.DateTime);
+            p.Add("@CODIGO", s.Codigo);
+            p.Add("@CEDULA", s.Cedula);
+            p.Add("@Q", s.QLike);
+
+            if (includePaging)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new MonitorAutoGestionLista
-                {
-                    total = 0,
-                    lista = new List<MonitorAutoGestionListaData>()
-                }
-            };
+                p.Add("@SORT_FIELD", s.SortField);
+                p.Add("@SORT_ORDER", s.SortOrder);
+                p.Add("@OFFSET", s.Offset);
+                p.Add("@FETCH", s.Fetch);
+            }
 
-            try
-            {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
+            return p;
+        }
 
-                var p = new DynamicParameters();
-
-                string? estado = string.IsNullOrWhiteSpace(filtroDto.estado) ? null : filtroDto.estado.Trim().Substring(0, 1);
-                string? tramite = string.IsNullOrWhiteSpace(filtroDto.tramite_estado_id) ? null : filtroDto.tramite_estado_id.Trim().Substring(0, 1);
-
-                bool todasFechas = string.Equals(filtroDto.fechaTipo ?? "", "Todas", StringComparison.OrdinalIgnoreCase);
-                bool useResFecha = string.Equals(filtroDto.fechaTipo, "Resolución", StringComparison.OrdinalIgnoreCase);
-
-                var ini = new DateTime(filtroDto.fechaInicio.Year, filtroDto.fechaInicio.Month, filtroDto.fechaInicio.Day, 0, 0, 0, filtroDto.fechaInicio.Kind);
-                var fin = new DateTime(filtroDto.fechaFin.Year, filtroDto.fechaFin.Month, filtroDto.fechaFin.Day, 23, 59, 59, filtroDto.fechaFin.Kind);
-
-                string? codigo = string.IsNullOrWhiteSpace(filtroDto.codigoLinea) ? null : filtroDto.codigoLinea.Trim();
-                string? cedula = string.IsNullOrWhiteSpace(filtroDto.cedula) ? null : filtroDto.cedula.Trim();
-
-                string rawQ = (filtroDto.filtros?.filtro ?? string.Empty).Trim();
-                string? qLike = string.IsNullOrWhiteSpace(rawQ) ? null : $"%{rawQ}%";
-
-                string sortField = (filtroDto.filtros?.sortField ?? string.Empty).Trim().ToLowerInvariant();
-                int sortOrder = filtroDto.filtros?.sortOrder ?? 1; // 0=DESC, 1=ASC
-
-                int offset = Math.Max(0, filtroDto.filtros?.pagina ?? 0);
-                int fetch = Math.Max(1, filtroDto.filtros?.paginacion ?? 30);
-
-                p.Add("@ESTADO", estado);
-                p.Add("@TRAMITE", tramite);
-                p.Add("@TODAS_FECHAS", todasFechas ? 1 : 0, DbType.Int32);
-                p.Add("@USE_RES", useResFecha ? 1 : 0, DbType.Int32);
-                p.Add("@INI", ini, DbType.DateTime);
-                p.Add("@FIN", fin, DbType.DateTime);
-                p.Add("@CODIGO", codigo);
-                p.Add("@CEDULA", cedula);
-                p.Add("@Q", qLike);
-                p.Add("@SORT_FIELD", sortField);
-                p.Add("@SORT_ORDER", sortOrder);
-                p.Add("@OFFSET", offset);
-                p.Add("@FETCH", fetch);
-
-                const string sqlCount = @"
-                    SELECT COUNT(1)
+        private const string AutoGestionWhere = @"
                     FROM vCrd_Solicitudes_AutoGestion
                     WHERE 1=1
                       AND (@ESTADO IS NULL OR ESTADO = @ESTADO)
@@ -108,11 +134,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                             OR NOMBRE LIKE @Q
                             OR LINEA_DESC LIKE @Q
                             OR ESTADO_DESC LIKE @Q
-                          );";
+                          )";
 
-                result.Result.total = cn.ExecuteScalar<int>(sqlCount, p, commandTimeout: 60);
-
-                const string sql = @"
+        private const string AutoGestionSelect = @"
                     SELECT 
                         COD_SOLICITUD           AS Cod_Solicitud,
                         ESTADO_DESC             AS Estado_Desc,
@@ -128,27 +152,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         RES_FECHA               AS Res_Fecha,
                         RES_CODIGO              AS Res_Codigo,
                         TRAMITE_ESTADO_DESC     AS Tramite_Estado_Desc,
-                        RES_TIPO                AS Res_Tipo 
-                    FROM vCrd_Solicitudes_AutoGestion
-                    WHERE 1=1
-                      AND (@ESTADO IS NULL OR ESTADO = @ESTADO)
-                      AND (@TRAMITE IS NULL OR TRAMITE_ESTADO_ID = @TRAMITE)
-                      AND (
-                            @TODAS_FECHAS = 1
-                            OR (
-                                (@USE_RES = 1 AND ISDATE(RES_FECHA) = 1 AND CONVERT(datetime, RES_FECHA, 121) BETWEEN @INI AND @FIN)
-                                OR (@USE_RES = 0 AND ISDATE(REGISTRO_FECHA) = 1 AND CONVERT(datetime, REGISTRO_FECHA, 121) BETWEEN @INI AND @FIN)
-                               )
-                          )
-                      AND (@CODIGO IS NULL OR CODIGO = @CODIGO)
-                      AND (@CEDULA IS NULL OR CEDULA = @CEDULA)
-                      AND (
-                            @Q IS NULL
-                            OR CEDULA LIKE @Q
-                            OR NOMBRE LIKE @Q
-                            OR LINEA_DESC LIKE @Q
-                            OR ESTADO_DESC LIKE @Q
-                          )
+                        RES_TIPO                AS Res_Tipo ";
+
+        private const string AutoGestionOrderDynamic = @"
                     ORDER BY
                         -- ASC
                         CASE WHEN @SORT_ORDER = 1 AND @SORT_FIELD = 'cod_solicitud' THEN COD_SOLICITUD END ASC,
@@ -185,15 +191,62 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         COD_SOLICITUD ASC
                     OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY;";
 
-                result.Result.lista = cn.Query<MonitorAutoGestionListaData>(sql, p, commandTimeout: 60).ToList();
-            }
-            catch (Exception ex)
+        private static string SqlCount() => "SELECT COUNT(1)" + AutoGestionWhere + ";";
+        private static string SqlListPaged() => AutoGestionSelect + AutoGestionWhere + AutoGestionOrderDynamic;
+        private static string SqlListAll() => AutoGestionSelect + AutoGestionWhere + " ORDER BY COD_SOLICITUD ASC;";
+
+        /// <summary>
+        /// Obtiene lista (grid) con LazyLoad, filtros y ordenamiento.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="filtros"></param>
+        /// <param name="estado"></param>
+        /// <param name="tramite_estado_id"></param>
+        /// <param name="fechaTipo"></param>
+        /// <param name="fechaInicio"></param>
+        /// <param name="fechaFin"></param>
+        /// <param name="codigoLinea"></param>
+        /// <param name="cedula"></param>
+        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener(int CodEmpresa, MonitorAutoGestionListaFiltroDto filtroDto)
+        {
+            var result = new ErrorDto<MonitorAutoGestionLista>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new MonitorAutoGestionLista
+                {
+                    total = 0,
+                    lista = new List<MonitorAutoGestionListaData>()
+                }
+            };
+
+            var spec = BuildSpec(filtroDto, includePaging: true);
+            var p = BuildParams(spec, includePaging: true);
+
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, cn =>
+            {
+                var dto = new MonitorAutoGestionLista
+                {
+                    total = 0,
+                    lista = new List<MonitorAutoGestionListaData>()
+                };
+
+                dto.total = cn.ExecuteScalar<int>(SqlCount(), p, commandTimeout: 60);
+                dto.lista = cn.Query<MonitorAutoGestionListaData>(SqlListPaged(), p, commandTimeout: 60).AsList();
+
+                return dto;
+            });
+
+            if (db.Code != 0)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = db.Description ?? DefaultErrorDescription;
                 result.Result.total = 0;
                 result.Result.lista = new List<MonitorAutoGestionListaData>();
+                return result;
             }
+
+            result.Result = db.Result ?? new MonitorAutoGestionLista { total = 0, lista = new List<MonitorAutoGestionListaData>() };
             return result;
         }
 
@@ -219,85 +272,21 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 Result = new List<MonitorAutoGestionListaData>()
             };
 
-            try
-            {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
+            var spec = BuildSpec(filtroDto, includePaging: false);
+            var p = BuildParams(spec, includePaging: false);
 
-                var p = new DynamicParameters();
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, cn =>
+                cn.Query<MonitorAutoGestionListaData>(SqlListAll(), p, commandTimeout: 60).AsList());
 
-                string? estado = string.IsNullOrWhiteSpace(filtroDto.estado) ? null : filtroDto.estado.Trim().Substring(0, 1);
-                string? tramite = string.IsNullOrWhiteSpace(filtroDto.tramite_estado_id) ? null : filtroDto.tramite_estado_id.Trim().Substring(0, 1);
-
-                bool todasFechas = string.Equals(filtroDto.fechaTipo ?? "", "Todas", StringComparison.OrdinalIgnoreCase);
-                bool useResFecha = string.Equals(filtroDto.fechaTipo, "Resolución", StringComparison.OrdinalIgnoreCase);
-
-                var ini = new DateTime(filtroDto.fechaInicio.Year, filtroDto.fechaInicio.Month, filtroDto.fechaInicio.Day, 0, 0, 0, filtroDto.fechaInicio.Kind);
-                var fin = new DateTime(filtroDto.fechaFin.Year, filtroDto.fechaFin.Month, filtroDto.fechaFin.Day, 23, 59, 59, filtroDto.fechaFin.Kind);
-
-                string? codigo = string.IsNullOrWhiteSpace(filtroDto.codigoLinea) ? null : filtroDto.codigoLinea.Trim();
-                string? cedula = string.IsNullOrWhiteSpace(filtroDto.cedula) ? null : filtroDto.cedula.Trim();
-
-                string rawQ = (filtroDto.filtros?.filtro ?? string.Empty).Trim();
-                string? qLike = string.IsNullOrWhiteSpace(rawQ) ? null : $"%{rawQ}%";
-
-                p.Add("@ESTADO", estado);
-                p.Add("@TRAMITE", tramite);
-                p.Add("@TODAS_FECHAS", todasFechas ? 1 : 0, DbType.Int32);
-                p.Add("@USE_RES", useResFecha ? 1 : 0, DbType.Int32);
-                p.Add("@INI", ini, DbType.DateTime);
-                p.Add("@FIN", fin, DbType.DateTime);
-                p.Add("@CODIGO", codigo);
-                p.Add("@CEDULA", cedula);
-                p.Add("@Q", qLike);
-
-                const string sql = @"
-                    SELECT 
-                        COD_SOLICITUD           AS Cod_Solicitud,
-                        ESTADO_DESC             AS Estado_Desc,
-                        CEDULA                  AS Cedula,
-                        NOMBRE                  AS Nombre,
-                        LINEA_DESC              AS Linea_Desc,
-                        MONTO                   AS Monto,
-                        PLAZO                   AS Plazo,
-                        TASA                    AS Tasa,
-                        CUOTA                   AS Cuota,
-                        GARANTIA_DESC           AS Garantia_Desc,
-                        REGISTRO_FECHA          AS Registro_Fecha,
-                        RES_FECHA               AS Res_Fecha,
-                        RES_CODIGO              AS Res_Codigo,
-                        TRAMITE_ESTADO_DESC     AS Tramite_Estado_Desc,
-                        RES_TIPO                AS Res_Tipo 
-                    FROM vCrd_Solicitudes_AutoGestion
-                    WHERE 1=1
-                      AND (@ESTADO IS NULL OR ESTADO = @ESTADO)
-                      AND (@TRAMITE IS NULL OR TRAMITE_ESTADO_ID = @TRAMITE)
-                      AND (
-                            @TODAS_FECHAS = 1
-                            OR (
-                                (@USE_RES = 1 AND ISDATE(RES_FECHA) = 1 AND CONVERT(datetime, RES_FECHA, 121) BETWEEN @INI AND @FIN)
-                                OR (@USE_RES = 0 AND ISDATE(REGISTRO_FECHA) = 1 AND CONVERT(datetime, REGISTRO_FECHA, 121) BETWEEN @INI AND @FIN)
-                               )
-                          )
-                      AND (@CODIGO IS NULL OR CODIGO = @CODIGO)
-                      AND (@CEDULA IS NULL OR CEDULA = @CEDULA)
-                      AND (
-                            @Q IS NULL
-                            OR CEDULA LIKE @Q
-                            OR NOMBRE LIKE @Q
-                            OR LINEA_DESC LIKE @Q
-                            OR ESTADO_DESC LIKE @Q
-                          )
-                    ORDER BY COD_SOLICITUD ASC;";
-
-                result.Result = cn.Query<MonitorAutoGestionListaData>(sql, p, commandTimeout: 60).ToList();
-            }
-            catch (Exception ex)
+            if (db.Code != 0)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = db.Description ?? DefaultErrorDescription;
                 result.Result = null;
+                return result;
             }
+
+            result.Result = db.Result ?? new List<MonitorAutoGestionListaData>();
             return result;
         }
 
@@ -307,16 +296,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_solicitud"></param>
-        public ErrorDto<MonitorAutoGestionCasoDetalle> Sys_Monitor_AutoGestion_Caso_Obtener(int CodEmpresa,long cod_solicitud)
+        public ErrorDto<MonitorAutoGestionCasoDetalle> Sys_Monitor_AutoGestion_Caso_Obtener(int CodEmpresa, long cod_solicitud)
         {
             var result = new ErrorDto<MonitorAutoGestionCasoDetalle> { Code = 0, Description = "Ok" };
 
-            try
-            {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
-
-                const string sql = @"
+            const string sql = @"
                     SELECT 
                         COD_SOLICITUD AS Cod_Solicitud,
                         ESTADO_DESC   AS Estado_Desc,
@@ -340,19 +324,24 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     FROM vCrd_Solicitudes_AutoGestion
                     WHERE COD_SOLICITUD = @ID";
 
-                result.Result = cn.QueryFirstOrDefault<MonitorAutoGestionCasoDetalle>(sql, new { ID = cod_solicitud }, commandTimeout: 60);
-                if (result.Result == null)
-                {
-                    result.Code = 1;
-                    result.Description = "Caso no encontrado.";
-                }
-            }
-            catch (Exception ex)
+            var db = DbHelper.ExecuteSingleQuery<MonitorAutoGestionCasoDetalle>(_portalDb, CodEmpresa, sql, null, new { ID = cod_solicitud });
+
+            if (db.Code != 0)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = db.Description ?? "Error";
                 result.Result = null;
+                return result;
             }
+
+            result.Result = db.Result;
+
+            if (result.Result == null)
+            {
+                result.Code = 1;
+                result.Description = "Caso no encontrado.";
+            }
+
             return result;
         }
 
@@ -363,7 +352,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
-        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa, DateTime fechaInicio, DateTime fechaFin)
         {
             var result = new ErrorDto<MonitorAutoGestionResumenLista>
             {
@@ -376,29 +365,27 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 }
             };
 
-            try
-            {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
+            var p = new DynamicParameters();
+            p.Add("@Inicio", StartOfDay(fechaInicio), DbType.DateTime);
+            p.Add("@Corte", EndOfDay(fechaFin), DbType.DateTime);
 
-                var p = new DynamicParameters();
-                p.Add("@Inicio", new DateTime(fechaInicio.Year, fechaInicio.Month, fechaInicio.Day, 0, 0, 0, fechaInicio.Kind), DbType.DateTime);
-                p.Add("@Corte", new DateTime(fechaFin.Year, fechaFin.Month, fechaFin.Day, 23, 59, 59, fechaFin.Kind), DbType.DateTime);
-
-                var data = cn.Query<MonitorAutoGestionResumenData>(
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, cn =>
+                cn.Query<MonitorAutoGestionResumenData>(
                     "spCrd_Solicitudes_AutoGestion_Rsm",
-                    p, commandType: CommandType.StoredProcedure, commandTimeout: 60).ToList();
+                    p, commandType: CommandType.StoredProcedure, commandTimeout: 60).AsList());
 
-                result.Result.lista = data;
-                result.Result.total = data.Count;
-            }
-            catch (Exception ex)
+            if (db.Code != 0)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = db.Description ?? DefaultErrorDescription;
                 result.Result.total = 0;
                 result.Result.lista = new List<MonitorAutoGestionResumenData>();
+                return result;
             }
+
+            var data = db.Result ?? new List<MonitorAutoGestionResumenData>();
+            result.Result.lista = data;
+            result.Result.total = data.Count;
             return result;
         }
 
@@ -408,7 +395,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="cod_solicitud"></param>
-        public ErrorDto<MonitorAutoGestionAdjuntosLista> Sys_Monitor_AutoGestion_Adjuntos_Obtener(int CodEmpresa,long cod_solicitud)
+        public ErrorDto<MonitorAutoGestionAdjuntosLista> Sys_Monitor_AutoGestion_Adjuntos_Obtener(int CodEmpresa, long cod_solicitud)
         {
             var result = new ErrorDto<MonitorAutoGestionAdjuntosLista>
             {
@@ -421,12 +408,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 }
             };
 
-            try
-            {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
-
-                const string sql = @"
+            const string sql = @"
                     SELECT 
                         A.ARCHIVO_ID   AS Archivo_Id,
                         T.DESCRIPCION  AS Tipo_Adjunto,
@@ -437,17 +419,20 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     WHERE A.TRANSAC_TIPO = 'SOL' AND A.TRANSAC_CODIGO = @ID
                     ORDER BY A.ARCHIVO_ID ASC;";
 
-                var lista = cn.Query<MonitorAutoGestionAdjuntoData>(sql, new { ID = cod_solicitud }, commandTimeout: 60).ToList();
-                result.Result.lista = lista;
-                result.Result.total = lista.Count;
-            }
-            catch (Exception ex)
+            var db = DbHelper.ExecuteListQuery<MonitorAutoGestionAdjuntoData>(_portalDb, CodEmpresa, sql, new { ID = cod_solicitud });
+
+            if (db.Code != 0)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = db.Description ?? DefaultErrorDescription;
                 result.Result.total = 0;
                 result.Result.lista = new List<MonitorAutoGestionAdjuntoData>();
+                return result;
             }
+
+            var lista = db.Result ?? new List<MonitorAutoGestionAdjuntoData>();
+            result.Result.lista = lista;
+            result.Result.total = lista.Count;
             return result;
         }
 
@@ -457,7 +442,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="archivo_id"></param>
-        public ErrorDto<(byte[] buffer, string nombre, string tipo)> Sys_Monitor_AutoGestion_Adjunto_Descargar(int CodEmpresa,long archivo_id)
+        public ErrorDto<(byte[] buffer, string nombre, string tipo)> Sys_Monitor_AutoGestion_Adjunto_Descargar(int CodEmpresa, long archivo_id)
         {
             var result = new ErrorDto<(byte[], string, string)>
             {
@@ -495,8 +480,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
         private SqlConnection OpenEmpresaConnection(int CodEmpresa)
         {
-            string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            return new SqlConnection(connStr);
+            // Mantengo este método porque el streaming usa ADO (SqlCommand/SqlDataReader).
+            // Solo elimino duplicación: ya no reconstruyo connStr aquí.
+            return _portalDb.CreateConnection(CodEmpresa);
         }
 
         private static SqlCommand CreateAdjuntoSelectCommand(SqlConnection cn, long archivo_id)
@@ -617,7 +603,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
-        public ErrorDto<MonitorAutoGestionResolucionResponse> Sys_Monitor_AutoGestion_Resolucion_Aplicar(int CodEmpresa,MonitorAutoGestionResolucionRequest dto)
+        public ErrorDto<MonitorAutoGestionResolucionResponse> Sys_Monitor_AutoGestion_Resolucion_Aplicar(int CodEmpresa, MonitorAutoGestionResolucionRequest dto)
         {
             var result = new ErrorDto<MonitorAutoGestionResolucionResponse>
             {
@@ -626,51 +612,53 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 Result = new MonitorAutoGestionResolucionResponse()
             };
 
-            try
+            var exec = DbHelper.WithConn(_portalDb, CodEmpresa, cn =>
             {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
-
                 var p = new DynamicParameters();
                 p.Add("@Solicitud", dto.cod_solicitud);
                 p.Add("@Resolucion", (dto.resolucion ?? "P").Trim().Substring(0, 1));
                 p.Add("@Notas", dto.notas ?? "");
                 p.Add("@Usuario", dto.usuario ?? "");
                 p.Add("@Gestion", (dto.gestion ?? "S").Trim().Substring(0, 1));
+
                 cn.Execute("spCrd_Solicitudes_AutoGestion_Resolucion", p, commandType: CommandType.StoredProcedure, commandTimeout: 90);
+                return true;
+            });
 
-                var post = Sys_Monitor_AutoGestion_Caso_Obtener(CodEmpresa, dto.cod_solicitud);
-                if (post.Code == 0 && post.Result != null)
-                {
-                    result.Result.cod_solicitud = post.Result.Cod_Solicitud;
-                    result.Result.estado = post.Result.Estado;
-                    result.Result.estado_desc = post.Result.Estado_Desc;
-                    result.Result.res_fecha = post.Result.Res_Fecha;
-                    result.Result.res_usuario = post.Result.Res_Usuario;
-                    result.Result.res_codigo = post.Result.Res_Codigo;
-                    result.Result.notas = post.Result.Notas;
-                }
-
-                // Bitácora
-                _security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = dto.usuario ?? "",
-                    Modulo = vModulo,
-                    Movimiento = "Resolución - WEB",
-                    DetalleMovimiento = $"Caso {dto.cod_solicitud} → {dto.resolucion}/{dto.gestion}"
-                });
-            }
-            catch (Exception ex)
+            if (exec.Code != 0)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = exec.Description ?? DefaultErrorDescription;
                 result.Result = null;
+                return result;
             }
+
+            var post = Sys_Monitor_AutoGestion_Caso_Obtener(CodEmpresa, dto.cod_solicitud);
+            if (post.Code == 0 && post.Result != null)
+            {
+                result.Result.cod_solicitud = post.Result.Cod_Solicitud;
+                result.Result.estado = post.Result.Estado;
+                result.Result.estado_desc = post.Result.Estado_Desc;
+                result.Result.res_fecha = post.Result.Res_Fecha;
+                result.Result.res_usuario = post.Result.Res_Usuario;
+                result.Result.res_codigo = post.Result.Res_Codigo;
+                result.Result.notas = post.Result.Notas;
+            }
+
+            // Bitácora
+            _security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = dto.usuario ?? "",
+                Modulo = vModulo,
+                Movimiento = "Resolución - WEB",
+                DetalleMovimiento = $"Caso {dto.cod_solicitud} → {dto.resolucion}/{dto.gestion}"
+            });
+
             return result;
         }
-        
-        
+
+
         /// <summary>
         /// Ejecuta mantenimiento de adjuntos (fix opcional).
         /// </summary>
@@ -678,17 +666,19 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         public ErrorDto Sys_Monitor_AutoGestion_Adjuntos_Fix(int CodEmpresa)
         {
             var res = new ErrorDto { Code = 0, Description = "Ok" };
-            try
+
+            var exec = DbHelper.WithConn(_portalDb, CodEmpresa, cn =>
             {
-                string connStr = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-                using var cn = new SqlConnection(connStr);
                 cn.Execute("spCrd_Solicitudes_Adjuntos_Fix", commandType: CommandType.StoredProcedure, commandTimeout: 60);
-            }
-            catch (Exception ex)
+                return true;
+            });
+
+            if (exec.Code != 0)
             {
                 res.Code = -1;
-                res.Description = ex.Message;
+                res.Description = exec.Description ?? DefaultErrorDescription;
             }
+
             return res;
         }
     }
