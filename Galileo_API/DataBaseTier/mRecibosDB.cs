@@ -216,7 +216,7 @@ namespace Galileo_API.DataBaseTier
                     "select Tipo_Comprobante,isnull(ARCHIVO_PER,'') as 'ARCHIVO',FORMATO_SALIDA from sif_documentos where tipo_documento = @pTipo",
                     new { pTipo });
 
-                bool vFlat = vDocumento != null && vDocumento?.FORMATO_SALIDA == "01";
+                 bool vFlat = vDocumento?.FORMATO_SALIDA == "01";
                 string vArchivo = GetReportName(vDocumento);
 
                 var vEmpresa = connection.QueryFirstOrDefault("select nombre,cedula_juridica from sif_empresa");
