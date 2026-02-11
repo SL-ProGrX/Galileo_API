@@ -1,9 +1,12 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using Newtonsoft.Json;
 using Galileo.Models.ERROR;
 using Galileo.Models.SYS;
+using Microsoft.Extensions.Configuration;
 
 namespace Galileo.DataBaseTier
 {
@@ -11,6 +14,14 @@ namespace Galileo.DataBaseTier
     {
         private readonly PortalDB _portalDB;
         private const string RegistroActualizadoMsg = "Registro actualizado satisfactoriamente";
+        private const string DelRolesSql = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @cod_unidad";
+        private const string DelUensSql = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad";
+        private const string DelUensCascadeSql = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad OR UNIDAD_PRINCIPAL = @cod_unidad";
+        private const string TopUnidadSql = @"select TOP 1 COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad order by ACTIVA desc";
+        private const string UpSetPrincipalSql = @"update CORE_UENS set UNIDAD_PRINCIPAL = @nuevaUnidadPrincipal where UNIDAD_PRINCIPAL = @cod_unidad";
+        private const string UpClearPrincipalSql = @"update CORE_UENS set UNIDAD_PRINCIPAL = NULL where COD_UNIDAD = @nuevaUnidadPrincipal";
+        private const string FindSubUnidadSql = @"select COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad AND CNTX_UNIDAD = @cntx_unidad";
+        private const string UnidadInfoSql = @"select * from CORE_UENS where COD_UNIDAD = @cod_unidad";
 
         public FrmSysCoreUensDB(IConfiguration config)
         {
@@ -41,6 +52,43 @@ namespace Galileo.DataBaseTier
 
             int ultimoID = connection.Query<int>(getMaxSql).FirstOrDefault();
             return ultimoID < 10 ? "0" + ultimoID : ultimoID.ToString();
+        }
+
+        private static void DeleteRoles(SqlConnection connection, string cod_unidad)
+            => connection.Execute(DelRolesSql, new { cod_unidad });
+
+        private static void DeleteUnidad(SqlConnection connection, string cod_unidad)
+            => connection.Execute(DelUensSql, new { cod_unidad });
+
+        private static void DeleteUnidadCascade(SqlConnection connection, string cod_unidad)
+            => connection.Execute(DelUensCascadeSql, new { cod_unidad });
+
+        private static void DeleteRolesAndUnidad(SqlConnection connection, string cod_unidad)
+        {
+            DeleteRoles(connection, cod_unidad);
+            DeleteUnidad(connection, cod_unidad);
+        }
+
+        private static void PromoteAnotherAsPrincipalIfAny(SqlConnection connection, string cod_unidad)
+        {
+            string? nuevaUnidadPrincipal = connection.Query<string>(TopUnidadSql, new { cod_unidad }).FirstOrDefault();
+            if (nuevaUnidadPrincipal == null) return;
+
+            connection.Execute(UpSetPrincipalSql, new { nuevaUnidadPrincipal, cod_unidad });
+            connection.Execute(UpClearPrincipalSql, new { nuevaUnidadPrincipal });
+        }
+
+        private static int DeletePrincipalAndReassign(SqlConnection connection, string cod_unidad)
+        {
+            DeleteRolesAndUnidad(connection, cod_unidad);
+            PromoteAnotherAsPrincipalIfAny(connection, cod_unidad);
+            return 1;
+        }
+
+        private static int DeleteSubUnidad(SqlConnection connection, string cod_unidad)
+        {
+            DeleteRolesAndUnidad(connection, cod_unidad);
+            return 1;
         }
 
         private CoreUeNsDtoList QueryUensPaged(SqlConnection connection, CoreUeNsFiltros? vfiltro, bool onlyPrincipales)
@@ -290,8 +338,8 @@ namespace Galileo.DataBaseTier
         {
             var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
-                const string query = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad OR UNIDAD_PRINCIPAL = @cod_unidad";
-                return connection.Execute(query, new { cod_unidad });
+                DeleteUnidadCascade(connection, cod_unidad);
+                return 1;
             });
 
             return MapDbNonQuery(db, "Registros eliminados satisfactoriamente");
@@ -309,43 +357,13 @@ namespace Galileo.DataBaseTier
         {
             var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
-                const string qFind = @"select COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad AND CNTX_UNIDAD = @cntx_unidad";
-                string? codUnidad = connection.Query<string>(qFind, new { cod_unidad, cntx_unidad }).FirstOrDefault();
+                string? codUnidad = connection.Query<string>(FindSubUnidadSql, new { cod_unidad, cntx_unidad }).FirstOrDefault();
 
+                // Si no hay sub-unidad para esa unidad/cntx_unidad, se asume que es la principal
                 if (codUnidad == null)
-                {
-                    const string delRoles = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @cod_unidad";
-                    connection.Execute(delRoles, new { cod_unidad });
+                    return DeletePrincipalAndReassign(connection, cod_unidad);
 
-                    const string delUens = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad";
-                    connection.Execute(delUens, new { cod_unidad });
-
-                    const string qTopUnidad = @"select TOP 1 COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad order by ACTIVA desc";
-                    string? nuevaUnidadPrincipal = connection.Query<string>(qTopUnidad, new { cod_unidad }).FirstOrDefault();
-
-                    if (nuevaUnidadPrincipal != null)
-                    {
-                        const string upUensPrincipal = @"update CORE_UENS set
-                            UNIDAD_PRINCIPAL = @nuevaUnidadPrincipal
-                            where UNIDAD_PRINCIPAL = @cod_unidad";
-                        connection.Execute(upUensPrincipal, new { nuevaUnidadPrincipal, cod_unidad });
-
-                        const string upNullPrincipal = @"update CORE_UENS set
-                            UNIDAD_PRINCIPAL = NULL
-                            where COD_UNIDAD = @nuevaUnidadPrincipal";
-                        connection.Execute(upNullPrincipal, new { nuevaUnidadPrincipal });
-                    }
-
-                    return 1;
-                }
-
-                const string delRoles2 = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @codUnidad";
-                connection.Execute(delRoles2, new { codUnidad });
-
-                const string delUens2 = @"delete from CORE_UENS where COD_UNIDAD = @codUnidad";
-                connection.Execute(delUens2, new { codUnidad });
-
-                return 1;
+                return DeleteSubUnidad(connection, codUnidad);
             });
 
             return MapDbNonQuery(db, "Registros eliminado satisfactoriamente");
@@ -362,43 +380,13 @@ namespace Galileo.DataBaseTier
         {
             var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
-                const string qInfo = @"select * from CORE_UENS where COD_UNIDAD = @cod_unidad";
-                CoreUeNsDto unidadInfo = connection.Query<CoreUeNsDto>(qInfo, new { cod_unidad }).First();
+                CoreUeNsDto unidadInfo = connection.Query<CoreUeNsDto>(UnidadInfoSql, new { cod_unidad }).First();
 
+                // Si no tiene unidad_principal, es la principal
                 if (unidadInfo.unidad_principal == "")
-                {
-                    const string delRoles = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @cod_unidad";
-                    connection.Execute(delRoles, new { cod_unidad });
+                    return DeletePrincipalAndReassign(connection, cod_unidad);
 
-                    const string delUens = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad";
-                    connection.Execute(delUens, new { cod_unidad });
-
-                    const string qTopUnidad = @"select TOP 1 COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad order by ACTIVA desc";
-                    string? nuevaUnidadPrincipal = connection.Query<string>(qTopUnidad, new { cod_unidad }).FirstOrDefault();
-
-                    if (nuevaUnidadPrincipal != null)
-                    {
-                        const string upUensPrincipal = @"update CORE_UENS set
-                            UNIDAD_PRINCIPAL = @nuevaUnidadPrincipal
-                            where UNIDAD_PRINCIPAL = @cod_unidad";
-                        connection.Execute(upUensPrincipal, new { nuevaUnidadPrincipal, cod_unidad });
-
-                        const string upNullPrincipal = @"update CORE_UENS set
-                            UNIDAD_PRINCIPAL = NULL
-                            where COD_UNIDAD = @nuevaUnidadPrincipal";
-                        connection.Execute(upNullPrincipal, new { nuevaUnidadPrincipal });
-                    }
-
-                    return 1;
-                }
-
-                const string delRoles2 = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @cod_unidad";
-                connection.Execute(delRoles2, new { cod_unidad });
-
-                const string delUens2 = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad";
-                connection.Execute(delUens2, new { cod_unidad });
-
-                return 1;
+                return DeleteSubUnidad(connection, cod_unidad);
             });
 
             return MapDbNonQuery(db, "Registro eliminado satisfactoriamente");
