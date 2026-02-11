@@ -95,13 +95,13 @@ namespace Galileo_API.DataBaseTier
             SinpeResultLite? sr;
             if (canal != 24)
             {
-                sr = (resPIN?.DTRSendingResult is null ? null : 
-                 new SinpeResultLite(resPIN?.DTRSendingResult.SINPERefNumber!, resPIN?.DTRSendingResult?.State));
+                sr = (resPIN?.DTRSendingResult is null ? null :
+                    new SinpeResultLite(resPIN.DTRSendingResult.SINPERefNumber!, resPIN.DTRSendingResult.State));
             }
             else
             {
-                sr = (resPIN?.PINSendingResult is null ? null : 
-                new SinpeResultLite(resPIN?.PINSendingResult.SINPEReference!, resPIN?.PINSendingResult?.State));
+                sr = (resPIN?.PINSendingResult is null ? null :
+                    new SinpeResultLite(resPIN.PINSendingResult.SINPEReference!, resPIN.PINSendingResult.State));
             }
 
             return new
