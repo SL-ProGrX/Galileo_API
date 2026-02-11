@@ -15,7 +15,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             _db = new FrmArfMonitorDb(config);
         }
 
-        public ErrorDto<List<ARFMonitorTablaDto>> Buscar(int codEmpresa,ARFMonitorFiltroDto filtros)
+        public ErrorDto<List<ArfMonitorTablaDto>> Buscar(int codEmpresa,ArfMonitorFiltroDto filtros)
         {
             return _db.Buscar(codEmpresa, filtros);
         }

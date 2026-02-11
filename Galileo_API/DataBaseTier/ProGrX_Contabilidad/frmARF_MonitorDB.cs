@@ -25,11 +25,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa"></param>
         /// <param name="filtros"></param>
         /// <returns></returns>
-        public ErrorDto<List<ARFMonitorTablaDto>> Buscar(
-      int codEmpresa,
-      ARFMonitorFiltroDto filtros)
+        public ErrorDto<List<ArfMonitorTablaDto>> Buscar(int codEmpresa,ArfMonitorFiltroDto filtros)
         {
-            var response = new ErrorDto<List<ARFMonitorTablaDto>>();
+            var response = new ErrorDto<List<ArfMonitorTablaDto>>();
 
             try
             {
@@ -48,7 +46,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                     sql.Append(" WHERE ").Append(where);
                 }
 
-                response.Result = cn.Query<ARFMonitorTablaDto>(
+                response.Result = cn.Query<ArfMonitorTablaDto>(
                     sql.ToString(),
                     ObtenerParametros(filtros)
                 ).ToList();
@@ -62,7 +60,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
 
-        private static void ConstruirSelect(StringBuilder sql, ARFMonitorFiltroDto filtros)
+        private static void ConstruirSelect(StringBuilder sql, ArfMonitorFiltroDto filtros)
         {
             if (filtros.tipo_fecha == "Cierre")
             {
@@ -75,7 +73,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-        private static void ConstruirFiltros(StringBuilder where, ARFMonitorFiltroDto filtros)
+        private static void ConstruirFiltros(StringBuilder where, ArfMonitorFiltroDto filtros)
         {
             if (filtros.tipo_fecha == "Cierre")
             {
@@ -88,7 +86,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             AgregarFiltro(where, "COD_ACREEDOR = @cod_arrendador", filtros.cod_arrendador);
         }
 
-        private static void AgregarFiltroFecha(StringBuilder where, ARFMonitorFiltroDto filtros)
+        private static void AgregarFiltroFecha(StringBuilder where, ArfMonitorFiltroDto filtros)
         {
             if (!filtros.fecha_inicio.HasValue || !filtros.fecha_corte.HasValue)
                 return;
@@ -125,7 +123,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         }
 
 
-        private object ObtenerParametros(ARFMonitorFiltroDto filtros)
+        private object ObtenerParametros(ArfMonitorFiltroDto filtros)
         {
             return new
             {

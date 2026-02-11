@@ -22,7 +22,7 @@ namespace Galileo_API.Controllers.ProGrX_Contabilidad
 
         [Authorize]
         [HttpPost("Buscar")]
-        public ErrorDto<List<ARFMonitorTablaDto>> Buscar(int codEmpresa,[FromBody] ARFMonitorFiltroDto filtros
+        public ErrorDto<List<ArfMonitorTablaDto>> Buscar(int codEmpresa,[FromBody] ArfMonitorFiltroDto filtros
         )
         {
             return _bl.Buscar(codEmpresa, filtros);

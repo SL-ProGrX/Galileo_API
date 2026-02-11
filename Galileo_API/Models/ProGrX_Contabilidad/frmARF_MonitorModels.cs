@@ -1,6 +1,6 @@
 ﻿namespace Galileo_API.Models.ProGrX_Activos
 {
-    public class ARFMonitorFiltroDto
+    public class ArfMonitorFiltroDto
     {
         public string? tipo_fecha { get; set; }   // Activación | Cierre | Registro | Inicio | Finaliza
         public DateTime? fecha_inicio { get; set; }
@@ -10,7 +10,7 @@
         public string? corte { get; set; }
     }
 
-    public class ARFMonitorTablaDto
+    public class ArfMonitorTablaDto
     {
         public int operacion { get; set; }
         public string arrendatario_desc { get; set; } = "";
