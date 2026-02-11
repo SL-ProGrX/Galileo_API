@@ -3,174 +3,144 @@ using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
+using Galileo.DataBaseTier;
+using Microsoft.Extensions.Configuration;
 using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSifFormasDePagoDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
 
         public FrmSifFormasDePagoDB(IConfiguration config)
         {
-            _config = config;
+            _portalDB = new PortalDB(config);
+        }
+
+        private static string NormalizeUpper(string? value)
+            => (value ?? string.Empty).Trim().ToUpperInvariant();
+
+        private static string? BuildSearchLike(string? filtro)
+        {
+            var s = filtro?.Trim();
+            return string.IsNullOrWhiteSpace(s) ? null : $"%{s}%";
+        }
+
+        private ErrorDto<T?> Single<T>(int codEmpresa, string sql, T? defaultValue = default, object? parameters = null)
+            => DbHelper.ExecuteSingleQuery<T>(_portalDB, codEmpresa, sql, defaultValue, parameters);
+
+        private ErrorDto<List<T>> List<T>(int codEmpresa, string sql, object? parameters = null)
+            => DbHelper.ExecuteListQuery<T>(_portalDB, codEmpresa, sql, parameters);
+
+        private ErrorDto WithEmpresaConn(int codEmpresa, Func<SqlConnection, ErrorDto> action)
+        {
+            var r = DbHelper.WithConn(_portalDB, codEmpresa, action);
+            if ((r.Code ?? -1) != 0)
+                return DbHelper.ErrorResponse(r.Description ?? "Error inesperado", r.Code ?? -1);
+
+            return r.Result ?? DbHelper.CreateOkResponse();
         }
 
         /// <summary>
         /// Obtiene la forma de pago por código
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codFormaPago"></param>
-        /// <returns></returns>
         public ErrorDto<SifFormasPago> SIF_Formas_Pago_Obtener(int codEmpresa, string codFormaPago)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var result = new ErrorDto<SifFormasPago>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = null
-            };
+            var query = @"SELECT *
+                          FROM vSys_Formas_Pago
+                          WHERE COD_FORMA_PAGO = @codFormaPago";
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"SELECT 
-                                *
-                            FROM vSys_Formas_Pago
-                            WHERE COD_FORMA_PAGO = @codFormaPago";
+            var r = Single<SifFormasPago>(codEmpresa, query, default, new { codFormaPago });
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<SifFormasPago> { Code = r.Code, Description = r.Description, Result = null };
 
-                result.Result = connection.QueryFirstOrDefault<SifFormasPago>(
-                    query,
-                    new { codFormaPago }
-                );
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return new ErrorDto<SifFormasPago> { Code = 0, Description = "Ok", Result = r.Result };
         }
 
         /// <summary>
         /// Obtiene el siguiente o anterior código de forma de pago según el orden.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codFormaPagoActual"></param>
-        /// <param name="orden"></param>
-        /// <returns></returns>
         public ErrorDto<string> SIF_Formas_Pago_Obtener_SigAnt(int codEmpresa, string? codFormaPagoActual, string orden)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var result = new ErrorDto<string>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = null
-            };
+            var ord = (orden ?? string.Empty).Trim().ToLowerInvariant();
+            var actual = (codFormaPagoActual ?? string.Empty).Trim();
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                string query;
+            string sql;
+            object? prms = null;
 
-                if (orden?.ToLower() == "asc")
+            if (ord == "asc")
+            {
+                if (string.IsNullOrEmpty(actual))
                 {
-                    if (string.IsNullOrEmpty(codFormaPagoActual))
-                    {
-                        // Obtener el primer código
-                        query = @"SELECT TOP 1 COD_FORMA_PAGO FROM sif_formas_pago ORDER BY COD_FORMA_PAGO ASC";
-                        result.Result = connection.QueryFirstOrDefault<string>(query);
-                    }
-                    else
-                    {
-                        query = @"SELECT TOP 1 COD_FORMA_PAGO 
-                                  FROM sif_formas_pago 
-                                  WHERE COD_FORMA_PAGO > @codFormaPagoActual 
-                                  ORDER BY COD_FORMA_PAGO ASC";
-                        result.Result = connection.QueryFirstOrDefault<string>(query, new { codFormaPagoActual });
-                    }
-                }
-                else if (orden?.ToLower() == "desc")
-                {
-                    if (string.IsNullOrEmpty(codFormaPagoActual))
-                    {
-                        // Obtener el último código
-                        query = @"SELECT TOP 1 COD_FORMA_PAGO FROM sif_formas_pago ORDER BY COD_FORMA_PAGO DESC";
-                        result.Result = connection.QueryFirstOrDefault<string>(query);
-                    }
-                    else
-                    {
-                        query = @"SELECT TOP 1 COD_FORMA_PAGO 
-                                  FROM sif_formas_pago 
-                                  WHERE COD_FORMA_PAGO < @codFormaPagoActual 
-                                  ORDER BY COD_FORMA_PAGO DESC";
-                        result.Result = connection.QueryFirstOrDefault<string>(query, new { codFormaPagoActual });
-                    }
+                    sql = @"SELECT TOP 1 COD_FORMA_PAGO FROM sif_formas_pago ORDER BY COD_FORMA_PAGO ASC";
                 }
                 else
                 {
-                    result.Code = -1;
-                    result.Description = "Parámetro 'orden' inválido. Debe ser 'asc' o 'desc'.";
-                    return result;
+                    sql = @"SELECT TOP 1 COD_FORMA_PAGO
+                            FROM sif_formas_pago
+                            WHERE COD_FORMA_PAGO > @codFormaPagoActual
+                            ORDER BY COD_FORMA_PAGO ASC";
+                    prms = new { codFormaPagoActual = actual };
                 }
             }
-            catch (Exception ex)
+            else if (ord == "desc")
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
+                if (string.IsNullOrEmpty(actual))
+                {
+                    sql = @"SELECT TOP 1 COD_FORMA_PAGO FROM sif_formas_pago ORDER BY COD_FORMA_PAGO DESC";
+                }
+                else
+                {
+                    sql = @"SELECT TOP 1 COD_FORMA_PAGO
+                            FROM sif_formas_pago
+                            WHERE COD_FORMA_PAGO < @codFormaPagoActual
+                            ORDER BY COD_FORMA_PAGO DESC";
+                    prms = new { codFormaPagoActual = actual };
+                }
             }
-            return result;
+            else
+            {
+                return new ErrorDto<string>
+                {
+                    Code = -1,
+                    Description = "Parámetro 'orden' inválido. Debe ser 'asc' o 'desc'.",
+                    Result = null
+                };
+            }
+
+            var r = Single<string>(codEmpresa, sql, default, prms);
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<string> { Code = r.Code, Description = r.Description, Result = null };
+
+            return new ErrorDto<string> { Code = 0, Description = "Ok", Result = r.Result };
         }
 
         private static bool FormaPagoExiste(SqlConnection connection, string codFormaPago)
         {
-            var query = @"SELECT ISNULL(COUNT(*),0) FROM sif_formas_pago WHERE COD_FORMA_PAGO = @codFormaPago";
-            int existe = connection.QueryFirstOrDefault<int>(query, new { codFormaPago });
-            return existe > 0;
+            const string q = @"SELECT ISNULL(COUNT(*),0) FROM sif_formas_pago WHERE COD_FORMA_PAGO = @codFormaPago";
+            return connection.QueryFirstOrDefault<int>(q, new { codFormaPago }) > 0;
         }
 
         /// <summary>
         /// Inserta o actualiza una forma de pago.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="forma_pago"></param>
-        /// <returns></returns>
         public ErrorDto SIF_Formas_Pago_Guardar(int codEmpresa, SifFormasPago forma_pago)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Ok"
-            };
+            if (forma_pago == null)
+                return DbHelper.ErrorResponse("Datos inválidos");
 
-            try
+            return WithEmpresaConn(codEmpresa, connection =>
             {
-                using var connection = new SqlConnection(stringConn);
                 connection.Open();
 
-                // Validar si existe la forma de pago usando la función privada
-                bool existe = FormaPagoExiste(connection, forma_pago.cod_forma_pago ?? string.Empty);
+                var codigo = NormalizeUpper(forma_pago.cod_forma_pago);
+                var existe = FormaPagoExiste(connection, codigo);
 
-                if (!existe)
-                {
-                    result = SIF_Formas_Pago_Insertar(connection, forma_pago);
-                }
-                else
-                {
-                    result = SIF_Formas_Pago_Actualizar(connection, forma_pago);
-                }
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+                return existe
+                    ? SIF_Formas_Pago_Actualizar(connection, forma_pago)
+                    : SIF_Formas_Pago_Insertar(connection, forma_pago);
+            });
         }
 
         private ErrorDto SIF_Formas_Pago_Insertar(SqlConnection connection, SifFormasPago forma_pago)
@@ -192,9 +162,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 @maximo_apl, @maximo_monto, @or_aplica, @or_diario_apl, @or_diario_monto, @or_mensual_apl, @or_mensual_monto,
                 @codigo_fe, @recibo_digital, @registro_usuario, GETDATE()
             )";
+
                 connection.Execute(insertSql, new
                 {
-                    cod_forma_pago = forma_pago.cod_forma_pago != null ? forma_pago.cod_forma_pago.ToUpper() : string.Empty,
+                    cod_forma_pago = NormalizeUpper(forma_pago.cod_forma_pago),
                     forma_pago.descripcion,
                     forma_pago.activa,
                     forma_pago.efectivo,
@@ -252,9 +223,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 REGISTRO_USUARIO = @registro_usuario,
                 REGISTRO_FECHA = GETDATE()
             WHERE UPPER(COD_FORMA_PAGO) = @cod_forma_pago";
+
                 connection.Execute(updateSql, new
                 {
-                    cod_forma_pago = forma_pago.cod_forma_pago != null ? forma_pago.cod_forma_pago.ToUpper() : string.Empty,
+                    cod_forma_pago = NormalizeUpper(forma_pago.cod_forma_pago),
                     forma_pago.descripcion,
                     forma_pago.activa,
                     forma_pago.efectivo,
@@ -282,62 +254,33 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             return result;
         }
 
-
         /// <summary>
-        /// Obtiene formas de pago con base en filtros y paginación.
+        /// Obtiene formas de pago con base en filtros.
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="filtro"></param>
-        /// <returns></returns>
         public ErrorDto<List<SifFormasPagoList>> SIF_Formas_Pago_Obtener_Lista(int codEmpresa, string? filtro)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var result = new ErrorDto<List<SifFormasPagoList>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifFormasPagoList>()
-            };
+            var searchLike = BuildSearchLike(filtro);
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            const string query = @"SELECT COD_FORMA_PAGO, DESCRIPCION
+                                   FROM vSys_Formas_Pago
+                                   WHERE (@search IS NULL
+                                          OR COD_FORMA_PAGO LIKE @search
+                                          OR DESCRIPCION LIKE @search)";
 
-                var search = filtro?.Trim();
-                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
+            var r = List<SifFormasPagoList>(codEmpresa, query, new { search = searchLike });
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<List<SifFormasPagoList>> { Code = r.Code, Description = r.Description, Result = null };
 
-                const string query = @"SELECT COD_FORMA_PAGO, DESCRIPCION
-                                       FROM vSys_Formas_Pago
-                                       WHERE (@search IS NULL
-                                              OR COD_FORMA_PAGO LIKE @search
-                                              OR DESCRIPCION LIKE @search)";
-
-                result.Result = connection.Query<SifFormasPagoList>(query, new { search = searchLike }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return new ErrorDto<List<SifFormasPagoList>> { Code = 0, Description = "Ok", Result = r.Result };
         }
-
 
         /// <summary>
         /// Obtiene la lista de cuentas bancarias segun la forma de pago
         /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="codFormaPago"></param>
-        /// <returns></returns>
         public List<SysCuentasBancariasList> CuentasBancarias_Obtener_Lista(int CodEmpresa, string codFormaPago)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            List<SysCuentasBancariasList> info = new List<SysCuentasBancariasList>();
-
-            try
+            var r = DbHelper.WithConn(_portalDB, CodEmpresa, cn =>
             {
-                using var connection = new SqlConnection(clienteConnString);
                 var query = @"
                     select 
                       Ban.ID_BANCO,
@@ -355,57 +298,37 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     where Ban.ESTADO = 'A'
                     order by Fp.id_Banco desc, Ban.ID_BANCO asc;";
 
-                info = connection.Query<SysCuentasBancariasList>(query, new { codFormaPago }).ToList();
-            }
-            catch (Exception ex)
-            {
-                _ = ex.Message;
-            }
-            return info;
-        }
+                return cn.Query<SysCuentasBancariasList>(query, new { codFormaPago }).ToList();
+            });
 
+            return (r.Code ?? -1) == 0 && r.Result != null ? r.Result : new List<SysCuentasBancariasList>();
+        }
 
         /// <summary>
         /// Asigna o elimina cuentas bancarias segun la forma de pago
         /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
         public ErrorDto CuentasBancarias_Asignar(int codEmpresa, SifFormasPagoBancoAsgDto data)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            var result = new ErrorDto { Code = 0, Description = "Ok" };
+            if (data == null)
+                return DbHelper.ErrorResponse("Datos inválidos");
 
-            try
+            return WithEmpresaConn(codEmpresa, connection =>
             {
-                using var connection = new SqlConnection(stringConn);
-
-                // Verifica si existe
-                var queryExiste = @"SELECT COUNT(*) FROM SIF_FORMAS_PAGO_BANCOS_ASG WHERE id_banco = @IdBanco AND cod_forma_pago = @CodFormaPago";
+                const string queryExiste = @"SELECT COUNT(*) FROM SIF_FORMAS_PAGO_BANCOS_ASG WHERE id_banco = @IdBanco AND cod_forma_pago = @CodFormaPago";
                 var existe = connection.QueryFirstOrDefault<int>(queryExiste, new { data.IdBanco, data.CodFormaPago });
 
                 if (existe > 0)
                 {
-                    // Elimina
-                    var queryDelete = @"DELETE SIF_FORMAS_PAGO_BANCOS_ASG WHERE id_banco = @IdBanco AND cod_forma_pago = @CodFormaPago";
+                    const string queryDelete = @"DELETE SIF_FORMAS_PAGO_BANCOS_ASG WHERE id_banco = @IdBanco AND cod_forma_pago = @CodFormaPago";
                     connection.Execute(queryDelete, new { data.IdBanco, data.CodFormaPago });
-                    result.Description = "Eliminado correctamente.";
+                    return DbHelper.OkResponse("Eliminado correctamente.");
                 }
-                else
-                {
-                    // Inserta
-                    var queryInsert = @"INSERT SIF_FORMAS_PAGO_BANCOS_ASG (id_banco, cod_forma_pago, registro_fecha, registro_usuario)
-                                VALUES (@IdBanco, @CodFormaPago, dbo.MyGetdate(), @RegistroUsuario)";
-                    connection.Execute(queryInsert, new { data.IdBanco, data.CodFormaPago, data.RegistroUsuario });
-                    result.Description = "Insertado correctamente.";
-                }
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+
+                const string queryInsert = @"INSERT SIF_FORMAS_PAGO_BANCOS_ASG (id_banco, cod_forma_pago, registro_fecha, registro_usuario)
+                                            VALUES (@IdBanco, @CodFormaPago, dbo.MyGetdate(), @RegistroUsuario)";
+                connection.Execute(queryInsert, new { data.IdBanco, data.CodFormaPago, data.RegistroUsuario });
+                return DbHelper.OkResponse("Insertado correctamente.");
+            });
         }
     }
 }
