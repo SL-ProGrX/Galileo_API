@@ -1,8 +1,14 @@
-﻿using Dapper;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Linq;
+using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
+using Galileo.DataBaseTier;
 using Galileo_API.DataBaseTier;
 using PgxAPI.Models.ProGrX_Nucleo;
 
@@ -14,10 +20,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         private readonly IConfiguration _config;
         private readonly int vModulo = 10;
         private readonly MSecurityMainDb _Security_MainDB;
+        private readonly PortalDB _portalDb;
 
         public FrmSifConsultaDocumentosDB(IConfiguration config)
         {
             _config = config;
+            _portalDb = new PortalDB(_config);
             _Security_MainDB = new MSecurityMainDb(_config);
         }
 
@@ -29,27 +37,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<int> SifConsultaDocumentos_CajaUltimaApertura_Consultar(int CodEmpresa, string pCajas)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<int>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = 0,
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"select dbo.fxSIFDocsCajaUltimaApertura (@pCajas) as Resultado";
-                result.Result = connection.Query<int>(query, new { pCajas }).FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = -1;
-            }
+            const string query = @"select dbo.fxSIFDocsCajaUltimaApertura (@pCajas) as Resultado";
 
-            return result;
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, cn =>
+                cn.Query<int>(query, new { pCajas }).FirstOrDefault());
+
+            if (db.Code != 0)
+                return new ErrorDto<int> { Code = -1, Description = db.Description, Result = -1 };
+
+            return new ErrorDto<int> { Code = 0, Description = "Ok", Result = db.Result };
         }
 
 
@@ -65,40 +61,38 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto SifConsultaDocumentos_Transaccion_Actualizar(int CodEmpresa, string usuario, string actDocumento, string antDocumento, string tipoDocumento, string codTransaccion)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"update sif_Transacciones 
+
+            const string query = @"update sif_Transacciones 
                                 set Documento = @actDocumento                                    
                                     WHERE tipo_documento = @tipoDocumento  and cod_transaccion =@codTransaccion ";
-                    connection.Execute(query, new
-                    {
-                        actDocumento,
-                        tipoDocumento,
-                        codTransaccion
-                    });
 
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = usuario,
-                        DetalleMovimiento = $"TDoc.: {tipoDocumento} - NDoc.:{codTransaccion} - Act.Doc.: {actDocumento}  - Ant.Doc.:  {antDocumento} ",
-                        Movimiento = "Modifica - WEB",
-                        Modulo = vModulo
-                    });
-                
-            }
-            catch (Exception ex)
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, cn =>
+            {
+                cn.Execute(query, new { actDocumento, tipoDocumento, codTransaccion });
+                return true;
+            });
+
+            if (db.Code != 0)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = db.Description;
+                return result;
             }
+
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = $"TDoc.: {tipoDocumento} - NDoc.:{codTransaccion} - Act.Doc.: {actDocumento}  - Ant.Doc.:  {antDocumento} ",
+                Movimiento = "Modifica - WEB",
+                Modulo = vModulo
+            });
+
             return result;
         }
 
@@ -113,30 +107,27 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto SifConsultaDocumentos_ReciboDigitar_Enviar(int CodEmpresa, string codigo, string tipoDocumento, string formato)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto
             {
                 Code = 0,
                 Description = "Ok"
             };
-            try
+
+            const string query = @"exec spCajasReciboDigital @codigo, @tipoDocumento,@formato";
+
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, cn =>
             {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"exec spCajasReciboDigital @codigo, @tipoDocumento,@formato";
-                connection.Execute(query, new
-                {
-                    codigo,
-                    tipoDocumento,
-                    formato
-                });
-            }
-            catch (Exception ex)
+                cn.Execute(query, new { codigo, tipoDocumento, formato });
+                return true;
+            });
+
+            if (db.Code != 0)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = db.Description;
             }
-            return result;
 
+            return result;
         }
 
 
@@ -149,17 +140,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SifConsultaDocsFormasDePagoData>> SifConsultaDocumentos_FormasDePago_Obtener(int CodEmpresa, string tipoDocumento, string codTransaccion)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifConsultaDocsFormasDePagoData>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifConsultaDocsFormasDePagoData>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@" select F.DESCRIPCION,
+            const string query = @" select F.DESCRIPCION,
                                     P.Monto, P.COD_DIVISA, P.TIPO_CAMBIO, P.monto / dbo.fxSys_Tipo_Cambio_Apl(P.TIPO_CAMBIO)  AS importe_real
                                     , case when F.TIPO = 'C' then 'CK.: ' + P.CHEQUE_NUMERO + ' - Emisor.: ' + P.CHEQUE_EMISOR
                                      when F.TIPO = 'D' then 'DOC.: ' + P.NUM_REFERENCIA
@@ -171,16 +152,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                      left join CAJAS_SALDO_FAVOR S on P.SALDO_FAVOR_ID = S.Linea
                                     where P.tipo_documento = @tipoDocumento and P.cod_transaccion = @codTransaccion order by P.cod_linea";
 
-                result.Result = connection.Query<SifConsultaDocsFormasDePagoData>(query, new { tipoDocumento, codTransaccion }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return DbHelper.ExecuteListQuery<SifConsultaDocsFormasDePagoData>(_portalDb, CodEmpresa, query, new { tipoDocumento, codTransaccion });
         }
 
 
@@ -193,47 +165,49 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SifConsultaDocSeguimientoData> SifConsultaDocumentos_Seguimiento_Obtener(int CodEmpresa, string tipoDocumento, string codTransaccion)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto<SifConsultaDocSeguimientoData>()
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new SifConsultaDocSeguimientoData()
             };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"Select registro_fecha,registro_usuario,traspaso_fecha,traspaso_usuario,anulacion_fecha,anulacion_usuario
+
+            const string query = @"Select registro_fecha,registro_usuario,traspaso_fecha,traspaso_usuario,anulacion_fecha,anulacion_usuario
                                     from sif_transacciones
                                     where tipo_documento = @tipoDocumento and cod_transaccion = @codTransaccion";
 
-                    result.Result = connection.Query<SifConsultaDocSeguimientoData>(query, new { tipoDocumento, codTransaccion }).FirstOrDefault();
-                    if (result.Result != null)
-                    {
+            var db = DbHelper.ExecuteSingleQuery<SifConsultaDocSeguimientoData>(_portalDb, CodEmpresa, query, null, new { tipoDocumento, codTransaccion });
 
-                        result.Result.registro_fechast =
-                            result.Result.registro_fecha == DateTime.MinValue
-                            ? ""
-                            : result.Result.registro_fecha.ToString("dd/MM/yyyy hh:mm:ss tt");
-
-                        result.Result.anulacion_fechast =
-                            result.Result.anulacion_fecha == DateTime.MinValue
-                            ? ""
-                            : result.Result.anulacion_fecha.ToString("dd/MM/yyyy hh:mm:ss tt");
-
-                        result.Result.traspaso_fechast =
-                            result.Result.traspaso_fecha == DateTime.MinValue
-                            ? ""
-                            : result.Result.traspaso_fecha.ToString("dd/MM/yyyy hh:mm:ss tt");
-
-                    }
-            }
-            catch (Exception ex)
+            if (db.Code != 0)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = db.Description;
                 result.Result = null;
+                return result;
             }
+
+            result.Result = db.Result;
+
+            if (result.Result != null)
+            {
+
+                result.Result.registro_fechast =
+                    result.Result.registro_fecha == DateTime.MinValue
+                    ? ""
+                    : result.Result.registro_fecha.ToString("dd/MM/yyyy hh:mm:ss tt");
+
+                result.Result.anulacion_fechast =
+                    result.Result.anulacion_fecha == DateTime.MinValue
+                    ? ""
+                    : result.Result.anulacion_fecha.ToString("dd/MM/yyyy hh:mm:ss tt");
+
+                result.Result.traspaso_fechast =
+                    result.Result.traspaso_fecha == DateTime.MinValue
+                    ? ""
+                    : result.Result.traspaso_fecha.ToString("dd/MM/yyyy hh:mm:ss tt");
+
+            }
+
             return result;
         }
 
@@ -247,17 +221,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SifConsultaDocCargaDocumentoData> SifConsultaDocumentos_CargaDocumento_Obtener(int CodEmpresa, string tipoDocumento, string codTransaccion)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var result = new ErrorDto<SifConsultaDocCargaDocumentoData>()
             {
                 Code = 0,
                 Description = "Ok",
                 Result = new SifConsultaDocCargaDocumentoData()
             };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@" select T.tipo_documento,T.cod_transaccion, Docs.Descripcion as 'DocumentoDesc' 
+
+            const string query = @" select T.tipo_documento,T.cod_transaccion, Docs.Descripcion as 'DocumentoDesc' 
                                    , isnull(T.cliente_identificacion,'') as identificacion, isnull(T.cliente_nombre,'') as nombre,T.monto,T.registro_fecha
                                    , T.cod_Concepto,T.registro_usuario, C.descripcion as concepto,Documento,O.Descripcion as oficina,Ca.Descripcion as 'Caja'
                                    , case when T.Estado = 'P' then 'Pendiente' when T.Estado = 'I' then 'Impreso' when T.Estado = 'A' then 'Anulado' end as 'Estado'
@@ -270,19 +241,23 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                   left join cajas_definicion Ca on T.cod_caja = Ca.cod_caja
                                   where T.tipo_documento = @tipoDocumento and T.cod_transaccion = @codTransaccion";
 
-                result.Result = connection.Query<SifConsultaDocCargaDocumentoData>(query, new { tipoDocumento, codTransaccion }).FirstOrDefault();
+            var db = DbHelper.ExecuteSingleQuery<SifConsultaDocCargaDocumentoData>(_portalDb, CodEmpresa, query, null, new { tipoDocumento, codTransaccion });
 
-                if (result.Result != null)
-                {
-                    result.Result.detalle = BuildDetalle(result.Result);
-                }
-            }
-            catch (Exception ex)
+            if (db.Code != 0)
             {
                 result.Code = -1;
-                result.Description = ex.Message;
+                result.Description = db.Description;
                 result.Result = null;
+                return result;
             }
+
+            result.Result = db.Result;
+
+            if (result.Result != null)
+            {
+                result.Result.detalle = BuildDetalle(result.Result);
+            }
+
             return result;
         }
 
@@ -291,7 +266,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        private static  string BuildDetalle(SifConsultaDocCargaDocumentoData data)
+        private static string BuildDetalle(SifConsultaDocCargaDocumentoData data)
         {
             var lines = new List<string>
             {
@@ -323,17 +298,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SifConsultaDocCargaAsientoData>> SifConsultaDocumentos_CargaAsiento_Obtener(int CodEmpresa, string tipoDocumento, string codTransaccion)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifConsultaDocCargaAsientoData>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifConsultaDocCargaAsientoData>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select isnull(C.Cod_Cuenta_Mask, D.cod_cuenta) as 'COD_CUENTA' , isnull(C.descripcion,'--Cuenta No Existe--') as 'Descripcion',D.Cod_divisa,D.tipo_movimiento,D.monto,D.cod_unidad
+            const string query = @"select isnull(C.Cod_Cuenta_Mask, D.cod_cuenta) as 'COD_CUENTA' , isnull(C.descripcion,'--Cuenta No Existe--') as 'Descripcion',D.Cod_divisa,D.tipo_movimiento,D.monto,D.cod_unidad
                                  ,U.descripcion as UnidadX,D.cod_centro_costo,X.descripcion as CCX,D.Tipo_Cambio
                                  ,D.Referencia_01,D.Referencia_02,D.Referencia_03, D.Monto / dbo.fxSys_Tipo_Cambio_Apl(D.Tipo_Cambio) as 'IMPORTE_REAL', D.Tipo_Documento, D.Cod_Transaccion
                                   from Sif_transacciones_asiento D left join CntX_Cuentas C on D.cod_cuenta = C.cod_cuenta and D.cod_contabilidad = C.cod_contabilidad
@@ -342,16 +307,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                                   where D.cod_transaccion=  @codTransaccion and tipo_Documento = @tipoDocumento
                                   order by D.Numero_linea";
 
-                    result.Result = connection.Query<SifConsultaDocCargaAsientoData>(query, new { tipoDocumento, codTransaccion }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return DbHelper.ExecuteListQuery<SifConsultaDocCargaAsientoData>(_portalDb, CodEmpresa, query, new { tipoDocumento, codTransaccion });
         }
 
 
@@ -363,27 +319,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<string> SifConsultaDocumentos_NombreDocumento_Consultar(int CodEmpresa, string tipoDocumento)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<string>
+            const string query = @"select Descripcion from SIF_Documentos where Activo = 1  and Tipo_Documento like @tipoDocumento";
+            var db = DbHelper.ExecuteSingleQuery<string>(_portalDb, CodEmpresa, query, "", new { tipoDocumento });
+            return new ErrorDto<string>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = "",
+                Code = db.Code,
+                Description = db.Description,
+                Result = db.Result ?? string.Empty
             };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select Descripcion from SIF_Documentos where Activo = 1  and Tipo_Documento like @tipoDocumento";
-                    result.Result = connection.Query<string>(query, new { tipoDocumento }).FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
         }
 
 
@@ -397,33 +340,17 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto SifConsultaDocumentos_Reversar_Actualizar(int CodEmpresa, string usuario, string documento, string tipoDocumento)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto
+            const string query = @"exec spSIFDocsReversaMain @tipoDocumento,@documento,@usuario ";
+
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, cn =>
             {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+                cn.Execute(query, new { tipoDocumento, documento, usuario });
+                return true;
+            });
 
-                    var query = $@"exec spSIFDocsReversaMain @tipoDocumento,@documento,@usuario ";
-                    connection.Execute(query, new
-                    {
-                        tipoDocumento,
-                        documento,
-                        usuario
-                    });
-
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
-
+            return db.Code == 0
+                ? new ErrorDto { Code = 0, Description = "Ok" }
+                : new ErrorDto { Code = -1, Description = db.Description };
         }
 
 
@@ -434,29 +361,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> SifConsultaDocumentos_Cajas_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                    var query = $@"select rtrim(cod_caja) as 'item',rtrim(descripcion) as 'descripcion' FROM cajas_definicion where activa = 1";
-                    result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            const string query = @"select rtrim(cod_caja) as 'item',rtrim(descripcion) as 'descripcion' FROM cajas_definicion where activa = 1";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query);
         }
 
 
@@ -467,29 +373,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> SifConsultaDocumentos_FormasPago_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                    var query = $@"select rtrim(cod_forma_pago) as 'item',rtrim(descripcion) as 'descripcion' FROM sif_Formas_Pago  where activa = 1";
-                    result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            const string query = @"select rtrim(cod_forma_pago) as 'item',rtrim(descripcion) as 'descripcion' FROM sif_Formas_Pago  where activa = 1";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query);
         }
 
 
@@ -500,28 +385,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> SifConsultaDocumentos_Bancos(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                    var query = $@"select id_banco as 'item',descripcion  as 'descripcion' FROM Tes_Bancos where estado = 'A'";
-                    result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            const string query = @"select id_banco as 'item',descripcion  as 'descripcion' FROM Tes_Bancos where estado = 'A'";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query);
         }
 
 
@@ -533,28 +398,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<string> SifConsultaDocumentos_NombreUsuario_Consultar(int CodEmpresa, string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<string>
+            const string query = @"select descripcion from usuarios where nombre =@usuario";
+            var db = DbHelper.ExecuteSingleQuery<string>(_portalDb, CodEmpresa, query, "", new { usuario });
+            return new ErrorDto<string>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = "",
+                Code = db.Code,
+                Description = db.Description,
+                Result = db.Result ?? string.Empty
             };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select descripcion from usuarios where nombre =@usuario";
-                    result.Result = connection.Query<string>(query, new { usuario }).FirstOrDefault();
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
         }
 
 
@@ -567,27 +418,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SifConsultaDocCuentasPorCobrarData>> SifConsultaDocumentos_CuentasPorCobrar_Obtener(int CodEmpresa, string documento, string codigo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifConsultaDocCuentasPorCobrarData>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifConsultaDocCuentasPorCobrarData>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select * from vSIF_CtrlDoc_CxC_Detalle Where TCon= @documento And NCon = @codigo";
-
-                    result.Result = connection.Query<SifConsultaDocCuentasPorCobrarData>(query, new { documento, codigo }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            const string query = @"select * from vSIF_CtrlDoc_CxC_Detalle Where TCon= @documento And NCon = @codigo";
+            return DbHelper.ExecuteListQuery<SifConsultaDocCuentasPorCobrarData>(_portalDb, CodEmpresa, query, new { documento, codigo });
         }
 
 
@@ -600,27 +432,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SifConsultaDocPatrimoniosData>> SifConsultaDocumentos_Patrimonios_Obtener(int CodEmpresa, string documento, string codigo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifConsultaDocPatrimoniosData>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifConsultaDocPatrimoniosData>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select * from vSIF_CtrlDoc_Pat_Detalle Where TCon= @documento And NCon = @codigo";
-
-                    result.Result = connection.Query<SifConsultaDocPatrimoniosData>(query, new { documento, codigo }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            const string query = @"select * from vSIF_CtrlDoc_Pat_Detalle Where TCon= @documento And NCon = @codigo";
+            return DbHelper.ExecuteListQuery<SifConsultaDocPatrimoniosData>(_portalDb, CodEmpresa, query, new { documento, codigo });
         }
 
 
@@ -633,28 +446,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SifConsultaDocFondosData>> SifConsultaDocumentos_Fondos_Obtener(int CodEmpresa, string documento, string codigo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifConsultaDocFondosData>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifConsultaDocFondosData>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select * from vSIF_CtrlDoc_Fnd_Detalle Where TCon= @documento And NCon = @codigo";
-
-                    result.Result = connection.Query<SifConsultaDocFondosData>(query, new { documento, codigo }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            const string query = @"select * from vSIF_CtrlDoc_Fnd_Detalle Where TCon= @documento And NCon = @codigo";
+            return DbHelper.ExecuteListQuery<SifConsultaDocFondosData>(_portalDb, CodEmpresa, query, new { documento, codigo });
         }
 
 
@@ -667,28 +460,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SifConsultaDocCreditosData>> SifConsultaDocumentos_Creditos_Obtener(int CodEmpresa, string documento, string codigo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifConsultaDocCreditosData>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifConsultaDocCreditosData>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select * from vSIF_CtrlDoc_Crd_Detalle Where TCon= @documento And NCon = @codigo";
-
-                    result.Result = connection.Query<SifConsultaDocCreditosData>(query, new { documento, codigo }).ToList();
-
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            const string query = @"select * from vSIF_CtrlDoc_Crd_Detalle Where TCon= @documento And NCon = @codigo";
+            return DbHelper.ExecuteListQuery<SifConsultaDocCreditosData>(_portalDb, CodEmpresa, query, new { documento, codigo });
         }
 
 
@@ -700,30 +473,17 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<string> SifConsultaDocumentos_UltDocumento_Consultar(int CodEmpresa, string tipoDocumento)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<string>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = "",
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select  Top 1 rtrim(COD_TRANSACCION)  as 'Transaccion'
+            const string query = @"select  Top 1 rtrim(COD_TRANSACCION)  as 'Transaccion'
                                     from Sif_Transacciones
                                      where Tipo_Documento = @tipoDocumento
                                       order by Registro_Fecha desc, Cod_Transaccion";
-                    result.Result = connection.Query<string>(query, new { tipoDocumento }).FirstOrDefault();
-            }
-            catch (Exception ex)
+            var db = DbHelper.ExecuteSingleQuery<string>(_portalDb, CodEmpresa, query, "", new { tipoDocumento });
+            return new ErrorDto<string>
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
+                Code = db.Code,
+                Description = db.Description,
+                Result = db.Result ?? string.Empty
+            };
         }
 
 
@@ -737,39 +497,22 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<string> SifConsultaDocumentos_SiguienteTransaccion_Consultar(int CodEmpresa, string tipoDocumento, string transaccion, int orden)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<string>
+            var baseQuery = @"select Top 1 cod_transaccion from sif_transacciones";
+            var query = orden == 1
+                ? baseQuery + @" where tipo_documento =@tipoDocumento  and cod_transaccion > @transaccion order by cod_transaccion asc"
+                : baseQuery + @" where tipo_documento =@tipoDocumento  and cod_transaccion < @transaccion order by cod_transaccion desc";
+
+            var db = DbHelper.ExecuteSingleQuery<string>(_portalDb, CodEmpresa, query, "0", new { tipoDocumento, transaccion });
+
+            if (db.Code != 0)
+                return new ErrorDto<string> { Code = -1, Description = db.Description, Result = null };
+
+            return new ErrorDto<string>
             {
                 Code = 0,
                 Description = "Ok",
-                Result = "",
+                Result = string.IsNullOrWhiteSpace(db.Result) ? "0" : db.Result
             };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select Top 1 cod_transaccion from sif_transacciones";
-                    if (orden == 1)
-                    {
-                        query += $@" where tipo_documento =@tipoDocumento  and cod_transaccion > @transaccion order by cod_transaccion asc";
-                    }
-                    else
-                    {
-                        query += $@" where tipo_documento =@tipoDocumento  and cod_transaccion < @transaccion order by cod_transaccion desc";
-                    }
-                    result.Result = connection.Query<string>(query, new { tipoDocumento, transaccion }).FirstOrDefault();
-                    if (result.Result == null)
-                    {
-                        result.Result = "0";
-                    }
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-
-            return result;
         }
 
 
@@ -781,29 +524,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> SifConsultaDocumentos_Documentos_Obtener(int CodEmpresa, string filtro)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select tipo_documento as 'item',descripcion as 'descripcion'  
+            const string query = @"select tipo_documento as 'item',descripcion as 'descripcion'  
                                     from sif_documentos
                                        where Activo = 1 and descripcion like '%'+ @filtro +'%'
                                        order by descripcion";
-                    result.Result = connection.Query<DropDownListaGenericaModel>(query, new { filtro }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query, new { filtro });
         }
 
 
@@ -815,29 +541,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> SifConsultaDocumentos_TipoConceptos_Obtener(int CodEmpresa, string filtro)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select cod_concepto as 'item',descripcion as 'descripcion'  
+            const string query = @"select cod_concepto as 'item',descripcion as 'descripcion'  
                                     from sif_conceptos
                                         Where descripcion like '%'+ @filtro +'%'
                                        order by descripcion";
-                    result.Result = connection.Query<DropDownListaGenericaModel>(query, new { filtro }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query, new { filtro });
         }
 
 
@@ -849,29 +558,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> SifConsultaDocumentos_UsuariosCajas_Obtener(int CodEmpresa, string caja)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select USUARIO as 'item',USUARIO as 'descripcion'  
+            const string query = @"select USUARIO as 'item',USUARIO as 'descripcion'  
                                     from CAJAS_USUARIOS
                                        where COD_CAJA = @caja";
-                    result.Result = connection.Query<DropDownListaGenericaModel>(query, new { caja }).ToList();
 
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query, new { caja });
         }
 
 
@@ -883,7 +574,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SifConsultaDocTrasaccionesDataLista> SifConsultaDocumentos_Buscar(int CodEmpresa, bool esExportar, SifConsultaDocFiltros filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var response = new ErrorDto<SifConsultaDocTrasaccionesDataLista>
             {
                 Code = 0,
@@ -901,8 +591,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
-
                 if (!filtros.fecha_inicio.HasValue || !filtros.fecha_corte.HasValue)
                 {
                     response.Code = -1;
@@ -911,19 +599,41 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     return response;
                 }
 
-                string query = BuildDocumentosBuscarQuery(filtros, CodEmpresa, out var parametrosDynamic);
+                var db = DbHelper.WithConn(_portalDb, CodEmpresa, cn =>
+                {
+                    string query = BuildDocumentosBuscarQuery(filtros, CodEmpresa, out var parametrosDynamic);
 
-                // Cast dynamic to object to avoid Dapper extension method issue
-                object parametros = parametrosDynamic;
+                    // Cast dynamic to object to avoid Dapper extension method issue
+                    object parametros = parametrosDynamic;
 
-                var totales = connection.Query<SifConsultaDocTrasaccionesData>(query, parametros).ToList();
+                    var totales = cn.Query<SifConsultaDocTrasaccionesData>(query, parametros).ToList();
 
-                response.Result.totales.total = totales.Count;
-                response.Result.totales.montototal = totales.Sum(x => x.monto);
+                    var r = new SifConsultaDocTrasaccionesDataLista
+                    {
+                        totales = new SifConsultaDocTrasaccionesTotales
+                        {
+                            total = totales.Count,
+                            montototal = totales.Sum(x => x.monto)
+                        },
+                        lista = new List<SifConsultaDocTrasaccionesData>()
+                    };
 
-                query = AppendOrderAndPaging(query, filtros, esExportar);
+                    query = AppendOrderAndPaging(query, filtros, esExportar);
 
-                response.Result.lista = connection.Query<SifConsultaDocTrasaccionesData>(query, parametros).ToList();
+                    r.lista = cn.Query<SifConsultaDocTrasaccionesData>(query, parametros).ToList();
+
+                    return r;
+                });
+
+                if (db.Code != 0)
+                {
+                    response.Code = -1;
+                    response.Description = $"Error al buscar documentos: {db.Description}";
+                    response.Result = null;
+                    return response;
+                }
+
+                response.Result = db.Result;
             }
             catch (Exception ex)
             {
@@ -931,6 +641,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 response.Description = $"Error al buscar documentos: {ex.Message}";
                 response.Result = null;
             }
+
             return response;
         }
 
@@ -1225,23 +936,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         private int cboSesionConsultar(int CodEmpresa, int valor)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            int result = 0;
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = $@"select ISNULL(ID_SESION,0) AS 'ID_SESION' from CAJAS_ROE WHERE ID_ROE =@valor";
-
-                    result = connection.Query<int>(query, new { valor }).FirstOrDefault();
-
-            }
-            catch (Exception)
-            {
-                result = 0;
-            }
-
-            return result;
-
+            const string query = @"select ISNULL(ID_SESION,0) AS 'ID_SESION' from CAJAS_ROE WHERE ID_ROE =@valor";
+            var db = DbHelper.ExecuteSingleQuery<int>(_portalDb, CodEmpresa, query, 0, new { valor });
+            return db.Code == 0 ? db.Result : 0;
         }
 
 
