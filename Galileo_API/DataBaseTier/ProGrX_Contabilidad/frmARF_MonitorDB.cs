@@ -82,8 +82,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             }
 
             AgregarFiltroFecha(where, filtros);
-            AgregarFiltro(where, "COD_LOCAL = @cod_unidad", filtros.cod_unidad);
-            AgregarFiltro(where, "COD_ACREEDOR = @cod_arrendador", filtros.cod_arrendador);
+            AgregarFiltro(where, "COD_LOCAL = @cod_unidad", filtros.cod_unidad!);
+            AgregarFiltro(where, "COD_ACREEDOR = @cod_arrendador", filtros.cod_arrendador!);
         }
 
         private static void AgregarFiltroFecha(StringBuilder where, ArfMonitorFiltroDto filtros)
@@ -91,7 +91,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             if (!filtros.fecha_inicio.HasValue || !filtros.fecha_corte.HasValue)
                 return;
 
-            string campoFecha = ObtenerCampoFecha(filtros.tipo_fecha);
+            string campoFecha = ObtenerCampoFecha(filtros.tipo_fecha!);
 
             where.Append($@"
                             {campoFecha} BETWEEN
