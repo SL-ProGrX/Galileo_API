@@ -2,16 +2,12 @@
 using Galileo.DataBaseTier.ProGrX_Reportes;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.Security;
-using Galileo.Models.TES;
-using Galileo_API.DataBaseTier.ProGrX.Bancos;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.Reporting.NETCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using static Org.BouncyCastle.Crypto.Engines.SM2Engine;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+using System.Security;
 
 namespace Galileo.DataBaseTier
 {
@@ -100,35 +96,30 @@ namespace Galileo.DataBaseTier
             if (string.IsNullOrWhiteSpace(data.nombreReporte))
                 return ReportRenderer.Error("El nombre del reporte no puede ser nulo o vacío.", 400);
 
-            var reportFile = data.nombreReporte.Trim();
-            if (reportFile.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) >= 0)
-                return ReportRenderer.Error("Nombre de reporte inválido.", 400);
-
-            if (!string.IsNullOrWhiteSpace(data.folder) &&
-                (Path.IsPathRooted(data.folder) ||
-                 data.folder.Contains("..", StringComparison.Ordinal) ||
-                 data.folder.IndexOfAny(Path.GetInvalidPathChars()) >= 0))
-            {
-                return ReportRenderer.Error("Folder inválido.", 400);
-            }
-
             string connString = new PortalDB(_config).ObtenerDbConnStringEmpresa(data.codEmpresa);
             try
             {
                 using var connection = new SqlConnection(connString);
                 connection.Open();
 
+                // 1) Validar inputs como segmentos
+                var reportFile = data.nombreReporte.Trim();
+                ValidateSegment(reportFile, nameof(data.nombreReporte), allowEmpty: false);
+
+                ValidateSegment(data.folder, nameof(data.folder), allowEmpty: true);
+
                 var report = new LocalReport { EnableExternalImages = true };
                 var basePath = _path.GetBasePath(data.codEmpresa, _dirRdlc, data.folder ?? null);
 
-                var mainPath = _path.ResolveReportPath(basePath, data.nombreReporte);
-                if (mainPath == null)
-                    return ReportRenderer.Error($"No se encontró el reporte principal.", 404);
+                var mainPath = _path.CombineUnderRoot(basePath, reportFile);
+                var finalPath = _path.ResolveReportPath(mainPath);
+                if (!System.IO.File.Exists(finalPath))
+                    return ReportRenderer.Error("No se encontró el reporte principal.", 404);
 
-                using var patched = _patcher.PatchReportCode(mainPath, data.codeSection);
+                using var patched = _patcher.PatchReportCode(finalPath, data.codeSection);
                 report.LoadReportDefinition(patched);
 
-                var (mainDataSets, subreportNames) = _meta.ReadRdlcMeta(mainPath);
+                var (mainDataSets, subreportNames) = _meta.ReadRdlcMeta(finalPath);
                 var subMeta = _subs.LoadSubreports(report, basePath, subreportNames);
                 var autoAliases = _subs.BuildAutoAliasMap(mainPath, basePath);
 
@@ -384,5 +375,27 @@ namespace Galileo.DataBaseTier
                 return conn.Query<string>(query, new { Code = code }).FirstOrDefault() ?? string.Empty;
             });
         }
+
+        static void ValidateSegment(string? segment, string paramName, bool allowEmpty)
+        {
+            if (string.IsNullOrWhiteSpace(segment))
+            {
+                if (allowEmpty) return;
+                throw new SecurityException($"{paramName} requerido.");
+            }
+
+            // No permitir separadores => no subcarpetas, no traversal con / o \
+            if (segment.IndexOfAny(new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar }) >= 0)
+                throw new SecurityException($"{paramName} debe ser un solo segmento.");
+
+            if (segment is "." or ".." || segment.Contains("..", StringComparison.Ordinal))
+                throw new SecurityException($"{paramName} inválido.");
+
+            if (segment.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                throw new SecurityException($"{paramName} contiene caracteres inválidos.");
+        }
+
+       
+
     }
 }

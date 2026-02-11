@@ -6,7 +6,7 @@
         public string? cedula { get; set; }
         public string? nombre { get; set; }
 
-        public DateTime aso_fecha_nac { get; set; }
+        public DateTime aso_fecha_nac { get; set; } = DateTime.MinValue;
         public string aso_telefono { get; set; } = string.Empty;
 
         public string aso_estado_persona_desc { get; set; } = string.Empty;
@@ -98,7 +98,7 @@
     public class CajasRoeActualizaParamsModel
     {
         // @ROE
-        public int roe { get; set; }
+        public int roe { get; set; } = 0;
 
         // @TipoIdDesc
         public string tipoiddesc { get; set; } = "";
@@ -111,7 +111,7 @@
 
         // @Telefono, @FechaNac
         public string telefono { get; set; } = "";
-        public DateTime fecha_nac { get; set; }
+        public DateTime fecha_nac { get; set; } = DateTime.MinValue;
 
         // @TipoTrans, @TipoOperacion
         public string tipo_trans { get; set; } = "";
@@ -146,7 +146,7 @@
 
     public class CajasRoeImprimeParamsModel
     {
-        public int roe { get; set; }
+        public int roe { get; set; } = 0;
         public string usuario { get; set; } = "";
     }
 
