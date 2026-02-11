@@ -20,6 +20,68 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             _Security_MainDB = new MSecurityMainDb(config);
         }
 
+        // --- SQL fragments (avoid duplication) ---
+        private const string ConceptosSelectColumns = @"select
+   COD_CONCEPTO       AS cod_concepto,
+   DESCRIPCION        AS descripcion,
+   MOVIMIENTO_TIPO    AS movimiento_tipo,
+   NIVEL_ACCESO       AS nivel_acceso,
+   ACTIVO             AS activo,
+   REGISTRO_FECHA     AS registro_fecha,
+   REGISTRO_USUARIO   AS registro_usuario
+from SIF_CONCEPTOS";
+
+        private const string ConceptosFilterWhere = @" where (COD_CONCEPTO LIKE @Q OR DESCRIPCION LIKE @Q OR REGISTRO_USUARIO LIKE @Q) ";
+
+        private const string ConceptosCountNoFilter = "select COUNT(COD_CONCEPTO) from SIF_CONCEPTOS;";
+
+        private const string ConceptosCountWithFilter = @"select COUNT(COD_CONCEPTO)
+from SIF_CONCEPTOS
+where (COD_CONCEPTO LIKE @Q OR DESCRIPCION LIKE @Q OR REGISTRO_USUARIO LIKE @Q);";
+
+        private static string BuildConceptosBaseQuery(bool hasFilter)
+            => hasFilter ? (ConceptosSelectColumns + ConceptosFilterWhere) : ConceptosSelectColumns;
+
+        private const string ConceptosOrderByWithSort = @"
+ order by
+    CASE WHEN @SORTFIELD = 'COD_CONCEPTO'        AND @SORTDIR = 1 THEN COD_CONCEPTO END ASC,
+    CASE WHEN @SORTFIELD = 'COD_CONCEPTO'        AND @SORTDIR = 0 THEN COD_CONCEPTO END DESC,
+    CASE WHEN @SORTFIELD = 'DESCRIPCION'         AND @SORTDIR = 1 THEN DESCRIPCION END ASC,
+    CASE WHEN @SORTFIELD = 'DESCRIPCION'         AND @SORTDIR = 0 THEN DESCRIPCION END DESC,
+    CASE WHEN @SORTFIELD = 'MOVIMIENTO_TIPO'     AND @SORTDIR = 1 THEN MOVIMIENTO_TIPO END ASC,
+    CASE WHEN @SORTFIELD = 'MOVIMIENTO_TIPO'     AND @SORTDIR = 0 THEN MOVIMIENTO_TIPO END DESC,
+    CASE WHEN @SORTFIELD = 'NIVEL_ACCESO'        AND @SORTDIR = 1 THEN NIVEL_ACCESO END ASC,
+    CASE WHEN @SORTFIELD = 'NIVEL_ACCESO'        AND @SORTDIR = 0 THEN NIVEL_ACCESO END DESC,
+    CASE WHEN @SORTFIELD = 'ACTIVO'              AND @SORTDIR = 1 THEN ACTIVO END ASC,
+    CASE WHEN @SORTFIELD = 'ACTIVO'              AND @SORTDIR = 0 THEN ACTIVO END DESC,
+    CASE WHEN @SORTFIELD = 'REGISTRO_FECHA'      AND @SORTDIR = 1 THEN REGISTRO_FECHA END ASC,
+    CASE WHEN @SORTFIELD = 'REGISTRO_FECHA'      AND @SORTDIR = 0 THEN REGISTRO_FECHA END DESC,
+    CASE WHEN @SORTFIELD = 'REGISTRO_USUARIO'    AND @SORTDIR = 1 THEN REGISTRO_USUARIO END ASC,
+    CASE WHEN @SORTFIELD = 'REGISTRO_USUARIO'    AND @SORTDIR = 0 THEN REGISTRO_USUARIO END DESC,
+    COD_CONCEPTO ASC";
+
+        private const string ConceptosOrderByDefault = " order by COD_CONCEPTO";
+
+        private ErrorDto SafeBitacora(int codEmpresa, string usuario, string detalleMovimiento, string movimiento)
+        {
+            try
+            {
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = codEmpresa,
+                    Usuario = usuario,
+                    DetalleMovimiento = detalleMovimiento,
+                    Movimiento = movimiento,
+                    Modulo = vModulo
+                });
+                return DbHelper.OkResponse("Ok");
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message ?? "Error inesperado");
+            }
+        }
+
 
         /// <summary>
         /// Lista los conceptos existentes con paginación y filtros.
@@ -38,12 +100,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 bool hasFilter = TryAddConceptosFiltro(filtros, p);
 
                 // Total
-                const string countNoFilter = "select COUNT(COD_CONCEPTO) from SIF_CONCEPTOS;";
-                const string countWithFilter = @"select COUNT(COD_CONCEPTO)
-from SIF_CONCEPTOS
-where (COD_CONCEPTO LIKE @Q OR DESCRIPCION LIKE @Q OR REGISTRO_USUARIO LIKE @Q);";
-
-                var total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
+                var total = connection.ExecuteScalar<int>(hasFilter ? ConceptosCountWithFilter : ConceptosCountNoFilter, p);
 
                 // Sorting (sin SQL dinámico)
                 string sortField = NormalizeConceptosSortField(filtros?.sortField);
@@ -57,43 +114,12 @@ where (COD_CONCEPTO LIKE @Q OR DESCRIPCION LIKE @Q OR REGISTRO_USUARIO LIKE @Q);
                 p.Add("@OFFSET", offset);
                 p.Add("@FETCH", fetch);
 
-                var sb = new StringBuilder();
-                sb.Append(@"select
-   COD_CONCEPTO       AS cod_concepto,
-   DESCRIPCION        AS descripcion,
-   MOVIMIENTO_TIPO    AS movimiento_tipo,
-   NIVEL_ACCESO       AS nivel_acceso,
-   ACTIVO             AS activo,
-   REGISTRO_FECHA     AS registro_fecha,
-   REGISTRO_USUARIO   AS registro_usuario
-from SIF_CONCEPTOS");
+                var sql = new StringBuilder();
+                sql.Append(BuildConceptosBaseQuery(hasFilter));
+                sql.Append(ConceptosOrderByWithSort);
+                sql.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
 
-                if (hasFilter)
-                {
-                    sb.Append(" where (COD_CONCEPTO LIKE @Q OR DESCRIPCION LIKE @Q OR REGISTRO_USUARIO LIKE @Q) ");
-                }
-
-                sb.Append(@"
- order by
-    CASE WHEN @SORTFIELD = 'COD_CONCEPTO'        AND @SORTDIR = 1 THEN COD_CONCEPTO END ASC,
-    CASE WHEN @SORTFIELD = 'COD_CONCEPTO'        AND @SORTDIR = 0 THEN COD_CONCEPTO END DESC,
-    CASE WHEN @SORTFIELD = 'DESCRIPCION'         AND @SORTDIR = 1 THEN DESCRIPCION END ASC,
-    CASE WHEN @SORTFIELD = 'DESCRIPCION'         AND @SORTDIR = 0 THEN DESCRIPCION END DESC,
-    CASE WHEN @SORTFIELD = 'MOVIMIENTO_TIPO'     AND @SORTDIR = 1 THEN MOVIMIENTO_TIPO END ASC,
-    CASE WHEN @SORTFIELD = 'MOVIMIENTO_TIPO'     AND @SORTDIR = 0 THEN MOVIMIENTO_TIPO END DESC,
-    CASE WHEN @SORTFIELD = 'NIVEL_ACCESO'        AND @SORTDIR = 1 THEN NIVEL_ACCESO END ASC,
-    CASE WHEN @SORTFIELD = 'NIVEL_ACCESO'        AND @SORTDIR = 0 THEN NIVEL_ACCESO END DESC,
-    CASE WHEN @SORTFIELD = 'ACTIVO'              AND @SORTDIR = 1 THEN ACTIVO END ASC,
-    CASE WHEN @SORTFIELD = 'ACTIVO'              AND @SORTDIR = 0 THEN ACTIVO END DESC,
-    CASE WHEN @SORTFIELD = 'REGISTRO_FECHA'      AND @SORTDIR = 1 THEN REGISTRO_FECHA END ASC,
-    CASE WHEN @SORTFIELD = 'REGISTRO_FECHA'      AND @SORTDIR = 0 THEN REGISTRO_FECHA END DESC,
-    CASE WHEN @SORTFIELD = 'REGISTRO_USUARIO'    AND @SORTDIR = 1 THEN REGISTRO_USUARIO END ASC,
-    CASE WHEN @SORTFIELD = 'REGISTRO_USUARIO'    AND @SORTDIR = 0 THEN REGISTRO_USUARIO END DESC,
-    COD_CONCEPTO ASC");
-
-                sb.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
-
-                var lista = connection.Query<SifConceptoData>(sb.ToString(), p).ToList();
+                var lista = connection.Query<SifConceptoData>(sql.ToString(), p).ToList();
 
                 return new SifConceptoLista
                 {
@@ -117,25 +143,11 @@ from SIF_CONCEPTOS");
                 var p = new DynamicParameters();
                 bool hasFilter = TryAddConceptosFiltro(filtros, p);
 
-                var sb = new StringBuilder();
-                sb.Append(@"select
-   COD_CONCEPTO       AS cod_concepto,
-   DESCRIPCION        AS descripcion,
-   MOVIMIENTO_TIPO    AS movimiento_tipo,
-   NIVEL_ACCESO       AS nivel_acceso,
-   ACTIVO             AS activo,
-   REGISTRO_FECHA     AS registro_fecha,
-   REGISTRO_USUARIO   AS registro_usuario
-from SIF_CONCEPTOS");
+                var sql = new StringBuilder();
+                sql.Append(BuildConceptosBaseQuery(hasFilter));
+                sql.Append(ConceptosOrderByDefault);
 
-                if (hasFilter)
-                {
-                    sb.Append(" where (COD_CONCEPTO LIKE @Q OR DESCRIPCION LIKE @Q OR REGISTRO_USUARIO LIKE @Q) ");
-                }
-
-                sb.Append(" order by COD_CONCEPTO");
-
-                return connection.Query<SifConceptoData>(sb.ToString(), p).ToList();
+                return connection.Query<SifConceptoData>(sql.ToString(), p).ToList();
             });
         }
 
@@ -155,21 +167,14 @@ from SIF_CONCEPTOS");
             if ((res.Code ?? -1) != 0)
                 return res;
 
-            try
-            {
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Concepto : {cod_concepto}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? "Error inesperado");
-            }
+            var bit = SafeBitacora(
+                CodEmpresa,
+                usuario,
+                $"Concepto : {cod_concepto}",
+                "Elimina - WEB");
+
+            if ((bit.Code ?? -1) != 0)
+                return bit;
 
             return res;
         }
@@ -252,14 +257,11 @@ where UPPER(COD_CONCEPTO) = @cod;";
                 registro_usuario = usuario
             });
 
-            _Security_MainDB.Bitacora(new BitacoraInsertarDto
-            {
-                EmpresaId = CodEmpresa,
-                Usuario = usuario,
-                DetalleMovimiento = $"Concepto : {concepto.cod_concepto} - {concepto.descripcion}",
-                Movimiento = "Modifica - WEB",
-                Modulo = vModulo
-            });
+            SafeBitacora(
+                CodEmpresa,
+                usuario,
+                $"Concepto : {concepto.cod_concepto} - {concepto.descripcion}",
+                "Modifica - WEB");
         }
 
 
@@ -286,14 +288,11 @@ where UPPER(COD_CONCEPTO) = @cod;";
                 registro_usuario = usuario
             });
 
-            _Security_MainDB.Bitacora(new BitacoraInsertarDto
-            {
-                EmpresaId = CodEmpresa,
-                Usuario = usuario,
-                DetalleMovimiento = $"Concepto : {concepto.cod_concepto} - {concepto.descripcion}",
-                Movimiento = "Registra - WEB",
-                Modulo = vModulo
-            });
+            SafeBitacora(
+                CodEmpresa,
+                usuario,
+                $"Concepto : {concepto.cod_concepto} - {concepto.descripcion}",
+                "Registra - WEB");
         }
 
 
@@ -365,21 +364,14 @@ where UPPER(COD_CONCEPTO) = @cod;";
             if ((res.Code ?? -1) != 0)
                 return res;
 
-            try
-            {
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Concepto {cod_concepto} asociado al Documento {tipo_documento}",
-                    Movimiento = "Asocia - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? "Error inesperado");
-            }
+            var bit = SafeBitacora(
+                CodEmpresa,
+                usuario,
+                $"Concepto {cod_concepto} asociado al Documento {tipo_documento}",
+                "Asocia - WEB");
+
+            if ((bit.Code ?? -1) != 0)
+                return bit;
 
             return res;
         }
@@ -406,21 +398,14 @@ where UPPER(COD_CONCEPTO) = @cod;";
             if ((res.Code ?? -1) != 0)
                 return res;
 
-            try
-            {
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Concepto {cod_concepto} desasociado del Documento {tipo_documento}",
-                    Movimiento = "Desasocia - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.ErrorResponse(ex.Message ?? "Error inesperado");
-            }
+            var bit = SafeBitacora(
+                CodEmpresa,
+                usuario,
+                $"Concepto {cod_concepto} desasociado del Documento {tipo_documento}",
+                "Desasocia - WEB");
+
+            if ((bit.Code ?? -1) != 0)
+                return bit;
 
             return res;
         }
