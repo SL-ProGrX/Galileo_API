@@ -18,36 +18,9 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             _portalDb = new PortalDB(config);
         }
 
+        private const int DefaultTimeout = 60;
 
-        /// <summary>
-        /// Obtiene una lista de bandeja de correos con paginación y filtros.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="para_Buscar"></param>
-        /// <param name="asunto_Buscar"></param>
-        /// <param name="fecha_Inicio"></param>
-        /// <param name="fecha_Fin"></param>
-        /// <param name="filtros"></param>
-        /// <returns></returns>
-        public ErrorDto<SysCorreosBandejaLista> Correos_Bandeja_Lista_Obtener(
-            int CodEmpresa,
-            string para_Buscar,
-            string asunto_Buscar,
-            string fecha_Inicio,
-            string fecha_Fin,
-            FiltrosLazyLoadData filtros)
-        {
-            var dto = new ErrorDto<SysCorreosBandejaLista>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new SysCorreosBandejaLista { total = 0, lista = new() }
-            };
-
-            var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
-            {
-                // Igualamos a la técnica de "Resumen": temp table + select con nombres EXACTOS al POCO
-                var sql = @"
+        private const string SqlDetalle = @"
                 DECLARE @tmp TABLE(
                   ID_EMAIL     INT,
                   COD_SMTP     VARCHAR(50),
@@ -84,72 +57,183 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                   Mes          AS Mes
                 FROM @tmp;";
 
-                var args = new
-                {
-                    parametro_para = (para_Buscar ?? "").Trim(),
-                    parametro_asunto = (asunto_Buscar ?? "").Trim(),
-                    fecha_inicio_consulta = (fecha_Inicio ?? "").Trim(),
-                    fecha_fin_consulta = (fecha_Fin ?? "").Trim(),
-                    tipo_resultado = "D"
-                };
+        private const string SqlResumen = @"
+            exec dbo.spSys_Mail_Consulta_General
+                 @parametro_para,
+                 @parametro_asunto,
+                 @fecha_inicio_consulta,
+                 @fecha_fin_consulta,
+                 @tipo_resultado";
 
-                var all = connection.Query<SysCorreosBandejaData>(sql, args, commandTimeout: 60).ToList();
+        private static object BuildArgs(string para_Buscar, string asunto_Buscar, string fecha_Inicio, string fecha_Fin, string tipo)
+            => new
+            {
+                parametro_para = (para_Buscar ?? "").Trim(),
+                parametro_asunto = (asunto_Buscar ?? "").Trim(),
+                fecha_inicio_consulta = (fecha_Inicio ?? "").Trim(),
+                fecha_fin_consulta = (fecha_Fin ?? "").Trim(),
+                tipo_resultado = tipo
+            };
 
-                // --- Filtro texto ---
-                var texto = (filtros?.filtro ?? "").Trim();
-                if (!string.IsNullOrWhiteSpace(texto))
-                {
-                    var q = texto.ToUpperInvariant();
-                    all = all.Where(x =>
-                        (x.Para ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Asunto ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.CodSmtp ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.EstadoDesc ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Usuario ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Mes ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Anio?.ToString() ?? "").Contains(q) ||
-                        (x.MesId?.ToString() ?? "").Contains(q)
-                    ).ToList();
-                }
+        private static List<SysCorreosBandejaData> QueryDetalle(SqlConnection connection, object args)
+            => connection.Query<SysCorreosBandejaData>(SqlDetalle, args, commandTimeout: DefaultTimeout).ToList();
 
-                // --- Ordenamiento (1=ASC, 0=DESC) ---
-                string campo = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
-                int orden = filtros?.sortOrder ?? 1;
+        private static List<SysCorreosBandejaResumenData> QueryResumen(SqlConnection connection, object args)
+            => connection.Query<SysCorreosBandejaResumenData>(SqlResumen, args, commandTimeout: DefaultTimeout).ToList();
 
-                Func<SysCorreosBandejaData, object?> key = campo switch
-                {
-                    "id_mail" or "id_email" or "idemail" => x => x.IdEmail,
-                    "cuenta" or "cod_smtp" or "codsmtp" => x => x.CodSmtp,
-                    "para" => x => x.Para,
-                    "asunto" => x => x.Asunto,
-                    "estado" or "estadodesc" => x => x.EstadoDesc,
-                    "fecha" => x => x.Fecha ?? DateTime.MinValue,
-                    "fecha_envio" or "fechaenvio" => x => x.FechaEnvio ?? DateTime.MinValue,
-                    "usuario" => x => x.Usuario,
-                    "anio" => x => x.Anio,
-                    "mesid" => x => x.MesId,
-                    "mes" => x => x.Mes,
-                    _ => x => x.Fecha ?? DateTime.MinValue
-                };
+        private static List<SysCorreosBandejaData> ApplyFiltroDetalle(List<SysCorreosBandejaData> datos, string? texto)
+        {
+            var t = (texto ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(t))
+                return datos;
 
-                all = (orden == 0) ? all.OrderByDescending(key).ToList()
-                                   : all.OrderBy(key).ToList();
+            var q = t.ToUpperInvariant();
+            return datos.Where(x =>
+                (x.Para ?? "").ToUpperInvariant().Contains(q) ||
+                (x.Asunto ?? "").ToUpperInvariant().Contains(q) ||
+                (x.CodSmtp ?? "").ToUpperInvariant().Contains(q) ||
+                (x.EstadoDesc ?? "").ToUpperInvariant().Contains(q) ||
+                (x.Usuario ?? "").ToUpperInvariant().Contains(q) ||
+                (x.Mes ?? "").ToUpperInvariant().Contains(q) ||
+                (x.Anio?.ToString() ?? "").Contains(q) ||
+                (x.MesId?.ToString() ?? "").Contains(q)
+            ).ToList();
+        }
 
-                // --- Paginación ---
-                int offset = Math.Max(0, filtros?.pagina ?? 0);
-                int take = Math.Max(1, filtros?.paginacion ?? 30);
+        private static List<SysCorreosBandejaResumenData> ApplyFiltroResumen(List<SysCorreosBandejaResumenData> datos, string? texto)
+        {
+            var t = (texto ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(t))
+                return datos;
 
-                return (total: all.Count, lista: all.Skip(offset).Take(take).ToList());
+            var q = t.ToUpperInvariant();
+            return datos.Where(x =>
+                (x.Cod_Smtp ?? "").ToUpperInvariant().Contains(q) ||
+                (x.EstadoDesc ?? "").ToUpperInvariant().Contains(q) ||
+                (x.Mes ?? "").ToUpperInvariant().Contains(q) ||
+                (x.Anio?.ToString() ?? "").Contains(q) ||
+                (x.MesId?.ToString() ?? "").Contains(q) ||
+                (x.Correos.ToString()).Contains(q)
+            ).ToList();
+        }
+
+        private static List<SysCorreosBandejaData> ApplyOrdenDetalle(List<SysCorreosBandejaData> all, FiltrosLazyLoadData filtros)
+        {
+            string campo = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
+            int orden = filtros?.sortOrder ?? 1; // 1=ASC, 0=DESC
+
+            Func<SysCorreosBandejaData, object?> key = campo switch
+            {
+                "id_mail" or "id_email" or "idemail" => x => x.IdEmail,
+                "cuenta" or "cod_smtp" or "codsmtp" => x => x.CodSmtp,
+                "para" => x => x.Para,
+                "asunto" => x => x.Asunto,
+                "estado" or "estadodesc" => x => x.EstadoDesc,
+                "fecha" => x => x.Fecha ?? DateTime.MinValue,
+                "fecha_envio" or "fechaenvio" => x => x.FechaEnvio ?? DateTime.MinValue,
+                "usuario" => x => x.Usuario,
+                "anio" => x => x.Anio,
+                "mesid" => x => x.MesId,
+                "mes" => x => x.Mes,
+                _ => x => x.Fecha ?? DateTime.MinValue
+            };
+
+            return (orden == 0) ? all.OrderByDescending(key).ToList()
+                               : all.OrderBy(key).ToList();
+        }
+
+        private static List<SysCorreosBandejaResumenData> ApplyOrdenResumen(List<SysCorreosBandejaResumenData> all, FiltrosLazyLoadData filtros)
+        {
+            string campo = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
+            int orden = filtros?.sortOrder ?? 1; // 1=ASC, 0=DESC
+
+            Func<SysCorreosBandejaResumenData, object?> key = campo switch
+            {
+                "cod_smtp" => x => x.Cod_Smtp,
+                "correos" => x => x.Correos,
+                "estadodesc" => x => x.EstadoDesc,
+                "anio" => x => x.Anio,
+                "mesid" => x => x.MesId,
+                "mes" => x => x.Mes,
+                _ => x => x.Cod_Smtp
+            };
+
+            return (orden == 0) ? all.OrderByDescending(key).ToList()
+                               : all.OrderBy(key).ToList();
+        }
+
+        private static (int total, List<T> lista) ApplyPaginacion<T>(List<T> all, FiltrosLazyLoadData filtros, int defaultTake = 30)
+        {
+            int offset = Math.Max(0, filtros?.pagina ?? 0);
+            int take = Math.Max(1, filtros?.paginacion ?? defaultTake);
+            return (all.Count, all.Skip(offset).Take(take).ToList());
+        }
+
+        private static ErrorDto<SysCorreosBandejaLista> FailDetalle(ErrorDto<SysCorreosBandejaLista> dto, string msg)
+        {
+            dto.Code = -1;
+            dto.Description = msg;
+            if (dto.Result != null)
+            {
+                dto.Result.total = 0;
+                dto.Result.lista = null;
+            }
+            return dto;
+        }
+
+        private static ErrorDto<SysCorreosBandejaResumenLista> FailResumen(ErrorDto<SysCorreosBandejaResumenLista> dto, string msg)
+        {
+            dto.Code = -1;
+            dto.Description = msg;
+            if (dto.Result != null)
+            {
+                dto.Result.total = 0;
+                dto.Result.lista = new List<SysCorreosBandejaResumenData>();
+            }
+            return dto;
+        }
+
+
+        /// <summary>
+        /// Obtiene una lista de bandeja de correos con paginación y filtros.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="para_Buscar"></param>
+        /// <param name="asunto_Buscar"></param>
+        /// <param name="fecha_Inicio"></param>
+        /// <param name="fecha_Fin"></param>
+        /// <param name="filtros"></param>
+        /// <returns></returns>
+        public ErrorDto<SysCorreosBandejaLista> Correos_Bandeja_Lista_Obtener(
+            int CodEmpresa,
+            string para_Buscar,
+            string asunto_Buscar,
+            string fecha_Inicio,
+            string fecha_Fin,
+            FiltrosLazyLoadData filtros)
+        {
+            var dto = new ErrorDto<SysCorreosBandejaLista>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new SysCorreosBandejaLista { total = 0, lista = new() }
+            };
+
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
+            {
+                var args = BuildArgs(para_Buscar, asunto_Buscar, fecha_Inicio, fecha_Fin, "D");
+
+                var all = QueryDetalle(connection, args);
+                all = ApplyFiltroDetalle(all, filtros?.filtro);
+                all = ApplyOrdenDetalle(all, filtros ?? new FiltrosLazyLoadData());
+
+                var safeFiltros = filtros ?? new FiltrosLazyLoadData();
+                var page = ApplyPaginacion(all, safeFiltros);
+                return page;
             });
 
             if (db.Code != 0)
-            {
-                dto.Code = -1;
-                dto.Description = db.Description;
-                dto.Result.total = 0;
-                dto.Result.lista = null;
-                return dto;
-            }
+                return FailDetalle(dto, db.Description ?? "Error desconocido");
 
             dto.Result.total = db.Result.total;
             dto.Result.lista = db.Result.lista;
@@ -184,70 +268,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
             {
-                var sql = @"
-                DECLARE @tmp TABLE(
-                  ID_EMAIL     INT,
-                  COD_SMTP     VARCHAR(50),
-                  PARA         VARCHAR(500),
-                  ASUNTO       VARCHAR(500),
-                  EstadoDesc   VARCHAR(100),
-                  FECHA        DATETIME,
-                  FECHA_ENVIO  DATETIME,
-                  Usuario      VARCHAR(50),
-                  Anio         INT,
-                  MesId        INT,
-                  Mes          VARCHAR(20)
-                );
+                var args = BuildArgs(para_Buscar, asunto_Buscar, fecha_Inicio, fecha_Fin, "D");
 
-                INSERT INTO @tmp
-                EXEC dbo.spSys_Mail_Consulta_General
-                     @parametro_para,
-                     @parametro_asunto,
-                     @fecha_inicio_consulta,
-                     @fecha_fin_consulta,
-                     @tipo_resultado;
-
-                SELECT
-                  ID_EMAIL     AS IdEmail,
-                  COD_SMTP     AS CodSmtp,
-                  PARA         AS Para,
-                  ASUNTO       AS Asunto,
-                  EstadoDesc   AS EstadoDesc,
-                  FECHA        AS Fecha,
-                  FECHA_ENVIO  AS FechaEnvio,
-                  Usuario      AS Usuario,
-                  Anio         AS Anio,
-                  MesId        AS MesId,
-                  Mes          AS Mes
-                FROM @tmp;";
-
-                var args = new
-                {
-                    parametro_para = (para_Buscar ?? "").Trim(),
-                    parametro_asunto = (asunto_Buscar ?? "").Trim(),
-                    fecha_inicio_consulta = (fecha_Inicio ?? "").Trim(),
-                    fecha_fin_consulta = (fecha_Fin ?? "").Trim(),
-                    tipo_resultado = "D"
-                };
-
-                var datos = connection.Query<SysCorreosBandejaData>(sql, args, commandTimeout: 60).ToList();
-
-                var texto = (filtro_Global ?? "").Trim();
-                if (!string.IsNullOrWhiteSpace(texto))
-                {
-                    var q = texto.ToUpperInvariant();
-                    datos = datos.Where(x =>
-                        (x.Para ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Asunto ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.CodSmtp ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.EstadoDesc ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Usuario ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Mes ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Anio?.ToString() ?? "").Contains(q) ||
-                        (x.MesId?.ToString() ?? "").Contains(q)
-                    ).ToList();
-                }
-
+                var datos = QueryDetalle(connection, args);
+                datos = ApplyFiltroDetalle(datos, filtro_Global);
                 return datos;
             });
 
@@ -285,68 +309,19 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
             {
-                var sql = @"
-            exec dbo.spSys_Mail_Consulta_General
-                 @parametro_para,
-                 @parametro_asunto,
-                 @fecha_inicio_consulta,
-                 @fecha_fin_consulta,
-                 @tipo_resultado";
+                var args = BuildArgs(para_Buscar, asunto_Buscar, fecha_Inicio, fecha_Fin, "R");
 
-                var args = new
-                {
-                    parametro_para = (para_Buscar ?? "").Trim(),
-                    parametro_asunto = (asunto_Buscar ?? "").Trim(),
-                    fecha_inicio_consulta = (fecha_Inicio ?? "").Trim(),
-                    fecha_fin_consulta = (fecha_Fin ?? "").Trim(),
-                    tipo_resultado = "R"
-                };
+                var all = QueryResumen(connection, args);
+                all = ApplyFiltroResumen(all, filtros?.filtro);
+                all = ApplyOrdenResumen(all, filtros ?? new FiltrosLazyLoadData());
 
-                var all = connection.Query<SysCorreosBandejaResumenData>(sql, args).ToList();
-
-                var texto = (filtros?.filtro ?? "").Trim();
-                if (!string.IsNullOrWhiteSpace(texto))
-                {
-                    var q = texto.ToUpperInvariant();
-                    all = all.Where(x =>
-                        (x.Cod_Smtp ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.EstadoDesc ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Mes ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Anio?.ToString() ?? "").Contains(q) ||
-                        (x.MesId?.ToString() ?? "").Contains(q) ||
-                        (x.Correos.ToString()).Contains(q)
-                    ).ToList();
-                }
-
-                string campo = (filtros?.sortField ?? "").Trim().ToLowerInvariant();
-                int orden = filtros?.sortOrder ?? 1; // 1=ASC, 0=DESC
-                Func<SysCorreosBandejaResumenData, object?> key = campo switch
-                {
-                    "cod_smtp" => x => x.Cod_Smtp,
-                    "correos" => x => x.Correos,
-                    "estadodesc" => x => x.EstadoDesc,
-                    "anio" => x => x.Anio,
-                    "mesid" => x => x.MesId,
-                    "mes" => x => x.Mes,
-                    _ => x => x.Cod_Smtp
-                };
-
-                all = (orden == 0) ? all.OrderByDescending(key).ToList() : all.OrderBy(key).ToList();
-
-                int offset = Math.Max(0, filtros?.pagina ?? 0);
-                int take = Math.Max(1, filtros?.paginacion ?? 30);
-
-                return (total: all.Count, lista: all.Skip(offset).Take(take).ToList());
+                var safeFiltros = filtros ?? new FiltrosLazyLoadData();
+                var page = ApplyPaginacion(all, safeFiltros);
+                return page;
             });
 
             if (db.Code != 0)
-            {
-                dto.Code = -1;
-                dto.Description = db.Description;
-                dto.Result.total = 0;
-                dto.Result.lista = new List<SysCorreosBandejaResumenData>();
-                return dto;
-            }
+                return FailResumen(dto, db.Description ?? "Error desconocido");
 
             dto.Result.total = db.Result.total;
             dto.Result.lista = db.Result.lista;
@@ -370,39 +345,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
             {
-                var sql = @"
-            exec dbo.spSys_Mail_Consulta_General
-                 @parametro_para,
-                 @parametro_asunto,
-                 @fecha_inicio_consulta,
-                 @fecha_fin_consulta,
-                 @tipo_resultado";
+                var args = BuildArgs(para_Buscar, asunto_Buscar, fecha_Inicio, fecha_Fin, "R");
 
-                var args = new
-                {
-                    parametro_para = (para_Buscar ?? "").Trim(),
-                    parametro_asunto = (asunto_Buscar ?? "").Trim(),
-                    fecha_inicio_consulta = (fecha_Inicio ?? "").Trim(),
-                    fecha_fin_consulta = (fecha_Fin ?? "").Trim(),
-                    tipo_resultado = "R"
-                };
-
-                var datos = connection.Query<SysCorreosBandejaResumenData>(sql, args).ToList();
-
-                var texto = (filtro_Global ?? "").Trim();
-                if (!string.IsNullOrWhiteSpace(texto))
-                {
-                    var q = texto.ToUpperInvariant();
-                    datos = datos.Where(x =>
-                        (x.Cod_Smtp ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.EstadoDesc ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Mes ?? "").ToUpperInvariant().Contains(q) ||
-                        (x.Anio?.ToString() ?? "").Contains(q) ||
-                        (x.MesId?.ToString() ?? "").Contains(q) ||
-                        (x.Correos.ToString()).Contains(q)
-                    ).ToList();
-                }
-
+                var datos = QueryResumen(connection, args);
+                datos = ApplyFiltroResumen(datos, filtro_Global);
                 return datos;
             });
 
