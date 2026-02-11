@@ -1,17 +1,21 @@
-﻿using Dapper;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
+using Galileo.DataBaseTier;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSysCorreosBandejaDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDb;
         public FrmSysCorreosBandejaDB(IConfiguration config)
         {
-            _config = config;
+            _portalDb = new PortalDB(config);
         }
 
 
@@ -33,8 +37,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             string fecha_Fin,
             FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
             var dto = new ErrorDto<SysCorreosBandejaLista>
             {
                 Code = 0,
@@ -42,11 +44,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 Result = new SysCorreosBandejaLista { total = 0, lista = new() }
             };
 
-            try
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
             {
-                using var connection = new SqlConnection(stringConn);
-
-
                 // Igualamos a la técnica de "Resumen": temp table + select con nombres EXACTOS al POCO
                 var sql = @"
                 DECLARE @tmp TABLE(
@@ -102,14 +101,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 {
                     var q = texto.ToUpperInvariant();
                     all = all.Where(x =>
-                    (x.Para ?? "").ToUpperInvariant().Contains(q) ||
-                    (x.Asunto ?? "").ToUpperInvariant().Contains(q) ||
-                    (x.CodSmtp ?? "").ToUpperInvariant().Contains(q) ||
-                    (x.EstadoDesc ?? "").ToUpperInvariant().Contains(q) ||
-                    (x.Usuario ?? "").ToUpperInvariant().Contains(q) ||
-                    (x.Mes ?? "").ToUpperInvariant().Contains(q) ||
-                    (x.Anio?.ToString() ?? "").Contains(q) ||
-                    (x.MesId?.ToString() ?? "").Contains(q)
+                        (x.Para ?? "").ToUpperInvariant().Contains(q) ||
+                        (x.Asunto ?? "").ToUpperInvariant().Contains(q) ||
+                        (x.CodSmtp ?? "").ToUpperInvariant().Contains(q) ||
+                        (x.EstadoDesc ?? "").ToUpperInvariant().Contains(q) ||
+                        (x.Usuario ?? "").ToUpperInvariant().Contains(q) ||
+                        (x.Mes ?? "").ToUpperInvariant().Contains(q) ||
+                        (x.Anio?.ToString() ?? "").Contains(q) ||
+                        (x.MesId?.ToString() ?? "").Contains(q)
                     ).ToList();
                 }
 
@@ -140,17 +139,20 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 int offset = Math.Max(0, filtros?.pagina ?? 0);
                 int take = Math.Max(1, filtros?.paginacion ?? 30);
 
-                dto.Result.total = all.Count;
-                dto.Result.lista = all.Skip(offset).Take(take).ToList();
-            }
-            catch (Exception ex)
+                return (total: all.Count, lista: all.Skip(offset).Take(take).ToList());
+            });
+
+            if (db.Code != 0)
             {
                 dto.Code = -1;
-                dto.Description = ex.Message;
+                dto.Description = db.Description;
                 dto.Result.total = 0;
                 dto.Result.lista = null;
+                return dto;
             }
 
+            dto.Result.total = db.Result.total;
+            dto.Result.lista = db.Result.lista;
             return dto;
         }
 
@@ -173,8 +175,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                    string fecha_Fin,
                    string filtro_Global)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
             var dto = new ErrorDto<List<SysCorreosBandejaData>>
             {
                 Code = 0,
@@ -182,10 +182,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 Result = new()
             };
 
-            try
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
             {
-                using var connection = new SqlConnection(stringConn);
-
                 var sql = @"
                 DECLARE @tmp TABLE(
                   ID_EMAIL     INT,
@@ -250,19 +248,22 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     ).ToList();
                 }
 
-                dto.Result = datos;
-            }
-            catch (Exception ex)
+                return datos;
+            });
+
+            if (db.Code != 0)
             {
                 dto.Code = -1;
-                dto.Description = ex.Message;
+                dto.Description = db.Description;
                 dto.Result = null;
+                return dto;
             }
 
+            dto.Result = db.Result ?? new();
             return dto;
         }
-        
-        
+
+
         /// <summary>
         /// Obtiene una lista de bandeja de correos resumen con paginación y con filtros.
         /// </summary>
@@ -275,11 +276,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SysCorreosBandejaResumenLista> Correos_Bandeja_Resumen_Lista_Obtener(int CodEmpresa, string para_Buscar, string asunto_Buscar, string fecha_Inicio, string fecha_Fin, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var dto = new ErrorDto<SysCorreosBandejaResumenLista> { Code = 0, Description = "Ok", Result = new SysCorreosBandejaResumenLista { total = 0, lista = new() } };
-            try
+            var dto = new ErrorDto<SysCorreosBandejaResumenLista>
             {
-                using var connection = new SqlConnection(stringConn);
+                Code = 0,
+                Description = "Ok",
+                Result = new SysCorreosBandejaResumenLista { total = 0, lista = new() }
+            };
+
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
+            {
                 var sql = @"
             exec dbo.spSys_Mail_Consulta_General
                  @parametro_para,
@@ -287,6 +292,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                  @fecha_inicio_consulta,
                  @fecha_fin_consulta,
                  @tipo_resultado";
+
                 var args = new
                 {
                     parametro_para = (para_Buscar ?? "").Trim(),
@@ -324,23 +330,31 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     "mes" => x => x.Mes,
                     _ => x => x.Cod_Smtp
                 };
+
                 all = (orden == 0) ? all.OrderByDescending(key).ToList() : all.OrderBy(key).ToList();
 
                 int offset = Math.Max(0, filtros?.pagina ?? 0);
                 int take = Math.Max(1, filtros?.paginacion ?? 30);
 
-                dto.Result.total = all.Count;
-                dto.Result.lista = all.Skip(offset).Take(take).ToList();
-            }
-            catch (Exception ex)
+                return (total: all.Count, lista: all.Skip(offset).Take(take).ToList());
+            });
+
+            if (db.Code != 0)
             {
-                dto.Code = -1; dto.Description = ex.Message; dto.Result.total = 0; dto.Result.lista = new List<SysCorreosBandejaResumenData>();
+                dto.Code = -1;
+                dto.Description = db.Description;
+                dto.Result.total = 0;
+                dto.Result.lista = new List<SysCorreosBandejaResumenData>();
+                return dto;
             }
+
+            dto.Result.total = db.Result.total;
+            dto.Result.lista = db.Result.lista;
             return dto;
         }
-       
-       
-       /// <summary>
+
+
+        /// <summary>
         /// Obtiene una lista de bandeja de correos resumen sin paginación y con filtros.
         /// </summary>
         /// <param name="CodEmpresa"></param>
@@ -352,11 +366,10 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SysCorreosBandejaResumenData>> Correos_Bandeja_Resumen_Obtener(int CodEmpresa, string para_Buscar, string asunto_Buscar, string fecha_Inicio, string fecha_Fin, string filtro_Global)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
             var dto = new ErrorDto<List<SysCorreosBandejaResumenData>> { Code = 0, Description = "Ok", Result = new() };
-            try
+
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
             {
-                using var connection = new SqlConnection(stringConn);
                 var sql = @"
             exec dbo.spSys_Mail_Consulta_General
                  @parametro_para,
@@ -364,6 +377,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                  @fecha_inicio_consulta,
                  @fecha_fin_consulta,
                  @tipo_resultado";
+
                 var args = new
                 {
                     parametro_para = (para_Buscar ?? "").Trim(),
@@ -389,14 +403,19 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     ).ToList();
                 }
 
-                dto.Result = datos;
-            }
-            catch (Exception ex)
+                return datos;
+            });
+
+            if (db.Code != 0)
             {
-                dto.Code = -1; dto.Description = ex.Message; dto.Result = null;
+                dto.Code = -1;
+                dto.Description = db.Description;
+                dto.Result = null;
+                return dto;
             }
+
+            dto.Result = db.Result ?? new();
             return dto;
         }
-
     }
 }

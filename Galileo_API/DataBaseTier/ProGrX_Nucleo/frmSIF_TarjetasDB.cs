@@ -1,5 +1,4 @@
 using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models;
@@ -9,14 +8,15 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSifTarjetasDB
     {
-        private readonly IConfiguration _config;
         private readonly int vModulo = 10; // Modulo de Tesorer�a
         private readonly MSecurityMainDb _Security_MainDB;
+        private readonly PortalDB _portalDb;
+
         public FrmSifTarjetasDB(IConfiguration config)
         {
-            _config = config;
-            _Security_MainDB = new MSecurityMainDb(_config);
-        }
+           _portalDb = new PortalDB(config);
+            _Security_MainDB = new MSecurityMainDb(config);
+        }   
 
         /// <summary>
         /// Obtiene una lista de tarjetas con paginaci�n y filtros (lazy loading).
@@ -26,22 +26,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<SifTarjetasLista> SIF_TarjetasLista_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<SifTarjetasLista>()
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new SifTarjetasLista()
-                {
-                    total = 0,
-                    lista = new List<SifTarjetasData>()
-                }
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
                 var search = filtros?.filtro?.Trim();
                 string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
 
@@ -51,13 +37,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 var offset = filtros?.pagina ?? 0;
                 var fetch = filtros?.paginacion ?? 0;
                 if (fetch <= 0)
-                {
                     fetch = int.MaxValue;
-                }
 
                 // Busco Total (mantiene comportamiento anterior: total sin filtro)
                 const string totalQuery = @"SELECT COUNT(cod_tarjeta) FROM sif_tarjetas";
-                result.Result.total = connection.Query<int>(totalQuery).FirstOrDefault();
+                var total = connection.Query<int>(totalQuery).FirstOrDefault();
 
                 const string query = @"
                     SELECT cod_tarjeta, descripcion, activa
@@ -80,7 +64,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         cod_tarjeta ASC
                     OFFSET @offset ROWS FETCH NEXT @fetch ROWS ONLY;";
 
-                result.Result.lista = connection.Query<SifTarjetasData>(query, new
+                var lista = connection.Query<SifTarjetasData>(query, new
                 {
                     search = searchLike,
                     sortField,
@@ -88,15 +72,24 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                     offset,
                     fetch
                 }).ToList();
-            }
-            catch (Exception ex)
+
+                return new SifTarjetasLista
+                {
+                    total = total,
+                    lista = lista
+                };
+            });
+
+            if (db.Code != 0)
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result.total = 0;
-                result.Result.lista = null;
+                db.Result = new SifTarjetasLista
+                {
+                    total = 0,
+                    lista = null
+                };
             }
-            return result;
+
+            return db;
         }
 
         /// <summary>
@@ -107,37 +100,17 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SifTarjetasData>> SIF_Tarjetas_Obtener(int CodEmpresa, FiltrosLazyLoadData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifTarjetasData>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifTarjetasData>()
-            };
+            var search = filtros?.filtro?.Trim();
+            string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
 
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                var search = filtros?.filtro?.Trim();
-                string? searchLike = string.IsNullOrWhiteSpace(search) ? null : $"%{search}%";
-
-                const string query = @"SELECT cod_tarjeta, descripcion, activa
+            const string query = @"SELECT cod_tarjeta, descripcion, activa
                                 FROM sif_tarjetas
                                 WHERE (@search IS NULL
                                        OR cod_tarjeta LIKE @search
                                        OR descripcion LIKE @search)
                                 ORDER BY cod_tarjeta";
 
-                result.Result = connection.Query<SifTarjetasData>(query, new { search = searchLike }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            return DbHelper.ExecuteListQuery<SifTarjetasData>(_portalDb, CodEmpresa, query, new { search = searchLike });
         }
 
         /// <summary>
@@ -149,131 +122,76 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto SIF_Tarjetas_Guardar(int CodEmpresa, string usuario, SifTarjetasData tarjeta)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            if (tarjeta == null)
+                return DbHelper.ErrorResponse("El objeto tarjeta no puede ser nulo.", -2);
 
-                // Validar si existe la tarjeta
-                var queryExiste = @"SELECT COUNT(*) FROM sif_tarjetas WHERE UPPER(cod_tarjeta) = @cod_tarjeta";
-                var codTarjetaUpper = tarjeta?.cod_tarjeta?.ToUpper() ?? string.Empty;
-                var existe = connection.QueryFirstOrDefault<int>(queryExiste, new { cod_tarjeta = codTarjetaUpper });
+            var codTarjetaUpper = NormalizeUpper(tarjeta.cod_tarjeta);
+            if (string.IsNullOrWhiteSpace(codTarjetaUpper))
+                return DbHelper.ErrorResponse("El código de tarjeta no puede ser vacío.", -2);
 
-                if (existe == 0)
-                {
-                    if (tarjeta == null)
-                    {
-                        result.Code = -2;
-                        result.Description = "El objeto tarjeta no puede ser nulo.";
-                    }
-                    else
-                    {
-                        result = SIF_Tarjetas_Insertar(connection, CodEmpresa, usuario, tarjeta);
-                    }
-                }
-                else
-                {
-                    if (tarjeta == null)
-                    {
-                        result.Code = -2;
-                        result.Description = "El objeto tarjeta no puede ser nulo.";
-                    }
-                    else
-                    {
-                        result = SIF_Tarjetas_Actualizar(connection, CodEmpresa, usuario, tarjeta);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+            // Validar si existe la tarjeta
+            var queryExiste = @"SELECT COUNT(*) FROM sif_tarjetas WHERE UPPER(cod_tarjeta) = @cod_tarjeta";
+            var existeDb = DbHelper.ExecuteSingleQuery<int>(_portalDb, CodEmpresa, queryExiste, 0, new { cod_tarjeta = codTarjetaUpper });
+            if (existeDb.Code != 0)
+                return DbHelper.ErrorResponse(existeDb.Description ?? "Error desconocido al validar existencia de tarjeta.", existeDb.Code ?? -1);
+
+            var existe = existeDb.Result;
+
+            if (existe == 0)
+                return SIF_Tarjetas_Insertar(CodEmpresa, usuario, tarjeta);
+
+            return SIF_Tarjetas_Actualizar(CodEmpresa, usuario, tarjeta);
         }
 
         /// <summary>
         /// Inserta una nueva tarjeta y registra en bit�cora.
         /// </summary>
-        private ErrorDto SIF_Tarjetas_Insertar(SqlConnection connection, int CodEmpresa, string usuario, SifTarjetasData tarjeta)
+        private ErrorDto SIF_Tarjetas_Insertar(int CodEmpresa, string usuario, SifTarjetasData tarjeta)
         {
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Tarjeta registrada correctamente."
-            };
-            try
-            {
-                var queryInsert = @"INSERT INTO sif_tarjetas (cod_tarjeta, descripcion, activa, registro_usuario, registro_fecha)
+            var queryInsert = @"INSERT INTO sif_tarjetas (cod_tarjeta, descripcion, activa, registro_usuario, registro_fecha)
                                     VALUES (@cod_tarjeta, @descripcion, @activa, @registro_usuario, GETDATE())";
-                connection.Execute(queryInsert, new
-                {
-                    cod_tarjeta = tarjeta.cod_tarjeta?.ToUpper() ?? string.Empty,
-                    tarjeta.descripcion,
-                    tarjeta.activa,
-                    registro_usuario = usuario
-                });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Mantenimiento Tarjetas: {tarjeta.cod_tarjeta} - {tarjeta.descripcion}",
-                    Movimiento = "Registra - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
+            var db = DbHelper.ExecuteNonQuery(_portalDb, CodEmpresa, queryInsert, new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                cod_tarjeta = NormalizeUpper(tarjeta.cod_tarjeta),
+                tarjeta.descripcion,
+                tarjeta.activa,
+                registro_usuario = usuario
+            });
+
+            if (db.Code == 0)
+            {
+                LogTarjetaBitacora(CodEmpresa, usuario, tarjeta.cod_tarjeta, tarjeta.descripcion, "Registra - WEB");
+                return DbHelper.OkResponse("Tarjeta registrada correctamente.");
             }
-            return result;
+
+            return db;
         }
 
         /// <summary>
         /// Actualiza una tarjeta existente y registra en bit�cora.
         /// </summary>
-        private ErrorDto SIF_Tarjetas_Actualizar(SqlConnection connection, int CodEmpresa, string usuario, SifTarjetasData tarjeta)
+        private ErrorDto SIF_Tarjetas_Actualizar(int CodEmpresa, string usuario, SifTarjetasData tarjeta)
         {
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Tarjeta actualizada correctamente."
-            };
-            try
-            {
-                var queryUpdate = @"UPDATE sif_tarjetas
+            var queryUpdate = @"UPDATE sif_tarjetas
                                     SET descripcion = @descripcion,
                                         activa = @activa
                                     WHERE UPPER(cod_tarjeta) = @cod_tarjeta";
-                connection.Execute(queryUpdate, new
-                {
-                    cod_tarjeta = tarjeta.cod_tarjeta?.ToUpper() ?? string.Empty,
-                    tarjeta.descripcion,
-                    tarjeta.activa
-                });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Mantenimiento Tarjetas: {tarjeta.cod_tarjeta} - {tarjeta.descripcion}",
-                    Movimiento = "Modifica - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
+            var db = DbHelper.ExecuteNonQuery(_portalDb, CodEmpresa, queryUpdate, new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
+                cod_tarjeta = NormalizeUpper(tarjeta.cod_tarjeta),
+                tarjeta.descripcion,
+                tarjeta.activa
+            });
+
+            if (db.Code == 0)
+            {
+                LogTarjetaBitacora(CodEmpresa, usuario, tarjeta.cod_tarjeta, tarjeta.descripcion, "Modifica - WEB");
+                return DbHelper.OkResponse("Tarjeta actualizada correctamente.");
             }
-            return result;
+
+            return db;
         }
 
         /// <summary>
@@ -285,45 +203,26 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto SIF_Tarjetas_Eliminar(int CodEmpresa, string usuario, string cod_tarjeta)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
+            var codUpper = NormalizeUpper(cod_tarjeta);
+            if (string.IsNullOrWhiteSpace(codUpper))
+                return DbHelper.ErrorResponse("El código de tarjeta no puede ser vacío.", -2);
 
-                // Verifica que exista la tarjeta antes de eliminar
-                var queryExiste = @"SELECT COUNT(*) FROM sif_tarjetas WHERE UPPER(cod_tarjeta) = @cod_tarjeta";
-                var existe = connection.QueryFirstOrDefault<int>(queryExiste, new { cod_tarjeta = cod_tarjeta.ToUpper() });
+            // Verifica que exista la tarjeta antes de eliminar
+            var queryExiste = @"SELECT COUNT(*) FROM sif_tarjetas WHERE UPPER(cod_tarjeta) = @cod_tarjeta";
+            var existeDb = DbHelper.ExecuteSingleQuery<int>(_portalDb, CodEmpresa, queryExiste, 0, new { cod_tarjeta = codUpper });
+            if (existeDb.Code != 0)
+                return DbHelper.ErrorResponse(existeDb.Description ?? "Error desconocido al validar existencia de tarjeta.", existeDb.Code ?? -1);
 
-                if (existe == 0)
-                {
-                    result.Code = -2;
-                    result.Description = $"La tarjeta con el c�digo {cod_tarjeta} no existe.";
-                    return result;
-                }
+            if (existeDb.Result == 0)
+                return DbHelper.ErrorResponse($"La tarjeta con el c�digo {cod_tarjeta} no existe.", -2);
 
-                var queryDelete = @"DELETE FROM sif_tarjetas WHERE UPPER(cod_tarjeta) = @cod_tarjeta";
-                connection.Execute(queryDelete, new { cod_tarjeta = cod_tarjeta.ToUpper() });
+            var queryDelete = @"DELETE FROM sif_tarjetas WHERE UPPER(cod_tarjeta) = @cod_tarjeta";
+            var db = DbHelper.ExecuteNonQuery(_portalDb, CodEmpresa, queryDelete, new { cod_tarjeta = codUpper });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    DetalleMovimiento = $"Mantenimiento Tarjetas: {cod_tarjeta}",
-                    Movimiento = "Elimina - WEB",
-                    Modulo = vModulo
-                });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+            if (db.Code == 0)
+                LogTarjetaBitacora(CodEmpresa, usuario, cod_tarjeta, null, "Elimina - WEB");
+
+            return db;
         }
 
         /// <summary>
@@ -334,41 +233,26 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto SIF_Tarjetas_Valida(int CodEmpresa, SifTarjetasData tarjeta)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
-            {
-                Code = 0,
-                Description = "Ok"
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                    var query = @"SELECT COUNT(*) FROM sif_tarjetas 
+            if (tarjeta == null)
+                return DbHelper.ErrorResponse("El objeto tarjeta no puede ser nulo.", -2);
+
+            var query = @"SELECT COUNT(*) FROM sif_tarjetas 
                                   WHERE UPPER(cod_tarjeta) = @cod_tarjeta
                                      OR UPPER(descripcion) = @descripcion";
-                    var existe = connection.QueryFirstOrDefault<int>(query, new
-                    {
-                        cod_tarjeta = tarjeta.cod_tarjeta?.ToUpper() ?? string.Empty,
-                        descripcion = tarjeta.descripcion?.ToUpper() ?? string.Empty
-                    });
 
-                    if (existe > 0)
-                    {
-                        result.Code = -1;
-                        result.Description = "Ya existe una tarjeta con ese c�digo o descripci�n.";
-                    }
-                    else
-                    {
-                        result.Code = 0;
-                        result.Description = "El c�digo y la descripci�n de tarjeta son v�lidos.";
-                    }
-            }
-            catch (Exception ex)
+            var db = DbHelper.ExecuteSingleQuery<int>(_portalDb, CodEmpresa, query, 0, new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+                cod_tarjeta = NormalizeUpper(tarjeta.cod_tarjeta),
+                descripcion = NormalizeUpper(tarjeta.descripcion)
+            });
+
+            if (db.Code != 0)
+                return DbHelper.ErrorResponse(db.Description ?? "Error desconocido al validar existencia de tarjeta.", db.Code ?? -1);
+
+            if (db.Result > 0)
+                return DbHelper.ErrorResponse("Ya existe una tarjeta con ese c�digo o descripci�n.", -1);
+
+            return DbHelper.OkResponse("El c�digo y la descripci�n de tarjeta son v�lidos.");
         }
 
         /// <summary>
@@ -379,31 +263,34 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SifEmisoresAsignadosData>> SIF_TarjetasEmisores_Obtener(int CodEmpresa, string cod_tarjeta)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SifEmisoresAsignadosData>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SifEmisoresAsignadosData>()
-            };
-
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = @"SELECT E.cod_emisor AS Codigo, E.descripcion, X.cod_emisor AS Asignado
+            var query = @"SELECT E.cod_emisor AS Codigo, E.descripcion, X.cod_emisor AS Asignado
                               FROM sif_emisores E
                               LEFT JOIN sif_emisores_tarjetas X ON E.cod_emisor = X.cod_emisor
                                 AND X.cod_tarjeta = @cod_tarjeta
                               ORDER BY X.cod_emisor DESC, E.cod_emisor";
-                result.Result = connection.Query<SifEmisoresAsignadosData>(query, new { cod_tarjeta }).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+
+            return DbHelper.ExecuteListQuery<SifEmisoresAsignadosData>(_portalDb, CodEmpresa, query, new { cod_tarjeta });
         }
+
+        private void LogTarjetaBitacora(int CodEmpresa, string usuario, string? codTarjeta, string? descripcion, string movimiento)
+        {
+            var cod = codTarjeta ?? "";
+            var desc = descripcion ?? "";
+            var detalle = string.IsNullOrWhiteSpace(desc)
+                ? $"Mantenimiento Tarjetas: {cod}"
+                : $"Mantenimiento Tarjetas: {cod} - {desc}";
+
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalle,
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
+        }
+
+        private static string NormalizeUpper(string? value)
+            => (value ?? string.Empty).Trim().ToUpperInvariant();
     }
 }
