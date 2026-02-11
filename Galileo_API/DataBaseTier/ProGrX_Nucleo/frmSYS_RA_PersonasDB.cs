@@ -3,21 +3,20 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using System.Data;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.Security;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
     public class FrmSysRaPersonasDB
     {
-        private readonly IConfiguration _config;
         private readonly int vModulo = 10;
-        private readonly MSecurityMainDb _Security_MainDB;
+        private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _securityMainDb;
 
         public FrmSysRaPersonasDB(IConfiguration config)
         {
-            _config = config;
-            _Security_MainDB = new MSecurityMainDb(_config);
+            _portalDb = new PortalDB(config);
+            _securityMainDb = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -28,72 +27,54 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SysRaExpedientesData>> SYS_RA_Personas_Buscar(int CodEmpresa, SysExpedienteFiltroData filtros)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<SysRaExpedientesData>>
+            // Normalización defensiva
+            var ced = $"%{filtros.cedula?.Trim()}%";
+            var nombre = $"%{filtros.nombre?.Trim()}%";
+
+            if (!filtros.vence)
             {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SysRaExpedientesData>()
-            };
-            try
-            {
+                if (filtros.inicioVenc == null)
+                    return DbHelper.CreateErrorResponse("filtros.inicioVenc cannot be null", -1, (List<SysRaExpedientesData>)null!);
 
-                using var connection = new SqlConnection(stringConn);
-                if (!filtros.vence)
-                {
-                    DateTimeOffset fecha_inicio = filtros.inicioVenc != null
-                        ? DateTimeOffset.Parse(filtros.inicioVenc, System.Globalization.CultureInfo.InvariantCulture)
-                        : throw new ArgumentNullException("filtros.inicioVenc cannot be null", nameof(filtros.inicioVenc));
+                if (filtros.finVenc == null)
+                    return DbHelper.CreateErrorResponse("filtros.finVenc cannot be null", -1, (List<SysRaExpedientesData>)null!);
 
-                    DateTimeOffset fecha_fin = filtros.finVenc != null
-                        ? DateTimeOffset.Parse(filtros.finVenc, System.Globalization.CultureInfo.InvariantCulture)
-                        : throw new ArgumentNullException(nameof(filtros), "filtros.finVenc cannot be null");
+                DateTimeOffset fecha_inicio = DateTimeOffset.Parse(filtros.inicioVenc, System.Globalization.CultureInfo.InvariantCulture);
+                DateTimeOffset fecha_fin = DateTimeOffset.Parse(filtros.finVenc, System.Globalization.CultureInfo.InvariantCulture);
 
-                    // Rango inclusivo día completo
-                    var ini = fecha_inicio.Date;
-                    var fin = fecha_fin.Date.AddDays(1).AddSeconds(-1);
+                // Rango inclusivo día completo
+                var ini = fecha_inicio.Date;
+                var fin = fecha_fin.Date.AddDays(1).AddSeconds(-1);
 
-                    const string query = @"select *, isnull(Fecha_Vence, '2300/01/01') as 'Vence_Fix'
+                const string query = @"select *, isnull(Fecha_Vence, '2300/01/01') as 'Vence_Fix'
                                           from vSYS_RA_Casos
                                           where cedula like @ced
                                             and nombre like @nombre
                                             and Estado = @estado
                                             and isnull(Fecha_Vence, '2300/01/01') between @ini and @fin";
 
-                    result.Result = connection.Query<SysRaExpedientesData>(query,
-                        new
-                        {
-                            ced = $"%{filtros.cedula?.Trim()}%",
-                            nombre = $"%{filtros.nombre?.Trim()}%",
-                            estado = filtros.estado,
-                            ini,
-                            fin
-                        }).ToList();
-                }
-                else
+                return DbHelper.ExecuteListQuery<SysRaExpedientesData>(_portalDb, CodEmpresa, query, new
                 {
-                    const string query = @"select *, isnull(Fecha_Vence, '2300/01/01') as 'Vence_Fix'
+                    ced,
+                    nombre,
+                    estado = filtros.estado,
+                    ini,
+                    fin
+                });
+            }
+
+            const string queryAll = @"select *, isnull(Fecha_Vence, '2300/01/01') as 'Vence_Fix'
                                           from vSYS_RA_Casos
                                           where cedula like @ced
                                             and nombre like @nombre
                                             and Estado = @estado";
 
-                    result.Result = connection.Query<SysRaExpedientesData>(query,
-                        new
-                        {
-                            ced = $"%{filtros.cedula?.Trim()}%",
-                            nombre = $"%{filtros.nombre?.Trim()}%",
-                            estado = filtros.estado,
-                        }).ToList();
-                }
-            }
-            catch (Exception ex)
+            return DbHelper.ExecuteListQuery<SysRaExpedientesData>(_portalDb, CodEmpresa, queryAll, new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+                ced,
+                nombre,
+                estado = filtros.estado
+            });
         }
 
 
@@ -107,61 +88,49 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto SYS_RA_Personas_Guardar(int CodEmpresa, int personaId, SysRaExpedientesData datos, string usuario)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto()
+            // Validaciones mínimas para evitar NRE
+            var cedula = (datos.cedula ?? string.Empty).Trim();
+            if (cedula == "")
+                return DbHelper.ErrorResponse("La cédula es requerida", -1);
+
+            var db = DbHelper.WithConn(_portalDb, CodEmpresa, connection =>
             {
-                Code = 0,
+                return connection.QuerySingle<int>(
+                    "spSYS_RA_Persona_Add",
+                    new
+                    {
+                        PersonaId = datos.persona_id,
+                        Cedula = cedula,
+                        Estado = datos.estado,
+                        TipoId = datos.tipo_id,
+                        Vence = datos.vence && datos.vencimiento != null ? datos.vencimiento.Value.Date : (DateTime?)null,
+                        Notas = datos.notas,
+                        Usuario = usuario
+                    },
+                    commandType: CommandType.StoredProcedure);
+            });
+
+            if (db.Code != 0)
+                return DbHelper.ErrorResponse(db.Description ?? "Error al guardar", -1);
+
+            var personaCreadaId = db.Result;
+
+            // Bitácora solo si el SP fue OK
+            var movimiento = (datos.persona_id == 0) ? "Registra - WEB" : "Modifica - WEB";
+            _securityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = $"Expediente Restringido: {datos.persona_id} Cedula = {cedula}",
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
+
+            return new ErrorDto
+            {
+                Code = personaCreadaId,
                 Description = "Ok"
             };
-            try
-            {
-
-                using var connection = new SqlConnection(stringConn);
-                int PERSONA_ID = connection.QuerySingle<int>(
-                            "spSYS_RA_Persona_Add",
-                            new
-                            {
-                                PersonaId = datos.persona_id,
-                                Cedula = datos.cedula.Trim(),
-                                Estado = datos.estado,
-                                TipoId = datos.tipo_id,
-                                Vence = datos.vence && datos.vencimiento != null ? datos.vencimiento.Value.Date : (DateTime?)null,
-                                Notas = datos.notas,
-                                Usuario = usuario
-                            },
-                        commandType: CommandType.StoredProcedure
-                        );
-                result.Code = PERSONA_ID;
-
-                if (datos.persona_id == 0)
-                {
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = usuario,
-                        DetalleMovimiento = $"Expediente Restringido: {datos.persona_id} Cedula = {datos.cedula}",
-                        Movimiento = "Registra - WEB",
-                        Modulo = vModulo
-                    });
-                }
-                else
-                {
-                    _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = usuario,
-                        DetalleMovimiento = $"Expediente Restringido: {datos.persona_id} Cedula = {datos.cedula}",
-                        Movimiento = "Modifica - WEB",
-                        Modulo = vModulo
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
         }
 
 
@@ -172,26 +141,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> SYS_Usuarios_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"select CEDULA as 'item',NOMBRE as 'descripcion' from SOCIOS ";
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+            const string query = @"select CEDULA as 'item',NOMBRE as 'descripcion' from SOCIOS";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query);
         }
 
 
@@ -202,29 +153,8 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> SYS_RaTipos_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var result = new ErrorDto<List<DropDownListaGenericaModel>>()
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<DropDownListaGenericaModel>()
-            };
-
-            try
-            {
-                var query = "";
-                using var connection = new SqlConnection(stringConn);
-                query = $@"select rtrim(TIPO_ID) as 'item',rtrim(descripcion) as 'descripcion' from SYS_EXP_TIPOS  where Activo = 1 order by TIPO_ID";
-                result.Result = connection.Query<DropDownListaGenericaModel>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
-
+            const string query = @"select rtrim(TIPO_ID) as 'item',rtrim(descripcion) as 'descripcion' from SYS_EXP_TIPOS where Activo = 1 order by TIPO_ID";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, CodEmpresa, query);
         }
 
 
@@ -236,34 +166,14 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         public ErrorDto<List<SysAutorizacionesData>> SYS_RA_CasosPorCedula_Obtener(int CodEmpresa, string filtro)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            filtro = (filtro == "undefined" ? "" : filtro);
-            var result = new ErrorDto<List<SysAutorizacionesData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new List<SysAutorizacionesData>()
-            };
-            try
-            {
+            filtro = (filtro == "undefined" ? "" : (filtro ?? ""));
 
-                using var connection = new SqlConnection(stringConn);
-                var query = $@"SELECT Persona_Id, Cedula, NOMBRE, Estado  FROM vSYS_RA_Casos where cedula like @ced ";
-                result.Result = connection.Query<SysAutorizacionesData>(query,
-                    new
-                    {
-                        ced = $"%{filtro.Trim()}%",
+            const string query = @"SELECT Persona_Id, Cedula, NOMBRE, Estado FROM vSYS_RA_Casos where cedula like @ced";
 
-
-                    }).ToList();
-            }
-            catch (Exception ex)
+            return DbHelper.ExecuteListQuery<SysAutorizacionesData>(_portalDb, CodEmpresa, query, new
             {
-                result.Code = -1;
-                result.Description = ex.Message;
-                result.Result = null;
-            }
-            return result;
+                ced = $"%{filtro.Trim()}%"
+            });
         }
     }
 }
