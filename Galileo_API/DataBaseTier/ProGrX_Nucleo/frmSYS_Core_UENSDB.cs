@@ -20,33 +20,16 @@ namespace Galileo.DataBaseTier
         private static CoreUeNsDtoList EmptyUensList()
             => new CoreUeNsDtoList { uens = new List<CoreUeNsDto>(), Total = 0 };
 
-        private ErrorDto<T> WithClienteConn<T>(int codCliente, Func<SqlConnection, T> action, Func<T> defaultFactory)
-        {
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDB, codCliente);
-                var result = action(conn);
-                return DbHelper.CreateOkResponse(result);
-            }
-            catch (Exception ex)
-            {
-                return DbHelper.CreateErrorResponse(ex.Message ?? "Error inesperado", -1, defaultFactory());
-            }
-        }
 
-        private ErrorDto WithClienteConnNonQuery(int codCliente, Func<SqlConnection, int> action, string okDescription)
-        {
-            try
-            {
-                using var conn = DbHelper.OpenConnection(_portalDB, codCliente);
-                var rows = action(conn);
-                return new ErrorDto { Code = rows, Description = okDescription };
-            }
-            catch (Exception ex)
-            {
-                return new ErrorDto { Code = -1, Description = ex.Message ?? "Error inesperado" };
-            }
-        }
+        private static ErrorDto<T> MapDb<T>(ErrorDto<T> db, Func<T> defaultFactory)
+            => db.Code == 0
+                ? db
+                : DbHelper.CreateErrorResponse(db.Description ?? "Error inesperado", -1, defaultFactory());
+
+        private static ErrorDto MapDbNonQuery(ErrorDto<int> db, string okDescription)
+            => db.Code == 0
+                ? new ErrorDto { Code = db.Result, Description = okDescription }
+                : new ErrorDto { Code = -1, Description = db.Description ?? "Error inesperado" };
 
         private static int ToActivaBit(bool? activa)
             => activa == true ? 1 : 0;
@@ -102,9 +85,10 @@ namespace Galileo.DataBaseTier
         {
             var vfiltro = JsonConvert.DeserializeObject<CoreUeNsFiltros>(filtros);
 
-            return WithClienteConn(CodCliente,
-                connection => QueryUensPaged(connection, vfiltro, onlyPrincipales: false),
-                EmptyUensList);
+            var db = DbHelper.WithConn(_portalDB, CodCliente,
+                connection => QueryUensPaged(connection, vfiltro, onlyPrincipales: false));
+
+            return MapDb(db, EmptyUensList);
         }
 
 
@@ -117,7 +101,11 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Core_UENS_Upsert(int CodCliente, string usuario, CoreUeNsDto request)
         {
-            return WithClienteConnNonQuery(CodCliente, connection =>
+            var okMsg = request?.cod_unidad == null || request.cod_unidad == ""
+                ? "Registro agregado satisfactoriamente"
+                : RegistroActualizadoMsg;
+
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 var activa = ToActivaBit(request?.activa);
 
@@ -142,7 +130,9 @@ namespace Galileo.DataBaseTier
                                              where COD_UNIDAD = @cod_unidad OR UNIDAD_PRINCIPAL = @cod_unidad;";
 
                 return connection.Execute(updateSql, new { cod_unidad = request?.cod_unidad, descripcion = request?.descripcion, activa, usuario });
-            }, request?.cod_unidad == null || request.cod_unidad == "" ? "Registro agregado satisfactoriamente" : RegistroActualizadoMsg);
+            });
+
+            return MapDbNonQuery(db, okMsg);
         }
 
 
@@ -156,11 +146,10 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Core_SubUnidad_Upsert(int CodCliente, string usuario, string? unidad_anterior, CoreUeNsDto request)
         {
-            return WithClienteConnNonQuery(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 var activa = ToActivaBit(request?.activa);
 
-                //Se obtiene información de la unidad principal
                 const string qPrincipal = @"select * from CORE_UENS where COD_UNIDAD = @unidad_principal";
                 CoreUeNsDto unidadPrincipal = connection.Query<CoreUeNsDto>(qPrincipal, new { unidad_principal = request?.unidad_principal }).First();
 
@@ -172,7 +161,6 @@ namespace Galileo.DataBaseTier
 
                 if (existe == 0 && unidadPrincipal.cntx_unidad == "")
                 {
-                    //Asigna la unidad a la UEN principal, porque no tiene unidad
                     const string upSql = @"update CORE_UENS set
                                          CntX_Unidad = @cntx_unidad,
                                          Activa = @activa,
@@ -185,7 +173,6 @@ namespace Galileo.DataBaseTier
 
                 if (existe == 0 && request != null && request.cod_unidad == "")
                 {
-                    //Agrega una nueva unidad
                     string nuevoCodigo = GetNextNumericCodUnidad(connection);
 
                     const string insSql = @"insert into CORE_UENS(COD_UNIDAD, descripcion, CntX_Unidad, unidad_principal, Activa, Registro_Fecha, Registro_Usuario)
@@ -202,7 +189,6 @@ namespace Galileo.DataBaseTier
                     });
                 }
 
-                //Actualiza la unidad
                 const string upSql2 = @"update CORE_UENS set
                                          CntX_Unidad = @cntx_unidad,
                                          Activa = @activa,
@@ -219,7 +205,9 @@ namespace Galileo.DataBaseTier
                     cod_unidad = request?.cod_unidad,
                     unidad_anterior
                 });
-            }, RegistroActualizadoMsg);
+            });
+
+            return MapDbNonQuery(db, RegistroActualizadoMsg);
         }
 
 
@@ -232,7 +220,11 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Core_SubCentroCosto_Upsert(int CodCliente, string usuario, CoreUeNsDto request)
         {
-            return WithClienteConnNonQuery(CodCliente, connection =>
+            var okMsg = request?.cod_unidad == null || request.cod_unidad == ""
+                ? "Registro agregado satisfactoriamente"
+                : RegistroActualizadoMsg;
+
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 var activa = ToActivaBit(request?.activa);
 
@@ -241,7 +233,6 @@ namespace Galileo.DataBaseTier
 
                 if (existe == 0)
                 {
-                    //Se obtiene información de la unidad principal
                     const string query2 = @"select * from CORE_UENS
                                            where (COD_UNIDAD = @unidad_principal OR UNIDAD_PRINCIPAL = @unidad_principal)
                                              AND CNTX_UNIDAD = @cntx_unidad";
@@ -284,7 +275,9 @@ namespace Galileo.DataBaseTier
                                            where COD_UNIDAD = @cod_unidad";
 
                 return connection.Execute(upSql2, new { cntx_centro_costo = request?.cntx_centro_costo, activa, usuario, cod_unidad = request?.cod_unidad });
-            }, request?.cod_unidad == null || request.cod_unidad == "" ? "Registro agregado satisfactoriamente" : RegistroActualizadoMsg);
+            });
+
+            return MapDbNonQuery(db, okMsg);
         }
 
         /// <summary>
@@ -295,11 +288,13 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Core_UENS_Delete(int CodCliente, string cod_unidad)
         {
-            return WithClienteConnNonQuery(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 const string query = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad OR UNIDAD_PRINCIPAL = @cod_unidad";
                 return connection.Execute(query, new { cod_unidad });
-            }, "Registros eliminados satisfactoriamente");
+            });
+
+            return MapDbNonQuery(db, "Registros eliminados satisfactoriamente");
         }
 
 
@@ -312,34 +307,31 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Core_SubUnidad_Delete(int CodCliente, string cod_unidad, string cntx_unidad)
         {
-            return WithClienteConnNonQuery(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 const string qFind = @"select COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad AND CNTX_UNIDAD = @cntx_unidad";
                 string? codUnidad = connection.Query<string>(qFind, new { cod_unidad, cntx_unidad }).FirstOrDefault();
 
-                //Valida si es la unidad principal
                 if (codUnidad == null)
                 {
-                    //Es la UEN Principal
                     const string delRoles = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @cod_unidad";
                     connection.Execute(delRoles, new { cod_unidad });
 
                     const string delUens = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad";
                     connection.Execute(delUens, new { cod_unidad });
 
-                    //Valida si existen otras unidades asociadas a la UEN Principal
                     const string qTopUnidad = @"select TOP 1 COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad order by ACTIVA desc";
                     string? nuevaUnidadPrincipal = connection.Query<string>(qTopUnidad, new { cod_unidad }).FirstOrDefault();
 
                     if (nuevaUnidadPrincipal != null)
                     {
-                        const string upUensPrincipal = @"update CORE_UENS set 
-                            UNIDAD_PRINCIPAL = @nuevaUnidadPrincipal 
+                        const string upUensPrincipal = @"update CORE_UENS set
+                            UNIDAD_PRINCIPAL = @nuevaUnidadPrincipal
                             where UNIDAD_PRINCIPAL = @cod_unidad";
                         connection.Execute(upUensPrincipal, new { nuevaUnidadPrincipal, cod_unidad });
 
-                        const string upNullPrincipal = @"update CORE_UENS set 
-                            UNIDAD_PRINCIPAL = NULL 
+                        const string upNullPrincipal = @"update CORE_UENS set
+                            UNIDAD_PRINCIPAL = NULL
                             where COD_UNIDAD = @nuevaUnidadPrincipal";
                         connection.Execute(upNullPrincipal, new { nuevaUnidadPrincipal });
                     }
@@ -347,7 +339,6 @@ namespace Galileo.DataBaseTier
                     return 1;
                 }
 
-                //No es la UEN Principal
                 const string delRoles2 = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @codUnidad";
                 connection.Execute(delRoles2, new { codUnidad });
 
@@ -355,7 +346,9 @@ namespace Galileo.DataBaseTier
                 connection.Execute(delUens2, new { codUnidad });
 
                 return 1;
-            }, "Registros eliminado satisfactoriamente");
+            });
+
+            return MapDbNonQuery(db, "Registros eliminado satisfactoriamente");
         }
 
 
@@ -367,33 +360,31 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Core_SubCentroCosto_Delete(int CodCliente, string cod_unidad)
         {
-            return WithClienteConnNonQuery(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 const string qInfo = @"select * from CORE_UENS where COD_UNIDAD = @cod_unidad";
                 CoreUeNsDto unidadInfo = connection.Query<CoreUeNsDto>(qInfo, new { cod_unidad }).First();
 
-                //Valida si es la unidad principal
                 if (unidadInfo.unidad_principal == "")
                 {
-                    //Es la UEN Principal
                     const string delRoles = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @cod_unidad";
                     connection.Execute(delRoles, new { cod_unidad });
 
                     const string delUens = @"delete from CORE_UENS where COD_UNIDAD = @cod_unidad";
                     connection.Execute(delUens, new { cod_unidad });
 
-                    //Valida si existen otras unidades asociadas a la UEN Principal
                     const string qTopUnidad = @"select TOP 1 COD_UNIDAD from CORE_UENS where UNIDAD_PRINCIPAL = @cod_unidad order by ACTIVA desc";
                     string? nuevaUnidadPrincipal = connection.Query<string>(qTopUnidad, new { cod_unidad }).FirstOrDefault();
+
                     if (nuevaUnidadPrincipal != null)
                     {
-                        const string upUensPrincipal = @"update CORE_UENS set 
-                            UNIDAD_PRINCIPAL = @nuevaUnidadPrincipal 
+                        const string upUensPrincipal = @"update CORE_UENS set
+                            UNIDAD_PRINCIPAL = @nuevaUnidadPrincipal
                             where UNIDAD_PRINCIPAL = @cod_unidad";
                         connection.Execute(upUensPrincipal, new { nuevaUnidadPrincipal, cod_unidad });
 
-                        const string upNullPrincipal = @"update CORE_UENS set 
-                            UNIDAD_PRINCIPAL = NULL 
+                        const string upNullPrincipal = @"update CORE_UENS set
+                            UNIDAD_PRINCIPAL = NULL
                             where COD_UNIDAD = @nuevaUnidadPrincipal";
                         connection.Execute(upNullPrincipal, new { nuevaUnidadPrincipal });
                     }
@@ -401,7 +392,6 @@ namespace Galileo.DataBaseTier
                     return 1;
                 }
 
-                //No es la UEN Principal
                 const string delRoles2 = @"delete from CORE_UENS_USUARIOS_ROLES where COD_UNIDAD = @cod_unidad";
                 connection.Execute(delRoles2, new { cod_unidad });
 
@@ -409,7 +399,9 @@ namespace Galileo.DataBaseTier
                 connection.Execute(delUens2, new { cod_unidad });
 
                 return 1;
-            }, "Registro eliminado satisfactoriamente");
+            });
+
+            return MapDbNonQuery(db, "Registro eliminado satisfactoriamente");
         }
 
 
@@ -423,9 +415,10 @@ namespace Galileo.DataBaseTier
         {
             var vfiltro = JsonConvert.DeserializeObject<CoreUeNsFiltros>(filtros);
 
-            return WithClienteConn(CodCliente,
-                connection => QueryUensPaged(connection, vfiltro, onlyPrincipales: true),
-                EmptyUensList);
+            var db = DbHelper.WithConn(_portalDB, CodCliente,
+                connection => QueryUensPaged(connection, vfiltro, onlyPrincipales: true));
+
+            return MapDb(db, EmptyUensList);
         }
 
 
@@ -437,7 +430,7 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<CoreUeNsDtoList> Core_SubUnidades_Obtener(int CodCliente, string cod_unidad)
         {
-            return WithClienteConn(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 const string query = @"select DISTINCT @cod_unidad AS COD_UNIDAD, C.CNTX_UNIDAD, @cod_unidad as UNIDAD_PRINCIPAL,
                     (select TOP 1 DESCRIPCION from CNTX_UNIDADES WHERE COD_UNIDAD = C.CNTX_UNIDAD) AS DESCRIPCION
@@ -449,12 +442,13 @@ namespace Galileo.DataBaseTier
                 dto.Total = 0;
                 dto.uens = connection.Query<CoreUeNsDto>(query, new { cod_unidad }).ToList();
 
-                // Mantiene el comportamiento anterior: si no hay cntx_unidad, Result = null
                 if (dto.uens == null || dto.uens.Count == 0 || string.IsNullOrWhiteSpace(dto.uens[0].cntx_unidad))
                     return null!;
 
                 return dto;
-            }, EmptyUensList);
+            });
+
+            return MapDb(db, EmptyUensList);
         }
 
 
@@ -466,7 +460,7 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<CoreUeNsDtoList> Core_SubCentroCosto_Obtener(int CodCliente, string cod_unidad, string sub_unidad)
         {
-            return WithClienteConn(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 const string query = @"select C.COD_UNIDAD, C.CNTX_UNIDAD, C.CNTX_CENTRO_COSTO, C.ACTIVA, @cod_unidad AS UNIDAD_PRINCIPAL,
                     (select TOP 1 DESCRIPCION from CNTX_CENTRO_COSTOS WHERE COD_CENTRO_COSTO = C.CNTX_CENTRO_COSTO) AS DESCRIPCION
@@ -478,12 +472,13 @@ namespace Galileo.DataBaseTier
                 dto.Total = 0;
                 dto.uens = connection.Query<CoreUeNsDto>(query, new { cod_unidad, sub_unidad }).ToList();
 
-                // Mantiene el comportamiento anterior: si no hay cntx_centro_costo, Result = null
                 if (dto.uens == null || dto.uens.Count == 0 || string.IsNullOrWhiteSpace(dto.uens[0].cntx_centro_costo))
                     return null!;
 
                 return dto;
-            }, EmptyUensList);
+            });
+
+            return MapDb(db, EmptyUensList);
         }
 
 
@@ -496,7 +491,7 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<List<CoreUsuariosDto>> Core_Miembros_Obtener(int CodCliente, string cod_unidad, string? filtro)
         {
-            return WithClienteConn(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 const string sp = "spSys_UENS_Miembros_Consultas";
                 return connection.Query<CoreUsuariosDto>(sp, new
@@ -504,7 +499,9 @@ namespace Galileo.DataBaseTier
                     cod_unidad,
                     filtro = (filtro ?? string.Empty)
                 }, commandType: CommandType.StoredProcedure).ToList();
-            }, () => new List<CoreUsuariosDto>());
+            });
+
+            return MapDb(db, () => new List<CoreUsuariosDto>());
         }
         
         
@@ -517,7 +514,7 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto Core_Miembros_Registro(int CodCliente, string cod_unidad, CoreUsuariosDto request)
         {
-            return WithClienteConnNonQuery(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 var mov = request.asignado ? 'A' : 'E';
                 const string sp = "spSys_UENS_Miembros_Registro";
@@ -531,7 +528,9 @@ namespace Galileo.DataBaseTier
                 }, commandType: CommandType.StoredProcedure);
 
                 return 1;
-            }, RegistroActualizadoMsg);
+            });
+
+            return MapDbNonQuery(db, RegistroActualizadoMsg);
         }
 
 
@@ -544,7 +543,7 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<List<CoreRolesDto>> Core_Roles_Obtener(int CodCliente, string cod_unidad, string? filtro)
         {
-            return WithClienteConn(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 const string sp = "spSys_UENS_Roles_Consultas";
                 return connection.Query<CoreRolesDto>(sp, new
@@ -552,7 +551,9 @@ namespace Galileo.DataBaseTier
                     cod_unidad,
                     filtro = (filtro ?? string.Empty)
                 }, commandType: CommandType.StoredProcedure).ToList();
-            }, () => new List<CoreRolesDto>());
+            });
+
+            return MapDb(db, () => new List<CoreRolesDto>());
         }
 
 
@@ -568,7 +569,7 @@ namespace Galileo.DataBaseTier
             if (request == null)
                 return new ErrorDto { Code = -1, Description = "El parámetro 'request' no puede ser nulo." };
 
-            return WithClienteConnNonQuery(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 const string sp = "spSys_UENS_Roles_Registro";
                 connection.Execute(sp, new
@@ -584,7 +585,9 @@ namespace Galileo.DataBaseTier
                 }, commandType: CommandType.StoredProcedure);
 
                 return 1;
-            }, RegistroActualizadoMsg);
+            });
+
+            return MapDbNonQuery(db, RegistroActualizadoMsg);
         }
 
 
@@ -596,7 +599,7 @@ namespace Galileo.DataBaseTier
         /// <returns></returns>
         public ErrorDto<List<UensListaDatos>> Core_UENLista_Obtener(int CodCliente, string? usuario)
         {
-            return WithClienteConn(CodCliente, connection =>
+            var db = DbHelper.WithConn(_portalDB, CodCliente, connection =>
             {
                 if (usuario == null || usuario == "null")
                 {
@@ -610,7 +613,9 @@ namespace Galileo.DataBaseTier
                                            WHERE S.CORE_USUARIO = @usuario";
 
                 return connection.Query<UensListaDatos>(query2, new { usuario }).ToList();
-            }, () => new List<UensListaDatos>());
+            });
+
+            return MapDb(db, () => new List<UensListaDatos>());
         }
     }
 }
