@@ -141,7 +141,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         result = Sys_Educacion_Insertar(CodEmpresa, usuario, datos);
                     }
                 }
-                else if (existe == 0 && !datos.isNew)
+                else if (existe == 0)
                 {
                     result.Code = -2;
                     result.Description = $"El código {datos.cod_educ} no existe.";

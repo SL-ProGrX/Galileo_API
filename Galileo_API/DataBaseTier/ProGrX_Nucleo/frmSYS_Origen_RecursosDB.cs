@@ -96,7 +96,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         result = Sys_OrigenRecursos_Insertar(CodEmpresa, OrigenRecursos);
                     }
                 }
-                else if (existe == 0 && !OrigenRecursos.isNew)
+                else if (existe == 0)
                 {
                     result.Code = -2;
                     result.Description = $"El  origen recursos con el código {OrigenRecursos.cod_origen_recursos} no existe.";

@@ -99,7 +99,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         result = Sys_EstadoCivil_Insertar(CodEmpresa, estadoCivil);
                     }
                 }
-                else if (existe == 0 && !estadoCivil.isNew)
+               else if (existe == 0)
                 {
                     result.Code = -2;
                     result.Description = $"El estado civil con el código {estadoCivil.cod_estado_civil} no existe.";
