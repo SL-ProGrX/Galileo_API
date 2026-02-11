@@ -3,27 +3,23 @@ using Dapper;
 using Galileo.Models.ERROR;
 using Newtonsoft.Json;
 using Microsoft.Data.SqlClient;
+using System.Data;
 using System.Text;
 
 namespace Galileo.DataBaseTier
 {
     public class FrmGgPePerspectivasDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
 
         public FrmGgPePerspectivasDB(IConfiguration config)
         {
-            _config = config;
+            _portalDB = new PortalDB(config);
         }
 
         public ErrorDto<PePerspectivasDto> PePerspectiva_Obtener(int CodEmpresa, int perspectiva)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<PePerspectivasDto>();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                const string query = @"select [PERSPECTIVA_ID]
+            const string query = @"select [PERSPECTIVA_ID]
                                           ,[DESCRIPCION]
                                           ,[PE_ID]
                                           ,[OBJETIVO_A_1]
@@ -37,98 +33,90 @@ namespace Galileo.DataBaseTier
                                           ,[MODIFICA_USUARIO]
                                    from PE_PERSPECTIVAS
                                    WHERE PERSPECTIVA_ID = @perspectiva;";
-                response.Result = connection.Query<PePerspectivasDto>(query, new { perspectiva }).FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+
+            var r = DbHelper.ExecuteSingleQuery<PePerspectivasDto>(_portalDB, CodEmpresa, query, defaultValue: null, parameters: new { perspectiva });
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<PePerspectivasDto> { Code = r.Code, Description = r.Description, Result = null };
+
+            return new ErrorDto<PePerspectivasDto> { Code = 0, Description = "Ok", Result = r.Result };
         }
 
         public ErrorDto<PePerspectivasDto> PePerspectiva_Scroll(int CodEmpresa, int scroll, int? perspectiva)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<PePerspectivasDto>();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-
-                const string qNext = @"select top 1 *
+            const string qNext = @"select top 1 *
 from PE_PERSPECTIVAS
 where PERSPECTIVA_ID > @perspectiva
 order by PERSPECTIVA_ID asc;";
 
-                const string qPrev = @"select top 1 *
+            const string qPrev = @"select top 1 *
 from PE_PERSPECTIVAS
 where PERSPECTIVA_ID < @perspectiva
 order by PERSPECTIVA_ID desc;";
 
-                var param = new { perspectiva = perspectiva ?? 0 };
-                var query = (scroll == 1) ? qNext : qPrev;
-                response.Result = connection.Query<PePerspectivasDto>(query, param).FirstOrDefault();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+            var query = (scroll == 1) ? qNext : qPrev;
+            var param = new { perspectiva = perspectiva ?? 0 };
+
+            var r = DbHelper.ExecuteSingleQuery<PePerspectivasDto>(_portalDB, CodEmpresa, query, defaultValue: null, parameters: param);
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<PePerspectivasDto> { Code = r.Code, Description = r.Description, Result = null };
+
+            return new ErrorDto<PePerspectivasDto> { Code = 0, Description = "Ok", Result = r.Result };
         }
 
         public ErrorDto PePerspectiva_Guardar(int CodEmpresa, PePerspectivasDto perspectiva)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto resp = new()
-            {
-                Code = 0,
-                Description = ""
-            };
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
+            if (perspectiva == null)
+                return DbHelper.ErrorResponse("Datos inválidos");
 
+            return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
+            {
+                //Obtengo el siguiente ID si es nuevo
                 if (perspectiva.perspectiva_id == 0)
                 {
-                    //Obtengo el siguiente ID
-                    var query = $@"SELECT ISNULL(MAX(PERSPECTIVA_ID),0) + 1 FROM PE_PERSPECTIVAS";
-                    perspectiva.perspectiva_id = connection.QueryFirstOrDefault<int>(query);
-
-                    resp = Perspectiva_Insertar(CodEmpresa, perspectiva);
-
+                    const string nextIdSql = @"SELECT ISNULL(MAX(PERSPECTIVA_ID),0) + 1 FROM PE_PERSPECTIVAS";
+                    perspectiva.perspectiva_id = connection.QueryFirstOrDefault<int>(nextIdSql);
+                    return ExecuteWrite(connection, InsertSql, BuildParams(perspectiva, isInsert: true));
                 }
-                else
-                {
-                    resp = Perspectiva_Actualizar(CodEmpresa, perspectiva);
-                }
+
+                return ExecuteWrite(connection, UpdateSql, BuildParams(perspectiva, isInsert: false));
+            }).Result ?? DbHelper.ErrorResponse("Error inesperado");
+        }
+
+        private static DynamicParameters BuildParams(PePerspectivasDto p, bool isInsert)
+        {
+            var dp = new DynamicParameters();
+
+            dp.Add("@perspectiva_id", p.perspectiva_id, DbType.Int32);
+            dp.Add("@descripcion", p.descripcion, DbType.String);
+            dp.Add("@pe_id", p.pe_id, DbType.Int32);
+            dp.Add("@objetivo_a_1", p.objetivo_a_1, DbType.String);
+            dp.Add("@objetivo_a_2", p.objetivo_a_2, DbType.String);
+            dp.Add("@objetivo_a_3", p.objetivo_a_3, DbType.String);
+            dp.Add("@responsable", p.responsable, DbType.String);
+            dp.Add("@activa", p.activa ? 1 : 0, DbType.Int32);
+
+            if (isInsert)
+                dp.Add("@registro_usuario", p.registro_usuario, DbType.String);
+            else
+                dp.Add("@modifica_usuario", p.modifica_usuario, DbType.String);
+
+            return dp;
+        }
+
+        private static ErrorDto ExecuteWrite(SqlConnection connection, string sql, DynamicParameters p)
+        {
+            try
+            {
+                connection.Execute(sql, p);
+                return DbHelper.CreateOkResponse();
             }
             catch (Exception ex)
             {
-                resp.Code = -1;
-                resp.Description = ex.Message;
+                return DbHelper.ErrorResponse(ex.Message);
             }
-
-            return resp;
         }
 
-        private ErrorDto Perspectiva_Insertar(int CodEmpresa, PePerspectivasDto perspectiva)
-        {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto resp = new()
-            {
-                Code = 0,
-                Description = ""
-            };
-            try
-            {
-
-                int activa = perspectiva.activa ? 1 : 0;
-
-                using var connection = new SqlConnection(clienteConnString);
-                const string query = @"INSERT INTO [dbo].[PE_PERSPECTIVAS]
+        private const string InsertSql = @"INSERT INTO [dbo].[PE_PERSPECTIVAS]
                                        ([PERSPECTIVA_ID]
                                        ,[DESCRIPCION]
                                        ,[PE_ID]
@@ -151,41 +139,7 @@ order by PERSPECTIVA_ID desc;";
                                        ,@registro_usuario
                                        ,GetDate());";
 
-                var p = new
-                {
-                    perspectiva_id = perspectiva.perspectiva_id,
-                    descripcion = perspectiva.descripcion,
-                    pe_id = perspectiva.pe_id,
-                    objetivo_a_1 = perspectiva.objetivo_a_1,
-                    objetivo_a_2 = perspectiva.objetivo_a_2,
-                    objetivo_a_3 = perspectiva.objetivo_a_3,
-                    responsable = perspectiva.responsable,
-                    activa = activa,
-                    registro_usuario = perspectiva.registro_usuario
-                };
-
-                connection.Execute(query, p);
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
-        }
-
-        private ErrorDto Perspectiva_Actualizar(int CodEmpresa, PePerspectivasDto perspectiva)
-        {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto resp = new()
-            {
-                Code = 0,
-                Description = ""
-            };
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
-                const string query = @"UPDATE [dbo].[PE_PERSPECTIVAS]
+        private const string UpdateSql = @"UPDATE [dbo].[PE_PERSPECTIVAS]
                                        SET [DESCRIPCION] = @descripcion
                                           ,[PE_ID] = @pe_id
                                           ,[OBJETIVO_A_1] = @objetivo_a_1
@@ -197,101 +151,54 @@ order by PERSPECTIVA_ID desc;";
                                           ,[MODIFICA_USUARIO] = @modifica_usuario
                                      WHERE PERSPECTIVA_ID = @perspectiva_id;";
 
-                var p = new
-                {
-                    perspectiva_id = perspectiva.perspectiva_id,
-                    descripcion = perspectiva.descripcion,
-                    pe_id = perspectiva.pe_id,
-                    objetivo_a_1 = perspectiva.objetivo_a_1,
-                    objetivo_a_2 = perspectiva.objetivo_a_2,
-                    objetivo_a_3 = perspectiva.objetivo_a_3,
-                    responsable = perspectiva.responsable,
-                    activa = (perspectiva.activa ? 1 : 0),
-                    modifica_usuario = perspectiva.modifica_usuario
-                };
-
-                connection.Execute(query, p);
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
-        }
-
         public ErrorDto PePerspectiva_Eliminar(int CodEmpresa, int perspectiva)
         {
-            var clienteConnString = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            ErrorDto resp = new()
+            var exec = DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
             {
-                Code = 0,
-                Description = ""
-            };
-            try
-            {
-                using var connection = new SqlConnection(clienteConnString);
                 //Valida si existe en la tabla de objetivos
                 const string qCount = @"SELECT COUNT(1) FROM [dbo].[PE_OBJETIVOS] WHERE PERSPECTIVA_ID = @perspectiva;";
                 var count = connection.ExecuteScalar<int>(qCount, new { perspectiva });
                 if (count > 0)
                 {
-                    resp.Code = -1;
-                    resp.Description = "No se puede eliminar la perspectiva, ya que tiene objetivos asociados.";
-                    return resp;
+                    return DbHelper.ErrorResponse("No se puede eliminar la perspectiva, ya que tiene objetivos asociados.");
                 }
 
                 const string qDelete = @"DELETE FROM [dbo].[PE_PERSPECTIVAS] WHERE PERSPECTIVA_ID = @perspectiva;";
                 connection.Execute(qDelete, new { perspectiva });
-            }
-            catch (Exception ex)
-            {
-                resp.Code = -1;
-                resp.Description = ex.Message;
-            }
-            return resp;
+                return DbHelper.CreateOkResponse();
+            });
+
+            if ((exec.Code ?? -1) != 0)
+                return DbHelper.ErrorResponse(exec.Description ?? "Error", exec.Code ?? -1);
+
+            return exec.Result ?? DbHelper.CreateOkResponse();
         }
 
         public ErrorDto<List<PePerspectivasDto>> PePlanesLista_Obtener(int CodEmpresa)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<List<PePerspectivasDto>>();
-            try
-            {
-                using var connection = new SqlConnection(stringConn);
-                const string query = @"select [PE_ID]
+            const string query = @"select [PE_ID]
                                       ,[DESCRIPCION] from PE_PLANES Where ESTADO = 'A' 
                                        AND FINALIZACION > getDate() ";
-                response.Result = connection.Query<PePerspectivasDto>(query).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = null;
-            }
-            return response;
+
+            return DbHelper.ExecuteListQuery<PePerspectivasDto>(_portalDB, CodEmpresa, query);
         }
 
         public ErrorDto<PePerspectivasDatosLista> PePerpectivasLista_Obtener(int CodEmpresa, string Jfiltros)
         {
-            PePerspectivasFiltros filtros = JsonConvert.DeserializeObject<PePerspectivasFiltros>(Jfiltros) ?? new PePerspectivasFiltros();
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            var response = new ErrorDto<PePerspectivasDatosLista>();
-            response.Result = new PePerspectivasDatosLista
-            {
-                total = 0,
-                data = new List<PePerspectivasDto>()
-            };
+            var filtros = JsonConvert.DeserializeObject<PePerspectivasFiltros>(Jfiltros) ?? new PePerspectivasFiltros();
 
-            try
+            return DbHelper.WithConn(_portalDB, CodEmpresa, connection =>
             {
-                using var connection = new SqlConnection(stringConn);
+                var result = new PePerspectivasDatosLista
+                {
+                    total = 0,
+                    data = new List<PePerspectivasDto>()
+                };
 
                 var p = new DynamicParameters();
-                bool hasFilter = TryAddPerspectivasFiltro(filtros, p);
+                var hasFilter = TryAddPerspectivasFiltro(filtros, p);
 
-                int offset = filtros.pagina ?? 0;
+                var offset = filtros.pagina ?? 0;
                 if (offset < 0) offset = 0;
 
                 const string countNoFilter = "select COUNT(1) from PE_PERSPECTIVAS;";
@@ -300,7 +207,7 @@ from PE_PERSPECTIVAS
 where CAST(perspectiva_id AS varchar(50)) LIKE @Q
    OR DESCRIPCION LIKE @Q;";
 
-                response.Result.total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
+                result.total = connection.ExecuteScalar<int>(hasFilter ? countWithFilter : countNoFilter, p);
 
                 var sb = new StringBuilder();
                 sb.Append(@"select [PERSPECTIVA_ID]
@@ -327,33 +234,27 @@ where CAST(perspectiva_id AS varchar(50)) LIKE @Q
 
                 if (filtros.pagina != null)
                 {
-                    int pageFetch = filtros.paginacion ?? 30;
+                    var pageFetch = filtros.paginacion ?? 30;
                     if (pageFetch < 1) pageFetch = 30;
-                    p.Add("@OFFSET", offset);
-                    p.Add("@FETCH", pageFetch);
+
+                    p.Add("@OFFSET", offset, DbType.Int32);
+                    p.Add("@FETCH", pageFetch, DbType.Int32);
                     sb.Append(" OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY ");
                 }
 
-                response.Result.data = connection.Query<PePerspectivasDto>(sb.ToString(), p).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result.data = null;
-            }
-            return response;
+                result.data = connection.Query<PePerspectivasDto>(sb.ToString(), p).ToList();
+                return result;
+            });
         }
 
         private static bool TryAddPerspectivasFiltro(PePerspectivasFiltros filtros, DynamicParameters p)
         {
-            string q = (filtros?.filtro ?? string.Empty).Trim();
+            var q = (filtros?.filtro ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(q))
                 return false;
 
-            p.Add("@Q", $"%{q}%");
+            p.Add("@Q", $"%{q}%", DbType.String);
             return true;
         }
-
     }
 }
