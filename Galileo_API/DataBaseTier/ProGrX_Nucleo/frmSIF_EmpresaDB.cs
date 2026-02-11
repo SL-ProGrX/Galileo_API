@@ -1,37 +1,48 @@
 using Dapper;
-using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using System.Data;
 using Galileo.Models.Security;
+
+
 namespace Galileo.DataBaseTier
 {
     public class FrmSifEmpresaDB
     {
-        private readonly IConfiguration _config;
+        private readonly PortalDB _portalDB;
         private readonly int vModulo = 10;
         private readonly MSecurityMainDb _Security_MainDB;
+
         public FrmSifEmpresaDB(IConfiguration config)
         {
-            _config = config;
-            _Security_MainDB = new MSecurityMainDb(_config);
+            _portalDB = new PortalDB(config);
+            _Security_MainDB = new MSecurityMainDb(config);
         }
-        
-        /// <summary>
-        /// Obtiene la configuraci�n de empresa desde SIF_EMPRESA.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="idEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<FrmSifEmpresaModel> Sif_Empresa_Obtener(int CodEmpresa, int? idEmpresa = null)
-        {
-            var r = new ErrorDto<FrmSifEmpresaModel> { Code = 0 };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
 
+        private ErrorDto TryBitacora(int codEmpresa, string usuario, string movimiento, string detalle)
+        {
             try
             {
-                using var cn = new SqlConnection(conn);
-                var sql = @"
+                _Security_MainDB.Bitacora(new BitacoraInsertarDto
+                {
+                    EmpresaId = codEmpresa,
+                    Usuario = (usuario ?? string.Empty).ToUpperInvariant(),
+                    Modulo = vModulo,
+                    Movimiento = movimiento,
+                    DetalleMovimiento = detalle
+                });
+
+                return DbHelper.CreateOkResponse();
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message ?? "Error inesperado");
+            }
+        }
+        
+        public ErrorDto<FrmSifEmpresaModel> Sif_Empresa_Obtener(int CodEmpresa, int? idEmpresa = null)
+        {
+            const string sql = @"
                 SELECT TOP (1)
                     e.ID_EMPRESA              AS id_empresa,
                     e.NOMBRE                  AS nombre,
@@ -93,34 +104,35 @@ namespace Galileo.DataBaseTier
                 WHERE (@id IS NULL OR e.ID_EMPRESA = @id)
                 ORDER BY e.ID_EMPRESA;";
 
-                r.Result = cn.QueryFirstOrDefault<FrmSifEmpresaModel>(sql, new { id = idEmpresa });
-                r.Description = r.Result == null ? "No existe SIF_EMPRESA" : "OK";
-                r.Code = r.Result == null ? 1 : 0;
-            }
-            catch (Exception ex)
+            var r = DbHelper.ExecuteSingleQuery<FrmSifEmpresaModel>(_portalDB, CodEmpresa, sql, defaultValue: null, parameters: new { id = idEmpresa });
+
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<FrmSifEmpresaModel> { Code = r.Code, Description = r.Description, Result = null };
+
+            var model = r.Result;
+            if (model == null)
             {
-                r.Code = -1;
-                r.Description = ex.Message;
+                return new ErrorDto<FrmSifEmpresaModel>
+                {
+                    Code = 1,
+                    Description = "No existe SIF_EMPRESA",
+                    Result = null
+                };
             }
-            return r;
+
+            return new ErrorDto<FrmSifEmpresaModel> { Code = 0, Description = "OK", Result = model };
         }
 
 
-        /// <summary>
-        /// Guarda la configuraci�n de SIF_EMPRESA.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="dto"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto Sif_Empresa_Guardar(int CodEmpresa, FrmSifEmpresaModel dto, string usuario)
         {
-            var r = new ErrorDto { Code = 0, Description = "OK" };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            if (dto == null)
+                return DbHelper.ErrorResponse("Datos inválidos");
 
-            try
+            var usuarioLocal = usuario ?? string.Empty;
+
+            var exec = DbHelper.WithConn(_portalDB, CodEmpresa, cn =>
             {
-                using var cn = new SqlConnection(conn);
                 cn.Open();
                 using var tx = cn.BeginTransaction();
 
@@ -128,7 +140,6 @@ namespace Galileo.DataBaseTier
                 {
                     dto.id_empresa,
 
-                    // datos empresa
                     dto.nombre,
                     dto.cedula_juridica,
                     dto.apto_postal,
@@ -137,11 +148,9 @@ namespace Galileo.DataBaseTier
                     dto.email,
                     dto.sitio_web,
 
-                    // contabilidad
                     dto.cod_empresa_enlace,
                     cod_cuenta_no_cfg = string.IsNullOrWhiteSpace(dto.cod_cuenta_no_cfg) ? null : dto.cod_cuenta_no_cfg,
 
-                    // pagar�
                     dto.pag_nomlargo,
                     dto.pag_nomcorto,
                     dto.pag_cedjurle,
@@ -152,7 +161,6 @@ namespace Galileo.DataBaseTier
                     dto.pag_seccion_01,
                     dto.pag_seccion_02,
 
-                    // flags estado de cuenta
                     dto.usar_estado_comercial,
                     dto.ec_nota01,
                     dto.ec_nota02,
@@ -163,19 +171,15 @@ namespace Galileo.DataBaseTier
                     dto.ec_visible_excedentes,
                     dto.ec_visible_disponible,
 
-                    // pie de boleta
                     dto.liq_boleta_pie,
 
-                    // misi�n/visi�n
                     dto.mision,
                     dto.vision,
                     dto.slogan,
 
-                    // consentimiento
                     dto.consentimiento_contacto_titulo,
                     dto.consentimiento_contacto_texto,
 
-                    // constancias
                     dto.constancia_crd_encabezado,
                     dto.constancia_crd_pie,
                     dto.constancia_pat_encabezado,
@@ -189,7 +193,8 @@ namespace Galileo.DataBaseTier
                     "SELECT COUNT(1) FROM SIF_EMPRESA WHERE ID_EMPRESA=@id_empresa",
                     new { dto.id_empresa }, tx);
 
-                bool esUpdate = exists > 0;
+                var esUpdate = exists > 0;
+
                 if (esUpdate)
                 {
                     var updateSql = @"
@@ -223,11 +228,12 @@ namespace Galileo.DataBaseTier
 
                         SINPE_ACTIVO = CAST(@sinpe_activo AS smallint)
                     WHERE ID_EMPRESA=@id_empresa;";
-                                        cn.Execute(updateSql, p, tx);
-                                    }
-                                    else
-                                    {
-                                        var insertSql = @"
+
+                    cn.Execute(updateSql, p, tx);
+                }
+                else
+                {
+                    var insertSql = @"
                     INSERT INTO SIF_EMPRESA(
                         NOMBRE, CEDULA_JURIDICA, APTO_POSTAL, TELEFONOEMP, FAX, EMAIL, SITIO_WEB,
                         COD_EMPRESA_ENLACE, COD_CUENTA_NO_CFG,
@@ -258,204 +264,116 @@ namespace Galileo.DataBaseTier
                         CAST(@sinpe_activo AS smallint)
                     );
                     SELECT CAST(SCOPE_IDENTITY() AS INT);";
+
                     var newId = cn.ExecuteScalar<int>(insertSql, p, tx);
                     dto.id_empresa = newId;
                 }
 
                 tx.Commit();
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    Modulo = vModulo,
-                    Movimiento = esUpdate ? "Modifica - WEB" : "Registra - WEB",
-                    DetalleMovimiento = $"Empresa: {dto.nombre} (ID: {dto.id_empresa})"
-                });
-            }
-            catch (Exception ex)
-            {
-                r.Code = -1;
-                r.Description = ex.Message;
-            }
-            return r;
+
+                var movimiento = esUpdate ? "Modifica - WEB" : "Registra - WEB";
+                var detalle = $"Empresa: {dto.nombre} (ID: {dto.id_empresa})";
+                var bit = TryBitacora(CodEmpresa, usuarioLocal, movimiento, detalle);
+
+                if ((bit.Code ?? -1) != 0)
+                    return bit;
+
+                return DbHelper.CreateOkResponse();
+            });
+
+            return (exec.Code ?? -1) == 0
+                ? DbHelper.CreateOkResponse()
+                : DbHelper.ErrorResponse(exec.Description ?? "Error", exec.Code ?? -1);
         }
 
 
-        /// <summary>
-        /// Devuelve el LOGO almacenado en SIF_EMPRESA como varbinary.
-        /// <param name="CodEmpresa"></param>
-        /// <param name="idEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<byte[]> Sif_Empresa_Logo_Obtener(int CodEmpresa, int? idEmpresa = null)
         {
-            var r = new ErrorDto<byte[]> { Code = 0 };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            try
-            {
-                using var cn = new SqlConnection(conn);
-                var sql = @"SELECT TOP 1 LOGO FROM SIF_EMPRESA
+            const string sql = @"SELECT TOP 1 LOGO FROM SIF_EMPRESA
                             WHERE (@id IS NULL) OR ID_EMPRESA=@id
                             ORDER BY ID_EMPRESA;";
-                r.Result = cn.ExecuteScalar<byte[]>(sql, new { id = idEmpresa });
-                r.Description = "OK";
-            }
-            catch (Exception ex) { r.Code = -1; r.Description = ex.Message; }
-            return r;
+
+            var r = DbHelper.WithConn(_portalDB, CodEmpresa, cn => cn.ExecuteScalar<byte[]>(sql, new { id = idEmpresa }));
+
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<byte[]> { Code = r.Code, Description = r.Description, Result = null };
+
+            return new ErrorDto<byte[]> { Code = 0, Description = "OK", Result = r.Result ?? Array.Empty<byte>() };
         }
 
 
-        /// <summary>
-        /// Guarda el LOGO en SIF_EMPRESA (columna LOGO).
-        /// </summary>
-        /// <param name="CodEmpresa">/param>
-        /// <param name="idEmpresa"></param>
-        /// <param name="contenido"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto Sif_Empresa_Logo_Guardar(int CodEmpresa, int idEmpresa, byte[] contenido, string usuario)
         {
-            var r = new ErrorDto { Code = 0, Description = "OK" };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            try
-            {
-                using var cn = new SqlConnection(conn);
-                cn.Execute("UPDATE SIF_EMPRESA SET LOGO=@contenido WHERE ID_EMPRESA=@id",
-                           new { id = idEmpresa, contenido });
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    Modulo = vModulo,
-                    Movimiento = "Actualiza - WEB",
-                    DetalleMovimiento = $"Empresa: Logo actualizado (ID: {idEmpresa})"
-                });
-            }
-            catch (Exception ex) { r.Code = -1; r.Description = ex.Message; }
-            return r;
+            const string sql = @"UPDATE SIF_EMPRESA SET LOGO=@contenido WHERE ID_EMPRESA=@id";
+
+            var exec = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, sql, new { id = idEmpresa, contenido });
+            if ((exec.Code ?? -1) != 0)
+                return exec;
+
+            var bit = TryBitacora(CodEmpresa, usuario, "Actualiza - WEB", $"Empresa: Logo actualizado (ID: {idEmpresa})");
+            return (bit.Code ?? -1) == 0 ? DbHelper.CreateOkResponse() : bit;
         }
 
 
-        /// <summary>
-        /// Devuelve el FONDO_PANTALLA almacenado en SIF_EMPRESA como varbinary.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="idEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<byte[]> Sif_Empresa_Fondo_Obtener(int CodEmpresa, int? idEmpresa = null)
         {
-            var r = new ErrorDto<byte[]> { Code = 0 };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            try
-            {
-                using var cn = new SqlConnection(conn);
-                var sql = @"SELECT TOP 1 FONDO_PANTALLA FROM SIF_EMPRESA
+            const string sql = @"SELECT TOP 1 FONDO_PANTALLA FROM SIF_EMPRESA
                             WHERE (@id IS NULL) OR ID_EMPRESA=@id
                             ORDER BY ID_EMPRESA;";
-                r.Result = cn.ExecuteScalar<byte[]>(sql, new { id = idEmpresa });
-                r.Description = "OK";
-            }
-            catch (Exception ex) { r.Code = -1; r.Description = ex.Message; }
-            return r;
+
+            var r = DbHelper.WithConn(_portalDB, CodEmpresa, cn => cn.ExecuteScalar<byte[]>(sql, new { id = idEmpresa }));
+
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<byte[]> { Code = r.Code, Description = r.Description, Result = null };
+
+            return new ErrorDto<byte[]> { Code = 0, Description = "OK", Result = r.Result ?? Array.Empty<byte>() };
         }
 
 
-        /// <summary>
-        /// Guarda el FONDO_PANTALLA en SIF_EMPRESA (columna FONDO_PANTALLA).
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="idEmpresa"></param>
-        /// <param name="contenido"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto Sif_Empresa_Fondo_Guardar(int CodEmpresa, int idEmpresa, byte[] contenido, string usuario)
         {
-            var r = new ErrorDto { Code = 0, Description = "OK" };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            try
-            {
-                using var cn = new SqlConnection(conn);
-                cn.Execute("UPDATE SIF_EMPRESA SET FONDO_PANTALLA=@contenido WHERE ID_EMPRESA=@id",
-                           new { id = idEmpresa, contenido });
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    Modulo = vModulo,
-                    Movimiento = "Actualiza - WEB",
-                    DetalleMovimiento = $"Empresa: Fondo de pantalla actualizado (ID: {idEmpresa})"
-                });
-            }
-            catch (Exception ex) { r.Code = -1; r.Description = ex.Message; }
-            return r;
+            const string sql = @"UPDATE SIF_EMPRESA SET FONDO_PANTALLA=@contenido WHERE ID_EMPRESA=@id";
+
+            var exec = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, sql, new { id = idEmpresa, contenido });
+            if ((exec.Code ?? -1) != 0)
+                return exec;
+
+            var bit = TryBitacora(CodEmpresa, usuario, "Actualiza - WEB", $"Empresa: Fondo de pantalla actualizado (ID: {idEmpresa})");
+            return (bit.Code ?? -1) == 0 ? DbHelper.CreateOkResponse() : bit;
         }
 
 
-        /// <summary>
-        /// Lista las contabilidades disponibles para el combo (CNTX_CONTABILIDADES).
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<List<ComboContabilidadDto>> Sif_Empresa_Contabilidades_Obtener(int CodEmpresa)
         {
-            var r = new ErrorDto<List<ComboContabilidadDto>> { Code = 0, Result = new() };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            try
-            {
-                using var cn = new SqlConnection(conn);
-                var sql = @"SELECT COD_CONTABILIDAD AS idx, RTRIM(NOMBRE) AS itmx, RTRIM(NOMBRE) AS descripcion
+            const string sql = @"SELECT COD_CONTABILIDAD AS idx, RTRIM(NOMBRE) AS itmx, RTRIM(NOMBRE) AS descripcion
                             FROM CNTX_CONTABILIDADES
                             ORDER BY NOMBRE;";
-                r.Result = cn.Query<ComboContabilidadDto>(sql).ToList();
-                r.Description = "OK";
-            }
-            catch (Exception ex) { r.Code = -1; r.Description = ex.Message; r.Result = null; }
-            return r;
+
+            return DbHelper.ExecuteListQuery<ComboContabilidadDto>(_portalDB, CodEmpresa, sql);
         }
 
 
-        /// <summary>
-        /// Busca una cuenta exacta en la vista local por contabilidad y c�digo de cuenta.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="codCuenta"></param>
-        /// <returns></returns>
         public ErrorDto<CuentaLookupDto> Sif_Empresa_CuentaPorCodigo_Obtener(int CodEmpresa, int codContabilidad, string codCuenta)
         {
-            var r = new ErrorDto<CuentaLookupDto> { Code = 0 };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            try
-            {
-                using var cn = new SqlConnection(conn);
-                var sql = @"SELECT TOP 1 Cod_Cuenta_Mask AS cod_cuenta_mask, Descripcion
+            const string sql = @"SELECT TOP 1 Cod_Cuenta_Mask AS cod_cuenta_mask, Descripcion
                             FROM vCNTX_CUENTAS_LOCAL
                             WHERE COD_CONTABILIDAD=@conta AND COD_CUENTA=@cuenta;";
-                r.Result = cn.QueryFirstOrDefault<CuentaLookupDto>(sql, new { conta = codContabilidad, cuenta = codCuenta });
-                r.Description = r.Result == null ? "No existe la cuenta" : "OK";
-                r.Code = r.Result == null ? 1 : 0;
-            }
-            catch (Exception ex) { r.Code = -1; r.Description = ex.Message; }
-            return r;
+
+            var r = DbHelper.ExecuteSingleQuery<CuentaLookupDto>(_portalDB, CodEmpresa, sql, defaultValue: null, parameters: new { conta = codContabilidad, cuenta = codCuenta });
+
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<CuentaLookupDto> { Code = r.Code, Description = r.Description, Result = null };
+
+            if (r.Result == null)
+                return new ErrorDto<CuentaLookupDto> { Code = 1, Description = "No existe la cuenta", Result = null };
+
+            return new ErrorDto<CuentaLookupDto> { Code = 0, Description = "OK", Result = r.Result };
         }
 
 
-        /// <summary>
-        /// Busca cuentas por texto (m�scara o descripci�n) en la vista local.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="codContabilidad"></param>
-        /// <param name="search"></param>
-        /// <returns></returns>
         public ErrorDto<List<CuentaLookupDto>> Sif_Empresa_Cuentas_Buscar(int CodEmpresa, int codContabilidad, string? search)
         {
-            var r = new ErrorDto<List<CuentaLookupDto>> { Code = 0, Result = new() };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-
-            try
-            {
-                using var cn = new SqlConnection(conn);
-
-                const string sql = @"
+            const string sql = @"
             SELECT TOP 50 Cod_Cuenta_Mask AS cod_cuenta_mask, Descripcion
             FROM vCNTX_CUENTAS_LOCAL
             WHERE COD_CONTABILIDAD = @conta
@@ -465,92 +383,51 @@ namespace Galileo.DataBaseTier
                     OR Descripcion      LIKE '%' + @q + '%'
                   )
             ORDER BY Cod_Cuenta_Mask;";
-                var q = search;
 
-                r.Result = cn.Query<CuentaLookupDto>(sql, new { conta = codContabilidad, q }).ToList();
-                r.Description = "OK";
-            }
-            catch (Exception ex)
-            {
-                r.Code = -1;
-                r.Description = ex.Message;
-                r.Result = null;
-            }
-            return r;
+            return DbHelper.ExecuteListQuery<CuentaLookupDto>(_portalDB, CodEmpresa, sql, new { conta = codContabilidad, q = search });
         }
 
 
-        /// <summary>
-        /// Aplica bloqueo o desbloqueo de fecha de auxiliares mediante el SP spSys_BloqueoFechaAuxiliar.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="fecha"></param>
-        /// <param name="accion"></param>
-        /// <param name="usuario"></param>
-        /// <returns></returns>
         public ErrorDto Sif_Empresa_BloqueoFecha_Aplicar(int CodEmpresa, DateTime fecha, char accion, string usuario)
         {
-            var r = new ErrorDto { Code = 0, Description = "OK" };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            var fechaHora = new DateTime(fecha.Year, fecha.Month, fecha.Day, 22, 0, 0, DateTimeKind.Unspecified);
+            var usuarioLocal = usuario ?? string.Empty;
 
-            try
+            var exec = DbHelper.WithConn(_portalDB, CodEmpresa, cn =>
             {
-                using var cn = new SqlConnection(conn);
-
-                var fechaHora = new DateTime(fecha.Year, fecha.Month, fecha.Day, 22, 0, 0, DateTimeKind.Unspecified);
-
                 cn.Execute(
                     "spSys_BloqueoFechaAuxiliar",
-                    new { Fecha = fechaHora, Tipo = accion, Usuario = usuario },
+                    new { Fecha = fechaHora, Tipo = accion, Usuario = usuarioLocal },
                     commandType: CommandType.StoredProcedure,
-                    commandTimeout: 180
-                );
-                // Bit�cora
-                var mov = "Aplica - WEB";
-                var detalle = (char.ToUpperInvariant(accion) == 'B')
-                    ? $"Bloquea Fecha Auxiliar: {fechaHora:yyyy/MM/dd}"
-                    : "DES-Bloqueo Fecha Auxiliar";
+                    commandTimeout: 180);
+                return 0;
+            });
 
-                _Security_MainDB.Bitacora(new BitacoraInsertarDto
-                {
-                    EmpresaId = CodEmpresa,
-                    Usuario = usuario,
-                    Modulo = vModulo,
-                    Movimiento = mov,
-                    DetalleMovimiento = detalle
-                });
-            }
-            catch (Exception ex)
-            {
-                r.Code = -1;
-                r.Description = ex.Message;
-            }
+            if ((exec.Code ?? -1) != 0)
+                return DbHelper.ErrorResponse(exec.Description ?? "Error", exec.Code ?? -1);
 
-            return r;
+            var mov = "Aplica - WEB";
+            var detalle = (char.ToUpperInvariant(accion) == 'B')
+                ? $"Bloquea Fecha Auxiliar: {fechaHora:yyyy/MM/dd}"
+                : "DES-Bloqueo Fecha Auxiliar";
+
+            var bit = TryBitacora(CodEmpresa, usuarioLocal, mov, detalle);
+            return (bit.Code ?? -1) == 0 ? DbHelper.CreateOkResponse() : bit;
         }
 
 
-        /// <summary>
-        /// Obtiene la fecha de bloqueo almacenada (FECHA_CONGELA) desde SIF_EMPRESA.
-        /// </summary>
-        /// <param name="CodEmpresa"></param>
-        /// <param name="idEmpresa"></param>
-        /// <returns></returns>
         public ErrorDto<DateTime?> Sif_Empresa_BloqueoFecha_Obtener(int CodEmpresa, int? idEmpresa = null)
         {
-            var r = new ErrorDto<DateTime?> { Code = 0 };
-            string conn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
-            try
-            {
-                using var cn = new SqlConnection(conn);
-                var sql = @"SELECT TOP 1 FECHA_CONGELA FROM SIF_EMPRESA 
+            const string sql = @"SELECT TOP 1 FECHA_CONGELA FROM SIF_EMPRESA 
                             WHERE (@id IS NULL) OR ID_EMPRESA=@id
                             ORDER BY ID_EMPRESA;";
-                r.Result = cn.ExecuteScalar<DateTime?>(sql, new { id = idEmpresa });
-                r.Description = "OK";
-            }
-            catch (Exception ex) { r.Code = -1; r.Description = ex.Message; }
-            return r;
+
+            var r = DbHelper.WithConn(_portalDB, CodEmpresa, cn => cn.ExecuteScalar<DateTime?>(sql, new { id = idEmpresa }));
+
+            if ((r.Code ?? -1) != 0)
+                return new ErrorDto<DateTime?> { Code = r.Code, Description = r.Description, Result = null };
+
+            return new ErrorDto<DateTime?> { Code = 0, Description = "OK", Result = r.Result };
         }
     }
 }

@@ -3,6 +3,8 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.ProGrX_Nucleo;
 using Galileo.Models.Security;
+using Microsoft.Extensions.Configuration;
+using System.Data;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
@@ -27,6 +29,40 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
         private static string NormalizeUpper(string? value)
             => (value ?? string.Empty).Trim().ToUpperInvariant();
+
+        private static DynamicParameters BuildEntidadParams(SifEntidadesCancelaData entidad, string usuario)
+        {
+            var p = new DynamicParameters();
+            p.Add("@cod_entidad_pago", NormalizeUpper(entidad.cod_entidad_pago), DbType.String);
+            p.Add("@descripcion", NormalizeUpper(entidad.descripcion), DbType.String);
+            p.Add("@activa", entidad.activa, DbType.String);
+            p.Add("@registro_usuario", usuario, DbType.String);
+            return p;
+        }
+
+        private static ErrorDto ExecuteWrite(PortalDB portalDb, int codEmpresa, string sql, DynamicParameters p)
+            => DbHelper.ExecuteNonQuery(portalDb, codEmpresa, sql, p);
+
+        private ErrorDto WithBitacoraOnSuccess(ErrorDto res, int codEmpresa, string usuario, string detalle, string movimiento)
+        {
+            if ((res.Code ?? -1) != 0)
+                return res;
+
+            var bit = TryBitacora(codEmpresa, usuario, detalle, movimiento);
+            return (bit.Code ?? -1) == 0 ? res : bit;
+        }
+
+        private const string InsertEntidadSql = @"INSERT INTO SIF_ENTIDADES_PAGO
+                                    (COD_ENTIDAD_PAGO, descripcion, activA, Registro_Fecha, Registro_Usuario)
+                                VALUES
+                                    (@cod_entidad_pago, @descripcion, @activa, GETDATE(), @registro_usuario);";
+
+        private const string UpdateEntidadSql = @"UPDATE SIF_ENTIDADES_PAGO
+                               SET descripcion       = @descripcion,
+                                   activa            = @activa,
+                                   Registro_Fecha    = GETDATE(),
+                                   Registro_Usuario  = @registro_usuario
+                             WHERE COD_ENTIDAD_PAGO    = @cod_entidad_pago;";
 
         private const string BaseSelectEntidadesPago = @"
                             SELECT
@@ -170,11 +206,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             var query = @"DELETE FROM SIF_ENTIDADES_PAGO WHERE COD_ENTIDAD_PAGO = @cod_entidad_pago";
             var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new { cod_entidad_pago = NormalizeUpper(cod_entidad_pago) });
 
-            if ((res.Code ?? -1) != 0)
-                return res;
-
-            var bit = TryBitacora(CodEmpresa, usuario, $"Entidad Pagadora : {cod_entidad_pago}", "Elimina - WEB");
-            return (bit.Code ?? -1) == 0 ? res : bit;
+            return WithBitacoraOnSuccess(res, CodEmpresa, usuario, $"Entidad Pagadora : {cod_entidad_pago}", "Elimina - WEB");
         }
 
         /// <summary>
@@ -257,26 +289,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         private ErrorDto SIF_EntidadesCancela_Actualizar(int CodEmpresa, string usuario, SifEntidadesCancelaData entidad)
         {
-            var query = @"UPDATE SIF_ENTIDADES_PAGO
-                               SET descripcion       = @descripcion,
-                                   activa            = @activa,
-                                   Registro_Fecha    = GETDATE(),
-                                   Registro_Usuario  = @registro_usuario
-                             WHERE COD_ENTIDAD_PAGO    = @cod_entidad_pago;";
-
-            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
-            {
-                cod_entidad_pago = NormalizeUpper(entidad.cod_entidad_pago),
-                descripcion = NormalizeUpper(entidad.descripcion),
-                activa = entidad.activa,
-                registro_usuario = usuario
-            });
-
-            if ((res.Code ?? -1) != 0)
-                return res;
-
-            var bit = TryBitacora(CodEmpresa, usuario, $"Entidad Pagadora : {entidad.cod_entidad_pago} - {entidad.descripcion}", "Modifica - WEB");
-            return (bit.Code ?? -1) == 0 ? res : bit;
+            var p = BuildEntidadParams(entidad, usuario);
+            var res = ExecuteWrite(_portalDB, CodEmpresa, UpdateEntidadSql, p);
+            return WithBitacoraOnSuccess(res, CodEmpresa, usuario,
+                $"Entidad Pagadora : {entidad.cod_entidad_pago} - {entidad.descripcion}",
+                "Modifica - WEB");
         }
         
         
@@ -289,24 +306,11 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
         /// <returns></returns>
         private ErrorDto SIF_EntidadesCancela_Insertar(int CodEmpresa, string usuario, SifEntidadesCancelaData entidad)
         {
-            var query = @"INSERT INTO SIF_ENTIDADES_PAGO
-                                    (COD_ENTIDAD_PAGO, descripcion, activA, Registro_Fecha, Registro_Usuario)
-                                VALUES
-                                    (@cod_entidad_pago, @descripcion, @activa, GETDATE(), @registro_usuario);";
-
-            var res = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, query, new
-            {
-                cod_entidad_pago = NormalizeUpper(entidad.cod_entidad_pago),
-                descripcion = NormalizeUpper(entidad.descripcion),
-                activa = entidad.activa,
-                registro_usuario = usuario
-            });
-
-            if ((res.Code ?? -1) != 0)
-                return res;
-
-            var bit = TryBitacora(CodEmpresa, usuario, $"Entidad pagadora : {entidad.cod_entidad_pago} - {entidad.descripcion}", "Registra - WEB");
-            return (bit.Code ?? -1) == 0 ? res : bit;
+            var p = BuildEntidadParams(entidad, usuario);
+            var res = ExecuteWrite(_portalDB, CodEmpresa, InsertEntidadSql, p);
+            return WithBitacoraOnSuccess(res, CodEmpresa, usuario,
+                $"Entidad pagadora : {entidad.cod_entidad_pago} - {entidad.descripcion}",
+                "Registra - WEB");
         }
         
         
