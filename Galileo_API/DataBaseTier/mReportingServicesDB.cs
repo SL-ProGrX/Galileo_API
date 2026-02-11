@@ -121,7 +121,7 @@ namespace Galileo.DataBaseTier
 
                 var (mainDataSets, subreportNames) = _meta.ReadRdlcMeta(finalPath);
                 var subMeta = _subs.LoadSubreports(report, basePath, subreportNames);
-                var autoAliases = _subs.BuildAutoAliasMap(mainPath, basePath);
+                var autoAliases = _subs.BuildAutoAliasMap(finalPath, basePath);
 
                 var (reportParams, paramDict, jParams) = _params.Build(data, connection, connString);
                 if (reportParams.Count > 0)

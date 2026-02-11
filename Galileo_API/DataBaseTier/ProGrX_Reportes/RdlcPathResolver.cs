@@ -33,10 +33,10 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
 
         }
 
-        public string CombineUnderRoot(string rootDir, params string[] segments)
+        public string CombineUnderRoot(string basePath, params string[] reportFile)
         {
-            var rootFull = Path.GetFullPath(rootDir);
-            var combined = segments.Aggregate(rootFull, Path.Combine);
+            var rootFull = Path.GetFullPath(basePath);
+            var combined = reportFile.Aggregate(rootFull, Path.Combine);
             var full = Path.GetFullPath(combined);
 
             var rootWithSep = rootFull.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;

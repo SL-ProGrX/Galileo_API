@@ -72,7 +72,9 @@ namespace Galileo.DataBaseTier
         private Dictionary<string, string> BuildAliasForSubreport(string subName, List<string> parentParams, string basePath)
         {
             var alias = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            var childPath = _paths.ResolveReportPath(basePath);
+
+            var mainPath = _paths.CombineUnderRoot(basePath, subName);
+            var childPath = _paths.ResolveReportPath(mainPath);
             if (childPath == null) return alias;
 
             var childDoc = XDocument.Load(childPath);
