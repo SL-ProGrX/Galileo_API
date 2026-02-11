@@ -140,7 +140,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                 var tipoIdUpper = tipo?.tipo_id?.ToUpper() ?? string.Empty;
                 var existe = connection.QueryFirstOrDefault<int>(query, new { tipoId = tipoIdUpper });
 
-                if (tipo != null && tipo.isNew)
+                if (tipo == null)
+                {
+                    result.Code = -2;
+                    result.Description = "El parámetro 'tipo' no puede ser nulo.";
+                }
+                else if (tipo.isNew)
                 {
                     if (existe > 0)
                     {
@@ -152,17 +157,12 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
                         result = Sys_RaTipos_Insertar(CodEmpresa, usuario, tipo);
                     }
                 }
-                else if (existe == 0 && tipo != null && !tipo.isNew)
-                {
-                    result.Code = -2;
-                    result.Description = $"El tipo con el código {tipo.tipo_id} no existe.";
-                }
                 else
                 {
-                    if (tipo == null)
+                    if (existe == 0)
                     {
                         result.Code = -2;
-                        result.Description = "El parámetro 'tipo' no puede ser nulo.";
+                        result.Description = $"El tipo con el código {tipo.tipo_id} no existe.";
                     }
                     else
                     {
