@@ -27,6 +27,78 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             return string.IsNullOrWhiteSpace(s) ? null : $"%{s}%";
         }
 
+        private static DynamicParameters BuildFormaPagoParams(SifFormasPago forma_pago)
+        {
+            var p = new DynamicParameters();
+
+            p.Add("@cod_forma_pago", NormalizeUpper(forma_pago.cod_forma_pago), DbType.String);
+            p.Add("@descripcion", forma_pago.descripcion, DbType.String);
+            p.Add("@activa", forma_pago.activa, DbType.String);
+            p.Add("@efectivo", forma_pago.efectivo, DbType.String);
+            p.Add("@aplica_saldos_favor", forma_pago.aplica_saldos_favor, DbType.String);
+            p.Add("@cod_cuenta", forma_pago.cod_cuenta, DbType.String);
+            p.Add("@tipo", forma_pago.tipo, DbType.String);
+            p.Add("@aplica_para_deposito", forma_pago.aplica_para_deposito, DbType.String);
+            p.Add("@maximo_apl", forma_pago.maximo_apl, DbType.Decimal);
+            p.Add("@maximo_monto", forma_pago.maximo_monto, DbType.Decimal);
+            p.Add("@or_aplica", forma_pago.or_aplica, DbType.String);
+            p.Add("@or_diario_apl", forma_pago.or_diario_apl, DbType.Decimal);
+            p.Add("@or_diario_monto", forma_pago.or_diario_monto, DbType.Decimal);
+            p.Add("@or_mensual_apl", forma_pago.or_mensual_apl, DbType.Decimal);
+            p.Add("@or_mensual_monto", forma_pago.or_mensual_monto, DbType.Decimal);
+            p.Add("@codigo_fe", forma_pago.codigo_fe, DbType.String);
+            p.Add("@recibo_digital", forma_pago.recibo_digital, DbType.String);
+            p.Add("@registro_usuario", forma_pago.registro_usuario, DbType.String);
+
+            return p;
+        }
+
+        private static ErrorDto ExecuteFormaPagoWrite(SqlConnection connection, string sql, DynamicParameters p, string okMsg)
+        {
+            try
+            {
+                connection.Execute(sql, p);
+                return DbHelper.OkResponse(okMsg);
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse(ex.Message);
+            }
+        }
+
+        private const string InsertFormaPagoSql = @"
+INSERT INTO sif_formas_pago (
+    COD_FORMA_PAGO, DESCRIPCION, ACTIVA, EFECTIVO, APLICA_SALDOS_FAVOR, COD_CUENTA, TIPO, APLICA_PARA_DEPOSITO,
+    MAXIMO_APL, MAXIMO_MONTO, OR_APLICA, OR_DIARIO_APL, OR_DIARIO_MONTO, OR_MENSUAL_APL, OR_MENSUAL_MONTO,
+    CODIGO_FE, RECIBO_DIGITAL, REGISTRO_USUARIO, REGISTRO_FECHA
+) VALUES (
+    @cod_forma_pago, UPPER(LTRIM(RTRIM(@descripcion))), @activa, @efectivo, @aplica_saldos_favor, @cod_cuenta, @tipo, @aplica_para_deposito,
+    @maximo_apl, @maximo_monto, @or_aplica, @or_diario_apl, @or_diario_monto, @or_mensual_apl, @or_mensual_monto,
+    @codigo_fe, @recibo_digital, @registro_usuario, GETDATE()
+)";
+
+        private const string UpdateFormaPagoSql = @"
+UPDATE sif_formas_pago SET
+    DESCRIPCION = UPPER(LTRIM(RTRIM(@descripcion))),
+    ACTIVA = @activa,
+    EFECTIVO = @efectivo,
+    APLICA_SALDOS_FAVOR = @aplica_saldos_favor,
+    COD_CUENTA = @cod_cuenta,
+    TIPO = @tipo,
+    APLICA_PARA_DEPOSITO = @aplica_para_deposito,
+    MAXIMO_APL = @maximo_apl,
+    MAXIMO_MONTO = @maximo_monto,
+    OR_APLICA = @or_aplica,
+    OR_DIARIO_APL = @or_diario_apl,
+    OR_DIARIO_MONTO = @or_diario_monto,
+    OR_MENSUAL_APL = @or_mensual_apl,
+    OR_MENSUAL_MONTO = @or_mensual_monto,
+    CODIGO_FE = @codigo_fe,
+    RECIBO_DIGITAL = @recibo_digital,
+    REGISTRO_USUARIO = @registro_usuario,
+    REGISTRO_FECHA = GETDATE()
+WHERE UPPER(COD_FORMA_PAGO) = @cod_forma_pago";
+
         private ErrorDto<T?> Single<T>(int codEmpresa, string sql, T? defaultValue = default, object? parameters = null)
             => DbHelper.ExecuteSingleQuery<T>(_portalDB, codEmpresa, sql, defaultValue, parameters);
 
@@ -143,115 +215,16 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             });
         }
 
-        private ErrorDto SIF_Formas_Pago_Insertar(SqlConnection connection, SifFormasPago forma_pago)
+        private static ErrorDto SIF_Formas_Pago_Insertar(SqlConnection connection, SifFormasPago forma_pago)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Forma de pago registrada correctamente."
-            };
-            try
-            {
-                var insertSql = @"
-            INSERT INTO sif_formas_pago (
-                COD_FORMA_PAGO, DESCRIPCION, ACTIVA, EFECTIVO, APLICA_SALDOS_FAVOR, COD_CUENTA, TIPO, APLICA_PARA_DEPOSITO,
-                MAXIMO_APL, MAXIMO_MONTO, OR_APLICA, OR_DIARIO_APL, OR_DIARIO_MONTO, OR_MENSUAL_APL, OR_MENSUAL_MONTO,
-                CODIGO_FE, RECIBO_DIGITAL, REGISTRO_USUARIO, REGISTRO_FECHA
-            ) VALUES (
-                @cod_forma_pago, UPPER(LTRIM(RTRIM(@descripcion))), @activa, @efectivo, @aplica_saldos_favor, @cod_cuenta, @tipo, @aplica_para_deposito,
-                @maximo_apl, @maximo_monto, @or_aplica, @or_diario_apl, @or_diario_monto, @or_mensual_apl, @or_mensual_monto,
-                @codigo_fe, @recibo_digital, @registro_usuario, GETDATE()
-            )";
-
-                connection.Execute(insertSql, new
-                {
-                    cod_forma_pago = NormalizeUpper(forma_pago.cod_forma_pago),
-                    forma_pago.descripcion,
-                    forma_pago.activa,
-                    forma_pago.efectivo,
-                    forma_pago.aplica_saldos_favor,
-                    forma_pago.cod_cuenta,
-                    forma_pago.tipo,
-                    forma_pago.aplica_para_deposito,
-                    forma_pago.maximo_apl,
-                    forma_pago.maximo_monto,
-                    forma_pago.or_aplica,
-                    forma_pago.or_diario_apl,
-                    forma_pago.or_diario_monto,
-                    forma_pago.or_mensual_apl,
-                    forma_pago.or_mensual_monto,
-                    forma_pago.codigo_fe,
-                    forma_pago.recibo_digital,
-                    forma_pago.registro_usuario
-                });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+            var p = BuildFormaPagoParams(forma_pago);
+            return ExecuteFormaPagoWrite(connection, InsertFormaPagoSql, p, "Forma de pago registrada correctamente.");
         }
 
-        private ErrorDto SIF_Formas_Pago_Actualizar(SqlConnection connection, SifFormasPago forma_pago)
+        private static ErrorDto SIF_Formas_Pago_Actualizar(SqlConnection connection, SifFormasPago forma_pago)
         {
-            var result = new ErrorDto
-            {
-                Code = 0,
-                Description = "Forma de pago actualizada correctamente."
-            };
-            try
-            {
-                var updateSql = @"
-            UPDATE sif_formas_pago SET
-                DESCRIPCION = UPPER(LTRIM(RTRIM(@descripcion))),
-                ACTIVA = @activa,
-                EFECTIVO = @efectivo,
-                APLICA_SALDOS_FAVOR = @aplica_saldos_favor,
-                COD_CUENTA = @cod_cuenta,
-                TIPO = @tipo,
-                APLICA_PARA_DEPOSITO = @aplica_para_deposito,
-                MAXIMO_APL = @maximo_apl,
-                MAXIMO_MONTO = @maximo_monto,
-                OR_APLICA = @or_aplica,
-                OR_DIARIO_APL = @or_diario_apl,
-                OR_DIARIO_MONTO = @or_diario_monto,
-                OR_MENSUAL_APL = @or_mensual_apl,
-                OR_MENSUAL_MONTO = @or_mensual_monto,
-                CODIGO_FE = @codigo_fe,
-                RECIBO_DIGITAL = @recibo_digital,
-                REGISTRO_USUARIO = @registro_usuario,
-                REGISTRO_FECHA = GETDATE()
-            WHERE UPPER(COD_FORMA_PAGO) = @cod_forma_pago";
-
-                connection.Execute(updateSql, new
-                {
-                    cod_forma_pago = NormalizeUpper(forma_pago.cod_forma_pago),
-                    forma_pago.descripcion,
-                    forma_pago.activa,
-                    forma_pago.efectivo,
-                    forma_pago.aplica_saldos_favor,
-                    forma_pago.cod_cuenta,
-                    forma_pago.tipo,
-                    forma_pago.aplica_para_deposito,
-                    forma_pago.maximo_apl,
-                    forma_pago.maximo_monto,
-                    forma_pago.or_aplica,
-                    forma_pago.or_diario_apl,
-                    forma_pago.or_diario_monto,
-                    forma_pago.or_mensual_apl,
-                    forma_pago.or_mensual_monto,
-                    forma_pago.codigo_fe,
-                    forma_pago.recibo_digital,
-                    forma_pago.registro_usuario
-                });
-            }
-            catch (Exception ex)
-            {
-                result.Code = -1;
-                result.Description = ex.Message;
-            }
-            return result;
+            var p = BuildFormaPagoParams(forma_pago);
+            return ExecuteFormaPagoWrite(connection, UpdateFormaPagoSql, p, "Forma de pago actualizada correctamente.");
         }
 
         /// <summary>
