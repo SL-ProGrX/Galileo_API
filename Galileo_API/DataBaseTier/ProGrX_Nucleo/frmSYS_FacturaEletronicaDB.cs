@@ -1808,44 +1808,46 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
         private static string? FirstAny(object r, params string[] keys)
         {
-            foreach (var k in keys)
-            {
-                var v = ExtractKeyFromParametros(r, k);
-                if (v != null) return v;
-            }
-            return null;
-        }
+            if (keys == null || keys.Length == 0) return null;
 
+            return keys
+                .Select(k => ExtractKeyFromParametros(r, k))
+                .FirstOrDefault(v => v != null);
+        }
         private static string? FirstNonEmpty(object r, params string[] keys)
         {
-            foreach (var k in keys)
-            {
-                var v = ExtractKeyFromParametros(r, k);
-                if (!string.IsNullOrWhiteSpace(v)) return v;
-            }
-            return null;
-        }
+            if (keys == null || keys.Length == 0) return null;
 
+            return keys
+                .Select(k => ExtractKeyFromParametros(r, k))
+                .FirstOrDefault(v => !string.IsNullOrWhiteSpace(v));
+        }
         private static int FirstNonZeroInt(object r, params string[] keys)
         {
-            foreach (var k in keys)
-            {
-                var n = TryParseInt(ExtractKeyFromParametros(r, k));
-                if (n != 0) return n;
-            }
-            return TryParseInt(ExtractKeyFromParametros(r, keys.Length > 0 ? keys[^1] : ""));
-        }
+            if (keys == null || keys.Length == 0)
+                return TryParseInt(ExtractKeyFromParametros(r, ""));
 
+            var firstNonZero = keys
+                .Select(k => TryParseInt(ExtractKeyFromParametros(r, k)))
+                .FirstOrDefault(n => n != 0);
+
+            return firstNonZero != 0
+                ? firstNonZero
+                : TryParseInt(ExtractKeyFromParametros(r, keys[^1]));
+        }
         private static decimal FirstNonZeroDecimal(object r, params string[] keys)
         {
-            foreach (var k in keys)
-            {
-                var n = TryParseDecimal(ExtractKeyFromParametros(r, k));
-                if (n != 0m) return n;
-            }
-            return TryParseDecimal(ExtractKeyFromParametros(r, keys.Length > 0 ? keys[^1] : ""));
-        }
+            if (keys == null || keys.Length == 0)
+                return TryParseDecimal(ExtractKeyFromParametros(r, ""));
 
+            var firstNonZero = keys
+                .Select(k => TryParseDecimal(ExtractKeyFromParametros(r, k)))
+                .FirstOrDefault(n => n != 0m);
+
+            return firstNonZero != 0m
+                ? firstNonZero
+                : TryParseDecimal(ExtractKeyFromParametros(r, keys[^1]));
+        }
 
         /// <summary>
         /// Ordena lista de resumen por sortField/sortOrder.
