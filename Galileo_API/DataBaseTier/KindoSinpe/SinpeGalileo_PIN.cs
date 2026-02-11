@@ -25,7 +25,7 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResServiceAvailable IsServiceAvailable(string UrlCGP_PIN, ReqBase context)
         {
-            var json = JsonConvert.SerializeObject(context);
+           
             return mClient.PostJsonAsync<ReqBase, ResServiceAvailable, ResServiceAvailable>(
                    baseUrl: UrlCGP_PIN,
                    endpoint: "/IsServiceAvailable",
@@ -54,8 +54,7 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResAccountInfo GetAccountInfo(string UrlCGP_PIN, ReqAccountInfo accountData)
         {
-            var json = JsonConvert.SerializeObject(accountData);
-
+           
             return mClient.PostJsonAsync<ReqAccountInfo, ResAccountInfo, ResAccountInfo>(
                    baseUrl: UrlCGP_PIN,
                    endpoint: "/GetAccountInfo",
@@ -88,7 +87,7 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResSendingDynamic SendPIN(string UrlCGP_PIN, ReqSendingDynamic pinData)
         {
-            var json = JsonConvert.SerializeObject(pinData);
+            
             return mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
                    baseUrl: UrlCGP_PIN,
                    endpoint: "/SendTransfer",

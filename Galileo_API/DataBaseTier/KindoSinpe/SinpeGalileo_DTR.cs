@@ -37,7 +37,6 @@ namespace Galileo_API.DataBaseTier
 
         public ResAccountInfo GetAccountInfo(string UrlCGP_DTR, ReqAccountInfo data)
         {
-            var json = JsonConvert.SerializeObject(data);
 
             return mClient.PostJsonAsync<ReqBase, ResAccountInfo, ResAccountInfo>(
                  baseUrl: UrlCGP_DTR,
@@ -62,7 +61,6 @@ namespace Galileo_API.DataBaseTier
 
         public ResSendingDynamic SendDebit(string UrlCGP_DTR, ReqSendingDynamic data)
         {
-            var json = JsonConvert.SerializeObject(data);
 
             return mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
                  baseUrl: UrlCGP_DTR,

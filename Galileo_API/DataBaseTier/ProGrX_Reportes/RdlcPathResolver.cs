@@ -23,8 +23,6 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
                     basePath,
                     reportNameOrRelative,
                     out var baseFull,
-                    out var rel,
-                    out var relDir,
                     out var bare))
                 return string.Empty;
 
@@ -84,11 +82,11 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             string basePath,
             string reportNameOrRelative,
             out string baseFull,
-            out string rel,
-            out string relDir,
             out string bare)
         {
-            baseFull = rel = relDir = bare = string.Empty;
+            string relDir = string.Empty;
+            string rel = string.Empty;
+            baseFull = bare = string.Empty;
 
             if (string.IsNullOrWhiteSpace(basePath) || string.IsNullOrWhiteSpace(reportNameOrRelative))
                 return false;
@@ -107,7 +105,6 @@ namespace Galileo.DataBaseTier.ProGrX_Reportes
             if (Path.IsPathRooted(rel))
                 return false;
 
-            relDir = Path.GetDirectoryName(baseFull + rel) ?? string.Empty;
             bare = Path.GetFileName(rel);
 
             // bloquea cosas raras tipo "." ".." o nombre vacío

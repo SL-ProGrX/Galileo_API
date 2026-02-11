@@ -43,36 +43,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 sql.Append(" ORDER BY FECHA DESC");
 
-                var response =  conn.Query<CajasRoeConsultaResult>(sql.ToString(), parameters).ToList() ?? new List<CajasRoeConsultaResult>();
-
-                if(response.Count == 0)
-                {
-                    response.Add(new CajasRoeConsultaResult
-                    {
-                        ID_ROE = 1,
-                        TIPOROE ="X",
-                        CEDULA_ASO = "XXX",
-                        IDENTIFICACION_DEPO = "XXX",
-                        NOMBRE_DEPO = "XXX",
-                        FECHA = null,
-                        USUARIO = "DEMO",
-                        MONTO_LOCAL = 0,
-                        MONTO_DOL = 0,
-                        ACTUALIZA_FECHA = null,
-                        ACTUALIZA_USUARIO = string.Empty,
-                        REGISTRO_FECHA = null,
-                        REGISTRO_USUARIO = string.Empty,
-                        USUARIO_ANULACION = string.Empty,
-                        FECHA_ANULACION = null,
-                        OBSERV_ANULACION = string.Empty,
-                        IMPRIME_FECHA = null,
-                        IMPRIME_USUARIO = string.Empty,
-                        ID_SESION = string.Empty,
-                        ESTADO = string.Empty
-
-                    });
-                }
-
+                var response =  conn.Query<CajasRoeConsultaResult>(sql.ToString(), parameters).ToList();
                 return response;
             });
         }

@@ -87,7 +87,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
             catch (Exception ex)
             {
-                 response="";
+                 response= ex.Message;
             } 
 
             return response;
