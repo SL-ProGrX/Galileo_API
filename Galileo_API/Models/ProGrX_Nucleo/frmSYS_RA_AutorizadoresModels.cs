@@ -1,4 +1,4 @@
-namespace Galileo.Models.SYS
+namespace Galileo.Models.ProGrX_Nucleo
 {
     public class AutorizadoresExpDto
     {
