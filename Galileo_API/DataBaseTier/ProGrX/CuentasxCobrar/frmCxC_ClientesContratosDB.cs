@@ -96,7 +96,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                  new ClientesContratosData(),
                  new { cedula, contrato });
 
-            // Ajuste de tipo_vidautil si la consulta fue exitosa
+
             if (respNullable.Code == 0 && respNullable.Result == null)
             {
                 string query2 = $@"select *,dbo.MyGetdate() as 'Fecha' from CxC_Contratos where cod_contrato = @contrato  and activo = 1";
@@ -134,29 +134,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         public ErrorDto CxCClientesPersonasContratos_Guardar(int codEmpresa, string usuario, ClientesContratosData datos)
         {
             if (datos is null) return Err("Datos requeridos.");
-            if (string.IsNullOrWhiteSpace(datos.cedula)) return Err("El campo 'cedula' es requerido.");
+            if (string.IsNullOrWhiteSpace(datos.Cedula)) return Err("El campo 'cedula' es requerido.");
             if (string.IsNullOrWhiteSpace(usuario)) return Err("El usuario es requerido.");
 
             try
             {
-                if (datos.IsNew)
-                {
-                    return CxCClientesPersonas_Contratos_Insertar(codEmpresa, usuario, datos);
-                }
-                else
-                {
-                    return CxCClientesPersonas_Contratos_Actualizar(codEmpresa, usuario, datos);
-                }
-
+                return datos.IsNew
+                     ? CxCClientesPersonas_Contratos_Insertar(codEmpresa, usuario, datos)
+                     : CxCClientesPersonas_Contratos_Actualizar(codEmpresa, usuario, datos);
+ 
 
             }
             catch (DbException)
             {
                 return Err("No fue posible guardar.");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return Err("Error inesperado al guardar.");
+                return Err("Error inesperado al guardar: " + ex.Message);
             }
         }
 
@@ -180,7 +175,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 conn.Execute(query, new
                 {
-                    datos.cedula,
+                    datos.Cedula,
                     datos.Cod_Contrato,
                     datos.Notas,
                     datos.Activo,
@@ -193,7 +188,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     datos.Contrato_Vence
                 });
 
-                var detalle = $"Suscripción: Ced: {datos.cedula} Cnt:{datos.Cod_Contrato}";
+                var detalle = $"Suscripción: Ced: {datos.Cedula} Cnt:{datos.Cod_Contrato}";
 
                 LogBitacora(CodEmpresa, usuario, detalle, MovRegistra);
 
@@ -238,7 +233,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
                 conn.Execute(query, new
                 {
-                    datos.cedula,
+                    datos.Cedula,
                     datos.Cod_Contrato,
                     datos.Notas,
                     datos.Activo,
@@ -251,7 +246,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     datos.Contrato_Vence
                 });
 
-                var detalle = $"Suscripción: Ced: {datos.cedula} Cnt:{datos.Cod_Contrato}";
+                var detalle = $"Suscripción: Ced: {datos.Cedula} Cnt:{datos.Cod_Contrato}";
 
                 LogBitacora(CodEmpresa, usuario, detalle, MovActualiza);
 

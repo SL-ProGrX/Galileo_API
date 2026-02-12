@@ -20,7 +20,7 @@
             public DateTime? Actualiza_fecha { get; set; }
             public bool? Activo { get; set; }
             public string? Cedula { get; set; } = string.Empty;
-            public bool? IsNew { get; set; }
+            public bool IsNew { get; set; } = false;
         }
         public class PersonasContratosSuscripcionesData
         {
