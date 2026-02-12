@@ -115,7 +115,7 @@ namespace Galileo_API.DataBaseTier
                 RegistroFecha = DateTime.Now,
                 RegistroUsuario = usuario,
                 ComprobanteInterno = sr?.SINPEReference ?? string.Empty,
-                RechazoCodigo = (resPIN!.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
+                RechazoCodigo = (resPIN?.Errors != null && resPIN.Errors.Length > 0) ? resPIN.Errors[0].Code : 0,
                 RechazoDesc = string.Empty,
                 Estado = (sr?.SINPEReference == null)? 4 : sr?.State,
                 FechaActualiza = incluirFechaActualiza ? DateTime.Now : (DateTime?)null,
