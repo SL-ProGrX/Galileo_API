@@ -9,13 +9,14 @@ using System.Data;
 using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier
 {
     public class MKindoServiceDb : IWfcSinpe
     {
         private readonly PortalDB _portalDB;
-        private readonly IConfiguration _config;
+
         private readonly SinpeGalileoPin _PIN;
 
         private readonly Guid OperationId;
@@ -24,10 +25,9 @@ namespace Galileo_API.DataBaseTier
 
         public MKindoServiceDb(IConfiguration config)
         {
-            _config = config;
-            _PIN = new SinpeGalileoPin(_config);
+            _PIN = new SinpeGalileoPin(config);
             OperationId = Guid.NewGuid();
-            _portalDB = new PortalDB(_config);
+            _portalDB = new PortalDB(config);
         }
 
         #region Helpers privados (para reducir duplicidad)
