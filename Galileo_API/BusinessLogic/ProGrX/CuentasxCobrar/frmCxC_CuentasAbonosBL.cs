@@ -1,6 +1,5 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo_API.DataBaseTier.ProGrX.Cobros;
 using Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
 
@@ -35,6 +34,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         public ErrorDto<CxCCuentaCuotasInfoData> CxCCuentas_CuotasInfo_Obtener(int codEmpresa, int vOperacion, int vCuotas)
         {
             return _db.CxCCuentas_CuotasInfo_Obtener(codEmpresa, vOperacion, vCuotas);
+        }
+
+        public ErrorDto CxCCuentas_Abono_Registrar(int codEmpresa, CxCCuentasRegistrarAbonoRequest request)
+        {
+            return _db.CxCCuentas_Abono_Registrar(codEmpresa, request);
         }
     }
 }

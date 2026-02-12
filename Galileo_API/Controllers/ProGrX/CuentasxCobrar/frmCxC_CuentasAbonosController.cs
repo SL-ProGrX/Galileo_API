@@ -46,5 +46,11 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _bl.CxCCuentas_CuotasInfo_Obtener(codEmpresa, vOperacion, vCuotas);
         }
+
+        [HttpPost("CxCCuentas_Abono_Registrar")]
+        public ErrorDto CxCCuentas_Abono_Registrar(int codEmpresa, CxCCuentasRegistrarAbonoRequest request)
+        {
+            return _bl.CxCCuentas_Abono_Registrar(codEmpresa, request);
+        }
     }
 }

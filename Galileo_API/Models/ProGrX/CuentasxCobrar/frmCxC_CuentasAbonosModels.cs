@@ -55,4 +55,51 @@
         public DateTime? fecha_Proceso { get; set; }
         public decimal cuota { get; set; } = 0;
     }
+
+    public class CxCCuentasRegistrarAbonoRequest
+    {
+        public string mcaja { get; set; } = "";
+        public int mapertura { get; set; } = 0;
+        public int msesionid { get; set; } = 0;
+        public string mtiquete { get; set; } = "";
+        public int operacionid { get; set; } = 0;
+
+        public string tipodoc { get; set; } = "";
+
+        public DateTime? fechacancelacion { get; set; }
+
+        public bool fechacancelacion_enabled { get; set; } = false;
+
+        public decimal totalcajas { get; set; } = 0;
+        public decimal totalcancela { get; set; } = 0;
+        public decimal diferencia { get; set; } = 0;
+        public decimal datosamortiza { get; set; } = 0;
+        public decimal totalpagar { get; set; } = 0;
+
+        public int diasactivo { get; set; } = 0;
+        public bool recalculacuota { get; set; } = false;
+
+        public AbonoTipo tipoabono { get; set; } = AbonoTipo.Ordinario;
+        public bool diferenciaaplenabled { get; set; } = false;
+        public string diferenciaapltexto { get; set; } = "";
+
+        public string usuario { get; set; } = "";
+        public string cedula { get; set; } = "";
+        public string nombre { get; set; } = "";
+        public string codigo { get; set; } = "";
+        public string descripcion { get; set; } = "";
+        public string notas { get; set; } = "";
+        public decimal saldo_anterior { get; set; } = 0;
+        public decimal saldo_nuevo { get; set; } = 0;
+        
+        public bool recibo_digital { get; set; } = false;
+    }
+
+    public enum AbonoTipo
+    {
+        Ordinario = 0,
+        Extraordinario = 1,
+        Cancelacion = 2,
+        AdelantoCuotas = 3
+    }
 }
