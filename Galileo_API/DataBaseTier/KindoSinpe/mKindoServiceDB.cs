@@ -5,12 +5,10 @@ using Galileo.Models.ERROR;
 using Galileo.Models.KindoSinpe;
 using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.Data.SqlClient;
-using PdfSharp.Pdf.Content.Objects;
 using System.Data;
 using System.Globalization;
 using System.Net;
 using System.Text.RegularExpressions;
-using System.Linq;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -33,13 +31,6 @@ namespace Galileo_API.DataBaseTier
         }
 
         #region Helpers privados (para reducir duplicidad)
-
-        private SqlConnection OpenConnection(int codEmpresa)
-        {
-            var cs = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
-            return new SqlConnection(cs);
-        }
-
         // Wrapper genérico para reducir try/catch repetidos
         private static T Safe<T>(Func<T> f, Func<T> fallback)
         {
@@ -203,7 +194,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             }
 
             var resultado = new List<CoreInterno.CL_ResultadoValidacion>();
-            using var connection = OpenConnection(codEmpresa);
+            using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
             foreach (var t in request.Transacciones!)
             {
@@ -285,7 +276,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             }
 
             var resultado = new List<CoreInterno.CL_RespuestaTransaccion>();
-            using var connection = OpenConnection(codEmpresa);
+            using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
             foreach (var s in transacciones)
             {
@@ -379,7 +370,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             }
 
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
-            using var connection = OpenConnection(codEmpresa);
+            using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
             foreach (var s in transacciones)
             {
@@ -435,7 +426,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             }
 
             var resultado = new List<CoreInterno.CL_ResultadoActualizacion>();
-            using var connection = OpenConnection(codEmpresa);
+            using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
             resultado.AddRange(from s in transacciones//consulto solicitud 
                                let exist = $@"SELECT * FROM SINPE_MOV_TRANSITO WHERE COD_REFERENCIA = @codReferencia"
@@ -471,7 +462,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             var response = false;
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var query = "SELECT COUNT(*) FROM SINPE_PARAMETROS_EMPRESA";
                 response = connection.ExecuteScalar<int>(query) > 0;
             }
@@ -487,7 +478,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             var cuenta = new CoreInterno.CL_CuentaIBAN();
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = $@"exec sp_Sinpe_ObtenerCuentaIBAN @CuentaIBAN";
                 var result = connection.QueryFirstOrDefault<dynamic>(query, new { CuentaIBAN = DatosCuenta.CuentaIBAN });
@@ -575,7 +566,7 @@ FROM dbo.fxSinpe_ValidaCredito(
         {
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = $@"exec sp_Sinpe_ObtieneInfoCuenta @Identificacion, @CuentaIBAN ";
                 var result = connection.QueryFirstOrDefault<dynamic>(query, new { Identificacion = Identificacion, CuentaIBAN = CuentaIBAN });
@@ -636,7 +627,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             var resultado = new CoreInterno.CL_ValidaCuenta();
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 string tipo = CuentaIBAN!.Substring(8, 2);
 
@@ -692,7 +683,7 @@ FROM dbo.fxSinpe_ValidaCredito(
                     };
                 }
 
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var tc = $@"exec dbo.sp_Sinpe_ObtenerTipoCambio @CODIGO_REFERENCIA";
                 var tipoCambio = connection.QueryFirstOrDefault<decimal>(tc, new { CODIGO_REFERENCIA = Cuentaorigen });
@@ -718,7 +709,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             var resultado = new CoreInterno.ComisionRespectivaResponse();
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = $@"SELECT dbo.fxPSL_VerificaComision(
                                     @Cedula, 
@@ -837,7 +828,7 @@ FROM dbo.fxSinpe_ValidaCredito(
         {
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = $@"exec sp_Sinpe_ObtieneEstadoTransaccion
                                              @CODIGO_REFERENCIA ";
@@ -909,7 +900,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             var resultado = new CoreInterno.SaldoDisponibleResponse();
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = $@"exec sp_Sinpe_SaldoDisponible
                                         @Identificacion ,
@@ -949,7 +940,7 @@ FROM dbo.fxSinpe_ValidaCredito(
         {
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 const string query = @"exec sp_Sinpe_ObtenerInformacionCliente @Identificacion";
 
@@ -992,7 +983,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             var resultado = new CoreInterno.ObtenerProductosPorClienteResponse();
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var query = $@"exec sp_Sinpe_Obtener_ProductosporCliente
                                         @CEDULAPERSONA ";
@@ -1309,7 +1300,7 @@ FROM dbo.fxSinpe_ValidaCredito(
 
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var res = connection.QueryFirstOrDefault<InfoSinpeData>(
                             "spTES_W_ConsultaInfoSinpe",
                             new { solicitud },
@@ -1368,7 +1359,7 @@ FROM dbo.fxSinpe_ValidaCredito(
             var result = new ErrorDto<ParametrosSinpe>();
             try
             {
-                using var connection = OpenConnection(codEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, codEmpresa);
 
                 var query = "SELECT * FROM SINPE_PARAMETROS_EMPRESA WHERE COD_EMPRESA = @codEmpresa";
                 var parametros = connection.Query(query, new
@@ -1420,7 +1411,7 @@ FROM dbo.fxSinpe_ValidaCredito(
 
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
                 var query = $@"SELECT 
                                     NSOLICITUD as 'NumeroSolicitud', 
                                     ID_BANCO, 
@@ -1581,7 +1572,7 @@ FROM dbo.fxSinpe_ValidaCredito(
         {
             try
             {
-                using var connection = OpenConnection(CodEmpresa);
+                using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 if (TipoId == 3)
                 {
@@ -1616,7 +1607,7 @@ FROM dbo.fxSinpe_ValidaCredito(
 
         public ErrorDto<string> fxTesConsultaMotivo(int CodEmpresa, int idRechazo)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var response = new ErrorDto<string>
             {
                 Code = 0,
@@ -1626,7 +1617,6 @@ FROM dbo.fxSinpe_ValidaCredito(
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
                 var query = $@"SELECT DESCRIPCION FROM SINPE_MOTIVOS where COD_MOTIVO = @rechazo ";
                 response.Result = connection.Query<string>(query, new { rechazo = idRechazo }).FirstOrDefault();
             }
@@ -1641,7 +1631,7 @@ FROM dbo.fxSinpe_ValidaCredito(
 
         public ErrorDto<bool> RegistraCreditoCuenta(int CodEmpresa, int Nsolicitud, ResSendingDynamic resPIN)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var response = new ErrorDto<bool>
             {
                 Code = 0,
@@ -1651,7 +1641,6 @@ FROM dbo.fxSinpe_ValidaCredito(
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
                 var query = $@"UPDATE TES_TRANSACCIONES SET 
                                     REFERENCIA_SINPE = @refSinpe ,
                                     ID_RECHAZO = @idRechazo ,
@@ -1676,7 +1665,7 @@ FROM dbo.fxSinpe_ValidaCredito(
 
         public ErrorDto<bool> RegistraDibitoCuenta(int CodEmpresa, int Nsolicitud, ResSendingDynamic resPIN)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var response = new ErrorDto<bool>
             {
                 Code = 0,
@@ -1686,7 +1675,6 @@ FROM dbo.fxSinpe_ValidaCredito(
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
                 var query = $@"UPDATE TES_TRANSACCIONES SET 
                                     REFERENCIA_SINPE = @refSinpe ,
                                     ID_RECHAZO = @idRechazo ,
@@ -1711,7 +1699,7 @@ FROM dbo.fxSinpe_ValidaCredito(
 
         public ErrorDto<bool> fxTesRespuestaSinpe(int CodEmpresa, TesTransaccion datos)
         {
-            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(CodEmpresa);
+            using var connection = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             var response = new ErrorDto<bool>
             {
                 Code = 0,
@@ -1723,7 +1711,6 @@ FROM dbo.fxSinpe_ValidaCredito(
 
             try
             {
-                using var connection = new SqlConnection(stringConn);
                 if (datos.IdMotivoRechazo != 201)
                 {
                     string estado = "I";
