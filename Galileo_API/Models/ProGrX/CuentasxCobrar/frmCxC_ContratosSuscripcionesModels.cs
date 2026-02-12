@@ -2,10 +2,16 @@
 
 namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
-    public class CxcPersonaContratoDto
+    // Base para contratos
+    public class ContratoBase
     {
         public string Cod_Contrato { get; set; }
         public string Cedula { get; set; }
+    }
+
+    // DTO principal de contrato
+    public class CxcPersonaContratoDto : ContratoBase
+    {
         public short Activo { get; set; }
         public int? Plazo { get; set; }
         public decimal? Tasa_Corriente { get; set; }
@@ -21,12 +27,10 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string Nombre { get; set; }
     }
 
-    public class CxcPersonaContratoSaveParams
+    public class CxcPersonaContratoSaveParams : ContratoBase
     {
-        public string Cedula { get; set; }
-        public string Cod_Contrato { get; set; }
         public string? Notas { get; set; }
-        public short Activo { get; set; }
+        public short? Activo { get; set; }
         public int? Plazo { get; set; }
         public decimal? Tasa_Corriente { get; set; }
         public decimal? Tasa_Mora { get; set; }
@@ -36,43 +40,33 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public DateTime? Contrato_Vence { get; set; }
     }
 
-    public class CxcPersonaContratoDeleteParams
-    {
-        public string Cedula { get; set; }
-        public string Cod_Contrato { get; set; }
-    }
+    public class CxcPersonaContratoDeleteParams : ContratoBase { }
 
-    public class CxcPersonaContratoPagadorDto
+    // Pagador
+    public class CxcPersonaContratoPagadorDto : ContratoBase
     {
-        public string Cod_Contrato { get; set; }
-        public string Cedula { get; set; }
         public string? Cedula_Pagador { get; set; }
         public DateTime? Registro_Fecha { get; set; }
         public string? Registro_Usuario { get; set; }
         public string Nombre { get; set; }
     }
 
-    public class CxcPersonaContratoPagadorSaveParams
+    public class CxcPersonaContratoPagadorSaveParams : ContratoBase
     {
-        public string Cod_Contrato { get; set; }
-        public string Cedula { get; set; }
         public string Cedula_Pagador { get; set; }
         public string Registro_Usuario { get; set; }
     }
 
-    public class CxcPersonaContratoPagadorDeleteParams
+    public class CxcPersonaContratoPagadorDeleteParams : ContratoBase
     {
-        public string Cod_Contrato { get; set; }
-        public string Cedula { get; set; }
         public string Cedula_Pagador { get; set; }
     }
 
-    public class CxcPersonaContratoSuscripcionDto
+    // Suscripción
+    public class CxcPersonaContratoSuscripcionDto : ContratoBase
     {
-        public string Cod_Contrato { get; set; }
-        public string Cedula { get; set; }
         public string Cod_Cargo { get; set; }
-        public short Frecuencia_Dias { get; set; }
+        public short? Frecuencia_Dias { get; set; }
         public DateTime? Pago_Ultimo { get; set; }
         public DateTime? Pago_Proximo { get; set; }
         public decimal? Recaudado { get; set; }
@@ -85,10 +79,8 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string Descripcion { get; set; }
     }
 
-    public class CxcPersonaContratoSuscripcionSaveParams
+    public class CxcPersonaContratoSuscripcionSaveParams : ContratoBase
     {
-        public string Cod_Contrato { get; set; }
-        public string Cedula { get; set; }
         public string Cod_Cargo { get; set; }
         public string? Tipo { get; set; }
         public decimal? Valor { get; set; }
@@ -102,10 +94,8 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string Registro_Usuario { get; set; }
     }
 
-    public class CxcPersonaContratoSuscripcionDeleteParams
+    public class CxcPersonaContratoSuscripcionDeleteParams : ContratoBase
     {
-        public string Cod_Contrato { get; set; }
-        public string Cedula { get; set; }
         public string Cod_Cargo { get; set; }
     }
 }
