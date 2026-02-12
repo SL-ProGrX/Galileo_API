@@ -103,7 +103,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var respNullable2 = DbHelper.ExecuteSingleQuery<ClientesContratosData?>(
                       _portalDB,
                       codEmpresa,
-                      query,
+                      query2,
                       new ClientesContratosData(),
                       new { cedula, contrato });
 
