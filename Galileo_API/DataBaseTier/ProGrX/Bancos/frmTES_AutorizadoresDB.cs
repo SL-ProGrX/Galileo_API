@@ -54,7 +54,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 const string sqlCount = @"
                         SELECT COUNT(1)
                         FROM tes_autorizaciones
-                        WHERE (@filtro IS NULL OR Nombre LIKE @filtroLike);";
+                        WHERE (@filtro IS NULL OR Nombre LIKE @filtro);";
 
                 result.Result.total = conn.QuerySingle<int>(
                     sqlCount,
@@ -65,10 +65,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                 Nombre AS item,
                                 Nombre AS descripcion
                             FROM tes_autorizaciones
-                            WHERE (@filtro IS NULL OR Nombre LIKE @filtroLike)
+                            WHERE (@filtro IS NULL OR Nombre LIKE @filtro)
                             ORDER BY Nombre  
                             OFFSET @offset ROWS
-                            FETCH NEXT @fetch ROWS ONLY";
+                            FETCH NEXT @pageSize ROWS ONLY";
                 
 
                 result.Result.lista = conn.Query<DropDownListaGenericaModel>(
@@ -276,8 +276,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         public ErrorDto Tes_Autorizadores_Eliminar(int CodEmpresa, string nombre, string usuario)
         {
             
-            string sql = $@"DELETE FROM tes_autorizaciones WHERE nombre = @nombre";
-            var parametros = new { nombre = nombre };
+            string sql = $@"DELETE FROM tes_autorizaciones WHERE UPPER(nombre) = @nombre";
+            var parametros = new { nombre = usuario.ToUpper() };
 
             var response = DbHelper.ExecuteNonQuery(_portalDB, CodEmpresa, sql, parametros);
 

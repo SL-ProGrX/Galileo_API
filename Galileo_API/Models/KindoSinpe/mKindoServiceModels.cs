@@ -194,7 +194,9 @@
 
             public int? CoreIntegrationPoint { get; set; } = null;
             public int? CostCenter { get; set; }
-        }
+
+            public int? vCanalCGP { get; set; }
+    }
 
         public class ParametrosSinpe
         {
@@ -1110,7 +1112,9 @@
             public E_TipoIdentificacion tipoCedDestino { get; set; }
 
             public string? NDocumento { get; set; } = null;
-        }
+
+            public string? referencia_sinpe { get; set; } = null;
+    }
 
         public class vInfoSinpe
         {

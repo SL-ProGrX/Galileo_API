@@ -349,9 +349,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
             using var conn = DbHelper.OpenConnection(_portalDB, reversa.codEmpresa);
             try
             {
-
+                var solicitud = string.Empty;
+                var nDocumento = string.Empty;
                 // Normalizo textos
-                var documento = reversa.documento?.Trim();
+                if (reversa.tipoDocumento == "S")
+                {
+                    solicitud = (reversa.documento == " 0") ? null : reversa.documento?.Trim();
+                }
+                else
+                {
+                    nDocumento = (reversa.documento == " 0") ? null : reversa.documento?.Trim();
+                }
+
+                    
+
               
                 const string query = @"
                         SELECT
@@ -368,18 +379,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                                 AND (@Ndocumento IS NULL OR Ndocumento LIKE @NdocumentoLike)
                                 AND (@NSolicitud IS NULL OR NSOLICITUD LIKE @NSolicitudLike)
                                 AND REFERENCIA_SINPE IN (
-    	                            SELECT COD_REFERENCIA FROM SINPE_MOV_TRANSITO
-                                ) AND ESRADO = 4";
+    	                            SELECT COD_REFERENCIA FROM SINPE_MOV_TRANSITO  where ESTADO = 4
+                                )";
 
                 var parameters = new
                 {
                     id_banco = reversa.id_banco,
 
-                    Ndocumento = string.IsNullOrWhiteSpace(documento) ? null : documento,
-                    NdocumentoLike = string.IsNullOrWhiteSpace(documento) ? null : $"%{documento}%",
+                    Ndocumento = string.IsNullOrWhiteSpace(nDocumento) ? null : nDocumento,
+                    NdocumentoLike = string.IsNullOrWhiteSpace(nDocumento) ? null : $"%{nDocumento}%",
 
-                    NSolicitud = string.IsNullOrWhiteSpace(documento) ? null : documento,
-                    NSolicitudLike = string.IsNullOrWhiteSpace(documento) ? null : $"%{documento}%",
+                    NSolicitud = string.IsNullOrWhiteSpace(solicitud) ? null : solicitud,
+                    NSolicitudLike = string.IsNullOrWhiteSpace(solicitud) ? null : $"%{solicitud}%",
                 };
 
                 var response = conn.Query<TransferenciaSolicitudData>(query, parameters).ToList();
