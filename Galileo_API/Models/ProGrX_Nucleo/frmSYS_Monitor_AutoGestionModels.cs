@@ -105,7 +105,7 @@
 
         public class MonitorAutoGestionResolucionRequest
         {
-            public long cod_solicitud { get; set; }
+            public long? cod_solicitud { get; set; }
             public string resolucion { get; set; } = "P";
             public string notas { get; set; } = "";
             public string usuario { get; set; } = "";

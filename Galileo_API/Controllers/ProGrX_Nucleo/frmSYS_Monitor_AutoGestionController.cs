@@ -1,6 +1,5 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX_Nucleo;
 using Galileo_API.BusinessLogic.ProGrX_Nucleo;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,13 +9,13 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class frmSYS_Monitor_AutoGestionController : ControllerBase
+    public class FrmSysMonitorAutoGestionController : ControllerBase
     {
-        private readonly frmSYS_Monitor_AutoGestionBL BL;
+        private readonly FrmSysMonitorAutoGestionBl BL;
 
-        public frmSYS_Monitor_AutoGestionController(IConfiguration config)
+        public FrmSysMonitorAutoGestionController(IConfiguration config)
         {
-            BL = new frmSYS_Monitor_AutoGestionBL(config);
+            BL = new FrmSysMonitorAutoGestionBl(config);
         }
         [Authorize]
         [HttpGet("Sys_Monitor_AutoGestion_Personas_DropDown_Obtener")]

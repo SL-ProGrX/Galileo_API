@@ -6,24 +6,21 @@ using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
 using System.Data;
-using System.Text;
 using static Galileo.Models.ProGrX_Nucleo.FrmSysMonitorAutoGestionModels;
 
 
 namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 {
-    public class frmSYS_Monitor_AutoGestionDB
+    public class FrmSysMonitorAutoGestionDb
     {
-        private readonly IConfiguration _config;
         private readonly MSecurityMainDb _security_MainDB;
         private readonly int vModulo = 3;
         private readonly PortalDB _portalDB;
 
-        public frmSYS_Monitor_AutoGestionDB(IConfiguration config)
+        public FrmSysMonitorAutoGestionDb(IConfiguration config)
         {
-            _config = config;
-            _security_MainDB = new MSecurityMainDb(_config);
-            _portalDB = new PortalDB(_config);
+            _security_MainDB = new MSecurityMainDb(config);
+            _portalDB = new PortalDB(config);
         }
 
         /// <summary>
@@ -256,8 +253,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             if (!TryParseFecha(fechaInicio, out var fIni) || !TryParseFecha(fechaFin, out var fFin))
                 return DbHelper.CreateErrorResponse<MonitorAutoGestionResumenLista>("Fechas inválidas.");
 
-            var ini = new DateTime(fIni.Year, fIni.Month, fIni.Day, 0, 0, 0);
-            var fin = new DateTime(fFin.Year, fFin.Month, fFin.Day, 23, 59, 59);
+            var ini = new DateTime(fIni.Year, fIni.Month, fIni.Day, 0, 0, 0, DateTimeKind.Unspecified);
+            var fin = new DateTime(fFin.Year, fFin.Month, fFin.Day, 23, 59, 59, DateTimeKind.Unspecified);
 
             var res = DbHelper.WithConn(_portalDB, CodEmpresa, cn =>
             {
@@ -385,7 +382,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             return (rdr["ARCHIVO_NOMBRE"] as string ?? "archivo").Trim();
         }
 
-        private string ReadTipoFinal(IDataRecord rdr, ref string nombre)
+        private static string ReadTipoFinal(IDataRecord rdr, ref string nombre)
         {
             var tipoDb = (rdr["ARCHIVO_TIPO"] as string ?? "").Trim();
             return ResolveMimeAndFixFileName(ref nombre, tipoDb);
@@ -473,15 +470,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="dto"></param>
-        public ErrorDto<MonitorAutoGestionResolucionResponse> Sys_Monitor_AutoGestion_Resolucion_Aplicar(int CodEmpresa, MonitorAutoGestionResolucionRequest dto)
+        public ErrorDto<MonitorAutoGestionResolucionResponse> Sys_Monitor_AutoGestion_Resolucion_Aplicar(int CodEmpresa,MonitorAutoGestionResolucionRequest dto)
         {
+            if (!dto.cod_solicitud.HasValue)
+                return DbHelper.CreateErrorResponse<MonitorAutoGestionResolucionResponse>(
+                    "Código de solicitud inválido.");
+
+            long codSolicitud = dto.cod_solicitud.Value;
+
             try
             {
                 using var cn = _portalDB.CreateConnection(CodEmpresa);
 
                 EjecutarResolucionSP(cn, dto);
 
-                var response = ConstruirResolucionResponse(CodEmpresa, dto.cod_solicitud);
+                var response = ConstruirResolucionResponse(
+                    CodEmpresa,
+                    codSolicitud);
 
                 RegistrarBitacoraResolucion(CodEmpresa, dto);
 
@@ -496,6 +501,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.CreateErrorResponse<MonitorAutoGestionResolucionResponse>(ex.Message);
             }
         }
+
         /// <summary>
         /// Ejecuta mantenimiento de adjuntos.
         /// </summary>
@@ -524,7 +530,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             }
         }
 
-        private (FiltrosLazyLoadData? filtros, ErrorDto<MonitorAutoGestionLista>? error) TryParseFiltros(string jfiltros)
+        private static (FiltrosLazyLoadData? filtros, ErrorDto<MonitorAutoGestionLista>? error) TryParseFiltros(string jfiltros)
         {
             try
             {
@@ -552,7 +558,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return response;
         }
-        private bool IsExportAll(FiltrosLazyLoadData filtros)
+        private static bool IsExportAll(FiltrosLazyLoadData filtros)
         {
             return filtros.paginacion == 0;
         }
@@ -562,12 +568,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             string orderDir = ResolveOrderDir(filtros.sortOrder);
             return (orderBy, orderDir);
         }
-        private string ResolveOrderDir(int sortOrder)
+        private static string ResolveOrderDir(int sortOrder)
         {
             return sortOrder < 0 ? "DESC" : "ASC";
         }
-
-        private string ResolveOrderBy(string? sortField)
+        private static string ResolveOrderBy(string? sortField)
         {
             var sf = (sortField ?? "").Trim().ToLowerInvariant();
 
@@ -591,7 +596,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 _ => "COD_SOLICITUD"
             };
         }
-        private int ExecuteTotal(SqlConnection cn, DynamicParameters p)
+        private static int ExecuteTotal(SqlConnection cn, DynamicParameters p)
         {
             const string sqlCount = @"
                 SELECT COUNT(1)
@@ -618,7 +623,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 ";
             return cn.ExecuteScalar<int>(sqlCount, p, commandTimeout: 60);
         }
-
         private void AddPagingParamsIfNeeded(DynamicParameters p, FiltrosLazyLoadData filtros, bool exportAll)
         {
             if (exportAll) return;
@@ -629,7 +633,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             p.Add("@OFFSET", offset, DbType.Int32);
             p.Add("@FETCH", fetch, DbType.Int32);
         }
-        private int GetOffset(FiltrosLazyLoadData filtros)
+        private static int GetOffset(FiltrosLazyLoadData filtros)
         {
             return Math.Max(0, filtros.pagina);
         }
@@ -681,13 +685,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return baseSelect + orderClause + " OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY;";
         }
-        private string BuildOrderClause(string orderBy, string orderDir)
+        private static string BuildOrderClause(string orderBy, string orderDir)
         {
             if (orderBy.Equals("COD_SOLICITUD", StringComparison.OrdinalIgnoreCase))
                 return " ORDER BY COD_SOLICITUD " + orderDir;
             return " ORDER BY " + orderBy + " " + orderDir + ", COD_SOLICITUD " + orderDir;
         }
-        private List<MonitorAutoGestionListaData> ExecuteLista(SqlConnection cn, string sql, DynamicParameters p)
+        private static List<MonitorAutoGestionListaData> ExecuteLista(SqlConnection cn, string sql, DynamicParameters p)
         {
             return cn.Query<MonitorAutoGestionListaData>(sql, p, commandTimeout: 60).ToList();
         }
@@ -710,7 +714,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             p.Add("@FECHA_INVALIDA", 0);
 
-            var sqlMin = new DateTime(1753, 1, 1, 0, 0, 0);
+            var sqlMin = new DateTime(1753, 1, 1, 0, 0, 0, DateTimeKind.Unspecified);
 
             bool esRegistro = ft.Equals("Registro", StringComparison.OrdinalIgnoreCase);
             bool esResolucion = ft.Equals("Resolución", StringComparison.OrdinalIgnoreCase) || ft.Equals("Resolucion", StringComparison.OrdinalIgnoreCase);
@@ -726,8 +730,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     return;
                 }
 
-                var ini = new DateTime(fIni.Year, fIni.Month, fIni.Day, 0, 0, 0);
-                var fin = new DateTime(fFin.Year, fFin.Month, fFin.Day, 23, 59, 59);
+                var ini = new DateTime(fIni.Year, fIni.Month, fIni.Day, 0, 0, 0, DateTimeKind.Unspecified);
+                var fin = new DateTime(fFin.Year, fFin.Month, fFin.Day, 23, 59, 59, DateTimeKind.Unspecified);
 
                 p.Add("@INI", ini, DbType.DateTime);
                 p.Add("@FIN", fin, DbType.DateTime);
@@ -765,7 +769,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             if (s.Length == 0) return "";
             return s.Substring(0, 1).ToUpperInvariant();
         }
-        private void EjecutarResolucionSP(SqlConnection cn, MonitorAutoGestionResolucionRequest dto)
+        private static void EjecutarResolucionSP(SqlConnection cn, MonitorAutoGestionResolucionRequest dto)
         {
             var p = new DynamicParameters();
             p.Add("@Solicitud", dto.cod_solicitud);

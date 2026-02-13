@@ -1,18 +1,17 @@
 ﻿using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.ProGrX_Nucleo;
 using Galileo_API.DataBaseTier.ProGrX_Nucleo;
 using static Galileo.Models.ProGrX_Nucleo.FrmSysMonitorAutoGestionModels;
 
 namespace Galileo_API.BusinessLogic.ProGrX_Nucleo
 {
-    public class frmSYS_Monitor_AutoGestionBL
+    public class FrmSysMonitorAutoGestionBl
     {
-        private readonly frmSYS_Monitor_AutoGestionDB Db;
+        private readonly FrmSysMonitorAutoGestionDb Db;
 
-        public frmSYS_Monitor_AutoGestionBL(IConfiguration config)
+        public FrmSysMonitorAutoGestionBl(IConfiguration config)
         {
-            Db = new frmSYS_Monitor_AutoGestionDB(config);
+            Db = new FrmSysMonitorAutoGestionDb(config);
         }
         public ErrorDto<List<DropDownListaGenericaModel>> Sys_Monitor_AutoGestion_Personas_DropDown_Obtener(int CodEmpresa, string? filtro)
         {
