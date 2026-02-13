@@ -54,7 +54,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     left join vCxC_CuentasMora V on R.Operacion = V.Operacion 
                     where R.estado = 'A' and R.saldo > 0 and R.Operacion = @operacionId";
 
-            var result = DbHelper.ExecuteSingleQuery<CxCCuentasAbonosData>(_portalDb, codEmpresa, query, new CxCCuentasAbonosData(), new { codCaja, operacionId });
+            var result = DbHelper.ExecuteSingleQuery<CxCCuentasAbonosData>(
+                _portalDb, codEmpresa, query, new CxCCuentasAbonosData(), new { codCaja, operacionId });
 
             if (result.Result == null)
             {
@@ -193,23 +194,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             {
                 req.notas = MProGrxMain.sbSIFCleanTxtInject(req.notas);
 
-                var ver = FxVerifica(codEmpresa, req);
-                if (FailIfError(ver, out var e)) return e;
+                var verif = FxVerifica(codEmpresa, req);
+                if (FailIfError(verif, out var ee)) return ee;
 
                 var vNumDoc = _mRecibos.FxDocumentoConsecutivo(codEmpresa, req.tipodoc).ToString();
 
                 var extraordinario = false;
-                var r = ProcesarRegistroAbono(codEmpresa, req, vNumDoc, ref extraordinario);
-                if (FailIfError(r, out e)) return e;
+                var respP = ProcesarRegistroAbono(codEmpresa, req, vNumDoc, ref extraordinario);
+                if (FailIfError(respP, out ee)) return ee;
 
                 // Indica si debe reprocesar el Plan de Pagos por registro de Abonos Extraordinario
                 if (extraordinario)
                 {
-                    var rp = Exec(codEmpresa,
+                    var spCPP = Exec(codEmpresa,
                         @"exec spCxC_CuentaPlanPagos @Operacion;",
                         new { Operacion = req.operacionid });
 
-                    if (FailIfError(rp, out e)) return e;
+                    if (FailIfError(spCPP, out ee)) return ee;
                 }
 
                 var (bitacoraDesc, comprobanteConcepto) = ObtenerDescripcionComprobante(req);
@@ -223,9 +224,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     Modulo = vModulo
                 });
 
-                var resp = CxCCuentas_DocumentoAbono_Generar(codEmpresa, comprobanteConcepto, req, vNumDoc);
+                var respD = CxCCuentas_DocumentoAbono_Generar(codEmpresa, comprobanteConcepto, req, vNumDoc);
 
-                if (FailIfError(resp, out e)) return e;
+                if (FailIfError(respD, out ee)) return ee;
 
                 var mensajeFinal = ProcesarRecibo(codEmpresa, req, vNumDoc);
 
@@ -239,11 +240,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         #region helpers CxCCuentas_Abono_Registrar
 
-        private static bool FailIfError(ErrorDto? r, out ErrorDto err)
+        private static bool FailIfError(ErrorDto? resp, out ErrorDto err)
         {
-            if (r?.Code.HasValue == true && r.Code != 0)
+            if (resp?.Code.HasValue == true && resp.Code != 0)
             {
-                err = r;
+                err = resp;
                 return true;
             }
 
@@ -251,19 +252,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return false;
         }
 
-        private ErrorDto Exec(int codEmpresa, string sql, object param)
+        private ErrorDto Exec(int codEmpresa, string sqlString, object param)
         {
-            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, param);
+            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sqlString, param);
         }
 
-        public ErrorDto FxVerifica(int codEmpresa, CxCCuentasRegistrarAbonoRequest req)
+        public ErrorDto FxVerifica(int codEmpresa, CxCCuentasRegistrarAbonoRequest request)
         {
             try
             {
                 var mensajes = new List<string>();
 
-                ValidacionesSaldo(codEmpresa, req, mensajes);
-                ValidacionCajas(codEmpresa, req, mensajes);
+                ValidacionesSaldo(codEmpresa, request, mensajes);
+                ValidacionCajas(codEmpresa, request, mensajes);
 
                 return mensajes.Count > 0
                     ? new ErrorDto
@@ -281,61 +282,61 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         private void ValidacionesSaldo(
             int codEmpresa,
-            CxCCuentasRegistrarAbonoRequest req,
+            CxCCuentasRegistrarAbonoRequest request,
             List<string> mensajes)
         {
             //Verifica que la diferencia del Monto a Cancelar no supere el Saldo
-            if (req.diferencia < 0 && (req.saldo_nuevo + req.diferencia) < 0)
+            if (request.diferencia < 0 && (request.saldo_nuevo + request.diferencia) < 0)
                 mensajes.Add("La diferencia supera el saldo!, verifique...");
 
-            if (req.operacionid == 0)
+            if (request.operacionid == 0)
                 mensajes.Add("Número de Operacion no es válido...");
 
             //Verifica Saldo Actual
             using var conn = DbHelper.OpenConnection(_portalDb, codEmpresa);
-            if (!MCxCDb.fxCxCSaldoVerifica(conn, req.operacionid, req.saldo_anterior))
+            if (!MCxCDb.fxCxCSaldoVerifica(conn, request.operacionid, request.saldo_anterior))
                 mensajes.Add("Esta Operación ha sido modificada, actualice los datos nuevamente antes de realizar el abono...");
 
-            if (req.datosamortiza > req.saldo_anterior)
+            if (request.datosamortiza > request.saldo_anterior)
                 mensajes.Add("La Amortización es mayor al Saldo Actual...");
 
-            if (req.totalcajas <= 0)
+            if (request.totalcajas <= 0)
                 mensajes.Add("Los valores Recibidos en Cajas no son válidos...verifique...!");
         }
 
         private void ValidacionCajas(
             int codEmpresa,
-            CxCCuentasRegistrarAbonoRequest req,
+            CxCCuentasRegistrarAbonoRequest request,
             List<string> mensajes)
         {
-            string estadoCaja = _mCajas.fxCajasAperturaEstado(codEmpresa, req.mcaja, req.mapertura);
+            string estadoCaja = _mCajas.fxCajasAperturaEstado(codEmpresa, request.mcaja, request.mapertura);
             if (estadoCaja == "C")
-                mensajes.Add($"La apertura ..:{req.mapertura} de esta caja ha sido cerrada!");
+                mensajes.Add($"La apertura ..:{request.mapertura} de esta caja ha sido cerrada!");
 
             const string sqlVal = @"
             exec spCajas_Transac_Validacion @caja, @Usuario, @apertura, @sesionid, 
               'CxC', @codigo, @monto, @tiquete;";
 
-            var val = DbHelper.ExecuteSingleQuery<dynamic>(
+            var response = DbHelper.ExecuteSingleQuery<dynamic>(
                 _portalDb,
                 codEmpresa,
                 sqlVal,
                 null,
                 new
                 {
-                    caja = req.mcaja,
-                    Usuario = req.usuario,
-                    apertura = req.mapertura,
-                    sesionid = req.msesionid,
-                    codigo = (req.codigo ?? "").Trim(),
-                    monto = req.totalcajas,
-                    tiquete = req.mtiquete
+                    caja = request.mcaja,
+                    Usuario = request.usuario,
+                    apertura = request.mapertura,
+                    sesionid = request.msesionid,
+                    codigo = (request.codigo ?? "").Trim(),
+                    monto = request.totalcajas,
+                    tiquete = request.mtiquete
                 }
             ).Result;
 
-            string? validacion = (val?.Validacion as string) ?? (val?.validacion as string);
-            if (!string.IsNullOrWhiteSpace(validacion))
-                mensajes.Add(validacion);
+            string? validac = (response?.Validacion as string) ?? (response?.validacion as string);
+            if (!string.IsNullOrWhiteSpace(validac))
+                mensajes.Add(validac);
         }
 
         private ErrorDto ProcesarRegistroAbono(int codEmpresa, CxCCuentasRegistrarAbonoRequest req, string vNumDoc, ref bool extraordinario)
@@ -350,20 +351,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             };
         }
 
-        private ErrorDto RegistrarOrdinarioYAdelanto(int codEmpresa, string codTipo, CxCCuentasRegistrarAbonoRequest req, string vNumDoc, ref bool extraordinario)
+        private ErrorDto RegistrarOrdinarioYAdelanto(int codEmpresa, string codTipo, CxCCuentasRegistrarAbonoRequest request, string vNumDoc, ref bool extraordinario)
         {
-            if (!req.diferenciaaplenabled)
+            if (!request.diferenciaaplenabled)
             {
                 return Exec(codEmpresa,
                     @"exec spCxC_AbonoOrdinario @Operacion,@Codigo,@Usuario,@TipoDoc,@numDoc,@monto,@fecha,''",
                     new
                     {
-                        Operacion = req.operacionid,
+                        Operacion = request.operacionid,
                         Codigo = codTipo,
-                        Usuario = req.usuario,
-                        TipoDoc = req.tipodoc,
+                        Usuario = request.usuario,
+                        TipoDoc = request.tipodoc,
                         numDoc = vNumDoc,
-                        monto = req.totalcajas,
+                        monto = request.totalcajas,
                         fecha = DateTime.Now
                     });
             }
@@ -372,61 +373,61 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 @"exec spCxC_AbonoOrdinario @Operacion,@Codigo,@Usuario,@TipoDoc,@numDoc,@monto,@fecha,''",
                 new
                 {
-                    Operacion = req.operacionid,
+                    Operacion = request.operacionid,
                     Codigo = codTipo,
-                    Usuario = req.usuario,
-                    TipoDoc = req.tipodoc,
+                    Usuario = request.usuario,
+                    TipoDoc = request.tipodoc,
                     numDoc = vNumDoc,
-                    monto = req.totalcancela,
+                    monto = request.totalcancela,
                     fecha = DateTime.Now
                 });
 
             if (r1?.Code.HasValue == true && r1.Code != 0)
                 return r1;
 
-            return AplicarDiferenciaOrdinario(codEmpresa, req, vNumDoc, ref extraordinario);
+            return AplicarDiferenciaOrdinario(codEmpresa, request, vNumDoc, ref extraordinario);
         }
 
-        private ErrorDto AplicarDiferenciaOrdinario(int codEmpresa, CxCCuentasRegistrarAbonoRequest req, string vNumDoc, ref bool extraordinario)
+        private ErrorDto AplicarDiferenciaOrdinario(int codEmpresa, CxCCuentasRegistrarAbonoRequest request, string vNumDoc, ref bool extraordinario)
         {
-            if (req.diferenciaapltexto == "Adelanto de Cuota")
-                return AplicarAdelantoCuota(codEmpresa, req, vNumDoc);
+            if (request.diferenciaapltexto == "Adelanto de Cuota")
+                return AplicarAdelantoCuota(codEmpresa, request, vNumDoc);
 
-            if (req.diferenciaapltexto == "Abono Extraordinario")
-                return AplicarExtraordinario(codEmpresa, req, vNumDoc, ref extraordinario);
+            if (request.diferenciaapltexto == "Abono Extraordinario")
+                return AplicarExtraordinario(codEmpresa, request, vNumDoc, ref extraordinario);
 
             return new ErrorDto { Code = 0, Description = string.Empty };
         }
 
-        private ErrorDto AplicarAdelantoCuota(int codEmpresa, CxCCuentasRegistrarAbonoRequest req, string vNumDoc)
+        private ErrorDto AplicarAdelantoCuota(int codEmpresa, CxCCuentasRegistrarAbonoRequest request, string vNumDoc)
         {
             return Exec(codEmpresa,
                 @"exec spCxC_AbonoOrdinario @Operacion,'CRD004',@Usuario,@TipoDoc,@numDoc,@monto,@fecha,''",
                 new
                 {
-                    Operacion = req.operacionid,
-                    Usuario = req.usuario,
-                    TipoDoc = req.tipodoc,
+                    Operacion = request.operacionid,
+                    Usuario = request.usuario,
+                    TipoDoc = request.tipodoc,
                     numDoc = vNumDoc,
-                    monto = Math.Abs(req.diferencia),
+                    monto = Math.Abs(request.diferencia),
                     fecha = DateTime.Now
                 });
         }
 
-        private ErrorDto AplicarExtraordinario(int codEmpresa, CxCCuentasRegistrarAbonoRequest req, string vNumDoc, ref bool extraordinario)
+        private ErrorDto AplicarExtraordinario(int codEmpresa, CxCCuentasRegistrarAbonoRequest request, string vNumDoc, ref bool extraordinario)
         {
             var rAbono = Exec(codEmpresa,
                 @"exec spCxC_AbonoExtraOrdinario @Operacion,'CRD002',@Usuario,@tipoDoc,@numDoc,
                   0, 0, @Diferencia, 0, @fecha,'',@recalcula",
                 new
                 {
-                    Operacion = req.operacionid,
-                    Usuario = req.usuario,
-                    tipoDoc = req.tipodoc,
+                    Operacion = request.operacionid,
+                    Usuario = request.usuario,
+                    tipoDoc = request.tipodoc,
                     numDoc = vNumDoc,
-                    Diferencia = req.diferencia,
+                    Diferencia = request.diferencia,
                     fecha = DateTime.Now,
-                    recalcula = req.recalculacuota ? 1 : 0
+                    recalcula = request.recalculacuota ? 1 : 0
                 });
 
             if (rAbono?.Code.HasValue == true && rAbono.Code != 0)
@@ -436,21 +437,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return new ErrorDto { Code = 0, Description = string.Empty };
         }
 
-        private ErrorDto RegistrarExtraordinario(int codEmpresa, CxCCuentasRegistrarAbonoRequest req, string vNumDoc, ref bool extraordinario)
+        private ErrorDto RegistrarExtraordinario(int codEmpresa, CxCCuentasRegistrarAbonoRequest request, string vNumDoc, ref bool extraordinario)
         {
             var r = Exec(codEmpresa,
                 @"exec spCxC_AbonoExtraOrdinario @operacion,'CRD002',@Usuario,@tipoDoc,@numDoc,
                     @dias,0,@totalPagar,0,@fecha,'',@recalcula",
                 new
                 {
-                    operacion = req.operacionid,
-                    Usuario = req.usuario,
-                    tipoDoc = req.tipodoc,
+                    operacion = request.operacionid,
+                    Usuario = request.usuario,
+                    tipoDoc = request.tipodoc,
                     numDoc = vNumDoc,
-                    dias = req.diasactivo,
-                    totalPagar = req.totalpagar,
+                    dias = request.diasactivo,
+                    totalPagar = request.totalpagar,
                     fecha = DateTime.Now,
-                    recalcula = req.recalculacuota ? 1 : 0
+                    recalcula = request.recalculacuota ? 1 : 0
                 });
 
             if (r?.Code.HasValue == true && r.Code != 0)
@@ -460,83 +461,83 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return new ErrorDto { Code = 0, Description = string.Empty };
         }
 
-        private ErrorDto RegistrarCancelacion(int codEmpresa, CxCCuentasRegistrarAbonoRequest req, string vNumDoc)
+        private ErrorDto RegistrarCancelacion(int codEmpresa, CxCCuentasRegistrarAbonoRequest request, string vNumDoc)
         {
             return Exec(codEmpresa,
                 @"exec spCxC_AbonoCancelacion @operacion,'CRD003',@Usuario,@tipoDoc,@numDoc,@totalCajas,@fecha,''",
                 new
                 {
-                    operacion = req.operacionid,
-                    Usuario = req.usuario,
-                    tipoDoc = req.tipodoc,
+                    operacion = request.operacionid,
+                    Usuario = request.usuario,
+                    tipoDoc = request.tipodoc,
                     numDoc = vNumDoc,
-                    totalCajas = req.totalcajas,
-                    fecha = req.fechacancelacion ?? DateTime.Now
+                    totalCajas = request.totalcajas,
+                    fecha = request.fechacancelacion ?? DateTime.Now
                 });
         }
 
-        private static (string bitacoraDesc, string comprobanteConcepto) ObtenerDescripcionComprobante(CxCCuentasRegistrarAbonoRequest req)
+        private static (string bitacoraDesc, string comprobanteConcepto) ObtenerDescripcionComprobante(CxCCuentasRegistrarAbonoRequest request)
         {
-            return req.tipoabono switch
+            return request.tipoabono switch
             {
                 AbonoTipo.Ordinario => (
-                    $"Abono Ordinario a la Operacion : {req.operacionid}",
+                    $"Abono Ordinario a la Operacion : {request.operacionid}",
                     "CRD001"
                 ),
                 AbonoTipo.Extraordinario => (
-                    $"Abono ExtraOrd. {(req.recalculacuota ? "Con Recal." : "Sin Recal")} a la Op.: {req.operacionid}",
+                    $"Abono ExtraOrd. {(request.recalculacuota ? "Con Recal." : "Sin Recal")} a la Op.: {request.operacionid}",
                     "CRD002"
                 ),
                 AbonoTipo.Cancelacion => (
-                    $"Cancelación de la Operacion : {req.operacionid}",
+                    $"Cancelación de la Operacion : {request.operacionid}",
                     "CRD003"
                 ),
                 AbonoTipo.AdelantoCuotas => (
-                    $"Adelanto de Cuotas de la Operacion : {req.operacionid}",
+                    $"Adelanto de Cuotas de la Operacion : {request.operacionid}",
                     "CRD004"
                 ),
                 _ => (
-                    $"Movimiento no identificado para la Operacion : {req.operacionid}",
+                    $"Movimiento no identificado para la Operacion : {request.operacionid}",
                     string.Empty
                 )
             };
         }
 
-        public ErrorDto CxCCuentas_DocumentoAbono_Generar(int codEmpresa, string pConcepto, CxCCuentasRegistrarAbonoRequest req, string vNumDoc)
+        public ErrorDto CxCCuentas_DocumentoAbono_Generar(int codEmpresa, string pConcepto, CxCCuentasRegistrarAbonoRequest request, string vNumDoc)
         {
             DateTime? pFechaCancela = null;
 
-            if (req.fechacancelacion_enabled)
+            if (request.fechacancelacion_enabled)
             {
-                pFechaCancela = req.fechacancelacion;
+                pFechaCancela = request.fechacancelacion;
             }
             return Exec(codEmpresa,
                 @"exec spCxC_Cuenta_Movimiento_Asiento @Operacion, @TipoAbono, @TipoDoc, @NumDoc, @Concepto, 
                     @Notas, @FechaCancela, @Usuario, @Cajas, @Apertura, @SesionId, @Tiquete",
                 new
                 {
-                    Operacion = req.operacionid,
-                    TipoAbono = req.tipoabono,
-                    TipoDoc = req.tipodoc,
+                    Operacion = request.operacionid,
+                    TipoAbono = request.tipoabono,
+                    TipoDoc = request.tipodoc,
                     NumDoc = vNumDoc,
                     Concepto = pConcepto,
-                    Notas = req.notas,
+                    Notas = request.notas,
                     FechaCancela = pFechaCancela,
-                    Usuario = req.usuario,
-                    Cajas = req.mcaja,
-                    Apertura = req.mapertura,
-                    SesionId = req.msesionid,
-                    Tiquete = req.mtiquete
+                    Usuario = request.usuario,
+                    Cajas = request.mcaja,
+                    Apertura = request.mapertura,
+                    SesionId = request.msesionid,
+                    Tiquete = request.mtiquete
                 });
         }
 
-        private string ProcesarRecibo(int codEmpresa, CxCCuentasRegistrarAbonoRequest req, string vNumDoc)
+        private string ProcesarRecibo(int codEmpresa, CxCCuentasRegistrarAbonoRequest request, string vNumDoc)
         {
             string mensaje;
             string documentoElectronico = "";
 
             //PROCESAR RECIBO
-            if (req.recibo_digital)
+            if (request.recibo_digital)
             {
                 DbHelper.ExecuteNonQuery(
                     _portalDb, codEmpresa,
@@ -544,20 +545,20 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     new
                     {
                         numDoc = vNumDoc,
-                        tipoDoc = req.tipodoc
+                        tipoDoc = request.tipodoc
                     });
 
                 mensaje =
                     documentoElectronico + Environment.NewLine + Environment.NewLine +
                     ">>> Recibo Digital enviado al cliente <<<" + Environment.NewLine +
-                    $" - Abono aplicado, con : {req.tipodoc} ...No.: {vNumDoc}" + Environment.NewLine +
+                    $" - Abono aplicado, con : {request.tipodoc} ...No.: {vNumDoc}" + Environment.NewLine +
                     " - Desea Realizar Otra Transacción a esta Operación ?";
             }
             else
             {
                 mensaje =
                     documentoElectronico + Environment.NewLine + Environment.NewLine +
-                    $" - Abono aplicado, con : {req.tipodoc} ...No.: {vNumDoc}" + Environment.NewLine +
+                    $" - Abono aplicado, con : {request.tipodoc} ...No.: {vNumDoc}" + Environment.NewLine +
                     " - Desea Realizar Otra Transacción a esta Operación ?";
             }
 
