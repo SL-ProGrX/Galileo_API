@@ -34,7 +34,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Nucleo
         {
             return Db.Sys_Monitor_AutoGestion_Caso_Obtener(CodEmpresa, cod_solicitud);
         }
-        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa, DateTime fechaInicio, DateTime fechaFin)
+        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa, string fechaInicio, string fechaFin)
         {
             return Db.Sys_Monitor_AutoGestion_Resumen_Obtener(CodEmpresa, fechaInicio, fechaFin);
         }

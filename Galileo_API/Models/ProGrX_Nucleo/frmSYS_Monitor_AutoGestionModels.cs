@@ -82,8 +82,8 @@
             public string? estado { get; set; } = null; 
             public string? tramite_estado_id { get; set; } = null;
             public string fechaTipo { get; set; } = "Registro";
-            public DateTime fechaInicio { get; set; }
-            public DateTime fechaFin { get; set; }
+            public string? fechaInicio { get; set; }
+            public string? fechaFin { get; set; }
             public string? codigoLinea { get; set; } = null; 
             public string? cedula { get; set; } = null; 
         }

@@ -41,37 +41,39 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (string.IsNullOrWhiteSpace(f))
                 {
                     const string q = @"
-                SELECT
-                    RTRIM(CEDULA) AS item,
-                    RTRIM(NOMBRE) AS descripcion
-                FROM vCrd_Solicitudes_AutoGestion
-                WHERE LTRIM(RTRIM(ISNULL(CEDULA,''))) <> ''
-                GROUP BY CEDULA, NOMBRE
-                ORDER BY NOMBRE;";
+                    SELECT
+                        RTRIM(CEDULA) AS item,
+                        RTRIM(NOMBRE) AS descripcion
+                    FROM SOCIOS
+                    WHERE LTRIM(RTRIM(ISNULL(CEDULA,''))) <> ''
+                    GROUP BY CEDULA, NOMBRE
+                    ORDER BY NOMBRE;";
 
                     return conn.Query<DropDownListaGenericaModel>(q).ToList();
                 }
                 else
                 {
                     const string q = @"
-                SELECT
-                    RTRIM(CEDULA) AS item,
-                    RTRIM(NOMBRE) AS descripcion
-                FROM vCrd_Solicitudes_AutoGestion
-                WHERE LTRIM(RTRIM(ISNULL(CEDULA,''))) <> ''
-                  AND (
-                        CEDULA LIKE @Q
-                     OR NOMBRE LIKE @Q
-                  )
-                GROUP BY CEDULA, NOMBRE
-                ORDER BY NOMBRE;";
+                    SELECT
+                        RTRIM(CEDULA) AS item,
+                        RTRIM(NOMBRE) AS descripcion
+                    FROM SOCIOS
+                    WHERE LTRIM(RTRIM(ISNULL(CEDULA,''))) <> ''
+                      AND (
+                            CEDULA LIKE @Q
+                         OR CEDULAR LIKE @Q
+                         OR NOMBRE LIKE @Q
+                      )
+                    GROUP BY CEDULA, NOMBRE
+                    ORDER BY NOMBRE;";
 
                     return conn.Query<DropDownListaGenericaModel>(q, new { Q = "%" + f + "%" }).ToList();
                 }
             });
         }
+
         /// <summary>
-        /// Créditos/Solicitudes para Monitor AutoGestión (Cod_Solicitud).
+        /// Lista Creditos.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="filtro"></param>
@@ -85,32 +87,40 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 if (string.IsNullOrWhiteSpace(f))
                 {
                     const string q = @"
-                SELECT
-                    CAST(COD_SOLICITUD AS varchar(50)) AS item,
-                    RTRIM(ISNULL(CEDULA,'')) + ' - ' + RTRIM(ISNULL(NOMBRE,'')) AS descripcion
-                FROM vCrd_Solicitudes_AutoGestion
-                GROUP BY COD_SOLICITUD, CEDULA, NOMBRE
-                ORDER BY COD_SOLICITUD DESC;";
+                    SELECT
+                        RTRIM(CODIGO) AS item,
+                        RTRIM(DESCRIPCION) AS descripcion
+                    FROM CATALOGO
+                    WHERE LINEA_INTERNA = 1
+                      AND RETENCION = 'N'
+                      AND POLIZA = 'N'
+                      AND WEBSITE = 1
+                    ORDER BY DESCRIPCION;";
 
                     return conn.Query<DropDownListaGenericaModel>(q).ToList();
                 }
                 else
                 {
                     const string q = @"
-                SELECT
-                    CAST(COD_SOLICITUD AS varchar(50)) AS item,
-                    RTRIM(ISNULL(CEDULA,'')) + ' - ' + RTRIM(ISNULL(NOMBRE,'')) AS descripcion
-                FROM vCrd_Solicitudes_AutoGestion
-                WHERE CAST(COD_SOLICITUD AS varchar(50)) LIKE @Q
-                   OR CEDULA LIKE @Q
-                   OR NOMBRE LIKE @Q
-                GROUP BY COD_SOLICITUD, CEDULA, NOMBRE
-                ORDER BY COD_SOLICITUD DESC;";
+                    SELECT
+                        RTRIM(CODIGO) AS item,
+                        RTRIM(DESCRIPCION) AS descripcion
+                    FROM CATALOGO
+                    WHERE LINEA_INTERNA = 1
+                      AND RETENCION = 'N'
+                      AND POLIZA = 'N'
+                      AND WEBSITE = 1
+                      AND (
+                            CODIGO LIKE @Q
+                         OR DESCRIPCION LIKE @Q
+                      )
+                    ORDER BY DESCRIPCION;";
 
                     return conn.Query<DropDownListaGenericaModel>(q, new { Q = "%" + f + "%" }).ToList();
                 }
             });
         }
+
         /// <summary>
         /// Obtiene lista (grid) con LazyLoad, filtros y ordenamiento.
         /// </summary>
@@ -119,75 +129,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="req"></param>
         public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener(int CodEmpresa,string jfiltros,MonitorAutoGestionBuscarRequest req)
         {
-            FiltrosLazyLoadData filtros;
-            try
-            {
-                filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
-            }
-            catch (JsonException ex)
-            {
-                return DbHelper.CreateErrorResponse<MonitorAutoGestionLista>(ex.Message);
-            }
+            var filtrosResult = TryParseFiltros(jfiltros);
+            if (filtrosResult.error != null)
+                return filtrosResult.error;
 
-            var response = DbHelper.CreateOkResponse(new MonitorAutoGestionLista
-            {
-                total = 0,
-                lista = new List<MonitorAutoGestionListaData>()
-            });
-            response.Result ??= new MonitorAutoGestionLista { total = 0, lista = new List<MonitorAutoGestionListaData>() };
+            var filtros = filtrosResult.filtros!;
+            var response = CreateEmptyOkResponse();
 
             try
             {
                 using var cn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-                bool exportAll = filtros.pagina == 0 || filtros.paginacion == 0;
-
                 var p = new DynamicParameters();
                 string where = BuildWhereAndParams(p, filtros, req);
 
-                string orderBy = ResolveOrderBy(filtros.sortField);
-                string orderDir = filtros.sortOrder == 0 ? "DESC" : "ASC";
+                response.Result!.total = ExecuteTotal(cn, where, p);
 
-                string sqlCount = $@"
-                    SELECT COUNT(1)
-                    FROM vCrd_Solicitudes_AutoGestion
-                    {where};";
+                var sort = ResolveSort(filtros);
+                bool exportAll = IsExportAll(filtros);
 
-                response.Result.total = cn.ExecuteScalar<int>(sqlCount, p, commandTimeout: 60);
+                AddPagingParamsIfNeeded(p, filtros, exportAll);
 
-                string paginadoSql = "";
-                if (!exportAll)
-                {
-                    int offset = Math.Max(0, filtros.pagina);
-                    int fetch = Math.Max(1, filtros.paginacion);
-                    paginadoSql = $@"
-                        OFFSET {offset} ROWS
-                        FETCH NEXT {fetch} ROWS ONLY";
-                }
+                string sql = BuildSelectSql(where, sort, exportAll);
 
-                string sql = $@"
-                    SELECT 
-                        COD_SOLICITUD           AS Cod_Solicitud,
-                        ESTADO_DESC             AS Estado_Desc,
-                        CEDULA                  AS Cedula,
-                        NOMBRE                  AS Nombre,
-                        LINEA_DESC              AS Linea_Desc,
-                        MONTO                   AS Monto,
-                        PLAZO                   AS Plazo,
-                        TASA                    AS Tasa,
-                        CUOTA                   AS Cuota,
-                        GARANTIA_DESC           AS Garantia_Desc,
-                        REGISTRO_FECHA          AS Registro_Fecha,
-                        RES_FECHA               AS Res_Fecha,
-                        RES_CODIGO              AS Res_Codigo,
-                        TRAMITE_ESTADO_DESC     AS Tramite_Estado_Desc,
-                        RES_TIPO                AS Res_Tipo
-                    FROM vCrd_Solicitudes_AutoGestion
-                    {where}
-                    ORDER BY {orderBy} {orderDir}
-                    {paginadoSql};";
+                response.Result.lista = ExecuteLista(cn, sql, p);
 
-                response.Result.lista = cn.Query<MonitorAutoGestionListaData>(sql, p, commandTimeout: 60).ToList();
                 return response;
             }
             catch (SqlException ex)
@@ -195,6 +161,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.CreateErrorResponse<MonitorAutoGestionLista>(ex.Message);
             }
         }
+
         /// <summary>
         /// Exporta la lista (sin paginar) con los mismos filtros del grid.
         /// </summary>
@@ -203,16 +170,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="req"></param>
         public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Export(int CodEmpresa,string jfiltros,MonitorAutoGestionBuscarRequest req)
         {
-            FiltrosLazyLoadData filtros;
-            try
-            {
-                filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
-            }
-            catch (JsonException ex)
-            {
-                return DbHelper.CreateErrorResponse<MonitorAutoGestionLista>(ex.Message);
-            }
+            var filtrosResult = TryParseFiltros(jfiltros);
+            if (filtrosResult.error != null)
+                return filtrosResult.error;
 
+            var filtros = filtrosResult.filtros!;
             filtros.pagina = 0;
             filtros.paginacion = 0;
 
@@ -289,10 +251,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
-        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa,DateTime fechaInicio,DateTime fechaFin)
+        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa,string fechaInicio,string fechaFin)
         {
-            var ini = new DateTime(fechaInicio.Year, fechaInicio.Month, fechaInicio.Day, 0, 0, 0);
-            var fin = new DateTime(fechaFin.Year, fechaFin.Month, fechaFin.Day, 23, 59, 59);
+            if (!TryParseFecha(fechaInicio, out var fIni) || !TryParseFecha(fechaFin, out var fFin))
+                return DbHelper.CreateErrorResponse<MonitorAutoGestionResumenLista>("Fechas inválidas.");
+
+            var ini = new DateTime(fIni.Year, fIni.Month, fIni.Day, 0, 0, 0);
+            var fin = new DateTime(fFin.Year, fFin.Month, fFin.Day, 23, 59, 59);
 
             var res = DbHelper.WithConn(_portalDB, CodEmpresa, cn =>
             {
@@ -301,34 +266,26 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 p.Add("@Corte", fin, DbType.DateTime);
 
                 var lista = cn.Query<MonitorAutoGestionResumenData>(
-                    "spCrd_Solicitudes_AutoGestion_Rsm",
-                    p,
-                    commandType: CommandType.StoredProcedure,
-                    commandTimeout: 60
+                  "spCrd_Solicitudes_AutoGestion_Rsm",
+                  p,
+                  commandType: CommandType.StoredProcedure,
+                  commandTimeout: 60
                 ).ToList();
 
-                return new MonitorAutoGestionResumenLista
-                {
-                    total = lista.Count,
-                    lista = lista
-                };
+                return new MonitorAutoGestionResumenLista { total = lista.Count, lista = lista };
             });
+
             if (res.Code != 0 || res.Result == null)
-            {
                 return new ErrorDto<MonitorAutoGestionResumenLista>
                 {
                     Code = res.Code == 0 ? -1 : res.Code,
                     Description = string.IsNullOrWhiteSpace(res.Description) ? "Error" : res.Description,
-                    Result = new MonitorAutoGestionResumenLista
-                    {
-                        total = 0,
-                        lista = new List<MonitorAutoGestionResumenData>()
-                    }
+                    Result = new MonitorAutoGestionResumenLista { total = 0, lista = new List<MonitorAutoGestionResumenData>() }
                 };
-            }
 
             return res;
         }
+
         /// <summary>
         /// Lista adjuntos del caso (solo metadatos).
         /// </summary>
@@ -563,10 +520,138 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+
+        private (FiltrosLazyLoadData? filtros, ErrorDto<MonitorAutoGestionLista>? error) TryParseFiltros(string jfiltros)
+        {
+            try
+            {
+                var filtros = JsonConvert.DeserializeObject<FiltrosLazyLoadData>(jfiltros) ?? new FiltrosLazyLoadData();
+                return (filtros, null);
+            }
+            catch (JsonException ex)
+            {
+                return (null, DbHelper.CreateErrorResponse<MonitorAutoGestionLista>(ex.Message));
+            }
+        }
+        private ErrorDto<MonitorAutoGestionLista> CreateEmptyOkResponse()
+        {
+            var response = DbHelper.CreateOkResponse(new MonitorAutoGestionLista
+            {
+                total = 0,
+                lista = new List<MonitorAutoGestionListaData>()
+            });
+
+            response.Result ??= new MonitorAutoGestionLista
+            {
+                total = 0,
+                lista = new List<MonitorAutoGestionListaData>()
+            };
+
+            return response;
+        }
+        private bool IsExportAll(FiltrosLazyLoadData filtros)
+        {
+            return filtros.paginacion == 0;
+        }
+        private (string orderBy, string orderDir) ResolveSort(FiltrosLazyLoadData filtros)
+        {
+            string orderBy = ResolveOrderBy(filtros.sortField);
+            string orderDir = ResolveOrderDir(filtros.sortOrder);
+            return (orderBy, orderDir);
+        }
+        private string ResolveOrderDir(int sortOrder)
+        {
+            return sortOrder < 0 ? "DESC" : "ASC";
+        }
+
+        private string ResolveOrderBy(string? sortField)
+        {
+            var sf = (sortField ?? "").Trim().ToLowerInvariant();
+
+            return sf switch
+            {
+                "cod_solicitud" => "COD_SOLICITUD",
+                "estado_desc" => "ESTADO_DESC",
+                "cedula" => "CEDULA",
+                "nombre" => "NOMBRE",
+                "linea_desc" => "LINEA_DESC",
+                "monto" => "MONTO",
+                "plazo" => "PLAZO",
+                "tasa" => "TASA",
+                "cuota" => "CUOTA",
+                "garantia_desc" => "GARANTIA_DESC",
+                "registro_fecha" => "REGISTRO_FECHA",
+                "res_fecha" => "RES_FECHA",
+                "res_codigo" => "RES_CODIGO",
+                "tramite_estado_desc" => "TRAMITE_ESTADO_DESC",
+                "res_tipo" => "RES_TIPO",
+                _ => "COD_SOLICITUD"
+            };
+        }
+        private int ExecuteTotal(SqlConnection cn, string where, DynamicParameters p)
+        {
+            string sqlCount =
+                "SELECT COUNT(1) " +
+                "FROM dbo.vCrd_Solicitudes_AutoGestion " +
+                where + ";";
+
+            return cn.ExecuteScalar<int>(sqlCount, p, commandTimeout: 60);
+        }
+        private void AddPagingParamsIfNeeded(DynamicParameters p, FiltrosLazyLoadData filtros, bool exportAll)
+        {
+            if (exportAll) return;
+
+            int offset = GetOffset(filtros);
+            int fetch = Math.Max(1, filtros.paginacion);
+
+            p.Add("@OFFSET", offset, DbType.Int32);
+            p.Add("@FETCH", fetch, DbType.Int32);
+        }
+        private int GetOffset(FiltrosLazyLoadData filtros)
+        {
+            return Math.Max(0, filtros.pagina);
+        }
+        private string BuildSelectSql(string where, (string orderBy, string orderDir) sort, bool exportAll)
+        {
+            string baseSelect =
+                "SELECT " +
+                "  COD_SOLICITUD           AS Cod_Solicitud," +
+                "  ESTADO_DESC             AS Estado_Desc," +
+                "  CEDULA                  AS Cedula," +
+                "  NOMBRE                  AS Nombre," +
+                "  LINEA_DESC              AS Linea_Desc," +
+                "  MONTO                   AS Monto," +
+                "  PLAZO                   AS Plazo," +
+                "  TASA                    AS Tasa," +
+                "  CUOTA                   AS Cuota," +
+                "  GARANTIA_DESC           AS Garantia_Desc," +
+                "  REGISTRO_FECHA          AS Registro_Fecha," +
+                "  RES_FECHA               AS Res_Fecha," +
+                "  RES_CODIGO              AS Res_Codigo," +
+                "  TRAMITE_ESTADO_DESC     AS Tramite_Estado_Desc," +
+                "  RES_TIPO                AS Res_Tipo " +
+                "FROM dbo.vCrd_Solicitudes_AutoGestion ";
+            string orderClause = BuildOrderClause(sort.orderBy, sort.orderDir);
+
+            if (exportAll)
+                return baseSelect + where + orderClause + ";";
+
+            string pagingClause = " OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY;";
+            return baseSelect + where + orderClause + pagingClause;
+        }
+        private string BuildOrderClause(string orderBy, string orderDir)
+        {
+            if (orderBy.Equals("COD_SOLICITUD", StringComparison.OrdinalIgnoreCase))
+                return " ORDER BY COD_SOLICITUD " + orderDir;
+            return " ORDER BY " + orderBy + " " + orderDir + ", COD_SOLICITUD " + orderDir;
+        }
+        private List<MonitorAutoGestionListaData> ExecuteLista(SqlConnection cn, string sql, DynamicParameters p)
+        {
+            return cn.Query<MonitorAutoGestionListaData>(sql, p, commandTimeout: 60).ToList();
+        }
         private static string BuildWhereAndParams(DynamicParameters p, FiltrosLazyLoadData filtros, MonitorAutoGestionBuscarRequest req)
         {
             var sb = new StringBuilder(" WHERE 1=1 ");
-
             string estado1 = Normalizar1Char(req.estado);
             if (!string.IsNullOrWhiteSpace(estado1))
             {
@@ -580,26 +665,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 sb.Append(" AND TRAMITE_ESTADO_ID = @TRAMITE ");
                 p.Add("@TRAMITE", tramite1);
             }
+            string fechaTipo = (req.fechaTipo ?? "").Trim();
 
-            DateTime ini = new DateTime(req.fechaInicio.Year, req.fechaInicio.Month, req.fechaInicio.Day, 0, 0, 0);
-            DateTime fin = new DateTime(req.fechaFin.Year, req.fechaFin.Month, req.fechaFin.Day, 23, 59, 59);
-
-            if (!string.Equals((req.fechaTipo ?? "").Trim(), "Todas", StringComparison.OrdinalIgnoreCase))
+            if (fechaTipo.Equals("Registro", StringComparison.OrdinalIgnoreCase)
+                || fechaTipo.Equals("Resolución", StringComparison.OrdinalIgnoreCase)
+                || fechaTipo.Equals("Resolucion", StringComparison.OrdinalIgnoreCase))
             {
-                bool porResolucion = string.Equals((req.fechaTipo ?? "").Trim(), "Resolución", StringComparison.OrdinalIgnoreCase);
+                if (!TryParseFecha(req.fechaInicio, out var fIni) || !TryParseFecha(req.fechaFin, out var fFin))
+                {
+                    sb.Append(" AND 1=0 ");
+                    return sb.ToString();
+                }
+
+                var ini = new DateTime(fIni.Year, fIni.Month, fIni.Day, 0, 0, 0);
+                var fin = new DateTime(fFin.Year, fFin.Month, fFin.Day, 23, 59, 59);
+
+                bool porResolucion =
+                    fechaTipo.Equals("Resolución", StringComparison.OrdinalIgnoreCase)
+                    || fechaTipo.Equals("Resolucion", StringComparison.OrdinalIgnoreCase);
 
                 if (porResolucion)
-                {
-                    sb.Append(@"
-                        AND TRY_CONVERT(datetime, RES_FECHA, 121) IS NOT NULL
-                        AND TRY_CONVERT(datetime, RES_FECHA, 121) BETWEEN @INI AND @FIN ");
-                }
+                    sb.Append(" AND RES_FECHA BETWEEN @INI AND @FIN ");
                 else
-                {
-                    sb.Append(@"
-                        AND TRY_CONVERT(datetime, REGISTRO_FECHA, 121) IS NOT NULL
-                        AND TRY_CONVERT(datetime, REGISTRO_FECHA, 121) BETWEEN @INI AND @FIN ");
-                }
+                    sb.Append(" AND REGISTRO_FECHA BETWEEN @INI AND @FIN ");
 
                 p.Add("@INI", ini, DbType.DateTime);
                 p.Add("@FIN", fin, DbType.DateTime);
@@ -616,47 +704,40 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 sb.Append(" AND CEDULA = @CEDULA ");
                 p.Add("@CEDULA", req.cedula.Trim());
             }
-
             if (!string.IsNullOrWhiteSpace(filtros?.filtro))
             {
                 sb.Append(@"
-                    AND (
-                         CEDULA      LIKE @Q
-                      OR NOMBRE      LIKE @Q
-                      OR LINEA_DESC  LIKE @Q
-                      OR ESTADO_DESC LIKE @Q
-                    )");
+            AND (
+                 CEDULA      LIKE @Q
+              OR NOMBRE      LIKE @Q
+              OR LINEA_DESC  LIKE @Q
+              OR ESTADO_DESC LIKE @Q
+            )");
                 p.Add("@Q", "%" + filtros.filtro.Trim() + "%");
             }
 
             return sb.ToString();
         }
-        private static string ResolveOrderBy(string? sortField)
+        private static bool TryParseFecha(string? value, out DateTime fecha)
         {
-            return (sortField ?? "").Trim().ToUpperInvariant() switch
-            {
-                "COD_SOLICITUD" => "COD_SOLICITUD",
-                "ESTADO_DESC" => "ESTADO_DESC",
-                "CEDULA" => "CEDULA",
-                "NOMBRE" => "NOMBRE",
-                "LINEA_DESC" => "LINEA_DESC",
-                "MONTO" => "MONTO",
-                "PLAZO" => "PLAZO",
-                "TASA" => "TASA",
-                "CUOTA" => "CUOTA",
-                "GARANTIA_DESC" => "GARANTIA_DESC",
-                "REGISTRO_FECHA" => "REGISTRO_FECHA",
-                "RES_FECHA" => "RES_FECHA",
-                "RES_CODIGO" => "RES_CODIGO",
-                "TRAMITE_ESTADO_DESC" => "TRAMITE_ESTADO_DESC",
-                _ => "COD_SOLICITUD"
-            };
+            fecha = default;
+            var s = (value ?? "").Trim();
+            if (s.Length == 0) return false;
+
+            string[] formats = { "dd-MM-yyyy", "dd/MM/yyyy", "yyyy-MM-dd", "yyyy/MM/dd" };
+            return DateTime.TryParseExact(
+                s,
+                formats,
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out fecha
+            );
         }
-        private static string Normalizar1Char(string? s)
+        private static string Normalizar1Char(string? value)
         {
-            string v = (s ?? "").Trim();
-            if (string.IsNullOrEmpty(v)) return "";
-            return v.Length > 1 ? v.Substring(0, 1) : v;
+            var s = (value ?? "").Trim();
+            if (s.Length == 0) return "";
+            return s.Substring(0, 1).ToUpperInvariant();
         }
         private void EjecutarResolucionSP(SqlConnection cn, MonitorAutoGestionResolucionRequest dto)
         {
