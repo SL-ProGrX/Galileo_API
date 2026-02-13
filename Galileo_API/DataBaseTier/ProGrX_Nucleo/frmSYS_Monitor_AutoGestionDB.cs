@@ -562,7 +562,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             return filtros.paginacion == 0;
         }
-        private (string orderBy, string orderDir) ResolveSort(FiltrosLazyLoadData filtros)
+        private static (string orderBy, string orderDir) ResolveSort(FiltrosLazyLoadData filtros)
         {
             string orderBy = ResolveOrderBy(filtros.sortField);
             string orderDir = ResolveOrderDir(filtros.sortOrder);
@@ -623,7 +623,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 ";
             return cn.ExecuteScalar<int>(sqlCount, p, commandTimeout: 60);
         }
-        private void AddPagingParamsIfNeeded(DynamicParameters p, FiltrosLazyLoadData filtros, bool exportAll)
+        private static void AddPagingParamsIfNeeded(DynamicParameters p, FiltrosLazyLoadData filtros, bool exportAll)
         {
             if (exportAll) return;
 
@@ -637,7 +637,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             return Math.Max(0, filtros.pagina);
         }
-        private string BuildSelectSql((string orderBy, string orderDir) sort, bool exportAll)
+        private static string BuildSelectSql((string orderBy, string orderDir) sort, bool exportAll)
         {
             string baseSelect = @"
             SELECT
