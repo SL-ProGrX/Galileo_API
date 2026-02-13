@@ -32,6 +32,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             _mRecibos = mRecibos;
         }
 
+        /// <summary>
+        /// Obtiene informacion de la operacion 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codCaja"></param>
+        /// <param name="operacionId"></param>
+        /// <returns></returns>
         public ErrorDto<CxCCuentasAbonosData> CxCCuentas_ConsultaOperacion_Obtener(int codEmpresa, string codCaja, int operacionId)
         {
             const string query = @"select R.Operacion,R.saldo,R.proceso,R.Tasa_Corriente,R.interesc,R.amortiza,
@@ -56,6 +63,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return result!;
         }
 
+        /// <summary>
+        /// Obtiene las cuotas activas de una operacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacionId"></param>
+        /// <returns></returns>
         public ErrorDto<List<CxCCuotasActivasData>> CxCCuentas_CuotasActivas_Obtener(int codEmpresa, int operacionId)
         {
             const string query = @"
@@ -67,6 +80,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return DbHelper.ExecuteListQuery<CxCCuotasActivasData>(_portalDb, codEmpresa, query, new { operacionId });
         }
 
+        /// <summary>
+        /// Obtiene lista de operaciones activas 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CxCOperacionesActivasData>> CxCCuentas_OperacionesActivas_Obtener(int codEmpresa)
         {
             const string query = @"
@@ -79,6 +97,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return DbHelper.ExecuteListQuery<CxCOperacionesActivasData>(_portalDb, codEmpresa, query);
         }
 
+        /// <summary>
+        /// Obtiene los tipos de documentos 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="caja"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CxCCuentas_TipoDoc_Obtener(int codEmpresa, string caja)
         {
             const string query = @"select rTrim(C.tipo_documento) as item, rtrim(D.Descripcion) as descripcion
@@ -89,6 +113,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, new { caja });
         }
 
+        /// <summary>
+        /// Obtiene informacion de las cuotas de una operacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="vOperacion"></param>
+        /// <param name="vCuotas"></param>
+        /// <returns></returns>
         public ErrorDto<CxCCuentaCuotasInfoData> CxCCuentas_CuotasInfo_Obtener(int codEmpresa, int vOperacion, int vCuotas)
         {
             const string sqlTotales = @"
@@ -150,6 +181,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return totales!;
         }
 
+        /// <summary>
+        /// Registra un abono en una cuenta por cobrar
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="req"></param>
+        /// <returns></returns>
         public ErrorDto CxCCuentas_Abono_Registrar(int codEmpresa, CxCCuentasRegistrarAbonoRequest req)
         {
             try
@@ -200,7 +237,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             }
         }
 
-        #region helpers CajasCrdAbonosCtP_Abono_Registrar 
+        #region helpers CxCCuentas_Abono_Registrar
 
         private static bool FailIfError(ErrorDto? r, out ErrorDto err)
         {
