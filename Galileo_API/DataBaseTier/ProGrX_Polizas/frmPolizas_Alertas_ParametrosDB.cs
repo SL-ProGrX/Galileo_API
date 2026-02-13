@@ -122,7 +122,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         }
 
         /// <summary>
-        /// Método para agregar un nuevo correo electrónico a la lista de alertas de pólizas. Recibe el código de empresa, el usuario que realiza la acción y un objeto PolAlertasEmailAgregarDto que contiene el correo electrónico a agregar. El método valida que el correo no esté vacío y luego ejecuta un procedimiento almacenado para insertar el nuevo registro. Además, registra la acción en la bitácora de movimientos para mantener un historial de cambios.
+        /// Método para agregar un nuevo correo electrónico a la lista de alertas de pólizas. 
+        /// Recibe el código de empresa, el usuario que realiza la acción y un objeto PolAlertasEmailAgregarDto
+        /// que contiene el correo electrónico a agregar. El método valida que el correo no esté vacío y luego ejecuta un procedimiento almacenado para insertar el nuevo registro. Además, registra la acción en la bitácora de movimientos para mantener un historial de cambios.
         /// </summary>
         /// <param name="CodEmpresa"></param>
         /// <param name="Usuario"></param>
