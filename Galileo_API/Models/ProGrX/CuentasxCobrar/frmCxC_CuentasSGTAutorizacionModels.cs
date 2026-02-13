@@ -5,14 +5,14 @@
         public class CuentasSgtAutorizacionDto
         {
             public int Operacion { get; set; } 
-            public string cod_concepto { get; set; } = string.Empty;
-            public string cedula { get; set; } = string.Empty;
-            public string nombre { get; set; } = string.Empty;
+            public string Cod_concepto { get; set; } = string.Empty;
+            public string Cedula { get; set; } = string.Empty;
+            public string Nombre { get; set; } = string.Empty;
             public decimal Monto { get; set; } 
             public int? Dias_plazo { get; set; } 
             public decimal? Tasa_Corriente { get; set; }
-            public decimal? cuota { get; set; }
-            public string cod_Contrato { get; set; } = string.Empty;
+            public decimal? Cuota { get; set; }
+            public string Cod_Contrato { get; set; } = string.Empty;
             public string ContratoDesc { get; set; } = string.Empty;
             public string ConceptoDesc { get; set; } = string.Empty;
             public string Registro_Usuario { get; set; } = string.Empty;
@@ -25,7 +25,7 @@
         public class OperacionFacturasDto
         {
             public int Operacion { get; set; }
-            public string  cod_factura { get; set; }
+            public string Cod_factura { get; set; } = string.Empty;
         }
 
     }
