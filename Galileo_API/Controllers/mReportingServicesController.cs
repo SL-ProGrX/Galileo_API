@@ -30,8 +30,9 @@ namespace PgxAPI.Controllers
                 fcr.FileDownloadName = nombreReporte;
                 return fcr;
             }
+           
 
-            return result;
+                return result;
         }
 
         [HttpPost("ReporteRDLC")]

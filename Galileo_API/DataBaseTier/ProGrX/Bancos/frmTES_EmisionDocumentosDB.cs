@@ -1,23 +1,15 @@
 ﻿using Dapper;
-using Galileo.BusinessLogic;
 using Galileo.DataBaseTier;
 using Galileo.Models;
 using Galileo.Models.ERROR;
-using Galileo.Models.FSL;
 using Galileo.Models.Security;
 using Galileo.Models.TES;
-using Galileo_API.Controllers.WFCSinpe;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using Microsoft.ReportingServices.ReportProcessing.ReportObjectModel;
 using Newtonsoft.Json;
-using PdfSharp.Pdf.Filters;
-using System.Collections;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
-using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace Galileo_API.DataBaseTier.ProGrX.Bancos
 {
@@ -186,8 +178,12 @@ And t.Autoriza = 'S' and t.fecha_hold is null";
 
                 if (especial == 0)
                 {
-                    query = @" Select TOP (@top) t.*, (select descripcion from SINPE_MOTIVOS 
-where cod_motivo = t.id_rechazo ) as estadoSinpe,
+                    query = @" Select TOP (@top) t.*, CAST(t.id_rechazo AS varchar(10)) + ' - ' +
+(
+    SELECT descripcion
+    FROM SINPE_MOTIVOS
+    WHERE cod_motivo = t.id_rechazo
+) AS estadoSinpe,
  dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass From Tes_Transacciones t 
  Where t.Estado='P' And t.Tipo = @tipoDoc And t.Id_Banco=@banco And t.Autoriza = 'S' 
  and t.fecha_hold is null and  t.USUARIO_AUTORIZA_ESPECIAL is null ";
@@ -197,7 +193,12 @@ where cod_motivo = t.id_rechazo ) as estadoSinpe,
                 {
 
                     query = @" Select TOP (@top) t.*, 
- (select descripcion from SINPE_MOTIVOS where cod_motivo = t.id_rechazo ) as estadoSinpe, 
+ CAST(t.id_rechazo AS varchar(10)) + ' - ' +
+(
+    SELECT descripcion
+    FROM SINPE_MOTIVOS
+    WHERE cod_motivo = t.id_rechazo
+) AS estadoSinpe,
  dbo.fxTes_Cuentas_Bancarias_Pass(id_Banco,Cta_Ahorros) as Pass From Tes_Transacciones t 
  Where t.Estado='P' And t.Autoriza = 'S' and t.fecha_hold is null and  UPPER(t.USUARIO_AUTORIZA_ESPECIAL) = @usuario ";
                 }

@@ -643,13 +643,13 @@ namespace CoreInterno
     [System.Runtime.Serialization.DataContractAttribute(Name="SI_Rastro", Namespace="http://schemas.datacontract.org/2004/07/")]
     public partial class SI_Rastro : object
     {
-        
+
         private int CanalField;
-        
+
         private string IPField;
-        
+
         private string UsuarioField;
-        
+
         [System.Runtime.Serialization.DataMemberAttribute()]
         public int Canal
         {
@@ -1938,23 +1938,23 @@ namespace CoreInterno
     public partial class SaldoDisponibleRequest
     {
         
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=0)]
-        public CoreInterno.SI_Rastro rastro;
+        [System.ServiceModel.MessageBodyMemberAttribute(Namespace = "http://prosoft.CGPbackOffice/", Order = 0)]
+        public CoreInterno.SI_Rastro rastro { get; set; } = new SI_Rastro();
         
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=1)]
-        public string cuentaIBAN;
+        public string cuentaIBAN { get; set; }
         
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=2)]
-        public string identificacion;
-        
+        public string identificacion { get; set; }
+
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=3)]
-        public int codigoMoneda;
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=4)]
-        public decimal monto;
-        
+        public int? codigoMoneda { get; set; }
+
+        [System.ServiceModel.MessageBodyMemberAttribute(Namespace = "http://prosoft.CGPbackOffice/", Order = 4)]
+        public decimal monto { get; set; } = 0;
+
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=5)]
-        public int codigoServicio;
+        public int? codigoServicio { get; set; }
         
         public SaldoDisponibleRequest()
         {
@@ -1978,10 +1978,10 @@ namespace CoreInterno
     {
         
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=0)]
-        public CoreInterno.E_Resultado SaldoDisponibleResult;
+        public CoreInterno.E_Resultado SaldoDisponibleResult { get; set; }
         
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=1)]
-        public bool disponible;
+        [System.ServiceModel.MessageBodyMemberAttribute(Namespace = "http://prosoft.CGPbackOffice/", Order = 1)]
+        public bool disponible { get; set; }
         
         public SaldoDisponibleResponse()
         {
@@ -2107,9 +2107,9 @@ namespace CoreInterno
     [System.ServiceModel.MessageContractAttribute(WrapperName="ObtenerProductosPorCliente", WrapperNamespace="http://prosoft.CGPbackOffice/", IsWrapped=true)]
     public partial class ObtenerProductosPorClienteRequest
     {
-        
-        [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=0)]
-        public string identificacion;
+
+        [System.ServiceModel.MessageBodyMemberAttribute(Namespace = "http://prosoft.CGPbackOffice/", Order = 0)]
+        public string identificacion { get; set; } = string.Empty;
         
         public ObtenerProductosPorClienteRequest()
         {
@@ -2128,10 +2128,10 @@ namespace CoreInterno
     {
         
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=0)]
-        public CoreInterno.E_Resultado ObtenerProductosPorClienteResult;
+        public CoreInterno.E_Resultado ObtenerProductosPorClienteResult { get; set; }
         
         [System.ServiceModel.MessageBodyMemberAttribute(Namespace="http://prosoft.CGPbackOffice/", Order=1)]
-        public CoreInterno.CL_ProductoCliente[] productos;
+        public CoreInterno.CL_ProductoCliente[] productos { get; set; }
         
         public ObtenerProductosPorClienteResponse()
         {

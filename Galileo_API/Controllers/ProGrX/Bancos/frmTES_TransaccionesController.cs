@@ -227,7 +227,7 @@ namespace Galileo_API.Controllers.ProGrX.Bancos
 
         [Authorize]
         [HttpGet("Tes_NumeroALetras_Convertir")]
-        public static ErrorDto<string> NumeroALetras(decimal numero)
+        public ErrorDto<string> NumeroALetras(decimal numero)
         {
             return FrmTesTransaccionesBL.NumeroALetras(numero);
         }

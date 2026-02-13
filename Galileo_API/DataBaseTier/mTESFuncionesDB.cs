@@ -651,9 +651,9 @@ where id_banco = @banco
 
             try
             {
-                string vRazon = GetParametro(request.codEmpresa, "BCRFormat3").PadRight(30, ' ');
-                string vNumNegocio = GetParametro(request.codEmpresa, "BCRFormat1");
-                string vCedulaReg = GetParametro(request.codEmpresa, "BCRFormat2");
+                string vRazon = GetParametro(request.codEmpresa, "14").PadRight(30, ' ');
+                string vNumNegocio = GetParametro(request.codEmpresa, "15");
+                string vCedulaReg = GetParametro(request.codEmpresa, "13");
 
                 int i = request.resolveConsecutivoArchivoDelDia(request.conn, request.bancoId, fecha);
                 string vConArchivo = i.ToString("D3", CultureInfo.InvariantCulture);
