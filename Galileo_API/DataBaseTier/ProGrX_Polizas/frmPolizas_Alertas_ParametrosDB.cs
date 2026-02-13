@@ -93,6 +93,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             }
             catch (Exception ex)
             {
+                // Log full exception details for diagnostics without changing the external error contract.
+                Console.Error.WriteLine($"[POL_Alertas_Parametros_Guardar] Unexpected exception: {ex}");
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
