@@ -125,7 +125,7 @@
         
         public class MonitorAutoGestionExportRequest : MonitorAutoGestionBuscarRequest
         {
-            public string formato { get; set; } = "Excel"; // "PDF" | "Excel"
+            public string formato { get; set; } = "Excel";
         }
     }
 }
