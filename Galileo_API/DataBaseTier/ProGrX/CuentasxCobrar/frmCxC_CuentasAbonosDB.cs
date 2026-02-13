@@ -246,7 +246,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         private static bool FailIfError(ErrorDto? resp, out ErrorDto err)
         {
-            if (resp?.Code.HasValue == true && resp.Code != 0)
+            if (resp is { Code: not null } && resp.Code != 0)
             {
                 err = resp;
                 return true;
