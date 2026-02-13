@@ -143,7 +143,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 var p = new DynamicParameters();
                 string where = BuildWhereAndParams(p, filtros, req);
 
-                response.Result!.total = ExecuteTotal(cn, where, p);
+                response.Result!.total = ExecuteTotal(cn, filtros, req);
 
                 var sort = ResolveSort(filtros);
                 bool exportAll = IsExportAll(filtros);
@@ -418,12 +418,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return ms.ToArray();
         }
-        private static string ResolveMimeAndFixFileName(ref string nombre, string tipoDb)
+        private static string ResolveMimeAndFixFileName(ref string nombre, string? tipoDb)
         {
-            if (!string.IsNullOrWhiteSpace(tipoDb) && tipoDb.Contains('/'))
-                return tipoDb;
+            var tipo = (tipoDb ?? string.Empty).Trim();
 
-            string ext = tipoDb.Trim().Trim('.').ToLowerInvariant();
+            if (tipo.Length > 0 && tipo.Contains('/'))
+                return tipo;
+
+            string ext = tipo.Trim('.').ToLowerInvariant();
 
             if (string.IsNullOrEmpty(ext))
             {
@@ -464,6 +466,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return mime;
         }
+
 
         /// <summary>
         /// Aplica resolución del caso llamando al SP y registra bitácora.
@@ -588,8 +591,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 _ => "COD_SOLICITUD"
             };
         }
-        private int ExecuteTotal(SqlConnection cn, string where, DynamicParameters p)
+        private int ExecuteTotal(SqlConnection cn, FiltrosLazyLoadData filtros, MonitorAutoGestionBuscarRequest req)
         {
+            var p = new DynamicParameters();
+            string where = BuildWhereAndParams(p, filtros, req);
+
             string sqlCount =
                 "SELECT COUNT(1) " +
                 "FROM dbo.vCrd_Solicitudes_AutoGestion " +
@@ -597,6 +603,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return cn.ExecuteScalar<int>(sqlCount, p, commandTimeout: 60);
         }
+
         private void AddPagingParamsIfNeeded(DynamicParameters p, FiltrosLazyLoadData filtros, bool exportAll)
         {
             if (exportAll) return;
