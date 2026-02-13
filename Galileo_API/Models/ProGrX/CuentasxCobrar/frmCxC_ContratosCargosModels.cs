@@ -28,8 +28,8 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Tipo { get; set; }
         public decimal? Valor { get; set; }
         public string? Frecuencia_Tipo { get; set; }
-        public short Frecuencia_Dias { get; set; }
-        public short Modifica { get; set; }
+        public short? Frecuencia_Dias { get; set; }
+        public short? Modifica { get; set; }
         public string Registro_Usuario { get; set; }
     }
 
