@@ -389,7 +389,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
                 utilizaPlan = param.utiliza_plan,
                 formato = param.formato_transferencia,
                 formatoN2 = param.formato_transferencias_n2,
-                cuentaBancaria = param.cod_cuenta,
+                cuentaBancaria = param.cta,
                 cuentaContable = ctaContable,
                 descCorta = param.desc_corta,
                 regional = param.cta_regional,

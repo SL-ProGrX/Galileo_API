@@ -4,6 +4,7 @@ using Humanizer;
 using Newtonsoft.Json;
 using System.Drawing.Drawing2D;
 using System.Text;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Galileo_API.DataBaseTier
 {
@@ -24,6 +25,7 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResServiceAvailable IsServiceAvailable(string UrlCGP_PIN, ReqBase context)
         {
+           
             return mClient.PostJsonAsync<ReqBase, ResServiceAvailable, ResServiceAvailable>(
                    baseUrl: UrlCGP_PIN,
                    endpoint: "/IsServiceAvailable",
@@ -37,7 +39,7 @@ namespace Galileo_API.DataBaseTier
                    errorFactory: (code, msg) => new ResServiceAvailable
                    {
                        IsSuccessful = false,
-                       Errors = new[] { new Error { Code = code, Message = msg } }
+                       Errors = new[] { new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg } }
                    },
                    operationName: nameof(IsServiceAvailable)
                ).Result;
@@ -52,6 +54,7 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResAccountInfo GetAccountInfo(string UrlCGP_PIN, ReqAccountInfo accountData)
         {
+           
             return mClient.PostJsonAsync<ReqAccountInfo, ResAccountInfo, ResAccountInfo>(
                    baseUrl: UrlCGP_PIN,
                    endpoint: "/GetAccountInfo",
@@ -66,9 +69,9 @@ namespace Galileo_API.DataBaseTier
                    errorFactory: (code, msg) => new ResAccountInfo
                    {
                        IsSuccessful = false,
-                       Errors = new Error[]
+                       Errors = new Galileo.Models.KindoSinpe.Error[]
                         {
-                            new Error { Code = code, Message = msg}
+                            new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg}
                         }
                    },
                    operationName: nameof(GetAccountInfo)
@@ -84,9 +87,10 @@ namespace Galileo_API.DataBaseTier
         /// </summary>
         public ResSendingDynamic SendPIN(string UrlCGP_PIN, ReqSendingDynamic pinData)
         {
+            
             return mClient.PostJsonAsync<ReqSendingDynamic, ResSendingDynamic, ResSendingDynamic>(
                    baseUrl: UrlCGP_PIN,
-                   endpoint: "/SendPIN",
+                   endpoint: "/SendTransfer",
                    request: pinData,
                    mapOk: serviceRes => new ResSendingDynamic
                    {
@@ -98,9 +102,9 @@ namespace Galileo_API.DataBaseTier
                    errorFactory: (code, msg) => new ResSendingDynamic
                    {
                        IsSuccessful = false,
-                       Errors = new Error[]
+                       Errors = new Galileo.Models.KindoSinpe.Error[]
                         {
-                            new Error { Code = code, Message = msg}
+                            new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg}
                         }
                    },
                    operationName: nameof(SendPIN)
@@ -118,7 +122,7 @@ namespace Galileo_API.DataBaseTier
         {
             return mClient.PostJsonAsync<ReqTransferInfoChannelRef, ResSendingDynamic, ResSendingDynamic>(
                    baseUrl: UrlCGP_PIN,
-                   endpoint: "/GetPINResult",
+                   endpoint: "/GetTransferResult",
                    request: pinData,
                    mapOk: serviceRes => new ResSendingDynamic
                    {
@@ -130,9 +134,9 @@ namespace Galileo_API.DataBaseTier
                    errorFactory: (code, msg) => new ResSendingDynamic
                    {
                        IsSuccessful = false,
-                       Errors = new Error[]
+                       Errors = new Galileo.Models.KindoSinpe.Error[]
                         {
-                            new Error { Code = code, Message = msg}
+                            new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg}
                         }
                    },
                    operationName: nameof(GetPINResult)
@@ -150,7 +154,7 @@ namespace Galileo_API.DataBaseTier
         {
             return mClient.PostJsonAsync<ReqTransferInfoChannelRef, ResTransferInfo, ResTransferInfo>(
                    baseUrl: UrlCGP_PIN,
-                   endpoint: "/GetPINDataByChannelRef",
+                   endpoint: "/GetTransferDataByChannelRef",
                    request: pinData,
                    mapOk: serviceRes => new ResTransferInfo
                    {
@@ -163,9 +167,9 @@ namespace Galileo_API.DataBaseTier
                    errorFactory: (code, msg) => new ResTransferInfo
                    {
                        IsSuccessful = false,
-                       Errors = new Error[]
+                       Errors = new Galileo.Models.KindoSinpe.Error[]
                         {
-                            new Error { Code = code, Message = msg}
+                            new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg}
                         }
                    },
                    operationName: nameof(GetPINDataByChannelRef)
@@ -183,7 +187,7 @@ namespace Galileo_API.DataBaseTier
         {
             return mClient.PostJsonAsync<ReqTransferInfoSINPERef, ResTransferInfo, ResTransferInfo>(
                    baseUrl: UrlCGP_PIN,
-                   endpoint: "/GetPINDataBySINPERef",
+                   endpoint: "/GetTransferDataBySINPERef",
                    request: pinData,
                    mapOk: serviceRes => new ResTransferInfo
                    {
@@ -195,9 +199,9 @@ namespace Galileo_API.DataBaseTier
                    errorFactory: (code, msg) => new ResTransferInfo
                    {
                        IsSuccessful = false,
-                       Errors = new Error[]
+                       Errors = new Galileo.Models.KindoSinpe.Error[]
                         {
-                            new Error { Code = code, Message = msg}
+                            new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg}
                         }
                    },
                    operationName: nameof(GetPINDataBySINPERef)
@@ -229,9 +233,9 @@ namespace Galileo_API.DataBaseTier
                    errorFactory: (code, msg) => new ResBatchSending
                    {
                        IsSuccessful = false,
-                       Errors = new Error[]
+                       Errors = new Galileo.Models.KindoSinpe.Error[]
                         {
-                            new Error { Code = code, Message = msg}
+                            new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg}
                         }
                    },
                    operationName: nameof(SendBatch)
@@ -262,9 +266,9 @@ namespace Galileo_API.DataBaseTier
                   errorFactory: (code, msg) => new ResBatchState
                   {
                       IsSuccessful = false,
-                      Errors = new Error[]
+                      Errors = new Galileo.Models.KindoSinpe.Error[]
                        {
-                            new Error { Code = code, Message = msg}
+                            new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg}
                        }
                   },
                   operationName: nameof(GetBatchState)
@@ -294,9 +298,9 @@ namespace Galileo_API.DataBaseTier
                  errorFactory: (code, msg) => new ResCustomerTransfers
                  {
                      IsSuccessful = false,
-                     Errors = new Error[]
+                     Errors = new Galileo.Models.KindoSinpe.Error[]
                       {
-                            new Error { Code = code, Message = msg}
+                            new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg}
                       }
                  },
                  operationName: nameof(GetCustomerTransfers)
@@ -328,9 +332,9 @@ namespace Galileo_API.DataBaseTier
                 errorFactory: (code, msg) => new ResAllTransfers
                 {
                     IsSuccessful = false,
-                    Errors = new Error[]
+                    Errors = new Galileo.Models.KindoSinpe.Error[]
                      {
-                            new Error { Code = code, Message = msg}
+                            new Galileo.Models.KindoSinpe.Error { Code = code, Message = msg}
                      }
                 },
                 operationName: nameof(GetAllTransfers)
