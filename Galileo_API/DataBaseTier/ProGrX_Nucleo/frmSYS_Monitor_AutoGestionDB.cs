@@ -127,7 +127,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="jfiltros"></param>
         /// <param name="req"></param>
-        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener(int CodEmpresa,string jfiltros,MonitorAutoGestionBuscarRequest req)
+        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Obtener(int CodEmpresa, string jfiltros, MonitorAutoGestionBuscarRequest req)
         {
             var filtrosResult = TryParseFiltros(jfiltros);
             if (filtrosResult.error != null)
@@ -168,7 +168,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="jfiltros"></param>
         /// <param name="req"></param>
-        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Export(int CodEmpresa,string jfiltros,MonitorAutoGestionBuscarRequest req)
+        public ErrorDto<MonitorAutoGestionLista> Sys_Monitor_AutoGestion_Lista_Export(int CodEmpresa, string jfiltros, MonitorAutoGestionBuscarRequest req)
         {
             var filtrosResult = TryParseFiltros(jfiltros);
             if (filtrosResult.error != null)
@@ -251,7 +251,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="fechaInicio"></param>
         /// <param name="fechaFin"></param>
-        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa,string fechaInicio,string fechaFin)
+        public ErrorDto<MonitorAutoGestionResumenLista> Sys_Monitor_AutoGestion_Resumen_Obtener(int CodEmpresa, string fechaInicio, string fechaFin)
         {
             if (!TryParseFecha(fechaInicio, out var fIni) || !TryParseFecha(fechaFin, out var fFin))
                 return DbHelper.CreateErrorResponse<MonitorAutoGestionResumenLista>("Fechas inválidas.");
