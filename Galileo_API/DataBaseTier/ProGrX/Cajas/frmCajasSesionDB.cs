@@ -97,7 +97,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
         }
 
         // Nuevo método extraído para iniciar la sesión de la caja
-        private void IniciarSesionCaja(SqlConnection connection, string caja, string usuario, int tipoId, string cedula, string nombre)
+        private int IniciarSesionCaja(SqlConnection connection, string caja, string usuario, int tipoId, string cedula, string nombre)
         {
             int aperturaActiva = ObtenerAperturaActiva(connection, caja);
 
@@ -109,7 +109,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             parameters.Add("@Identificacion", cedula, DbType.String);
             parameters.Add("@Nombre", nombre, DbType.String);
 
-            connection.QueryFirstOrDefault<CajaSesionDto>(
+            return connection.QueryFirstOrDefault<int>(
                 "spCajas_Sesion_Inicia",
                 parameters,
                 commandType: CommandType.StoredProcedure);
@@ -132,14 +132,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
             var response = new ErrorDto
             {
                 Code = 0,
-                Description = "Ok",
+                Description = "Ok"
             };
 
             try
             {
                 EjecutarConConexion(stringConn, connection =>
                 {
-                    IniciarSesionCaja(connection, caja, usuario, tipoId, cedula, nombre);
+                    response.Code = IniciarSesionCaja(connection, caja, usuario, tipoId, cedula, nombre);
                 });
             }
             catch (Exception ex)
