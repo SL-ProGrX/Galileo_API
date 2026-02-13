@@ -86,10 +86,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 response += Operacio_FacturasVerifica(codEmpresa, operacion);
             }
 
-            catch (Exception)
+            catch (Exception ex)
             {
-                response = "";
-            }
+                 response= ex.Message;
+            } 
 
             return response;
 

@@ -698,9 +698,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Bancos
         {
             try
             {
-                string fechaAutoriza = MProGrXAuxiliarDB.validaFechaGlobal(transaccion.fecha_autorizacion, "yyyy-MM-dd HH:mm:ss") ?? string.Empty; 
-                if (transaccion.user_autoriza == null) fechaAutoriza = string.Empty;
-
+                string fechaAutoriza = MProGrXAuxiliarDB.validaFechaGlobal(transaccion.fecha_autorizacion, "yyyy-MM-dd HH:mm:ss") ?? string.Empty;
+                if (transaccion.user_autoriza == null)
+                {
+                    fechaAutoriza = string.Empty;
+                }
                 using var connection = OpenConnection(CodEmpresa);
 
                 var query = @"
