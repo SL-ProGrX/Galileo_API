@@ -129,7 +129,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 isnull(sum(Int_Cor + Int_Mor),0) as intCor, 
                 isnull(sum(Principal),0) as principal,
                 isnull(min(Saldo_Final),0) as saldo, 
-                isnull(max(Fecha_Corte),0) as fecha_Proceso
+                CASE 
+		            WHEN CAST(MAX(Fecha_Corte) AS DATE) = '1900-01-01'
+			            THEN NULL
+		            ELSE MAX(Fecha_Corte)
+	            END AS fecha_Proceso 
             from CxC_Cuentas_Mov where Operacion = @OperacionId 
             and Linea in(select Top (@Cuotas) Linea from CxC_Cuentas_Mov
             where estado in('A','P') and Operacion =  @OperacionId  and Linea > 0  order by Linea);";
