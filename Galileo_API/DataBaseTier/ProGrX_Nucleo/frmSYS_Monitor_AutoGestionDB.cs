@@ -141,18 +141,18 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 using var cn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
                 var p = new DynamicParameters();
-                string where = BuildWhereAndParams(p, filtros, req);
+                FillParams(p, filtros, req);
 
-                response.Result!.total = ExecuteTotal(cn, filtros, req);
+                response.Result!.total = ExecuteTotal(cn, p);
 
                 var sort = ResolveSort(filtros);
                 bool exportAll = IsExportAll(filtros);
 
                 AddPagingParamsIfNeeded(p, filtros, exportAll);
 
-                string sql = BuildSelectSql(where, sort, exportAll);
-
+                string sql = BuildSelectSql(sort, exportAll);
                 response.Result.lista = ExecuteLista(cn, sql, p);
+
 
                 return response;
             }
@@ -591,16 +591,31 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 _ => "COD_SOLICITUD"
             };
         }
-        private int ExecuteTotal(SqlConnection cn, FiltrosLazyLoadData filtros, MonitorAutoGestionBuscarRequest req)
+        private int ExecuteTotal(SqlConnection cn, DynamicParameters p)
         {
-            var p = new DynamicParameters();
-            string where = BuildWhereAndParams(p, filtros, req);
-
-            string sqlCount =
-                "SELECT COUNT(1) " +
-                "FROM dbo.vCrd_Solicitudes_AutoGestion " +
-                where + ";";
-
+            const string sqlCount = @"
+                SELECT COUNT(1)
+                FROM dbo.vCrd_Solicitudes_AutoGestion
+                WHERE 1=1
+                  AND @FECHA_INVALIDA = 0
+                  AND (@ESTADO  IS NULL OR ESTADO = @ESTADO)
+                  AND (@TRAMITE IS NULL OR TRAMITE_ESTADO_ID = @TRAMITE)
+                  AND (@CODIGO  IS NULL OR CODIGO = @CODIGO)
+                  AND (@CEDULA  IS NULL OR CEDULA = @CEDULA)
+                  AND (
+                        @Q IS NULL OR (
+                             CEDULA      LIKE @Q
+                          OR NOMBRE      LIKE @Q
+                          OR LINEA_DESC  LIKE @Q
+                          OR ESTADO_DESC LIKE @Q
+                        )
+                      )
+                  AND (
+                        @FECHA_TIPO IS NULL OR @FECHA_TIPO = 'Todas'
+                     OR (@FECHA_TIPO = 'Registro' AND REGISTRO_FECHA BETWEEN @INI AND @FIN)
+                     OR ((@FECHA_TIPO = 'Resolución' OR @FECHA_TIPO = 'Resolucion') AND RES_FECHA BETWEEN @INI AND @FIN)
+                      );
+                ";
             return cn.ExecuteScalar<int>(sqlCount, p, commandTimeout: 60);
         }
 
@@ -618,33 +633,53 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             return Math.Max(0, filtros.pagina);
         }
-        private string BuildSelectSql(string where, (string orderBy, string orderDir) sort, bool exportAll)
+        private string BuildSelectSql((string orderBy, string orderDir) sort, bool exportAll)
         {
-            string baseSelect =
-                "SELECT " +
-                "  COD_SOLICITUD           AS Cod_Solicitud," +
-                "  ESTADO_DESC             AS Estado_Desc," +
-                "  CEDULA                  AS Cedula," +
-                "  NOMBRE                  AS Nombre," +
-                "  LINEA_DESC              AS Linea_Desc," +
-                "  MONTO                   AS Monto," +
-                "  PLAZO                   AS Plazo," +
-                "  TASA                    AS Tasa," +
-                "  CUOTA                   AS Cuota," +
-                "  GARANTIA_DESC           AS Garantia_Desc," +
-                "  REGISTRO_FECHA          AS Registro_Fecha," +
-                "  RES_FECHA               AS Res_Fecha," +
-                "  RES_CODIGO              AS Res_Codigo," +
-                "  TRAMITE_ESTADO_DESC     AS Tramite_Estado_Desc," +
-                "  RES_TIPO                AS Res_Tipo " +
-                "FROM dbo.vCrd_Solicitudes_AutoGestion ";
+            string baseSelect = @"
+            SELECT
+              COD_SOLICITUD           AS Cod_Solicitud,
+              ESTADO_DESC             AS Estado_Desc,
+              CEDULA                  AS Cedula,
+              NOMBRE                  AS Nombre,
+              LINEA_DESC              AS Linea_Desc,
+              MONTO                   AS Monto,
+              PLAZO                   AS Plazo,
+              TASA                    AS Tasa,
+              CUOTA                   AS Cuota,
+              GARANTIA_DESC           AS Garantia_Desc,
+              REGISTRO_FECHA          AS Registro_Fecha,
+              RES_FECHA               AS Res_Fecha,
+              RES_CODIGO              AS Res_Codigo,
+              TRAMITE_ESTADO_DESC     AS Tramite_Estado_Desc,
+              RES_TIPO                AS Res_Tipo
+            FROM dbo.vCrd_Solicitudes_AutoGestion
+            WHERE 1=1
+              AND @FECHA_INVALIDA = 0
+              AND (@ESTADO  IS NULL OR ESTADO = @ESTADO)
+              AND (@TRAMITE IS NULL OR TRAMITE_ESTADO_ID = @TRAMITE)
+              AND (@CODIGO  IS NULL OR CODIGO = @CODIGO)
+              AND (@CEDULA  IS NULL OR CEDULA = @CEDULA)
+              AND (
+                    @Q IS NULL OR (
+                         CEDULA      LIKE @Q
+                      OR NOMBRE      LIKE @Q
+                      OR LINEA_DESC  LIKE @Q
+                      OR ESTADO_DESC LIKE @Q
+                    )
+                  )
+              AND (
+                    @FECHA_TIPO IS NULL OR @FECHA_TIPO = 'Todas'
+                 OR (@FECHA_TIPO = 'Registro' AND REGISTRO_FECHA BETWEEN @INI AND @FIN)
+                 OR ((@FECHA_TIPO = 'Resolución' OR @FECHA_TIPO = 'Resolucion') AND RES_FECHA BETWEEN @INI AND @FIN)
+                  )
+            ";
+
             string orderClause = BuildOrderClause(sort.orderBy, sort.orderDir);
 
             if (exportAll)
-                return baseSelect + where + orderClause + ";";
+                return baseSelect + orderClause + ";";
 
-            string pagingClause = " OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY;";
-            return baseSelect + where + orderClause + pagingClause;
+            return baseSelect + orderClause + " OFFSET @OFFSET ROWS FETCH NEXT @FETCH ROWS ONLY;";
         }
         private string BuildOrderClause(string orderBy, string orderDir)
         {
@@ -656,74 +691,58 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             return cn.Query<MonitorAutoGestionListaData>(sql, p, commandTimeout: 60).ToList();
         }
-        private static string BuildWhereAndParams(DynamicParameters p, FiltrosLazyLoadData filtros, MonitorAutoGestionBuscarRequest req)
+        private static void FillParams(DynamicParameters p, FiltrosLazyLoadData filtros, MonitorAutoGestionBuscarRequest req)
         {
-            var sb = new StringBuilder(" WHERE 1=1 ");
             string estado1 = Normalizar1Char(req.estado);
-            if (!string.IsNullOrWhiteSpace(estado1))
-            {
-                sb.Append(" AND ESTADO = @ESTADO ");
-                p.Add("@ESTADO", estado1);
-            }
+            p.Add("@ESTADO", string.IsNullOrWhiteSpace(estado1) ? null : estado1);
 
             string tramite1 = Normalizar1Char(req.tramite_estado_id);
-            if (!string.IsNullOrWhiteSpace(tramite1))
-            {
-                sb.Append(" AND TRAMITE_ESTADO_ID = @TRAMITE ");
-                p.Add("@TRAMITE", tramite1);
-            }
-            string fechaTipo = (req.fechaTipo ?? "").Trim();
+            p.Add("@TRAMITE", string.IsNullOrWhiteSpace(tramite1) ? null : tramite1);
 
-            if (fechaTipo.Equals("Registro", StringComparison.OrdinalIgnoreCase)
-                || fechaTipo.Equals("Resolución", StringComparison.OrdinalIgnoreCase)
-                || fechaTipo.Equals("Resolucion", StringComparison.OrdinalIgnoreCase))
+            p.Add("@CODIGO", string.IsNullOrWhiteSpace(req.codigoLinea) ? null : req.codigoLinea.Trim());
+            p.Add("@CEDULA", string.IsNullOrWhiteSpace(req.cedula) ? null : req.cedula.Trim());
+
+            string q = (filtros?.filtro ?? "").Trim();
+            p.Add("@Q", string.IsNullOrWhiteSpace(q) ? null : "%" + q + "%");
+
+            string ft = (req.fechaTipo ?? "").Trim();
+            p.Add("@FECHA_TIPO", string.IsNullOrWhiteSpace(ft) ? null : ft);
+
+            p.Add("@FECHA_INVALIDA", 0);
+
+            var sqlMin = new DateTime(1753, 1, 1, 0, 0, 0);
+
+            bool esRegistro = ft.Equals("Registro", StringComparison.OrdinalIgnoreCase);
+            bool esResolucion = ft.Equals("Resolución", StringComparison.OrdinalIgnoreCase) || ft.Equals("Resolucion", StringComparison.OrdinalIgnoreCase);
+            bool esTodas = ft.Equals("Todas", StringComparison.OrdinalIgnoreCase) || string.IsNullOrWhiteSpace(ft);
+
+            if (esRegistro || esResolucion)
             {
                 if (!TryParseFecha(req.fechaInicio, out var fIni) || !TryParseFecha(req.fechaFin, out var fFin))
                 {
-                    sb.Append(" AND 1=0 ");
-                    return sb.ToString();
+                    p.Add("@FECHA_INVALIDA", 1);
+                    p.Add("@INI", sqlMin, DbType.DateTime);
+                    p.Add("@FIN", sqlMin, DbType.DateTime);
+                    return;
                 }
 
                 var ini = new DateTime(fIni.Year, fIni.Month, fIni.Day, 0, 0, 0);
                 var fin = new DateTime(fFin.Year, fFin.Month, fFin.Day, 23, 59, 59);
 
-                bool porResolucion =
-                    fechaTipo.Equals("Resolución", StringComparison.OrdinalIgnoreCase)
-                    || fechaTipo.Equals("Resolucion", StringComparison.OrdinalIgnoreCase);
-
-                if (porResolucion)
-                    sb.Append(" AND RES_FECHA BETWEEN @INI AND @FIN ");
-                else
-                    sb.Append(" AND REGISTRO_FECHA BETWEEN @INI AND @FIN ");
-
                 p.Add("@INI", ini, DbType.DateTime);
                 p.Add("@FIN", fin, DbType.DateTime);
+                return;
             }
 
-            if (!string.IsNullOrWhiteSpace(req.codigoLinea))
+            if (esTodas)
             {
-                sb.Append(" AND CODIGO = @CODIGO ");
-                p.Add("@CODIGO", req.codigoLinea.Trim());
+                p.Add("@INI", sqlMin, DbType.DateTime);
+                p.Add("@FIN", sqlMin, DbType.DateTime);
+                return;
             }
 
-            if (!string.IsNullOrWhiteSpace(req.cedula))
-            {
-                sb.Append(" AND CEDULA = @CEDULA ");
-                p.Add("@CEDULA", req.cedula.Trim());
-            }
-            if (!string.IsNullOrWhiteSpace(filtros?.filtro))
-            {
-                sb.Append(@"
-            AND (
-                 CEDULA      LIKE @Q
-              OR NOMBRE      LIKE @Q
-              OR LINEA_DESC  LIKE @Q
-              OR ESTADO_DESC LIKE @Q
-            )");
-                p.Add("@Q", "%" + filtros.filtro.Trim() + "%");
-            }
-
-            return sb.ToString();
+            p.Add("@INI", sqlMin, DbType.DateTime);
+            p.Add("@FIN", sqlMin, DbType.DateTime);
         }
         private static bool TryParseFecha(string? value, out DateTime fecha)
         {
