@@ -14,7 +14,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
     public class CxcContratoPagadorListaParams
     {
         public string Cod_Contrato { get; set; }
-        public bool ChkTodos { get; set; }
+        public required bool ChkTodos { get; set; }
         public string? Cedula { get; set; }
         public string? Nombre { get; set; }
     }
