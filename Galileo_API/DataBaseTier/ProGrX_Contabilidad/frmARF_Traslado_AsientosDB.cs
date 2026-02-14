@@ -46,7 +46,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Arrendamientos
                     WHERE Traslado_Fecha IS NULL
                 ");
 
-                if (!filtros.todos &&
+                if ((filtros.todos == false) &&
                     filtros.fechaInicio.HasValue &&
                     filtros.fechaCorte.HasValue)
                 {

@@ -4,7 +4,7 @@
     {
         public DateTime? fechaInicio { get; set; }
         public DateTime? fechaCorte { get; set; }
-        public bool todos { get; set; }
+        public bool? todos { get; set; }
     }
 
     public class ArfTrasladoTablaDto
