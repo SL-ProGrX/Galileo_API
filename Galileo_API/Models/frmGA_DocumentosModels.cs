@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc;
+
 namespace Galileo.Models.GA
 {
     public class DocumentosArchivoDto
@@ -36,7 +38,9 @@ namespace Galileo.Models.GA
 
     public class DocumentoFormData
     {
+        [FromForm(Name = "file")]
         public IFormFile? File { get; set; }
+        [FromForm(Name = "info")]
         public string? Info { get; set; }
     }
 }

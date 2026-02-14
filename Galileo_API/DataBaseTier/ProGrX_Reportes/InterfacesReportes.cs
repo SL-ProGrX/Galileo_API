@@ -9,7 +9,8 @@ namespace Galileo.DataBaseTier
     public interface IRdlcPathResolver
     {
         string GetBasePath(int codEmpresa, string dirRdlc, string? folder = null);
-        string ResolveReportPath(string basePath, string reportNameOrRelative);
+        string ResolveReportPath(string basePath);
+        string CombineUnderRoot(string basePath, params string[] reportFile);
     }
 
     public interface IRdlcMetaReader

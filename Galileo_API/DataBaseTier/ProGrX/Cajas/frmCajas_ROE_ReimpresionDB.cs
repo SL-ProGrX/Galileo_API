@@ -43,7 +43,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cajas
 
                 sql.Append(" ORDER BY FECHA DESC");
 
-                return conn.Query<CajasRoeConsultaResult>(sql.ToString(), parameters).ToList();
+                var response =  conn.Query<CajasRoeConsultaResult>(sql.ToString(), parameters).ToList();
+                return response;
             });
         }
 
