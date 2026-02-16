@@ -43,7 +43,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         int CodEmpresa,
         string Usuario,
         DateTime FechaCorte,
-        string Tipo)
+        string? Tipo)
         {
             return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
             {
@@ -51,13 +51,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 if (tipo is not ("T" or "I" or "E" or "SC"))
                     throw new ArgumentException("Tipo inválido. Use T, I, E o SC.");
 
-                const string execSp = @"EXEC spPoliza_Asociados @FechaCorte, @Usuario, @Tipo;";
+                const string execSp = @"EXEC spPoliza_Asociados @Corte, @Usuario, @Movimiento;";
 
                 return conn.Query<PolizaAsociadoCorteSpDto>(execSp, new
                 {
-                    FechaCorte = FechaCorte.Date,
+                    Corte = FechaCorte.Date,
                     Usuario = (Usuario ?? "").Trim(),
-                    Tipo = tipo
+                    Movimiento = tipo
                 }).ToList();
             });
         }

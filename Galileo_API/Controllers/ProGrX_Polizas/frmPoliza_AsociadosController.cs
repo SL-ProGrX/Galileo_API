@@ -30,7 +30,7 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         int CodEmpresa,
         string Usuario,
         DateTime FechaCorte,
-        string Tipo)
+        string? Tipo)
         {
             return _bl.Poliza_Asociados_Corte_Listar(CodEmpresa, Usuario, FechaCorte, Tipo);
         }

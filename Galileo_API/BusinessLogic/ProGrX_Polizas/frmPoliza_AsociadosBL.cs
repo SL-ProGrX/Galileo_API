@@ -23,7 +23,7 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
         int CodEmpresa,
         string Usuario,
         DateTime FechaCorte,
-        string Tipo)
+        string? Tipo)
         {
             return _db.Poliza_Asociados_Corte_Listar(CodEmpresa, Usuario, FechaCorte, Tipo);
         }
