@@ -195,22 +195,6 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             });
         }
 
-
-        /// <summary>
-        /// Filtros para la búsqueda de gestiones de bitácora.
-        /// </summary>
-        public class SysGestionesBitacoraFiltro
-        {
-            public string? ClienteBuscar { get; set; }
-            public string? GestionCod { get; set; }
-            public string? UsuarioBuscar { get; set; }
-            public string? FechaInicio { get; set; }
-            public string? FechaFin { get; set; }
-            public bool TodasFechas { get; set; }
-            public FiltrosLazyLoadData? Filtros { get; set; }
-        }
-
-
         /// <summary>
         /// Obtiene una lista de gestiones de bitacora sin paginación y filtros.
         /// </summary>
