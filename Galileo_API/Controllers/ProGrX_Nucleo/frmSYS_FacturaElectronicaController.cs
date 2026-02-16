@@ -67,9 +67,9 @@ namespace Galileo_API.Controllers.ProGrX_Nucleo
 
         [Authorize]
         [HttpGet("FE_Factura_Detalle_Obtener")]
-        public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa, string codCliente, string idFactura)
+        public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa, string codCliente, string idFactura, string tipo)
         {
-            return BL.FE_Factura_Detalle_Obtener(CodEmpresa, codCliente, idFactura);
+            return BL.FE_Factura_Detalle_Obtener(CodEmpresa, codCliente, idFactura, tipo);
         }
 
         [Authorize]
