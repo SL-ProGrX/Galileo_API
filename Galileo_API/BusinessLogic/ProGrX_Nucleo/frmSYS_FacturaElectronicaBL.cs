@@ -47,9 +47,9 @@ namespace Galileo_API.BusinessLogic.ProGrX_Nucleo
             return Db.FE_Facturas_Lista_Export(CodEmpresa, parametros);
         }
 
-        public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa, string codCliente, string idFactura)
+        public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa, string codCliente, string idFactura, string tipo)
         {
-            return Db.FE_Factura_Detalle_Obtener(CodEmpresa, codCliente, idFactura);
+            return Db.FE_Factura_Detalle_Obtener(CodEmpresa, codCliente, idFactura, tipo);
         }
 
         public ErrorDto<FeFacturasResumen> FE_Facturas_Resumen_Obtener(int CodEmpresa, string parametros)
