@@ -27,14 +27,9 @@ namespace Galileo.BusinessLogic.ProGrX_Nucleo
 
         public ErrorDto SIF_tipoDocumento_Guardar(int CodEmpresa, string usuario, SifTipoDocumentoData tipoDoc,int accion)
         {
-            if (accion == 1)
-            {
-                return _db.SIF_tipoDocumento_Insertar(CodEmpresa, usuario, tipoDoc);
-            }
-            else
-            {
-                return _db.SIF_tipoDocumento_Actualiza(CodEmpresa, usuario, tipoDoc);
-            }
+            return accion == 1
+                ? _db.SIF_tipoDocumento_Insertar(CodEmpresa, usuario, tipoDoc)
+                : _db.SIF_tipoDocumento_Actualiza(CodEmpresa, usuario, tipoDoc);
         }
 
         public ErrorDto<List<SifTipoDocConceptoData>> SIF_TipoDocumentosConceptosRelacionados_Obtener(int CodEmpresa, string tipoDoc)
