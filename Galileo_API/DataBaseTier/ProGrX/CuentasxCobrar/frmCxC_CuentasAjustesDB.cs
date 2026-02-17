@@ -24,6 +24,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             DBBitacora = dbBitacora;
         }
 
+        /// <summary>
+        /// Obtiene la información principal de la operacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacionId"></param>
+        /// <returns></returns>
         public ErrorDto<CxCCuentasAjustesOperacionData> CxCCuentasAjustes_ConsultaOperacion_Obtener(int codEmpresa, int operacionId)
         {
             const string query = @"select R.*,S.nombre,C.descripcion, 
@@ -45,6 +51,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return result!;
         }
 
+        /// <summary>
+        /// Obtiene las cuotas en mora de la operacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacionId"></param>
+        /// <returns></returns>
         public ErrorDto<List<CxCCuentasAjustesCuotasData>> CxCCuentasAjustes_CuotasMora_Obtener(int codEmpresa, int operacionId)
         {
             const string query = @"select * From CxC_Cuentas_Mov 
@@ -53,6 +65,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return DbHelper.ExecuteListQuery<CxCCuentasAjustesCuotasData>(_portalDb, codEmpresa, query, new { operacionId });
         }
 
+        /// <summary>
+        /// Obtiene los cargos de la operacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacionId"></param>
+        /// <returns></returns>
         public ErrorDto<List<CxCCuentasAjustesCargosData>> CxCCuentasAjustes_Cargos_Obtener(int codEmpresa, int operacionId)
         {
             const string query = @"select * from CxC_Cuentas_Cargos 
@@ -61,6 +79,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return DbHelper.ExecuteListQuery<CxCCuentasAjustesCargosData>(_portalDb, codEmpresa, query, new { operacionId });
         }
 
+        /// <summary>
+        /// Aplicar ajuste de fecha documento 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CxCCuentasAjustes_Fecha_Aplicar(int codEmpresa, CxCCuentasAjustesFechaRequest request)
         {
             const string query = @"exec spCxC_CuentaIntereses @operacionId, '', @fechaDoc";
@@ -68,6 +92,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, query, new { operacionId = request.operacion, fechaDoc = request.fecha_documento });
         }
 
+        /// <summary>
+        /// Eliminar cuotas en mora seleccionadas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacionId"></param>
+        /// <param name="usuario"></param>
+        /// <param name="lista"></param>
+        /// <returns></returns>
         public ErrorDto CxCCuentasAjustes_CuotasMora_Eliminar(int codEmpresa, int operacionId, string usuario, List<CxCCuentasAjustesCuotasData> lista)
         {
             const string query = @"
@@ -105,6 +137,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             };
         }
 
+        /// <summary>
+        /// Eliminar cargos seleccionados
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="operacionId"></param>
+        /// <param name="usuario"></param>
+        /// <param name="lista"></param>
+        /// <returns></returns>
         public ErrorDto CxCCuentasAjustes_Cargos_Eliminar(int codEmpresa, int operacionId, string usuario, List<CxCCuentasAjustesCargosData> lista)
         {
             const string query = @"exec spCxC_CuentaCargoElimina @operacionId, @linea;";
