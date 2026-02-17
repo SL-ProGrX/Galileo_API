@@ -109,13 +109,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 WHERE Linea = @linea 
                   AND Operacion = @operacionId;";
 
-            foreach (var item in lista)
+            foreach (var item in lista.Select(x => x.linea))
             {
                 var resp = DbHelper.ExecuteNonQuery(
                     _portalDb,
                     codEmpresa,
                     query,
-                    new { linea = item.linea, operacionId });
+                    new { linea = item, operacionId });
 
                 if (resp.Code == -1)
                     return resp;
