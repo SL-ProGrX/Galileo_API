@@ -19,6 +19,8 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
             _BL = new FrmCrCatalogoPolizasBL(config);
         }
 
+        #region Definicion
+
         [HttpGet("Crd_CatalogoPolizas_GrupoAplicacion_Listar")]
         public ErrorDto<List<DropDownListaGenericaModel>> Crd_CatalogoPolizas_GrupoAplicacion_Listar(int CodEmpresa)
         {
@@ -90,5 +92,36 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         {
             return _BL.Crd_CatalogoPolizas_Garantia_Asignar(CodEmpresa, usuario, req);
         }
+        #endregion
+
+
+        #region Acreedores
+
+        [HttpGet("Crd_PolizasAcreedores_Grid_Obtener")]
+        public ErrorDto<List<CrdPolizasAcreedoresGridDto>> Crd_PolizasAcreedores_Grid_Obtener(int CodEmpresa)
+        {
+            return _BL.Crd_PolizasAcreedores_Grid_Obtener(CodEmpresa);
+        }
+
+        [HttpDelete("Crd_PolizasAcreedores_Eliminar")]
+        public ErrorDto Crd_PolizasAcreedores_Eliminar(
+               int CodEmpresa,
+               string usuario,
+               string cod_acreedor)
+        {
+            return _BL.Crd_PolizasAcreedores_Eliminar(CodEmpresa, usuario, cod_acreedor);
+        }
+
+        [HttpPost("Crd_PolizasAcreedores_Guardar")]
+        public ErrorDto Crd_PolizasAcreedores_Guardar(
+            int CodEmpresa,
+            string usuario,
+            CrdPolizasAcreedoresGridSaveDto datos)
+        {
+            return _BL.Crd_PolizasAcreedores_Guardar(CodEmpresa, usuario, datos);
+        }
+
+        #endregion
+
     }
 }

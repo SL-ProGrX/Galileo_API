@@ -14,6 +14,8 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
             _db = new FrmCrCatalogoPolizasDB(config);
         }
 
+        #region Definicion
+
         public ErrorDto<List<DropDownListaGenericaModel>> Crd_CatalogoPolizas_GrupoAplicacion_Listar(int CodEmpresa)
         {
             return _db.Crd_CatalogoPolizas_GrupoAplicacion_Listar(CodEmpresa);
@@ -74,6 +76,33 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
         {
             return _db.Crd_CatalogoPolizas_Garantia_Asignar(CodEmpresa, usuario, req);
         }
+
+        #endregion
+
+        #region Acreedores
+
+        public ErrorDto<List<CrdPolizasAcreedoresGridDto>> Crd_PolizasAcreedores_Grid_Obtener(int CodEmpresa)
+        {
+            return _db.Crd_PolizasAcreedores_Grid_Obtener(CodEmpresa);
+        }
+
+        public ErrorDto Crd_PolizasAcreedores_Eliminar(
+                int CodEmpresa,
+                string usuario,
+                string cod_acreedor)
+        {
+            return _db.Crd_PolizasAcreedores_Eliminar(CodEmpresa, usuario, cod_acreedor);
+        }
+
+        public ErrorDto Crd_PolizasAcreedores_Guardar(
+            int CodEmpresa,
+            string usuario,
+            CrdPolizasAcreedoresGridSaveDto datos)
+        {
+           return _db.Crd_PolizasAcreedores_Guardar(CodEmpresa, usuario, datos);
+        }
+
+        #endregion
 
     }
 }

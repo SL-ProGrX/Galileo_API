@@ -1,7 +1,9 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
 using Galileo.Models;
+using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
+using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Polizas;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Polizas
@@ -9,10 +11,25 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
     public class FrmCrCatalogoPolizasDB
     {
         private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _Security_MainDB;
 
         public FrmCrCatalogoPolizasDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _Security_MainDB = new MSecurityMainDb(config);
+        }
+
+
+        private void Bitacora(int CodEmpresa, string usuario, string movimiento, string detalle)
+        {
+            _Security_MainDB.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = usuario,
+                DetalleMovimiento = detalle,
+                Movimiento = movimiento,
+                Modulo = 3
+            });
         }
 
         #region Definicion
@@ -283,5 +300,200 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
         #endregion
 
+
+
+        #region Acreedores
+
+        /// <summary>
+        /// Lista de acreedores para el mantenimiento (VB6: tcMain_SelectedChanged Case 2 -> sbCargaGrid vGrid).
+        /// </summary>
+        public ErrorDto<List<CrdPolizasAcreedoresGridDto>> Crd_PolizasAcreedores_Grid_Obtener(int CodEmpresa)
+        {
+            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+            {
+                const string query = @"
+                    SELECT 
+                        COD_ACREEDOR     AS cod_acreedor,
+                        IDENTIFICACION   AS identificacion,
+                        NOMBRE           AS nombre,
+                        CXP_ENLACE       AS cxp_enlace,
+                        ACTIVO           AS activo
+                    FROM CRD_POLIZAS_ACREEDORES
+                    ORDER BY COD_ACREEDOR";
+
+                return conn.Query<CrdPolizasAcreedoresGridDto>(query).ToList();
+            });
+        }
+
+        /// <summary>
+        /// Método para eliminar un acreedor, con validación previa para evitar eliminar acreedores que estén asignados a pólizas activas.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="cod_acreedor"></param>
+        /// <returns></returns>
+        public ErrorDto Crd_PolizasAcreedores_Eliminar(
+                int CodEmpresa,
+                string usuario,
+                string cod_acreedor)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+
+            var response = new ErrorDto
+            {
+                Code = 0,
+                Description = "Ok",
+            };
+
+            try
+            {
+                cod_acreedor = (cod_acreedor ?? string.Empty).Trim();
+
+                const string validaSql = @"
+                        SELECT COUNT(1)
+                        FROM CRD_POLIZAS_ACREEDOR_ASG
+                        WHERE cod_acreedor = @cod_acreedor;
+                        ";
+
+                var enUso = connection.ExecuteScalar<int>(validaSql, new { cod_acreedor });
+
+                if (enUso > 0)
+                {
+                    response.Code = -1;
+                    response.Description = $"No se puede eliminar: el acreedor está asignado a {enUso} póliza(s).";
+                    return response;
+                }
+
+                const string deleteSql = @"
+                        DELETE CRD_POLIZAS_ACREEDORES
+                        WHERE COD_ACREEDOR = @cod_acreedor;
+                        ";
+
+                var rows = connection.Execute(deleteSql, new { cod_acreedor });
+
+                if (rows > 0)
+                {
+                    Bitacora(CodEmpresa, usuario, $"Acreedor de Pólizas : {cod_acreedor}", "Elimina - WEB");
+                }
+                else
+                {
+                    response.Code = -1;
+                    response.Description = "Error al eliminar acreedor.";
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = $"Error al eliminar acreedor: {ex.Message}";
+            }
+
+            return response;
+        }
+
+        /// <summary>
+        /// Guarda o actualiza un acreedor del catálogo (VB6: fxGuardar en vGrid).
+        /// - Si existe COD_ACREEDOR: UPDATE
+        /// - Si no existe: INSERT
+        /// </summary>
+        public ErrorDto Crd_PolizasAcreedores_Guardar(
+            int CodEmpresa,
+            string usuario,
+            CrdPolizasAcreedoresGridSaveDto datos)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+          
+            try
+            {
+                var cod = (datos?.cod_acreedor ?? string.Empty).Trim().ToUpperInvariant();
+                if (string.IsNullOrWhiteSpace(cod))
+                {
+                    return DbHelper.ErrorResponse("El código del acreedor es requerido.");
+                }
+
+                var identificacion = (datos?.identificacion ?? string.Empty).Trim();
+                var nombre = (datos?.nombre ?? string.Empty).Trim();
+                var cxp = datos?.cxp_enlace;                 // puede ser null
+                var activo = (datos?.activo ?? 1);           // default 1
+
+                // Validaciones mínimas (ajusta a reglas reales)
+                if (string.IsNullOrWhiteSpace(identificacion))
+                {
+                    return DbHelper.ErrorResponse("La identificación es requerida.");
+                }
+                if (string.IsNullOrWhiteSpace(nombre))
+                {
+                    return DbHelper.ErrorResponse("El nombre es requerido.");
+                }
+
+                const string existsSql = @"
+                        SELECT ISNULL(COUNT(1),0)
+                        FROM CRD_POLIZAS_ACREEDORES
+                        WHERE COD_ACREEDOR = @cod;
+                        ";
+
+                var existe = connection.ExecuteScalar<int>(existsSql, new { cod });
+
+                var response = false;
+
+                if (existe == 0)
+                {
+                    const string insertSql = @"
+                            INSERT INTO CRD_POLIZAS_ACREEDORES
+                                (COD_ACREEDOR, IDENTIFICACION, NOMBRE, CXP_ENLACE, ACTIVO, REGISTRO_FECHA, REGISTRO_USUARIO)
+                            VALUES
+                                (@cod, @identificacion, @nombre, @cxp_enlace, @activo, dbo.MyGetdate(), @usuario);
+                            ";
+
+                    var rows = connection.Execute(insertSql, new
+                    {
+                        cod,
+                        identificacion,
+                        nombre,
+                        cxp_enlace = cxp,
+                        activo,
+                        usuario
+                    });
+
+                    response = rows > 0;
+                }
+                else
+                {
+                    const string updateSql = @"
+                            UPDATE CRD_POLIZAS_ACREEDORES
+                               SET IDENTIFICACION   = @identificacion,
+                                   NOMBRE           = @nombre,
+                                   CXP_ENLACE       = @cxp_enlace,
+                                   ACTIVO           = @activo
+                             WHERE COD_ACREEDOR     = @cod;
+                            ";
+
+                    var rows = connection.Execute(updateSql, new
+                    {
+                        cod,
+                        identificacion,
+                        nombre,
+                        cxp_enlace = cxp,
+                        activo
+                    });
+
+                    response = rows > 0;
+                }
+
+                if (!response)
+                {
+                    return DbHelper.ErrorResponse("No se pudo guardar el registro.");
+                }
+                Bitacora(CodEmpresa, usuario, $"Acreedor de Pólizas : {cod}", existe == 0 ? "Registra-Web" : "Modifica-Web");
+
+                return DbHelper.OkResponse($"Acreedor {(existe == 0 ? "registrado" : "actualizado")} exitosamente.");
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse($"Error al guardar acreedor: {ex.Message}");
+            }
+        }
+
+
+        #endregion
     }
 }
