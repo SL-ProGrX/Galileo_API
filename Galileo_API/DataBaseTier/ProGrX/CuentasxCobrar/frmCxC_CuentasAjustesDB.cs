@@ -124,7 +124,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 {
                     EmpresaId = codEmpresa,
                     Usuario = (usuario ?? "").ToUpper(),
-                    DetalleMovimiento = $"Morosidad OP: {operacionId} Linea: {item.linea}",
+                    DetalleMovimiento = $"Morosidad OP: {operacionId} Linea: {item}",
                     Movimiento = "Anula - WEB",
                     Modulo = vModulo
                 });
