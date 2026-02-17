@@ -506,8 +506,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         /// <param name="CodEmpresa"></param>
         /// <param name="codCliente"></param>
         /// <param name="idFactura"></param>
+        /// <param name="comprobante"></param>
         /// <returns></returns>
-        public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa, string codCliente, string idFactura)
+        public ErrorDto<List<FeFacturaDetalleItem>> FE_Factura_Detalle_Obtener(int CodEmpresa,string codCliente,string idFactura,string tipo)
         {
             var resp = DbHelper.CreateOkResponse(new List<FeFacturaDetalleItem>());
             resp.Result ??= new List<FeFacturaDetalleItem>();
@@ -521,27 +522,28 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 idFactura = (idFactura ?? "").Trim();
                 if (string.IsNullOrWhiteSpace(idFactura))
                     return DbHelper.CreateErrorResponse<List<FeFacturaDetalleItem>>("idFactura es requerido.");
-
                 if (!int.TryParse(idFactura, out int idFacturaInt) || idFacturaInt <= 0)
                     return DbHelper.CreateErrorResponse<List<FeFacturaDetalleItem>>("idFactura inválido.");
+                tipo = (tipo ?? "").Trim();
+                if (string.IsNullOrWhiteSpace(tipo))
+                    return DbHelper.CreateErrorResponse<List<FeFacturaDetalleItem>>("comprobante es requerido.");
 
                 using var conn = OpenPortalProveedorConn(CodEmpresa, codCliente);
-
-                var p = new DynamicParameters();
-                p.Add(P_CLIENTE_ID, codCliente, DbType.String);
-                p.Add(FACTURA, idFacturaInt, DbType.Int32);
-
                 var rows = conn.Query(
-                    SP_FACTURA_DETALLE,
-                    p,
-                    commandType: CommandType.StoredProcedure
+                    $"exec {SP_FACTURA_DETALLE} @p1, @p2, @p3;",
+                    new
+                    {
+                        p1 = codCliente,
+                        p2 = idFacturaInt,
+                        p3 = tipo
+                    },
+                    commandType: CommandType.Text
                 ).ToList();
 
                 var lista = new List<FeFacturaDetalleItem>(rows.Count);
 
                 foreach (var r in rows)
                 {
-
                     int linea = TryParseInt(ExtractKeyFromParametros(r, "NUM_LINEA"));
 
                     string? codigo =
@@ -558,6 +560,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                     decimal total = TryParseDecimal(ExtractKeyFromParametros(r, "MONTO_TOTAL"));
                     decimal descuento = TryParseDecimal(ExtractKeyFromParametros(r, "MONTO_DESCUENTO"));
                     decimal impuesto = TryParseDecimal(ExtractKeyFromParametros(r, "MONTO_IMPUESTO"));
+
                     string? cabys = ExtractKeyFromParametros(r, "CABYS_DESC");
 
                     bool filaVacia =
@@ -598,6 +601,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 return DbHelper.CreateErrorResponse<List<FeFacturaDetalleItem>>(ex.Message);
             }
         }
+
         /// <summary>
         /// Obtiene el resumen  usando spProGrX_Facturas_Consulta_Rsm.
         /// </summary>
@@ -1682,8 +1686,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return p;
         }
-
-
         /// <summary>
         /// Ejecuta cabecera (Tipo = 'R').
         /// </summary>
@@ -1701,7 +1703,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 commandType: CommandType.StoredProcedure
             );
         }
-
         private static FeFacturasResumenCabecera MapFacturasResumenCabecera(object? head)
         {
             var cab = new FeFacturasResumenCabecera
@@ -1722,14 +1723,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return cab;
         }
-
         private static string? GetVal(IDictionary<string, object?> d, string key)
         {
             if (!d.TryGetValue(key, out var v) || v == null || v == DBNull.Value)
                 return null;
             return v is DateTime dt ? dt.ToString("yyyy-MM-ddTHH:mm:ss") : v.ToString();
         }
-
         private static DateTime? TryParseDate(string? s)
         {
             s = (s ?? "").Trim();
@@ -1741,7 +1740,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return null;
         }
-
         private static DateTime? TryParseDateTimeNullable(string? s)
         {
             s = (s ?? "").Trim();
@@ -1755,7 +1753,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return null;
         }
-
         /// <summary>
         /// Ejecuta detalle.
         /// </summary>
@@ -1779,7 +1776,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return lista;
         }
-
         private FeFacturaResumenItem MapFacturasResumenDetalleItem(object r)
         {
             var item = new FeFacturaResumenItem
@@ -1796,7 +1792,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             NormalizeTipo(item);
             return item;
         }
-
         private static void NormalizeTipo(FeFacturaResumenItem item)
         {
             if (string.IsNullOrWhiteSpace(item.tipo)) return;
@@ -1805,7 +1800,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
             if (t == "01") item.tipo = "FE";
             else if (t == "03") item.tipo = "NC";
         }
-
         private static string? FirstAny(object r, params string[] keys)
         {
             if (keys == null || keys.Length == 0) return null;
@@ -1848,7 +1842,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 ? firstNonZero
                 : TryParseDecimal(ExtractKeyFromParametros(r, keys[^1]));
         }
-
         /// <summary>
         /// Ordena lista de resumen por sortField/sortOrder.
         /// </summary>
@@ -1902,16 +1895,19 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return lista;
         }
-
         private static FeFacturaItem MapFacturaRow(object r)
         {
             var tipoDoc = ExtractKeyFromParametros(r, KEY_TIPO_DOCUMENTO);
             var fecha = ReadFechaEmision(r);
 
+            var numeroConsecutivo = (ExtractKeyFromParametros(r, KEY_NUMERO_CONSECUTIVO) ?? "").Trim();
+            var clave = (ExtractKeyFromParametros(r, KEY_CLAVE) ?? "").Trim();
+
             return new FeFacturaItem
             {
                 tipo = (tipoDoc == "01") ? "FE" : "NC",
-                comprobante = "_" + (ExtractKeyFromParametros(r, KEY_NUMERO_CONSECUTIVO) ?? ""),
+
+                comprobante = numeroConsecutivo,
 
                 identificacion = ExtractKeyFromParametros(r, KEY_CEDULA),
                 razon_social = ExtractKeyFromParametros(r, KEY_RAZON_SOCIAL),
@@ -1924,8 +1920,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 total_impuestos = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_IMPUESTOS)),
                 total_descuentos = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_DESCUENTOS)),
                 total_comprobante = TryParseDecimal(ExtractKeyFromParametros(r, KEY_TOTAL_COMPROBANTE)),
-
-                clave = "_" + (ExtractKeyFromParametros(r, KEY_CLAVE) ?? ""),
+                clave = clave,
 
                 xml_respuesta = ExtractKeyFromParametros(r, KEY_XML_RESPUESTA),
                 observaciones = ExtractKeyFromParametros(r, KEY_OBSERVACIONES),
@@ -1933,7 +1928,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
                 id_factura = TryParseInt(ExtractKeyFromParametros(r, KEY_ID_FACTURA))
             };
         }
-
         private static DateTime? ReadFechaEmision(object r)
         {
             if (r is IDictionary<string, object> d &&
@@ -1978,7 +1972,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return null;
         }
-
         private static decimal TryParseDecimal(string? s)
         {
             s = (s ?? "").Trim();
@@ -1995,7 +1988,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
 
             return 0m;
         }
-
         private static int TryParseInt(string? s)
         {
             s = (s ?? "").Trim();
@@ -2008,30 +2000,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             if (rsConsec == null) return 0;
 
-            try
+            if (rsConsec is IDictionary<string, object?> d)
             {
-                var d = rsConsec as IDictionary<string, object?>;
-                if (d != null && d.TryGetValue("Consecutivo", out var v) && v != null)
+                if (d.TryGetValue("Consecutivo", out var v) && v != null && v != DBNull.Value)
+                    return Convert.ToInt32(v);
+
+                if (d.TryGetValue("CONSECUTIVO", out v) && v != null && v != DBNull.Value)
                     return Convert.ToInt32(v);
             }
-            catch (Exception)
-            {
-                // aqui cae la excepcion
-            }
 
-            try
-            {
-                var p = rsConsec.GetType().GetProperty("Consecutivo");
-                var v = p?.GetValue(rsConsec, null);
-                if (v == null) return 0;
-                return Convert.ToInt32(v);
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
+            var p = rsConsec.GetType().GetProperty("Consecutivo") ?? rsConsec.GetType().GetProperty("CONSECUTIVO");
+            if (p == null) return 0;
+
+            var val = p.GetValue(rsConsec, null);
+            if (val == null || val == DBNull.Value) return 0;
+
+            return Convert.ToInt32(val);
         }
-
         /// <summary>
         /// Retorna codigo interno.
         /// </summary>
@@ -2039,30 +2024,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             if (ins == null) return 0;
 
-            try
+            if (ins is IDictionary<string, object?> d)
             {
-                var d = ins as IDictionary<string, object?>;
-                if (d != null && d.TryGetValue("CODIGO_INTERNO", out var v) && v != null)
+                if (d.TryGetValue("CODIGO_INTERNO", out var v) && v != null && v != DBNull.Value)
+                    return Convert.ToInt64(v);
+
+                if (d.TryGetValue("Codigo_Interno", out v) && v != null && v != DBNull.Value)
                     return Convert.ToInt64(v);
             }
-            catch (Exception)
-            {
-                //aqui cae a la excepcion
-            }
 
-            try
-            {
-                var p = ins.GetType().GetProperty("CODIGO_INTERNO");
-                var v = p?.GetValue(ins, null);
-                if (v == null) return 0;
-                return Convert.ToInt64(v);
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
+            var t = ins.GetType();
+            var p = t.GetProperty("CODIGO_INTERNO") ?? t.GetProperty("Codigo_Interno");
+            if (p == null) return 0;
+
+            var val = p.GetValue(ins, null);
+            if (val == null || val == DBNull.Value) return 0;
+
+            return Convert.ToInt64(val);
         }
-
         /// <summary>
         /// Retorna id de la factura.
         /// </summary>
@@ -2070,30 +2049,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Nucleo
         {
             if (enc == null) return 0;
 
-            try
+            if (enc is IDictionary<string, object?> d)
             {
-                var d = enc as IDictionary<string, object?>;
-                if (d != null && d.TryGetValue("id_Factura", out var v) && v != null)
+                if (d.TryGetValue("id_Factura", out var v) && v != null && v != DBNull.Value)
+                    return Convert.ToInt64(v);
+
+                if (d.TryGetValue("ID_FACTURA", out v) && v != null && v != DBNull.Value)
                     return Convert.ToInt64(v);
             }
-            catch (Exception)
-            {
-                //aqui cae a la excepcion
-            }
 
-            try
-            {
-                var p = enc.GetType().GetProperty("id_Factura");
-                var v = p?.GetValue(enc, null);
-                if (v == null) return 0;
-                return Convert.ToInt64(v);
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
+            var t = enc.GetType();
+            var p = t.GetProperty("id_Factura") ?? t.GetProperty("ID_FACTURA");
+            if (p == null) return 0;
+
+            var val = p.GetValue(enc, null);
+            if (val == null || val == DBNull.Value) return 0;
+
+            return Convert.ToInt64(val);
         }
-
         /// <summary>
         /// Aplica sort a la lista de clientes.
         /// </summary>
