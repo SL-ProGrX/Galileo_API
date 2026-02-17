@@ -298,8 +298,429 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         }
 
 
+        public ErrorDto Crd_CatalogoPolizas_Guardar(int CodEmpresa, string usuario, CrdCatalogoPolizasGuardarDto dto)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+            // Validaciones mínimas (equivalente a lo crítico del VB)
+            var codPoliza = (dto.cod_poliza ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(codPoliza))
+                return DbHelper.ErrorResponse("Debe indicar el código de la póliza.");
+
+            if (string.IsNullOrWhiteSpace(dto.descripcion))
+                return DbHelper.ErrorResponse("Debe indicar la descripción de la póliza.");
+
+            if (dto.vence_dia is null || dto.vence_dia < 1 || dto.vence_dia > 30)
+                return DbHelper.ErrorResponse("El día de vencimiento debe estar entre 1 y 30.");
+
+            // Defaults como en VB (si vienen vacíos)
+            var baseCod = (dto.@base ?? "C").Trim();
+            var tipoCod = (dto.tipo ?? "P").Trim();
+
+            var existe = conn.ExecuteScalar<int>(
+                "SELECT COUNT(1) FROM CRD_CATALOGO_POLIZAS WHERE cod_poliza = @cod_poliza",
+                new { cod_poliza = codPoliza }
+            ) > 0;
+
+            if (!existe)
+            {
+                const string insertSql = @"
+                            INSERT INTO CRD_CATALOGO_POLIZAS
+                            (
+                              cod_poliza, descripcion, base, tipo, valor, porc_formalizacion, plazo_meses, cod_cuenta,
+                              codigo_retencion, codigo_cargo, cobertura_inicio, cobertura_corte, cod_aseguradora, contrato_num,
+                              cobertura_vencimiento, vence_frecuencia, vence_dia, poliza_general, cobertura_region,
+                              integra_plan_pagos, poliza_general_tipo, poliza_general_monto, iva_aplica, iva_incluido,
+                              iva_porcentaje, id_poliza_grupo, cod_cuenta_gasto, cod_unidad, cod_centro_costo,
+                              registro_fecha, registro_usuario
+                            )
+                            VALUES
+                            (
+                              @cod_poliza, @descripcion, @base, @tipo, @valor, @porc_formalizacion, @plazo_meses, @cod_cuenta,
+                              @codigo_retencion, @codigo_cargo, @cobertura_inicio, @cobertura_corte, @cod_aseguradora, @contrato_num,
+                              @cobertura_vencimiento, @vence_frecuencia, @vence_dia, @poliza_general, @cobertura_region,
+                              @integra_plan_pagos, @poliza_general_tipo, @poliza_general_monto, @iva_aplica, @iva_incluido,
+                              @iva_porcentaje, @id_poliza_grupo, @cod_cuenta_gasto, @cod_unidad, @cod_centro_costo,
+                              GETDATE(), @registro_usuario
+                            );";
+
+                var rows = conn.Execute(insertSql, new
+                {
+                    cod_poliza = codPoliza,
+                    descripcion = (dto.descripcion ?? "").Trim(),
+                    @base = baseCod,
+                    @tipo = tipoCod,
+                    valor = dto.valor ?? 0m,
+                    porc_formalizacion = dto.porc_formalizacion ?? 0m,
+                    plazo_meses = dto.plazo_meses ?? 0,
+                    cod_cuenta = (dto.cod_cuenta ?? "").Trim(),
+
+                    codigo_retencion = (dto.codigo_retencion ?? "").Trim(),
+                    codigo_cargo = (dto.codigo_cargo ?? "").Trim(),
+
+                    cobertura_inicio = dto.cobertura_inicio ?? 0m,
+                    cobertura_corte = dto.cobertura_corte ?? 0m,
+
+                    cod_aseguradora = string.IsNullOrWhiteSpace(dto.cod_aseguradora) ? null : dto.cod_aseguradora.Trim(),
+                    contrato_num = (dto.contrato_num ?? "").Trim(),
+
+                    cobertura_vencimiento = dto.cobertura_vencimiento ?? DateTime.Now,
+                    vence_frecuencia = (dto.vence_frecuencia ?? "").Trim(),
+                    vence_dia = dto.vence_dia,
+
+                    poliza_general = dto.poliza_general ?? 0,
+                    cobertura_region = dto.cobertura_region ?? 0,
+                    integra_plan_pagos = dto.integra_plan_pagos ?? 0,
+
+                    poliza_general_tipo = (dto.poliza_general_tipo ?? "C").Trim(),
+                    poliza_general_monto = dto.poliza_general_monto ?? 0m,
+
+                    iva_aplica = dto.iva_aplica ?? 0,
+                    iva_incluido = dto.iva_incluido ?? 0,
+                    iva_porcentaje = dto.iva_porcentaje ?? 0m,
+
+                    id_poliza_grupo = dto.id_poliza_grupo, // null permitido
+
+                    cod_cuenta_gasto = (dto.cod_cuenta_gasto ?? "").Trim(),
+                    cod_unidad = (dto.cod_unidad ?? "").Trim(),
+                    cod_centro_costo = (dto.cod_centro_costo ?? "").Trim(),
+
+                    registro_usuario = usuario
+                });
+
+                var result = rows > 0;
+                return result ? DbHelper.OkResponse("Póliza creada correctamente.") : DbHelper.ErrorResponse("No se pudo crear la póliza.");
+            }
+            else
+            {
+                const string insertSql = @"
+                        INSERT INTO CRD_CATALOGO_POLIZAS
+                        (
+                          cod_poliza, descripcion, base, tipo, valor, porc_formalizacion, plazo_meses, cod_cuenta,
+                          codigo_retencion, codigo_cargo, cobertura_inicio, cobertura_corte, cod_aseguradora, contrato_num,
+                          cobertura_vencimiento, vence_frecuencia, vence_dia, poliza_general, cobertura_region,
+                          integra_plan_pagos, poliza_general_tipo, poliza_general_monto, iva_aplica, iva_incluido,
+                          iva_porcentaje, id_poliza_grupo, cod_cuenta_gasto, cod_unidad, cod_centro_costo,
+                          registro_fecha, registro_usuario
+                        )
+                        VALUES
+                        (
+                          @cod_poliza, @descripcion, @base, @tipo, @valor, @porc_formalizacion, @plazo_meses, @cod_cuenta,
+                          @codigo_retencion, @codigo_cargo, @cobertura_inicio, @cobertura_corte, @cod_aseguradora, @contrato_num,
+                          @cobertura_vencimiento, @vence_frecuencia, @vence_dia, @poliza_general, @cobertura_region,
+                          @integra_plan_pagos, @poliza_general_tipo, @poliza_general_monto, @iva_aplica, @iva_incluido,
+                          @iva_porcentaje, @id_poliza_grupo, @cod_cuenta_gasto, @cod_unidad, @cod_centro_costo,
+                          GETDATE(), @registro_usuario
+                        );";
+
+                var rows = conn.Execute(insertSql, new
+                {
+                    cod_poliza = codPoliza,
+                    descripcion = (dto.descripcion ?? "").Trim(),
+                    @base = baseCod,
+                    @tipo = tipoCod,
+                    valor = dto.valor ?? 0m,
+                    porc_formalizacion = dto.porc_formalizacion ?? 0m,
+                    plazo_meses = dto.plazo_meses ?? 0,
+                    cod_cuenta = (dto.cod_cuenta ?? "").Trim(),
+
+                    codigo_retencion = (dto.codigo_retencion ?? "").Trim(),
+                    codigo_cargo = (dto.codigo_cargo ?? "").Trim(),
+
+                    cobertura_inicio = dto.cobertura_inicio ?? 0m,
+                    cobertura_corte = dto.cobertura_corte ?? 0m,
+
+                    cod_aseguradora = string.IsNullOrWhiteSpace(dto.cod_aseguradora) ? null : dto.cod_aseguradora.Trim(),
+                    contrato_num = (dto.contrato_num ?? "").Trim(),
+
+                    cobertura_vencimiento = dto.cobertura_vencimiento ?? DateTime.Now,
+                    vence_frecuencia = (dto.vence_frecuencia ?? "").Trim(),
+                    vence_dia = dto.vence_dia,
+
+                    poliza_general = dto.poliza_general ?? 0,
+                    cobertura_region = dto.cobertura_region ?? 0,
+                    integra_plan_pagos = dto.integra_plan_pagos ?? 0,
+
+                    poliza_general_tipo = (dto.poliza_general_tipo ?? "C").Trim(),
+                    poliza_general_monto = dto.poliza_general_monto ?? 0m,
+
+                    iva_aplica = dto.iva_aplica ?? 0,
+                    iva_incluido = dto.iva_incluido ?? 0,
+                    iva_porcentaje = dto.iva_porcentaje ?? 0m,
+
+                    id_poliza_grupo = dto.id_poliza_grupo, // null permitido
+
+                    cod_cuenta_gasto = (dto.cod_cuenta_gasto ?? "").Trim(),
+                    cod_unidad = (dto.cod_unidad ?? "").Trim(),
+                    cod_centro_costo = (dto.cod_centro_costo ?? "").Trim(),
+
+                    registro_usuario = usuario
+                });
+
+                var result = rows > 0;
+                return result ? DbHelper.OkResponse("Póliza actualizada correctamente.") : DbHelper.ErrorResponse("No se pudo actualizar la póliza.");
+            }
+        }
+
+
         #endregion
 
+            #region Asignacion
+
+            /// <summary>
+            /// Método para construir el árbol de asignación de pólizas (VB6: sbCargaArbol), que muestra las líneas, destinos y garantías disponibles para asignar a una póliza. El nodo raíz es "Lineas", debajo van las líneas (L), luego los destinos (D) y finalmente las garantías (G). Cada nodo tiene un key con formato específico para identificar su tipo y código.
+            /// </summary>
+            /// <param name="CodEmpresa"></param>
+            /// <returns></returns>
+        public ErrorDto<List<CrdTreeNodeDto>> Crd_Asignacion_Arbol_Raiz(int CodEmpresa)
+        {
+            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+            {
+                const string sql = @"
+                select codigo, descripcion
+                from catalogo
+                where retencion = 'N' and poliza = 'N' and activo = 1
+                order by codigo";
+
+                var lineas = conn.Query(sql).Select(r =>
+                {
+                    string codigo = (r.codigo ?? "").ToString().Trim();
+                    string desc = (r.descripcion ?? "").ToString().Trim();
+
+                    return new CrdTreeNodeDto
+                    {
+                        key = $"0x0{codigo}L",
+                        label = $"{codigo} - {desc}",
+                        leaf = false,
+                        children = new List<CrdTreeNodeDto>
+                        {
+                            new CrdTreeNodeDto { key="__loading__", label="Cargando...", leaf=true }
+                        },
+                        data = new { tipo = "L", codigo = codigo }
+                    };
+                }).ToList();
+
+                var root = new CrdTreeNodeDto
+                {
+                    key = "Lineas",
+                    label = "Lineas",
+                    leaf = false,
+                    children = lineas,
+                    data = new { tipo = "ROOT" }
+                };
+
+                return new List<CrdTreeNodeDto> { root };
+            });
+        }
+
+        /// <summary>
+        /// Método para cargar los nodos hijos (destinos y garantías) de un nodo de línea específico en el árbol de asignación (VB6: sbCargaArbol, expand de línea). Solo se implementa para nodos de línea (terminan en "L"). El método extrae el código de la línea del key del nodo, consulta las garantías y destinos asociados a esa línea, y construye los nodos hijos correspondientes con un formato específico en el key para identificar su tipo (D para destino, G para garantía) y su código. Si no hay destinos o garantías, el nodo se marca como hoja (leaf = true).
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="nodeKey"></param>
+        /// <returns></returns>
+        public ErrorDto<List<CrdTreeNodeDto>> Crd_Asignacion_Arbol_Hijos(int CodEmpresa, string nodeKey)
+        {
+            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+            {
+                if (string.IsNullOrWhiteSpace(nodeKey))
+                    return new List<CrdTreeNodeDto>();
+
+                // Solo implementamos por ahora expand de Linea (termina en L)
+                if (!nodeKey.EndsWith("L", StringComparison.OrdinalIgnoreCase))
+                    return new List<CrdTreeNodeDto>();
+
+                string codigo = IndiceCodigo(nodeKey);
+                if (string.IsNullOrWhiteSpace(codigo))
+                    return new List<CrdTreeNodeDto>();
+
+                const string sqlGarantias = @"
+                select T.garantia, T.descripcion
+                from crd_catalogo_garantias C
+                inner join crd_garantia_tipos T on C.garantia = T.garantia
+                where C.codigo = @codigo";
+
+                const string sqlDestinos = @"
+                select cod_destino, descripcion
+                from catalogo_destinos
+                where cod_destino in (
+                    select cod_destino
+                    from CATALOGO_DESTINOSASG
+                    where codigo = @codigo
+                )";
+
+                var garantias = conn.Query(sqlGarantias, new { codigo })
+                    .Select(g => new
+                    {
+                        garantia = (g.garantia ?? "").ToString().Trim(),
+                        descripcion = (g.descripcion ?? "").ToString().Trim()
+                    })
+                    .Where(x => x.garantia != "")
+                    .ToList();
+
+                var destinos = conn.Query(sqlDestinos, new { codigo })
+                    .Select(d => new
+                    {
+                        cod_destino = (d.cod_destino ?? "").ToString().Trim(),
+                        descripcion = (d.descripcion ?? "").ToString().Trim()
+                    })
+                    .Where(x => x.cod_destino != "")
+                    .ToList();
+
+                // VB6: por cada destino agrega el nodo D y dentro todas las garantias G
+                var hijos = destinos.Select(dest =>
+                {
+                    var destinoKey = $"0x0{codigo}-{dest.cod_destino}D";
+
+                    var hijosGarantias = garantias.Select(g => new CrdTreeNodeDto
+                    {
+                        key = $"{destinoKey}-{g.garantia}G",
+                        label = g.descripcion,
+                        leaf = true,
+                        data = new { tipo = "G", codigo, cod_destino = dest.cod_destino, garantia = g.garantia }
+                    }).ToList();
+
+                    return new CrdTreeNodeDto
+                    {
+                        key = destinoKey,
+                        label = $"{dest.cod_destino} - {dest.descripcion}",
+                        leaf = hijosGarantias.Count == 0,
+                        children = hijosGarantias,
+                        data = new { tipo = "D", codigo, cod_destino = dest.cod_destino }
+                    };
+                }).ToList();
+
+                return hijos;
+            });
+        }
+
+        private static string IndiceCodigo(string nodeKey)
+        {
+            // VB6: Mid(xkey,4) y luego quitar último char (L/D/G)
+            // "0x0ABC123L" -> "ABC123"
+            if (string.IsNullOrWhiteSpace(nodeKey)) return "";
+            if (!nodeKey.StartsWith("0x0") || nodeKey.Length < 5) return "";
+
+            var tmp = nodeKey.Substring(3);               // quita "0x0"
+            tmp = tmp.Substring(0, tmp.Length - 1);       // quita sufijo L/D/G
+            return tmp;
+        }
+
+
+        /// <summary>
+        /// Lista de pólizas para la asignación (equivalente a sbCargaLswAdicional VB6).
+        /// Retorna todas las pólizas y marca asignado=true si existe vínculo en CRD_CATALOGO_POLIZAS_ASG.
+        /// </summary>
+        public ErrorDto<List<CrdCatalogoPolizasAsignacionDto>> Crd_CatalogoPolizas_Asignacion_Obtener(
+            int CodEmpresa,
+            string codigo,
+            string cod_destino,
+            string garantia)
+        {
+            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+            {
+                //elimino ultimo caracter del key para obtener el codigo (L/D/G)
+                string codDestino = cod_destino.Substring(0, cod_destino.Length - 1);
+                string codGarantia = garantia.Substring(0, garantia.Length - 1);
+
+                const string query = @"
+                        SELECT
+                            R.cod_poliza,
+                            R.descripcion,
+                            R.tipo,
+                            R.valor,
+                            CASE WHEN A.codigo IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS asignado
+                        FROM CRD_CATALOGO_POLIZAS R
+                        LEFT JOIN CRD_CATALOGO_POLIZAS_ASG A
+                            ON  R.cod_poliza  = A.cod_poliza
+                            AND A.codigo      = @codigo
+                            AND A.cod_destino = @cod_destino
+                            AND A.garantia    = @garantia
+                        ORDER BY asignado DESC, R.cod_poliza;";
+
+                var response = conn.Query<CrdCatalogoPolizasAsignacionDto>(query, new
+                {
+                    codigo = (codigo ?? "").Trim(),
+                    cod_destino = codDestino,
+                    garantia = codGarantia
+                }).ToList();
+
+                return response;
+            });
+        }
+
+        /// <summary>
+        /// Asigna o desasigna una póliza a una combinación (codigo, destino, garantia).
+        /// Equivalente a lsw_ItemCheck en VB6.
+        /// </summary>
+        public ErrorDto Crd_CatalogoPolizas_Asignacion_Actualizar(
+            int CodEmpresa,
+            string usuario,
+            CrdCatalogoPolizasAsignacionUpdateDto datos)
+        {
+            using var connection = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+
+            try
+            {
+                //elimino ultimo caracter del key para obtener el codigo (L/D/G)
+                string codDestino = datos.cod_destino.Substring(0, datos.cod_destino.Length - 1);
+                string codGarantia = datos.garantia.Substring(0, datos.garantia.Length - 1);
+
+                if (datos.asignado)
+                {
+                    const string insertQuery = @"
+                            IF NOT EXISTS (
+                                SELECT 1
+                                FROM CRD_CATALOGO_POLIZAS_ASG
+                                WHERE cod_poliza = @cod_poliza
+                                  AND codigo = @codigo
+                                  AND cod_destino = @cod_destino
+                                  AND garantia = @garantia
+                            )
+                            INSERT INTO CRD_CATALOGO_POLIZAS_ASG
+                                (cod_poliza, codigo, cod_destino, garantia)
+                            VALUES
+                                (@cod_poliza, @codigo, @cod_destino, @garantia);";
+
+                    connection.Execute(insertQuery, new
+                    {
+                        datos.cod_poliza,
+                        datos.codigo,
+                        cod_destino = codDestino,
+                        garantia = codGarantia
+                    });
+
+                    return DbHelper.OkResponse("Asignación Guardada Correctamente");
+                }
+                else
+                {
+                    const string deleteQuery = @"
+                            DELETE FROM CRD_CATALOGO_POLIZAS_ASG
+                            WHERE cod_poliza = @cod_poliza
+                              AND codigo = @codigo
+                              AND cod_destino = @cod_destino
+                              AND garantia = @garantia;";
+
+                    connection.Execute(deleteQuery, new
+                    {
+                        datos.cod_poliza,
+                        datos.codigo,
+                        cod_destino = codDestino,
+                        garantia = codGarantia
+                    });
+
+                    return DbHelper.OkResponse("Asignación Eliminada Correctamente");
+                }
+
+                
+            }
+            catch (Exception ex)
+            {
+                return DbHelper.ErrorResponse("Error al actualizar asignación: " + ex.Message);
+            }
+        }
+
+
+        #endregion
 
 
         #region Acreedores

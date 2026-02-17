@@ -144,5 +144,80 @@
         public int cantidad { get; set; } = 0;      // # de asignaciones
     }
 
+    public class CrdTreeNodeDto
+    {
+        public string key { get; set; } = string.Empty;     // ej: "Lineas" o "0x0ABC123L"
+        public string label { get; set; } = string.Empty;   // texto visible
+        public bool leaf { get; set; }                      // true si no se expande
+        public List<CrdTreeNodeDto>? children { get; set; } // opcional (si ya vienen cargados)
+        public object? data { get; set; }                   // opcional: metadatos
+    }
 
+    public class CrdCatalogoPolizasAsignacionDto
+    {
+        public string cod_poliza { get; set; } = string.Empty;
+        public string? descripcion { get; set; }
+
+        // rs!Tipo en VB6 es "P" o "M"
+        public string? tipo { get; set; }
+
+        public decimal? valor { get; set; }
+
+        // equivalente a: itmX.Checked = IIf(IsNull(rs!Existe), False, True)
+        public bool asignado { get; set; } = false;
+    }
+
+    public class CrdCatalogoPolizasAsignacionUpdateDto
+    {
+        public string cod_poliza { get; set; } = string.Empty;
+        public string codigo { get; set; } = string.Empty;
+        public string cod_destino { get; set; } = string.Empty;
+        public string garantia { get; set; } = string.Empty;
+        public bool asignado { get; set; } = false;
+    }
+
+    public class CrdCatalogoPolizasGuardarDto
+    {
+        public string? cod_poliza { get; set; }
+        public string? descripcion { get; set; }
+
+        // Combos (se mandan ya como código)
+        public string? @base { get; set; }                 // C/A/X/S/P
+        public string? tipo { get; set; }                 // P/M  (Porcentaje/Monto)
+
+        public decimal? valor { get; set; }
+        public decimal? porc_formalizacion { get; set; }
+        public int? plazo_meses { get; set; }
+
+        public string? cod_cuenta { get; set; }           // ya formateada o normalizada por el front/back
+        public string? codigo_retencion { get; set; }
+        public string? codigo_cargo { get; set; }
+
+        public decimal? cobertura_inicio { get; set; }
+        public decimal? cobertura_corte { get; set; }
+
+        public string? cod_aseguradora { get; set; }      // puede venir null
+        public string? contrato_num { get; set; }
+
+        public DateTime? cobertura_vencimiento { get; set; }
+        public string? vence_frecuencia { get; set; }     // A/M (Anual/Mensual) o lo que uses en DB
+        public int? vence_dia { get; set; }               // 1..30
+
+        public int? poliza_general { get; set; }          // 0/1
+        public int? cobertura_region { get; set; }        // 0/1
+        public int? integra_plan_pagos { get; set; }      // 0/1
+
+        public string? poliza_general_tipo { get; set; }  // C/A (Crédito/Asociados)
+        public decimal? poliza_general_monto { get; set; }
+
+        public int? iva_aplica { get; set; }              // 0/1
+        public int? iva_incluido { get; set; }            // 0/1
+        public decimal? iva_porcentaje { get; set; }
+
+        public int? id_poliza_grupo { get; set; }         // cboAplicacion (puede venir null)
+
+        public string? cod_cuenta_gasto { get; set; }
+        public string? cod_unidad { get; set; }
+        public string? cod_centro_costo { get; set; }
+    }
 }
