@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
 using Galileo.Models.ERROR;
-using PgxAPI.Models.ProGrX_Nucleo;
+using Galileo.Models.ProGrX_Nucleo;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
