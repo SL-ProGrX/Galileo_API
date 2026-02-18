@@ -3,7 +3,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace PgxAPI.Controllers
+namespace Galileo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]

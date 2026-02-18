@@ -29,4 +29,14 @@
         public List<SociosLookupData>? lista { get; set; }
     }
 
+    public class SysGestionesBitacoraFiltro
+    {
+        public string? ClienteBuscar { get; set; }
+        public string? GestionCod { get; set; }
+        public string? UsuarioBuscar { get; set; }
+        public string? FechaInicio { get; set; }
+        public string? FechaFin { get; set; }
+        public bool TodasFechas { get; set; }
+        public FiltrosLazyLoadData? Filtros { get; set; }
+    }
 }

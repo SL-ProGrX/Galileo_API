@@ -10,7 +10,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo.DataBaseTier;
 using Galileo_API.DataBaseTier;
-using PgxAPI.Models.ProGrX_Nucleo;
+using Galileo.Models.ProGrX_Nucleo;
 
 namespace Galileo.DataBaseTier.ProGrX_Nucleo
 {
