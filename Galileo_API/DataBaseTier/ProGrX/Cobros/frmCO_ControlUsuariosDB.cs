@@ -90,12 +90,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 if (string.IsNullOrWhiteSpace(pActual))
                 {
-                    var orderDirection = scrollCode == 1 ? "ASC" : "DESC";
+                    const string sqlFirst = @"
+                    SELECT TOP 1 usuario
+                    FROM cbr_usuarios
+                    ORDER BY
+                        CASE WHEN @scroll = 1 THEN usuario END ASC,
+                        CASE WHEN @scroll <> 1 THEN usuario END DESC;";
 
-                    next = (conn.QueryFirstOrDefault<string>(
-                        $"SELECT TOP 1 usuario FROM cbr_usuarios ORDER BY usuario {orderDirection};"
-                    ) ?? "").Trim();
+                    next = (conn.QueryFirstOrDefault<string>(sqlFirst, new
+                    {
+                        scroll = scrollCode
+                    }) ?? "").Trim();
                 }
+
                 else
                 {
                     const string sql = @"
@@ -129,7 +136,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoControlUsuariosData>(ex.Message);
             }
         }
-
         /// <summary>
         /// Verifica que el usuario exista.
         /// <param name="CodEmpresa"></param>
@@ -242,8 +248,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 p.Add(USUARIO, pUsuario, DbType.String);
 
                 var rows = conn.Query("dbo.spCrd_SGT_Bancos", p, commandType: CommandType.StoredProcedure);
-                var dictRows = rows.Cast<IDictionary<string, object?>>();
-
                 var itemKeys = new[] { "item", "ID_BANCO", "COD_BANCO", "id_banco", "cod_banco" };
                 var descKeys = new[] { DESCRIPCION_MINUS, DESCRIPCION_MAYUS, DESCRIPCION };
 
