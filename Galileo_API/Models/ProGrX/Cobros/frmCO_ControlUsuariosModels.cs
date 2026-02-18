@@ -69,17 +69,17 @@
         public string cedula { get; set; } = string.Empty;
         public string nombre { get; set; } = string.Empty;
 
-        public int estado { get; set; }
-        public int aplica_comision { get; set; } 
-        public int operador_externo { get; set; }
+        public int? estado { get; set; }
+        public int? aplica_comision { get; set; } 
+        public int? operador_externo { get; set; }
 
-        public decimal porc_comision { get; set; }
-        public long tiempo_resolucion_com { get; set; }
+        public decimal? porc_comision { get; set; }
+        public long? tiempo_resolucion_com { get; set; }
 
-        public int cod_banco { get; set; }
+        public int? cod_banco { get; set; }
         public string tipo_documento { get; set; } = string.Empty;
 
-        public bool edita { get; set; }
+        public bool? edita { get; set; }
         public string usuario_sesion { get; set; } = string.Empty;
     }
 
@@ -87,7 +87,7 @@
     {
         public string usuario { get; set; } = string.Empty;
         public string usuario_sesion { get; set; } = string.Empty;
-        public bool asignar { get; set; }
+        public bool? asignar { get; set; }
         public int? id_grupo { get; set; }
         public string? cod_clasificacion { get; set; }
     }

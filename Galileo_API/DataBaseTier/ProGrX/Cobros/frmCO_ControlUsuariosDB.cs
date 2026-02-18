@@ -14,7 +14,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDb;
         private const int vModulo = 4;
-
+        private const string USUARIO_INVALIDO = "Usuario inválido.";
+        private const string USUARIO_SESION_INVALIDO = "Usuario de sesión inválido.";
+        private const string USUARIO = "@Usuario";
+        private const string DESCRIPCION = "Descripcion";
+        private const string DESCRIPCION_MINUS = "descripcion";
+        private const string DESCRIPCION_MAYUS = "DESCRIPCION";
         public FrmCOControlUsuariosDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -29,7 +34,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public ErrorDto<CoControlUsuariosData> CO_Usuarios_Obtener(int CodEmpresa, string usuario)
         {
             if (string.IsNullOrWhiteSpace(usuario))
-                return DbHelper.CreateErrorResponse<CoControlUsuariosData>("Usuario inválido.", -2);
+                return DbHelper.CreateErrorResponse<CoControlUsuariosData>(USUARIO_INVALIDO, -2);
 
             var pUsuario = usuario.Trim();
 
@@ -143,7 +148,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (string.IsNullOrWhiteSpace(usuario))
             {
                 resp.Code = -2;
-                resp.Description = "Usuario inválido.";
+                resp.Description = USUARIO_INVALIDO;
                 return resp;
             }
 
@@ -232,43 +237,38 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public ErrorDto<List<DropDownListaGenericaModel>> CO_Bancos_Dropdown_Obtener(int CodEmpresa, string usuario_sesion)
         {
             if (string.IsNullOrWhiteSpace(usuario_sesion))
-                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>("Usuario de sesión inválido.", -2);
+                return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(USUARIO_SESION_INVALIDO, -2);
 
             var pUsuario = usuario_sesion.Trim();
 
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
                 var p = new DynamicParameters();
-                p.Add("@Usuario", pUsuario, DbType.String);
+                p.Add(USUARIO, pUsuario, DbType.String);
 
                 var rows = conn.Query("dbo.spCrd_SGT_Bancos", p, commandType: CommandType.StoredProcedure);
 
-                static string S(object? v) => (Convert.ToString(v) ?? string.Empty).Trim();
+                var itemKeys = new[] { "item", "ID_BANCO", "COD_BANCO", "id_banco", "cod_banco" };
+                var descKeys = new[] { DESCRIPCION_MINUS, DESCRIPCION_MAYUS, DESCRIPCION };
 
                 var lista = new List<DropDownListaGenericaModel>();
+
                 foreach (var r in rows)
                 {
                     var d = (IDictionary<string, object?>)r;
 
-                    var item = d.ContainsKey("item") ? S(d["item"])
-                             : d.ContainsKey("ID_BANCO") ? S(d["ID_BANCO"])
-                             : d.ContainsKey("COD_BANCO") ? S(d["COD_BANCO"])
-                             : d.ContainsKey("id_banco") ? S(d["id_banco"])
-                             : d.ContainsKey("cod_banco") ? S(d["cod_banco"])
-                             : string.Empty;
+                    var item = GetFirstNonEmpty(d, itemKeys);
+                    if (string.IsNullOrWhiteSpace(item)) continue;
 
-                    var desc = d.ContainsKey("descripcion") ? S(d["descripcion"])
-                             : d.ContainsKey("DESCRIPCION") ? S(d["DESCRIPCION"])
-                             : d.ContainsKey("Descripcion") ? S(d["Descripcion"])
-                             : string.Empty;
+                    var desc = GetFirstNonEmpty(d, descKeys);
 
-                    if (!string.IsNullOrWhiteSpace(item))
-                        lista.Add(new DropDownListaGenericaModel { item = item, descripcion = desc });
+                    lista.Add(new DropDownListaGenericaModel { item = item, descripcion = desc });
                 }
 
                 return lista;
             });
         }
+
         /// <summary>
         /// Lista cuentas bancarias por identificación.
         /// <param name="CodEmpresa"></param>
@@ -307,73 +307,36 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-            var response = new ErrorDto<CoControlUsuariosListaResult<CoControlUsuariosCuentasData>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CoControlUsuariosListaResult<CoControlUsuariosCuentasData>()
-            };
-            response.Result ??= new CoControlUsuariosListaResult<CoControlUsuariosCuentasData>();
+            var response = BuildListaResponse<CoControlUsuariosCuentasData>();
 
             try
             {
                 const string sql = @"
-                select 
-                    RTRIM(B.Descripcion) as Banco,
-                    case when C.tipo = 'A' then 'Ahorros' else 'Corriente' end as TipoDesc,
-                    C.cod_Divisa,
-                    C.CUENTA_INTERNA,
-                    C.CUENTA_INTERBANCA,
-                    C.ACTIVA,
-                    ISNULL(C.DESTINO,'') as DESTINO,
-                    ISNULL(CONVERT(varchar(19),C.REGISTRO_FECHA,120),'') as REGISTRO_FECHA,
-                    ISNULL(C.REGISTRO_USUARIO,'') as REGISTRO_USUARIO
-                from SYS_CUENTAS_BANCARIAS C
-                inner join TES_BANCOS_GRUPOS B on C.cod_banco = B.cod_grupo
-                where C.Identificacion = @cedula;";
+            select 
+                RTRIM(B.Descripcion) as Banco,
+                case when C.tipo = 'A' then 'Ahorros' else 'Corriente' end as TipoDesc,
+                C.cod_Divisa,
+                C.CUENTA_INTERNA,
+                C.CUENTA_INTERBANCA,
+                C.ACTIVA,
+                ISNULL(C.DESTINO,'') as DESTINO,
+                ISNULL(CONVERT(varchar(19),C.REGISTRO_FECHA,120),'') as REGISTRO_FECHA,
+                ISNULL(C.REGISTRO_USUARIO,'') as REGISTRO_USUARIO
+            from SYS_CUENTAS_BANCARIAS C
+            inner join TES_BANCOS_GRUPOS B on C.cod_banco = B.cod_grupo
+            where C.Identificacion = @cedula;";
 
                 var rows = conn.Query(sql, new { cedula = pCedula });
-
-                static string S(object? v) => (Convert.ToString(v) ?? string.Empty).Trim();
-                static int I(object? v)
-                {
-                    var s = Convert.ToString(v);
-                    return string.IsNullOrWhiteSpace(s) ? 0 : Convert.ToInt32(s);
-                }
 
                 var lista = new List<CoControlUsuariosCuentasData>();
                 foreach (var r in rows)
                 {
                     var d = (IDictionary<string, object?>)r;
-
-                    var cuentaInterna = d.ContainsKey("CUENTA_INTERNA") ? S(d["CUENTA_INTERNA"]) : string.Empty;
-                    var banco = d.ContainsKey("Banco") ? S(d["Banco"]) : string.Empty;
-                    var tipo = d.ContainsKey("TipoDesc") ? S(d["TipoDesc"]) : string.Empty;
-                    var divisa = d.ContainsKey("cod_Divisa") ? S(d["cod_Divisa"]) : string.Empty;
-
-                    var interbanca01 = d.ContainsKey("CUENTA_INTERBANCA") ? I(d["CUENTA_INTERBANCA"]) : 0;
-                    var destino = d.ContainsKey("DESTINO") ? S(d["DESTINO"]) : string.Empty;
-
-                    var activa01 = d.ContainsKey("ACTIVA") ? I(d["ACTIVA"]) : 0;
-                    var fecha = d.ContainsKey("REGISTRO_FECHA") ? S(d["REGISTRO_FECHA"]) : string.Empty;
-                    var usr = d.ContainsKey("REGISTRO_USUARIO") ? S(d["REGISTRO_USUARIO"]) : string.Empty;
-
-                    lista.Add(new CoControlUsuariosCuentasData
-                    {
-                        cuenta = cuentaInterna,
-                        banco = banco,
-                        tipo = tipo,
-                        cod_divisa = divisa,
-                        interbanca = interbanca01 == 1 ? "Sí" : "No",
-                        destino = destino,
-                        activa = activa01 == 1 ? "Activa" : "Cerrada",
-                        registro_fecha = fecha,
-                        registro_usuario = usr
-                    });
+                    lista.Add(MapCuenta(d));
                 }
 
-                response.Result.total = lista.Count;
-                response.Result.lista = lista;
+                response.Result!.total = lista.Count;
+                response.Result!.lista = lista;
                 return response;
             }
             catch (SqlException ex)
@@ -390,7 +353,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public ErrorDto<CoControlUsuariosListaResult<CoControlUsuariosGrupoItem>> CO_Usuarios_Grupos_Lista_Obtener(int CodEmpresa, string usuario)
         {
             if (string.IsNullOrWhiteSpace(usuario))
-                return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosGrupoItem>>("Usuario inválido.", -2);
+                return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosGrupoItem>>(USUARIO_INVALIDO, -2);
 
             var pUsuario = usuario.Trim();
 
@@ -400,7 +363,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 new CoControlUsuariosGrupoItem
                 {
                     id_grupo = I(V(d, "ID_GRUPO", "id_grupo", "Id_Grupo")),
-                    descripcion = S(V(d, "Descripcion", "DESCRIPCION", "descripcion")),
+                    descripcion = S(V(d, DESCRIPCION, DESCRIPCION_MAYUS, DESCRIPCION_MINUS)),
                     asignado = B01(V(d, "asignado", "ASIGNADO", "Asignado")),
                 }
             );
@@ -414,7 +377,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public ErrorDto<CoControlUsuariosListaResult<CoControlUsuariosCarteraItem>> CO_Usuarios_Carteras_Lista_Obtener(int CodEmpresa, string usuario)
         {
             if (string.IsNullOrWhiteSpace(usuario))
-                return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosCarteraItem>>("Usuario inválido.", -2);
+                return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosCarteraItem>>(USUARIO_INVALIDO, -2);
 
             var pUsuario = usuario.Trim();
 
@@ -424,7 +387,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 new CoControlUsuariosCarteraItem
                 {
                     cod_clasificacion = S(V(d, "COD_CLASIFICACION", "cod_clasificacion", "Cod_Clasificacion")),
-                    descripcion = S(V(d, "Descripcion", "DESCRIPCION", "descripcion")),
+                    descripcion = S(V(d, DESCRIPCION, DESCRIPCION_MAYUS, DESCRIPCION_MINUS)),
                     asignado = B01(V(d, "asignado", "ASIGNADO", "Asignado")),
                 }
             );
@@ -437,115 +400,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto CO_Usuarios_Guardar(int CodEmpresa, CoControlUsuariosGuardarRequest req)
         {
-            if (req == null)
-                return DbHelper.ErrorResponse("Solicitud inválida.", -2);
+            var err = ValidarGuardar(req);
+            if (err != null) return err;
 
-            if (string.IsNullOrWhiteSpace(req.usuario))
-                return DbHelper.ErrorResponse("Usuario no es válido.", -2);
-
-            if (string.IsNullOrWhiteSpace(req.nombre))
-                return DbHelper.ErrorResponse("Nombre no es válido.", -2);
-
-            if (string.IsNullOrWhiteSpace(req.cedula))
-                return DbHelper.ErrorResponse("Número de Identificación no es válida.", -2);
-
-            if (req.porc_comision < 0 || req.porc_comision > 100)
-                return DbHelper.ErrorResponse("Porcentaje de Comisión no es válida.", -2);
-
-            if (req.tiempo_resolucion_com < 0)
-                return DbHelper.ErrorResponse("Tiempo de Resolución no es válida.", -2);
-
-            if (string.IsNullOrWhiteSpace(req.usuario_sesion))
-                return DbHelper.ErrorResponse("Usuario de sesión inválido.", -2);
-
-            var user = req.usuario.Trim();
-            var userSesion = req.usuario_sesion.Trim();
+            var user = req.usuario!.Trim();
+            var userSesion = req.usuario_sesion!.Trim();
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
+
             try
             {
-                if (req.edita)
+                if (req.edita.GetValueOrDefault(false))
                 {
-                    const string sqlUpd = @"
-                    update cbr_usuarios
-                    set nombre = @nombre,
-                        cedula = @cedula,
-                        estado = @estado,
-                        aplica_comision = @aplica,
-                        Operador_Externo = @externo,
-                        cod_banco = @cod_banco,
-                        tipo_documento = @tipo_documento,
-                        porc_comision = @porc,
-                        tiempo_resolucion_com = @tiempo,
-                        Modifica_Fecha = getdate(),
-                        Modifica_Usuario = @usuario_mod
-                    where usuario = @usuario;";
-
-                    conn.Execute(sqlUpd, new
-                    {
-                        usuario = user,
-                        nombre = (req.nombre ?? string.Empty).Trim().ToUpperInvariant(),
-                        cedula = (req.cedula ?? string.Empty).Trim(),
-                        estado = req.estado == 1 ? 1 : 0,
-                        aplica = req.aplica_comision == 1 ? 1 : 0,
-                        externo = req.operador_externo == 1 ? 1 : 0,
-                        cod_banco = req.cod_banco,
-                        tipo_documento = (req.tipo_documento ?? string.Empty).Trim(),
-                        porc = req.porc_comision,
-                        tiempo = req.tiempo_resolucion_com,
-                        usuario_mod = userSesion
-                    });
-
-                    _securityMainDb.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = userSesion,
-                        DetalleMovimiento = $"Cobros > Control Usuarios > Modifica usuario: {user}",
-                        Movimiento = "Modifica - WEB",
-                        Modulo = vModulo
-                    });
-
+                    EjecutarUpdate(conn, user, userSesion, req);
+                    RegistrarBitacora(CodEmpresa, userSesion, $"Cobros > Control Usuarios > Modifica usuario: {user}", "Modifica - WEB");
                     return DbHelper.CreateOkResponse();
                 }
-                else
-                {
-                    const string sqlExiste = @"select count(1) from cbr_usuarios where usuario = @usuario;";
-                    var existe = conn.QuerySingle<int>(sqlExiste, new { usuario = user }) > 0;
-                    if (existe)
-                        return DbHelper.ErrorResponse("Usuario ya existe, verifique...", -2);
 
-                    const string sqlIns = @"
-                    insert into cbr_usuarios
-                    (usuario, nombre, cedula, estado, aplica_comision, Operador_Externo, cod_banco, tipo_documento, tiempo_resolucion_com, porc_comision, registro_fecha, registro_usuario)
-                    values
-                    (@usuario, @nombre, @cedula, @estado, @aplica, @externo, @cod_banco, @tipo_documento, @tiempo, @porc, getdate(), @usuario_reg);";
-
-                    conn.Execute(sqlIns, new
-                    {
-                        usuario = user,
-                        nombre = (req.nombre ?? string.Empty).Trim().ToUpperInvariant(),
-                        cedula = (req.cedula ?? string.Empty).Trim(),
-                        estado = req.estado == 1 ? 1 : 0,
-                        aplica = req.aplica_comision == 1 ? 1 : 0,
-                        externo = req.operador_externo == 1 ? 1 : 0,
-                        cod_banco = req.cod_banco,
-                        tipo_documento = (req.tipo_documento ?? string.Empty).Trim(),
-                        porc = req.porc_comision,
-                        tiempo = req.tiempo_resolucion_com,
-                        usuario_reg = userSesion
-                    });
-
-                    _securityMainDb.Bitacora(new BitacoraInsertarDto
-                    {
-                        EmpresaId = CodEmpresa,
-                        Usuario = userSesion,
-                        DetalleMovimiento = $"Cobros > Control Usuarios > Registra usuario: {user}",
-                        Movimiento = "Registra - WEB",
-                        Modulo = vModulo
-                    });
-
-                    return DbHelper.CreateOkResponse();
-                }
+                EjecutarInsert(conn, user, userSesion, req);
+                RegistrarBitacora(CodEmpresa, userSesion, $"Cobros > Control Usuarios > Registra usuario: {user}", "Registra - WEB");
+                return DbHelper.CreateOkResponse();
             }
             catch (SqlException ex)
             {
@@ -564,17 +438,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse("Solicitud inválida.", -2);
 
             if (string.IsNullOrWhiteSpace(req.usuario))
-                return DbHelper.ErrorResponse("Usuario inválido.", -2);
+                return DbHelper.ErrorResponse(USUARIO_INVALIDO, -2);
 
             if (req.id_grupo == null || req.id_grupo <= 0)
                 return DbHelper.ErrorResponse("Grupo inválido.", -2);
 
             if (string.IsNullOrWhiteSpace(req.usuario_sesion))
-                return DbHelper.ErrorResponse("Usuario de sesión inválido.", -2);
+                return DbHelper.ErrorResponse(USUARIO_SESION_INVALIDO, -2);
 
             var user = req.usuario.Trim();
-            var userSesion = req.usuario_sesion.Trim();   
-            var accion = req.asignar ? "A" : "E";
+            var userSesion = req.usuario_sesion.Trim();
+            var accion = req.asignar == true ? "A" : "E";
             accion = accion == "A" ? "A" : "E";
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
@@ -583,7 +457,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var p = new DynamicParameters();
                 p.Add("@UsuarioList", user, DbType.String);
                 p.Add("@GrupoId", req.id_grupo.Value, DbType.Int32);
-                p.Add("@Usuario", userSesion, DbType.String);
+                p.Add(USUARIO, userSesion, DbType.String);
                 p.Add("@Mov", accion, DbType.AnsiStringFixedLength);
 
                 conn.Execute("dbo.spCbr_Usuarios_Grupos_Add", p, commandType: CommandType.StoredProcedure);
@@ -592,7 +466,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = userSesion,
-                    DetalleMovimiento = $"Cobros > Control Usuarios > Grupo {req.id_grupo} => {(req.asignar ? "Asignar" : "Eliminar")} (Usuario {user})",
+                    DetalleMovimiento = $"Cobros > Control Usuarios > Grupo {req.id_grupo} => {(req.asignar == true ? "Asignar" : "Eliminar")} (Usuario {user})",
                     Movimiento = "Modifica - WEB",
                     Modulo = vModulo
                 });
@@ -616,18 +490,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse("Solicitud inválida.", -2);
 
             if (string.IsNullOrWhiteSpace(req.usuario))
-                return DbHelper.ErrorResponse("Usuario inválido.", -2);
+                return DbHelper.ErrorResponse(USUARIO_INVALIDO, -2);
 
             if (string.IsNullOrWhiteSpace(req.cod_clasificacion))
                 return DbHelper.ErrorResponse("Cartera inválida.", -2);
 
             if (string.IsNullOrWhiteSpace(req.usuario_sesion))
-                return DbHelper.ErrorResponse("Usuario de sesión inválido.", -2);
+                return DbHelper.ErrorResponse(USUARIO_SESION_INVALIDO, -2);
 
             var user = req.usuario.Trim(); 
             var userSesion = req.usuario_sesion.Trim();    
-            var cartera = req.cod_clasificacion.Trim();   
-            var accion = req.asignar ? "A" : "E";
+            var cartera = req.cod_clasificacion.Trim();
+            var accion = req.asignar == true ? "A" : "E";
             accion = accion == "A" ? "A" : "E";
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
@@ -637,7 +511,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 p.Add("@UsuarioList", user, DbType.String);
                 p.Add("@Codigo", cartera, DbType.String);
-                p.Add("@Usuario", userSesion, DbType.String);
+                p.Add(USUARIO, userSesion, DbType.String);
                 p.Add("@Mov", accion, DbType.AnsiStringFixedLength);
 
                 conn.Execute("dbo.spCbr_Usuarios_Carteras_Add", p, commandType: CommandType.StoredProcedure);
@@ -646,7 +520,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 {
                     EmpresaId = CodEmpresa,
                     Usuario = userSesion,
-                    DetalleMovimiento = $"Cobros > Control Usuarios > Cartera {cartera} => {(req.asignar ? "Asignar" : "Eliminar")} (Usuario {user})",
+                    DetalleMovimiento = $"Cobros > Control Usuarios > Cartera {cartera} => {(req.asignar == true ? "Asignar" : "Eliminar")} (Usuario {user})",
                     Movimiento = "Modifica - WEB",
                     Modulo = vModulo
                 });
@@ -668,10 +542,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public ErrorDto CO_Usuarios_Eliminar(int CodEmpresa, string usuario, string usuario_sesion)
         {
             if (string.IsNullOrWhiteSpace(usuario))
-                return DbHelper.ErrorResponse("Usuario inválido.", -2);
+                return DbHelper.ErrorResponse(USUARIO_INVALIDO, -2);
 
             if (string.IsNullOrWhiteSpace(usuario_sesion))
-                return DbHelper.ErrorResponse("Usuario de sesión inválido.", -2);
+                return DbHelper.ErrorResponse(USUARIO_SESION_INVALIDO, -2);
 
             var user = usuario.Trim();
             var userSesion = usuario_sesion.Trim();
@@ -704,12 +578,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         private static object? V(IDictionary<string, object?> d, params string[] keys)
         {
             foreach (var k in keys)
-                if (d.ContainsKey(k)) return d[k];
+                if (d.TryGetValue(k, out var v)) return v;
+
             return null;
         }
-
         private static string S(object? v) => (Convert.ToString(v) ?? string.Empty).Trim();
-
+        private static string GetStr(IDictionary<string, object?> d, params string[] keys)
+        {
+            foreach (var k in keys)
+                if (d.TryGetValue(k, out var v)) return S(v);
+            return string.Empty;
+        }
+        private static int GetInt(IDictionary<string, object?> d, params string[] keys)
+        {
+            var txt = GetStr(d, keys);
+            if (string.IsNullOrWhiteSpace(txt)) return 0;
+            return int.TryParse(txt, out var n) ? n : 0;
+        }
         private static int I(object? v)
         {
             if (v == null) return 0;
@@ -723,7 +608,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             if (string.IsNullOrWhiteSpace(txt)) return 0;
             return int.TryParse(txt, out var n) ? n : 0;
         }
-
         private static bool B01(object? v)
         {
             if (v == null) return false;
@@ -742,7 +626,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             txt = txt.ToUpperInvariant();
             return (txt == "TRUE" || txt == "T" || txt == "S" || txt == "SI" || txt == "YES" || txt == "Y");
         }
-
         private static ErrorDto<CoControlUsuariosListaResult<T>> BuildListaResponse<T>()
         {
             var r = new ErrorDto<CoControlUsuariosListaResult<T>>
@@ -754,7 +637,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             r.Result ??= new CoControlUsuariosListaResult<T>();
             return r;
         }
-        private ErrorDto<CoControlUsuariosListaResult<T>> EjecutarListaSP<T>(SqlConnection conn,string spName,string pUsuario,Func<IDictionary<string, object?>, T> map)
+        private static ErrorDto<CoControlUsuariosListaResult<T>> EjecutarListaSP<T>(SqlConnection conn,string spName,string pUsuario,Func<IDictionary<string, object?>, T> map)
         {
             var response = BuildListaResponse<T>();
             response.Result ??= new CoControlUsuariosListaResult<T>();
@@ -762,7 +645,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             try
             {
                 var p = new DynamicParameters();
-                p.Add("@Usuario", pUsuario, DbType.String);
+                p.Add(USUARIO, pUsuario, DbType.String);
 
                 var rows = conn.Query(spName, p, commandType: CommandType.StoredProcedure);
 
@@ -783,6 +666,133 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<T>>(ex.Message);
             }
         }
+        private static string GetFirstNonEmpty(IDictionary<string, object?> d, params string[] keys)
+        {
+            foreach (var k in keys)
+            {
+                if (d.TryGetValue(k, out var val))
+                {
+                    var s = S(val);
+                    if (!string.IsNullOrWhiteSpace(s)) return s;
+                }
+            }
+            return string.Empty;
+        }
+        private static ErrorDto? ValidarGuardar(CoControlUsuariosGuardarRequest? req)
+        {
+            if (req == null)
+                return DbHelper.ErrorResponse("Solicitud inválida.", -2);
+
+            if (string.IsNullOrWhiteSpace(req.usuario))
+                return DbHelper.ErrorResponse("Usuario no es válido.", -2);
+
+            if (string.IsNullOrWhiteSpace(req.nombre))
+                return DbHelper.ErrorResponse("Nombre no es válido.", -2);
+
+            if (string.IsNullOrWhiteSpace(req.cedula))
+                return DbHelper.ErrorResponse("Número de Identificación no es válida.", -2);
+
+            if (req.porc_comision < 0 || req.porc_comision > 100)
+                return DbHelper.ErrorResponse("Porcentaje de Comisión no es válida.", -2);
+
+            if (req.tiempo_resolucion_com < 0)
+                return DbHelper.ErrorResponse("Tiempo de Resolución no es válida.", -2);
+
+            if (string.IsNullOrWhiteSpace(req.usuario_sesion))
+                return DbHelper.ErrorResponse(USUARIO_SESION_INVALIDO, -2);
+
+            return null;
+        }
+        private static object BuildParamsGuardar(string user, string userSesion, CoControlUsuariosGuardarRequest req, bool isUpdate)
+        {
+            return new
+            {
+                usuario = user,
+                nombre = (req.nombre ?? string.Empty).Trim().ToUpperInvariant(),
+                cedula = (req.cedula ?? string.Empty).Trim(),
+                estado = req.estado == 1 ? 1 : 0,
+                aplica = req.aplica_comision == 1 ? 1 : 0,
+                externo = req.operador_externo == 1 ? 1 : 0,
+                cod_banco = req.cod_banco,
+                tipo_documento = (req.tipo_documento ?? string.Empty).Trim(),
+                porc = req.porc_comision,
+                tiempo = req.tiempo_resolucion_com,
+                usuario_mod = isUpdate ? userSesion : null,
+                usuario_reg = isUpdate ? null : userSesion
+            };
+        }
+        private static void EjecutarUpdate(SqlConnection conn, string user, string userSesion, CoControlUsuariosGuardarRequest req)
+        {
+            const string sqlUpd = @"
+            update cbr_usuarios
+            set nombre = @nombre,
+                cedula = @cedula,
+                estado = @estado,
+                aplica_comision = @aplica,
+                Operador_Externo = @externo,
+                cod_banco = @cod_banco,
+                tipo_documento = @tipo_documento,
+                porc_comision = @porc,
+                tiempo_resolucion_com = @tiempo,
+                Modifica_Fecha = getdate(),
+                Modifica_Usuario = @usuario_mod
+            where usuario = @usuario;";
+
+            var p = BuildParamsGuardar(user, userSesion, req, isUpdate: true);
+            conn.Execute(sqlUpd, p);
+        }
+        private static ErrorDto? EjecutarInsert(SqlConnection conn, string user, string userSesion, CoControlUsuariosGuardarRequest req)
+        {
+            const string sqlExiste = @"select count(1) from cbr_usuarios where usuario = @usuario;";
+            var existe = conn.QuerySingle<int>(sqlExiste, new { usuario = user }) > 0;
+            if (existe)
+                return DbHelper.ErrorResponse("Usuario ya existe, verifique...", -2);
+
+            const string sqlIns = @"
+            insert into cbr_usuarios
+            (usuario, nombre, cedula, estado, aplica_comision, Operador_Externo, cod_banco, tipo_documento, tiempo_resolucion_com, porc_comision, registro_fecha, registro_usuario)
+            values
+            (@usuario, @nombre, @cedula, @estado, @aplica, @externo, @cod_banco, @tipo_documento, @tiempo, @porc, getdate(), @usuario_reg);";
+
+            var p = BuildParamsGuardar(user, userSesion, req, isUpdate: false);
+            conn.Execute(sqlIns, p);
+            return null;
+        }
+        private void RegistrarBitacora(int CodEmpresa, string userSesion, string detalle, string movimiento)
+        {
+            _securityMainDb.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = CodEmpresa,
+                Usuario = userSesion,
+                DetalleMovimiento = detalle,
+                Movimiento = movimiento,
+                Modulo = vModulo
+            });
+        }
+        private static CoControlUsuariosCuentasData MapCuenta(IDictionary<string, object?> d)
+        {
+            var cuenta = GetStr(d, "CUENTA_INTERNA");
+            var banco = GetStr(d, "Banco", "BANCO");
+            var tipo = GetStr(d, "TipoDesc", "TIPODESC");
+            var divisa = GetStr(d, "cod_Divisa", "COD_DIVISA");
+
+            var interbanca01 = GetInt(d, "CUENTA_INTERBANCA");
+            var activa01 = GetInt(d, "ACTIVA");
+
+            return new CoControlUsuariosCuentasData
+            {
+                cuenta = cuenta,
+                banco = banco,
+                tipo = tipo,
+                cod_divisa = divisa,
+                interbanca = interbanca01 == 1 ? "Sí" : "No",
+                destino = GetStr(d, "DESTINO"),
+                activa = activa01 == 1 ? "Activa" : "Cerrada",
+                registro_fecha = GetStr(d, "REGISTRO_FECHA"),
+                registro_usuario = GetStr(d, "REGISTRO_USUARIO")
+            };
+        }
+
 
     }
 }
