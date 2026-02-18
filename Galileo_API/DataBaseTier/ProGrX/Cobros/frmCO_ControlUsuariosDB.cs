@@ -745,7 +745,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var p = BuildParamsGuardar(user, userSesion, req, isUpdate: true);
             conn.Execute(sqlUpd, p);
         }
-        internal sealed class BusinessException : Exception
+        public sealed class BusinessException : Exception
         {
             public int Code { get; }
 
