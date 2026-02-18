@@ -6,7 +6,7 @@ using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.Cobros;
 using Microsoft.Data.SqlClient;
 using System.Data;
-
+using System.Linq;
 namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 {
     public class FrmCOControlUsuariosDB
@@ -90,36 +90,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 if (string.IsNullOrWhiteSpace(pActual))
                 {
-                    if (scrollCode == 1)
-                    {
-                        next = (conn.QueryFirstOrDefault<string>(
-                            "SELECT TOP 1 usuario FROM cbr_usuarios ORDER BY usuario ASC;"
-                        ) ?? "").Trim();
-                    }
-                    else
-                    {
-                        next = (conn.QueryFirstOrDefault<string>(
-                            "SELECT TOP 1 usuario FROM cbr_usuarios ORDER BY usuario DESC;"
-                        ) ?? "").Trim();
-                    }
+                    var orderDirection = scrollCode == 1 ? "ASC" : "DESC";
+
+                    next = (conn.QueryFirstOrDefault<string>(
+                        $"SELECT TOP 1 usuario FROM cbr_usuarios ORDER BY usuario {orderDirection};"
+                    ) ?? "").Trim();
                 }
                 else
                 {
                     const string sql = @"
-                SELECT TOP 1 usuario
-                FROM cbr_usuarios
-                WHERE
-                      (@scroll = 1 AND usuario > @actual)
-                   OR (@scroll <> 1 AND usuario < @actual)
-                ORDER BY
-                    CASE WHEN @scroll = 1 THEN usuario END ASC,
-                    CASE WHEN @scroll <> 1 THEN usuario END DESC;";
+            SELECT TOP 1 usuario
+            FROM cbr_usuarios
+            WHERE
+                  (@scroll = 1 AND usuario > @actual)
+               OR (@scroll <> 1 AND usuario < @actual)
+            ORDER BY
+                CASE WHEN @scroll = 1 THEN usuario END ASC,
+                CASE WHEN @scroll <> 1 THEN usuario END DESC;";
 
                     next = (conn.QueryFirstOrDefault<string>(sql, new
                     {
                         scroll = scrollCode,
                         actual = pActual
                     }) ?? "").Trim();
+
                     if (string.IsNullOrWhiteSpace(next))
                         next = pActual;
                 }
@@ -135,6 +129,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoControlUsuariosData>(ex.Message);
             }
         }
+
         /// <summary>
         /// Verifica que el usuario exista.
         /// <param name="CodEmpresa"></param>
@@ -247,22 +242,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 p.Add(USUARIO, pUsuario, DbType.String);
 
                 var rows = conn.Query("dbo.spCrd_SGT_Bancos", p, commandType: CommandType.StoredProcedure);
+                var dictRows = rows.Cast<IDictionary<string, object?>>();
 
                 var itemKeys = new[] { "item", "ID_BANCO", "COD_BANCO", "id_banco", "cod_banco" };
                 var descKeys = new[] { DESCRIPCION_MINUS, DESCRIPCION_MAYUS, DESCRIPCION };
 
                 var lista = new List<DropDownListaGenericaModel>();
 
-                foreach (var r in rows)
+                foreach (var d in rows.Cast<IDictionary<string, object?>>())
                 {
-                    var d = (IDictionary<string, object?>)r;
-
                     var item = GetFirstNonEmpty(d, itemKeys);
                     if (string.IsNullOrWhiteSpace(item)) continue;
 
                     var desc = GetFirstNonEmpty(d, descKeys);
 
-                    lista.Add(new DropDownListaGenericaModel { item = item, descripcion = desc });
+                    lista.Add(new DropDownListaGenericaModel
+                    {
+                        item = item,
+                        descripcion = desc
+                    });
                 }
 
                 return lista;
@@ -311,28 +309,26 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             try
             {
                 const string sql = @"
-            select 
-                RTRIM(B.Descripcion) as Banco,
-                case when C.tipo = 'A' then 'Ahorros' else 'Corriente' end as TipoDesc,
-                C.cod_Divisa,
-                C.CUENTA_INTERNA,
-                C.CUENTA_INTERBANCA,
-                C.ACTIVA,
-                ISNULL(C.DESTINO,'') as DESTINO,
-                ISNULL(CONVERT(varchar(19),C.REGISTRO_FECHA,120),'') as REGISTRO_FECHA,
-                ISNULL(C.REGISTRO_USUARIO,'') as REGISTRO_USUARIO
-            from SYS_CUENTAS_BANCARIAS C
-            inner join TES_BANCOS_GRUPOS B on C.cod_banco = B.cod_grupo
-            where C.Identificacion = @cedula;";
+                select 
+                    RTRIM(B.Descripcion) as Banco,
+                    case when C.tipo = 'A' then 'Ahorros' else 'Corriente' end as TipoDesc,
+                    C.cod_Divisa,
+                    C.CUENTA_INTERNA,
+                    C.CUENTA_INTERBANCA,
+                    C.ACTIVA,
+                    ISNULL(C.DESTINO,'') as DESTINO,
+                    ISNULL(CONVERT(varchar(19),C.REGISTRO_FECHA,120),'') as REGISTRO_FECHA,
+                    ISNULL(C.REGISTRO_USUARIO,'') as REGISTRO_USUARIO
+                from SYS_CUENTAS_BANCARIAS C
+                inner join TES_BANCOS_GRUPOS B on C.cod_banco = B.cod_grupo
+                where C.Identificacion = @cedula;";
 
                 var rows = conn.Query(sql, new { cedula = pCedula });
 
-                var lista = new List<CoControlUsuariosCuentasData>();
-                foreach (var r in rows)
-                {
-                    var d = (IDictionary<string, object?>)r;
-                    lista.Add(MapCuenta(d));
-                }
+                var lista = rows
+                    .Cast<IDictionary<string, object?>>()
+                    .Select(MapCuenta)
+                    .ToList();
 
                 response.Result!.total = lista.Count;
                 response.Result!.lista = lista;
@@ -343,6 +339,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosCuentasData>>(ex.Message);
             }
         }
+
         /// <summary>
         /// Lista de grupos (spCbr_Usuarios_Grupos_List)
         /// <param name="CodEmpresa"></param>
@@ -581,17 +578,18 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private static object? V(IDictionary<string, object?> d, params string[] keys)
         {
-            foreach (var k in keys)
-                if (d.TryGetValue(k, out var v)) return v;
-
-            return null;
+            return keys
+                .Select(k => d.TryGetValue(k, out var v) ? v : null)
+                .FirstOrDefault(v => v != null);
         }
         private static string S(object? v) => (Convert.ToString(v) ?? string.Empty).Trim();
         private static string GetStr(IDictionary<string, object?> d, params string[] keys)
         {
-            foreach (var k in keys)
-                if (d.TryGetValue(k, out var v)) return S(v);
-            return string.Empty;
+            var value = keys
+                .Select(k => d.TryGetValue(k, out var v) ? v : null)
+                .FirstOrDefault(v => v != null);
+
+            return value != null ? S(value) : string.Empty;
         }
         private static int GetInt(IDictionary<string, object?> d, params string[] keys)
         {
@@ -654,9 +652,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 var rows = conn.Query(spName, p, commandType: CommandType.StoredProcedure);
 
                 var lista = new List<T>();
-                foreach (var r in rows)
+
+                foreach (var d in rows.Cast<IDictionary<string, object?>>())
                 {
-                    var d = (IDictionary<string, object?>)r;
                     lista.Add(map(d));
                 }
 
@@ -672,15 +670,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         }
         private static string GetFirstNonEmpty(IDictionary<string, object?> d, params string[] keys)
         {
-            foreach (var k in keys)
-            {
-                if (d.TryGetValue(k, out var val))
-                {
-                    var s = S(val);
-                    if (!string.IsNullOrWhiteSpace(s)) return s;
-                }
-            }
-            return string.Empty;
+            return keys
+                .Where(d.ContainsKey)
+                .Select(k => S(d[k]))
+                .FirstOrDefault(s => !string.IsNullOrWhiteSpace(s))
+                ?? string.Empty;
         }
         private static ErrorDto? ValidarGuardar(CoControlUsuariosGuardarRequest? req)
         {
