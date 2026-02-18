@@ -5,6 +5,7 @@ using Galileo.Models.CxP;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX_Polizas;
+using Org.BouncyCastle.Asn1.X500;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 {
@@ -279,21 +280,23 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             {
                 const string query = @"
         EXEC spCrd_Poliza_Catalogo_Garantias_Asigna 
-            @cod_poliza,
-            @garantia,
-            @accion,
-            @usuario";
+            @Poliza,
+            @Garantia,
+            @Mov,
+            @Usuario";
 
-                return conn.QueryFirstOrDefault<CrdCatalogoPolizasGarantiaAsignaDto>(
+                var response = conn.QueryFirstOrDefault<CrdCatalogoPolizasGarantiaAsignaDto>(
                     query,
                     new
                     {
-                        cod_poliza = req.cod_poliza.Trim(),
-                        garantia = req.garantia.Trim(),
-                        accion = req.asignar ? "A" : "E",
-                        usuario
+                        Poliza = req.cod_poliza.Trim(),
+                        Garantia = req.garantia.Trim(),
+                        Mov = req.asignar ? "E" : "A",
+                        Usuario = usuario
                     }
                 );
+
+                return response;
             });
         }
 
@@ -354,7 +357,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     plazo_meses = dto.plazo_meses ?? 0,
                     cod_cuenta = (dto.cod_cuenta ?? "").Trim(),
 
-                    codigo_retencion = (dto.codigo_retencion ?? "").Trim(),
+                    codigo_retencion = string.IsNullOrWhiteSpace(dto.codigo_retencion) ? null : dto.codigo_retencion.Trim(),
                     codigo_cargo = (dto.codigo_cargo ?? "").Trim(),
 
                     cobertura_inicio = dto.cobertura_inicio ?? 0m,
@@ -364,7 +367,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     contrato_num = (dto.contrato_num ?? "").Trim(),
 
                     cobertura_vencimiento = dto.cobertura_vencimiento ?? DateTime.Now,
-                    vence_frecuencia = (dto.vence_frecuencia ?? "").Trim(),
+                    vence_frecuencia = string.IsNullOrWhiteSpace(dto.vence_frecuencia)
+                                        ? null
+                                        : dto.vence_frecuencia.Trim().Substring(0, 1),
                     vence_dia = dto.vence_dia,
 
                     poliza_general = dto.poliza_general ?? 0,
@@ -392,27 +397,42 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             }
             else
             {
-                const string insertSql = @"
-                        INSERT INTO CRD_CATALOGO_POLIZAS
-                        (
-                          cod_poliza, descripcion, base, tipo, valor, porc_formalizacion, plazo_meses, cod_cuenta,
-                          codigo_retencion, codigo_cargo, cobertura_inicio, cobertura_corte, cod_aseguradora, contrato_num,
-                          cobertura_vencimiento, vence_frecuencia, vence_dia, poliza_general, cobertura_region,
-                          integra_plan_pagos, poliza_general_tipo, poliza_general_monto, iva_aplica, iva_incluido,
-                          iva_porcentaje, id_poliza_grupo, cod_cuenta_gasto, cod_unidad, cod_centro_costo,
-                          registro_fecha, registro_usuario
-                        )
-                        VALUES
-                        (
-                          @cod_poliza, @descripcion, @base, @tipo, @valor, @porc_formalizacion, @plazo_meses, @cod_cuenta,
-                          @codigo_retencion, @codigo_cargo, @cobertura_inicio, @cobertura_corte, @cod_aseguradora, @contrato_num,
-                          @cobertura_vencimiento, @vence_frecuencia, @vence_dia, @poliza_general, @cobertura_region,
-                          @integra_plan_pagos, @poliza_general_tipo, @poliza_general_monto, @iva_aplica, @iva_incluido,
-                          @iva_porcentaje, @id_poliza_grupo, @cod_cuenta_gasto, @cod_unidad, @cod_centro_costo,
-                          GETDATE(), @registro_usuario
-                        );";
+                const string updateSql = @"
+                        UPDATE CRD_CATALOGO_POLIZAS
+                        SET
+                          descripcion = @descripcion,
+                          base = @base,
+                          tipo = @tipo,
+                          valor = @valor,
+                          porc_formalizacion = @porc_formalizacion,
+                          plazo_meses = @plazo_meses,
+                          cod_cuenta = @cod_cuenta,
+                          codigo_retencion = @codigo_retencion,
+                          codigo_cargo = @codigo_cargo,
+                          cobertura_inicio = @cobertura_inicio,
+                          cobertura_corte = @cobertura_corte,
+                          cod_aseguradora = @cod_aseguradora,
+                          contrato_num = @contrato_num,
+                          cobertura_vencimiento = @cobertura_vencimiento,
+                          vence_frecuencia = @vence_frecuencia,
+                          vence_dia = @vence_dia,
+                          poliza_general = @poliza_general,
+                          cobertura_region = @cobertura_region,
+                          integra_plan_pagos = @integra_plan_pagos,
+                          poliza_general_tipo = @poliza_general_tipo,
+                          poliza_general_monto = @poliza_general_monto,
+                          iva_aplica = @iva_aplica,
+                          iva_incluido = @iva_incluido,
+                          iva_porcentaje = @iva_porcentaje,
+                          id_poliza_grupo = @id_poliza_grupo,
+                          cod_cuenta_gasto = @cod_cuenta_gasto,
+                          cod_unidad = @cod_unidad,
+                          cod_centro_costo = @cod_centro_costo,
+                          modifica_fecha = GETDATE(),
+                          modifica_usuario = @modifica_usuario
+                        WHERE cod_poliza = @cod_poliza;";
 
-                var rows = conn.Execute(insertSql, new
+                var rows = conn.Execute(updateSql, new
                 {
                     cod_poliza = codPoliza,
                     descripcion = (dto.descripcion ?? "").Trim(),
@@ -421,7 +441,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     valor = dto.valor ?? 0m,
                     porc_formalizacion = dto.porc_formalizacion ?? 0m,
                     plazo_meses = dto.plazo_meses ?? 0,
-                    cod_cuenta = (dto.cod_cuenta ?? "").Trim(),
+                    cod_cuenta = (dto.cod_cuenta ?? "").Trim().Replace("-",""),
 
                     codigo_retencion = (dto.codigo_retencion ?? "").Trim(),
                     codigo_cargo = (dto.codigo_cargo ?? "").Trim(),
@@ -433,7 +453,9 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                     contrato_num = (dto.contrato_num ?? "").Trim(),
 
                     cobertura_vencimiento = dto.cobertura_vencimiento ?? DateTime.Now,
-                    vence_frecuencia = (dto.vence_frecuencia ?? "").Trim(),
+                    vence_frecuencia = string.IsNullOrWhiteSpace(dto.vence_frecuencia)
+                                        ? null
+                                        : dto.vence_frecuencia.Trim().Substring(0, 1),
                     vence_dia = dto.vence_dia,
 
                     poliza_general = dto.poliza_general ?? 0,
@@ -449,11 +471,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                     id_poliza_grupo = dto.id_poliza_grupo, // null permitido
 
-                    cod_cuenta_gasto = (dto.cod_cuenta_gasto ?? "").Trim(),
+                    cod_cuenta_gasto = (dto.cod_cuenta_gasto ?? "").Trim().Replace("-", ""),
                     cod_unidad = (dto.cod_unidad ?? "").Trim(),
                     cod_centro_costo = (dto.cod_centro_costo ?? "").Trim(),
 
-                    registro_usuario = usuario
+                    modifica_usuario = usuario
                 });
 
                 var result = rows > 0;
@@ -464,7 +486,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
         #endregion
 
-            #region Asignacion
+       #region Asignacion
 
             /// <summary>
             /// Método para construir el árbol de asignación de pólizas (VB6: sbCargaArbol), que muestra las líneas, destinos y garantías disponibles para asignar a una póliza. El nodo raíz es "Lineas", debajo van las líneas (L), luego los destinos (D) y finalmente las garantías (G). Cada nodo tiene un key con formato específico para identificar su tipo y código.
@@ -722,7 +744,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
         #endregion
 
-
         #region Acreedores
 
         /// <summary>
@@ -916,5 +937,139 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
 
         #endregion
+
+        #region Busquedas
+
+        /// <summary>
+        /// Consulta catálogo de retenciones (catalogo where poliza = 'S').
+        /// Si se envía código, filtra por ese código.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Retencion_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+            {
+                var query = $@"
+                        SELECT 
+                            codigo AS item,
+                            descripcion
+                        FROM catalogo
+                        WHERE poliza = 'S'
+                          AND (@codigo IS NULL OR codigo = @codigo)
+                        ORDER BY  
+                            CASE WHEN @orden = 'item' THEN codigo END,
+                            CASE WHEN @orden = 'descripcion' THEN descripcion END";
+
+                return conn.Query<DropDownListaGenericaModel>(query, new
+                {
+                    codigo = string.IsNullOrWhiteSpace(codigo) ? null : codigo.Trim(),
+                    orden = ordenarPor
+                }).ToList();
+            });
+        }
+
+        /// <summary>
+        /// Consulta catalogo de Cargos
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <param name="ordenarPor"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Cargos_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+            {
+                var query = $@"
+                        SELECT 
+                            cod_cargo AS item,
+                            descripcion
+                        FROM cargos_adicionales
+                        WHERE 
+                           (@codigo IS NULL OR cod_cargo = @codigo)
+                        ORDER BY  
+                            CASE WHEN @orden = 'item' THEN cod_cargo END,
+                            CASE WHEN @orden = 'descripcion' THEN descripcion END";
+
+                return conn.Query<DropDownListaGenericaModel>(query, new
+                {
+                    codigo = string.IsNullOrWhiteSpace(codigo) ? null : codigo.Trim(),
+                    orden = ordenarPor
+                }).ToList();
+            });
+        }
+
+        /// <summary>
+        /// Consulta de Unidades Contables
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <param name="ordenarPor"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Unidades_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+            {
+                var query = $@"
+                        SELECT 
+                            COD_UNIDAD AS item,
+                            descripcion
+                        FROM vCNTX_UNIDADES_LOCAL
+                        WHERE ACTIVA = 1
+                          AND (@codigo IS NULL OR COD_UNIDAD = @codigo)
+                        ORDER BY  
+                            CASE WHEN @orden = 'item' THEN COD_UNIDAD END,
+                            CASE WHEN @orden = 'descripcion' THEN descripcion END";
+
+                return conn.Query<DropDownListaGenericaModel>(query, new
+                {
+                    codigo = string.IsNullOrWhiteSpace(codigo) ? null : codigo.Trim(),
+                    orden = ordenarPor
+                }).ToList();
+            });
+        }
+
+        /// <summary>
+        /// Consulra de Centro de Costos
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <param name="ordenarPor"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_CentroCostos_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
+            {
+                var query = $@"
+                        SELECT 
+                            COD_CENTRO_COSTO AS item,
+                            descripcion
+                        FROM vCNTX_CENTRO_COSTO_LOCAL
+                        WHERE ACTIVO = 1
+                          AND (@codigo IS NULL OR COD_CENTRO_COSTO = @codigo)
+                        ORDER BY  
+                            CASE WHEN @orden = 'item' THEN COD_CENTRO_COSTO END,
+                            CASE WHEN @orden = 'descripcion' THEN descripcion END";
+
+                return conn.Query<DropDownListaGenericaModel>(query, new
+                {
+                    codigo = string.IsNullOrWhiteSpace(codigo) ? null : codigo.Trim(),
+                    orden = ordenarPor
+                }).ToList();
+            });
+        }
+
+        #endregion
+
     }
 }

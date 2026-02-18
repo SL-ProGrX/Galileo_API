@@ -101,7 +101,7 @@
         public string? registro_usuario { get; set; }
         public DateTime? registro_fecha { get; set; }
 
-        public int asignado { get; set; } = 0;     // 1 o 0
+        public bool asignado { get; set; } = false;
     }
 
     public class CrdCatalogoPolizasGarantiaAsignaDto

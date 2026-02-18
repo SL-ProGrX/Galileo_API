@@ -140,5 +140,40 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
 
         #endregion
 
+        #region Busquedas
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Retencion_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return _db.Crd_Catalogo_Retencion_Buscar(CodEmpresa, codigo, ordenarPor);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Cargos_Buscar(
+           int CodEmpresa,
+           string? codigo = null,
+           string? ordenarPor = "item")
+        {
+            return _db.Crd_Catalogo_Cargos_Buscar(CodEmpresa, codigo, ordenarPor); 
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Unidades_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return _db.Crd_Catalogo_Unidades_Buscar(CodEmpresa, codigo, ordenarPor);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_CentroCostos_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return _db.Crd_Catalogo_CentroCostos_Buscar(CodEmpresa, codigo, ordenarPor);
+        }
+
+        #endregion
     }
 }
