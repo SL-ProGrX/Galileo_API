@@ -253,32 +253,25 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns></returns>
         public ErrorDto<GeneralData> CxC_CuentasCorreccionesPagadores_Consultar(int codEmpresa, int orden, bool mCntPagadorAbierto, string cedula, string pagadorCedula, string contrato)
         {
-            string query = "";
-
-            if (mCntPagadorAbierto)
-            {
-                query = $@"select Top 1 Cp.Cedula as Item,Cp.Nombre  as Detalle from CxC_Personas Cp 
-                                    Where Cp.Rol_Pagador = 1";
-            }
-            else
-            {
-                query = $@"select Top 1 Cp.Cedula as Item,Per.nombre as Detalle
-                               from CxC_Contratos_Pagadores Cp inner join  CxC_Contratos Cn on Cp.Cod_Contrato = Cn.Cod_Contrato
-                                inner join CxC_Personas Per on Cp.cedula = Per.cedula
-                                left join CxC_Personas_Contratos_Pagadores PcP on Cp.Cod_Contrato = PcP.cod_Contrato
-                                and Cp.Cedula = PcP.cedula_Pagador and PcP.cedula = @cedula
-                                 Where Cn.Cod_Contrato =@contrato
-                                and (PcP.cedula is not null or Cn.Pagadores_Abierto = 1)";
-            }
-
+           
+            string query = mCntPagadorAbierto
+                 ? $@"select Top 1 Cp.Cedula as Item,Cp.Nombre  as Detalle from CxC_Personas Cp 
+                                     Where Cp.Rol_Pagador = 1 "
+                 : $@"select Top 1 Cp.Cedula as Item,Per.nombre as Detalle
+                                from CxC_Contratos_Pagadores Cp inner join  CxC_Contratos Cn on Cp.Cod_Contrato = Cn.Cod_Contrato
+                                 inner join CxC_Personas Per on Cp.cedula = Per.cedula
+                                 left join CxC_Personas_Contratos_Pagadores PcP on Cp.Cod_Contrato = PcP.cod_Contrato
+                                 and Cp.Cedula = PcP.cedula_Pagador and PcP.cedula = @cedula
+                                  Where Cn.Cod_Contrato =@contrato
+                                 and (PcP.cedula is not null or Cn.Pagadores_Abierto = 1) ";
 
             if (orden == 1)
             {
-                query += $"and Cp.Cedula > @pagadorCedula order by cod_Concepto  asc";
+                query += $" and Cp.Cedula > @pagadorCedula order by cod_Concepto  asc";
             }
             else
             {
-                query += $"and Cp.Cedula < @pagadorCedula order by Cp.Cedula desc";
+                query += $" and Cp.Cedula < @pagadorCedula order by Cp.Cedula desc";
             }
 
             return DbHelper.WithConn(_portalDB, codEmpresa, conn =>
@@ -382,19 +375,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> CxC_CuentasCorreccionesPagadores_Listado(int CodEmpresa, bool mCntPagadorAbierto, string cedula, string contrato)
         {
-            string query = "";
-            if (mCntPagadorAbierto)
-            {
-                query = @"select Cedula  as item ,Nombre as descripcion  
-                            from CxC_Personas where Rol_Pagador = 1";
-            }
-            else
-            {
-                query = @"select PcP.Cedula_Pagador  as item ,Per.nombre as descripcion 
-                            from CxC_Personas_Contratos_Pagadores PcP
-                            inner join CxC_Personas Per on PcP.cedula_pagador = Per.cedula
-                            and PcP.cod_contrato =@contrato  and PcP.cedula =@cedula";
-            }
+            
+
+            string query = mCntPagadorAbierto
+                     ? @"select Cedula  as item ,Nombre as descripcion  
+                                         from CxC_Personas where Rol_Pagador = 1"
+                     : @"select PcP.Cedula_Pagador  as item ,Per.nombre as descripcion 
+                                         from CxC_Personas_Contratos_Pagadores PcP
+                                         inner join CxC_Personas Per on PcP.cedula_pagador = Per.cedula
+                                         and PcP.cod_contrato =@contrato  and PcP.cedula =@cedula";
+
+          
             return DbHelper.WithConn(_portalDB, CodEmpresa, conn =>
             {
 
@@ -474,15 +465,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 string TipoDoc = (result?.Result?.TipoDoc) ?? "";
                 string NumDoc = (result?.Result?.NumDoc) ?? "";
                 var resultado = CxC_CuentasCorrecciones_Reporte(codEmpresa, usuario, TipoDoc, NumDoc);
-                if (resultado.Code != -1)
-                {
-                    return DbHelper.CreateOkResponse();
-                }
-                else
-                {
-                    return DbHelper.ErrorResponse(resultado.Description??"Error al generar el reporte");
+                return resultado.Code != -1
+                  ? DbHelper.CreateOkResponse()
+                  : DbHelper.ErrorResponse(resultado.Description ?? "Error al generar el reporte");
 
-                }
+                 
 
             } 
 
