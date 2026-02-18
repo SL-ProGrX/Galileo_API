@@ -68,5 +68,46 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 FROM AFI_TIPOS_IDS";
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
         }
+
+        /// <summary>
+        /// Lista de provincias.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> Provincias_Lista(int codEmpresa)
+        {
+            var query = @"
+                SELECT Provincia as item,
+                       rtrim(Descripcion) as descripcion
+                FROM Provincias";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query);
+        }
+
+        /// <summary>
+        /// Lista de cantones por provincia.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> Cantones_Lista(int codEmpresa, string provincia)
+        {
+            var query = @"
+                SELECT Canton as item,
+                       rtrim(Descripcion) as descripcion
+                FROM Cantones
+                WHERE provincia = @provincia
+                ORDER BY descripcion";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, new { provincia });
+        }
+
+        /// <summary>
+        /// Lista de distritos por provincia y cantón.
+        /// </summary>
+        public ErrorDto<List<DropDownListaGenericaModel>> Distritos_Lista(int codEmpresa, string provincia, string canton)
+        {
+            var query = @"
+                SELECT Distrito as item,
+                       rtrim(Descripcion) as descripcion
+                FROM Distritos
+                WHERE provincia = @provincia
+                  AND canton = @canton
+                ORDER BY descripcion";
+            return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, new { provincia, canton });
+        }
     }
 }

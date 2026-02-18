@@ -34,5 +34,20 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         {
             return _db.TiposId_Lista(codEmpresa);
         }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Provincias_Lista(int codEmpresa)
+        {
+            return _db.Provincias_Lista(codEmpresa);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Cantones_Lista(int codEmpresa, string provincia)
+        {
+            return _db.Cantones_Lista(codEmpresa, provincia);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Distritos_Lista(int codEmpresa, string provincia, string canton)
+        {
+            return _db.Distritos_Lista(codEmpresa, provincia, canton);
+        }
     }
 }

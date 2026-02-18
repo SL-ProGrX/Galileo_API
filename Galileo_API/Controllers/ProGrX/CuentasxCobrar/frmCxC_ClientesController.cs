@@ -46,5 +46,26 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _bl.TiposId_Lista(codEmpresa);
         }
+
+        [Authorize]
+        [HttpGet("Provincias_Lista")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Provincias_Lista(int codEmpresa)
+        {
+            return _bl.Provincias_Lista(codEmpresa);
+        }
+
+        [Authorize]
+        [HttpGet("Cantones_Lista")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Cantones_Lista(int codEmpresa, [FromQuery] string provincia)
+        {
+            return _bl.Cantones_Lista(codEmpresa, provincia);
+        }
+
+        [Authorize]
+        [HttpGet("Distritos_Lista")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Distritos_Lista(int codEmpresa, [FromQuery] string provincia, [FromQuery] string canton)
+        {
+            return _bl.Distritos_Lista(codEmpresa, provincia, canton);
+        }
     }
 }
