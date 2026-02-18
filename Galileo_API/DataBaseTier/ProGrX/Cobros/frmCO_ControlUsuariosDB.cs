@@ -396,84 +396,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-            var response = new ErrorDto<CoControlUsuariosListaResult<CoControlUsuariosGrupoItem>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CoControlUsuariosListaResult<CoControlUsuariosGrupoItem>()
-            };
-            response.Result ??= new CoControlUsuariosListaResult<CoControlUsuariosGrupoItem>();
-
-            try
-            {
-                var p = new DynamicParameters();
-                p.Add("@Usuario", pUsuario, DbType.String);
-
-                var rows = conn.Query("dbo.spCbr_Usuarios_Grupos_List", p, commandType: CommandType.StoredProcedure);
-
-                static object? V(IDictionary<string, object?> d, params string[] keys)
+            return EjecutarListaSP(conn, "dbo.spCbr_Usuarios_Grupos_List", pUsuario, d =>
+                new CoControlUsuariosGrupoItem
                 {
-                    foreach (var k in keys)
-                        if (d.ContainsKey(k)) return d[k];
-                    return null;
+                    id_grupo = I(V(d, "ID_GRUPO", "id_grupo", "Id_Grupo")),
+                    descripcion = S(V(d, "Descripcion", "DESCRIPCION", "descripcion")),
+                    asignado = B01(V(d, "asignado", "ASIGNADO", "Asignado")),
                 }
-
-                static string S(object? v) => (Convert.ToString(v) ?? string.Empty).Trim();
-
-                static int I(object? v)
-                {
-                    if (v == null) return 0;
-                    if (v is int i) return i;
-                    if (v is short s) return s;
-                    if (v is long l) return (int)l;
-                    if (v is byte b) return b;
-                    if (v is decimal m) return (int)m;
-
-                    var txt = (Convert.ToString(v) ?? "").Trim();
-                    if (string.IsNullOrWhiteSpace(txt)) return 0;
-                    if (int.TryParse(txt, out var n)) return n;
-                    return 0;
-                }
-
-                static bool B01(object? v)
-                {
-                    if (v == null) return false;
-                    if (v is bool bb) return bb;
-                    if (v is int i) return i == 1;
-                    if (v is short s) return s == 1;
-                    if (v is long l) return l == 1;
-                    if (v is byte b) return b == 1;
-                    if (v is decimal m) return m == 1;
-
-                    var txt = (Convert.ToString(v) ?? "").Trim();
-                    if (string.IsNullOrWhiteSpace(txt)) return false;
-                    if (int.TryParse(txt, out var n)) return n == 1;
-                    txt = txt.ToUpperInvariant();
-                    return (txt == "TRUE" || txt == "T" || txt == "S" || txt == "SI" || txt == "YES" || txt == "Y");
-                }
-
-                var lista = new List<CoControlUsuariosGrupoItem>();
-
-                foreach (var r in rows)
-                {
-                    var d = (IDictionary<string, object?>)r;
-
-                    lista.Add(new CoControlUsuariosGrupoItem
-                    {
-                        id_grupo = I(V(d, "ID_GRUPO", "id_grupo", "Id_Grupo")),
-                        descripcion = S(V(d, "Descripcion", "DESCRIPCION", "descripcion")),
-                        asignado = B01(V(d, "asignado", "ASIGNADO", "Asignado"))
-                    });
-                }
-
-                response.Result.total = lista.Count;
-                response.Result.lista = lista;
-                return response;
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosGrupoItem>>(ex.Message);
-            }
+            );
         }
         /// <summary>
         /// Lista de carteras.
@@ -490,71 +420,14 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
 
-            var response = new ErrorDto<CoControlUsuariosListaResult<CoControlUsuariosCarteraItem>>
-            {
-                Code = 0,
-                Description = "Ok",
-                Result = new CoControlUsuariosListaResult<CoControlUsuariosCarteraItem>()
-            };
-            response.Result ??= new CoControlUsuariosListaResult<CoControlUsuariosCarteraItem>();
-
-            try
-            {
-                var p = new DynamicParameters();
-                p.Add("@Usuario", pUsuario, DbType.String);
-
-                var rows = conn.Query("dbo.spCbr_Usuarios_Carteras_List", p, commandType: CommandType.StoredProcedure);
-
-                static object? V(IDictionary<string, object?> d, params string[] keys)
+            return EjecutarListaSP(conn, "dbo.spCbr_Usuarios_Carteras_List", pUsuario, d =>
+                new CoControlUsuariosCarteraItem
                 {
-                    foreach (var k in keys)
-                        if (d.ContainsKey(k)) return d[k];
-                    return null;
+                    cod_clasificacion = S(V(d, "COD_CLASIFICACION", "cod_clasificacion", "Cod_Clasificacion")),
+                    descripcion = S(V(d, "Descripcion", "DESCRIPCION", "descripcion")),
+                    asignado = B01(V(d, "asignado", "ASIGNADO", "Asignado")),
                 }
-
-                static string S(object? v) => (Convert.ToString(v) ?? string.Empty).Trim();
-
-                static bool B01(object? v)
-                {
-                    if (v == null) return false;
-                    if (v is bool bb) return bb;
-                    if (v is int i) return i == 1;
-                    if (v is short s) return s == 1;
-                    if (v is long l) return l == 1;
-                    if (v is byte b) return b == 1;
-                    if (v is decimal m) return m == 1;
-
-                    var txt = (Convert.ToString(v) ?? "").Trim();
-                    if (string.IsNullOrWhiteSpace(txt)) return false;
-
-                    if (int.TryParse(txt, out var n)) return n == 1;
-
-                    txt = txt.ToUpperInvariant();
-                    return (txt == "TRUE" || txt == "T" || txt == "S" || txt == "SI" || txt == "YES" || txt == "Y");
-                }
-
-                var lista = new List<CoControlUsuariosCarteraItem>();
-
-                foreach (var r in rows)
-                {
-                    var d = (IDictionary<string, object?>)r;
-
-                    lista.Add(new CoControlUsuariosCarteraItem
-                    {
-                        cod_clasificacion = S(V(d, "COD_CLASIFICACION", "cod_clasificacion", "Cod_Clasificacion")),
-                        descripcion = S(V(d, "Descripcion", "DESCRIPCION", "descripcion")),
-                        asignado = B01(V(d, "asignado", "ASIGNADO", "Asignado"))
-                    });
-                }
-
-                response.Result.total = lista.Count;
-                response.Result.lista = lista;
-                return response;
-            }
-            catch (SqlException ex)
-            {
-                return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosCarteraItem>>(ex.Message);
-            }
+            );
         }
         /// <summary>
         /// Guardar usuario (insert/update cbr_usuarios)
@@ -828,5 +701,88 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
+        private static object? V(IDictionary<string, object?> d, params string[] keys)
+        {
+            foreach (var k in keys)
+                if (d.ContainsKey(k)) return d[k];
+            return null;
+        }
+
+        private static string S(object? v) => (Convert.ToString(v) ?? string.Empty).Trim();
+
+        private static int I(object? v)
+        {
+            if (v == null) return 0;
+            if (v is int i) return i;
+            if (v is short s) return s;
+            if (v is long l) return (int)l;
+            if (v is byte b) return b;
+            if (v is decimal m) return (int)m;
+
+            var txt = (Convert.ToString(v) ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(txt)) return 0;
+            return int.TryParse(txt, out var n) ? n : 0;
+        }
+
+        private static bool B01(object? v)
+        {
+            if (v == null) return false;
+            if (v is bool bb) return bb;
+            if (v is int i) return i == 1;
+            if (v is short s) return s == 1;
+            if (v is long l) return l == 1;
+            if (v is byte b) return b == 1;
+            if (v is decimal m) return m == 1;
+
+            var txt = (Convert.ToString(v) ?? "").Trim();
+            if (string.IsNullOrWhiteSpace(txt)) return false;
+
+            if (int.TryParse(txt, out var n)) return n == 1;
+
+            txt = txt.ToUpperInvariant();
+            return (txt == "TRUE" || txt == "T" || txt == "S" || txt == "SI" || txt == "YES" || txt == "Y");
+        }
+
+        private static ErrorDto<CoControlUsuariosListaResult<T>> BuildListaResponse<T>()
+        {
+            var r = new ErrorDto<CoControlUsuariosListaResult<T>>
+            {
+                Code = 0,
+                Description = "Ok",
+                Result = new CoControlUsuariosListaResult<T>()
+            };
+            r.Result ??= new CoControlUsuariosListaResult<T>();
+            return r;
+        }
+        private ErrorDto<CoControlUsuariosListaResult<T>> EjecutarListaSP<T>(SqlConnection conn,string spName,string pUsuario,Func<IDictionary<string, object?>, T> map)
+        {
+            var response = BuildListaResponse<T>();
+            response.Result ??= new CoControlUsuariosListaResult<T>();
+
+            try
+            {
+                var p = new DynamicParameters();
+                p.Add("@Usuario", pUsuario, DbType.String);
+
+                var rows = conn.Query(spName, p, commandType: CommandType.StoredProcedure);
+
+                var lista = new List<T>();
+                foreach (var r in rows)
+                {
+                    var d = (IDictionary<string, object?>)r;
+                    lista.Add(map(d));
+                }
+
+                response.Result.total = lista.Count;
+                response.Result.lista = lista;
+
+                return response;
+            }
+            catch (SqlException ex)
+            {
+                return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<T>>(ex.Message);
+            }
+        }
+
     }
 }
