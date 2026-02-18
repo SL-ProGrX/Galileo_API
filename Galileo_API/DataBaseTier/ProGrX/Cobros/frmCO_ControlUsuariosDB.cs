@@ -268,7 +268,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return lista;
             });
         }
-
         /// <summary>
         /// Lista cuentas bancarias por identificación.
         /// <param name="CodEmpresa"></param>
@@ -746,10 +745,15 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var p = BuildParamsGuardar(user, userSesion, req, isUpdate: true);
             conn.Execute(sqlUpd, p);
         }
-        private sealed class BusinessException : Exception
+        internal sealed class BusinessException : Exception
         {
             public int Code { get; }
-            public BusinessException(string message, int code) : base(message) => Code = code;
+
+            public BusinessException(string message, int code)
+                : base(message)
+            {
+                Code = code;
+            }
         }
         private static void EjecutarInsert(SqlConnection conn, string user, string userSesion, CoControlUsuariosGuardarRequest req)
         {
