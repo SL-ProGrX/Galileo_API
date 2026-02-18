@@ -349,7 +349,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 var rows = conn.Execute(insertSql, new
                 {
                     cod_poliza = codPoliza,
-                    descripcion = (dto.descripcion ?? "").Trim(),
+                    descripcion = dto.descripcion.Trim(),
                     @base = baseCod,
                     @tipo = tipoCod,
                     valor = dto.valor ?? 0m,
