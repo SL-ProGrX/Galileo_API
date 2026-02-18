@@ -1,376 +1,305 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
+using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo_API.Models.ProGrX_Contabilidad;
 using Microsoft.Data.SqlClient;
+using System.Text;
 
 namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
 {
-    public class FrmCntXUnidadesDb
+    public class FrmCntXPlantillaRateDb
     {
-        private readonly PortalDB _portalDB;
+        private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _mSecurityMainDb;
+        private readonly int vModulo = 21; // módulo contabilidad
 
-        public FrmCntXUnidadesDb(IConfiguration config)
+        public FrmCntXPlantillaRateDb(IConfiguration config)
+            : this(new PortalDB(config), new MSecurityMainDb(config)) { }
+
+        public FrmCntXPlantillaRateDb(
+            PortalDB portalDb,
+            MSecurityMainDb securityDb)
         {
-            _portalDB = new PortalDB(config);
+            _portalDb = portalDb;
+            _mSecurityMainDb = securityDb;
         }
 
 
-        /// <summary>
-        /// Lista las unidades
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CntXUnidadDto>> CntX_Unidades_Listar(int codEmpresa)
+        public ErrorDto<CntxPlantillaRateDto>
+            CntxPlantillaRate_Scroll_Obtener(
+                int codEmpresa,
+                int scrollCode,
+                int? codPlantilla)
         {
-            var response = new ErrorDto<List<CntXUnidadDto>>();
+            string query =
+                "SELECT TOP 1 CodPlantilla FROM CNTX_PLANTILLA_RATE ";
 
-            try
+            if (codPlantilla.HasValue)
             {
-                using var cn = new SqlConnection(_portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var sql = @"
-                    SELECT
-                        RTRIM(cod_unidad) AS cod_unidad,
-                        RTRIM(descripcion) AS descripcion,
-                        Nivel AS nivel,
-                        unidad_omision,
-                        reporta_renta,
-                        activa,
-                        RTRIM(Cta_Renta) AS cta_renta,
-                        RTRIM(Cta_Renta_Gasto) AS cta_renta_gasto
-                    FROM CntX_Unidades
-                    WHERE COD_CONTABILIDAD = 2
-                    ORDER BY cod_unidad;
-                ";
-
-                response.Result = cn.Query<CntXUnidadDto>(sql, new { codEmpresa }).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
+                if (scrollCode == 1)
+                    query += "WHERE CodPlantilla > @codPlantilla ORDER BY CodPlantilla ASC";
+                else
+                    query += "WHERE CodPlantilla < @codPlantilla ORDER BY CodPlantilla DESC";
             }
 
-            return response;
-        }
+            var codResult = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb,
+                codEmpresa,
+                query,
+                0,
+                new { codPlantilla });
 
-        /// <summary>
-        /// Guarda las unidades
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="dto"></param>
-        /// <returns></returns>
-        public ErrorDto<bool> CntX_Unidades_Guardar(int codEmpresa, string usuario, CntXUnidadGuardarDto dto)
-        {
-            var response = new ErrorDto<bool>();
-
-            try
+            if (codResult.Result == 0)
             {
-                using var cn = new SqlConnection(_portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                // Existe?
-                var existe = cn.ExecuteScalar<int>(@"
-                    SELECT ISNULL(COUNT(*),0)
-                    FROM CntX_Unidades
-                    WHERE COD_CONTABILIDAD = @codEmpresa
-                      AND cod_unidad = @cod_unidad;
-                ", new
+                return new ErrorDto<CntxPlantillaRateDto>
                 {
+                    Code = -2,
+                    Description = "No se encontraron registros"
+                };
+            }
+
+            return CntxPlantillaRate_Consulta_Obtener(
+                codEmpresa,
+                codResult.Result);
+        }
+
+
+
+        public ErrorDto<CntxPlantillaRateDto>
+            CntxPlantillaRate_Consulta_Obtener(
+                int codEmpresa,
+                int codPlantilla)
+        {
+            string queryCab = @"
+                SELECT *
+                FROM CNTX_PLANTILLA_RATE
+                WHERE CodPlantilla = @codPlantilla";
+
+            var result = DbHelper.ExecuteSingleQuery(
+                _portalDb,
+                codEmpresa,
+                queryCab,
+                new CntxPlantillaRateDto(),
+                new { codPlantilla });
+
+            if (result.Result == null)
+                return result!;
+
+            string queryDet = @"
+                SELECT *
+                FROM CNTX_PLANTILLA_RATE_DETALLE
+                WHERE CodPlantilla = @codPlantilla
+                ORDER BY NumLinea";
+
+            var detalle =
+                DbHelper.ExecuteListQuery<CntxPlantillaRateDetalleDto>(
+                    _portalDb,
                     codEmpresa,
-                    cod_unidad = dto.cod_unidad.Trim()
+                    queryDet,
+                    new { codPlantilla });
+
+            result.Result.Detalle =
+                detalle.Result ??
+                new List<CntxPlantillaRateDetalleDto>();
+
+            return result!;
+        }
+
+
+
+        public ErrorDto CntxPlantillaRate_Guardar(
+            int codEmpresa,
+            bool existe,
+            CntxPlantillaRateDto request)
+        {
+            string usuario = request.RegistroUsuario ?? "";
+
+            if (!existe)
+            {
+                const string insert = @"
+                    INSERT INTO CNTX_PLANTILLA_RATE
+                    (CodPlantilla, Descripcion, TipoAsiento,
+                     Consecutivo, RegistroFecha, RegistroUsuario)
+                    VALUES
+                    (@CodPlantilla, @Descripcion, @TipoAsiento,
+                     @Consecutivo, GETDATE(), @Usuario)";
+
+                var resp = DbHelper.ExecuteNonQuery(
+                    _portalDb,
+                    codEmpresa,
+                    insert,
+                    new
+                    {
+                        request.CodPlantilla,
+                        request.Descripcion,
+                        request.TipoAsiento,
+                        request.Consecutivo,
+                        Usuario = usuario
+                    });
+
+                if (resp.Code < 0)
+                    return resp;
+            }
+            else
+            {
+                const string update = @"
+                    UPDATE CNTX_PLANTILLA_RATE SET
+                        Descripcion = @Descripcion,
+                        TipoAsiento = @TipoAsiento,
+                        Consecutivo = @Consecutivo,
+                        ModificaFecha = GETDATE(),
+                        ModificaUsuario = @Usuario
+                    WHERE CodPlantilla = @CodPlantilla";
+
+                var resp = DbHelper.ExecuteNonQuery(
+                    _portalDb,
+                    codEmpresa,
+                    update,
+                    new
+                    {
+                        request.CodPlantilla,
+                        request.Descripcion,
+                        request.TipoAsiento,
+                        request.Consecutivo,
+                        Usuario = usuario
+                    });
+
+                if (resp.Code < 0)
+                    return resp;
+
+                DbHelper.ExecuteNonQuery(
+                    _portalDb,
+                    codEmpresa,
+                    @"DELETE CNTX_PLANTILLA_RATE_DETALLE
+                      WHERE CodPlantilla = @CodPlantilla",
+                    new { request.CodPlantilla });
+            }
+
+            foreach (var d in request.Detalle)
+            {
+                const string insertDet = @"
+                    INSERT INTO CNTX_PLANTILLA_RATE_DETALLE
+                    (CodPlantilla, NumLinea, CodCuenta,
+                     CodUnidad, CodCentroCosto, CodDivisa,
+                     Detalle, Debitos, Creditos)
+                    VALUES
+                    (@CodPlantilla, @NumLinea, @CodCuenta,
+                     @CodUnidad, @CodCentroCosto, @CodDivisa,
+                     @Detalle, @Debitos, @Creditos)";
+
+                DbHelper.ExecuteNonQuery(
+                    _portalDb,
+                    codEmpresa,
+                    insertDet,
+                    new
+                    {
+                        request.CodPlantilla,
+                        d.NumLinea,
+                        d.CodCuenta,
+                        d.CodUnidad,
+                        d.CodCentroCosto,
+                        d.CodDivisa,
+                        d.Detalle,
+                        d.Debitos,
+                        d.Creditos
+                    });
+            }
+
+            _mSecurityMainDb.Bitacora(
+                new Galileo.Models.Security.BitacoraInsertarDto
+                {
+                    EmpresaId = codEmpresa,
+                    Usuario = usuario,
+                    Movimiento = existe
+                        ? "Modifica - WEB"
+                        : "Registra - WEB",
+                    DetalleMovimiento =
+                        $"Plantilla Rate Id: {request.CodPlantilla}",
+                    Modulo = vModulo
                 });
 
-                if (existe == 0)
+            return new ErrorDto
+            {
+                Code = 0,
+                Description =
+                    "Informacion guardada satisfactoriamente..."
+            };
+        }
+
+     
+
+        public ErrorDto CntxPlantillaRate_Eliminar(
+            int codEmpresa,
+            string usuario,
+            int codPlantilla)
+        {
+            DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                @"DELETE CNTX_PLANTILLA_RATE_DETALLE
+                  WHERE CodPlantilla = @CodPlantilla",
+                new { codPlantilla });
+
+            var resp = DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                @"DELETE CNTX_PLANTILLA_RATE
+                  WHERE CodPlantilla = @CodPlantilla",
+                new { codPlantilla });
+
+            if (resp.Code < 0)
+                return resp;
+
+            _mSecurityMainDb.Bitacora(
+                new Galileo.Models.Security.BitacoraInsertarDto
                 {
-                    // INSERT (mantengo mismas columnas que VB6, excepto cuentas que vos no estás editando aún)
-                    cn.Execute(@"
-                        INSERT INTO CntX_Unidades
-                        (
-                            cod_unidad,
-                            COD_CONTABILIDAD,
-                            descripcion,
-                            nivel,
-                            unidad_omision,
-                            reporta_renta,
-                            activa
-                        )
-                        VALUES
-                        (
-                            @cod_unidad,
-                            @codEmpresa,
-                            @descripcion,
-                            @nivel,
-                            @unidad_omision,
-                            @reporta_renta,
-                            @activa
-                        );
-                    ", new
-                    {
-                        codEmpresa,
-                        cod_unidad = dto.cod_unidad.Trim().ToUpper(),
-                        descripcion = dto.descripcion.Trim(),
-                        nivel = dto.nivel,
-                        unidad_omision = dto.unidad_omision,
-                        reporta_renta = dto.reporta_renta,
-                        activa = dto.activa
-                    });
-                }
-                else
-                {
-                    // UPDATE
-                    cn.Execute(@"
-                        UPDATE CntX_Unidades
-                           SET descripcion = @descripcion,
-                               nivel = @nivel,
-                               unidad_omision = @unidad_omision,
-                               reporta_renta = @reporta_renta,
-                               activa = @activa
-                         WHERE COD_CONTABILIDAD = @codEmpresa
-                           AND cod_unidad = @cod_unidad;
-                    ", new
-                    {
-                        codEmpresa,
-                        cod_unidad = dto.cod_unidad.Trim(),
-                        descripcion = dto.descripcion.Trim(),
-                        nivel = dto.nivel,
-                        unidad_omision = dto.unidad_omision,
-                        reporta_renta = dto.reporta_renta,
-                        activa = dto.activa
-                    });
-                }
+                    EmpresaId = codEmpresa,
+                    Usuario = usuario,
+                    Movimiento = "Elimina - WEB",
+                    DetalleMovimiento =
+                        $"Plantilla Rate Id: {codPlantilla}",
+                    Modulo = vModulo
+                });
 
-                response.Result = true;
-            }
-            catch (Exception ex)
+            return new ErrorDto
             {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = false;
-            }
-
-            return response;
-        }
-
-        /// <summary>
-        /// Elimina las unidades
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="codUnidad"></param>
-        /// <returns></returns>
-        public ErrorDto<bool> CntX_Unidades_Eliminar(int codEmpresa, string usuario, string codUnidad)
-        {
-            var response = new ErrorDto<bool>();
-
-            try
-            {
-                using var cn = new SqlConnection(_portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                cn.Execute(@"
-                    DELETE CntX_Unidades
-                     WHERE COD_CONTABILIDAD = @codEmpresa
-                       AND cod_unidad = @codUnidad;
-                ", new { codEmpresa, codUnidad });
-
-                response.Result = true;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = false;
-            }
-
-            return response;
+                Code = 0,
+                Description =
+                    "Registro eliminado satisfactoriamente..."
+            };
         }
 
 
-        /// <summary>
-        /// Lista las unidades activas
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CntXUnidadActivaDto>> CntX_Unidades_Activas_Listar(int codEmpresa)
+
+        public ErrorDto<List<DropDownListaGenericaModel>>
+            TiposAsiento_Obtener(int codEmpresa)
         {
-            var response = new ErrorDto<List<CntXUnidadActivaDto>>();
-
-            try
-            {
-                using var cn = new SqlConnection(_portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var sql = @"
-                    SELECT
-                        RTRIM(cod_unidad) AS cod_unidad,
-                        RTRIM(descripcion) AS descripcion
-                    FROM CntX_Unidades
-                    WHERE activa = 1
-                      AND cod_contabilidad = @codEmpresa
-                    ORDER BY cod_unidad;
-                ";
-
-                response.Result = cn.Query<CntXUnidadActivaDto>(sql, new { codEmpresa }).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
-
-        /// <summary>
-        /// Trae centros de costo por unidad 
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codUnidad"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CntXCentroCostoDto>> CntX_CentrosCosto_PorUnidad(int codEmpresa, string codUnidad)
-        {
-            var response = new ErrorDto<List<CntXCentroCostoDto>>();
-
-            try
-            {
-                using var cn = new SqlConnection(_portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var sql = @"
-                    SELECT
-                        RTRIM(C.cod_centro_costo) AS cod_centro_costo,
-                        RTRIM(C.descripcion) AS descripcion,
-                        CASE WHEN A.cod_centro_costo IS NULL THEN CAST(0 AS bit) ELSE CAST(1 AS bit) END AS asignado
-                    FROM CntX_Centro_costos C
-                    LEFT JOIN CntX_Unidades_CC A
-                           ON C.cod_centro_costo = A.cod_centro_costo
-                          AND C.cod_contabilidad = A.cod_contabilidad
-                          AND A.cod_unidad = @codUnidad
-                          AND A.cod_contabilidad = @codEmpresa
-                    WHERE C.cod_contabilidad = @codEmpresa
-                    ORDER BY asignado DESC, C.cod_centro_costo;
-                ";
-
-                response.Result = cn.Query<CntXCentroCostoDto>(sql, new { codEmpresa, codUnidad }).ToList();
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
-        }
-
-        /// <summary>
-        /// Guarda las unidades CC
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="usuario"></param>
-        /// <param name="dto"></param>
-        /// <returns></returns>
-        public ErrorDto<bool> CntX_Unidades_CC_Guardar(int codEmpresa, string usuario, CntXUnidadCCGuardarDto dto)
-        {
-            var response = new ErrorDto<bool>();
-
-            try
-            {
-                using var cn = new SqlConnection(_portalDB.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                if (dto.asociado == 1)
-                {
-                    // INSERT si no existe
-                    cn.Execute(@"
-                        IF NOT EXISTS (
-                            SELECT 1
-                              FROM CntX_Unidades_CC
-                             WHERE cod_unidad = @cod_unidad
-                               AND cod_centro_costo = @cod_centro_costo
-                               AND cod_contabilidad = @codEmpresa
-                        )
-                        BEGIN
-                            INSERT INTO CntX_Unidades_CC(cod_unidad, cod_centro_costo, cod_contabilidad)
-                            VALUES(@cod_unidad, @cod_centro_costo, @codEmpresa);
-                        END
-                    ", new
-                    {
-                        codEmpresa,
-                        cod_unidad = dto.cod_unidad.Trim(),
-                        cod_centro_costo = dto.cod_centro_costo.Trim()
-                    });
-                }
-                else
-                {
-                    // DELETE
-                    cn.Execute(@"
-                        DELETE CntX_Unidades_CC
-                         WHERE cod_unidad = @cod_unidad
-                           AND cod_centro_costo = @cod_centro_costo
-                           AND cod_contabilidad = @codEmpresa;
-                    ", new
-                    {
-                        codEmpresa,
-                        cod_unidad = dto.cod_unidad.Trim(),
-                        cod_centro_costo = dto.cod_centro_costo.Trim()
-                    });
-                }
-
-                response.Result = true;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-                response.Result = false;
-            }
-
-            return response;
-        }
-
-
-        /// <summary>
-        /// Consulta las unidades CC
-        /// </summary>
-        /// <param name="codEmpresa"></param>
-        /// <param name="codUnidad"></param>
-        /// <returns></returns>
-        public ErrorDto<List<CntXCentroCostoDto>> CntX_Unidades_CC_Consulta(int codEmpresa,string codUnidad
-        )
-        {
-            var response = new ErrorDto<List<CntXCentroCostoDto>>();
+            var response =
+                new ErrorDto<List<DropDownListaGenericaModel>>();
 
             try
             {
                 using var cn = new SqlConnection(
-                    _portalDB.ObtenerDbConnStringEmpresa(codEmpresa)
-                );
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
-                var sql = @"
-                   SELECT
-                      C.cod_centro_costo,
-                      C.descripcion,
-                      CASE 
-                        WHEN A.cod_centro_costo IS NULL THEN 0
-                        ELSE 1
-                      END AS asignado
-                    FROM CntX_Centro_costos C
-                    LEFT JOIN CntX_Unidades_CC A
-                      ON C.cod_centro_costo = A.cod_centro_costo
-                     AND A.cod_unidad = @codUnidad
-                     AND A.cod_contabilidad = 2
-                    WHERE C.cod_contabilidad = 2
-                    ORDER BY asignado DESC, C.cod_centro_costo
-                ";
+                var sql = new StringBuilder();
 
-                response.Result = cn
-                    .Query<CntXCentroCostoDto>(
-                        sql,
-                        new
-                        {
-                            codEmpresa,
-                            codUnidad
-                        }
-                    )
+                sql.AppendLine("SELECT");
+                sql.AppendLine("  Tipo_Asiento AS item,");
+                sql.AppendLine("  descripcion");
+                sql.AppendLine("FROM CntX_Tipos_Asientos");
+                sql.AppendLine("WHERE cod_contabilidad = 2");
+                sql.AppendLine("ORDER BY Tipo_Asiento");
+
+                var result =
+                    cn.Query<DropDownListaGenericaModel>(
+                        sql.ToString(),
+                        new { codEmpresa })
                     .ToList();
+
+                response.Result = result;
+                response.Code = 0;
             }
             catch (Exception ex)
             {
@@ -381,7 +310,4 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return response;
         }
     }
-
-
-
 }
