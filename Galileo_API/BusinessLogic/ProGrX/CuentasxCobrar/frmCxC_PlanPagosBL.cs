@@ -24,5 +24,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         {
             return _db.CxCPlanPagos_ResumenOperacion_Obtener(codEmpresa, operacionId);
         }
+
+        public ErrorDto<List<CxCPlanPagosCargosMovData>> CxCPlanPagos_CargosPorMovimiento_Obtener(
+            int codEmpresa, int operacionId, bool estadoActivo, int? linea)
+        {
+            return _db.CxCPlanPagos_CargosPorMovimiento_Obtener(codEmpresa, operacionId, estadoActivo, linea);
+        }
     }
 }

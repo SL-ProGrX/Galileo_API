@@ -58,4 +58,22 @@
         public DateTime? corte { get; set; }
         public int moradias { get; set; } = 0;
     }
+
+    public class CxCPlanPagosCargosMovData
+    {
+        public int id_cargo { get; set; }
+        public int operacion { get; set; }
+        public string? cod_cargo { get; set; }
+        public decimal monto { get; set; }
+        public decimal saldo { get; set; }
+        public string? notas { get; set; }
+        public string? cod_cuenta { get; set; }
+        public DateTime? registro_fecha { get; set; }
+        public string? registro_usuario { get; set; }
+        public string? cod_unidad { get; set; }
+        public string? cod_centro_costo { get; set; }
+        public string? cod_divisa { get; set; }
+        public decimal abono { get; set; }
+        public decimal linea { get; set; }
+    }
 }

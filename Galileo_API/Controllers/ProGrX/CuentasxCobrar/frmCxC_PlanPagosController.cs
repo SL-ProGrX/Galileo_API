@@ -32,5 +32,12 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _bl.CxCPlanPagos_ResumenOperacion_Obtener(codEmpresa, operacionId);
         }
+
+        [HttpGet("CxCPlanPagos_CargosPorMovimiento_Obtener")]
+        public ErrorDto<List<CxCPlanPagosCargosMovData>> CxCPlanPagos_CargosPorMovimiento_Obtener(
+            int codEmpresa, int operacionId, bool estadoActivo, int? linea)
+        {
+            return _bl.CxCPlanPagos_CargosPorMovimiento_Obtener(codEmpresa, operacionId, estadoActivo, linea);
+        }
     }
 }
