@@ -94,6 +94,46 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         }
         #endregion
 
+        #region Asignacion
+
+        [HttpGet("Crd_CatalogoPolizas_Asignacion_Arbol_Raiz")]
+        public ActionResult<ErrorDto<List<CrdTreeNodeDto>>> Crd_Asignacion_Arbol_Raiz(int CodEmpresa)
+        {
+            return _BL.Crd_Asignacion_Arbol_Raiz(CodEmpresa);
+        }
+
+        [HttpGet("Crd_CatalogoPolizas_Asignacion_Arbol_Hijos")]
+        public ActionResult<ErrorDto<List<CrdTreeNodeDto>>> Crd_Asignacion_Arbol_Hijos(int CodEmpresa, string nodeKey)
+        {
+            return _BL.Crd_Asignacion_Arbol_Hijos(CodEmpresa, nodeKey);
+        }
+
+        [HttpGet("Crd_CatalogoPolizas_Asignacion_Obtener")]
+        public ErrorDto<List<CrdCatalogoPolizasAsignacionDto>> Crd_CatalogoPolizas_Asignacion_Obtener(
+          int CodEmpresa,
+          string codigo,
+          string cod_destino,
+          string garantia)
+        {
+            return _BL.Crd_CatalogoPolizas_Asignacion_Obtener(CodEmpresa, codigo, cod_destino, garantia);
+        }
+
+        [HttpPost("Crd_CatalogoPolizas_Asignacion_Actualizar")]
+        public ErrorDto Crd_CatalogoPolizas_Asignacion_Actualizar(
+           int CodEmpresa,
+           string usuario,
+           CrdCatalogoPolizasAsignacionUpdateDto datos)
+        {
+            return _BL.Crd_CatalogoPolizas_Asignacion_Actualizar(CodEmpresa, usuario, datos);
+        }
+
+        [HttpPost("Crd_CatalogoPolizas_Guardar")]
+        public ErrorDto Crd_CatalogoPolizas_Guardar(int CodEmpresa, string usuario, CrdCatalogoPolizasGuardarDto dto)
+        {
+            return _BL.Crd_CatalogoPolizas_Guardar(CodEmpresa, usuario, dto);
+        }
+
+        #endregion
 
         #region Acreedores
 
@@ -123,5 +163,44 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
 
         #endregion
 
+        #region Busquedas
+
+        [HttpGet("Crd_Catalogo_Retencion_Buscar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Retencion_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return _BL.Crd_Catalogo_Retencion_Buscar(CodEmpresa, codigo, ordenarPor);
+        }
+
+        [HttpGet("Crd_Catalogo_Cargos_Buscar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Cargos_Buscar(
+           int CodEmpresa,
+           string? codigo = null,
+           string? ordenarPor = "item")
+        {
+            return _BL.Crd_Catalogo_Cargos_Buscar(CodEmpresa, codigo, ordenarPor);
+        }
+
+        [HttpGet("Crd_Catalogo_Unidades_Buscar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Unidades_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return _BL.Crd_Catalogo_Unidades_Buscar(CodEmpresa, codigo, ordenarPor);
+        }
+
+        [HttpGet("Crd_Catalogo_CentroCostos_Buscar")]
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_CentroCostos_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return _BL.Crd_Catalogo_CentroCostos_Buscar(CodEmpresa, codigo, ordenarPor);
+        }
+
+        #endregion
     }
 }

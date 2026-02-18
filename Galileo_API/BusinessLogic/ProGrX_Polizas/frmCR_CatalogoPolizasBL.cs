@@ -79,6 +79,42 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
 
         #endregion
 
+        #region Asignacion
+
+        public ErrorDto<List<CrdTreeNodeDto>> Crd_Asignacion_Arbol_Raiz(int CodEmpresa)
+        {
+            return _db.Crd_Asignacion_Arbol_Raiz(CodEmpresa);
+        }
+
+        public ErrorDto<List<CrdTreeNodeDto>> Crd_Asignacion_Arbol_Hijos(int CodEmpresa, string nodeKey)
+        {
+            return _db.Crd_Asignacion_Arbol_Hijos(CodEmpresa, nodeKey);
+        }
+
+        public ErrorDto<List<CrdCatalogoPolizasAsignacionDto>> Crd_CatalogoPolizas_Asignacion_Obtener(
+           int CodEmpresa,
+           string codigo,
+           string cod_destino,
+           string garantia)
+        {
+            return _db.Crd_CatalogoPolizas_Asignacion_Obtener(CodEmpresa, codigo, cod_destino, garantia);
+        }
+
+        public ErrorDto Crd_CatalogoPolizas_Asignacion_Actualizar(
+            int CodEmpresa,
+            string usuario,
+            CrdCatalogoPolizasAsignacionUpdateDto datos)
+        {
+            return _db.Crd_CatalogoPolizas_Asignacion_Actualizar(CodEmpresa, usuario, datos);
+        }
+
+        public ErrorDto Crd_CatalogoPolizas_Guardar(int CodEmpresa, string usuario, CrdCatalogoPolizasGuardarDto dto)
+        {
+            return _db.Crd_CatalogoPolizas_Guardar(CodEmpresa, usuario, dto);
+        }
+
+        #endregion
+
         #region Acreedores
 
         public ErrorDto<List<CrdPolizasAcreedoresGridDto>> Crd_PolizasAcreedores_Grid_Obtener(int CodEmpresa)
@@ -104,5 +140,40 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
 
         #endregion
 
+        #region Busquedas
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Retencion_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return _db.Crd_Catalogo_Retencion_Buscar(CodEmpresa, codigo, ordenarPor);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Cargos_Buscar(
+           int CodEmpresa,
+           string? codigo = null,
+           string? ordenarPor = "item")
+        {
+            return _db.Crd_Catalogo_Cargos_Buscar(CodEmpresa, codigo, ordenarPor); 
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_Unidades_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return _db.Crd_Catalogo_Unidades_Buscar(CodEmpresa, codigo, ordenarPor);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Crd_Catalogo_CentroCostos_Buscar(
+            int CodEmpresa,
+            string? codigo = null,
+            string? ordenarPor = "item")
+        {
+            return _db.Crd_Catalogo_CentroCostos_Buscar(CodEmpresa, codigo, ordenarPor);
+        }
+
+        #endregion
     }
 }
