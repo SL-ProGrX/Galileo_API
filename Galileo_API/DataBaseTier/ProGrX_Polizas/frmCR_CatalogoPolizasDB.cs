@@ -300,12 +300,42 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             });
         }
 
-
         public ErrorDto Crd_CatalogoPolizas_Guardar(int CodEmpresa, string usuario, CrdCatalogoPolizasGuardarDto dto)
         {
             using var conn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
-            // Validaciones mínimas (equivalente a lo crítico del VB)
+
             var codPoliza = (dto.cod_poliza ?? "").Trim();
+            var validationError = Validate(dto, codPoliza);
+            if (validationError != null) return validationError;
+
+            var baseCod = (dto.@base ?? "C").Trim();
+            var tipoCod = (dto.tipo ?? "P").Trim();
+
+            var existe = conn.ExecuteScalar<int>(
+                "SELECT COUNT(1) FROM CRD_CATALOGO_POLIZAS WHERE cod_poliza = @cod_poliza",
+                new { cod_poliza = codPoliza }
+            ) > 0;
+
+            var sql = existe ? UpdateSql : InsertSql;
+            var parametros = BuildParams(dto, codPoliza, baseCod, tipoCod, usuario, existe);
+
+            var rows = conn.Execute(sql, parametros);
+
+            var successMessage = existe
+                ? "Póliza actualizada correctamente."
+                : "Póliza creada correctamente.";
+
+            var errorMessage = existe
+                ? "No se pudo actualizar la póliza."
+                : "No se pudo crear la póliza.";
+
+            return rows > 0
+                ? DbHelper.OkResponse(successMessage)
+                : DbHelper.ErrorResponse(errorMessage);
+        }
+
+        private static ErrorDto? Validate(CrdCatalogoPolizasGuardarDto dto, string codPoliza)
+        {
             if (string.IsNullOrWhiteSpace(codPoliza))
                 return DbHelper.ErrorResponse("Debe indicar el código de la póliza.");
 
@@ -315,184 +345,146 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             if (dto.vence_dia is null || dto.vence_dia < 1 || dto.vence_dia > 30)
                 return DbHelper.ErrorResponse("El día de vencimiento debe estar entre 1 y 30.");
 
-            // Defaults como en VB (si vienen vacíos)
-            var baseCod = (dto.@base ?? "C").Trim();
-            var tipoCod = (dto.tipo ?? "P").Trim();
-
-            var existe = conn.ExecuteScalar<int>(
-                "SELECT COUNT(1) FROM CRD_CATALOGO_POLIZAS WHERE cod_poliza = @cod_poliza",
-                new { cod_poliza = codPoliza }
-            ) > 0;
-
-            if (!existe)
-            {
-                const string insertSql = @"
-                            INSERT INTO CRD_CATALOGO_POLIZAS
-                            (
-                              cod_poliza, descripcion, base, tipo, valor, porc_formalizacion, plazo_meses, cod_cuenta,
-                              codigo_retencion, codigo_cargo, cobertura_inicio, cobertura_corte, cod_aseguradora, contrato_num,
-                              cobertura_vencimiento, vence_frecuencia, vence_dia, poliza_general, cobertura_region,
-                              integra_plan_pagos, poliza_general_tipo, poliza_general_monto, iva_aplica, iva_incluido,
-                              iva_porcentaje, id_poliza_grupo, cod_cuenta_gasto, cod_unidad, cod_centro_costo,
-                              registro_fecha, registro_usuario
-                            )
-                            VALUES
-                            (
-                              @cod_poliza, @descripcion, @base, @tipo, @valor, @porc_formalizacion, @plazo_meses, @cod_cuenta,
-                              @codigo_retencion, @codigo_cargo, @cobertura_inicio, @cobertura_corte, @cod_aseguradora, @contrato_num,
-                              @cobertura_vencimiento, @vence_frecuencia, @vence_dia, @poliza_general, @cobertura_region,
-                              @integra_plan_pagos, @poliza_general_tipo, @poliza_general_monto, @iva_aplica, @iva_incluido,
-                              @iva_porcentaje, @id_poliza_grupo, @cod_cuenta_gasto, @cod_unidad, @cod_centro_costo,
-                              GETDATE(), @registro_usuario
-                            );";
-
-                var rows = conn.Execute(insertSql, new
-                {
-                    cod_poliza = codPoliza,
-                    descripcion = (dto.descripcion ?? "").Trim(),
-                    @base = baseCod,
-                    @tipo = tipoCod,
-                    valor = dto.valor ?? 0m,
-                    porc_formalizacion = dto.porc_formalizacion ?? 0m,
-                    plazo_meses = dto.plazo_meses ?? 0,
-                    cod_cuenta = (dto.cod_cuenta ?? "").Trim(),
-
-                    codigo_retencion = string.IsNullOrWhiteSpace(dto.codigo_retencion) ? null : dto.codigo_retencion.Trim(),
-                    codigo_cargo = (dto.codigo_cargo ?? "").Trim(),
-
-                    cobertura_inicio = dto.cobertura_inicio ?? 0m,
-                    cobertura_corte = dto.cobertura_corte ?? 0m,
-
-                    cod_aseguradora = string.IsNullOrWhiteSpace(dto.cod_aseguradora) ? null : dto.cod_aseguradora.Trim(),
-                    contrato_num = (dto.contrato_num ?? "").Trim(),
-
-                    cobertura_vencimiento = dto.cobertura_vencimiento ?? DateTime.Now,
-                    vence_frecuencia = string.IsNullOrWhiteSpace(dto.vence_frecuencia)
-                                        ? null
-                                        : dto.vence_frecuencia.Trim().Substring(0, 1),
-                    vence_dia = dto.vence_dia,
-
-                    poliza_general = dto.poliza_general ?? 0,
-                    cobertura_region = dto.cobertura_region ?? 0,
-                    integra_plan_pagos = dto.integra_plan_pagos ?? 0,
-
-                    poliza_general_tipo = (dto.poliza_general_tipo ?? "C").Trim(),
-                    poliza_general_monto = dto.poliza_general_monto ?? 0m,
-
-                    iva_aplica = dto.iva_aplica ?? 0,
-                    iva_incluido = dto.iva_incluido ?? 0,
-                    iva_porcentaje = dto.iva_porcentaje ?? 0m,
-
-                    id_poliza_grupo = dto.id_poliza_grupo, // null permitido
-
-                    cod_cuenta_gasto = (dto.cod_cuenta_gasto ?? "").Trim(),
-                    cod_unidad = (dto.cod_unidad ?? "").Trim(),
-                    cod_centro_costo = (dto.cod_centro_costo ?? "").Trim(),
-
-                    registro_usuario = usuario
-                });
-
-                var result = rows > 0;
-                return result ? DbHelper.OkResponse("Póliza creada correctamente.") : DbHelper.ErrorResponse("No se pudo crear la póliza.");
-            }
-            else
-            {
-                const string updateSql = @"
-                        UPDATE CRD_CATALOGO_POLIZAS
-                        SET
-                          descripcion = @descripcion,
-                          base = @base,
-                          tipo = @tipo,
-                          valor = @valor,
-                          porc_formalizacion = @porc_formalizacion,
-                          plazo_meses = @plazo_meses,
-                          cod_cuenta = @cod_cuenta,
-                          codigo_retencion = @codigo_retencion,
-                          codigo_cargo = @codigo_cargo,
-                          cobertura_inicio = @cobertura_inicio,
-                          cobertura_corte = @cobertura_corte,
-                          cod_aseguradora = @cod_aseguradora,
-                          contrato_num = @contrato_num,
-                          cobertura_vencimiento = @cobertura_vencimiento,
-                          vence_frecuencia = @vence_frecuencia,
-                          vence_dia = @vence_dia,
-                          poliza_general = @poliza_general,
-                          cobertura_region = @cobertura_region,
-                          integra_plan_pagos = @integra_plan_pagos,
-                          poliza_general_tipo = @poliza_general_tipo,
-                          poliza_general_monto = @poliza_general_monto,
-                          iva_aplica = @iva_aplica,
-                          iva_incluido = @iva_incluido,
-                          iva_porcentaje = @iva_porcentaje,
-                          id_poliza_grupo = @id_poliza_grupo,
-                          cod_cuenta_gasto = @cod_cuenta_gasto,
-                          cod_unidad = @cod_unidad,
-                          cod_centro_costo = @cod_centro_costo,
-                          modifica_fecha = GETDATE(),
-                          modifica_usuario = @modifica_usuario
-                        WHERE cod_poliza = @cod_poliza;";
-
-                var rows = conn.Execute(updateSql, new
-                {
-                    cod_poliza = codPoliza,
-                    descripcion = (dto.descripcion ?? "").Trim(),
-                    @base = baseCod,
-                    @tipo = tipoCod,
-                    valor = dto.valor ?? 0m,
-                    porc_formalizacion = dto.porc_formalizacion ?? 0m,
-                    plazo_meses = dto.plazo_meses ?? 0,
-                    cod_cuenta = (dto.cod_cuenta ?? "").Trim().Replace("-",""),
-
-                    codigo_retencion = (dto.codigo_retencion ?? "").Trim(),
-                    codigo_cargo = (dto.codigo_cargo ?? "").Trim(),
-
-                    cobertura_inicio = dto.cobertura_inicio ?? 0m,
-                    cobertura_corte = dto.cobertura_corte ?? 0m,
-
-                    cod_aseguradora = string.IsNullOrWhiteSpace(dto.cod_aseguradora) ? null : dto.cod_aseguradora.Trim(),
-                    contrato_num = (dto.contrato_num ?? "").Trim(),
-
-                    cobertura_vencimiento = dto.cobertura_vencimiento ?? DateTime.Now,
-                    vence_frecuencia = string.IsNullOrWhiteSpace(dto.vence_frecuencia)
-                                        ? null
-                                        : dto.vence_frecuencia.Trim().Substring(0, 1),
-                    vence_dia = dto.vence_dia,
-
-                    poliza_general = dto.poliza_general ?? 0,
-                    cobertura_region = dto.cobertura_region ?? 0,
-                    integra_plan_pagos = dto.integra_plan_pagos ?? 0,
-
-                    poliza_general_tipo = (dto.poliza_general_tipo ?? "C").Trim(),
-                    poliza_general_monto = dto.poliza_general_monto ?? 0m,
-
-                    iva_aplica = dto.iva_aplica ?? 0,
-                    iva_incluido = dto.iva_incluido ?? 0,
-                    iva_porcentaje = dto.iva_porcentaje ?? 0m,
-
-                    id_poliza_grupo = dto.id_poliza_grupo, // null permitido
-
-                    cod_cuenta_gasto = (dto.cod_cuenta_gasto ?? "").Trim().Replace("-", ""),
-                    cod_unidad = (dto.cod_unidad ?? "").Trim(),
-                    cod_centro_costo = (dto.cod_centro_costo ?? "").Trim(),
-
-                    modifica_usuario = usuario
-                });
-
-                var result = rows > 0;
-                return result ? DbHelper.OkResponse("Póliza actualizada correctamente.") : DbHelper.ErrorResponse("No se pudo actualizar la póliza.");
-            }
+            return null;
         }
+
+        private static object BuildParams(
+                CrdCatalogoPolizasGuardarDto dto,
+                string codPoliza,
+                string baseCod,
+                string tipoCod,
+                string usuario,
+                bool esUpdate)
+        {
+            string? VenceFrecuenciaOrNull(string? v) =>
+                string.IsNullOrWhiteSpace(v) ? null : v.Trim().Substring(0, 1);
+
+            string? NullIfWhiteSpace(string? v) =>
+                string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+
+            string CleanAccount(string? v) =>
+                esUpdate ? (v ?? "").Trim().Replace("-", "") : (v ?? "").Trim();
+
+            string CleanGasto(string? v) =>
+                esUpdate ? (v ?? "").Trim().Replace("-", "") : (v ?? "").Trim();
+
+            return new
+            {
+                cod_poliza = codPoliza,
+                descripcion = (dto.descripcion ?? "").Trim(),
+                @base = baseCod,
+                @tipo = tipoCod,
+                valor = dto.valor ?? 0m,
+                porc_formalizacion = dto.porc_formalizacion ?? 0m,
+                plazo_meses = dto.plazo_meses ?? 0,
+                cod_cuenta = CleanAccount(dto.cod_cuenta),
+
+                // Nota: en tu insert permitías null para retención, en update no.
+                // Con esto mantenemos esa diferencia:
+                codigo_retencion = esUpdate ? (dto.codigo_retencion ?? "").Trim()
+                                            : NullIfWhiteSpace(dto.codigo_retencion),
+
+                codigo_cargo = (dto.codigo_cargo ?? "").Trim(),
+
+                cobertura_inicio = dto.cobertura_inicio ?? 0m,
+                cobertura_corte = dto.cobertura_corte ?? 0m,
+
+                cod_aseguradora = NullIfWhiteSpace(dto.cod_aseguradora),
+                contrato_num = (dto.contrato_num ?? "").Trim(),
+
+                cobertura_vencimiento = dto.cobertura_vencimiento ?? DateTime.Now,
+                vence_frecuencia = VenceFrecuenciaOrNull(dto.vence_frecuencia),
+                vence_dia = dto.vence_dia,
+
+                poliza_general = dto.poliza_general ?? 0,
+                cobertura_region = dto.cobertura_region ?? 0,
+                integra_plan_pagos = dto.integra_plan_pagos ?? 0,
+
+                poliza_general_tipo = (dto.poliza_general_tipo ?? "C").Trim(),
+                poliza_general_monto = dto.poliza_general_monto ?? 0m,
+
+                iva_aplica = dto.iva_aplica ?? 0,
+                iva_incluido = dto.iva_incluido ?? 0,
+                iva_porcentaje = dto.iva_porcentaje ?? 0m,
+
+                id_poliza_grupo = dto.id_poliza_grupo,
+
+                cod_cuenta_gasto = CleanGasto(dto.cod_cuenta_gasto),
+                cod_unidad = (dto.cod_unidad ?? "").Trim(),
+                cod_centro_costo = (dto.cod_centro_costo ?? "").Trim(),
+
+                // Solo uno se usa según el SQL escogido:
+                registro_usuario = usuario,
+                modifica_usuario = usuario
+            };
+        }
+
+        private const string InsertSql = @"
+                INSERT INTO CRD_CATALOGO_POLIZAS
+                (
+                  cod_poliza, descripcion, base, tipo, valor, porc_formalizacion, plazo_meses, cod_cuenta,
+                  codigo_retencion, codigo_cargo, cobertura_inicio, cobertura_corte, cod_aseguradora, contrato_num,
+                  cobertura_vencimiento, vence_frecuencia, vence_dia, poliza_general, cobertura_region,
+                  integra_plan_pagos, poliza_general_tipo, poliza_general_monto, iva_aplica, iva_incluido,
+                  iva_porcentaje, id_poliza_grupo, cod_cuenta_gasto, cod_unidad, cod_centro_costo,
+                  registro_fecha, registro_usuario
+                )
+                VALUES
+                (
+                  @cod_poliza, @descripcion, @base, @tipo, @valor, @porc_formalizacion, @plazo_meses, @cod_cuenta,
+                  @codigo_retencion, @codigo_cargo, @cobertura_inicio, @cobertura_corte, @cod_aseguradora, @contrato_num,
+                  @cobertura_vencimiento, @vence_frecuencia, @vence_dia, @poliza_general, @cobertura_region,
+                  @integra_plan_pagos, @poliza_general_tipo, @poliza_general_monto, @iva_aplica, @iva_incluido,
+                  @iva_porcentaje, @id_poliza_grupo, @cod_cuenta_gasto, @cod_unidad, @cod_centro_costo,
+                  GETDATE(), @registro_usuario
+                );";
+
+        private const string UpdateSql = @"
+                UPDATE CRD_CATALOGO_POLIZAS
+                SET
+                  descripcion = @descripcion,
+                  base = @base,
+                  tipo = @tipo,
+                  valor = @valor,
+                  porc_formalizacion = @porc_formalizacion,
+                  plazo_meses = @plazo_meses,
+                  cod_cuenta = @cod_cuenta,
+                  codigo_retencion = @codigo_retencion,
+                  codigo_cargo = @codigo_cargo,
+                  cobertura_inicio = @cobertura_inicio,
+                  cobertura_corte = @cobertura_corte,
+                  cod_aseguradora = @cod_aseguradora,
+                  contrato_num = @contrato_num,
+                  cobertura_vencimiento = @cobertura_vencimiento,
+                  vence_frecuencia = @vence_frecuencia,
+                  vence_dia = @vence_dia,
+                  poliza_general = @poliza_general,
+                  cobertura_region = @cobertura_region,
+                  integra_plan_pagos = @integra_plan_pagos,
+                  poliza_general_tipo = @poliza_general_tipo,
+                  poliza_general_monto = @poliza_general_monto,
+                  iva_aplica = @iva_aplica,
+                  iva_incluido = @iva_incluido,
+                  iva_porcentaje = @iva_porcentaje,
+                  id_poliza_grupo = @id_poliza_grupo,
+                  cod_cuenta_gasto = @cod_cuenta_gasto,
+                  cod_unidad = @cod_unidad,
+                  cod_centro_costo = @cod_centro_costo,
+                  modifica_fecha = GETDATE(),
+                  modifica_usuario = @modifica_usuario
+                WHERE cod_poliza = @cod_poliza;";
+        
 
 
         #endregion
 
-       #region Asignacion
+        #region Asignacion
 
-            /// <summary>
-            /// Método para construir el árbol de asignación de pólizas (VB6: sbCargaArbol), que muestra las líneas, destinos y garantías disponibles para asignar a una póliza. El nodo raíz es "Lineas", debajo van las líneas (L), luego los destinos (D) y finalmente las garantías (G). Cada nodo tiene un key con formato específico para identificar su tipo y código.
-            /// </summary>
-            /// <param name="CodEmpresa"></param>
-            /// <returns></returns>
+        /// <summary>
+        /// Método para construir el árbol de asignación de pólizas (VB6: sbCargaArbol), que muestra las líneas, destinos y garantías disponibles para asignar a una póliza. El nodo raíz es "Lineas", debajo van las líneas (L), luego los destinos (D) y finalmente las garantías (G). Cada nodo tiene un key con formato específico para identificar su tipo y código.
+        /// </summary>
+        /// <param name="CodEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<CrdTreeNodeDto>> Crd_Asignacion_Arbol_Raiz(int CodEmpresa)
         {
             return DbHelper.WithConn(_portalDb, CodEmpresa, conn =>
