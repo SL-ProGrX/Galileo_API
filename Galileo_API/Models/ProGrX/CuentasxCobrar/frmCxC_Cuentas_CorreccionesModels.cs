@@ -15,7 +15,7 @@
             public string? Cedula_Autorizado { get; set; } = string.Empty;
             public string? AutorizadoNom { get; set; } = string.Empty;
             public string? BancoDesc { get; set; } = string.Empty;
-            public int Emitir_Banco { get; set; }
+            public int? Emitir_Banco { get; set; }
             public string? Emitir_Tipo { get; set; } = string.Empty;
             public string? Emitir_Cuenta { get; set; } = string.Empty;
             public string? CuentaDesc { get; set; } = string.Empty;

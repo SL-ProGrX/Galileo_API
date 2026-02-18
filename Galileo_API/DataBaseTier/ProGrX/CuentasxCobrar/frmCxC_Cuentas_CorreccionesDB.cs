@@ -9,8 +9,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
     public class FrmCxCCuentasCorreccionesDb
     {
         private readonly PortalDB _portalDB; 
-        private readonly IConfiguration _config; 
-
+        private readonly IConfiguration _config;  
+        private const string consultaE = "Consulta realizada correctamente";
         public FrmCxCCuentasCorreccionesDb(IConfiguration config)
         {
             _portalDB = new PortalDB(config); 
@@ -28,7 +28,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
-                Description = "Consulta realizada correctamente",
+                Description = consultaE,
                 Result = new List<DropDownListaGenericaModel>()
             };
             try
@@ -64,7 +64,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var response = new ErrorDto<List<DropDownListaGenericaModel>>
             {
                 Code = 0,
-                Description = "Consulta realizada correctamente",
+                Description = consultaE,
                 Result = new List<DropDownListaGenericaModel>()
             };
             try
@@ -132,7 +132,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var response = new ErrorDto<ContratoData>
             {
                 Code = 0,
-                Description = "Consulta realizada correctamente",
+                Description = consultaE,
                 Result = new ContratoData()
             };
             try
@@ -186,7 +186,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             var response = new ErrorDto<ContratoData>
             {
                 Code = 0,
-                Description = "Consulta realizada correctamente",
+                Description = consultaE,
                 Result = new ContratoData()
             };
 
