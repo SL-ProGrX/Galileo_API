@@ -407,19 +407,24 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var userSesion = req.usuario_sesion!.Trim();
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
-
             try
             {
                 if (req.edita.GetValueOrDefault(false))
                 {
                     EjecutarUpdate(conn, user, userSesion, req);
-                    RegistrarBitacora(CodEmpresa, userSesion, $"Cobros > Control Usuarios > Modifica usuario: {user}", "Modifica - WEB");
+                    RegistrarBitacora(CodEmpresa, userSesion,
+                        $"Cobros > Control Usuarios > Modifica usuario: {user}", "Modifica - WEB");
                     return DbHelper.CreateOkResponse();
                 }
 
                 EjecutarInsert(conn, user, userSesion, req);
-                RegistrarBitacora(CodEmpresa, userSesion, $"Cobros > Control Usuarios > Registra usuario: {user}", "Registra - WEB");
+                RegistrarBitacora(CodEmpresa, userSesion,
+                    $"Cobros > Control Usuarios > Registra usuario: {user}", "Registra - WEB");
                 return DbHelper.CreateOkResponse();
+            }
+            catch (BusinessException bex)
+            {
+                return DbHelper.ErrorResponse(bex.Message, bex.Code);
             }
             catch (SqlException ex)
             {
@@ -741,12 +746,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
             var p = BuildParamsGuardar(user, userSesion, req, isUpdate: true);
             conn.Execute(sqlUpd, p);
         }
-        private static ErrorDto? EjecutarInsert(SqlConnection conn, string user, string userSesion, CoControlUsuariosGuardarRequest req)
+        private sealed class BusinessException : Exception
+        {
+            public int Code { get; }
+            public BusinessException(string message, int code) : base(message) => Code = code;
+        }
+        private static void EjecutarInsert(SqlConnection conn, string user, string userSesion, CoControlUsuariosGuardarRequest req)
         {
             const string sqlExiste = @"select count(1) from cbr_usuarios where usuario = @usuario;";
             var existe = conn.QuerySingle<int>(sqlExiste, new { usuario = user }) > 0;
             if (existe)
-                return DbHelper.ErrorResponse("Usuario ya existe, verifique...", -2);
+                throw new BusinessException("Usuario ya existe, verifique...", -2);
 
             const string sqlIns = @"
             insert into cbr_usuarios
@@ -756,7 +766,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
             var p = BuildParamsGuardar(user, userSesion, req, isUpdate: false);
             conn.Execute(sqlIns, p);
-            return null;
         }
         private void RegistrarBitacora(int CodEmpresa, string userSesion, string detalle, string movimiento)
         {
