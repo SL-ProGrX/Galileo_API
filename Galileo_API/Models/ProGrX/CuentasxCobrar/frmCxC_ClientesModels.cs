@@ -49,6 +49,29 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Notas { get; set; }
     }
 
+    // Nueva clase para información de conyuge
+    public class ConyugeInfo
+    {
+        public string? Cedula { get; set; }
+        public string? Nombre { get; set; }
+        public string? TelTra { get; set; }
+        public string? TelTraExt { get; set; }
+        public string? TelCell { get; set; }
+    }
+
+    // Nueva clase para información de albacea
+    public class AlbaceaInfo
+    {
+        public string? Cedula { get; set; }
+        public string? Nombre { get; set; }
+        public string? TelTra { get; set; }
+        public string? TelTraExt { get; set; }
+        public string? TelCell { get; set; }
+        public string? Cod_Oficina { get; set; }
+        public DateTime? Nombramiento_Fecha { get; set; }
+        public string? Notificaciones { get; set; }
+    }
+
     public class CxcPersonaValidaResult
     {
         public int Existe { get; set; }
@@ -59,6 +82,8 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public PersonaBaseInfo? Persona { get; set; }
         public DireccionInfo? DireccionData { get; set; }
         public ContactoInfo? ContactoData { get; set; }
+        public ConyugeInfo? Conyuge { get; set; }
+        public AlbaceaInfo? Albacea { get; set; }
         // Propiedades exclusivas de SocioInfoDto
         public int? Hijos { get; set; }
         public string? EstadoLaboral { get; set; }
@@ -96,16 +121,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public DateTime? Nota_Fecha { get; set; }
         public DateTime? Fecha_Comision { get; set; }
         public short? Ind_Doble_Deduccion { get; set; }
-        public string? Conyuge_Cedula { get; set; }
-        public string? Conyuge_Nombre { get; set; }
-        public string? Conyuge_TelTra { get; set; }
-        public string? Conyuge_TelTraExt { get; set; }
-        public string? Conyuge_TelCell { get; set; }
         public string? Notificaciones { get; set; }
-        public DateTime? Nombramiento_Fecha { get; set; }
-        public string? Albacea_Cedula { get; set; }
-        public string? Albacea_Nombre { get; set; }
-        public string? Cod_Oficina { get; set; }
         public short? Profesion { get; set; }
         public short? Comision_Autorizada { get; set; }
         public string? Cod_Actividad { get; set; }
@@ -175,9 +191,6 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Usuario_Carga_Act_Datos { get; set; }
         public byte? Proyeccion_Social { get; set; }
         public bool? AutorizaAdminAportePatronal { get; set; }
-        public string? Albacea_TelTra { get; set; }
-        public string? Albacea_TelTraExt { get; set; }
-        public string? Albacea_TelCell { get; set; }
         public int? Id_Persona { get; set; }
         public string? Tra_Provincia { get; set; }
         public string? Tra_Canton { get; set; }
@@ -199,6 +212,8 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public PersonaBaseInfo? Persona { get; set; }
         public ContactoInfo? ContactoData { get; set; }
         public DireccionInfo? DireccionData { get; set; }
+        public ConyugeInfo? Conyuge { get; set; }
+        public AlbaceaInfo? Albacea { get; set; }
         // Solo propiedades exclusivas de PersonaInfoDto aquí
         public int? Enlace_CXP { get; set; }
         public DateTime? Categoria_Fecha { get; set; }
@@ -222,6 +237,8 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public PersonaBaseInfo? Persona { get; set; }
         public ContactoInfo? ContactoData { get; set; }
         public DireccionInfo? DireccionData { get; set; }
+        public ConyugeInfo? Conyuge { get; set; }
+        public AlbaceaInfo? Albacea { get; set; }
         public string? Usuario { get; set; }
     }
 
