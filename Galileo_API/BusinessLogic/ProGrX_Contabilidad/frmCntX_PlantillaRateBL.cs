@@ -39,5 +39,25 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.TiposAsiento_Obtener(codEmpresa);
         }
 
+        public ErrorDto<List<DropDownListaGenericaModel>>Plantillas_Buscar(int codEmpresa)
+        {
+            return _db.Plantillas_Buscar(codEmpresa);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Obtener(int codEmpresa)
+        {
+            return _db.Unidades_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Obtener(int codEmpresa)
+        {
+            return _db.Divisas_Obtener(codEmpresa);
+        }
+
+        public ErrorDto<List<DropDownListaGenericaModel>> CentroCosto_Obtener(int codEmpresa,string codUnidad)
+        {
+            return _db.CentroCosto_Obtener(codEmpresa, codUnidad);
+        }
+
     }
 }
