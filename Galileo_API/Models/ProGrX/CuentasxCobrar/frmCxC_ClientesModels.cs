@@ -24,12 +24,6 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Website { get; set; }
     }
 
-    // Común para auditoría
-    public class AuditoriaInfo
-    {
-        public string? Registro_Usuario { get; set; }
-        public DateTime? Registro_Fecha { get; set; }
-    }
 
     public class CxcPersonaValidaResult
     {
