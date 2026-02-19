@@ -13,12 +13,13 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
     {
         private readonly PortalDB _portalDB;
         private readonly MSecurityMainDb _securityMainDb;
-
         private const int vModulo = 4;
         private const string USUARIO_INVALIDO = "Usuario inválido.";
         private const string USUARIO_SESION_INVALIDO = "Usuario de sesión inválido.";
         private const string SOLICITUD_INVALIDA = "Solicitud inválida.";
-
+        private const string ASIGNAR = "Asignar";
+        private const string ELIMINAR = "Eliminar";
+        private const string MODIFICA = "Modifica - WEB";
         public FrmCOControlUsuariosRolDB(IConfiguration config)
         {
             _portalDB = new PortalDB(config);
@@ -62,7 +63,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<List<DropDownListaGenericaModel>>(ex.Message);
             }
         }
-
         /// <summary>
         /// Lista Antigüedad con asignación por usuario.
         /// <param name="CodEmpresa"></param>
@@ -102,7 +102,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosRolAntiguedadItem>>(ex.Message);
             }
         }
-
         /// <summary>
         /// Lista Garantías con asignación por usuario.
         /// <param name="CodEmpresa"></param>
@@ -142,7 +141,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosRolGarantiaItem>>(ex.Message);
             }
         }
-
         /// <summary>
         /// Lista Oficinas con asignación por usuario.
         /// <param name="CodEmpresa"></param>
@@ -182,7 +180,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosRolOficinaItem>>(ex.Message);
             }
         }
-
         /// <summary>
         /// Lista Instituciones con asignación por usuario.
         /// <param name="CodEmpresa"></param>
@@ -222,7 +219,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.CreateErrorResponse<CoControlUsuariosListaResult<CoControlUsuariosRolInstitucionItem>>(ex.Message);
             }
         }
-
         /// <summary>
         /// Asignar/Desasignar Antigüedad.
         /// <param name="CodEmpresa"></param>
@@ -264,8 +260,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RegistrarBitacora(
                     CodEmpresa,
                     usuarioSesion,
-                    $"Cobros > Control Usuarios Rol > Antigüedad {codAnt} => {(req.asignar ? "Asignar" : "Eliminar")} (Usuario {usuario})",
-                    "Modifica - WEB"
+                    $"Cobros > Control Usuarios Rol > Antigüedad {codAnt} => {(req.asignar ? ASIGNAR : ELIMINAR)} (Usuario {usuario})",
+                    MODIFICA
                 );
 
                 return DbHelper.CreateOkResponse();
@@ -283,15 +279,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto CO_UsuariosRol_Garantia_Asignar(int CodEmpresa, CoControlUsuariosRolAsignarGarantiaRequest req)
         {
-            var err = ValidarAsignacionBase(req?.usuario, req?.usuario_sesion);
+            if (req == null)
+                return DbHelper.ErrorResponse(SOLICITUD_INVALIDA, -2);
+            var err = ValidarAsignacionBase(req.usuario, req.usuario_sesion);
             if (err != null) return err;
-
-            if (string.IsNullOrWhiteSpace(req!.garantia))
+            var garantia = (req.garantia ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(garantia))
                 return DbHelper.ErrorResponse("Garantía inválida.", -2);
 
             var usuario = req.usuario!.Trim();
             var usuarioSesion = req.usuario_sesion!.Trim();
-            var garantia = req.garantia!.Trim();
+            var asignar = req.asignar ?? false;
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
@@ -304,16 +302,19 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 DELETE CBR_USUARIOS_GARANTIAS
                 WHERE usuario = @usuario AND garantia = @gar;";
 
-                EjecutarAsignacion(conn, req.asignar, sqlIns, sqlDel, new
+                EjecutarAsignacion(conn, asignar, sqlIns, sqlDel, new
                 {
                     usuario,
                     gar = garantia,
                     usr = usuarioSesion
                 });
 
-                RegistrarBitacora(CodEmpresa, usuarioSesion,
-                    $"Cobros > Control Usuarios Rol > Garantía {garantia} => {(req.asignar ? "Asignar" : "Eliminar")} (Usuario {usuario})",
-                    "Modifica - WEB");
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuarioSesion,
+                    $"Cobros > Control Usuarios Rol > Garantía {garantia} => {(asignar ? ASIGNAR : ELIMINAR)} (Usuario {usuario})",
+                    MODIFICA
+                );
 
                 return DbHelper.CreateOkResponse();
             }
@@ -322,7 +323,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
         /// Asignar/Desasignar Oficina.
         /// <param name="CodEmpresa"></param>
@@ -331,37 +331,42 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto CO_UsuariosRol_Oficina_Asignar(int CodEmpresa, CoControlUsuariosRolAsignarOficinaRequest req)
         {
-            var err = ValidarAsignacionBase(req?.usuario, req?.usuario_sesion);
+            if (req == null)
+                return DbHelper.ErrorResponse(SOLICITUD_INVALIDA, -2);
+            var err = ValidarAsignacionBase(req.usuario, req.usuario_sesion);
             if (err != null) return err;
-
-            if (string.IsNullOrWhiteSpace(req!.cod_oficina))
+            var oficina = (req.cod_oficina ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(oficina))
                 return DbHelper.ErrorResponse("Oficina inválida.", -2);
 
             var usuario = req.usuario!.Trim();
             var usuarioSesion = req.usuario_sesion!.Trim();
-            var oficina = req.cod_oficina!.Trim();
+            var asignar = req.asignar ?? false;
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
             {
                 const string sqlIns = @"
-                INSERT INTO CBR_USUARIOS_OFICINAS(usuario, cod_oficina, registro_fecha, registro_usuario)
-                VALUES(@usuario, @cod, dbo.MyGetdate(), @usr);";
+                    INSERT INTO CBR_USUARIOS_OFICINAS(usuario, cod_oficina, registro_fecha, registro_usuario)
+                    VALUES(@usuario, @cod, dbo.MyGetdate(), @usr);";
 
-                                const string sqlDel = @"
-                DELETE CBR_USUARIOS_OFICINAS
-                WHERE usuario = @usuario AND cod_oficina = @cod;";
+                const string sqlDel = @"
+                    DELETE CBR_USUARIOS_OFICINAS
+                    WHERE usuario = @usuario AND cod_oficina = @cod;";
 
-                EjecutarAsignacion(conn, req.asignar, sqlIns, sqlDel, new
+                EjecutarAsignacion(conn, asignar, sqlIns, sqlDel, new
                 {
                     usuario,
                     cod = oficina,
                     usr = usuarioSesion
                 });
 
-                RegistrarBitacora(CodEmpresa, usuarioSesion,
-                    $"Cobros > Control Usuarios Rol > Oficina {oficina} => {(req.asignar ? "Asignar" : "Eliminar")} (Usuario {usuario})",
-                    "Modifica - WEB");
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuarioSesion,
+                    $"Cobros > Control Usuarios Rol > Oficina {oficina} => {(asignar ? ASIGNAR : ELIMINAR)} (Usuario {usuario})",
+                    MODIFICA
+                );
 
                 return DbHelper.CreateOkResponse();
             }
@@ -370,7 +375,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
         /// Asignar/Desasignar Institución.
         /// <param name="CodEmpresa"></param>
@@ -379,15 +383,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         /// <returns></returns>
         public ErrorDto CO_UsuariosRol_Institucion_Asignar(int CodEmpresa, CoControlUsuariosRolAsignarInstitucionRequest req)
         {
-            var err = ValidarAsignacionBase(req?.usuario, req?.usuario_sesion);
+            if (req == null)
+                return DbHelper.ErrorResponse(SOLICITUD_INVALIDA, -2);
+            var err = ValidarAsignacionBase(req.usuario, req.usuario_sesion);
             if (err != null) return err;
-
-            if (string.IsNullOrWhiteSpace(req!.cod_institucion))
+            var institucion = (req.cod_institucion ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(institucion))
                 return DbHelper.ErrorResponse("Institución inválida.", -2);
 
             var usuario = req.usuario!.Trim();
             var usuarioSesion = req.usuario_sesion!.Trim();
-            var institucion = req.cod_institucion!.Trim();
+            var asignar = req.asignar ?? false;
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
@@ -396,20 +402,23 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 INSERT INTO CBR_USUARIOS_INSTITUCION(usuario, cod_institucion, registro_fecha, registro_usuario)
                 VALUES(@usuario, @cod, dbo.MyGetdate(), @usr);";
 
-                                const string sqlDel = @"
+                const string sqlDel = @"
                 DELETE CBR_USUARIOS_INSTITUCION
                 WHERE usuario = @usuario AND cod_institucion = @cod;";
 
-                EjecutarAsignacion(conn, req.asignar, sqlIns, sqlDel, new
+                EjecutarAsignacion(conn, asignar, sqlIns, sqlDel, new
                 {
                     usuario,
                     cod = institucion,
                     usr = usuarioSesion
                 });
 
-                RegistrarBitacora(CodEmpresa, usuarioSesion,
-                    $"Cobros > Control Usuarios Rol > Institución {institucion} => {(req.asignar ? "Asignar" : "Eliminar")} (Usuario {usuario})",
-                    "Modifica - WEB");
+                RegistrarBitacora(
+                    CodEmpresa,
+                    usuarioSesion,
+                    $"Cobros > Control Usuarios Rol > Institución {institucion} => {(asignar ? ASIGNAR : ELIMINAR)} (Usuario {usuario})",
+                    MODIFICA
+                );
 
                 return DbHelper.CreateOkResponse();
             }
@@ -418,10 +427,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
         /// Copia roles (spCBR_UsuarioRol_Copia).
+        /// <param name="CodEmpresa"></param>
+        /// <param name="req"></param>
         /// </summary>
+        /// <returns></returns>
         public ErrorDto CO_UsuariosRol_Copia(int CodEmpresa, CoControlUsuariosRolCopiaRequest req)
         {
             if (req == null)
@@ -457,8 +468,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 RegistrarBitacora(CodEmpresa, usuarioSesion,
                     $"Cobros > Control Usuarios Rol > Copia roles: {origen} => {destino}",
-                    "Modifica - WEB");
-
+                    MODIFICA);
+                    
                 return DbHelper.CreateOkResponse();
             }
             catch (SqlException ex)
@@ -466,7 +477,6 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 return DbHelper.ErrorResponse(ex.Message);
             }
         }
-
         /// <summary>
         /// Limpia roles de usuarios inactivos (spCBR_UsuarioRol_Limpia).
         /// <param name="CodEmpresa"></param>
@@ -490,7 +500,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
 
                 RegistrarBitacora(CodEmpresa, usuarioSesion,
                     "Cobros > Control Usuarios Rol > Limpia roles usuarios inactivos",
-                    "Modifica - WEB");
+                    MODIFICA);
 
                 return DbHelper.CreateOkResponse();
             }

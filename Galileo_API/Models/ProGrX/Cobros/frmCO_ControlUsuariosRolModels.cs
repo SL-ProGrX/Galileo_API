@@ -12,7 +12,7 @@
     {
         public string? usuario { get; set; }
         public string? garantia { get; set; }
-        public bool asignar { get; set; }
+        public bool? asignar { get; set; }
         public string? usuario_sesion { get; set; }
     }
 
@@ -20,7 +20,7 @@
     {
         public string? usuario { get; set; }
         public string? cod_oficina { get; set; }
-        public bool asignar { get; set; }
+        public bool? asignar { get; set; }
         public string? usuario_sesion { get; set; }
     }
 
@@ -28,7 +28,7 @@
     {
         public string? usuario { get; set; }
         public string? cod_institucion { get; set; }
-        public bool asignar { get; set; }
+        public bool? asignar { get; set; }
         public string? usuario_sesion { get; set; }
     }
 
