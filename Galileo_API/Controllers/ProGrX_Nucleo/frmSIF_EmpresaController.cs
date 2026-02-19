@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Galileo.BusinessLogic;
@@ -75,9 +77,20 @@ namespace Galileo.Controllers
 
         public class SifEmpresaArchivoRequest
         {
+            [BindRequired]
+            [Required]
             public int CodEmpresa { get; set; }
+
+            [BindRequired]
+            [Required]
             public int idEmpresa { get; set; }
+
+            [BindRequired]
+            [Required]
             public string usuario { get; set; } = string.Empty;
+
+            [BindRequired]
+            [Required]
             public IFormFile file { get; set; } = default!;
         }
         
