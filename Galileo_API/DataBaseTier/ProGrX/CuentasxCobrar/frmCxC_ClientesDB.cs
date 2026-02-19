@@ -1,8 +1,9 @@
 ﻿using Dapper;
 using Galileo.DataBaseTier;
-using Galileo.Models.ERROR;
-using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using Galileo.Models;
+using Galileo.Models.ERROR;
+using Galileo.Models.Security;
+using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using System.Collections.Generic;
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
@@ -10,10 +11,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
     public class FrmCxCClientesDB
     {
         private readonly PortalDB _portalDb;
+        private readonly MSecurityMainDb _dbBitacora;
 
         public FrmCxCClientesDB(IConfiguration config)
         {
             _portalDb = new PortalDB(config);
+            _dbBitacora = new MSecurityMainDb(config);
         }
 
         /// <summary>
@@ -108,6 +111,211 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                   AND canton = @canton
                 ORDER BY descripcion";
             return DbHelper.ExecuteListQuery<DropDownListaGenericaModel>(_portalDb, codEmpresa, query, new { provincia, canton });
+        }
+
+        /// <summary>
+        /// Valida si existe una persona por cédula.
+        /// </summary>
+        public ErrorDto<CxcPersonaValidaResult?> CxcPersona_Valida(int codEmpresa, string cedula)
+        {
+            var query = @"select isnull(count(*),0) as Existe from cxc_personas where cedula = @cedula";
+            return DbHelper.ExecuteSingleQuery<CxcPersonaValidaResult>(_portalDb, codEmpresa, query, default, new { cedula });
+        }
+
+        /// <summary>
+        /// Obtiene la información extendida de un socio.
+        /// </summary>
+        public ErrorDto<SocioInfoDto?> Socio_Info(int codEmpresa, string cedula)
+        {
+            var query = @"
+                select P.*,
+                       rtrim(Prov.Descripcion) as ProvDesc,
+                       rtrim(Cant.Descripcion) as CantonDesc,
+                       rtrim(Dist.Descripcion) as DistDesc,
+                       Tid.Descripcion as TipoIdDesc,
+                       Tid.Tipo_Personeria,
+                       dbo.fxAFITelefono(P.cedula,1) as TelHab,
+                       dbo.fxAFITelefono(P.cedula,2) as TelTra,
+                       dbo.fxAFITelefono(P.cedula,3) as TelCell
+                from socios P
+                left join Provincias Prov on P.Provincia = Prov.Provincia
+                left join Cantones Cant on P.Provincia = Cant.Provincia and P.Canton = Cant.Canton
+                left join Distritos Dist on P.Provincia = Dist.Provincia and P.Canton = Dist.Canton and P.distrito = Dist.distrito
+                left join AFI_TIPOS_IDS Tid on P.tipo_id = Tid.tipo_id
+                where P.cedula = @cedula";
+            return DbHelper.ExecuteSingleQuery<SocioInfoDto>(_portalDb, codEmpresa, query, default, new { cedula });
+        }
+
+        /// <summary>
+        /// Obtiene la información extendida de una persona.
+        /// </summary>
+        public ErrorDto<PersonaInfoDto?> Persona_Info(int codEmpresa, string cedula)
+        {
+            var query = @"
+                select P.*,
+                       rtrim(Prov.Descripcion) as ProvDesc,
+                       rtrim(Cant.Descripcion) as CantonDesc,
+                       rtrim(Dist.Descripcion) as DistDesc,
+                       Tid.Descripcion as TipoIdDesc,
+                       Tid.Tipo_Personeria,
+                       rtrim(Cat.Descripcion) as CatDesc,
+                       isnull(Ec.Descripcion,'No. Identificado') as EstadoCivilDesc
+                from CxC_Personas P
+                left join Provincias Prov
+                       on P.Provincia = Prov.Provincia
+                left join Cantones Cant
+                       on P.Provincia = Cant.Provincia
+                      and P.Canton = Cant.Canton
+                left join Distritos Dist
+                       on P.Provincia = Dist.Provincia
+                      and P.Canton = Dist.Canton
+                      and P.distrito = Dist.distrito
+                left join AFI_TIPOS_IDS Tid
+                       on P.tipo_id = Tid.tipo_id
+                left join CxC_Categoria_Clientes Cat
+                       on P.cod_categoria = Cat.cod_Categoria
+                left join SYS_ESTADO_CIVIL Ec
+                       on P.EstadoCivil = Ec.Estado_Civil
+                where P.cedula = @cedula";
+            return DbHelper.ExecuteSingleQuery<PersonaInfoDto>(_portalDb, codEmpresa, query, default, new { cedula });
+        }
+
+        /// <summary>
+        /// Valida el largo mínimo de la cédula para un tipo de ID.
+        /// </summary>
+        public ErrorDto<CxcPersonaLargoCedulaResult?> CxcPersona_LargoCedula(int codEmpresa, short tipoId)
+        {
+            var query = @"select LARGO_MINIMO from AFI_TIPOS_IDS where TIPO_ID = @tipoId";
+            return DbHelper.ExecuteSingleQuery<CxcPersonaLargoCedulaResult>(_portalDb, codEmpresa, query, default, new { tipoId });
+        }
+
+        /// <summary>
+        /// Guarda (inserta o actualiza) una persona.
+        /// </summary>
+        public ErrorDto<bool> CxcPersona_Guardar(int codEmpresa, CxcPersonaSaveParams param)
+        {
+
+            if (param.Persona == null || string.IsNullOrWhiteSpace(param.Persona.Cedula))
+            {
+                return new ErrorDto<bool>
+                {
+                    Code = -1,
+                    Description = "Los datos de la persona o la cédula son requeridos.",
+                    Result = false
+                };
+            }
+
+            // Verifica existencia
+            var existe = DbHelper.ExecuteSingleQuery<int>(
+                _portalDb, codEmpresa,
+                "SELECT COUNT(1) FROM CxC_Personas WHERE cedula = @Cedula",
+                default, new { param.Persona.Cedula }
+            ).Result;
+
+            if (existe == 0)
+            {
+                // Insertar
+                var sql = @"
+                    INSERT INTO CxC_Personas(
+                        cedula, Tipo_Id, nombre, razon_social, celular, telefono1, telefono2, fax,
+                        sexo, estadoCivil, fecha_nacimiento, apto_postal, email_01, email_02,
+                        webSite, notas, direccion, distrito, provincia, canton,
+                        credito_cerrado, Cliente_Exento, cod_categoria, categoria_fecha,
+                        ADELANTO_PERMITE, ADELANTO_MODIFICA, ADELANTO_PORCENTAJE, CREDITO_LIMITE,
+                        ACTIVO, ADELANTO_COMISION_APL, ADELANTO_COMISION, ROL_PAGADOR, ROL_AUTORIZADOR
+                    )
+                    VALUES(
+                        @Cedula, @Tipo_Id, @Nombre, @Razon_Social, @Celular, @Telefono1, @Telefono2, @Fax,
+                        @Sexo, @EstadoCivil, @Fecha_Nacimiento, @Apto_Postal, @Email_01, @Email_02,
+                        @Website, @Notas, @Direccion, @Distrito, @Provincia, @Canton,
+                        @Credito_Cerrado, @Cliente_Exento, @Cod_Categoria, dbo.MyGetdate(),
+                        @Adelanto_Permite, @Adelanto_Modifica, @Adelanto_Porcentaje, @Credito_Limite,
+                        @Activo, @Adelanto_Comision_Apl, @Adelanto_Comision, @Rol_Pagador, @Rol_Autorizador
+                    )";
+                var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                {
+                    var rows = conn.Execute(sql, param);
+                    return rows > 0;
+                });
+
+                RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula ?? "", "REGISTRA-WEB");
+                return result;
+            }
+            else
+            {
+                // Actualizar
+                var sql = @"
+                    UPDATE CxC_Personas
+                    SET nombre = @Nombre,
+                        Razon_Social = @Razon_Social,
+                        Tipo_Id = @Tipo_Id,
+                        telefono1 = @Telefono1,
+                        telefono2 = @Telefono2,
+                        celular = @Celular,
+                        Fax = @Fax,
+                        WebSite = @Website,
+                        apto_postal = @Apto_Postal,
+                        email_01 = @Email_01,
+                        email_02 = @Email_02,
+                        direccion = @Direccion,
+                        distrito = @Distrito,
+                        canton = @Canton,
+                        provincia = @Provincia,
+                        sexo = @Sexo,
+                        EstadoCivil = @EstadoCivil,
+                        Fecha_nacimiento = @Fecha_Nacimiento,
+                        notas = @Notas,
+                        credito_cerrado = @Credito_Cerrado,
+                        Cliente_Exento = @Cliente_Exento,
+                        cod_categoria = @Cod_Categoria,
+                        Categoria_Fecha = dbo.MyGetdate(),
+                        ADELANTO_PERMITE = @Adelanto_Permite,
+                        ADELANTO_MODIFICA = @Adelanto_Modifica,
+                        ADELANTO_PORCENTAJE = @Adelanto_Porcentaje,
+                        CREDITO_LIMITE = @Credito_Limite,
+                        ACTIVO = @Activo,
+                        ADELANTO_COMISION_APL = @Adelanto_Comision_Apl,
+                        ADELANTO_COMISION = @Adelanto_Comision,
+                        ROL_PAGADOR = @Rol_Pagador,
+                        ROL_AUTORIZADOR = @Rol_Autorizador
+                    WHERE cedula = @Cedula";
+                var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+                {
+                    var rows = conn.Execute(sql, param);
+                    return rows > 0;
+                });
+
+                RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula ?? "", "MODIFICA-WEB");
+                return result;
+            }
+        }
+
+        /// <summary>
+        /// Elimina una persona.
+        /// </summary>
+        public ErrorDto<bool> CxcPersona_Eliminar(int codEmpresa, CxcPersonaDeleteParams param)
+        {
+            var sql = @"DELETE FROM CxC_Personas WHERE cedula = @Cedula";
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+
+            RegistrarBitacora(codEmpresa, param.Usuario, param.Cedula, "ELIMINA-WEB");
+            return result;
+        }
+
+        private void RegistrarBitacora(int codEmpresa, string usuario, string cedula, string movimiento)
+        {
+            _dbBitacora.Bitacora(new BitacoraInsertarDto
+            {
+                EmpresaId = codEmpresa,
+                Usuario = usuario?.ToUpperInvariant() ?? "",
+                DetalleMovimiento = $"Persona: {cedula}",
+                Movimiento = movimiento,
+                Modulo = 9
+            });
         }
     }
 }
