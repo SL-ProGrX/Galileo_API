@@ -75,6 +75,7 @@ namespace Galileo.Controllers
             _bl = new FrmSifEmpresaBL(config);
         }
 
+
         public class SifEmpresaArchivoRequest
         {
             [BindRequired]
@@ -93,6 +94,7 @@ namespace Galileo.Controllers
             [Required]
             public IFormFile file { get; set; } = default!;
         }
+
         
         [Authorize]
         [HttpGet("Sif_Empresa_Obtener")]
