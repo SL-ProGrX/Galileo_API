@@ -2,7 +2,7 @@
 {
         public class ArfAcreedorDto
         {
-            public int cod_acreedor { get; set; }
+            public int? cod_acreedor { get; set; }
 
             public string? descripcion { get; set; }
 
@@ -30,7 +30,7 @@
 
             public string? contacto_nombre { get; set; }
 
-            public bool activo { get; set; }
+            public bool? activo { get; set; }
 
             public int? cod_banco { get; set; }
 
