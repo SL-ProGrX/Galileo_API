@@ -4,7 +4,7 @@
     {
         public string? usuario { get; set; }
         public string? cod_antiguedad { get; set; }
-        public bool asignar { get; set; }
+        public bool? asignar { get; set; }
         public string? usuario_sesion { get; set; }
     }
 

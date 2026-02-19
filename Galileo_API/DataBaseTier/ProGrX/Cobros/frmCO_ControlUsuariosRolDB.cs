@@ -228,16 +228,17 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
         public ErrorDto CO_UsuariosRol_Antiguedad_Asignar(int CodEmpresa, CoControlUsuariosRolAsignarAntiguedadRequest req)
         {
             if (req == null)
-                return DbHelper.ErrorResponse("Request inválido.", -2);
+                return DbHelper.ErrorResponse(SOLICITUD_INVALIDA, -2);
             var err = ValidarAsignacionBase(req.usuario, req.usuario_sesion);
             if (err != null) return err;
 
-            var usuario = (req.usuario ?? "").Trim();
-            var usuarioSesion = (req.usuario_sesion ?? "").Trim();
-            var codAnt = (req.cod_antiguedad ?? "").Trim();
-
+            var codAnt = (req.cod_antiguedad ?? string.Empty).Trim();
             if (string.IsNullOrWhiteSpace(codAnt))
                 return DbHelper.ErrorResponse("Antigüedad inválida.", -2);
+
+            var usuario = req.usuario!.Trim();
+            var usuarioSesion = req.usuario_sesion!.Trim();
+            var asignar = req.asignar ?? false;
 
             using var conn = DbHelper.OpenConnection(_portalDB, CodEmpresa);
             try
@@ -246,11 +247,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 INSERT INTO CBR_USUARIOS_ANTIGUEDADES(usuario, cod_antiguedad, registro_fecha, registro_usuario)
                 VALUES(@usuario, @cod, dbo.MyGetdate(), @usr);";
 
-                        const string sqlDel = @"
+                const string sqlDel = @"
                 DELETE CBR_USUARIOS_ANTIGUEDADES
                 WHERE usuario = @usuario AND cod_antiguedad = @cod;";
 
-                EjecutarAsignacion(conn, req.asignar, sqlIns, sqlDel, new
+                EjecutarAsignacion(conn, asignar, sqlIns, sqlDel, new
                 {
                     usuario,
                     cod = codAnt,
@@ -260,7 +261,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.Cobros
                 RegistrarBitacora(
                     CodEmpresa,
                     usuarioSesion,
-                    $"Cobros > Control Usuarios Rol > Antigüedad {codAnt} => {(req.asignar ? ASIGNAR : ELIMINAR)} (Usuario {usuario})",
+                    $"Cobros > Control Usuarios Rol > Antigüedad {codAnt} => {(asignar ? ASIGNAR : ELIMINAR)} (Usuario {usuario})",
                     MODIFICA
                 );
 
