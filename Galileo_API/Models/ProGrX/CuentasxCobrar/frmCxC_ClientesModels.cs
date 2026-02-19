@@ -28,7 +28,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
     public class PersonaBaseInfo
     {
         public string? Cedula { get; set; }
-        public short Tipo_Id { get; set; }
+        public short? Tipo_Id { get; set; }
         public string? Nombre { get; set; }
         public string? Razon_Social { get; set; }
         public string? Sexo { get; set; }
@@ -59,7 +59,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public PersonaBaseInfo? Persona { get; set; }
         public DireccionInfo? DireccionData { get; set; }
         public ContactoInfo? ContactoData { get; set; }
-        public DateTime? Fecha_Nac { get; set; }
+        // Propiedades exclusivas de SocioInfoDto
         public int? Hijos { get; set; }
         public string? EstadoLaboral { get; set; }
         public DateTime? FechaIngreso { get; set; }
@@ -119,7 +119,6 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Consentimiento_Contacto_Usuario { get; set; }
         public DateTime? Consentimiento_Contacto_Fecha { get; set; }
         public short? Cliente_VIP { get; set; }
-        public string? Email_02 { get; set; }
         public string? Facebook { get; set; }
         public string? Linkedin { get; set; }
         public string? Instagram { get; set; }
@@ -200,6 +199,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public PersonaBaseInfo? Persona { get; set; }
         public ContactoInfo? ContactoData { get; set; }
         public DireccionInfo? DireccionData { get; set; }
+        // Solo propiedades exclusivas de PersonaInfoDto aquí
         public int? Enlace_CXP { get; set; }
         public DateTime? Categoria_Fecha { get; set; }
         // Campos extendidos del query
