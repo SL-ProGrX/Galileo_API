@@ -25,12 +25,50 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _mSecurityMainDb = securityDb;
         }
 
+        #region ===================== HELPER =====================
 
-        public ErrorDto<CntxPlantillaRateDto>
-            CntxPlantillaRate_Scroll_Obtener(
-                int codEmpresa,
-                int scrollCode,
-                int? codPlantilla)
+        private ErrorDto<List<DropDownListaGenericaModel>> EjecutarDropDownQuery(
+            int codEmpresa,
+            string sql,
+            object? parametros = null)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var result = cn.Query<DropDownListaGenericaModel>(
+                    sql,
+                    parametros
+                ).ToList();
+
+                response.Result = result;
+                response.Code = 0;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Metodo para scroll 
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="scrollCode"></param>
+        /// <param name="codPlantilla"></param>
+        /// <returns></returns>
+        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Scroll_Obtener(
+            int codEmpresa,
+            int scrollCode,
+            int? codPlantilla)
         {
             string query =
                 "SELECT TOP 1 CodPlantilla FROM CNTX_PLANTILLA_RATE ";
@@ -64,12 +102,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 codResult.Result);
         }
 
-
-
-        public ErrorDto<CntxPlantillaRateDto>
-            CntxPlantillaRate_Consulta_Obtener(
-                int codEmpresa,
-                int codPlantilla)
+        /// <summary>
+        /// Obtiene las plantillas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codPlantilla"></param>
+        /// <returns></returns>
+        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Consulta_Obtener(
+            int codEmpresa,
+            int codPlantilla)
         {
             string queryCab = @"
                 SELECT *
@@ -106,8 +147,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return result!;
         }
 
-
-
+        /// <summary>
+        /// Guarda las plantillas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="existe"></param>
+        /// <param name="request"></param>
+        /// <returns></returns>
         public ErrorDto CntxPlantillaRate_Guardar(
             int codEmpresa,
             bool existe,
@@ -227,8 +273,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             };
         }
 
-     
-
+        /// <summary>
+        /// Elimina las plantillas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <param name="codPlantilla"></param>
+        /// <returns></returns>
         public ErrorDto CntxPlantillaRate_Eliminar(
             int codEmpresa,
             string usuario,
@@ -270,44 +321,102 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             };
         }
 
-
-
-        public ErrorDto<List<DropDownListaGenericaModel>>
-            TiposAsiento_Obtener(int codEmpresa)
+        /// <summary>
+        /// Obtiene los tipo de asientos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> TiposAsiento_Obtener(int codEmpresa)
         {
-            var response =
-                new ErrorDto<List<DropDownListaGenericaModel>>();
+            var sql = @"
+                SELECT
+                  Tipo_Asiento AS item,
+                  descripcion
+                FROM CntX_Tipos_Asientos
+                WHERE cod_contabilidad = 2
+                ORDER BY Tipo_Asiento";
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+            return EjecutarDropDownQuery(codEmpresa, sql);
+        }
 
-                var sql = new StringBuilder();
+        /// <summary>
+        /// Obtiene las plantillas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Plantillas_Buscar(int codEmpresa)
+        {
+            var sql = @"
+                SELECT
+                  cod_plantilla AS item,
+                  descripcion
+                FROM CntX_Plantilla_Rate
+                WHERE cod_contabilidad = @codEmpresa
+                ORDER BY cod_plantilla";
 
-                sql.AppendLine("SELECT");
-                sql.AppendLine("  Tipo_Asiento AS item,");
-                sql.AppendLine("  descripcion");
-                sql.AppendLine("FROM CntX_Tipos_Asientos");
-                sql.AppendLine("WHERE cod_contabilidad = 2");
-                sql.AppendLine("ORDER BY Tipo_Asiento");
+            return EjecutarDropDownQuery(codEmpresa, sql, new { codEmpresa });
+        }
 
-                var result =
-                    cn.Query<DropDownListaGenericaModel>(
-                        sql.ToString(),
-                        new { codEmpresa })
-                    .ToList();
+        /// <summary>
+        /// Obtiene las unidades
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Obtener(int codEmpresa)
+        {
+            var sql = @"
+                SELECT
+                  cod_unidad AS item,
+                  descripcion
+                FROM CntX_Unidades
+                WHERE cod_contabilidad = 2
+                ORDER BY cod_unidad";
 
-                response.Result = result;
-                response.Code = 0;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
+            return EjecutarDropDownQuery(codEmpresa, sql);
+        }
 
-            return response;
+        /// <summary>
+        /// Obtiene las divisas
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Obtener(int codEmpresa)
+        {
+            var sql = @"
+                SELECT
+                  cod_divisa AS item,
+                  descripcion
+                FROM CntX_Divisas
+                WHERE cod_contabilidad = 2
+                ORDER BY cod_divisa";
+
+            return EjecutarDropDownQuery(codEmpresa, sql);
+        }
+
+        /// <summary>
+        /// Obtiene los centros de costos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codUnidad"></param>
+        /// <returns></returns>
+        public ErrorDto<List<DropDownListaGenericaModel>> CentroCosto_Obtener(int codEmpresa, string codUnidad)
+        {
+            var sql = @"
+                SELECT
+                  C.cod_centro_costo AS item,
+                  C.descripcion
+                FROM CntX_Centro_Costos C
+                INNER JOIN CntX_Unidades_CC U
+                  ON C.cod_centro_costo = U.cod_centro_costo
+                  AND C.cod_contabilidad = U.cod_contabilidad
+                WHERE C.cod_contabilidad = @codEmpresa
+                  AND U.cod_unidad = @codUnidad
+                ORDER BY C.cod_centro_costo";
+
+            return EjecutarDropDownQuery(
+                codEmpresa,
+                sql,
+                new { codEmpresa, codUnidad });
         }
     }
 }
