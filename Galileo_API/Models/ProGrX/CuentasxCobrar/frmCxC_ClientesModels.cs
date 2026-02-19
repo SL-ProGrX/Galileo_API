@@ -2,6 +2,35 @@
 
 namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
+    // Común para información de dirección
+    public class DireccionInfo
+    {
+        public string? Provincia { get; set; }
+        public string? Canton { get; set; }
+        public string? Distrito { get; set; }
+        public string? Direccion { get; set; }
+        public string? Apto_Postal { get; set; }
+    }
+
+    // Común para información de contacto
+    public class ContactoInfo
+    {
+        public string? Telefono1 { get; set; }
+        public string? Telefono2 { get; set; }
+        public string? Celular { get; set; }
+        public string? Fax { get; set; }
+        public string? Email_01 { get; set; }
+        public string? Email_02 { get; set; }
+        public string? Website { get; set; }
+    }
+
+    // Común para auditoría
+    public class AuditoriaInfo
+    {
+        public string? Registro_Usuario { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+    }
+
     public class CxcPersonaValidaResult
     {
         public int Existe { get; set; }
@@ -11,10 +40,8 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
     {
         public string? Cedula { get; set; }
         public string? Nombre { get; set; }
-        public string? Provincia { get; set; }
-        public string? Canton { get; set; }
-        public string? Distrito { get; set; }
-        public string? Direccion { get; set; }
+        public DireccionInfo? DireccionData { get; set; }
+        public ContactoInfo? ContactoData { get; set; }
         public DateTime? Fecha_Nac { get; set; }
         public string? Sexo { get; set; }
         public string? EstadoCivil { get; set; }
@@ -163,18 +190,8 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Nombre { get; set; }
         public string? Razon_Social { get; set; }
         public int? Enlace_CXP { get; set; }
-        public string? Telefono1 { get; set; }
-        public string? Telefono2 { get; set; }
-        public string? Celular { get; set; }
-        public string? Fax { get; set; }
-        public short? Provincia { get; set; }
-        public string? Canton { get; set; }
-        public string? Distrito { get; set; }
-        public string? Direccion { get; set; }
-        public string? Email_01 { get; set; }
-        public string? Email_02 { get; set; }
-        public string? Website { get; set; }
-        public string? Apto_Postal { get; set; }
+        public ContactoInfo? ContactoData { get; set; }
+        public DireccionInfo? DireccionData { get; set; }
         public string? Sexo { get; set; }
         public string? EstadoCivil { get; set; }
         public DateTime? Fecha_Nacimiento { get; set; }
