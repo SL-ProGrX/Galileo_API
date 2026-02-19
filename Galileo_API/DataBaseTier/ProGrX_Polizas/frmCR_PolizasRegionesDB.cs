@@ -287,7 +287,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             var validationError = ValidateCantonesListar(codPoliza, cod_region, provinciaTxt, out var provinciaInt);
             if (validationError != null)
+            {
                 return DbHelper.CreateErrorResponse<List<CrdPolizasRegionCantonDto>>(validationError.Description!);
+            }
+                
 
                 var sql = BuildCantonesSql(modo, provinciaInt.HasValue);
             var param = BuildCantonesParams(codPoliza, cod_region, provinciaInt);
