@@ -67,5 +67,47 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _bl.Distritos_Lista(codEmpresa, provincia, canton);
         }
+
+        [Authorize]
+        [HttpGet("CxcPersona_Valida")]
+        public ErrorDto<CxcPersonaValidaResult> CxcPersona_Valida(int codEmpresa, string cedula)
+        {
+            return _bl.CxcPersona_Valida(codEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("Socio_Info")]
+        public ErrorDto<SocioInfoDto> Socio_Info(int codEmpresa, string cedula)
+        {
+            return _bl.Socio_Info(codEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("Persona_Info")]
+        public ErrorDto<PersonaInfoDto> Persona_Info(int codEmpresa, string cedula)
+        {
+            return _bl.Persona_Info(codEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("CxcPersona_LargoCedula")]
+        public ErrorDto<CxcPersonaLargoCedulaResult> CxcPersona_LargoCedula(int codEmpresa, short tipoId)
+        {
+            return _bl.CxcPersona_LargoCedula(codEmpresa, tipoId);
+        }
+
+        [Authorize]
+        [HttpPost("CxcPersona_Guardar")]
+        public ErrorDto<bool> CxcPersona_Guardar(int codEmpresa, [FromBody] CxcPersonaSaveParams param)
+        {
+            return _bl.CxcPersona_Guardar(codEmpresa, param);
+        }
+
+        [Authorize]
+        [HttpPost("CxcPersona_Eliminar")]
+        public ErrorDto<bool> CxcPersona_Eliminar(int codEmpresa, [FromBody] CxcPersonaDeleteParams param)
+        {
+            return _bl.CxcPersona_Eliminar(codEmpresa, param);
+        }
     }
 }
