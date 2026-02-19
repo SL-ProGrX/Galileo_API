@@ -24,6 +24,30 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Website { get; set; }
     }
 
+    // Común para información de persona
+    public class PersonaBaseInfo
+    {
+        public string? Cedula { get; set; }
+        public short Tipo_Id { get; set; }
+        public string? Nombre { get; set; }
+        public string? Razon_Social { get; set; }
+        public string? Sexo { get; set; }
+        public string? EstadoCivil { get; set; }
+        public DateTime? Fecha_Nacimiento { get; set; }
+        public short? Credito_Cerrado { get; set; }
+        public short? Cliente_Exento { get; set; }
+        public string? Cod_Categoria { get; set; }
+        public short? Adelanto_Permite { get; set; }
+        public decimal? Adelanto_Porcentaje { get; set; }
+        public short? Adelanto_Modifica { get; set; }
+        public short? Activo { get; set; }
+        public decimal? Credito_Limite { get; set; }
+        public short? Adelanto_Comision_Apl { get; set; }
+        public decimal? Adelanto_Comision { get; set; }
+        public short? Rol_Pagador { get; set; }
+        public short? Rol_Autorizador { get; set; }
+        public string? Notas { get; set; }
+    }
 
     public class CxcPersonaValidaResult
     {
@@ -32,20 +56,16 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 
     public class SocioInfoDto
     {
-        public string? Cedula { get; set; }
-        public string? Nombre { get; set; }
+        public PersonaBaseInfo? Persona { get; set; }
         public DireccionInfo? DireccionData { get; set; }
         public ContactoInfo? ContactoData { get; set; }
         public DateTime? Fecha_Nac { get; set; }
-        public string? Sexo { get; set; }
-        public string? EstadoCivil { get; set; }
         public int? Hijos { get; set; }
         public string? EstadoLaboral { get; set; }
         public DateTime? FechaIngreso { get; set; }
         public string? EstadoActual { get; set; }
         public string? Apto { get; set; }
         public string? Af_Email { get; set; }
-        public string? Notas { get; set; }
         public string? Ultimo_Estado { get; set; }
         public short? Ind_Liquidacion { get; set; }
         public int? Cod_Banco { get; set; }
@@ -76,7 +96,6 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public DateTime? Nota_Fecha { get; set; }
         public DateTime? Fecha_Comision { get; set; }
         public short? Ind_Doble_Deduccion { get; set; }
-        public short? Tipo_Id { get; set; }
         public string? Conyuge_Cedula { get; set; }
         public string? Conyuge_Nombre { get; set; }
         public string? Conyuge_TelTra { get; set; }
@@ -89,7 +108,6 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Cod_Oficina { get; set; }
         public short? Profesion { get; set; }
         public short? Comision_Autorizada { get; set; }
-        public string? Razon_Social { get; set; }
         public string? Cod_Actividad { get; set; }
         public string? Cod_Sociedad { get; set; }
         public short? Ind_Propiedades { get; set; }
@@ -179,32 +197,11 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 
     public class PersonaInfoDto
     {
-        public string? Cedula { get; set; }
-        public short Tipo_Id { get; set; }
-        public string? Nombre { get; set; }
-        public string? Razon_Social { get; set; }
-        public int? Enlace_CXP { get; set; }
+        public PersonaBaseInfo? Persona { get; set; }
         public ContactoInfo? ContactoData { get; set; }
         public DireccionInfo? DireccionData { get; set; }
-        public string? Sexo { get; set; }
-        public string? EstadoCivil { get; set; }
-        public DateTime? Fecha_Nacimiento { get; set; }
-        public string? Notas { get; set; }
-        public short? Credito_Cerrado { get; set; }
-        public short? Cliente_Exento { get; set; }
+        public int? Enlace_CXP { get; set; }
         public DateTime? Categoria_Fecha { get; set; }
-        public string? Cod_Categoria { get; set; }
-        public short? Adelanto_Permite { get; set; }
-        public decimal? Adelanto_Porcentaje { get; set; }
-        public short? Adelanto_Modifica { get; set; }
-        public short? Activo { get; set; }
-        public decimal? Credito_Limite { get; set; }
-        public string? Registro_Usuario { get; set; }
-        public DateTime? Registro_Fecha { get; set; }
-        public short? Adelanto_Comision_Apl { get; set; }
-        public decimal? Adelanto_Comision { get; set; }
-        public short? Rol_Pagador { get; set; }
-        public short? Rol_Autorizador { get; set; }
         // Campos extendidos del query
         public string? ProvDesc { get; set; }
         public string? CantonDesc { get; set; }
@@ -222,38 +219,9 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 
     public class CxcPersonaSaveParams
     {
-        public string? Cedula { get; set; }
-        public short Tipo_Id { get; set; }
-        public string? Nombre { get; set; }
-        public string? Razon_Social { get; set; }
-        public string? Celular { get; set; }
-        public string? Telefono1 { get; set; }
-        public string? Telefono2 { get; set; }
-        public string? Fax { get; set; }
-        public string? Sexo { get; set; }
-        public string? EstadoCivil { get; set; }
-        public DateTime? Fecha_Nacimiento { get; set; }
-        public string? Apto_Postal { get; set; }
-        public string? Email_01 { get; set; }
-        public string? Email_02 { get; set; }
-        public string? Website { get; set; }
-        public string? Notas { get; set; }
-        public string? Direccion { get; set; }
-        public string? Distrito { get; set; }
-        public string? Canton { get; set; }
-        public short? Provincia { get; set; }
-        public short Credito_Cerrado { get; set; }
-        public short Cliente_Exento { get; set; }
-        public string? Cod_Categoria { get; set; }
-        public short Adelanto_Permite { get; set; }
-        public short Adelanto_Modifica { get; set; }
-        public decimal? Adelanto_Porcentaje { get; set; }
-        public decimal? Credito_Limite { get; set; }
-        public short Activo { get; set; }
-        public short Adelanto_Comision_Apl { get; set; }
-        public decimal? Adelanto_Comision { get; set; }
-        public short Rol_Pagador { get; set; }
-        public short Rol_Autorizador { get; set; }
+        public PersonaBaseInfo? Persona { get; set; }
+        public ContactoInfo? ContactoData { get; set; }
+        public DireccionInfo? DireccionData { get; set; }
         public string? Usuario { get; set; }
     }
 

@@ -116,7 +116,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Valida si existe una persona por cédula.
         /// </summary>
-        public ErrorDto<CxcPersonaValidaResult> CxcPersona_Valida(int codEmpresa, string cedula)
+        public ErrorDto<CxcPersonaValidaResult?> CxcPersona_Valida(int codEmpresa, string cedula)
         {
             var query = @"select isnull(count(*),0) as Existe from cxc_personas where cedula = @cedula";
             return DbHelper.ExecuteSingleQuery<CxcPersonaValidaResult>(_portalDb, codEmpresa, query, default, new { cedula });
@@ -125,7 +125,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Obtiene la información extendida de un socio.
         /// </summary>
-        public ErrorDto<SocioInfoDto> Socio_Info(int codEmpresa, string cedula)
+        public ErrorDto<SocioInfoDto?> Socio_Info(int codEmpresa, string cedula)
         {
             var query = @"
                 select P.*,
@@ -149,7 +149,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Obtiene la información extendida de una persona.
         /// </summary>
-        public ErrorDto<PersonaInfoDto> Persona_Info(int codEmpresa, string cedula)
+        public ErrorDto<PersonaInfoDto?> Persona_Info(int codEmpresa, string cedula)
         {
             var query = @"
                 select P.*,
@@ -183,7 +183,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Valida el largo mínimo de la cédula para un tipo de ID.
         /// </summary>
-        public ErrorDto<CxcPersonaLargoCedulaResult> CxcPersona_LargoCedula(int codEmpresa, short tipoId)
+        public ErrorDto<CxcPersonaLargoCedulaResult?> CxcPersona_LargoCedula(int codEmpresa, short tipoId)
         {
             var query = @"select LARGO_MINIMO from AFI_TIPOS_IDS where TIPO_ID = @tipoId";
             return DbHelper.ExecuteSingleQuery<CxcPersonaLargoCedulaResult>(_portalDb, codEmpresa, query, default, new { tipoId });
@@ -194,11 +194,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// </summary>
         public ErrorDto<bool> CxcPersona_Guardar(int codEmpresa, CxcPersonaSaveParams param)
         {
+
+            if (param.Persona == null || string.IsNullOrWhiteSpace(param.Persona.Cedula))
+            {
+                return new ErrorDto<bool>
+                {
+                    Code = -1,
+                    Description = "Los datos de la persona o la cédula son requeridos.",
+                    Result = false
+                };
+            }
+
             // Verifica existencia
             var existe = DbHelper.ExecuteSingleQuery<int>(
                 _portalDb, codEmpresa,
                 "SELECT COUNT(1) FROM CxC_Personas WHERE cedula = @Cedula",
-                default, new { param.Cedula }
+                default, new { param.Persona.Cedula }
             ).Result;
 
             if (existe == 0)
@@ -227,7 +238,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     return rows > 0;
                 });
 
-                RegistrarBitacora(codEmpresa, param.Usuario, param.Cedula, "REGISTRA-WEB");
+                RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula ?? "", "REGISTRA-WEB");
                 return result;
             }
             else
@@ -274,7 +285,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     return rows > 0;
                 });
 
-                RegistrarBitacora(codEmpresa, param.Usuario, param.Cedula, "MODIFICA-WEB");
+                RegistrarBitacora(codEmpresa, param.Usuario ?? "", param.Persona.Cedula ?? "", "MODIFICA-WEB");
                 return result;
             }
         }
