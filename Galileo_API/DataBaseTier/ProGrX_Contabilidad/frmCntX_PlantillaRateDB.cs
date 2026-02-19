@@ -25,6 +25,39 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             _mSecurityMainDb = securityDb;
         }
 
+        #region ===================== HELPER =====================
+
+        private ErrorDto<List<DropDownListaGenericaModel>> EjecutarDropDownQuery(
+            int codEmpresa,
+            string sql,
+            object? parametros = null)
+        {
+            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+
+            try
+            {
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
+
+                var result = cn.Query<DropDownListaGenericaModel>(
+                    sql,
+                    parametros
+                ).ToList();
+
+                response.Result = result;
+                response.Code = 0;
+            }
+            catch (Exception ex)
+            {
+                response.Code = -1;
+                response.Description = ex.Message;
+            }
+
+            return response;
+        }
+
+        #endregion
+
         /// <summary>
         /// Metodo para scroll 
         /// </summary>
@@ -32,7 +65,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="scrollCode"></param>
         /// <param name="codPlantilla"></param>
         /// <returns></returns>
-        public ErrorDto<CntxPlantillaRateDto>CntxPlantillaRate_Scroll_Obtener( int codEmpresa,int scrollCode,int? codPlantilla)
+        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Scroll_Obtener(
+            int codEmpresa,
+            int scrollCode,
+            int? codPlantilla)
         {
             string query =
                 "SELECT TOP 1 CodPlantilla FROM CNTX_PLANTILLA_RATE ";
@@ -66,14 +102,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 codResult.Result);
         }
 
-
         /// <summary>
         /// Obtiene las plantillas
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <param name="codPlantilla"></param>
         /// <returns></returns>
-        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Consulta_Obtener(int codEmpresa,int codPlantilla)
+        public ErrorDto<CntxPlantillaRateDto> CntxPlantillaRate_Consulta_Obtener(
+            int codEmpresa,
+            int codPlantilla)
         {
             string queryCab = @"
                 SELECT *
@@ -110,7 +147,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             return result!;
         }
 
-
         /// <summary>
         /// Guarda las plantillas
         /// </summary>
@@ -118,7 +154,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="existe"></param>
         /// <param name="request"></param>
         /// <returns></returns>
-        public ErrorDto CntxPlantillaRate_Guardar(int codEmpresa,bool existe,CntxPlantillaRateDto request)
+        public ErrorDto CntxPlantillaRate_Guardar(
+            int codEmpresa,
+            bool existe,
+            CntxPlantillaRateDto request)
         {
             string usuario = request.RegistroUsuario ?? "";
 
@@ -234,7 +273,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             };
         }
 
-     
         /// <summary>
         /// Elimina las plantillas
         /// </summary>
@@ -242,7 +280,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="usuario"></param>
         /// <param name="codPlantilla"></param>
         /// <returns></returns>
-        public ErrorDto CntxPlantillaRate_Eliminar(int codEmpresa,string usuario,int codPlantilla)
+        public ErrorDto CntxPlantillaRate_Eliminar(
+            int codEmpresa,
+            string usuario,
+            int codPlantilla)
         {
             DbHelper.ExecuteNonQuery(
                 _portalDb,
@@ -280,47 +321,22 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             };
         }
 
-
         /// <summary>
         /// Obtiene los tipo de asientos
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>>TiposAsiento_Obtener(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> TiposAsiento_Obtener(int codEmpresa)
         {
-            var response =
-                new ErrorDto<List<DropDownListaGenericaModel>>();
+            var sql = @"
+                SELECT
+                  Tipo_Asiento AS item,
+                  descripcion
+                FROM CntX_Tipos_Asientos
+                WHERE cod_contabilidad = 2
+                ORDER BY Tipo_Asiento";
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var sql = new StringBuilder();
-
-                sql.AppendLine("SELECT");
-                sql.AppendLine("  Tipo_Asiento AS item,");
-                sql.AppendLine("  descripcion");
-                sql.AppendLine("FROM CntX_Tipos_Asientos");
-                sql.AppendLine("WHERE cod_contabilidad = 2");
-                sql.AppendLine("ORDER BY Tipo_Asiento");
-
-                var result =
-                    cn.Query<DropDownListaGenericaModel>(
-                        sql.ToString(),
-                        new { codEmpresa })
-                    .ToList();
-
-                response.Result = result;
-                response.Code = 0;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return EjecutarDropDownQuery(codEmpresa, sql);
         }
 
         /// <summary>
@@ -328,39 +344,17 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// </summary>
         /// <param name="codEmpresa"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>>Plantillas_Buscar(int codEmpresa)
+        public ErrorDto<List<DropDownListaGenericaModel>> Plantillas_Buscar(int codEmpresa)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var sql = @"
+                SELECT
+                  cod_plantilla AS item,
+                  descripcion
+                FROM CntX_Plantilla_Rate
+                WHERE cod_contabilidad = @codEmpresa
+                ORDER BY cod_plantilla";
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var sql = new StringBuilder();
-
-                sql.AppendLine("SELECT");
-                sql.AppendLine("  cod_plantilla AS item,");
-                sql.AppendLine("  descripcion");
-                sql.AppendLine("FROM CntX_Plantilla_Rate");
-                sql.AppendLine("WHERE cod_contabilidad = @codEmpresa");
-                sql.AppendLine("ORDER BY cod_plantilla");
-
-                var result = cn.Query<DropDownListaGenericaModel>(
-                    sql.ToString(),
-                    new { codEmpresa }
-                ).ToList();
-
-                response.Result = result;
-                response.Code = 0;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return EjecutarDropDownQuery(codEmpresa, sql, new { codEmpresa });
         }
 
         /// <summary>
@@ -370,37 +364,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Unidades_Obtener(int codEmpresa)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var sql = @"
+                SELECT
+                  cod_unidad AS item,
+                  descripcion
+                FROM CntX_Unidades
+                WHERE cod_contabilidad = 2
+                ORDER BY cod_unidad";
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var sql = new StringBuilder();
-
-                sql.AppendLine("SELECT");
-                sql.AppendLine("  cod_unidad AS item,");
-                sql.AppendLine("  descripcion");
-                sql.AppendLine("FROM CntX_Unidades");
-                sql.AppendLine("WHERE cod_contabilidad = 2");
-                sql.AppendLine("ORDER BY cod_unidad");
-
-                var result = cn.Query<DropDownListaGenericaModel>(
-                    sql.ToString(),
-                    new { codEmpresa }
-                ).ToList();
-
-                response.Result = result;
-                response.Code = 0;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return EjecutarDropDownQuery(codEmpresa, sql);
         }
 
         /// <summary>
@@ -410,37 +382,15 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Divisas_Obtener(int codEmpresa)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var sql = @"
+                SELECT
+                  cod_divisa AS item,
+                  descripcion
+                FROM CntX_Divisas
+                WHERE cod_contabilidad = 2
+                ORDER BY cod_divisa";
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var sql = new StringBuilder();
-
-                sql.AppendLine("SELECT");
-                sql.AppendLine("  cod_divisa AS item,");
-                sql.AppendLine("  descripcion");
-                sql.AppendLine("FROM CntX_Divisas");
-                sql.AppendLine("WHERE cod_contabilidad = 2");
-                sql.AppendLine("ORDER BY cod_divisa");
-
-                var result = cn.Query<DropDownListaGenericaModel>(
-                    sql.ToString(),
-                    new { codEmpresa }
-                ).ToList();
-
-                response.Result = result;
-                response.Code = 0;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return EjecutarDropDownQuery(codEmpresa, sql);
         }
 
         /// <summary>
@@ -449,47 +399,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         /// <param name="codEmpresa"></param>
         /// <param name="codUnidad"></param>
         /// <returns></returns>
-        public ErrorDto<List<DropDownListaGenericaModel>> CentroCosto_Obtener(int codEmpresa,string codUnidad)
+        public ErrorDto<List<DropDownListaGenericaModel>> CentroCosto_Obtener(int codEmpresa, string codUnidad)
         {
-            var response = new ErrorDto<List<DropDownListaGenericaModel>>();
+            var sql = @"
+                SELECT
+                  C.cod_centro_costo AS item,
+                  C.descripcion
+                FROM CntX_Centro_Costos C
+                INNER JOIN CntX_Unidades_CC U
+                  ON C.cod_centro_costo = U.cod_centro_costo
+                  AND C.cod_contabilidad = U.cod_contabilidad
+                WHERE C.cod_contabilidad = @codEmpresa
+                  AND U.cod_unidad = @codUnidad
+                ORDER BY C.cod_centro_costo";
 
-            try
-            {
-                using var cn = new SqlConnection(
-                    _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
-
-                var sql = new StringBuilder();
-
-                sql.AppendLine("SELECT");
-                sql.AppendLine("  C.cod_centro_costo AS item,");
-                sql.AppendLine("  C.descripcion");
-                sql.AppendLine("FROM CntX_Centro_Costos C");
-                sql.AppendLine("INNER JOIN CntX_Unidades_CC U");
-                sql.AppendLine("  ON C.cod_centro_costo = U.cod_centro_costo");
-                sql.AppendLine("  AND C.cod_contabilidad = U.cod_contabilidad");
-                sql.AppendLine("WHERE C.cod_contabilidad = @codEmpresa");
-                sql.AppendLine("  AND U.cod_unidad = @codUnidad");
-                sql.AppendLine("ORDER BY C.cod_centro_costo");
-
-                var result = cn.Query<DropDownListaGenericaModel>(
-                    sql.ToString(),
-                    new { codEmpresa, codUnidad }
-                ).ToList();
-
-                response.Result = result;
-                response.Code = 0;
-            }
-            catch (Exception ex)
-            {
-                response.Code = -1;
-                response.Description = ex.Message;
-            }
-
-            return response;
+            return EjecutarDropDownQuery(
+                codEmpresa,
+                sql,
+                new { codEmpresa, codUnidad });
         }
-
-
-
-
     }
 }
