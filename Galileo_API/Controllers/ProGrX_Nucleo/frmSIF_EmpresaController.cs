@@ -35,6 +35,39 @@ namespace Galileo.Controllers
             return !string.IsNullOrWhiteSpace(ext) && AllowedImageExtensions.Contains(ext);
         }
 
+        private static ErrorDto? ValidateImageRequest(SifEmpresaArchivoRequest request)
+        {
+            if (request.file == null || request.file.Length == 0)
+                return new ErrorDto { Code = -1, Description = "Archivo vacío o cuerpo no recibido." };
+
+            if (request.file.Length > MaxLogoBytes)
+                return new ErrorDto { Code = -1, Description = "El archivo supera el tamaño permitido (máx. 1 MB)." };
+
+            if (!IsAllowedImage(request.file))
+                return new ErrorDto { Code = -1, Description = "Tipo de archivo no permitido. Solo JPG/JPEG o PNG." };
+
+            return null;
+        }
+
+        private static async Task<byte[]> ReadFileAsync(IFormFile file)
+        {
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            return ms.ToArray();
+        }
+
+        private static async Task<ErrorDto> GuardarImagenAsync(
+            SifEmpresaArchivoRequest request,
+            Func<int, int, byte[], string, ErrorDto> guardarFunc)
+        {
+            var validationError = ValidateImageRequest(request);
+            if (validationError != null)
+                return validationError;
+
+            var contenido = await ReadFileAsync(request.file);
+            return guardarFunc(request.CodEmpresa, request.idEmpresa, contenido, request.usuario);
+        }
+
         public FrmSifEmpresaController(IConfiguration config)
         {
             _bl = new FrmSifEmpresaBL(config);
@@ -75,23 +108,7 @@ namespace Galileo.Controllers
         [RequestSizeLimit(1_200_000)]
         public async Task<ErrorDto> Sif_Empresa_Logo_Guardar([FromForm] SifEmpresaArchivoRequest request)
         {
-            if (request.file == null || request.file.Length == 0)
-                return new ErrorDto { Code = -1, Description = "Archivo vacío o cuerpo no recibido." };
-
-            if (request.file.Length > MaxLogoBytes)
-                return new ErrorDto { Code = -1, Description = "El archivo supera el tamaño permitido (máx. 1 MB)." };
-
-            if (!IsAllowedImage(request.file))
-                return new ErrorDto { Code = -1, Description = "Tipo de archivo no permitido. Solo JPG/JPEG o PNG." };
-
-            byte[] contenido;
-            using (var ms = new MemoryStream())
-            {
-                await request.file.CopyToAsync(ms);
-                contenido = ms.ToArray();
-            }
-
-            return _bl.Sif_Empresa_Logo_Guardar(request.CodEmpresa, request.idEmpresa, contenido, request.usuario);
+            return await GuardarImagenAsync(request, _bl.Sif_Empresa_Logo_Guardar);
         }
 
         [Authorize]
@@ -107,23 +124,7 @@ namespace Galileo.Controllers
         [RequestSizeLimit(1_200_000)]
         public async Task<ErrorDto> Sif_Empresa_Fondo_Guardar([FromForm] SifEmpresaArchivoRequest request)
         {
-            if (request.file == null || request.file.Length == 0)
-                return new ErrorDto { Code = -1, Description = "Archivo vacío o cuerpo no recibido." };
-
-            if (request.file.Length > MaxLogoBytes)
-                return new ErrorDto { Code = -1, Description = "El archivo supera el tamaño permitido (máx. 1 MB)." };
-
-            if (!IsAllowedImage(request.file))
-                return new ErrorDto { Code = -1, Description = "Tipo de archivo no permitido. Solo JPG/JPEG o PNG." };
-
-            byte[] contenido;
-            using (var ms = new MemoryStream())
-            {
-                await request.file.CopyToAsync(ms);
-                contenido = ms.ToArray();
-            }
-
-            return _bl.Sif_Empresa_Fondo_Guardar(request.CodEmpresa, request.idEmpresa, contenido, request.usuario);
+            return await GuardarImagenAsync(request, _bl.Sif_Empresa_Fondo_Guardar);
         }
 
         [Authorize]
