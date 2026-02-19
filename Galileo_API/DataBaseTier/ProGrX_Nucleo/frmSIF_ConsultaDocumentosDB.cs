@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
+﻿using System.Data;
 using Dapper;
-using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
-using Galileo.DataBaseTier;
 using Galileo_API.DataBaseTier;
 using Galileo.Models.ProGrX_Nucleo;
 
@@ -669,19 +663,19 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
             string[] conceptos = Array.Empty<string>();
             string[] documentos = Array.Empty<string>();
 
-            if (string.IsNullOrEmpty(filtros.sortField))
-            {
-                filtros.sortField = "T.Registro_fecha desc, Tipo_Documento, Cod_Transaccion ";
-            }
-            if (!string.IsNullOrEmpty(filtros.filtro))
-            {
-                filtros.filtro = "where  ( Cod_transaccion LIKE '%" + filtros.filtro + "%' " +
-                    " OR documento LIKE '%" + filtros.filtro + "%' " +
-                    " OR Tipo_documento LIKE '%" + filtros.filtro + "%' ) ";
-            }
-
             var outerCols = BuildTransaccionesSelectColumns(outer: true);
             var innerCols = BuildTransaccionesSelectColumns(outer: false);
+
+            // Build parameterized outer filter clause
+            var textoFiltro = filtros.filtro;
+            var outerFilterClause = string.Empty;
+            var filtroLike = string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(textoFiltro))
+            {
+                outerFilterClause = @" where (T.Cod_transaccion like @filtroLike or T.documento like @filtroLike or T.Tipo_documento like @filtroLike) ";
+                filtroLike = $"%{textoFiltro}%";
+            }
 
             var query = $@"select {outerCols}
                             from (
@@ -689,7 +683,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             query += BuildWhereClause(filtros, ref documentos, ref conceptos, ref pSesion, CodEmpresa);
 
-            query += $@") AS T {filtros.filtro} ";
+            query += $@") AS T {outerFilterClause} ";
 
             if (!filtros.fecha_inicio.HasValue || !filtros.fecha_corte.HasValue)
             {
@@ -702,6 +696,7 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
             parametros = new
             {
+                filtroLike,
                 filtros.valor_filtro,
                 Listadocumentos = documentos,
                 Listaconceptos = conceptos,
@@ -918,14 +913,61 @@ namespace Galileo.DataBaseTier.ProGrX_Nucleo
 
         private static string AppendOrderAndPaging(string query, SifConsultaDocFiltros filtros, bool esExportar)
         {
-            var order = $@"  order by {filtros.sortField} {(filtros.sortOrder == 0 ? "DESC" : "ASC")}";
+            var sortColumn = NormalizeSortColumn(filtros?.sortField);
+            var sortDir = (filtros?.sortOrder == 0) ? "DESC" : "ASC";
+
+            var order = $@"  order by {sortColumn} {sortDir}";
+
             if (!esExportar)
             {
+                var offset = filtros?.pagina ?? 0;
+                var pageSize = filtros?.paginacion ?? 50;
+
+                if (offset < 0) offset = 0;
+                if (pageSize <= 0) pageSize = 50;
+                if (pageSize > 500) pageSize = 500; // hard cap to reduce DoS risk
+
                 order += $@"
-                                 OFFSET {filtros.pagina} ROWS 
-                                 FETCH NEXT {filtros.paginacion} ROWS ONLY";
+                                 OFFSET {offset} ROWS 
+                                 FETCH NEXT {pageSize} ROWS ONLY";
             }
+
             return query + order;
+        }
+
+        // Whitelist user-provided sort fields to prevent SQL injection
+        private static string NormalizeSortColumn(string? sortField)
+        {
+            // Default
+            const string defaultSort = "T.Registro_fecha";
+
+            if (string.IsNullOrWhiteSpace(sortField))
+                return defaultSort;
+
+            // Reject obviously dangerous patterns
+            var s = sortField.Trim();
+            if (s.Contains(';') || s.Contains("--") || s.Contains("/*") || s.Contains("*/") || s.Contains(','))
+                return defaultSort;
+
+            // Accept only the first token (ignore any direction passed by client)
+            var token = s.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+
+            if (token.StartsWith("T.", StringComparison.OrdinalIgnoreCase))
+                token = token.Substring(2);
+
+            // Map supported fields
+            return token.ToLowerInvariant() switch
+            {
+                "registro_fecha" => "T.Registro_fecha",
+                "fecha_registro" => "T.Registro_fecha",
+                "tipo_documento" => "T.Tipo_documento",
+                "tipodocumento" => "T.Tipo_documento",
+                "cod_transaccion" => "T.Cod_transaccion",
+                "codtransaccion" => "T.Cod_transaccion",
+                "monto" => "T.monto",
+                "estado" => "T.Estado",
+                _ => defaultSort
+            };
         }
 
         /// <summary>
