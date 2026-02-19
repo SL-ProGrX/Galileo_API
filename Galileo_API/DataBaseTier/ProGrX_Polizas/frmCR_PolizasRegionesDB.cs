@@ -212,5 +212,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
 
         #endregion
+
+
+        #region Asignacion
+
+        #endregion
+
     }
 }
