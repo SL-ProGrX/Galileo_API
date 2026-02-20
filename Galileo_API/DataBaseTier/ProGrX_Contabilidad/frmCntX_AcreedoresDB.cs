@@ -16,6 +16,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
             _portalDb = new PortalDB(config);
         }
 
+        /// <summary>
+        /// Consulta acreedores
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
         public ErrorDto<ArfAcreedorDto?> Consultar(int codEmpresa, int codigo)
         {
             var response = new ErrorDto<ArfAcreedorDto?>();
@@ -48,6 +54,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
             return response;
         }
 
+        /// <summary>
+        /// Inserta Acreedores
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="m"></param>
+        /// <returns></returns>
         public ErrorDto<int> Insertar(int codEmpresa, ArfAcreedorDto m)
         {
             var response = new ErrorDto<int>();
@@ -59,9 +71,53 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
 
                 cn.Execute(
                     @"INSERT INTO ARF_ACREEDORES
-                      (COD_ACREEDOR, DESCRIPCION, IDENTIFICACION)
-                      VALUES
-                      (@cod_acreedor, @descripcion, @identificacion)",
+                                    (
+                                     cod_acreedor,
+                                     descripcion,
+                                     tipo_id,
+                                     identificacion,
+                                     telefono_01,
+                                     telefono_02,
+                                     activo,
+                                     apto_postal,
+                                     email_01,
+                                     email_02,
+                                     website,
+                                     provincia,
+                                     canton,
+                                     distrito,
+                                     direccion,
+                                     contacto_nombre,
+                                     cod_banco,
+                                     cod_cuenta,
+                                     cod_proveedor,
+                                     registro_fecha,
+                                     registro_usuario
+                                    )
+                                    VALUES
+                                    (
+                                     @cod_acreedor,
+                                     @descripcion,
+                                     @tipo_id,
+                                     @identificacion,
+                                     @telefono_01,
+                                     @telefono_02,
+                                     @activo,
+                                     @apto_postal,
+                                     @email_01,
+                                     @email_02,
+                                     @website,
+                                     @provincia,
+                                     @canton,
+                                     @distrito,
+                                     @direccion,
+                                     @contacto_nombre,
+                                     @cod_banco,
+                                     @cod_cuenta,
+                                     @cod_proveedor,
+                                     GETDATE(),
+                                     @usuario
+                                    )",
                     m);
 
                 response.Result = 1;
@@ -75,6 +131,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
             return response;
         }
 
+        /// <summary>
+        /// Actualiza Acreedores
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="m"></param>
+        /// <returns></returns>
         public ErrorDto<int> Actualizar(int codEmpresa, ArfAcreedorDto m)
         {
             var response = new ErrorDto<int>();
@@ -85,11 +147,29 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
                     _portalDb.ObtenerDbConnStringEmpresa(codEmpresa));
 
                 cn.Execute(
-                    @"UPDATE ARF_ACREEDORES
-                      SET DESCRIPCION = @descripcion,
-                          IDENTIFICACION = @identificacion
-                      WHERE COD_ACREEDOR = @cod_acreedor",
-                    m);
+                      @"UPDATE ARF_ACREEDORES
+                          SET descripcion = @descripcion,
+                              tipo_id = @tipo_id,
+                              identificacion = @identificacion,
+                              telefono_01 = @telefono_01,
+                              telefono_02 = @telefono_02,
+                              website = @website,
+                              apto_postal = @apto_postal,
+                              email_01 = @email_01,
+                              email_02 = @email_02,
+                              direccion = @direccion,
+                              provincia = @provincia,
+                              canton = @canton,
+                              distrito = @distrito,
+                              contacto_nombre = @contacto_nombre,
+                              activo = @activo,
+                              cod_banco = @cod_banco,
+                              cod_cuenta = @cod_cuenta,
+                              cod_proveedor = @cod_proveedor,
+                              modifica_fecha = GETDATE(),
+                              modifica_usuario = @usuario
+                          WHERE cod_acreedor = @cod_acreedor",
+                      m);
 
                 response.Result = 1;
             }
@@ -102,6 +182,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
             return response;
         }
 
+        /// <summary>
+        /// Borra un acreedor
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigo"></param>
+        /// <returns></returns>
         public ErrorDto<int> Borrar(int codEmpresa, int codigo)
         {
             var response = new ErrorDto<int>();
@@ -126,6 +212,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
             return response;
         }
 
+        /// <summary>
+        /// Metodo de Scroll
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="codigoActual"></param>
+        /// <param name="direccion"></param>
+        /// <returns></returns>
         public ErrorDto<int?> Scroll(int codEmpresa, int? codigoActual, int direccion)
         {
             var response = new ErrorDto<int?>();
@@ -158,6 +251,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
             return response;
         }
 
+        /// <summary>
+        /// Obtiene cuentas bancarias
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="identificacion"></param>
+        /// <returns></returns>
         public ErrorDto<List<CuentaBancariaAcreedorDto>> CuentasBancarias(int codEmpresa,string identificacion)
         {
             var response = new ErrorDto<List<CuentaBancariaAcreedorDto>>();
@@ -184,7 +283,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
             return response;
         }
     
-
+     /// <summary>
+     /// Obtiene las provincias
+     /// </summary>
+     /// <param name="codEmpresa"></param>
+     /// <returns></returns>
     public ErrorDto<List<ProvinciaAcreedorDto>> ObtenerProvincias(int codEmpresa)
         {
             var response = new ErrorDto<List<ProvinciaAcreedorDto>>();
@@ -210,6 +313,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
         }
 
 
+        /// <summary>
+        /// Obtiene los cantones
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="provincia"></param>
+        /// <returns></returns>
         public ErrorDto<List<CantonAcreedorDto>> ObtenerCantones(int codEmpresa, string provincia)
         {
             var response = new ErrorDto<List<CantonAcreedorDto>>();
@@ -237,6 +346,13 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
         }
 
 
+        /// <summary>
+        /// Obtiene los distritos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="provincia"></param>
+        /// <param name="canton"></param>
+        /// <returns></returns>
         public ErrorDto<List<DistritoAcreedorDto>> ObtenerDistritos(int codEmpresa, string provincia, string canton)
         {
             var response = new ErrorDto<List<DistritoAcreedorDto>>();
@@ -267,6 +383,11 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
         }
 
 
+        /// <summary>
+        /// Obtiene los tipos de identificacion
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> ObtenerTiposIdentificacion(int codEmpresa)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -292,6 +413,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
             return response;
         }
 
+        /// <summary>
+        /// Busca los acreedores
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public ErrorDto<List<ArfAcreedorDto>> BuscarAcreedores(int codEmpresa, string? filtro)
         {
             var response = new ErrorDto<List<ArfAcreedorDto>>();
@@ -322,6 +449,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
             return response;
         }
 
+        /// <summary>
+        /// Busca los proveedores
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="filtro"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> BuscarProveedores(int codEmpresa, string? filtro)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
@@ -346,6 +479,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_ARF
             return response;
         }
 
+        /// <summary>
+        /// Obtiene los bancos
+        /// </summary>
+        /// <param name="codEmpresa"></param>
+        /// <param name="usuario"></param>
+        /// <returns></returns>
         public ErrorDto<List<DropDownListaGenericaModel>> ObtenerBancos(int codEmpresa,string usuario)
         {
             var response = new ErrorDto<List<DropDownListaGenericaModel>>();
