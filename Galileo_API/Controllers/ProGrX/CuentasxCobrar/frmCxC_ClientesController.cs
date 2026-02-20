@@ -140,7 +140,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 
         [Authorize]
         [HttpPost("CxcContratoPagador_Eliminar")]
-        public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, [FromBody] CxcContratosPagadorDeleteParams param)
+        public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, [FromBody] CxcContratoPagadorDeleteParams param)
         {
             return _bl.CxcContratoPagador_Eliminar(codEmpresa, param);
         }

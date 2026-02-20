@@ -100,7 +100,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
             return _db.CxcPersonasContratosSuscripciones(codEmpresa, codContrato, cedula);
         }
 
-        public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, CxcContratosPagadorDeleteParams param)
+        public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, CxcContratoPagadorDeleteParams param)
         {
             return _db.CxcContratoPagador_Eliminar(codEmpresa, param);
         }

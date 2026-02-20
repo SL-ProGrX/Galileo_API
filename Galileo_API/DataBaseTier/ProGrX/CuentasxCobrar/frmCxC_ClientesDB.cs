@@ -418,7 +418,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="param">Parámetros de eliminación.</param>
         /// <returns>True si la operación fue exitosa.</returns>
-        public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, CxcContratosPagadorDeleteParams param)
+        public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, CxcContratoPagadorDeleteParams param)
         {
             var sql = @"DELETE FROM CxC_Personas_Contratos_Pagadores
                 WHERE cod_contrato = @Cod_Contrato
