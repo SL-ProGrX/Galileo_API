@@ -116,5 +116,47 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _bl.CxcPersonasCuentas(codEmpresa, cedula, estado);
         }
+
+        [Authorize]
+        [HttpGet("CxcPersonasContratos")]
+        public ErrorDto<List<CxcPersonaContratosDto>> CxcPersonasContratos(int codEmpresa, string cedula)
+        {
+            return _bl.CxcPersonasContratos(codEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("CxcPersonasContratosPagadores")]
+        public ErrorDto<List<CxcPersonaContratosPagadorDto>> CxcPersonasContratosPagadores(int codEmpresa, string codContrato, string cedula)
+        {
+            return _bl.CxcPersonasContratosPagadores(codEmpresa, codContrato, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("CxcPersonasContratosSuscripciones")]
+        public ErrorDto<List<CxcPersonaContratosSuscripcionDto>> CxcPersonasContratosSuscripciones(int codEmpresa, string codContrato, string cedula)
+        {
+            return _bl.CxcPersonasContratosSuscripciones(codEmpresa, codContrato, cedula);
+        }
+
+        [Authorize]
+        [HttpPost("CxcContratoPagador_Eliminar")]
+        public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, [FromBody] CxcContratosPagadorDeleteParams param)
+        {
+            return _bl.CxcContratoPagador_Eliminar(codEmpresa, param);
+        }
+
+        [Authorize]
+        [HttpPost("CxcContratoSuscripcion_Eliminar")]
+        public ErrorDto<bool> CxcContratoSuscripcion_Eliminar(int codEmpresa, [FromBody] CxcContratosSuscripcionDeleteParams param)
+        {
+            return _bl.CxcContratoSuscripcion_Eliminar(codEmpresa, param);
+        }
+
+        [Authorize]
+        [HttpGet("CxcCuentasBancarias")]
+        public ErrorDto<List<CxcCuentaBancariaDto>> CxcCuentasBancarias(int codEmpresa, string cedula)
+        {
+            return _bl.CxcCuentasBancarias(codEmpresa, cedula);
+        }
     }
 }

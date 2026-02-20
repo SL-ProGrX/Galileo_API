@@ -353,6 +353,130 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return DbHelper.ExecuteListQuery<CxcPersonaCuentaDto>(_portalDb, codEmpresa, sql, param);
         }
 
+        /// <summary>
+        /// Obtiene la lista de contratos asociados a una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="cedula">Cédula de la persona.</param>
+        /// <returns>Lista de contratos de la persona.</returns>
+        public ErrorDto<List<CxcPersonaContratosDto>> CxcPersonasContratos(int codEmpresa, string cedula)
+        {
+            var sql = @"
+                select P.descripcion,
+                       C.*
+                from CxC_Contratos P
+                inner join CxC_Personas_Contratos C
+                        on P.cod_contrato = C.cod_contrato
+                where C.cedula = @Cedula
+                order by C.Activo desc, C.Registro_Fecha desc";
+            return DbHelper.ExecuteListQuery<CxcPersonaContratosDto>(_portalDb, codEmpresa, sql, new { Cedula = cedula });
+        }
+
+        /// <summary>
+        /// Obtiene los pagadores de un contrato para una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codContrato">Código del contrato.</param>
+        /// <param name="cedula">Cédula de la persona.</param>
+        /// <returns>Lista de pagadores del contrato.</returns>
+        public ErrorDto<List<CxcPersonaContratosPagadorDto>> CxcPersonasContratosPagadores(int codEmpresa, string codContrato, string cedula)
+        {
+            var sql = @"
+                select P.nombre,
+                       C.*
+                from CxC_Personas P
+                inner join CxC_Personas_Contratos_Pagadores C
+                        on P.cedula = C.cedula_pagador
+                where C.cod_contrato = @CodContrato
+                  and C.cedula = @Cedula";
+            return DbHelper.ExecuteListQuery<CxcPersonaContratosPagadorDto>(_portalDb, codEmpresa, sql, new { CodContrato = codContrato, Cedula = cedula });
+        }
+
+        /// <summary>
+        /// Obtiene las suscripciones de cargos de un contrato para una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="codContrato">Código del contrato.</param>
+        /// <param name="cedula">Cédula de la persona.</param>
+        /// <returns>Lista de suscripciones de cargos.</returns>
+        public ErrorDto<List<CxcPersonaContratosSuscripcionDto>> CxcPersonasContratosSuscripciones(int codEmpresa, string codContrato, string cedula)
+        {
+            var sql = @"
+                select C.descripcion,
+                       S.*
+                from CxC_Cargos C
+                inner join CxC_Personas_Contratos_Suscripciones S
+                        on C.cod_cargo = S.cod_cargo
+                where S.cod_contrato = @CodContrato
+                  and S.cedula = @Cedula";
+            return DbHelper.ExecuteListQuery<CxcPersonaContratosSuscripcionDto>(_portalDb, codEmpresa, sql, new { CodContrato = codContrato, Cedula = cedula });
+        }
+
+        /// <summary>
+        /// Elimina un pagador de un contrato.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de eliminación.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
+        public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, CxcContratosPagadorDeleteParams param)
+        {
+            var sql = @"DELETE FROM CxC_Personas_Contratos_Pagadores
+                WHERE cod_contrato = @Cod_Contrato
+                  AND cedula = @Cedula
+                  AND cedula_pagador = @Cedula_Pagador";
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+            return result;
+        }
+
+        /// <summary>
+        /// Elimina una suscripción de cargo de un contrato.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de eliminación.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
+        public ErrorDto<bool> CxcContratoSuscripcion_Eliminar(int codEmpresa, CxcContratosSuscripcionDeleteParams param)
+        {
+            var sql = @"DELETE FROM CxC_Personas_Contratos_Suscripciones
+                WHERE cod_contrato = @Cod_Contrato
+                  AND cod_cargo = @Cod_Cargo
+                  AND cedula = @Cedula";
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+            return result;
+        }
+
+        /// <summary>
+        /// Obtiene las cuentas bancarias de una persona para el módulo CxC.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="cedula">Cédula de la persona.</param>
+        /// <returns>Lista de cuentas bancarias.</returns>
+        public ErrorDto<List<CxcCuentaBancariaDto>> CxcCuentasBancarias(int codEmpresa, string cedula)
+        {
+            var sql = @"
+        select rtrim(B.Descripcion) as Banco,
+               case when C.tipo = 'A' then 'Ahorros' else 'Corriente' end as TipoDesc,
+               C.cod_Divisa,
+               C.CUENTA_INTERNA,
+               C.CUENTA_INTERBANCA,
+               C.ACTIVA,
+               C.REGISTRO_FECHA,
+               C.REGISTRO_USUARIO
+        from SYS_CUENTAS_BANCARIAS C
+        inner join TES_BANCOS_GRUPOS B
+                on C.cod_banco = B.cod_grupo
+        where C.Identificacion = @Cedula
+          and C.Modulo = 'CxC'";
+            return DbHelper.ExecuteListQuery<CxcCuentaBancariaDto>(_portalDb, codEmpresa, sql, new { Cedula = cedula });
+        }
+
         // Métodos privados no requieren comentarios XML para documentación pública.
         private void RegistrarBitacora(int codEmpresa, string usuario, string cedula, string movimiento)
         {

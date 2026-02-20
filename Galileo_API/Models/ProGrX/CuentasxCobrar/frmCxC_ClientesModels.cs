@@ -215,18 +215,18 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
     public class CxcPersonaCuentaDto
     {
         public int Operacion { get; set; }
-        public string Cod_Concepto { get; set; }
-        public string Cod_Contrato { get; set; }
-        public string Cedula { get; set; }
+        public string? Cod_Concepto { get; set; }
+        public string? Cod_Contrato { get; set; }
+        public string? Cedula { get; set; }
         public DateTime Registro_Fecha { get; set; }
         public DateTime? Fecha_UltMov { get; set; }
         public decimal Monto { get; set; }
         public decimal Saldo { get; set; }
         public int Dias_Plazo { get; set; }
-        public string Tipo_Plazo { get; set; }
+        public string? Tipo_Plazo { get; set; }
         public decimal Cuota { get; set; }
-        public string Cedula_Pagador { get; set; }
-        public string Num_Documento { get; set; }
+        public string? Cedula_Pagador { get; set; }
+        public string? Num_Documento { get; set; }
         public DateTime? Fecha_Emision { get; set; }
         public DateTime? Fecha_Vencimiento { get; set; }
         public DateTime? Fecha_Pago { get; set; }
@@ -234,22 +234,105 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public decimal Tasa_Mora { get; set; }
         public decimal Desembolso_Monto { get; set; }
         public DateTime? Activa_Fecha { get; set; }
-        public string Activa_Usuario { get; set; }
-        public string Nombre { get; set; }
-        public string Nombre_Pagador { get; set; }
-        public string ConceptoDesc { get; set; }
-        public string ContratoDesc { get; set; }
-        public string Estado { get; set; }
-        public string Autoriza_Estado { get; set; }
+        public string? Activa_Usuario { get; set; }
+        public string? Nombre { get; set; }
+        public string? Nombre_Pagador { get; set; }
+        public string? ConceptoDesc { get; set; }
+        public string? ContratoDesc { get; set; }
+        public string? Estado { get; set; }
+        public string? Autoriza_Estado { get; set; }
         public decimal MoraMonto { get; set; }
         public decimal MoraInt { get; set; }
         public decimal MoraPrincipal { get; set; }
         public decimal MoraCargos { get; set; }
         public int MoraDias { get; set; }
         public DateTime MoraFecha { get; set; }
-        public string Cod_Oficina { get; set; }
-        public string OficinaDesc { get; set; }
+        public string? Cod_Oficina { get; set; }
+        public string? OficinaDesc { get; set; }
         public DateTime Fecha_Server { get; set; }
         public int Warning { get; set; }
+    }
+
+    public class CxcPersonaContratosDto
+    {
+        public string Descripcion { get; set; } = string.Empty; // de CxC_Contratos
+        public string Cod_Contrato { get; set; } = string.Empty;
+        public string Cedula { get; set; } = string.Empty;
+        public short Activo { get; set; }
+        public int? Plazo { get; set; }
+        public decimal? Tasa_Corriente { get; set; }
+        public decimal? Tasa_Mora { get; set; }
+        public string? Notas { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
+        public DateTime? Actualiza_Fecha { get; set; }
+        public string? Actualiza_Usuario { get; set; }
+        public string? Contrato_Num { get; set; }
+        public DateTime? Contrato_Vence { get; set; }
+        public string? Contrato_Tipo { get; set; }
+    }
+
+    public class CxcPersonaContratosPagadorDto
+    {
+        public string? Nombre { get; set; } // de CxC_Personas
+        public string Cod_Contrato { get; set; } = string.Empty;
+        public string Cedula { get; set; } = string.Empty;
+        public string Cedula_Pagador { get; set; } = string.Empty;
+        public short Activo { get; set; }
+        public int? Plazo { get; set; }
+        public decimal? Tasa_Corriente { get; set; }
+        public decimal? Tasa_Mora { get; set; }
+        public string? Notas { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
+        public DateTime? Actualiza_Fecha { get; set; }
+        public string? Actualiza_Usuario { get; set; }
+        public string? Contrato_Num { get; set; }
+        public DateTime? Contrato_Vence { get; set; }
+        public string? Contrato_Tipo { get; set; }
+    }
+
+    public class CxcPersonaContratosSuscripcionDto
+    {
+        public string? Descripcion { get; set; } // de CxC_Cargos
+        public string Cod_Contrato { get; set; } = string.Empty;
+        public string Cedula { get; set; } = string.Empty;
+        public string Cod_Cargo { get; set; } = string.Empty;
+        public short Frecuencia_Dias { get; set; }
+        public DateTime? Pago_Ultimo { get; set; }
+        public DateTime? Pago_Proximo { get; set; }
+        public decimal? Recaudado { get; set; }
+        public string? Frecuencia_Tipo { get; set; }
+        public string? Tipo { get; set; }
+        public decimal? Valor { get; set; }
+        public short? Modifica { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
+    }
+
+    public class CxcContratosPagadorDeleteParams
+    {
+        public required string Cod_Contrato { get; set; }
+        public required string Cedula { get; set; }
+        public required string Cedula_Pagador { get; set; }
+    }
+
+    public class CxcContratosSuscripcionDeleteParams
+    {
+        public required string Cod_Contrato { get; set; }
+        public required string Cod_Cargo { get; set; }
+        public required string Cedula { get; set; }
+    }
+
+    public class CxcCuentaBancariaDto
+    {
+        public string Banco { get; set; } = string.Empty;
+        public string TipoDesc { get; set; } = string.Empty;
+        public string Cod_Divisa { get; set; } = string.Empty;
+        public string Cuenta_Interna { get; set; } = string.Empty;
+        public string Cuenta_Interbanca { get; set; } = string.Empty;
+        public short Activa { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
     }
 }
