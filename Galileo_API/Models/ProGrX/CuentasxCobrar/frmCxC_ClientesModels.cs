@@ -13,7 +13,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
     }
 
     // Común para información de contacto
-    public class ContactoInfo
+    public class ContactoInfo : DireccionInfo
     {
         public string? Telefono1 { get; set; }
         public string? Telefono2 { get; set; }
@@ -25,7 +25,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
     }
 
     // Común para información de persona
-    public class PersonaBaseInfo
+    public class PersonaBaseInfo : ContactoInfo
     {
         public string? Cedula { get; set; }
         public short? Tipo_Id { get; set; }
@@ -49,41 +49,13 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Notas { get; set; }
     }
 
-    // Nueva clase para información de conyuge
-    public class ConyugeInfo
-    {
-        public string? Cedula { get; set; }
-        public string? Nombre { get; set; }
-        public string? TelTra { get; set; }
-        public string? TelTraExt { get; set; }
-        public string? TelCell { get; set; }
-    }
-
-    // Nueva clase para información de albacea
-    public class AlbaceaInfo
-    {
-        public string? Cedula { get; set; }
-        public string? Nombre { get; set; }
-        public string? TelTra { get; set; }
-        public string? TelTraExt { get; set; }
-        public string? TelCell { get; set; }
-        public string? Cod_Oficina { get; set; }
-        public DateTime? Nombramiento_Fecha { get; set; }
-        public string? Notificaciones { get; set; }
-    }
-
     public class CxcPersonaValidaResult
     {
         public int Existe { get; set; }
     }
 
-    public class SocioInfoDto
-    {
-        public PersonaBaseInfo? Persona { get; set; }
-        public DireccionInfo? DireccionData { get; set; }
-        public ContactoInfo? ContactoData { get; set; }
-        public ConyugeInfo? Conyuge { get; set; }
-        public AlbaceaInfo? Albacea { get; set; }
+    public class SocioInfoDto : PersonaBaseInfo
+    {       
         // Propiedades exclusivas de SocioInfoDto
         public int? Hijos { get; set; }
         public string? EstadoLaboral { get; set; }
@@ -207,14 +179,8 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? TelCell { get; set; }
     }
 
-    public class PersonaInfoDto
+    public class PersonaInfoDto : PersonaBaseInfo
     {
-        public PersonaBaseInfo? Persona { get; set; }
-        public ContactoInfo? ContactoData { get; set; }
-        public DireccionInfo? DireccionData { get; set; }
-        public ConyugeInfo? Conyuge { get; set; }
-        public AlbaceaInfo? Albacea { get; set; }
-        // Solo propiedades exclusivas de PersonaInfoDto aquí
         public int? Enlace_CXP { get; set; }
         public DateTime? Categoria_Fecha { get; set; }
         // Campos extendidos del query
@@ -237,8 +203,6 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public PersonaBaseInfo? Persona { get; set; }
         public ContactoInfo? ContactoData { get; set; }
         public DireccionInfo? DireccionData { get; set; }
-        public ConyugeInfo? Conyuge { get; set; }
-        public AlbaceaInfo? Albacea { get; set; }
         public string? Usuario { get; set; }
     }
 
@@ -246,5 +210,46 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
     {
         public required string Cedula { get; set; }
         public required string Usuario { get; set; }
+    }
+
+    public class CxcPersonaCuentaDto
+    {
+        public int Operacion { get; set; }
+        public string Cod_Concepto { get; set; }
+        public string Cod_Contrato { get; set; }
+        public string Cedula { get; set; }
+        public DateTime Registro_Fecha { get; set; }
+        public DateTime? Fecha_UltMov { get; set; }
+        public decimal Monto { get; set; }
+        public decimal Saldo { get; set; }
+        public int Dias_Plazo { get; set; }
+        public string Tipo_Plazo { get; set; }
+        public decimal Cuota { get; set; }
+        public string Cedula_Pagador { get; set; }
+        public string Num_Documento { get; set; }
+        public DateTime? Fecha_Emision { get; set; }
+        public DateTime? Fecha_Vencimiento { get; set; }
+        public DateTime? Fecha_Pago { get; set; }
+        public decimal Tasa_Corriente { get; set; }
+        public decimal Tasa_Mora { get; set; }
+        public decimal Desembolso_Monto { get; set; }
+        public DateTime? Activa_Fecha { get; set; }
+        public string Activa_Usuario { get; set; }
+        public string Nombre { get; set; }
+        public string Nombre_Pagador { get; set; }
+        public string ConceptoDesc { get; set; }
+        public string ContratoDesc { get; set; }
+        public string Estado { get; set; }
+        public string Autoriza_Estado { get; set; }
+        public decimal MoraMonto { get; set; }
+        public decimal MoraInt { get; set; }
+        public decimal MoraPrincipal { get; set; }
+        public decimal MoraCargos { get; set; }
+        public int MoraDias { get; set; }
+        public DateTime MoraFecha { get; set; }
+        public string Cod_Oficina { get; set; }
+        public string OficinaDesc { get; set; }
+        public DateTime Fecha_Server { get; set; }
+        public int Warning { get; set; }
     }
 }
