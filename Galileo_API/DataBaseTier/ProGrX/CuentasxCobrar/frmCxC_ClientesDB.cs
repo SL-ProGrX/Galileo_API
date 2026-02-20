@@ -36,8 +36,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         }
 
         /// <summary>
-        /// Lista de estados civiles activos.
+        /// Obtiene la lista de estados civiles activos.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Lista de estados civiles.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> EstadoCivil_Lista(int codEmpresa)
         {
             var query = @"
@@ -49,8 +51,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         }
 
         /// <summary>
-        /// Lista de clasificaciones de clientes.
+        /// Obtiene la lista de clasificaciones de clientes.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Lista de clasificaciones.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Clasificacion_Lista(int codEmpresa)
         {
             var query = @"
@@ -61,8 +65,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         }
 
         /// <summary>
-        /// Lista de tipos de identificación.
+        /// Obtiene la lista de tipos de identificación.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Lista de tipos de identificación.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> TiposId_Lista(int codEmpresa)
         {
             var query = @"
@@ -73,8 +79,10 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         }
 
         /// <summary>
-        /// Lista de provincias.
+        /// Obtiene la lista de provincias.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <returns>Lista de provincias.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Provincias_Lista(int codEmpresa)
         {
             var query = @"
@@ -85,8 +93,11 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         }
 
         /// <summary>
-        /// Lista de cantones por provincia.
+        /// Obtiene la lista de cantones por provincia.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="provincia">Código de la provincia.</param>
+        /// <returns>Lista de cantones.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Cantones_Lista(int codEmpresa, string provincia)
         {
             var query = @"
@@ -99,8 +110,12 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         }
 
         /// <summary>
-        /// Lista de distritos por provincia y cantón.
+        /// Obtiene la lista de distritos por provincia y cantón.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="provincia">Código de la provincia.</param>
+        /// <param name="canton">Código del cantón.</param>
+        /// <returns>Lista de distritos.</returns>
         public ErrorDto<List<DropDownListaGenericaModel>> Distritos_Lista(int codEmpresa, string provincia, string canton)
         {
             var query = @"
@@ -116,6 +131,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Valida si existe una persona por cédula.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="cedula">Cédula de la persona.</param>
+        /// <returns>Resultado de validación.</returns>
         public ErrorDto<CxcPersonaValidaResult?> CxcPersona_Valida(int codEmpresa, string cedula)
         {
             var query = @"select isnull(count(*),0) as Existe from cxc_personas where cedula = @cedula";
@@ -125,6 +143,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Obtiene la información extendida de un socio.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="cedula">Cédula del socio.</param>
+        /// <returns>Información del socio.</returns>
         public ErrorDto<SocioInfoDto?> Socio_Info(int codEmpresa, string cedula)
         {
             var query = @"
@@ -149,6 +170,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Obtiene la información extendida de una persona.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="cedula">Cédula de la persona.</param>
+        /// <returns>Información de la persona.</returns>
         public ErrorDto<PersonaInfoDto?> Persona_Info(int codEmpresa, string cedula)
         {
             var query = @"
@@ -183,6 +207,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Valida el largo mínimo de la cédula para un tipo de ID.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="tipoId">Tipo de identificación.</param>
+        /// <returns>Resultado con el largo mínimo.</returns>
         public ErrorDto<CxcPersonaLargoCedulaResult?> CxcPersona_LargoCedula(int codEmpresa, short tipoId)
         {
             var query = @"select LARGO_MINIMO from AFI_TIPOS_IDS where TIPO_ID = @tipoId";
@@ -192,6 +219,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Guarda (inserta o actualiza) una persona.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de la persona a guardar.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
         public ErrorDto<bool> CxcPersona_Guardar(int codEmpresa, CxcPersonaSaveParams param)
         {
 
@@ -212,29 +242,30 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 default, new { param.Persona.Cedula }
             ).Result;
 
+            var dbParams = MapToDbParams(param);
+
             if (existe == 0)
             {
                 // Insertar
-                var sql = @"
-                    INSERT INTO CxC_Personas(
-                        cedula, Tipo_Id, nombre, razon_social, celular, telefono1, telefono2, fax,
-                        sexo, estadoCivil, fecha_nacimiento, apto_postal, email_01, email_02,
-                        webSite, notas, direccion, distrito, provincia, canton,
-                        credito_cerrado, Cliente_Exento, cod_categoria, categoria_fecha,
-                        ADELANTO_PERMITE, ADELANTO_MODIFICA, ADELANTO_PORCENTAJE, CREDITO_LIMITE,
-                        ACTIVO, ADELANTO_COMISION_APL, ADELANTO_COMISION, ROL_PAGADOR, ROL_AUTORIZADOR
-                    )
-                    VALUES(
-                        @Cedula, @Tipo_Id, @Nombre, @Razon_Social, @Celular, @Telefono1, @Telefono2, @Fax,
-                        @Sexo, @EstadoCivil, @Fecha_Nacimiento, @Apto_Postal, @Email_01, @Email_02,
-                        @Website, @Notas, @Direccion, @Distrito, @Provincia, @Canton,
-                        @Credito_Cerrado, @Cliente_Exento, @Cod_Categoria, dbo.MyGetdate(),
-                        @Adelanto_Permite, @Adelanto_Modifica, @Adelanto_Porcentaje, @Credito_Limite,
-                        @Activo, @Adelanto_Comision_Apl, @Adelanto_Comision, @Rol_Pagador, @Rol_Autorizador
-                    )";
+                var sql = @"INSERT INTO CxC_Personas(
+                    cedula, Tipo_Id, nombre, razon_social, celular, telefono1, telefono2, fax,
+                    sexo, estadoCivil, fecha_nacimiento, apto_postal, email_01, email_02,
+                    webSite, notas, direccion, distrito, provincia, canton,
+                    credito_cerrado, Cliente_Exento, cod_categoria, categoria_fecha,
+                    ADELANTO_PERMITE, ADELANTO_MODIFICA, ADELANTO_PORCENTAJE, CREDITO_LIMITE,
+                    ACTIVO, ADELANTO_COMISION_APL, ADELANTO_COMISION, ROL_PAGADOR, ROL_AUTORIZADOR
+                )
+                VALUES(
+                    @Cedula, @Tipo_Id, @Nombre, @Razon_Social, @Celular, @Telefono1, @Telefono2, @Fax,
+                    @Sexo, @EstadoCivil, @Fecha_Nacimiento, @Apto_Postal, @Email_01, @Email_02,
+                    @Website, @Notas, @Direccion, @Distrito, @Provincia, @Canton,
+                    @Credito_Cerrado, @Cliente_Exento, @Cod_Categoria, dbo.MyGetdate(),
+                    @Adelanto_Permite, @Adelanto_Modifica, @Adelanto_Porcentaje, @Credito_Limite,
+                    @Activo, @Adelanto_Comision_Apl, @Adelanto_Comision, @Rol_Pagador, @Rol_Autorizador
+                )";
                 var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 {
-                    var rows = conn.Execute(sql, param);
+                    var rows = conn.Execute(sql, dbParams);
                     return rows > 0;
                 });
 
@@ -244,8 +275,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             else
             {
                 // Actualizar
-                var sql = @"
-                    UPDATE CxC_Personas
+                var sql = @"UPDATE CxC_Personas
                     SET nombre = @Nombre,
                         Razon_Social = @Razon_Social,
                         Tipo_Id = @Tipo_Id,
@@ -281,7 +311,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                     WHERE cedula = @Cedula";
                 var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
                 {
-                    var rows = conn.Execute(sql, param);
+                    var rows = conn.Execute(sql, dbParams);
                     return rows > 0;
                 });
 
@@ -293,6 +323,9 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <summary>
         /// Elimina una persona.
         /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros de la persona a eliminar.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
         public ErrorDto<bool> CxcPersona_Eliminar(int codEmpresa, CxcPersonaDeleteParams param)
         {
             var sql = @"DELETE FROM CxC_Personas WHERE cedula = @Cedula";
@@ -306,6 +339,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
             return result;
         }
 
+        /// <summary>
+        /// Obtiene la lista de cuentas de una persona según su estado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="cedula">Cédula de la persona.</param>
+        /// <param name="estado">Estado de la cuenta ('A', 'C', 'N', 'T', etc.).</param>
+        /// <returns>Lista de cuentas de la persona.</returns>
+        public ErrorDto<List<CxcPersonaCuentaDto>> CxcPersonasCuentas(int codEmpresa, string cedula, string estado)
+        {
+            var sql = "exec spCxC_PersonasCuentas @Cedula, @Estado";
+            var param = new { Cedula = cedula, Estado = estado };
+            return DbHelper.ExecuteListQuery<CxcPersonaCuentaDto>(_portalDb, codEmpresa, sql, param);
+        }
+
+        // Métodos privados no requieren comentarios XML para documentación pública.
         private void RegistrarBitacora(int codEmpresa, string usuario, string cedula, string movimiento)
         {
             _dbBitacora.Bitacora(new BitacoraInsertarDto
@@ -316,6 +364,54 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 Movimiento = movimiento,
                 Modulo = 9
             });
+        }
+
+        private static object MapToDbParams(CxcPersonaSaveParams param)
+        {
+            var p = param.Persona ?? new PersonaBaseInfo();
+            var c = param.ContactoData ?? new ContactoInfo();
+            var d = param.DireccionData ?? new DireccionInfo();
+
+            return new
+            {
+                // PersonaBaseInfo
+                p.Cedula,
+                p.Tipo_Id,
+                p.Nombre,
+                p.Razon_Social,
+                p.Sexo,
+                p.EstadoCivil,
+                p.Fecha_Nacimiento,
+                p.Credito_Cerrado,
+                p.Cliente_Exento,
+                p.Cod_Categoria,
+                p.Adelanto_Permite,
+                p.Adelanto_Porcentaje,
+                p.Adelanto_Modifica,
+                p.Activo,
+                p.Credito_Limite,
+                p.Adelanto_Comision_Apl,
+                p.Adelanto_Comision,
+                p.Rol_Pagador,
+                p.Rol_Autorizador,
+                p.Notas,
+
+                // ContactoInfo
+                c.Telefono1,
+                c.Telefono2,
+                c.Celular,
+                c.Fax,
+                c.Email_01,
+                c.Email_02,
+                c.Website,
+
+                // DireccionInfo
+                d.Provincia,
+                d.Canton,
+                d.Distrito,
+                d.Direccion,
+                d.Apto_Postal
+            };
         }
     }
 }

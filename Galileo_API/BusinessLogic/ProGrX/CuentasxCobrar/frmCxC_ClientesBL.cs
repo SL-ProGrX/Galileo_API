@@ -50,22 +50,22 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
             return _db.Distritos_Lista(codEmpresa, provincia, canton);
         }
 
-        public ErrorDto<CxcPersonaValidaResult> CxcPersona_Valida(int codEmpresa, string cedula)
+        public ErrorDto<CxcPersonaValidaResult?> CxcPersona_Valida(int codEmpresa, string cedula)
         {
             return _db.CxcPersona_Valida(codEmpresa, cedula);
         }
 
-        public ErrorDto<SocioInfoDto> Socio_Info(int codEmpresa, string cedula)
+        public ErrorDto<SocioInfoDto?> Socio_Info(int codEmpresa, string cedula)
         {
             return _db.Socio_Info(codEmpresa, cedula);
         }
 
-        public ErrorDto<PersonaInfoDto> Persona_Info(int codEmpresa, string cedula)
+        public ErrorDto<PersonaInfoDto?> Persona_Info(int codEmpresa, string cedula)
         {
             return _db.Persona_Info(codEmpresa, cedula);
         }
 
-        public ErrorDto<CxcPersonaLargoCedulaResult> CxcPersona_LargoCedula(int codEmpresa, short tipoId)
+        public ErrorDto<CxcPersonaLargoCedulaResult?> CxcPersona_LargoCedula(int codEmpresa, short tipoId)
         {
             return _db.CxcPersona_LargoCedula(codEmpresa, tipoId);
         }
@@ -78,6 +78,11 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         public ErrorDto<bool> CxcPersona_Eliminar(int codEmpresa, CxcPersonaDeleteParams param)
         {
             return _db.CxcPersona_Eliminar(codEmpresa, param);
+        }
+
+        public ErrorDto<List<CxcPersonaCuentaDto>> CxcPersonasCuentas(int codEmpresa, string cedula, string estado)
+        {
+            return _db.CxcPersonasCuentas(codEmpresa, cedula, estado);
         }
     }
 }
