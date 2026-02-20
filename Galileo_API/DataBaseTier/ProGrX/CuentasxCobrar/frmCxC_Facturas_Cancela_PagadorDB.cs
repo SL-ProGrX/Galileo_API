@@ -124,8 +124,8 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                 var vNumDoc = _mRecibos.FxDocumentoConsecutivo(codEmpresa, req.tipodoc).ToString();
 
                 //Procesa las Facturas Canceladas
-                var respP = CxCFacturasCanceladas_Procesar(codEmpresa, req.tipodoc, vNumDoc, req.usuario, req.lista);
-                if (FailIfError(respP, out var ee)) return ee;
+                var respFC = CxCFacturasCanceladas_Procesar(codEmpresa, req.tipodoc, vNumDoc, req.usuario, req.lista);
+                if (FailIfError(respFC, out var ef)) return ef;
 
                 //Procesa Abono + Documento + Asiento
                 var spCOFCA = Exec(codEmpresa,
@@ -139,7 +139,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                             user = req.usuario
                         });
 
-                if (FailIfError(spCOFCA, out ee)) return ee;
+                if (FailIfError(spCOFCA, out ef)) return ef;
 
 
                 DBBitacora.Bitacora(new BitacoraInsertarDto
@@ -161,21 +161,21 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 
         #region helpers CxCFactCancPag_Abono_Registrar
 
-        private static bool FailIfError(ErrorDto? resp, out ErrorDto err)
+        private static bool FailIfError(ErrorDto? response, out ErrorDto error)
         {
-            if (resp is { Code: not null } && resp.Code != 0)
+            if (response is { Code: not null } && response.Code != 0)
             {
-                err = resp;
+                error = response;
                 return true;
             }
 
-            err = new ErrorDto { Code = 0, Description = "" };
+            error = new ErrorDto { Code = 0, Description = "" };
             return false;
         }
 
-        private ErrorDto Exec(int codEmpresa, string sqlString, object param)
+        private ErrorDto Exec(int codEmpresa, string sql, object param)
         {
-            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sqlString, param);
+            return DbHelper.ExecuteNonQuery(_portalDb, codEmpresa, sql, param);
         }
 
         private ErrorDto CxCFacturasCanceladas_Procesar(int codEmpresa, string vTipoDoc, string vNumDoc, string usuario, List<CxCFactPendienteCancelacionData> lista)
