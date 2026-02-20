@@ -70,28 +70,28 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 
         [Authorize]
         [HttpGet("CxcPersona_Valida")]
-        public ErrorDto<CxcPersonaValidaResult> CxcPersona_Valida(int codEmpresa, string cedula)
+        public ErrorDto<CxcPersonaValidaResult?> CxcPersona_Valida(int codEmpresa, string cedula)
         {
             return _bl.CxcPersona_Valida(codEmpresa, cedula);
         }
 
         [Authorize]
         [HttpGet("Socio_Info")]
-        public ErrorDto<SocioInfoDto> Socio_Info(int codEmpresa, string cedula)
+        public ErrorDto<SocioInfoDto?> Socio_Info(int codEmpresa, string cedula)
         {
             return _bl.Socio_Info(codEmpresa, cedula);
         }
 
         [Authorize]
         [HttpGet("Persona_Info")]
-        public ErrorDto<PersonaInfoDto> Persona_Info(int codEmpresa, string cedula)
+        public ErrorDto<PersonaInfoDto?> Persona_Info(int codEmpresa, string cedula)
         {
             return _bl.Persona_Info(codEmpresa, cedula);
         }
 
         [Authorize]
         [HttpGet("CxcPersona_LargoCedula")]
-        public ErrorDto<CxcPersonaLargoCedulaResult> CxcPersona_LargoCedula(int codEmpresa, short tipoId)
+        public ErrorDto<CxcPersonaLargoCedulaResult?> CxcPersona_LargoCedula(int codEmpresa, short tipoId)
         {
             return _bl.CxcPersona_LargoCedula(codEmpresa, tipoId);
         }
@@ -108,6 +108,13 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         public ErrorDto<bool> CxcPersona_Eliminar(int codEmpresa, [FromBody] CxcPersonaDeleteParams param)
         {
             return _bl.CxcPersona_Eliminar(codEmpresa, param);
+        }
+
+        [Authorize]
+        [HttpGet("CxcPersonasCuentas")]
+        public ErrorDto<List<CxcPersonaCuentaDto>> CxcPersonasCuentas(int codEmpresa, string cedula, string estado)
+        {
+            return _bl.CxcPersonasCuentas(codEmpresa, cedula, estado);
         }
     }
 }
