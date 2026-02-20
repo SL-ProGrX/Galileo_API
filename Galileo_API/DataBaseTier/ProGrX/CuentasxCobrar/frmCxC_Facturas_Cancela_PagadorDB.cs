@@ -3,6 +3,7 @@ using Galileo.Models;
 using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
+using System.Linq;
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 {
@@ -182,22 +183,22 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         {
             const string query = @"exec spCxC_Operacion_Factura_Cancela @operacionId, @factura, @abono, @tipoDoc, @numDoc, @user;";
 
-            foreach (var item in lista)
-            {
-                var resp = DbHelper.ExecuteNonQuery(
-                    _portalDb,
-                    codEmpresa,
-                    query,
-                    new
-                    {
-                        operacionId = item.operacion,
-                        factura = item.cod_factura,
-                        abono = item.monto,
-                        tipoDoc = vTipoDoc,
-                        numDoc = vNumDoc,
-                        user = usuario
-                    });
+            var responses = lista.Select(item => DbHelper.ExecuteNonQuery(
+                _portalDb,
+                codEmpresa,
+                query,
+                new
+                {
+                    operacionId = item.operacion,
+                    factura = item.cod_factura,
+                    abono = item.monto,
+                    tipoDoc = vTipoDoc,
+                    numDoc = vNumDoc,
+                    user = usuario
+                }));
 
+            foreach (var resp in responses)
+            {
                 if (resp.Code == -1)
                     return resp;
             }
