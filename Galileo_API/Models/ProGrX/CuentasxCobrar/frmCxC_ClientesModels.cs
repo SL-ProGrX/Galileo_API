@@ -2,7 +2,7 @@
 
 namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
-    // Común para información de dirección
+    // Información de dirección
     public class DireccionInfo
     {
         public string? Provincia { get; set; }
@@ -12,7 +12,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Apto_Postal { get; set; }
     }
 
-    // Común para información de contacto
+    // Información de contacto
     public class ContactoInfo : DireccionInfo
     {
         public string? Telefono1 { get; set; }
@@ -24,7 +24,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Website { get; set; }
     }
 
-    // Común para información de persona
+    // Información de persona
     public class PersonaBaseInfo : ContactoInfo
     {
         public string? Cedula { get; set; }
@@ -49,13 +49,101 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Notas { get; set; }
     }
 
+    // Base para contratos
+    public class ContratoBaseDto
+    {
+        public string Cod_Contrato { get; set; } = string.Empty;
+        public string Cedula { get; set; } = string.Empty;
+        public short Activo { get; set; }
+        public int? Plazo { get; set; }
+        public decimal? Tasa_Corriente { get; set; }
+        public decimal? Tasa_Mora { get; set; }
+        public string? Notas { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
+        public DateTime? Actualiza_Fecha { get; set; }
+        public string? Actualiza_Usuario { get; set; }
+        public string? Contrato_Num { get; set; }
+        public DateTime? Contrato_Vence { get; set; }
+        public string? Contrato_Tipo { get; set; }
+    }
+
+    // Contrato principal
+    public class CxcPersonaContratosDto : ContratoBaseDto
+    {
+        public string Descripcion { get; set; } = string.Empty; // de CxC_Contratos
+    }
+
+    // Pagador de contrato
+    public class CxcPersonaContratosPagadorDto : ContratoBaseDto
+    {
+        public string? Nombre { get; set; } // de CxC_Personas
+        public string Cedula_Pagador { get; set; } = string.Empty;
+    }
+
+    // Base para suscripciones
+    public class ContratoSuscripcionBaseDto
+    {
+        public string Cod_Contrato { get; set; } = string.Empty;
+        public string Cedula { get; set; } = string.Empty;
+        public string Cod_Cargo { get; set; } = string.Empty;
+        public short Frecuencia_Dias { get; set; }
+        public DateTime? Pago_Ultimo { get; set; }
+        public DateTime? Pago_Proximo { get; set; }
+        public decimal? Recaudado { get; set; }
+        public string? Frecuencia_Tipo { get; set; }
+        public string? Tipo { get; set; }
+        public decimal? Valor { get; set; }
+        public short? Modifica { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
+    }
+
+    public class CxcPersonaContratosSuscripcionDto : ContratoSuscripcionBaseDto
+    {
+        public string? Descripcion { get; set; } // de CxC_Cargos
+    }
+
+    // Base para cuentas bancarias
+    public class CuentaBancariaBase
+    {
+        public string Cod_Divisa { get; set; } = string.Empty;
+        public string Cuenta_Interna { get; set; } = string.Empty;
+        public string Cuenta_Interbanca { get; set; } = string.Empty;
+        public short Activa { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
+    }
+
+    public class CxcCuentaBancariaDto : CuentaBancariaBase
+    {
+        public string Banco { get; set; } = string.Empty;
+        public string TipoDesc { get; set; } = string.Empty;
+    }
+
+    // DTOs de eliminación
+    public class CxcContratosPagadorDeleteParams
+    {
+        public required string Cod_Contrato { get; set; }
+        public required string Cedula { get; set; }
+        public required string Cedula_Pagador { get; set; }
+    }
+
+    public class CxcContratosSuscripcionDeleteParams
+    {
+        public required string Cod_Contrato { get; set; }
+        public required string Cod_Cargo { get; set; }
+        public required string Cedula { get; set; }
+    }
+
+    // Otros modelos (no refactorizados por ser únicos)
     public class CxcPersonaValidaResult
     {
         public int Existe { get; set; }
     }
 
     public class SocioInfoDto : PersonaBaseInfo
-    {       
+    {
         // Propiedades exclusivas de SocioInfoDto
         public int? Hijos { get; set; }
         public string? EstadoLaboral { get; set; }
@@ -251,83 +339,5 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? OficinaDesc { get; set; }
         public DateTime Fecha_Server { get; set; }
         public int Warning { get; set; }
-    }
-
-    // Base para contratos
-    public class ContratoBaseDto
-    {
-        public string Cod_Contrato { get; set; } = string.Empty;
-        public string Cedula { get; set; } = string.Empty;
-        public short Activo { get; set; }
-        public int? Plazo { get; set; }
-        public decimal? Tasa_Corriente { get; set; }
-        public decimal? Tasa_Mora { get; set; }
-        public string? Notas { get; set; }
-        public DateTime? Registro_Fecha { get; set; }
-        public string? Registro_Usuario { get; set; }
-        public DateTime? Actualiza_Fecha { get; set; }
-        public string? Actualiza_Usuario { get; set; }
-        public string? Contrato_Num { get; set; }
-        public DateTime? Contrato_Vence { get; set; }
-        public string? Contrato_Tipo { get; set; }
-    }
-
-    // Contrato principal
-    public class CxcPersonaContratosDto : ContratoBaseDto
-    {
-        public string Descripcion { get; set; } = string.Empty; // de CxC_Contratos
-    }
-
-    // Pagador de contrato
-    public class CxcPersonaContratosPagadorDto : ContratoBaseDto
-    {
-        public string? Nombre { get; set; } // de CxC_Personas
-        public string Cedula_Pagador { get; set; } = string.Empty;
-    }
-
-    // Suscripción de contrato
-    public class ContratoSuscripcionBaseDto
-    {
-        public string Cod_Contrato { get; set; } = string.Empty;
-        public string Cedula { get; set; } = string.Empty;
-        public string Cod_Cargo { get; set; } = string.Empty;
-        public short Frecuencia_Dias { get; set; }
-        public DateTime? Pago_Ultimo { get; set; }
-        public DateTime? Pago_Proximo { get; set; }
-        public decimal? Recaudado { get; set; }
-        public string? Frecuencia_Tipo { get; set; }
-        public string? Tipo { get; set; }
-        public decimal? Valor { get; set; }
-        public short? Modifica { get; set; }
-        public DateTime? Registro_Fecha { get; set; }
-        public string? Registro_Usuario { get; set; }
-    }
-
-    public class CxcPersonaContratosSuscripcionDto : ContratoSuscripcionBaseDto
-    {
-        public string? Descripcion { get; set; } // de CxC_Cargos
-    }
-
-    public class CuentaBancariaBase
-    {
-        public string Cod_Divisa { get; set; } = string.Empty;
-        public string Cuenta_Interna { get; set; } = string.Empty;
-        public string Cuenta_Interbanca { get; set; } = string.Empty;
-        public short Activa { get; set; }
-        public DateTime? Registro_Fecha { get; set; }
-        public string? Registro_Usuario { get; set; }
-    }
-
-    public class CxcCuentaBancariaDto : CuentaBancariaBase
-    {
-        public string Banco { get; set; } = string.Empty;
-        public string TipoDesc { get; set; } = string.Empty;
-    }
-
-    public class CxcContratosSuscripcionDeleteParams
-    {
-        public required string Cod_Contrato { get; set; }
-        public required string Cod_Cargo { get; set; }
-        public required string Cedula { get; set; }
     }
 }
