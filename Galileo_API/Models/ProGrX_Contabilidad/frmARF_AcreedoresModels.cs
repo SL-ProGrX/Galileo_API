@@ -43,6 +43,9 @@
             public string? proveedor_desc { get; set; }
             public string? cod_cuenta_mask { get; set; }
             public string? cuenta_desc { get; set; }
+
+            public string? usuario { get; set; }
+
     }
 
 
