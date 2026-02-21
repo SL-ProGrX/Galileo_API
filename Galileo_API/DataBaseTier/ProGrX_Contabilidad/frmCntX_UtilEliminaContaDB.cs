@@ -58,10 +58,40 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
         public ErrorDto<bool> CntxUtil_Contabilidades_Eliminar(CntxUtilEliminaContabilidadesRequestDto request)
         {
             var response = new ErrorDto<bool>();
+            if (request == null)
+            {
+                response.Code = -1;
+                response.Description = "El parámetro 'request' no puede ser nulo.";
+                return response;
+            }
+
+            if (!request.cod_empresa.HasValue)
+            {
+                response.Code = -1;
+                response.Description = "El campo 'cod_empresa' es obligatorio.";
+                return response;
+            }
+
+            if (request.contabilidades == null || !request.contabilidades.Any())
+            {
+                response.Code = -1;
+                response.Description = "Debe enviar al menos una contabilidad a eliminar.";
+                return response;
+            }
+
+            if (string.IsNullOrWhiteSpace(request.usuario))
+            {
+                response.Code = -1;
+                response.Description = "El campo 'usuario' es obligatorio.";
+                return response;
+            }
 
             try
             {
-                using var cn = new SqlConnection( _portalDb.ObtenerDbConnStringEmpresa(request.cod_empresa!.Value));
+                using var cn = new SqlConnection(
+                    _portalDb.ObtenerDbConnStringEmpresa(request.cod_empresa.Value));
+
+                cn.Open();
 
                 foreach (var codContabilidad in request.contabilidades)
                 {
@@ -78,7 +108,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                         new Galileo.Models.Security.BitacoraInsertarDto
                         {
                             EmpresaId = request.cod_empresa.Value,
-                            Usuario = request.usuario!,
+                            Usuario = request.usuario,
                             DetalleMovimiento = $"Elimina: Contabilidad [{codContabilidad}]",
                             Movimiento = "Elimina - WEB",
                             Modulo = 20
