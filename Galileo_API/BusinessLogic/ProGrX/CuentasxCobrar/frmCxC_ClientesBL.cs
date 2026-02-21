@@ -3,6 +3,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using System.Collections.Generic;
+using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCClientesContratosModels;
 
 namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
 {
@@ -85,7 +86,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
             return _db.CxcPersonasCuentas(codEmpresa, cedula, estado);
         }
 
-        public ErrorDto<List<CxcPersonaContratosDto>> CxcPersonasContratos(int codEmpresa, string cedula)
+        public ErrorDto<List<ClientesContratosData>> CxcPersonasContratos(int codEmpresa, string cedula)
         {
             return _db.CxcPersonasContratos(codEmpresa, cedula);
         }
@@ -95,7 +96,7 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
             return _db.CxcPersonasContratosPagadores(codEmpresa, codContrato, cedula);
         }
 
-        public ErrorDto<List<CxcPersonaContratosSuscripcionDto>> CxcPersonasContratosSuscripciones(int codEmpresa, string codContrato, string cedula)
+        public ErrorDto<List<PersonasContratosSuscripcionesData>> CxcPersonasContratosSuscripciones(int codEmpresa, string codContrato, string cedula)
         {
             return _db.CxcPersonasContratosSuscripciones(codEmpresa, codContrato, cedula);
         }

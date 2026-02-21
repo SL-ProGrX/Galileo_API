@@ -5,6 +5,7 @@ using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCClientesContratosModels;
 
 namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 {
@@ -119,7 +120,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 
         [Authorize]
         [HttpGet("CxcPersonasContratos")]
-        public ErrorDto<List<CxcPersonaContratosDto>> CxcPersonasContratos(int codEmpresa, string cedula)
+        public ErrorDto<List<ClientesContratosData>> CxcPersonasContratos(int codEmpresa, string cedula)
         {
             return _bl.CxcPersonasContratos(codEmpresa, cedula);
         }
@@ -133,7 +134,7 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 
         [Authorize]
         [HttpGet("CxcPersonasContratosSuscripciones")]
-        public ErrorDto<List<CxcPersonaContratosSuscripcionDto>> CxcPersonasContratosSuscripciones(int codEmpresa, string codContrato, string cedula)
+        public ErrorDto<List<PersonasContratosSuscripcionesData>> CxcPersonasContratosSuscripciones(int codEmpresa, string codContrato, string cedula)
         {
             return _bl.CxcPersonasContratosSuscripciones(codEmpresa, codContrato, cedula);
         }

@@ -48,79 +48,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public short? Rol_Autorizador { get; set; }
         public string? Notas { get; set; }
     }
-
-    // Base para contratos
-    public class ContratoBaseDto
-    {
-        public string Cod_Contrato { get; set; } = string.Empty;
-        public string Cedula { get; set; } = string.Empty;
-        public short Activo { get; set; }
-        public int? Plazo { get; set; }
-        public decimal? Tasa_Corriente { get; set; }
-        public decimal? Tasa_Mora { get; set; }
-        public string? Notas { get; set; }
-        public DateTime? Registro_Fecha { get; set; }
-        public string? Registro_Usuario { get; set; }
-        public DateTime? Actualiza_Fecha { get; set; }
-        public string? Actualiza_Usuario { get; set; }
-        public string? Contrato_Num { get; set; }
-        public DateTime? Contrato_Vence { get; set; }
-        public string? Contrato_Tipo { get; set; }
-    }
-
-    // Contrato principal
-    public class CxcPersonaContratosDto : ContratoBaseDto
-    {
-        public string Descripcion { get; set; } = string.Empty; // de CxC_Contratos
-    }
-
-    // Pagador de contrato
-    public class CxcPersonaContratosPagadorDto : ContratoBaseDto
-    {
-        public string? Nombre { get; set; } // de CxC_Personas
-        public string Cedula_Pagador { get; set; } = string.Empty;
-    }
-
-    // Base para suscripciones
-    public class ContratoSuscripcionBaseDto
-    {
-        public string Cod_Contrato { get; set; } = string.Empty;
-        public string Cedula { get; set; } = string.Empty;
-        public string Cod_Cargo { get; set; } = string.Empty;
-        public short Frecuencia_Dias { get; set; }
-        public DateTime? Pago_Ultimo { get; set; }
-        public DateTime? Pago_Proximo { get; set; }
-        public decimal? Recaudado { get; set; }
-        public string? Frecuencia_Tipo { get; set; }
-        public string? Tipo { get; set; }
-        public decimal? Valor { get; set; }
-        public short? Modifica { get; set; }
-        public DateTime? Registro_Fecha { get; set; }
-        public string? Registro_Usuario { get; set; }
-    }
-
-    public class CxcPersonaContratosSuscripcionDto : ContratoSuscripcionBaseDto
-    {
-        public string? Descripcion { get; set; } // de CxC_Cargos
-    }
-
-    // Base para cuentas bancarias
-    public class CuentaBancariaBase
-    {
-        public string Cod_Divisa { get; set; } = string.Empty;
-        public string Cuenta_Interna { get; set; } = string.Empty;
-        public string Cuenta_Interbanca { get; set; } = string.Empty;
-        public short Activa { get; set; }
-        public DateTime? Registro_Fecha { get; set; }
-        public string? Registro_Usuario { get; set; }
-    }
-
-    public class CxcCuentaBancariaDto : CuentaBancariaBase
-    {
-        public string Banco { get; set; } = string.Empty;
-        public string TipoDesc { get; set; } = string.Empty;
-    }
-
+    
     // DTOs de eliminación
     public class CxcContratosPagadorDeleteParams
     {
@@ -339,5 +267,22 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? OficinaDesc { get; set; }
         public DateTime Fecha_Server { get; set; }
         public int Warning { get; set; }
+    }
+
+    // Base para cuentas bancarias
+    public class CuentaBancariaBase
+    {
+        public string Cod_Divisa { get; set; } = string.Empty;
+        public string Cuenta_Interna { get; set; } = string.Empty;
+        public string Cuenta_Interbanca { get; set; } = string.Empty;
+        public short Activa { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
+    }
+
+    public class CxcCuentaBancariaDto : CuentaBancariaBase
+    {
+        public string Banco { get; set; } = string.Empty;
+        public string TipoDesc { get; set; } = string.Empty;
     }
 }

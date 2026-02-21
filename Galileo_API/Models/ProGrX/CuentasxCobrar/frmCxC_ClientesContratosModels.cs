@@ -52,6 +52,12 @@
             
         }
 
+        public class CxcPersonaContratosPagadorDto : PersonasContratosPagadoresData
+        {
+            public string? Nombre { get; set; } // de CxC_Personas
+            public string Cedula_Pagador { get; set; } = string.Empty;
+        }
+
 
 
     }

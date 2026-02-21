@@ -5,6 +5,7 @@ using Galileo.Models.ERROR;
 using Galileo.Models.Security;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using System.Collections.Generic;
+using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCClientesContratosModels;
 
 namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
 {
@@ -359,7 +360,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="codEmpresa">Código de la empresa.</param>
         /// <param name="cedula">Cédula de la persona.</param>
         /// <returns>Lista de contratos de la persona.</returns>
-        public ErrorDto<List<CxcPersonaContratosDto>> CxcPersonasContratos(int codEmpresa, string cedula)
+        public ErrorDto<List<ClientesContratosData>> CxcPersonasContratos(int codEmpresa, string cedula)
         {
             var sql = @"
                 select P.descripcion,
@@ -369,7 +370,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         on P.cod_contrato = C.cod_contrato
                 where C.cedula = @Cedula
                 order by C.Activo desc, C.Registro_Fecha desc";
-            return DbHelper.ExecuteListQuery<CxcPersonaContratosDto>(_portalDb, codEmpresa, sql, new { Cedula = cedula });
+            return DbHelper.ExecuteListQuery<ClientesContratosData>(_portalDb, codEmpresa, sql, new { Cedula = cedula });
         }
 
         /// <summary>
@@ -399,7 +400,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         /// <param name="codContrato">Código del contrato.</param>
         /// <param name="cedula">Cédula de la persona.</param>
         /// <returns>Lista de suscripciones de cargos.</returns>
-        public ErrorDto<List<CxcPersonaContratosSuscripcionDto>> CxcPersonasContratosSuscripciones(int codEmpresa, string codContrato, string cedula)
+        public ErrorDto<List<PersonasContratosSuscripcionesData>> CxcPersonasContratosSuscripciones(int codEmpresa, string codContrato, string cedula)
         {
             var sql = @"
                 select C.descripcion,
@@ -409,7 +410,7 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
                         on C.cod_cargo = S.cod_cargo
                 where S.cod_contrato = @CodContrato
                   and S.cedula = @Cedula";
-            return DbHelper.ExecuteListQuery<CxcPersonaContratosSuscripcionDto>(_portalDb, codEmpresa, sql, new { CodContrato = codContrato, Cedula = cedula });
+            return DbHelper.ExecuteListQuery<PersonasContratosSuscripcionesData>(_portalDb, codEmpresa, sql, new { CodContrato = codContrato, Cedula = cedula });
         }
 
         /// <summary>
