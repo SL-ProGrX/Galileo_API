@@ -76,233 +76,238 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         }
 
         private static List<GridColumnDto> BuildColumnsByTipo(string tipo)
+        {
+            static GridColumnDto Col(string field, string title, int width, string align = GridConstants.Align.Left, string? format = null)
+                => new() { field = field, title = title, width = width, align = align, format = format };
+
+            // Dedup por field (por si en algún case se cuela un repetido)
+            static List<GridColumnDto> DedupByField(IEnumerable<GridColumnDto> cols)
+                => cols
+                    .GroupBy(c => c.field ?? string.Empty, StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.First())
+                    .ToList();
+
+            return tipo switch
             {
-                // Helper local para no repetir
-                static GridColumnDto Col(string field, string title, int width, string align = "left", string? format = null)
-                    => new() { field = field, title = title, width = width, align = align, format = format };
-
-                return tipo switch
+                // VB6: Case "PPC"
+                "PPC" => DedupByField(new[]
                 {
-                    // VB6: Case "PPC"
-                    "PPC" => new List<GridColumnDto>
+            Col(GridConstants.Fields.Cedula,   GridConstants.Titles.Cedula, 2000),
+            Col("APELLIDO_1",                  "Apellido 1",               2000),
+            Col("APELLIDO_2",                  "Apellido 2",               2000),
+            Col("NOMBRE_1",                    "Nombre 1",                 2000),
+            Col("NOMBRE_2",                    "Nombre 2",                 2000),
+
+            Col(GridConstants.Fields.Genero,   GridConstants.Titles.Genero,        1000, GridConstants.Align.Center),
+            Col(GridConstants.Fields.FechaNacimiento, GridConstants.Titles.FechaNacimiento, 2500, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
+            Col("EDAD",                        "Edad",                     1000, GridConstants.Align.Center),
+
+            Col(GridConstants.Fields.Email,    GridConstants.Titles.Email,         2000),
+            Col(GridConstants.Fields.Telefono, GridConstants.Titles.Telefono,      2000, GridConstants.Align.Center),
+
+            Col("MONTO_ASEGURADO_01",          GridConstants.Titles.MontoAsegurado, 2000, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col("FECHA_EMISION",               GridConstants.Titles.FechaEmision,   2000, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
+            Col("MONEDA",                      "Moneda",                   1500, GridConstants.Align.Center),
+            Col(GridConstants.Fields.Movimiento, GridConstants.Titles.Movimiento,  2000, GridConstants.Align.Center),
+
+            Col(GridConstants.Fields.NombreCompleto, GridConstants.Titles.NombreCompleto, 4000)
+        }),
+
+                // VB6: Case "PCG"
+                "PCG" => DedupByField(new[]
                 {
-                    Col("CEDULA", "Cédula", 2000),
-                    Col("APELLIDO_1", "Apellido 1", 2000),
-                    Col("APELLIDO_2", "Apellido 2", 2000),
-                    Col("NOMBRE_1", "Nombre 1", 2000),
-                    Col("NOMBRE_2", "Nombre 2", 2000),
+            Col("Identificacion", "Identificación", 2000),
+            Col("NombreCompleto", "Nombre Completo", 4000),
+            Col("FechaNacimiento", "Fecha Nacimiento", 2000, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
+            Col(GridConstants.Fields.Genero,GridConstants.Titles.Genero, 1000, GridConstants.Align.Center),
+            Col(GridConstants.Fields.Nacionalidad, GridConstants.Titles.Nacionalidad, 2000),
+            Col(GridConstants.Fields.Movimiento, GridConstants.Titles.Movimiento, 2000, GridConstants.Align.Center)
+        }),
 
-                    Col("GENERO", "Genero", 1000, "center"),
-                    Col("FECHA_NACIMIENTO", "Fecha Nac.", 2500, "center", "date:yyyy-MM-dd"),
-                    Col("EDAD", "Edad", 1000, "center"),
-
-                    Col("EMAIL", "Correo Electrónico", 2000),
-                    Col("TELEFONO", "Teléfono", 2000, "center"),
-
-                    Col("MONTO_ASEGURADO_01", "Monto Asegurado", 2000, "right", "n2"),
-                    Col("FECHA_EMISION", "Fecha Emisión", 2000, "center", "date:yyyy-MM-dd"),
-                    Col("MONEDA", "Moneda", 1500, "center"),
-                    Col("MOVIMIENTO", "Movimiento", 2000, "center"),
-
-                    Col("NOMBRE_COMPLETO", "Nombre Completo", 4000)
-                },
-
-                    // VB6: Case "PCG"
-                    "PCG" => new List<GridColumnDto>
+                // VB6: Case "PDE"
+                "PDE" => DedupByField(new[]
                 {
-                    Col("Identificacion", "Identificación", 2000),
-                    Col("NombreCompleto", "Nombre Completo", 4000),
-                    Col("FechaNacimiento", "Fecha Nacimiento", 2000, "center", "date:yyyy-MM-dd"),
-                    Col("Genero", "Genero", 1000, "center"),
-                    Col("Nacionalidad", "Nacionalidad", 2000),
-                    Col("MOVIMIENTO", "Movimiento", 2000, "center")
-                },
+            Col("Identificacion", "Identificación", 2000),
+            Col("NombreCompleto", "Nombre Completo", 4000),
+            Col("MontoAsegurado", GridConstants.Titles.MontoAsegurado, 2000, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col("FechaNacimiento", "Fecha Nacimiento", 2000, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
+            Col("Genero", "Genero", 1000, GridConstants.Align.Center),
+            Col(GridConstants.Fields.Nacionalidad, GridConstants.Titles.Nacionalidad, 2000),
+            Col("Movimiento", GridConstants.Titles.Movimiento, 2000, GridConstants.Align.Center)
+        }),
 
-                    // VB6: Case "PDE"
-                    "PDE" => new List<GridColumnDto>
+                // VB6: Case "PINC", "PINCC"
+                "PINC" or "PINCC" => DedupByField(new[]
                 {
-                    Col("Identificacion", "Identificación", 2000),
-                    Col("NombreCompleto", "Nombre Completo", 4000),
-                    Col("MontoAsegurado", "Monto Asegurado", 2000, "right", "n2"),
-                    Col("FechaNacimiento", "Fecha Nacimiento", 2000, "center", "date:yyyy-MM-dd"),
-                    Col("Genero", "Genero", 1000, "center"),
-                    Col("Nacionalidad", "Nacionalidad", 2000),
-                    Col("Movimiento", "Movimiento", 2000, "center")
-                },
+            Col("Corte", "Corte", 2000),
 
-                    // VB6: Case "PINC", "PINCC"
-                    "PINC" or "PINCC" => new List<GridColumnDto>
+            Col(GridConstants.Fields.Cedula, GridConstants.Titles.Cedula, 2000),
+            Col("APELLIDO_1", "Apellido 1", 2000),
+            Col("APELLIDO_2", "Apellido 2", 2000),
+            Col("NOMBRE_1", "Nombre 1", 2000),
+            Col("NOMBRE_2", "Nombre 2", 2000),
+
+            Col(GridConstants.Fields.Genero, GridConstants.Titles.Genero, 1000, GridConstants.Align.Center),
+            Col(GridConstants.Fields.FechaNacimiento, GridConstants.Titles.FechaNacimiento, 2000, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
+
+            Col(GridConstants.Fields.Telefono, GridConstants.Titles.Telefono, 2000),
+            Col(GridConstants.Fields.Email, GridConstants.Titles.Email, 2000),
+
+            Col("Folio", "No. Folio", 2000),
+
+            Col("PROVINCIA_DESC", "Provincia", 2000),
+            Col("CANTON_DESC", "Cantón", 2000),
+            Col("DISTRITO_DESC", "Distrito", 2000),
+            Col("DIRECCION", "Dirección Completa", 3000),
+
+            Col(GridConstants.Fields.CreditoMonto, "Monto del Crédito", 1800, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col("ValorConstruccion", "Monto de Construcción", 1800, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col(GridConstants.Fields.CreditoSaldo, "Saldo del Crédito", 1800, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+
+            Col("ID_SOLICITUD", "No. Operación", 2000),
+
+            Col("NumeroFinca", "No. Finca", 2000),
+            Col("AreaFinca", "Area Finca", 2000),
+            Col("NumPlanoCatastro", "Plano Castro", 2000),
+
+            Col(GridConstants.Fields.Movimiento, "Tipo", 2000),
+
+            Col("COD_POLIZA", "Cod.Póliza", 1100, GridConstants.Align.Center),
+            Col("CODIGO", "Cod.Retención", 1100, GridConstants.Align.Center),
+
+            Col("CREDITO_OPERACION", GridConstants.Titles.CrdOperacion, 2000, GridConstants.Align.Center),
+            Col("CREDITO_CODIGO",    GridConstants.Titles.CrdCodigo,    1500, GridConstants.Align.Center),
+            Col(GridConstants.Fields.CreditoMonto, GridConstants.Titles.CrdMonto, 1500, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col(GridConstants.Fields.CreditoSaldo, GridConstants.Titles.CrdSaldo, 1500, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col("CREDITO_ESTADO",    GridConstants.Titles.CrdEstado,    2000, GridConstants.Align.Center),
+            Col("VINCULADAS",        GridConstants.Titles.CrdOps,       2000, GridConstants.Align.Center)
+        }),
+
+                // VB6: Case "HVID" / "PVID"
+                "HVID" or "PVID" => DedupByField(new[]
                 {
-                    Col("Corte", "Corte", 2000),
+            Col("Cedula", "Cédula", 2000),
+            Col("Apellido_1", "Apellido 1", 2000),
+            Col("Apellido_2", "Apellido 2", 2000),
+            Col("Nombre_1", "Nombre 1", 2000),
+            Col("Nombre_2", "Nombre 2", 2000),
 
-                    Col("CEDULA", "Identificación", 2000),
-                    Col("APELLIDO_1", "Apellido 1", 2000),
-                    Col("APELLIDO_2", "Apellido 2", 2000),
-                    Col("NOMBRE_1", "Nombre 1", 2000),
-                    Col("NOMBRE_2", "Nombre 2", 2000),
+            Col("MONTO_ASEGURADO_01", GridConstants.Titles.MontoAsegurado, 2000, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
 
-                    Col("GENERO", "Genero", 1000, "center"),
-                    Col("FECHA_NACIMIENTO", "Fecha Nac.", 2000, "center", "date:yyyy-MM-dd"),
+            Col(GridConstants.Fields.Genero, GridConstants.Titles.Genero, 1000, GridConstants.Align.Center),
+            Col(GridConstants.Fields.FechaNacimiento, GridConstants.Titles.FechaNacimiento, 2500, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
+            Col("EDAD", "Edad", 1000, GridConstants.Align.Center),
 
-                    Col("TELEFONO", "Teléfono", 2000),
-                    Col("EMAIL", "Correo Electrónico", 2000),
+            Col("FECHA_EMISION", GridConstants.Titles.FechaEmision, 2000, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
 
-                    Col("Folio", "No. Folio", 2000),
+            Col("Movimiento", "Descripción", 2000, GridConstants.Align.Center),
+            Col("MONEDA", "Moneda", 1500, GridConstants.Align.Center),
 
-                    Col("PROVINCIA_DESC", "Provincia", 2000),
-                    Col("CANTON_DESC", "Cantón", 2000),
-                    Col("DISTRITO_DESC", "Distrito", 2000),
-                    Col("DIRECCION", "Dirección Completa", 3000),
+            Col("Id_Solicitud", "Referencia", 1000),
 
-                    Col("CREDITO_MONTO", "Monto del Crédito", 1800, "right", "n2"),
-                    Col("ValorConstruccion", "Monto de Construcción", 1800, "right", "n2"),
-                    Col("CREDITO_SALDO", "Saldo del Crédito", 1800, "right", "n2"),
+            Col("Email", GridConstants.Titles.Email, 2000),
+            Col(GridConstants.Fields.Telefono, GridConstants.Titles.Telefono, 2000, GridConstants.Align.Center),
 
-                    Col("ID_SOLICITUD", "No. Operación", 2000),
+            Col("Provincia_Desc", "Provincia", 2000),
+            Col("Canton_Desc", "Canton", 2000),
+            Col("Distrito_Desc", "Distrito", 2000),
 
-                    Col("NumeroFinca", "No. Finca", 2000),
-                    Col("AreaFinca", "Area Finca", 2000),
-                    Col("NumPlanoCatastro", "Plano Castro", 2000),
+            Col("Nombre_Completo", GridConstants.Titles.NombreCompleto, 4000),
 
-                    Col("MOVIMIENTO", "Tipo", 2000),
+            Col("Id_Solicitud", "Pol.Operación", 2000, GridConstants.Align.Center),
+            Col("cod_poliza", "Pol.Código", 1500, GridConstants.Align.Center),
+            Col("Codigo", "Pol.Retención", 1500, GridConstants.Align.Center),
 
-                    Col("COD_POLIZA", "Cod.Póliza", 1100, "center"),
-                    Col("CODIGO", "Cod.Retención", 1100, "center"),
+            Col("Credito_Operacion", GridConstants.Titles.CrdOperacion, 2000, GridConstants.Align.Center),
+            Col("Credito_Codigo",    GridConstants.Titles.CrdCodigo,    1500, GridConstants.Align.Center),
+            Col("Credito_Monto",     GridConstants.Titles.CrdMonto,     1500, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col("Credito_Saldo",     GridConstants.Titles.CrdSaldo,     1500, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col("Credito_Estado",    GridConstants.Titles.CrdEstado,    2000, GridConstants.Align.Center),
+            Col("Vinculadas",        GridConstants.Titles.CrdOps,       2000, GridConstants.Align.Center)
+        }),
 
-                    Col("CREDITO_OPERACION", "CRD.Operación", 2000, "center"),
-                    Col("CREDITO_CODIGO", "CRD.Código", 1500, "center"),
-                    Col("CREDITO_MONTO", "CRD.Monto", 1500, "right", "n2"),
-                    Col("CREDITO_SALDO", "CRD.Saldo", 1500, "right", "n2"),
-                    Col("CREDITO_ESTADO", "CRD.Estado", 2000, "center"),
-                    Col("VINCULADAS", "CRD.Ops", 2000, "center")
-                },
-
-                    // VB6: Case "HVID" (en tu VB6 la grilla “simple” era genérica)
-                    "HVID" or "PVID" => new List<GridColumnDto>
+                // VB6: Case "PREN"
+                "PREN" => DedupByField(new[]
                 {
-                        Col("Cedula", "Cédula", 2000),
-                        Col("Apellido_1", "Apellido 1", 2000),
-                        Col("Apellido_2", "Apellido 2", 2000),
-                        Col("Nombre_1", "Nombre 1", 2000),
-                        Col("Nombre_2", "Nombre 2", 2000),
+            Col(GridConstants.Fields.Cedula, GridConstants.Titles.Cedula, 2000),
+            Col(GridConstants.Fields.NombreCompleto, "Asegurado", 4000),
 
-                        Col("MONTO_ASEGURADO_01", "Monto Asegurado", 2000, "right", "n2"),
+            Col(GridConstants.Fields.Genero, GridConstants.Titles.Genero, 1000, GridConstants.Align.Center),
+            Col(GridConstants.Fields.FechaNacimiento, GridConstants.Titles.FechaNacimiento, 2500, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
 
-                        Col("Genero", "Genero", 1000, "center"),
-                        Col("FECHA_NACIMIENTO", "Fecha Nac.", 2500, "center", "date:yyyy-MM-dd"),
-                        Col("EDAD", "Edad", 1000, "center"),
+            Col("CREDITO_FECHA", GridConstants.Titles.FechaEmision, 2000, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
+            Col(GridConstants.Fields.Email, GridConstants.Titles.Email, 2000),
+            Col(GridConstants.Fields.Telefono, GridConstants.Titles.Telefono, 2000, GridConstants.Align.Center),
 
-                        Col("FECHA_EMISION", "Fecha Emisión", 2000, "center", "date:yyyy-MM-dd"),
-                        Col("MONTO_ASEGURADO_01", "Suma Asegurada", 2000, "right", "n2"),
+            Col("USO", "Uso", 2000),
+            Col("PLACA", "Placa", 2000),
+            Col("ID_PROVISIONAL", "Id Provisional", 2000),
+            Col("MARCA_DESC", "Marca", 2000),
+            Col("MODELO_DESC", "Modelo", 2000),
+            Col("PRESENTACION_DESC", "Presentación", 2000),
+            Col("ANIO", "Año Vehículo", 1000, GridConstants.Align.Center),
+            Col("COLOR", "Color", 2000),
 
-                        Col("Movimiento", "Descripción", 2000, "center"),
-                        Col("MONEDA", "Moneda", 1500, "center"),
+            Col("MONTO", GridConstants.Titles.MontoAsegurado, 2000, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col(GridConstants.Fields.Movimiento, GridConstants.Titles.Movimiento, 2000),
 
-                        Col("Id_Solicitud", "Referencia", 1000),
+            Col("ID_SOLICITUD", "Pol.Operación", 1100, GridConstants.Align.Center),
+            Col("COD_POLIZA", "Pol.Código", 1100, GridConstants.Align.Center),
+            Col("CODIGO", "Pol.Retención", 1100, GridConstants.Align.Center),
 
-                        Col("Email", "Correo Electrónico", 2000),
-                        Col("TELEFONO", "Teléfono", 2000, "center"),
+            Col("CREDITO_OPERACION", GridConstants.Titles.CrdOperacion, 2000, GridConstants.Align.Center),
+            Col("CREDITO_CODIGO",    GridConstants.Titles.CrdCodigo,    1500, GridConstants.Align.Center),
+            Col(GridConstants.Fields.CreditoMonto, GridConstants.Titles.CrdMonto, 1500, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col(GridConstants.Fields.CreditoSaldo, GridConstants.Titles.CrdSaldo, 1500, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col("CREDITO_ESTADO",    GridConstants.Titles.CrdEstado,    2000, GridConstants.Align.Center),
+            Col("VINCULADAS",        GridConstants.Titles.CrdOps,       2000, GridConstants.Align.Center)
+        }),
 
-                        Col("Provincia_Desc", "Provincia", 2000),
-                        Col("Canton_Desc", "Canton", 2000),
-                        Col("Distrito_Desc", "Distrito", 2000),
-
-                        Col("Nombre_Completo", "Nombre Completo", 4000),
-
-                        Col("Id_Solicitud", "Pol.Operación", 2000, "center"),
-                        Col("cod_poliza", "Pol.Código", 1500, "center"),
-                        Col("Codigo", "Pol.Retención", 1500, "center"),
-
-                        Col("Credito_Operacion", "CRD.Operación", 2000, "center"),
-                        Col("Credito_Codigo", "CRD.Código", 1500, "center"),
-                        Col("Credito_Monto", "CRD.Monto", 1500, "right", "n2"),
-                        Col("Credito_Saldo", "CRD.Saldo", 1500, "right", "n2"),
-                        Col("Credito_Estado", "CRD.Estado", 2000, "center"),
-                        Col("Vinculadas", "CRD.Ops", 2000, "center")
-                },
-
-                    // VB6: Case "PREN"
-                    "PREN" => new List<GridColumnDto>
+                // VB6: Case "PVEH"
+                "PVEH" => DedupByField(new[]
                 {
-                    Col("CEDULA", "Cédula", 2000),
-                    Col("NOMBRE_COMPLETO", "Asegurado", 4000),
+            Col(GridConstants.Fields.Cedula, GridConstants.Titles.Cedula, 2000),
+            Col(GridConstants.Fields.NombreCompleto, "Asegurado", 4000),
 
-                    Col("GENERO", "Genero", 1000, "center"),
-                    Col("FECHA_NACIMIENTO", "Fecha Nac.", 2500, "center", "date:yyyy-MM-dd"),
+            Col(GridConstants.Fields.Genero, GridConstants.Titles.Genero, 1000, GridConstants.Align.Center),
+            Col(GridConstants.Fields.FechaNacimiento, GridConstants.Titles.FechaNacimiento, 2500, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
 
-                    Col("CREDITO_FECHA", "Fecha Emisión", 2000, "center", "date:yyyy-MM-dd"),
-                    Col("EMAIL", "Correo Electrónico", 2000),
-                    Col("TELEFONO", "Teléfono", 2000, "center"),
+            Col("CREDITO_FECHA", GridConstants.Titles.FechaEmision, 2000, GridConstants.Align.Center, GridConstants.Formats.DateYMD),
+            Col(GridConstants.Fields.Email, GridConstants.Titles.Email, 2000),
+            Col(GridConstants.Fields.Telefono, GridConstants.Titles.Telefono, 2000, GridConstants.Align.Center),
 
-                    Col("USO", "Uso", 2000),
-                    Col("PLACA", "Placa", 2000),
-                    Col("ID_PROVISIONAL", "Id Provisional", 2000),
-                    Col("MARCA_DESC", "Marca", 2000),
-                    Col("MODELO_DESC", "Modelo", 2000),
-                    Col("PRESENTACION_DESC", "Presentación", 2000),
-                    Col("ANIO", "Año Vehículo", 1000, "center"),
-                    Col("COLOR", "Color", 2000),
+            Col("USO", "Uso del Vehículo", 2000),
+            Col("PLACA", "Placa", 2000),
+            Col("ID_PROVISIONAL", "Id Provisional", 2000),
+            Col("MARCA_DESC", "Marca", 2000),
+            Col("MODELO_DESC", "Modelo", 2000),
+            Col("PRESENTACION_DESC", "Presentación", 2000),
+            Col("ANIO", "Año Vehículo", 1000, GridConstants.Align.Center),
+            Col("VIN_MOTOR", "Motor CC", 2000),
+            Col("CHASIS_NUMERO", "Chasis", 3000),
+            Col("COLOR", "Color", 2000),
 
-                    Col("MONTO", "Monto Asegurado", 2000, "right", "n2"),
-                    Col("MOVIMIENTO", "Movimiento", 2000),
+            Col("MONTO", GridConstants.Titles.MontoAsegurado, 2000, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col(GridConstants.Fields.Movimiento, GridConstants.Titles.Movimiento, 2000),
 
-                    Col("ID_SOLICITUD", "Pol.Operación", 1100, "center"),
-                    Col("COD_POLIZA", "Pol.Código", 1100, "center"),
-                    Col("CODIGO", "Pol.Retención", 1100, "center"),
+            Col("COD_POLIZA", "Pol.Código", 1100, GridConstants.Align.Center),
+            Col("CODIGO", "Pol.Retención", 1100, GridConstants.Align.Center),
+            Col("ID_SOLICITUD", "Pol.Operación", 1100, GridConstants.Align.Center),
 
-                    Col("CREDITO_OPERACION", "CRD.Operación", 2000, "center"),
-                    Col("CREDITO_CODIGO", "CRD.Código", 1500, "center"),
-                    Col("CREDITO_MONTO", "CRD.Monto", 1500, "right", "n2"),
-                    Col("CREDITO_SALDO", "CRD.Saldo", 1500, "right", "n2"),
-                    Col("CREDITO_ESTADO", "CRD.Estado", 2000, "center"),
-                    Col("VINCULADAS", "CRD.Ops", 2000, "center")
-                },
+            Col("CREDITO_OPERACION", GridConstants.Titles.CrdOperacion, 2000, GridConstants.Align.Center),
+            Col("CREDITO_CODIGO",    GridConstants.Titles.CrdCodigo,    1500, GridConstants.Align.Center),
+            Col(GridConstants.Fields.CreditoMonto, GridConstants.Titles.CrdMonto, 1500, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col(GridConstants.Fields.CreditoSaldo, GridConstants.Titles.CrdSaldo, 1500, GridConstants.Align.Right, GridConstants.Formats.Numeric2),
+            Col("CREDITO_ESTADO",    GridConstants.Titles.CrdEstado,    2000, GridConstants.Align.Center),
+            Col("VINCULADAS",        GridConstants.Titles.CrdOps,       2000, GridConstants.Align.Center)
+        }),
 
-                    // VB6: Case "PVEH"
-                    "PVEH" => new List<GridColumnDto>
-                {
-                    Col("CEDULA", "Cédula", 2000),
-                    Col("NOMBRE_COMPLETO", "Asegurado", 4000),
-
-                    Col("GENERO", "Genero", 1000, "center"),
-                    Col("FECHA_NACIMIENTO", "Fecha Nac.", 2500, "center", "date:yyyy-MM-dd"),
-
-                    Col("CREDITO_FECHA", "Fecha Emisión", 2000, "center", "date:yyyy-MM-dd"),
-                    Col("EMAIL", "Correo Electrónico", 2000),
-                    Col("TELEFONO", "Teléfono", 2000, "center"),
-
-                    Col("USO", "Uso del Vehículo", 2000),
-                    Col("PLACA", "Placa", 2000),
-                    Col("ID_PROVISIONAL", "Id Provisional", 2000),
-                    Col("MARCA_DESC", "Marca", 2000),
-                    Col("MODELO_DESC", "Modelo", 2000),
-                    Col("PRESENTACION_DESC", "Presentación", 2000),
-                    Col("ANIO", "Año Vehículo", 1000, "center"),
-                    Col("VIN_MOTOR", "Motor CC", 2000),
-                    Col("CHASIS_NUMERO", "Chasis", 3000),
-                    Col("COLOR", "Color", 2000),
-
-                    Col("MONTO", "Monto Asegurado", 2000, "right", "n2"),
-                    Col("MOVIMIENTO", "Movimiento", 2000),
-
-                    Col("COD_POLIZA", "Pol.Código", 1100, "center"),
-                    Col("CODIGO", "Pol.Retención", 1100, "center"),
-                    Col("ID_SOLICITUD", "Pol.Operación", 1100, "center"),
-
-                    Col("CREDITO_OPERACION", "CRD.Operación", 2000, "center"),
-                    Col("CREDITO_CODIGO", "CRD.Código", 1500, "center"),
-                    Col("CREDITO_MONTO", "CRD.Monto", 1500, "right", "n2"),
-                    Col("CREDITO_SALDO", "CRD.Saldo", 1500, "right", "n2"),
-                    Col("CREDITO_ESTADO", "CRD.Estado", 2000, "center"),
-                    Col("VINCULADAS", "CRD.Ops", 2000, "center")
-                },
-                    _ => new List<GridColumnDto>
-                {
-                    Col("Info", "Tipo no soportado", 3000)
-                }
-                };
-            }
-
+                _ => new List<GridColumnDto>
+        {
+            Col("Info", "Tipo no soportado", 3000)
+        }
+            };
+        }
         /// <summary>
         /// Metodo para consultar los datos de la póliza según el código y tipo, aplicando el análisis (Crédito o Retención) y fecha de corte. En tu VB6 esto se hacía con un Select Case sobre el tipo para determinar qué SP ejecutar, y luego se llenaba la grilla con los resultados.
         /// </summary>
@@ -324,7 +329,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             // 1️⃣ Obtener tipo
             string tipoRow = conn.QueryFirstOrDefault<string>(
                 "exec spPolizas_Tipo_Aplicacion @cod_poliza",
-                new { cod_poliza = codPoliza });
+                new { cod_poliza = codPoliza }) ?? string.Empty;
 
              if (tipoRow == null)
                 return DbHelper.CreateErrorResponse<CrdPolizaConsultaResponseDto>("No se pudo determinar el tipo.");
@@ -332,7 +337,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             string tipo = tipoRow.Trim().ToUpper();
 
             // 2️⃣ Determinar SP según tipo + análisis
-            string sql = BuildSqlByTipo(tipo, req.analisis);
+            string sql = BuildSqlByTipo(tipo, req.analisis, new Exception($"Tipo de póliza no soportado: {tipo}")
+);
 
             // 3️⃣ Ejecutar SP principal
             var data = conn.Query(
@@ -360,7 +366,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             {
                 tipo = tipo,
                 columns = columns,
-                rows = rows,
+                rows = rows!,
                 total = rows.Count
             };
 
@@ -368,7 +374,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
         }
 
 
-        private static string BuildSqlByTipo(string tipo, string analisis)
+        private static string BuildSqlByTipo(string tipo, string analisis, Exception exception)
         {
             bool esCredito = analisis?.StartsWith("C", StringComparison.OrdinalIgnoreCase) == true;
 
@@ -394,7 +400,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 "PINC" or "PINCC" =>
                     "exec spPoliza_Incendio_Cierre_Retencion @Poliza, @Corte, 0, '', 'T'",
 
-                _ => throw new Exception($"Tipo de póliza no soportado: {tipo}")
+                _ => throw exception
             };
         }
 

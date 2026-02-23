@@ -39,4 +39,72 @@
         public List<Dictionary<string, object?>> rows { get; set; } = new();
         public int total { get; set; }
     }
+
+    public static class GridConstants
+    {
+        // =========================
+        // Fields (Data binding)
+        // =========================
+        public static class Fields
+        {
+            public const string Cedula = "CEDULA";
+            public const string Genero = "Genero";
+            public const string FechaNacimiento = "FECHA_NACIMIENTO";
+            public const string Email = "EMAIL";
+            public const string Telefono = "TELEFONO";
+            public const string Movimiento = "MOVIMIENTO";
+            public const string NombreCompleto = "NOMBRE_COMPLETO";
+            public const string Nacionalidad = "Nacionalidad";
+
+            public const string CreditoMonto = "CREDITO_MONTO";
+            public const string CreditoSaldo = "CREDITO_SALDO";
+        }
+
+        // =========================
+        // Titles (UI text)
+        // =========================
+        public static class Titles
+        {
+            public const string Cedula = "Cédula";
+            public const string Genero = "Genero";
+            public const string FechaNacimiento = "Fecha Nac.";
+            public const string Email = "Correo Electrónico";
+            public const string Telefono = "Teléfono";
+            public const string Movimiento = "Movimiento";
+            public const string NombreCompleto = "Nombre Completo";
+            public const string Nacionalidad = "Nacionalidad";
+
+            public const string MontoAsegurado = "Monto Asegurado";
+            public const string FechaEmision = "Fecha Emisión";
+
+            // Crédito (CRD)
+            public const string CrdOperacion = "CRD.Operación";
+            public const string CrdCodigo = "CRD.Código";
+            public const string CrdMonto = "CRD.Monto";
+            public const string CrdSaldo = "CRD.Saldo";
+            public const string CrdEstado = "CRD.Estado";
+            public const string CrdOps = "CRD.Ops";
+        }
+
+        // =========================
+        // Alignment
+        // =========================
+        public static class Align
+        {
+            public const string Left = "left";
+            public const string Center = "center";
+            public const string Right = "right";
+        }
+
+        // =========================
+        // Formats
+        // =========================
+        public static class Formats
+        {
+            public const string DateYMD = "date:yyyy-MM-dd";
+            public const string Numeric2 = "n2";
+        }
+    }
 }
+
+   
