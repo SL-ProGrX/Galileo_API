@@ -12,8 +12,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
     public class FrmCntXExploradorContableDb
     {
         private readonly PortalDB _portalDb;
-        private readonly MSecurityMainDb _mSecurityMainDb;
-        private readonly int vModulo = 20; // módulo contabilidad
 
         public FrmCntXExploradorContableDb(IConfiguration config)
             : this(new PortalDB(config), new MSecurityMainDb(config)) { }
@@ -23,7 +21,6 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
             MSecurityMainDb securityDb)
         {
             _portalDb = portalDb;
-            _mSecurityMainDb = securityDb;
         }
 
         #region CARGA TREE
@@ -149,8 +146,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Contabilidad
                 if (!string.IsNullOrWhiteSpace(filtros.num_asiento))
                     sb.Append(" AND A.num_asiento LIKE '%' + @num + '%' ");
 
-                if (!filtros.todas && filtros.fecha_desde != null && filtros.fecha_hasta != null)
+                if (filtros.todas != true && filtros.fecha_desde != null && filtros.fecha_hasta != null)
+                {
                     sb.Append(" AND A.fecha_asiento BETWEEN @desde AND @hasta ");
+                }
 
                 sb.Append(@"
                     GROUP BY A.num_asiento, A.tipo_asiento, A.fecha_asiento, 

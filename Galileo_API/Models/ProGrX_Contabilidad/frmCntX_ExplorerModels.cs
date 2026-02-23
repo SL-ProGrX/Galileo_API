@@ -22,7 +22,7 @@
 
             public DateTime? fecha_desde { get; set; }
             public DateTime? fecha_hasta { get; set; }
-            public bool todas { get; set; }
+            public bool? todas { get; set; }
 
             public string? divisa { get; set; }
             public string? cuenta_inicio { get; set; }
