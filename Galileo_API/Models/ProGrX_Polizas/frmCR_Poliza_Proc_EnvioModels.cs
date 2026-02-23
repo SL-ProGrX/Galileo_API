@@ -29,7 +29,7 @@
     {
         public string cod_poliza { get; set; } = string.Empty;
         public string analisis { get; set; } = "C"; // "C" o "R"
-        public DateTime? fecha_corte { get; set; } 
+        public DateTime fecha_corte { get; set; } = DateTime.Now;
     }
 
     public class CrdPolizaConsultaResponseDto
