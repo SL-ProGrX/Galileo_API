@@ -101,4 +101,56 @@
         public DateTime? cr_fecha_calculo { get; set; }
         public DateTime fechaalterna { get; set; }
     }
+
+    /// <summary>
+    /// Equivalente C# del Type vGLOBALES (VB6).
+    /// </summary>
+    public class Globales
+    {
+        public string GCedulaActual { get; set; } = string.Empty;
+        public string GstrEtiqueta { get; set; } = string.Empty;
+        public string GstrNombreEmpresa { get; set; } = string.Empty;
+
+        public int GInstitucion { get; set; } = 0;
+        public string GNombreInstitucion { get; set; } = string.Empty;
+
+        // VB6 Currency => en .NET lo más cercano es decimal (precisión fija, ideal para dinero/fechas en formato numérico).
+        public decimal GlngFechaAH { get; set; } = 0;
+        public decimal GlngFechaCR { get; set; } = 0;
+
+        public string GstrFechaCalculo { get; set; } = string.Empty;
+        public string GstrReporte { get; set; } = string.Empty;
+
+        public object? GCajaTxt { get; set; }
+
+        public bool GblnBuscando { get; set; } = false;
+        public int GOpcion { get; set; } = 0;
+
+        public string GstrNiveles { get; set; } = string.Empty;
+        public int GEnlace { get; set; } = 0;
+        public int GMascaraTChar { get; set; } = 0;
+
+        public string GstrMascara { get; set; } = string.Empty;
+        public string GstrNivelResolutivo { get; set; } = string.Empty;
+        public string GstrEntidad { get; set; } = string.Empty;
+
+        public string GOficinaTitular { get; set; } = string.Empty;
+        public string GOficinaApoyo { get; set; } = string.Empty;
+        public string GOficina { get; set; } = string.Empty;
+        public string GOficinaUnidad { get; set; } = string.Empty;
+        public string GOficinaCentroCosto { get; set; } = string.Empty;
+
+        public string GTag { get; set; } = string.Empty;
+        public string GTag2 { get; set; } = string.Empty;
+        public string GTag3 { get; set; } = string.Empty;
+
+        // VB6 Byte => C# byte
+        public int SysPlanPagos { get; set; } = 0;
+        public int SysDocVersion { get; set; } = 0;
+        public int SysTesVersion { get; set; } = 0;
+
+        public bool SysASEVersion { get; set; } = false;
+
+        public string GAppRuta { get; set; } = string.Empty;
+    }
 }
