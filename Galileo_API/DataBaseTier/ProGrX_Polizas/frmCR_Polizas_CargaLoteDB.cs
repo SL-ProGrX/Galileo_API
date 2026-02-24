@@ -254,14 +254,14 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 BulkInsertCreditosCargado(connection, request.CodigoCliente, request.CodAseguradora, request.Proceso, request.Items);
 
                 // 3) Revisión (SP calcula cuota y demás)
-                const string revisadoSp = @"EXEC spCrd_Creditos_Cargado_Revisado @Codigo, @CodAseguradora, @Proceso;";
+                const string revisadoSp = @"EXEC spCrd_Creditos_Cargado_Revisado @ClienteId, @Aseguradora, @Proceso;";
 
                 var revisado = connection.Query<CrdPolizasCargaLoteGridItem>(
                         revisadoSp,
                         new
                         {
-                            Codigo = request.CodigoCliente,
-                            CodAseguradora = request.CodAseguradora,
+                            ClienteId = request.CodigoCliente,
+                            Aseguradora = request.CodAseguradora,
                             Proceso = request.Proceso
                         })
                     .ToList();
@@ -318,7 +318,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             using var table = new DataTable();
             table.Columns.Add("LINEA", typeof(int));
             table.Columns.Add("CODIGO", typeof(string));
-            table.Columns.Add("cod_aseguradora", typeof(string));
+            table.Columns.Add("COD_ASEGURADORA", typeof(string));
             table.Columns.Add("PROCESO", typeof(long));
             table.Columns.Add("CEDULA", typeof(string));
             table.Columns.Add("MONTO", typeof(decimal));
@@ -368,7 +368,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
             bulk.ColumnMappings.Add("LINEA", "LINEA");
             bulk.ColumnMappings.Add("CODIGO", "CODIGO");
-            bulk.ColumnMappings.Add("cod_aseguradora", "cod_aseguradora");
+            bulk.ColumnMappings.Add("COD_ASEGURADORA", "COD_ASEGURADORA");
             bulk.ColumnMappings.Add("PROCESO", "PROCESO");
             bulk.ColumnMappings.Add("CEDULA", "CEDULA");
             bulk.ColumnMappings.Add("MONTO", "MONTO");
@@ -423,10 +423,10 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             }
         }
 
-        public ErrorDto<CrdPolizasCargaLoteProcesarResponse> CrdPolizasCargaLote_Procesar(
-    int codEmpresa,
-    string usuario,
-    CrdPolizasCargaLoteProcesarRequest request)
+        public ErrorDto<long> CrdPolizasCargaLote_Procesar(
+            int codEmpresa,
+            string usuario,
+            CrdPolizasCargaLoteProcesarRequest request)
         {
             using var connection = DbHelper.OpenConnection(_portalDb, codEmpresa);
 
@@ -439,29 +439,24 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 if (!string.Equals(request.CodigoCliente?.Trim(), request.CodigoConfirma?.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
-                    return DbHelper.CreateErrorResponse(
-                        "La confirmación de la línea/cliente ha fallado, revise!",
-                        -1,
-                        new CrdPolizasCargaLoteProcesarResponse());
+                    return DbHelper.CreateErrorResponse<long>(
+                        "La confirmación de la línea/cliente ha fallado, revise!");
                 }
 
                 if (request.MontoNeto <= 0m)
                 {
-                    return DbHelper.CreateErrorResponse(
-                        "El monto neto debe ser mayor a cero.",
-                        -1,
-                        new CrdPolizasCargaLoteProcesarResponse());
+                    return DbHelper.CreateErrorResponse<long>("El monto neto debe ser mayor a cero.");
                 }
 
                 // 1) Procesa lote
                 const string procesaSp = @"
-            EXEC spCrd_Creditos_Cargado_Procesa @CodigoCliente, @Proceso, @CodAseguradora, @Usuario;";
+            EXEC spCrd_Creditos_Cargado_Procesa @Codigo, @Proceso, @Aseguradora, @Usuario;";
 
                 connection.Execute(procesaSp, new
                 {
-                    CodigoCliente = request.CodigoCliente,
+                    Codigo = request.CodigoCliente,
                     Proceso = request.Proceso,
-                    CodAseguradora = request.CodAseguradora,
+                    Aseguradora = request.CodAseguradora,
                     Usuario = usuario
                 });
 
@@ -477,14 +472,12 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 if (string.IsNullOrWhiteSpace(cedulaJuridica))
                 {
-                    return DbHelper.CreateErrorResponse(
-                        "No se encontró la cédula jurídica de la aseguradora.",
-                        -1,
-                        new CrdPolizasCargaLoteProcesarResponse());
+                    return DbHelper.CreateErrorResponse<long>(
+                        "No se encontró la cédula jurídica de la aseguradora.");
                 }
 
                 // 3) Insert tesorería maestro y obtener NSolicitud
-                var tipo = MapTipoDocumento(request.TipoDocumentoUi);
+                var tipo = request.TipoDocumentoUi;
                 const string unidad = "OC";
                 const string concepto = "CAR";
 
@@ -513,47 +506,32 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
 
                 if (nSolicitud <= 0)
                 {
-                    return DbHelper.CreateErrorResponse(
-                        "No fue posible generar la solicitud de tesorería.",
-                        -1,
-                        new CrdPolizasCargaLoteProcesarResponse());
+                    return DbHelper.CreateErrorResponse<long>( "No fue posible generar la solicitud de tesorería.");
                 }
 
                 // 4) Asiento: H banco / D puente
                 var ctaBanco = ObtenerCtaBanco(connection, request.IdBanco);
                 if (string.IsNullOrWhiteSpace(ctaBanco))
                 {
-                    return DbHelper.CreateErrorResponse(
-                        "No se encontró la cuenta contable del banco.",
-                        -1,
-                        new CrdPolizasCargaLoteProcesarResponse());
+                    return DbHelper.CreateErrorResponse<long>("No se encontró la cuenta contable del banco.");
                 }
 
                 var ctaPuente = ObtenerCtaPuente(connection, request.CodigoCliente);
                 if (string.IsNullOrWhiteSpace(ctaPuente))
                 {
-                    return DbHelper.CreateErrorResponse(
-                        "No se encontró la cuenta puente del cliente.",
-                        -1,
-                        new CrdPolizasCargaLoteProcesarResponse());
+                    return DbHelper.CreateErrorResponse<long>("No se encontró la cuenta puente del cliente.");
                 }
 
                 InsertTesAsiento(connection, nSolicitud, ctaBanco, request.MontoNeto, "H", 1, unidad);
                 InsertTesAsiento(connection, nSolicitud, ctaPuente, request.MontoNeto, "D", 2, unidad);
 
-                return DbHelper.CreateOkResponse(new CrdPolizasCargaLoteProcesarResponse { NSolicitud = nSolicitud });
+                return DbHelper.CreateOkResponse<long>(nSolicitud);
             }
             catch (Exception)
             {
-                return DbHelper.CreateErrorResponse(
-                    "Error al procesar el lote y generar la solicitud en bancos.",
-                    -1,
-                    new CrdPolizasCargaLoteProcesarResponse());
+                return DbHelper.CreateErrorResponse<long>("Error al procesar el lote y generar la solicitud en bancos.");
             }
         }
-
-        private static string MapTipoDocumento(string tipoUi) =>
-            string.Equals(tipoUi?.Trim(), "CHEQUE", StringComparison.OrdinalIgnoreCase) ? "CK" : "TE";
 
         private static long InsertTesTransaccionYObtenerNSolicitud(RegistrarDocumentoRequest request)
         {
@@ -637,6 +615,36 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 Unidad = unidad
             });
         }
+
+
+        /// <summary>
+        /// Llena combo de Cliente (VB6: cboCliente) desde CLIENTES.
+        /// </summary>
+        public ErrorDto CrdPolizasCargaLote_Obtener(int CodEmpresa, string cedula)
+        {
+            using var conn = DbHelper.OpenConnection(_portalDb, CodEmpresa);
+
+            const string query = @"SELECT COUNT('X') FROM SOCIOS S WHERE TRIM(S.CEDULA) = @cedula";
+
+            int existe = conn.Query<int>(query, new { cedula = cedula.Trim() }).FirstOrDefault();
+
+            if (existe == 0)
+            {
+                return new ErrorDto
+                {
+                    Code = -1,
+                    Description = "SOCIO NO ENCONTRADO"
+                };
+            }
+
+            return new ErrorDto()
+            {
+                Code = 0,
+                Description = "Ok"
+            };
+        }
+
+
 
     }
 }
