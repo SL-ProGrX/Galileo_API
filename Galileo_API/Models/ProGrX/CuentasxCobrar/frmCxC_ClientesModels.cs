@@ -285,4 +285,36 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string Banco { get; set; } = string.Empty;
         public string TipoDesc { get; set; } = string.Empty;
     }
+
+    public class CxcPersonaAutorizadoDto
+    {
+        public string? Nombre { get; set; } // de CxC_Personas
+        public string Cedula { get; set; } = string.Empty;
+        public string Cedula_Autorizado { get; set; } = string.Empty;
+        public string? Profesion { get; set; }
+        public string? Condicion { get; set; }
+        public short Activo { get; set; }
+        public string? Registro_Usuario { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public DateTime? Actualiza_Fecha { get; set; }
+        public string? Actualiza_Usuario { get; set; }
+    }
+
+    public class CxcPersonaAutorizadorSaveParams
+    {
+        public required string Cedula { get; set; }                // Cliente dueño
+        public required string Cedula_Autorizado { get; set; }      // Cédula del autorizado
+        public string? Profesion { get; set; }
+        public string? Condicion { get; set; }
+        public short Activo { get; set; }
+        public required string Usuario { get; set; }
+        public required string Movimiento { get; set; }             // 'I' (Insert) o 'E' (Update)
+    }
+
+    public class CxcPersonaIdCambioParams
+    {
+        public required string Cedula { get; set; }         
+        public required string IdNew { get; set; }          
+        public required string Usuario { get; set; }       
+    }
 }

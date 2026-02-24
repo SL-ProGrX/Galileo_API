@@ -159,5 +159,33 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         {
             return _bl.CxcCuentasBancarias(codEmpresa, cedula);
         }
+
+        [Authorize]
+        [HttpGet("CxcPersonasAutorizados")]
+        public ErrorDto<List<CxcPersonaAutorizadoDto>> CxcPersonasAutorizados(int codEmpresa, string cedula)
+        {
+            return _bl.CxcPersonasAutorizados(codEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpPost("CxcPersonaAutorizador_Guardar")]
+        public ErrorDto<bool> CxcPersonaAutorizador_Guardar(int codEmpresa, [FromBody] CxcPersonaAutorizadorSaveParams param)
+        {
+            return _bl.CxcPersonaAutorizador_Guardar(codEmpresa, param);
+        }
+
+        [Authorize]
+        [HttpGet("CxcPersonasAutorizadoras_Lista")]
+        public ErrorDto<List<CxcPersonaDto>> CxcPersonasAutorizadoras_Lista(int codEmpresa, short rolAutorizador, string orden)
+        {
+            return _bl.CxcPersonasAutorizadoras_Lista(codEmpresa, rolAutorizador, orden);
+        }
+
+        [Authorize]
+        [HttpPost("CxcPersona_IdCambio")]
+        public ErrorDto<bool> CxcPersona_IdCambio(int codEmpresa, [FromBody] CxcPersonaIdCambioParams param)
+        {
+            return _bl.CxcPersona_IdCambio(codEmpresa, param);
+        }
     }
 }

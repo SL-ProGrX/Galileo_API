@@ -462,20 +462,99 @@ namespace Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar
         public ErrorDto<List<CxcCuentaBancariaDto>> CxcCuentasBancarias(int codEmpresa, string cedula)
         {
             var sql = @"
-        select rtrim(B.Descripcion) as Banco,
-               case when C.tipo = 'A' then 'Ahorros' else 'Corriente' end as TipoDesc,
-               C.cod_Divisa,
-               C.CUENTA_INTERNA,
-               C.CUENTA_INTERBANCA,
-               C.ACTIVA,
-               C.REGISTRO_FECHA,
-               C.REGISTRO_USUARIO
-        from SYS_CUENTAS_BANCARIAS C
-        inner join TES_BANCOS_GRUPOS B
-                on C.cod_banco = B.cod_grupo
-        where C.Identificacion = @Cedula
-          and C.Modulo = 'CxC'";
+                select rtrim(B.Descripcion) as Banco,
+                       case when C.tipo = 'A' then 'Ahorros' else 'Corriente' end as TipoDesc,
+                       C.cod_Divisa,
+                       C.CUENTA_INTERNA,
+                       C.CUENTA_INTERBANCA,
+                       C.ACTIVA,
+                       C.REGISTRO_FECHA,
+                       C.REGISTRO_USUARIO
+                from SYS_CUENTAS_BANCARIAS C
+                inner join TES_BANCOS_GRUPOS B
+                        on C.cod_banco = B.cod_grupo
+                where C.Identificacion = @Cedula
+                  and C.Modulo = 'CxC'";
             return DbHelper.ExecuteListQuery<CxcCuentaBancariaDto>(_portalDb, codEmpresa, sql, new { Cedula = cedula });
+        }
+
+        /// <summary>
+        /// Obtiene la lista de personas autorizadas para una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="cedula">Cédula de la persona.</param>
+        /// <returns>Lista de autorizados.</returns>
+        public ErrorDto<List<CxcPersonaAutorizadoDto>> CxcPersonasAutorizados(int codEmpresa, string cedula)
+        {
+            var sql = @"
+                select Per.Nombre,
+                       A.*
+                from CxC_Personas Per
+                inner join CxC_Personas_Autorizados A
+                        on Per.Cedula = A.cedula_Autorizado
+                where A.cedula = @Cedula";
+            return DbHelper.ExecuteListQuery<CxcPersonaAutorizadoDto>(_portalDb, codEmpresa, sql, new { Cedula = cedula });
+        }
+
+        /// <summary>
+        /// Registra o actualiza un autorizado para una persona.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros del autorizado.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
+        public ErrorDto<bool> CxcPersonaAutorizador_Guardar(int codEmpresa, CxcPersonaAutorizadorSaveParams param)
+        {
+            var sql = "exec spCxC_Persona_Autorizador_Registra @Cedula, @Cedula_Autorizado, @Profesion, @Condicion, @Activo, @Usuario, @Movimiento";
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, param);
+                return rows > 0;
+            });
+            return result;
+        }
+
+        /// <summary>
+        /// Obtiene la lista de personas autorizadoras, filtradas por tipo y rol, ordenadas por el campo indicado.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="rolAutorizador">Valor a validar contra Rol_Autorizador.</param>
+        /// <param name="orden">Campo de ordenamiento ("Cedula" o "Nombre").</param>
+        /// <returns>Lista de personas autorizadoras.</returns>
+        public ErrorDto<List<CxcPersonaDto>> CxcPersonasAutorizadoras_Lista(int codEmpresa, short rolAutorizador, string orden)
+        {
+            string orderBy = orden?.ToLower() == "nombre" ? "nombre" : "cedula";
+            var query = $@"
+                SELECT cedula, nombre
+                FROM CxC_Personas
+                WHERE tipo_Id = 1
+                  AND Rol_Autorizador = @RolAutorizador
+                ORDER BY {orderBy}";
+            return DbHelper.ExecuteListQuery<CxcPersonaDto>(_portalDb, codEmpresa, query, new { RolAutorizador = rolAutorizador });
+        }
+
+        /// <summary>
+        /// Cambia la identificación de una persona y registra en bitácora si el SP no da error.
+        /// </summary>
+        /// <param name="codEmpresa">Código de la empresa.</param>
+        /// <param name="param">Parámetros del cambio de identificación.</param>
+        /// <returns>True si la operación fue exitosa.</returns>
+        public ErrorDto<bool> CxcPersona_IdCambio(int codEmpresa, CxcPersonaIdCambioParams param)
+        {
+            var sql = "exec spCxC_Persona_Id_Cambio @Identificacion, @IdNew, @Usuario";
+            var spParams = new { Identificacion = param.Cedula, IdNew = param.IdNew, Usuario = param.Usuario };
+
+            var result = DbHelper.WithConn(_portalDb, codEmpresa, conn =>
+            {
+                var rows = conn.Execute(sql, spParams);
+                return rows >= 0; // SP no da error si rows >= 0
+            });
+
+            if (result.Result)
+            {
+                RegistrarBitacora(codEmpresa, param.Usuario, param.Cedula, $"Cambio Identificación: {param.Cedula} -> {param.IdNew}");
+            }
+
+            return result;
         }
 
         // Métodos privados no requieren comentarios XML para documentación pública.
