@@ -46,7 +46,7 @@
             public decimal debe { get; set; }
             public decimal haber { get; set; }
 
-            public string? aplicado { get; set; } 
+            public string? aplicado { get; set; }
             public string? referencia { get; set; }
         }
 
@@ -75,12 +75,47 @@
             public int anio { get; set; }
             public int mes { get; set; }
             public DateTime? periodo_corte { get; set; }
-            public string? estado { get; set; } 
+            public string? estado { get; set; }
             public string? cierre_usuario { get; set; }
             public DateTime? cierre_fecha { get; set; }
 
             public string periodo => $"{anio}-{mes:00}";
             public string fecha_periodo => $"{anio}-{mes:00}";
         }
+
+        public class CntxCuentaDto
+        {
+            public string cod_cuenta { get; set; } = string.Empty;
+            public string descripcion { get; set; } = string.Empty;
+            public bool es_mayor { get; set; }
+        }
+
+        public class CntxAsientoTreeDto
+        {
+            public string num_asiento { get; set; } = string.Empty;
+            public DateTime fecha_asiento { get; set; }
+        }
+
+        public class CntxTipoCuentaDto
+        {
+            public string item { get; set; } = string.Empty; // tipo_cuenta
+            public string descripcion { get; set; } = string.Empty;
+        }
+
+        public class CntxDiferidoHistoricoDto
+        {
+            public string? num_asiento { get; set; }
+
+            public string? tipo_asiento { get; set; }
+
+            public DateTime? fecha { get; set; }
+
+            public int? anio { get; set; }
+
+            public int? mes { get; set; }
+
+            public string? usuario { get; set; }
+        }
+
     }
 }
