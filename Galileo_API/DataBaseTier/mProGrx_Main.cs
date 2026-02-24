@@ -867,7 +867,7 @@ namespace Galileo.DataBaseTier
 
                 if (par != null)
                 {
-                    DateTime fecha = par.cr_fecha_calculo ?? par.FechaAlterna;
+                    DateTime fecha = par.CR_FECHA_CALCULO ?? par.FechaAlterna;
 
                     globales.GstrFechaCalculo = fecha.ToString("yyyy-MM-dd");
                     globales.GlngFechaCR = Convert.ToDecimal(fecha.Year * 100 + fecha.Month);
