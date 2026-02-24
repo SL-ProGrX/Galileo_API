@@ -2,7 +2,7 @@
 
 namespace Galileo_API.Models.ProGrX.CuentasxCobrar
 {
-    // Común para información de dirección
+    // Información de dirección
     public class DireccionInfo
     {
         public string? Provincia { get; set; }
@@ -12,7 +12,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Apto_Postal { get; set; }
     }
 
-    // Común para información de contacto
+    // Información de contacto
     public class ContactoInfo : DireccionInfo
     {
         public string? Telefono1 { get; set; }
@@ -24,7 +24,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public string? Website { get; set; }
     }
 
-    // Común para información de persona
+    // Información de persona
     public class PersonaBaseInfo : ContactoInfo
     {
         public string? Cedula { get; set; }
@@ -48,14 +48,30 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public short? Rol_Autorizador { get; set; }
         public string? Notas { get; set; }
     }
+    
+    // DTOs de eliminación
+    public class CxcContratosPagadorDeleteParams
+    {
+        public required string Cod_Contrato { get; set; }
+        public required string Cedula { get; set; }
+        public required string Cedula_Pagador { get; set; }
+    }
 
+    public class CxcContratosSuscripcionDeleteParams
+    {
+        public required string Cod_Contrato { get; set; }
+        public required string Cod_Cargo { get; set; }
+        public required string Cedula { get; set; }
+    }
+
+    // Otros modelos (no refactorizados por ser únicos)
     public class CxcPersonaValidaResult
     {
         public int Existe { get; set; }
     }
 
     public class SocioInfoDto : PersonaBaseInfo
-    {       
+    {
         // Propiedades exclusivas de SocioInfoDto
         public int? Hijos { get; set; }
         public string? EstadoLaboral { get; set; }
@@ -215,18 +231,18 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
     public class CxcPersonaCuentaDto
     {
         public int Operacion { get; set; }
-        public string Cod_Concepto { get; set; }
-        public string Cod_Contrato { get; set; }
-        public string Cedula { get; set; }
+        public string? Cod_Concepto { get; set; }
+        public string? Cod_Contrato { get; set; }
+        public string? Cedula { get; set; }
         public DateTime Registro_Fecha { get; set; }
         public DateTime? Fecha_UltMov { get; set; }
         public decimal Monto { get; set; }
         public decimal Saldo { get; set; }
         public int Dias_Plazo { get; set; }
-        public string Tipo_Plazo { get; set; }
+        public string? Tipo_Plazo { get; set; }
         public decimal Cuota { get; set; }
-        public string Cedula_Pagador { get; set; }
-        public string Num_Documento { get; set; }
+        public string? Cedula_Pagador { get; set; }
+        public string? Num_Documento { get; set; }
         public DateTime? Fecha_Emision { get; set; }
         public DateTime? Fecha_Vencimiento { get; set; }
         public DateTime? Fecha_Pago { get; set; }
@@ -234,22 +250,39 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public decimal Tasa_Mora { get; set; }
         public decimal Desembolso_Monto { get; set; }
         public DateTime? Activa_Fecha { get; set; }
-        public string Activa_Usuario { get; set; }
-        public string Nombre { get; set; }
-        public string Nombre_Pagador { get; set; }
-        public string ConceptoDesc { get; set; }
-        public string ContratoDesc { get; set; }
-        public string Estado { get; set; }
-        public string Autoriza_Estado { get; set; }
+        public string? Activa_Usuario { get; set; }
+        public string? Nombre { get; set; }
+        public string? Nombre_Pagador { get; set; }
+        public string? ConceptoDesc { get; set; }
+        public string? ContratoDesc { get; set; }
+        public string? Estado { get; set; }
+        public string? Autoriza_Estado { get; set; }
         public decimal MoraMonto { get; set; }
         public decimal MoraInt { get; set; }
         public decimal MoraPrincipal { get; set; }
         public decimal MoraCargos { get; set; }
         public int MoraDias { get; set; }
         public DateTime MoraFecha { get; set; }
-        public string Cod_Oficina { get; set; }
-        public string OficinaDesc { get; set; }
+        public string? Cod_Oficina { get; set; }
+        public string? OficinaDesc { get; set; }
         public DateTime Fecha_Server { get; set; }
         public int Warning { get; set; }
+    }
+
+    // Base para cuentas bancarias
+    public class CuentaBancariaBase
+    {
+        public string Cod_Divisa { get; set; } = string.Empty;
+        public string Cuenta_Interna { get; set; } = string.Empty;
+        public string Cuenta_Interbanca { get; set; } = string.Empty;
+        public short Activa { get; set; }
+        public DateTime? Registro_Fecha { get; set; }
+        public string? Registro_Usuario { get; set; }
+    }
+
+    public class CxcCuentaBancariaDto : CuentaBancariaBase
+    {
+        public string Banco { get; set; } = string.Empty;
+        public string TipoDesc { get; set; } = string.Empty;
     }
 }
