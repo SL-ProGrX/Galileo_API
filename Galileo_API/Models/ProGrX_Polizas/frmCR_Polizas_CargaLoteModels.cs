@@ -44,15 +44,10 @@ namespace Galileo_API.Models.ProGrX_Polizas
         public long Proceso { get; set; } = 0;                            // cboPrideduc.Text (yyyymm)
         public int IdBanco { get; set; } = 0;                             // cboBanco.ItemData
         public string CuentaAhorros { get; set; } = string.Empty;     // cboCuenta.ItemData (o texto, depende tu SP)
-        public string TipoDocumentoUi { get; set; } = "TRANSFERENCIA"; // "CHEQUE" | "TRANSFERENCIA"
+        public string TipoDocumentoUi { get; set; } = "TE"; // "CK" | "TE"
         public decimal MontoNeto { get; set; } = 0;                      // txtNeto
         public int Ops { get; set; } = 0;                           // vGrid.MaxRows
         public string AseguradoraNombre { get; set; } = string.Empty; // cboAseguradora.Text (beneficiario)
-    }
-
-    public sealed class CrdPolizasCargaLoteProcesarResponse
-    {
-        public long NSolicitud { get; set; } = 0;
     }
 
     public class RegistrarDocumentoRequest
