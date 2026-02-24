@@ -26,14 +26,34 @@ namespace Galileo_API.BusinessLogic.ProGrX_Contabilidad
             return _db.CntXDivisas_Lista_Obtener(codEmpresa, codConta);
         }
 
-        public ErrorDto<CntXDivisaData> CntXDivisas_Obtener(int codEmpresa, int codConta, string codDivisa)
+        public ErrorDto<CntXDivisaData?> CntXDivisas_Obtener(int codEmpresa, int codConta, string codDivisa)
         {
             return _db.CntXDivisas_Obtener(codEmpresa, codConta, codDivisa);
         }
 
-        public ErrorDto<CntXDivisaData> CntXDivisas_Scroll_Obtener(int CodEmpresa, int codConta, int scrollCode, string codDivisa)
+        public ErrorDto<CntXDivisaData?> CntXDivisas_Scroll_Obtener(int CodEmpresa, int codConta, int scrollCode, string codDivisa)
         {
             return _db.CntXDivisas_Scroll_Obtener(CodEmpresa, codConta, scrollCode, codDivisa);
+        }
+
+        public ErrorDto<List<CntXDivisaHistorialData>> CntXDivisas_Historial_Obtener(int codEmpresa, int codConta, string codDivisa)
+        {
+            return _db.CntXDivisas_Historial_Obtener(codEmpresa, codConta, codDivisa);
+        }
+
+        public ErrorDto<List<CntXDivisaTipoCambioData>> CntXDivisas_TipoCambio_Obtener(int codEmpresa, int codConta, string codDivisa)
+        {
+            return _db.CntXDivisas_TipoCambio_Obtener(codEmpresa, codConta, codDivisa);
+        }
+
+        public ErrorDto CntXDivisas_Guardar(int codEmpresa, string usuario, bool edita, CntXDivisaData request)
+        {
+            return _db.CntXDivisas_Guardar(codEmpresa, usuario, edita, request);
+        }
+
+        public ErrorDto CntXDivisas_Eliminar(int codEmpresa, int codConta, string codDivisa, string usuario)
+        {
+            return _db.CntXDivisas_Eliminar(codEmpresa, codConta, codDivisa, usuario);
         }
     }
 }
