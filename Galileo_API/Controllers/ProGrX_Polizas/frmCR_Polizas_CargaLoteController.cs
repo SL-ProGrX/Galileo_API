@@ -52,10 +52,10 @@ namespace Galileo_API.Controllers.ProGrX_Polizas
         }
 
         [HttpPost("CrdPolizasCargaLote_Cargar")]
-        public ErrorDto<CrdPolizasCargaLote_CargaResponse> CrdPolizasCargaLote_Cargar(
+        public ErrorDto<CrdPolizasCargaLoteCargaResponse> CrdPolizasCargaLote_Cargar(
               int codEmpresa,
               string usuario,
-              CrdPolizasCargaLote_CargaRequest request)
+              CrdPolizasCargaLoteCargaRequest request)
         {
             return _BL.CrdPolizasCargaLote_Cargar(codEmpresa, usuario, request);
         }

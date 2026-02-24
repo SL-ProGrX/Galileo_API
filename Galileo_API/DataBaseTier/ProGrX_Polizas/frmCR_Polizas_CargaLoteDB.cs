@@ -573,7 +573,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
             var userAutoriza = string.Equals(request.TipoDocumento, "CK", StringComparison.OrdinalIgnoreCase) ? request.Usuario : null;
             var fechaAutoriza = string.Equals(request.TipoDocumento, "CK", StringComparison.OrdinalIgnoreCase) ? (DateTime?)DateTime.Now : null;
 
-            var nSolicitud = request.Conn.QueryFirstOrDefault<long>(insertSql, new
+            var nSolicitud = request.Conn!.QueryFirstOrDefault<long>(insertSql, new
             {
                 Concepto = request.Concepto,
                 Unidad = request.Unidad,

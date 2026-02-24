@@ -41,10 +41,10 @@ namespace Galileo_API.BusinessLogic.ProGrX_Polizas
             return _DB.CrdPolizasCargaLote_Prideduc_Obtener(codEmpresa, usuario, codContabilidad);
         }
 
-        public ErrorDto<CrdPolizasCargaLote_CargaResponse> CrdPolizasCargaLote_Cargar(
+        public ErrorDto<CrdPolizasCargaLoteCargaResponse> CrdPolizasCargaLote_Cargar(
                 int codEmpresa,
                 string usuario,
-                CrdPolizasCargaLote_CargaRequest request)
+                CrdPolizasCargaLoteCargaRequest request)
         {
             return _DB.CrdPolizasCargaLote_Cargar(codEmpresa, usuario, request);
         }
