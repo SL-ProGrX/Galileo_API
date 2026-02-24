@@ -5,6 +5,7 @@ using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 using Microsoft.ReportingServices.Diagnostics.Internal;
 using System.Data;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Galileo.DataBaseTier
@@ -842,19 +843,16 @@ namespace Galileo.DataBaseTier
                 conta.Nivel5, conta.Nivel6, conta.Nivel7, conta.Nivel8
             };
 
-                    foreach (var nivel in niveles)
-                    {
-                        if (nivel > 0)
-                        {
-                            if (!string.IsNullOrEmpty(globales.GstrMascara))
-                                globales.GstrMascara += "-";
+                    var nivelesValidos = niveles.Where(n => n > 0).ToList();
 
-                            globales.GstrNiveles += nivel.ToString();
-                            globales.GMascaraTChar += nivel;
+                    globales.GstrMascara = string.Join(
+                        "-",
+                        nivelesValidos.Select(n => new string('#', n))
+                    );
 
-                            globales.GstrMascara += new string('#', nivel);
-                        }
-                    }
+                    globales.GstrNiveles = string.Concat(nivelesValidos);
+
+                    globales.GMascaraTChar = nivelesValidos.Cast<int>().Sum();
                 }
 
                 // ============================================================
