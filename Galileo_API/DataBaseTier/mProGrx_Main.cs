@@ -5,6 +5,7 @@ using Galileo.Models.Security;
 using Microsoft.Data.SqlClient;
 using Microsoft.ReportingServices.Diagnostics.Internal;
 using System.Data;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace Galileo.DataBaseTier
@@ -769,6 +770,141 @@ namespace Galileo.DataBaseTier
             }
             return response;
         }
+
+        /// <summary>
+        /// Inicializa los parámetros del sistema (equivalente a sbSIFParametrosInicializa).
+        /// </summary>
+        public ErrorDto<Globales> sbSifParametrosInicializa(int codEmpresa, string usuario, long? contabilidad = null)
+        {
+            string stringConn = new PortalDB(_config).ObtenerDbConnStringEmpresa(codEmpresa);
+
+            try
+            {
+                using var connection = new SqlConnection(stringConn);
+                var globales = new Globales();
+
+                // ============================================================
+                // 1. Validar si existe tabla UPROGRAMATICA
+                // ============================================================
+                const string sqlObj =
+                    @"SELECT OBJECT_ID('UPROGRAMATICA')";
+
+                var objectId = connection.ExecuteScalar<int?>(sqlObj);
+                globales.SysASEVersion = objectId.HasValue;
+
+                // ============================================================
+                // 2. Cargar empresa
+                // ============================================================
+                const string sqlEmpresa =
+                    @"SELECT cod_empresa_enlace,
+                     Nombre,
+                     SysCrdPlanPago,
+                     SysDocVersion,
+                     SysTesVersion,
+                     SYS_CCSS_IND
+              FROM sif_empresa";
+
+                var empresa = connection.QueryFirstOrDefault(sqlEmpresa);
+
+                if (empresa == null)
+                    return DbHelper.CreateErrorResponse<Globales>(
+                        "No existe definición de empresa.",
+                        -1
+                       );
+
+                globales.GEnlace = contabilidad.HasValue
+                    ? (int)contabilidad.Value
+                    : empresa.cod_empresa_enlace;
+
+                globales.GstrNombreEmpresa = empresa.Nombre.Trim();
+                globales.SysPlanPagos = empresa.SysCrdPlanPago;
+                globales.SysDocVersion = empresa.SysDocVersion;
+                globales.SysTesVersion = empresa.SysTesVersion;
+                globales.SysASEVersion = empresa.SYS_CCSS_IND == 1;
+
+                // ============================================================
+                // 3. Cargar máscara contable
+                // ============================================================
+                const string sqlConta =
+                    @"SELECT *
+              FROM CntX_Contabilidades
+              WHERE cod_contabilidad = @Cod";
+
+                var conta = connection.QueryFirstOrDefault(sqlConta, new
+                {
+                    Cod = globales.GEnlace
+                });
+
+                if (conta != null)
+                {
+                    var niveles = new[]
+                    {
+                conta.Nivel1, conta.Nivel2, conta.Nivel3, conta.Nivel4,
+                conta.Nivel5, conta.Nivel6, conta.Nivel7, conta.Nivel8
+            };
+
+                    var nivelesValidos = niveles.Where(n => n > 0).ToList();
+
+                    globales.GstrMascara = string.Join(
+                        "-",
+                        nivelesValidos.Select(n => new string('#', n))
+                    );
+
+                    globales.GstrNiveles = string.Concat(nivelesValidos);
+
+                    globales.GMascaraTChar = nivelesValidos.Cast<int>().Sum();
+                }
+
+                // ============================================================
+                // 4. Fecha de proceso
+                // ============================================================
+                const string sqlFecha =
+                    @"SELECT *,
+                     dbo.MyGetdate() as FechaAlterna
+              FROM par_ahcr";
+
+                var par = connection.QueryFirstOrDefault(sqlFecha);
+
+                if (par != null)
+                {
+                    DateTime fecha = par.cr_fecha_calculo ?? par.FechaAlterna;
+
+                    globales.GstrFechaCalculo = fecha.ToString("yyyy-MM-dd");
+                    globales.GlngFechaCR = Convert.ToDecimal(fecha.Year * 100 + fecha.Month);
+                    globales.GlngFechaAH = globales.GlngFechaCR;
+                }
+
+                // ============================================================
+                // 5. Oficinas por usuario
+                // ============================================================
+                const string sqlOficinas =
+                    @"EXEC sbSIFOficinasUsuario @Usuario";
+
+                var oficina = connection.QueryFirstOrDefault(sqlOficinas, new
+                {
+                    Usuario = usuario
+                });
+
+                if (oficina != null)
+                {
+                    globales.GOficinaTitular = oficina.Titular;
+                    globales.GOficinaApoyo = oficina.Apoyo;
+                    globales.GOficina = oficina.Descripcion;
+                    globales.GOficinaUnidad = oficina.Cod_Unidad;
+                    globales.GOficinaCentroCosto = oficina.Cod_Centro_Costo;
+                }
+
+                return DbHelper.CreateOkResponse(globales);
+            }
+            catch (Exception)
+            {
+                return DbHelper.CreateErrorResponse<Globales>(
+                    "Error al inicializar parámetros del sistema.",
+                    -1);
+            }
+        }
+
+        
 
     }
 
