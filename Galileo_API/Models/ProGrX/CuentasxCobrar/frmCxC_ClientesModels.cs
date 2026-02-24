@@ -306,7 +306,7 @@ namespace Galileo_API.Models.ProGrX.CuentasxCobrar
         public required string Cedula_Autorizado { get; set; }      // Cédula del autorizado
         public string? Profesion { get; set; }
         public string? Condicion { get; set; }
-        public short Activo { get; set; }
+        public short? Activo { get; set; }
         public required string Usuario { get; set; }
         public required string Movimiento { get; set; }             // 'I' (Insert) o 'E' (Update)
     }
