@@ -315,7 +315,7 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                 sqlConn.Open();
             }
 
-            var table = new DataTable();
+            using var table = new DataTable();
             table.Columns.Add("LINEA", typeof(int));
             table.Columns.Add("CODIGO", typeof(string));
             table.Columns.Add("cod_aseguradora", typeof(string));
