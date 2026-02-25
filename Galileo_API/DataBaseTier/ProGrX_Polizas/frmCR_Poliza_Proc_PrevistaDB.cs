@@ -141,10 +141,8 @@ namespace Galileo_API.DataBaseTier.ProGrX_Polizas
                         @Usuario,
                         @Notas ;";
 
-                foreach (var id in request.id_registros.Distinct())
+                foreach (var id in request.id_registros.Distinct().Where(id => id > 0))
                 {
-                    if (id <= 0) continue;
-
                     var param = new
                     {
                         IdRegistro = id,
