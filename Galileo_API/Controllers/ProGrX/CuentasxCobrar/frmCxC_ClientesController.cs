@@ -5,6 +5,7 @@ using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCClientesContratosModels;
 
 namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
 {
@@ -115,6 +116,76 @@ namespace Galileo_API.Controllers.ProGrX.CuentasxCobrar
         public ErrorDto<List<CxcPersonaCuentaDto>> CxcPersonasCuentas(int codEmpresa, string cedula, string estado)
         {
             return _bl.CxcPersonasCuentas(codEmpresa, cedula, estado);
+        }
+
+        [Authorize]
+        [HttpGet("CxcPersonasContratos")]
+        public ErrorDto<List<ClientesContratosData>> CxcPersonasContratos(int codEmpresa, string cedula)
+        {
+            return _bl.CxcPersonasContratos(codEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("CxcPersonasContratosPagadores")]
+        public ErrorDto<List<CxcPersonaContratosPagadorDto>> CxcPersonasContratosPagadores(int codEmpresa, string codContrato, string cedula)
+        {
+            return _bl.CxcPersonasContratosPagadores(codEmpresa, codContrato, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("CxcPersonasContratosSuscripciones")]
+        public ErrorDto<List<PersonasContratosSuscripcionesData>> CxcPersonasContratosSuscripciones(int codEmpresa, string codContrato, string cedula)
+        {
+            return _bl.CxcPersonasContratosSuscripciones(codEmpresa, codContrato, cedula);
+        }
+
+        [Authorize]
+        [HttpPost("CxcContratoPagador_Eliminar")]
+        public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, [FromBody] CxcContratoPagadorDeleteParams param)
+        {
+            return _bl.CxcContratoPagador_Eliminar(codEmpresa, param);
+        }
+
+        [Authorize]
+        [HttpPost("CxcContratoSuscripcion_Eliminar")]
+        public ErrorDto<bool> CxcContratoSuscripcion_Eliminar(int codEmpresa, [FromBody] CxcContratosSuscripcionDeleteParams param)
+        {
+            return _bl.CxcContratoSuscripcion_Eliminar(codEmpresa, param);
+        }
+
+        [Authorize]
+        [HttpGet("CxcCuentasBancarias")]
+        public ErrorDto<List<CxcCuentaBancariaDto>> CxcCuentasBancarias(int codEmpresa, string cedula)
+        {
+            return _bl.CxcCuentasBancarias(codEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpGet("CxcPersonasAutorizados")]
+        public ErrorDto<List<CxcPersonaAutorizadoDto>> CxcPersonasAutorizados(int codEmpresa, string cedula)
+        {
+            return _bl.CxcPersonasAutorizados(codEmpresa, cedula);
+        }
+
+        [Authorize]
+        [HttpPost("CxcPersonaAutorizador_Guardar")]
+        public ErrorDto<bool> CxcPersonaAutorizador_Guardar(int codEmpresa, [FromBody] CxcPersonaAutorizadorSaveParams param)
+        {
+            return _bl.CxcPersonaAutorizador_Guardar(codEmpresa, param);
+        }
+
+        [Authorize]
+        [HttpGet("CxcPersonasAutorizadoras_Lista")]
+        public ErrorDto<List<CxcPersonaDto>> CxcPersonasAutorizadoras_Lista(int codEmpresa, short rolAutorizador, string orden)
+        {
+            return _bl.CxcPersonasAutorizadoras_Lista(codEmpresa, rolAutorizador, orden);
+        }
+
+        [Authorize]
+        [HttpPost("CxcPersona_IdCambio")]
+        public ErrorDto<bool> CxcPersona_IdCambio(int codEmpresa, [FromBody] CxcPersonaIdCambioParams param)
+        {
+            return _bl.CxcPersona_IdCambio(codEmpresa, param);
         }
     }
 }

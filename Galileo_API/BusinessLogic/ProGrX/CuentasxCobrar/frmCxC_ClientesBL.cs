@@ -3,6 +3,7 @@ using Galileo.Models.ERROR;
 using Galileo_API.DataBaseTier.ProGrX.CuentasxCobrar;
 using Galileo_API.Models.ProGrX.CuentasxCobrar;
 using System.Collections.Generic;
+using static Galileo_API.Models.ProGrX.CuentasxCobrar.FrmCxCClientesContratosModels;
 
 namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
 {
@@ -83,6 +84,56 @@ namespace Galileo_API.BusinessLogic.ProGrX.CuentasxCobrar
         public ErrorDto<List<CxcPersonaCuentaDto>> CxcPersonasCuentas(int codEmpresa, string cedula, string estado)
         {
             return _db.CxcPersonasCuentas(codEmpresa, cedula, estado);
+        }
+
+        public ErrorDto<List<ClientesContratosData>> CxcPersonasContratos(int codEmpresa, string cedula)
+        {
+            return _db.CxcPersonasContratos(codEmpresa, cedula);
+        }
+
+        public ErrorDto<List<CxcPersonaContratosPagadorDto>> CxcPersonasContratosPagadores(int codEmpresa, string codContrato, string cedula)
+        {
+            return _db.CxcPersonasContratosPagadores(codEmpresa, codContrato, cedula);
+        }
+
+        public ErrorDto<List<PersonasContratosSuscripcionesData>> CxcPersonasContratosSuscripciones(int codEmpresa, string codContrato, string cedula)
+        {
+            return _db.CxcPersonasContratosSuscripciones(codEmpresa, codContrato, cedula);
+        }
+
+        public ErrorDto<bool> CxcContratoPagador_Eliminar(int codEmpresa, CxcContratoPagadorDeleteParams param)
+        {
+            return _db.CxcContratoPagador_Eliminar(codEmpresa, param);
+        }
+
+        public ErrorDto<bool> CxcContratoSuscripcion_Eliminar(int codEmpresa, CxcContratosSuscripcionDeleteParams param)
+        {
+            return _db.CxcContratoSuscripcion_Eliminar(codEmpresa, param);
+        }
+
+        public ErrorDto<List<CxcCuentaBancariaDto>> CxcCuentasBancarias(int codEmpresa, string cedula)
+        {
+            return _db.CxcCuentasBancarias(codEmpresa, cedula);
+        }
+
+        public ErrorDto<List<CxcPersonaAutorizadoDto>> CxcPersonasAutorizados(int codEmpresa, string cedula)
+        {
+            return _db.CxcPersonasAutorizados(codEmpresa, cedula);
+        }
+
+        public ErrorDto<bool> CxcPersonaAutorizador_Guardar(int codEmpresa, CxcPersonaAutorizadorSaveParams param)
+        {
+            return _db.CxcPersonaAutorizador_Guardar(codEmpresa, param);
+        }
+
+        public ErrorDto<List<CxcPersonaDto>> CxcPersonasAutorizadoras_Lista(int codEmpresa, short rolAutorizador, string orden)
+        {
+            return _db.CxcPersonasAutorizadoras_Lista(codEmpresa, rolAutorizador, orden);
+        }
+
+        public ErrorDto<bool> CxcPersona_IdCambio(int codEmpresa, CxcPersonaIdCambioParams param)
+        {
+            return _db.CxcPersona_IdCambio(codEmpresa, param);
         }
     }
 }
