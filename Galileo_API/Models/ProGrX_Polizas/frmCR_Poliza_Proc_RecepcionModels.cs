@@ -22,7 +22,7 @@
             public string Divisa { get; set; } = string.Empty;
             public string Unidad { get; set; } = string.Empty;
             public string CentroCosto { get; set; } = string.Empty;
-            public float TipoCambio { get; set; }
+            public float? TipoCambio { get; set; }
             public string Notas { get; set; } = string.Empty; 
         }
         public class PolizaAseguradoraCorteDetalleData
