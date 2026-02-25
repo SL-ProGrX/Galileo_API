@@ -4,8 +4,8 @@
     {
         public class PolizasPeConsultasBuscarRequestDto
         {
-            public bool? SoloVencida { get; set; }                 // chkVencida
-            public bool? FiltrarVenceCobertura { get; set; }       // chkVenceCobertura
+            public bool SoloVencida { get; set; }                 // chkVencida
+            public bool FiltrarVenceCobertura { get; set; }       // chkVenceCobertura
             public DateTime? VenceInicio { get; set; }            // dtpVenceInicio
             public DateTime? VenceCorte { get; set; }             // dtpVenceCorte
             public int? PresentacionId { get; set; }              // cboPresentacion (null = TODOS)
